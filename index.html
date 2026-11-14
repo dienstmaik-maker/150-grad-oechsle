@@ -13,13 +13,13 @@
 <link rel="apple-touch-icon" href="symbole/symbol-180.png">
 <title>150 Grad Öchsle</title>
 <style>
-/* Farben passend zu den Bildern: Sandstein fürs Weingut, Pflaster-Ton für die Stadt, dunkles Holz für die Kellerei. --kopf ist die Leiste oben. */
-:root{--bg:#f3e7cf;--card:#fdf6e6;--ink:#2d2116;--mut:#766449;--wein:#7b1e3a;--kopf:#7b1e3a;--gruen:#58793a;--blau:#4a4f8f;--line:#dfcda8;--rot:#b3261e;--gold:#a87908}
-html.ort-stadt{--bg:#f2e2d2;--card:#fdf4ea;--line:#e3c8ae;--mut:#7a6453}
+/* Farben passend zu den Bildern: Weinlaub-Grün fürs Weingut, Pflaster-Ton für die Stadt, dunkles Holz für die Kellerei. --kopf ist die Leiste oben. */
+:root{--bg:#dde7cc;--card:#f4f8e9;--ink:#232a1a;--mut:#5d6a48;--wein:#7b1e3a;--kopf:#7b1e3a;--gruen:#4c7030;--blau:#4a4f8f;--line:#bfd0a4;--rot:#b3261e;--gold:#a87908}
+html.ort-stadt{--bg:#f2e2d2;--card:#fdf4ea;--ink:#2d2116;--line:#e3c8ae;--mut:#7a6453;--gruen:#58793a}
 html.ort-keller{--bg:#2b1c12;--card:#3b281a;--ink:#f4e7d2;--mut:#bfa888;--wein:#cc607b;--kopf:#4a1526;--gruen:#9cbf74;--blau:#9aa0e0;--line:#5a4029;--rot:#f0766a;--gold:#e4b54a}
 @media (prefers-color-scheme:dark){
-:root{--bg:#1d1810;--card:#2b2419;--ink:#f1e8dc;--mut:#a89a8c;--wein:#c2516f;--kopf:#5c1830;--gruen:#8fb56a;--blau:#8d93d6;--line:#453a28;--rot:#ef6a60;--gold:#e0b84a}
-html.ort-stadt{--bg:#1f1814;--card:#2e2520;--line:#48392f;--mut:#a89a8c}
+:root{--bg:#151c11;--card:#212a1a;--ink:#ecf0e2;--mut:#9aa68a;--wein:#c2516f;--kopf:#5c1830;--gruen:#8fb56a;--blau:#8d93d6;--line:#38472b;--rot:#ef6a60;--gold:#e0b84a}
+html.ort-stadt{--bg:#1f1814;--card:#2e2520;--ink:#f1e8dc;--line:#48392f;--mut:#a89a8c}
 html.ort-keller{--bg:#1a110a;--card:#2a1b11;--ink:#f1e8dc;--mut:#a89a8c;--wein:#c2516f;--kopf:#4a1526;--gruen:#8fb56a;--blau:#8d93d6;--line:#4a3422;--rot:#ef6a60;--gold:#e0b84a}
 }
 *{box-sizing:border-box}
@@ -78,8 +78,8 @@ ul.kl{margin:4px 0 0;padding-left:18px;font-size:14px}
 .pano.stadt{--r:6.115}.pano.stadt>i{background-image:url(bilder/stadt.jpg)}
 .ptitel{position:absolute;left:0;right:0;bottom:0;padding:28px 12px 8px;background:linear-gradient(transparent,rgba(0,0,0,.66));color:#fff;text-align:center;pointer-events:none}
 .ptitel b{display:block;font-size:18px;text-shadow:0 1px 3px rgba(0,0,0,.8)}
-.punkte{display:flex;gap:7px;justify-content:center;margin-top:6px}
-.punkte span{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.45)}.punkte span.an{background:#fff;transform:scale(1.3)}
+.punkte{display:flex;gap:6px;justify-content:center;margin-top:5px;pointer-events:auto}
+.punkte span{width:40px;height:30px;line-height:30px;font-size:17px;border-radius:10px;opacity:.8;transition:opacity .2s,transform .2s}.punkte span.an{opacity:1;background:rgba(255,255,255,.3);transform:scale(1.12)}
 img.fass{height:1.1em;vertical-align:-.18em}
 .mbild{position:relative;height:min(200px,30vh);border-radius:14px;overflow:hidden;margin:0 0 12px;background:var(--line) center/cover no-repeat}
 .mbild.winter,.mbild.fruehling,.mbild.sommer,.mbild.herbst{background-position:center 38%}
@@ -177,14 +177,19 @@ const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=18000, WARTUNG=60, 
 const REBEN_JE_HELFER=1000, MASCH_HELFER=3, FASS_JE_LAGERARB=10000, FLASCHEN_JE_LAGERARB=20000;
 /* ---- Etappe 3: Ränge, Gegner, Auktionen, Wettbewerbe, Export ---- */
 const START_JAHR=2027, LANDWERT=15000;
+// Aufstiegstempo: Die ersten HA_FREI Hektar kosten im Monat HA_KOSTEN_KLEIN, jeder weitere HA_KOSTEN.
+// Der Großhandel kauft je Monat für MARKT_FREI Euro zum vollen Preis, je Rang für MARKT_RANG und je Exportland für MARKT_EXPORT mehr. Verkäufe an Weinhandlungen zählen mit. Darüber fällt der Preis bis auf MARKT_MIN, erreicht nach dem MARKT_BREIT-fachen des Budgets.
+// Jede Weinhandlung nimmt im Monat 1 bis LADEN_MAX mal LADEN_MENGE Flaschen. Der Wein im Keller zählt beim Vermögen nur mit WEIN_WERT seines Listenwerts und höchstens mit dem, was der Großhandel in einem Jahr zum vollen Preis kauft.
+// Die Gegner fangen mit GEGNER_START ihrer Stärke an und wachsen über GEGNER_JAHRE Jahre auf GEGNER_ENDE.
+const HA_FREI=3, HA_KOSTEN_KLEIN=50, HA_KOSTEN=400, MARKT_FREI=3000, MARKT_RANG=1000, MARKT_EXPORT=1500, MARKT_MIN=.25, MARKT_BREIT=.75, GEGNER_START=.5, GEGNER_ENDE=1.4, GEGNER_JAHRE=25, LADEN_MENGE=50, LADEN_MAX=2, WEIN_WERT=.5;
 const WO={mosel:'an der Mosel',rheingau:'im Rheingau',rheinhessen:'in Rheinhessen',pfalz:'in der Pfalz',franken:'in Franken',wuerttemberg:'in Württemberg'};
 const RAENGE=[
   {name:'Neuling',kurz:'Neuling',ans:0,ha:0,verm:0,rahmen:20000},
   {name:'Winzer',kurz:'Winzer',ans:15,ha:3,verm:100000,rahmen:40000,neu:'du darfst bei Auktionen mitbieten'},
-  {name:'Winzermeister',kurz:'Winzermeister',ans:60,ha:5,verm:300000,rahmen:40000,neu:'Landesprämierung, Export in die Niederlande und nach Großbritannien'},
-  {name:'Gutsherr',kurz:'Gutsherr',ans:150,ha:8,verm:750000,rahmen:160000,neu:'Bundeswettbewerb',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.'},
-  {name:'Weinbaurat',kurz:'Weinbaurat',ans:300,ha:13,verm:1800000,rahmen:300000,neu:'Export in die USA und nach Japan'},
-  {name:'Präsident des Weinbauverbands',kurz:'Präsident',ans:500,ha:20,verm:4000000,rahmen:500000,neu:'der Sieg'}
+  {name:'Winzermeister',kurz:'Winzermeister',ans:100,ha:5,verm:300000,rahmen:40000,neu:'Landesprämierung, Export in die Niederlande und nach Großbritannien'},
+  {name:'Gutsherr',kurz:'Gutsherr',ans:250,ha:8,verm:750000,rahmen:160000,neu:'Bundeswettbewerb',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.'},
+  {name:'Weinbaurat',kurz:'Weinbaurat',ans:480,ha:13,verm:1800000,rahmen:300000,neu:'Export in die USA und nach Japan'},
+  {name:'Präsident des Weinbauverbands',kurz:'Präsident',ans:850,ha:20,verm:3000000,rahmen:500000,neu:'der Sieg'}
 ];
 // Was ein Aufstieg bringt: der Kreditrahmen nur, wenn er wächst, dazu die Freischaltung des Rangs.
 function bringt(i){const r=RAENGE[i],T=[];if(r.rahmen>RAENGE[i-1].rahmen)T.push('Kreditrahmen '+eur(r.rahmen));T.push(r.neu);return T.join(', ')}
@@ -369,10 +374,10 @@ let PANO_ALT={tab:null,x:0,z:1}, ORT_ALT=null;
 function ortFarbe(tab){const h=document.documentElement; h.className='ort-'+tab; const m=$('meta[name="theme-color"]'); if(m) m.content=getComputedStyle(h).getPropertyValue('--kopf').trim()||'#7b1e3a'}
 // Bild oben in einem Fenster (Weinkontrolle, Auktion, Prämierung, Rathaus, Kellerbuch, Pleite).
 const sbild=n=>`<div class="sbild" style="background-image:url(bilder/${n}.jpg)"></div>`;
-// Das Bild des Ortes. Unten im Bild steht, wo man ist, die Punkte darunter zeigen die Orte des Hauptreiters. Wetter-Effekte über dem Bild gibt es nicht mehr.
+// Das Bild des Ortes. Unten im Bild steht, wo man ist, die Symbole darunter zeigen die Orte des Hauptreiters und springen beim Antippen dorthin. Wetter-Effekte über dem Bild gibt es nicht mehr.
 function ortBild(titel){
   const L=SUBS[TAB];
-  return `<div class="pano ${TAB}" data-a="bild"><i></i>${TAB==='gut'?wandHtml():''}<div class="ptitel"><b>${L.find(s=>s[0]===SUB)[1]} ${esc(titel)}</b><span class="punkte">${L.map(s=>`<span class="${s[0]===SUB?'an':''}"></span>`).join('')}</span></div></div>`;
+  return `<div class="pano ${TAB}" data-a="bild"><i></i>${TAB==='gut'?wandHtml():''}<div class="ptitel"><b>${L.find(s=>s[0]===SUB)[1]} ${esc(titel)}</b><span class="punkte">${L.map(s=>`<span class="${s[0]===SUB?'an':''}" data-a="sub" data-id="${s[0]}">${s[1]}</span>`).join('')}</span></div></div>`;
 }
 // Bild der Infoseite: Aufstieg, Sieg oder Prämierung, wenn es etwas zu feiern gibt, die Frostnacht beim Kälteeinbruch im November, sonst die Jahreszeit.
 function monatBild(E){
@@ -421,10 +426,14 @@ function etappe3(n,schwer){
   Object.assign(S,{schwer,rang:0,sieger:null,wett:null,auktion:null,sektJahr:0,exLage:{nl:1,gb:1,us:1,jp:1}});
   const typen=misch(['vorsicht','qualitaet','zocker']).slice(0,n), andere=misch(Object.keys(REGIONEN).filter(r=>r!==S.region));
   S.gegner=typen.map((typ,i)=>({id:i,typ,name:GEGNER_TYP[typ].name,region:i===0&&Math.random()<.3?S.region:andere[i],ha:3,geld:40000,kredit:0,ansehen:0,rang:0}));
-  neueLaeden();
+  neueLaeden(); S.absatz=0;
 }
 function zahle(b){S.geld-=b;S.jahrAus+=b}
 function kassiere(b){S.geld+=b;S.jahrEin+=b;fx('kasse')}
+// Großhandel: Budget des Monats zum vollen Preis, was davon noch offen ist, und der Schnitt-Faktor auf den Preis für Wein im Listenwert von w Euro.
+function marktFrei(){return MARKT_FREI+MARKT_RANG*S.rang+MARKT_EXPORT*EXPORT.filter(e=>S.rang>=e.rang).length}
+function marktRest(){return Math.max(0,marktFrei()-(S.absatz||0))}
+function marktF(n){n=Math.max(0,n);const Q=marktFrei(),a=S.absatz||0,f=x=>x<=Q?1:Math.max(MARKT_MIN,1-(1-MARKT_MIN)*(x-Q)/(Q*MARKT_BREIT)); if(n<=0) return f(a); let s=0; for(let i=0;i<40;i++) s+=f(a+n*(i+.5)/40); return s/40}
 function R(){return REGIONEN[S.region]}
 function rebenGesamt(){return R().sorten.reduce((a,id)=>a+S.felder[id].reben,0)}
 const verlustSpanne=b=>VERLUST.find(v=>b>=v[0]);
@@ -446,7 +455,7 @@ function lotWert(l){
   if(!l.stufe) return l.liter*2;
   return l.liter*STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*reifeFaktor(l)*(l.sekt?1.6:1)*(l.status==='fass'?.7:1);
 }
-function vermoegen(){return Math.round(S.geld-(S.kredit?S.kredit.rest:0)+S.ha*LANDWERT+S.maschinen.reduce((a,m)=>a+MASCH_PREIS*.5*m.zustand/100,0)+S.lots.reduce((a,l)=>a+lotWert(l),0))}
+function vermoegen(){return Math.round(S.geld-(S.kredit?S.kredit.rest:0)+S.ha*LANDWERT+S.maschinen.reduce((a,m)=>a+MASCH_PREIS*.5*m.zustand/100,0)+Math.min(12*marktFrei(),WEIN_WERT*S.lots.reduce((a,l)=>a+lotWert(l),0)))}
 function gVerm(g){return Math.round(g.geld-g.kredit+g.ha*LANDWERT)}
 function rangFuer(ab,ans,ha,verm){let r=ab;while(r<5){const n=RAENGE[r+1];if(ans>=n.ans&&ha>=n.ha&&verm>=n.verm)r++;else break}return r}
 function medHtml(l){return l.med&&l.med.length?`<div class="gold" style="font-size:14px">${l.med.map(esc).join(' · ')}</div>`:''}
@@ -458,7 +467,7 @@ function wege(l){
   for(const e of EXPORT) if(S.rang>=e.rang) W.push({name:e.name,flag:e.flag,p:Math.round(p*e.f(l)*S.exLage[e.id]*100)/100});
   return W.sort((a,b)=>b.p-a.p);
 }
-function neueLaeden(){S.laeden={};for(const r of Object.keys(REGIONEN)) if(r!==S.region) S.laeden[r]={rest:rint(1,4)*100,wunsch:['weiss','rot','sekt','edel'][rint(0,3)]}}
+function neueLaeden(){S.laeden={};for(const r of Object.keys(REGIONEN)) if(r!==S.region) S.laeden[r]={rest:rint(1,LADEN_MAX)*LADEN_MENGE,wunsch:['weiss','rot','sekt','edel'][rint(0,3)]}}
 function ladenOk(l){return l.status==='flasche'&&preis(l)>0&&(l.sekt||STUFEN[l.stufe].rang>=3)}
 function ladenPreis(l,r){
   const w=S.laeden[r].wunsch, passt=w==='sekt'?!!l.sekt:w==='edel'?STUFEN[l.stufe].rang>=5:!l.sekt&&SORTEN[l.sorte].farbe===w;
@@ -527,12 +536,14 @@ function aukOhneDich(){
 /* ================= Computer-Winzer ================= */
 // Läuft einmal im Monat für jeden Gegner und liefert die Nachrichten des Monats.
 function gegnerMonat(){
-  const N=[], m=S.monat, st=DIFF[S.schwer].ki, neu=(p,t)=>N.push({p,t});
+  const N=[], m=S.monat, st0=DIFF[S.schwer].ki, neu=(p,t)=>N.push({p,t});
   for(const g of S.gegner){
     const t=GEGNER_TYP[g.typ], wo=WO[g.region], heim=g.region===S.region;
     // Auch die Gegner fangen mit kahlem Weinberg an: Jahr 1 bringt 20 %, Jahr 2 60 %, danach voll.
     if(m===0) g.jahre=(g.jahre||0)+1;
     const auf=Math.min(1,.2+.4*((g.jahre||0)-1));
+    // Aufstiegstempo: Die Gegner fangen gemütlich an und werden über die Jahre stärker.
+    const st=st0*(GEGNER_START+(GEGNER_ENDE-GEGNER_START)*clamp(((g.jahre||1)-1)/GEGNER_JAHRE,0,1));
     if(m===0){
       // g.schaden: Anteil der Ernte, den eine Sabotage im Vorjahr gekostet hat.
       const gew=Math.round(g.ha*rnd(t.eink[0],t.eink[1])*st*auf*(1-(g.schaden||0))/100)*100; g.schaden=0;
@@ -605,7 +616,7 @@ function lohnAbgleich(){
   for(const k of LOHN_ARTEN){const a=S.loehne[k]; while(a.length<S[k]) a.push(LOHN_START); a.length=S[k]; a.sort((x,y)=>x-y)}
   if(!S.angebot) neuesLohnAngebot();
 }
-function kosten(){const k=S.kredit;return {basis:150+50*S.ha,loehne:lohnSumme('helfer')+lohnSumme('lagerarb'),tilgung:k?Math.min(k.rest,k.tilgung):0,zins:k?Math.round(k.rest*ZINS/12):0}}
+function kosten(){const k=S.kredit;return {basis:150+HA_KOSTEN_KLEIN*Math.min(S.ha,HA_FREI)+HA_KOSTEN*Math.max(0,S.ha-HA_FREI),loehne:lohnSumme('helfer')+lohnSumme('lagerarb'),tilgung:k?Math.min(k.rest,k.tilgung):0,zins:k?Math.round(k.rest*ZINS/12):0}}
 function schulden(){return (S.kredit?S.kredit.rest:0)+Math.max(0,-S.geld)}
 function sektFaehig(l){return l.status==='flasche'&&!l.sekt&&l.stufe!=='feder'&&l.flMonate>=lagerBasis(l).min}
 function dot(id){return `<i class="dot ${SORTEN[id].farbe==='weiss'?'weiss':'rotw'}"></i>`}
@@ -857,7 +868,7 @@ function etappe3Monat(Z){
     neueAuktion();
     Z.push(`🔨 Auktion: ${S.auktion.ha} Hektar Weinberg ${WO[S.region]} kommen diesen Monat unter den Hammer.${S.rang<1?' Mitbieten darfst du ab dem Rang Winzer.':''}`);
   }
-  neueLaeden();
+  neueLaeden(); S.absatz=0;
   for(const e of EXPORT) S.exLage[e.id]=clamp(S.exLage[e.id]+rnd(-.05,.05),.9,1.12);
 }
 /* ---- Weinkontrolle: unangekündigt, im Schnitt alle drei Jahre, spätestens nach vier. Nach einem Fund fünf Jahre lang jedes Jahr ---- */
@@ -1181,7 +1192,7 @@ function vStadt(){
     const fl=S.lots.filter(l=>l.status==='flasche');
     h+=`<div class="mut" style="margin-bottom:8px">Marktlage: ${S.markt>1.04?'gut 📈':S.markt<.96?'schwach 📉':'normal'}</div>`;
     const ex=EXPORT.filter(e=>S.rang>=e.rang), naechst=EXPORT.find(e=>S.rang<e.rang);
-    h+=`<div class="card"><div class="mut">Der Großhandel nimmt jede Menge und zeigt dir je Wein den besten Absatzweg. Der Zoll ist im Preis schon abgezogen.</div>
+    h+=`<div class="card"><div class="mut">Der Großhandel zeigt dir je Wein den besten Absatzweg, der Zoll ist im Preis schon abgezogen. Zum vollen Preis kauft er diesen Monat noch für <b>${eur(marktRest())} von ${eur(marktFrei())}</b>. Was darüber geht, drückt den Preis, und was du an Weinhandlungen verkaufst, zählt mit. Jeder Rang hebt das Budget um ${eur(MARKT_RANG)}, jedes Exportland um ${eur(MARKT_EXPORT)}.</div>
       ${ex.map(e=>`<div class="kv"><span>${e.flag} ${e.name}</span><span class="mut">${e.text}</span></div>`).join('')}
       ${naechst?`<div class="mut">Nächstes Exportland: ${naechst.flag} ${naechst.name}, ab dem Rang ${RAENGE[naechst.rang].name}.</div>`:''}</div>`;
     h+=fl.length?fl.map(l=>{const W=wege(l),L=lager(l);return `<div class="card"><b>${dot(l.sorte)}${lotName(l)}</b>${medHtml(l)}<div class="mut">${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte</div>${W.length?`<div class="kv"><span>Bester Preis: ${W[0].flag} ${W[0].name}</span><span>${eur2(W[0].p)}</span></div>${W.length>1?`<div class="mut">Sonst: ${W.slice(1).map(w=>`${w.flag} ${eur2(w.p)}`).join(' · ')}</div>`:''}<div class="btns"><button data-a="verkaufen" data-id="${l.id}">Verkaufen</button></div>`:`<div class="mut">Noch ${L.min-l.flMonate} Monate bis zur Verkaufsreife.</div>`}</div>`}).join(''):'<div class="card mut">Kein Flaschenwein im Lager.</div>';
@@ -1371,9 +1382,9 @@ const AKT={
   },
   ladenVerkauf(d){
     const l=lot(d.id), la=S.laeden[d.r], p=ladenPreis(l,d.r), max=Math.min(l.liter,la.rest);
-    mengeSheet({titel:`${lotName(l)} an die Weinhandlung`,text:`${eur2(p)} je Flasche, höchstens ${num(la.rest)} Flaschen.`,max,rangeStep:1,step:max>200?10:1,start:max,okText:'Verkaufen',
+    mengeSheet({titel:`${lotName(l)} an die Weinhandlung`,text:`${eur2(p)} je Flasche, höchstens ${num(la.rest)} Flaschen. Die Weinhandlung zahlt immer voll, der Verkauf zählt aber beim Großhandel mit.`,max,rangeStep:1,step:max>200?10:1,start:max,okText:'Verkaufen',
       info:n=>`<b>${num(n)} Flaschen</b>bringt dir ${eur(n*p)}`,
-      ok:n=>{kassiere(n*p);la.rest-=n;l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l)}});
+      ok:n=>{kassiere(n*p);S.absatz=(S.absatz||0)+n*p;la.rest-=n;l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l)}});
   },
   tab(d){geh(d.id,d.sub);render();window.scrollTo(0,0)},
   sub(d){SUB=d.id;render();window.scrollTo(0,0)},
@@ -1612,9 +1623,9 @@ const AKT={
   },
   verkaufen(d){
     const l=lot(d.id), w=wege(l)[0]; if(!w) return; const p=w.p;
-    mengeSheet({titel:`${lotName(l)} verkaufen`,text:`${w.flag} ${w.name}: ${eur2(p)} je Flasche. Was du behältst, reift weiter.`,max:l.liter,rangeStep:1,step:l.liter>2000?100:l.liter>200?10:1,start:l.liter,okText:'Verkaufen',
-      info:n=>`<b>${num(n)} Flaschen</b>bringt dir ${eur(n*p)}`,
-      ok:n=>{kassiere(n*p);l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l)}});
+    mengeSheet({titel:`${lotName(l)} verkaufen`,text:`${w.flag} ${w.name}: ${eur2(p)} je Flasche. ${marktRest()?`Zum vollen Preis kauft der Großhandel diesen Monat noch für ${eur(marktRest())}, danach sinkt er.`:'Der Markt ist diesen Monat satt, der Preis ist gedrückt. Nächsten Monat zahlt der Großhandel wieder voll.'} Was du behältst, reift weiter.`,max:l.liter,rangeStep:1,step:l.liter>2000?100:l.liter>200?10:1,start:Math.min(l.liter,Math.floor(marktRest()/p)||l.liter),okText:'Verkaufen',
+      info:n=>{const f=marktF(n*p);return `<b>${num(n)} Flaschen</b>bringt dir ${eur(n*p*f)}${f<.995?`<br>📉 im Schnitt ${eur2(p*f)} je Flasche, der Markt ist satt`:''}`},
+      ok:n=>{kassiere(Math.round(n*p*marktF(n*p)));S.absatz=(S.absatz||0)+n*p;l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l)}});
   }
 };
 /* ================= Titelbild und Geschichte ================= */
