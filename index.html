@@ -1664,9 +1664,10 @@ function pk(a,t,p,o={}){
 // Zeile unten in der Karte: links eine kurze Erklärung, rechts die Knöpfe untereinander.
 function kz(links,...kn){return `<div class="kz${links?'':' reihe'}"><div>${links||''}</div><div class="kzk">${kn.join('')}</div></div>`}
 function vAktuell(){
-  return `${vRang()}<h3>Das steht an</h3>${aufgabenHtml()}
+  // Version 4.4 (Maik): "Das steht an" ganz oben, der Rang darunter.
+  return `<h3>Das steht an</h3>${aufgabenHtml()}
   ${stehtAn()?'':`<div class="btns" style="margin:4px 0 6px"><button data-a="weiterBis">⏩ Weiter bis etwas ansteht</button></div>`}
-  <div class="btns" style="margin:4px 0 12px"><button class="sec klein" data-a="tab" data-id="monat">📅 Monatsbericht ansehen</button></div>`;
+  <div class="btns" style="margin:4px 0 12px"><button class="sec klein" data-a="tab" data-id="monat">📅 Monatsbericht ansehen</button></div>${vRang()}`;
 }
 function vMaschinen(){
   const saison=S.monat<=2;
