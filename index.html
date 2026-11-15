@@ -348,9 +348,9 @@ const RAENGE=[
   {name:'Neuling',kurz:'Neuling',ans:0,ha:0,verm:0,rahmen:20000},
   {name:'Jungwinzer',kurz:'Jungwinzer',ans:15,ha:3,verm:100000,rahmen:40000,neu:'du darfst bei Auktionen mitbieten'},
   {name:'Winzer',kurz:'Winzer',ans:50,ha:4,verm:180000,rahmen:80000,neu:'Export in die Niederlande'},
-  {name:'Winzermeister',kurz:'Winzermeister',ans:100,ha:5,verm:300000,rahmen:160000,neu:'Landesprämierung, Export nach Großbritannien'},
+  {name:'Winzermeister',kurz:'Winzermeister',ans:100,ha:5,verm:300000,rahmen:160000,neu:'Landesprämierung, Export nach Großbritannien, Erntemaschinen'},
   {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',ans:170,ha:6,verm:500000,rahmen:300000,neu:'Export in die USA, ein Gutsverwalter'},
-  {name:'Gutsherr',kurz:'Gutsherr',ans:250,ha:8,verm:750000,rahmen:300000,neu:'Bundeswettbewerb, Export nach Japan',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.'},
+  {name:'Gutsherr',kurz:'Gutsherr',ans:250,ha:8,verm:750000,rahmen:300000,neu:'Bundeswettbewerb, Export nach Japan, der große Vollernter',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.'},
   {name:'Weinbaurat',kurz:'Weinbaurat',ans:360,ha:10,verm:1200000,rahmen:300000,neu:'eine eigene Weinhandlung, das Amt des Weinbotschafters'},
   {name:'Verbandsvorstand',kurz:'Vorstand',ans:480,ha:13,verm:1800000,rahmen:300000,neu:'das Hoffest, du kannst Kontrollen anregen'},
   {name:'Vizepräsident',kurz:'Vizepräsident',ans:650,ha:16,verm:2400000,rahmen:300000,neu:'die Chance auf eine Spitzenlage'},
@@ -400,14 +400,20 @@ const HOFFEST_WETTER={sonnig:1.25,mild:1,regen:.7,kalt:.85,frost:.85};
 const BESTEN_KEY='oechsle-besten';
 const ANREG_ANS=30, ANREG_FEHL=3, PANSCH={zocker:.4,vorsicht:.08,qualitaet:.04}, SPITZE_HA=2, SPITZE_START=200000, SPITZE_OE=5, SPITZE_ANS=15, LOHN_BILLIG=250;
 // Paket 4 (15.11.2026): Ziele fürs Geld und Land ohne Auktionsglück.
-// Makler: ab Jungwinzer höchstens ein Hektar im Jahr zum MAKLER_PREIS, nur solange Land für den nächsten Rang fehlt. Auktionen bleiben deutlich billiger.
+// Makler: ab Jungwinzer höchstens ein Hektar im Jahr zum MAKLER_PREIS, nur wenn für den nächsten Rang allein noch Land fehlt. Auktionen bleiben deutlich billiger.
 // Weinfest: ab Winzermeister bis zum Hoffest, einmal im Jahr von Juni bis August, kostet WEINFEST_PREIS und bringt WEINFEST_ANS Ansehen mal Wetter-Faktor.
 // Kellerausbau: drei Stufen ab Winzer (KELLER_PREISE). Jede Stufe kürzt die Reifezeit von Prädikatswein und Eiswein in der Flasche um einen Monat, und jeder Wein gewinnt beim Reifen KELLER_REIFE schneller an Wert.
 const MAKLER_PREIS=45000, WEINFEST_PREIS=30000, WEINFEST_ANS=12, KELLER_PREISE=[50000,120000,250000], KELLER_REIFE=.1, R_WEINFEST=R_LAND, R_KELLER=2;
 const FESTE={weinfest:{name:'Weinfest',preis:WEINFEST_PREIS,ans:WEINFEST_ANS,text:'Ein Weinfest im Hof mit Zelt, Musik und deinem Wein',kurz:'Musik, Zwiebelkuchen und dein Wein für Nachbarn und Gäste'},hoffest:{name:'Hoffest',preis:HOFFEST_PREIS,ans:HOFFEST_ANS,text:'Ein großes Fest für das ganze Dorf',kurz:'Musik, Flammkuchen und dein Wein für das ganze Dorf'}};
+// Erntemaschinen (Paket 4, Variante C): die kleine ab Winzermeister, der große Vollernter ab Gutsherr. Maschinen ohne Typ (alte Spielstände) sind klein und bleiben, auch vor Winzermeister.
+const VOLL_PREIS=120000, VOLL_LEISTUNG=10000, VOLL_HELFER=10, VOLL_WARTUNG=300;
+const MASCH={klein:{name:'Erntemaschine',preis:MASCH_PREIS,leist:MASCH_LEISTUNG,helfer:MASCH_HELFER,wart:WARTUNG,rang:R_LAND,text:'die kleine Maschine für den Anfang'},
+  gross:{name:'Vollernter',preis:VOLL_PREIS,leist:VOLL_LEISTUNG,helfer:VOLL_HELFER,wart:VOLL_WARTUNG,rang:R_BUND,text:'die große Maschine für weite Lagen'}};
+function mTyp(ma){return MASCH[ma&&ma.gross?'gross':'klein']}
+function maschHelfer(){return S.maschinen.reduce((a,m)=>a+mTyp(m).helfer,0)}
 function festArt(){return S.rang>=R_HOFFEST?'hoffest':S.rang>=R_WEINFEST?'weinfest':''}
-// Der Makler verkauft, wenn der Spieler den Rang hat, dieses Jahr noch nicht gekauft hat und ihm Land für den nächsten Rang fehlt.
-function maklerGrund(){if(S.rang<R_AUKTION) return `Der Makler arbeitet erst für dich ab dem Rang ${RAENGE[R_AUKTION].name}.`; if(S.maklerJahr===S.jahr) return 'Dieses Jahr hat er dir schon einen Hektar verkauft. Nächstes Jahr wieder.'; const n=RAENGE[S.rang+1]; if(!n||S.ha>=n.ha) return 'Für den nächsten Rang hast du genug Land, da verkauft er dir nichts.'; return ''}
+// Der Makler verkauft, wenn der Spieler den Rang hat, dieses Jahr noch nicht gekauft hat und ihm für den nächsten Rang allein noch Land fehlt.
+function maklerGrund(){if(S.rang<R_AUKTION) return `Der Makler arbeitet erst für dich ab dem Rang ${RAENGE[R_AUKTION].name}.`; if(S.maklerJahr===S.jahr) return 'Dieses Jahr hat er dir schon einen Hektar verkauft. Nächstes Jahr wieder.'; const n=RAENGE[S.rang+1]; if(!n||S.ha>=n.ha) return 'Für den nächsten Rang hast du genug Land, da verkauft er dir nichts.'; if(S.ansehen<n.ans||vermoegen()<n.verm) return 'Dir fehlt für den nächsten Rang nicht nur Land. Erst wenn Ansehen und Vermögen reichen, verkauft er dir einen Hektar.'; return ''}
 
 /* ================= Helfer ================= */
 const $=s=>document.querySelector(s);
@@ -667,7 +673,7 @@ function lotWert(l){
   if(!l.stufe) return l.liter*2;
   return l.liter*STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*reifeFaktor(l)*(l.sekt?1.6:1)*(l.status==='fass'?.7:1);
 }
-function vermoegen(){return Math.round(S.geld-(S.kredit?S.kredit.rest:0)+S.ha*LANDWERT+S.maschinen.reduce((a,m)=>a+MASCH_PREIS*.5*m.zustand/100,0)+Math.min(12*marktFrei(),WEIN_WERT*S.lots.reduce((a,l)=>a+lotWert(l),0)))}
+function vermoegen(){return Math.round(S.geld-(S.kredit?S.kredit.rest:0)+S.ha*LANDWERT+S.maschinen.reduce((a,m)=>a+mTyp(m).preis*.5*m.zustand/100,0)+Math.min(12*marktFrei(),WEIN_WERT*S.lots.reduce((a,l)=>a+lotWert(l),0)))}
 function gVerm(g){return Math.round(g.geld-g.kredit+g.ha*LANDWERT)}
 function rangFuer(ab,ans,ha,verm){let r=ab;while(r<R_MAX){const n=RAENGE[r+1];if(ans>=n.ans&&ha>=n.ha&&verm>=n.verm)r++;else break}return r}
 function medHtml(l){return l.med&&l.med.length?`<div class="gold" style="font-size:14px">${l.med.map(esc).join(' · ')}</div>`:''}
@@ -795,7 +801,7 @@ const EREIGNIS={
   },
   schlecht:{
     hagel:{ok:()=>S.monat>=5&&S.monat<=8&&feldHaengt().length,los(){const p=rnd(.2,.4); for(const id of feldHaengt()){const f=S.felder[id]; f.menge=Math.round(f.menge*(1-p))} schlag(80,`Hagel ${WO[S.region]}`,`Ein Unwetter mit Hagelkörnern so groß wie Murmeln ist über deine Weinberge gezogen. Rund ${Math.round(p*100)}\u00a0% der Trauben sind hin.`,'hagel')}},
-    maschine:{ok:()=>S.maschinen.length,los(){const ma=S.maschinen[rint(0,S.maschinen.length-1)], n=rint(20,40); ma.zustand=Math.max(10,ma.zustand-n); schlag(80,'Maschinenschaden',`Deine Erntemaschine hat einen Felsbrocken erwischt. Der Zustand sinkt um ${n} auf ${ma.zustand}\u00a0%. Eine Wartung bringt sie wieder in Schuss.`,'maschine')}},
+    maschine:{ok:()=>S.maschinen.length,los(){const ma=S.maschinen[rint(0,S.maschinen.length-1)], n=rint(20,40); ma.zustand=Math.max(10,ma.zustand-n); schlag(80,'Maschinenschaden',`Dein${ma.gross?' Vollernter':'e Erntemaschine'} hat einen Felsbrocken erwischt. Der Zustand sinkt um ${n} auf ${ma.zustand}\u00a0%. Eine Wartung bringt sie wieder in Schuss.`,'maschine')}},
     skandal:{ok:()=>!S.lage,los(){const f=1-rnd(.2,.35), n=rint(3,5); S.lage={typ:'skandal',f,rest:n}; schlag(80,'Weinskandal erschüttert das Land',`Ein Großhändler hat Frostschutzmittel in seinen Wein gemischt, jetzt trauen die Leute keinem Winzer mehr. ${n} Monate lang bringen alle Weine ${Math.round((1-f)*100)}\u00a0% weniger.`,'weinskandal')}},
     helferweg:{ok:()=>S.helfer>0&&S.loehne.helfer[0]<=LOHN_BILLIG&&S.geld>4000,los(){const b=clamp(Math.round(S.geld*rnd(.05,.1)/100)*100,2000,30000); S.loehne.helfer.shift(); S.helfer--; S.geld-=b; schlag(80,'Erntehelfer über alle Berge',`Dein billigster Erntehelfer ist über Nacht verschwunden, und mit ihm ${eur(b)} aus der Kasse. Ersatz findest du beim Arbeitsamt.`,'helferweg')}}
   }
@@ -875,10 +881,10 @@ function gegnerMonat(){
   N.sort((a,b)=>b.p-a.p);
   return N.filter((n,i)=>n.p>=9||i<3).map(n=>n.t);
 }
-function leistung(){return S.helfer*HELFER_LEISTUNG+S.maschinen.reduce((a,m)=>a+Math.round(MASCH_LEISTUNG*m.zustand/100),0)}
+function leistung(){return S.helfer*HELFER_LEISTUNG+S.maschinen.reduce((a,m)=>a+Math.round(mTyp(m).leist*m.zustand/100),0)}
 function leseFaktor(){const b=rebenGesamt();return b?Math.min(1,leistung()/b):1}
 // Leute-Regel: Gezählt werden Köpfe, der Zustand einer Maschine spielt hier keine Rolle (der wirkt nur auf die Ernteleistung bei der Lese).
-function helferKraft(){return S.helfer+MASCH_HELFER*S.maschinen.length}
+function helferKraft(){return S.helfer+maschHelfer()}
 function helferBedarf(){return Math.ceil(rebenGesamt()/REBEN_JE_HELFER)}
 function lagerBedarf(){return Math.max(Math.ceil(S.fassraum/FASS_JE_LAGERARB),Math.ceil(S.flaschen/FLASCHEN_JE_LAGERARB))}
 function leuteFehlen(){return {helfer:Math.max(0,helferBedarf()-helferKraft()),lagerarb:Math.max(0,lagerBedarf()-S.lagerarb)}}
@@ -1621,12 +1627,17 @@ function vAktuell(){
 function vMaschinen(){
   const saison=S.monat<=2;
   let h=`<div class="mut" style="margin-bottom:8px">Kaufen und verkaufen von Januar bis März, warten das ganze Jahr. Jede Lesesaison kostet Zustand, und mit dem Zustand sinkt die Leistung.</div>`;
-  h+=S.maschinen.length?S.maschinen.map((ma,i)=>`<div class="card"><h3>🚜 Erntemaschine ${i+1}</h3>
+  h+=S.maschinen.length?S.maschinen.map((ma,i)=>{const T=mTyp(ma); return `<div class="card"><h3>🚜 ${T.name} ${i+1}</h3>
     <div class="kv"><span>Zustand</span><span>${ma.zustand}\u00a0%</span></div><div class="bar"><i style="width:${ma.zustand}%"></i></div>
-    <div class="kv"><span>Leistung</span><span>${num(MASCH_LEISTUNG*ma.zustand/100)} Reben</span></div>
-    ${kz(saison?'':'Verkaufen geht wieder ab Januar.',pk('maschWarten','Warten','',{id:i,aus:ma.zustand>=100,arm:S.geld<WARTUNG,klein:`${eur(WARTUNG)} je %`}),saison?pk('maschVerkauf','Verkaufen','+'+eur(MASCH_PREIS*.5*ma.zustand/100),{id:i,sec:1}):'')}</div>`).join(''):'<div class="card mut">Du hast noch keine Erntemaschine.</div>';
-  return h+`<div class="card"><h3>🚜 Neue Erntemaschine</h3><div class="mut">Schafft ${num(MASCH_LEISTUNG)} Reben bei der Lese und zählt wie ${MASCH_HELFER} Erntehelfer.</div>
-    ${kz(saison?'':'Zu kaufen von Januar bis März.',pk('maschKauf','Kaufen',eur(MASCH_PREIS),{aus:!saison,arm:S.geld<MASCH_PREIS}))}</div>`;
+    <div class="kv"><span>Leistung</span><span>${num(T.leist*ma.zustand/100)} Reben</span></div>
+    ${kz(saison?'':'Verkaufen geht wieder ab Januar.',pk('maschWarten','Warten','',{id:i,aus:ma.zustand>=100,arm:S.geld<T.wart,klein:`${eur(T.wart)} je %`}),saison?pk('maschVerkauf','Verkaufen','+'+eur(T.preis*.5*ma.zustand/100),{id:i,sec:1}):'')}</div>`}).join(''):'<div class="card mut">Du hast noch keine Erntemaschine.</div>';
+  // Kaufkarten: die kleine Maschine ab Winzermeister, der Vollernter ab Gutsherr.
+  for(const [id,T] of Object.entries(MASCH)){
+    const frei=S.rang>=T.rang;
+    h+=`<div class="card"><h3>🚜 Neue${id==='klein'?' ':'r '}${T.name}</h3><div class="mut">Schafft ${num(T.leist)} Reben bei der Lese und zählt wie ${T.helfer} Erntehelfer. Die Wartung kostet ${eur(T.wart)} je Prozentpunkt.</div>
+    ${kz(!frei?`Zu kaufen ab dem Rang ${RAENGE[T.rang].name}.`:saison?'':'Zu kaufen von Januar bis März.',pk('maschKauf','Kaufen',eur(T.preis),{id,aus:!saison||!frei,arm:S.geld<T.preis}))}</div>`;
+  }
+  return h;
 }
 // Büro als Pokalraum: Rangliste, Medaillen der eigenen Weine und die Aufstiege.
 function vBuero(){
@@ -1751,7 +1762,7 @@ function vStadt(){
     h+=`<h3>Wein anmelden</h3>`+(fa.length?fa.map(l=>`<div class="card"><b>${dot(l.sorte)}${lotName(l)}</b><div class="mut">${num(l.liter)}\u00a0l · ${l.oe}° Öchsle · ${LESE[l.leseart]} · Edelfäulnis ${l.edel?'ja':'nein'}${mani(l)?' · 🤫 '+maniText(l):''}</div><div class="btns"><button data-a="anmelden" data-id="${l.id}">Anmelden</button></div></div>`).join(''):'<div class="card mut">Kein Fasswein wartet auf die Anmeldung.</div>');
     if(S.rang>=R_AUKTION&&S.rang<R_MAX){
       const g=maklerGrund();
-      h+=`<h3>Makler</h3><div class="card"><div class="mut">Der Makler kennt Winzer, die ihr Land lieber still verkaufen. Ein Hektar kostet bei ihm ${eur(MAKLER_PREIS)}, bei einer Auktion meist viel weniger. Er verkauft dir höchstens einen Hektar im Jahr und nur, solange dir Land für den nächsten Rang fehlt.</div>
+      h+=`<h3>Makler</h3><div class="card"><div class="mut">Der Makler kennt Winzer, die ihr Land lieber still verkaufen. Ein Hektar kostet bei ihm ${eur(MAKLER_PREIS)}, bei einer Auktion meist viel weniger. Er verkauft dir höchstens einen Hektar im Jahr und nur, wenn dir für den nächsten Rang allein noch Land fehlt.</div>
       ${kz(g,pk('makler','Kaufen',eur(MAKLER_PREIS),{klein:'1 Hektar',aus:!!g,arm:S.geld<MAKLER_PREIS}))}</div>`;
     }
     if(S.rang>=R_HOFFEST){
@@ -1815,13 +1826,13 @@ function vStadt(){
     h+=`<div class="mut" style="margin-bottom:8px">Der Lohn beim Arbeitsamt schwankt jeden Monat zwischen ${eur(LOHN_MIN)} und ${eur(LOHN_MAX)}. Wer eingestellt ist, behält seinen Lohn. Die Vermittlung kostet einmalig ${eur(VERMITTLUNG)}. Entlassen wird immer der teuerste. Deine Leute brauchst du das ganze Jahr: Fehlt jemand, geht es nicht in den nächsten Monat.</div>
     <div class="card"><h3>Erntehelfer</h3>
       ${lohnTeil('helfer')}
-      ${ms?`<div class="kv"><span>Erntemaschinen</span><span>${ms}, ${ms===1?'zählt':'zählen'} wie ${ms*MASCH_HELFER} Helfer</span></div>`:''}
+      ${ms?`<div class="kv"><span>Erntemaschinen</span><span>${ms}, ${ms===1?'zählt':'zählen'} wie ${maschHelfer()} Helfer</span></div>`:''}
       <div class="kv"><span>Gebraucht für ${num(bed)} Reben</span><span class="${fe.helfer?'rot':''}">${helferBedarf()}</span></div>
       <div class="kv"><span>Deine Leute reichen für</span><span>${num(helferKraft()*REBEN_JE_HELFER)} Reben</span></div>
       ${ohneGeld('helfer')}
       <div class="kv"><span>Ernteleistung bei der Lese</span><span class="${lei<bed?'rot':''}">${num(lei)} von ${num(bed)} Reben</span></div>
       <div class="bar"><i style="width:${bed?Math.min(100,lei/bed*100):100}%"></i></div>
-      <div class="mut">Je ${num(REBEN_JE_HELFER)} angebaute Reben brauchst du einen Erntehelfer, eine Erntemaschine zählt wie ${MASCH_HELFER}. Pflanzen kannst du nur so viel, wie deine Leute schaffen. Bei der Lese leistet eine abgenutzte Maschine weniger.</div>
+      <div class="mut">Je ${num(REBEN_JE_HELFER)} angebaute Reben brauchst du einen Erntehelfer, eine Erntemaschine zählt wie ${MASCH_HELFER}, ein Vollernter wie ${VOLL_HELFER}. Pflanzen kannst du nur so viel, wie deine Leute schaffen. Bei der Lese leistet eine abgenutzte Maschine weniger.</div>
       ${lohnKnoepfe('helfer')}</div>
     <div class="card"><h3>Lagerarbeiter</h3>
       ${lohnTeil('lagerarb')}
@@ -2320,17 +2331,18 @@ const AKT={
     else if(S[k]>0){S[k]--;a.pop()}
     save();render();
   },
-  maschKauf(){
-    if(S.monat>2) return;
-    if(S.geld<MASCH_PREIS) return meldung('Zu wenig Geld',`Eine Erntemaschine kostet ${eur(MASCH_PREIS)}.`);
-    zahle(MASCH_PREIS);S.maschinen.push({zustand:100});fx('stempel');save();render();
+  maschKauf(d){
+    const id=d&&d.id==='gross'?'gross':'klein', T=MASCH[id];
+    if(S.monat>2||S.rang<T.rang) return;
+    if(S.geld<T.preis) return meldung('Zu wenig Geld',`${id==='gross'?'Ein Vollernter':'Eine Erntemaschine'} kostet ${eur(T.preis)}.`);
+    zahle(T.preis);S.maschinen.push(id==='gross'?{zustand:100,gross:1}:{zustand:100});fx('stempel');save();render();
   },
-  maschVerkauf(d){if(S.monat>2)return;const ma=S.maschinen[+d.id];kassiere(Math.round(MASCH_PREIS*.5*ma.zustand/100));S.maschinen.splice(+d.id,1);save();render()},
+  maschVerkauf(d){if(S.monat>2)return;const ma=S.maschinen[+d.id];if(!ma)return;kassiere(Math.round(mTyp(ma).preis*.5*ma.zustand/100));S.maschinen.splice(+d.id,1);save();render()},
   maschWarten(d){
-    const ma=S.maschinen[+d.id], max=Math.min(100-ma.zustand,Math.floor(S.geld/WARTUNG));
+    const ma=S.maschinen[+d.id], W=mTyp(ma).wart, max=Math.min(100-ma.zustand,Math.floor(S.geld/W));
     if(max<1) return meldung('Geht gerade nicht','Dir fehlt das Geld für die Wartung.');
-    mengeSheet({titel:'Maschine warten',text:`${eur(WARTUNG)} je Prozentpunkt.`,max,rangeStep:1,step:5,start:max,okText:'Warten',
-      info:n=>`<b>auf ${ma.zustand+n}\u00a0%</b>kostet ${eur(n*WARTUNG)}`,ok:n=>{fx('stempel');zahle(n*WARTUNG);ma.zustand+=n}});
+    mengeSheet({titel:`${mTyp(ma).name} warten`,text:`${eur(W)} je Prozentpunkt.`,max,rangeStep:1,step:5,start:max,okText:'Warten',
+      info:n=>`<b>auf ${ma.zustand+n}\u00a0%</b>kostet ${eur(n*W)}`,ok:n=>{fx('stempel');zahle(n*W);ma.zustand+=n}});
   },
   verkaufen(d){
     const l=lot(d.id), w=wege(l)[0]; if(!w||l.regal) return; const p=w.p;
