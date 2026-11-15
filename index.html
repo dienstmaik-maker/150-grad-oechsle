@@ -89,6 +89,7 @@ input[type=text]{width:100%;font:inherit;padding:12px;border-radius:12px;border:
 .wahl.an{border-color:var(--wein);box-shadow:0 0 0 2px var(--wein) inset}
 .chips{display:flex;gap:6px;overflow-x:auto;margin:0 -16px 12px;padding:0 16px 4px}
 .chip{flex:none;min-height:40px;padding:6px 12px;font-size:14px;background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.wq{padding:7px 0;border-bottom:1px solid var(--line)}.wq b{display:block}.wq span{font-size:14px}
 .chip.an{background:var(--wein);color:#fff;border-color:var(--wein)}
 ul.kl{margin:4px 0 0;padding-left:18px;font-size:14px}
 .stufe{padding:8px 0;border-top:1px solid var(--line)}.stufe:first-of-type{border-top:0}
@@ -924,6 +925,28 @@ const eisF=l=>l.stufe==='eis'?EIS_WERT[l.eisW||0].f:1;
 const stufeText=(st,oe)=>STUFEN[st].name+(st==='eis'?` (Öchsle einer ${EIS_WERT[eisStufe(oe)].name})`:'');
 function feldQ(f,la){return {oe:Math.min(150,f.oe+(la==='ueber'?5:0)),leseart:la,edel:f.edel,eis:f.gefroren}}
 function feldLiter(f,la){const r=f.reif/100,u=f.ueber/100; return Math.round(f.menge*r*(la==='reif'?1-u:la==='ueber'?u:1)*leseFaktor())}
+// Ab wann ein Wein frühestens verkauft werden darf, wenn er jetzt gelesen wird.
+// Gekeltert wird im Lesemonat, nach einem Monat im Fass darf er angemeldet und abgefüllt werden, ab Kabinett und beim Eiswein erst im Januar.
+// Danach muss er die Mindestzeit aus lagerBasis in der Flasche liegen. n zählt die Monate ab jetzt.
+function verkaufAb(sorte,st){
+  const abf=STUFEN[st].rang>=3?12:S.monat+1, t=abf+lagerBasis({sorte,stufe:st}).min, n=t-S.monat;
+  return `⏳ verkaufsfertig frühestens ${MON[t%12]} ${S.jahr+Math.floor(t/12)} (in ${n} ${n===1?'Monat':'Monaten'})`;
+}
+// Übersicht im Kellerbuch: was jede Stufe braucht und wie lange sie in der Flasche reifen muss, mit den Zahlen der eigenen Region.
+function weinQualHtml(){
+  const m=R().min, so=R().sorten, z=(n,t)=>`<div class="wq"><b>${n}</b><span class="mut">${t}</span></div>`;
+  const pr=st=>{const d=STUFEN[st];return `ab ${mindest(st)}° Öchsle, ${d.lese?LESE[d.lese]:'jede Leseart'}${d.edel===true?', mit Edelfäulnis':d.edel===false?', ohne Edelfäulnis':''}`};
+  const reife=f=>so.map(id=>`${SORTEN[id].name} ${f(SORTEN[id].minL)}\u00a0Monate`).join(', ');
+  return `${sbild('kellerbuch')}<h3>Weinqualität</h3><p class="mut">Was ein Wein für jede Stufe braucht, mit den Hürden in ${R().name}.</p>`
+    +z('Federweißer',`ab ${m.tafel}° Öchsle, jede Leseart. Nur im Monat nach der Lese anmelden und abfüllen, gleich verkaufbar, hält 2\u00a0Monate.`)
+    +z('Tafelwein',pr('tafel')+'.')
+    +z('Qualitätswein',pr('qba')+'.')
+    +['kab','spat','aus','ba','tba'].map(st=>z(STUFEN[st].name,pr(st)+'.')).join('')
+    +z('Eiswein',`ab ${m.tafel}° Öchsle, nur gefrorene Trauben der Dezember-Lese, mit Edelfäulnis, ${LESE.reif} oder ${LESE.ueber}, nicht gemischt. Nur im Januar anmelden. Die Öchsle bestimmen den Wert wie bei Auslese (ab ${m.aus}°), Beerenauslese (ab ${m.ba}°) oder Trockenbeerenauslese (ab ${m.tba}°).`)
+    +`<div class="hilfe"><b>⏳ Reifezeit in der Flasche bis zum Verkauf</b><br>Tafel- und Qualitätswein: 2\u00a0Monate.<br>Kabinett bis Trockenbeerenauslese: ${reife(x=>x)}.<br>Eiswein: ${reife(x=>Math.round(x*1.5))}.</div>`
+    +`<div class="hilfe"><b>📜 Gut zu wissen</b><br>Jeder Wein liegt mindestens einen Monat im Fass, höchstens sieben.<br>Ab Kabinett und beim Eiswein darfst du erst im Januar nach der Lese anmelden.<br>Überreife Trauben bringen 5° mehr Öchsle.<br>Edelfäulnis kommt meist ab ${m.aus}°.<br>Bei der Lese zeigt jede Leseart, ab wann der Wein verkaufsfertig ist.</div>`
+    +`<div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`;
+}
 function leseHilfe(f){
   let best=null,bla=null;
   for(const la of ['alles','reif','ueber']){const b=besteStufe(feldQ(f,la)); if(b&&(!best||STUFEN[b].rang>STUFEN[best].rang)){best=b;bla=la}}
@@ -1634,6 +1657,7 @@ function vBuch(){
   // Oben ein schmales Bild mit Zahl und geschätztem Wert, darunter je Wein eine kurze Zeile. Antippen zeigt alle Angaben und die passenden Knöpfe.
   const wert=ls.reduce((a,l)=>a+lotWert(l),0);
   let h=`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/kellerbuch.jpg)"><b>${ls.length?`${ls.length} ${ls.length===1?'Wein':'Weine'} im Kellerbuch`:'Das Kellerbuch ist leer'}</b><span>${ls.length?`Geschätzter Wert ${eur(Math.round(wert/100)*100)}`:'Hier stehen später alle deine Weine.'}</span></div>`;
+  h+=`<div class="btns"><button class="sec klein" data-a="weinQual">📖 Weinqualität</button></div>`;
   if(!ls.length) return h+'<div class="card mut">Noch keine Einträge. Hier stehen später alle deine Weine im Fass und in der Flasche.</div>';
   h+=`<div class="chips">${[['wert','Nach Wert'],['alter','Nach Alter'],['dringend','Nach Dringlichkeit']].map(s=>`<button class="chip ${BSORT===s[0]?'an':''}" data-a="bsort" data-id="${s[0]}">${s[1]}</button>`).join('')}</div>`;
   for(const l of ls){
@@ -1788,6 +1812,7 @@ const AKT={
   sub(d){SUB=d.id;render();window.scrollTo(0,0)},
   arbeitsamt(){closeSheet();geh('stadt','arbeit');render();window.scrollTo(0,0)},
   bsort(d){BSORT=d.id;render()},
+  weinQual(){openSheet(weinQualHtml())},
   // Ein Wein aus dem Kellerbuch mit allen Angaben und den Knöpfen, die gerade passen.
   buchDetail(d){
     const l=lot(d.id); if(!l||l.status==='trauben') return;
@@ -1910,7 +1935,7 @@ const AKT={
   lesen(d){
     const f=S.felder[d.id], so=SORTEN[d.id];
     const opt=['reif','ueber','alles'].map(la=>{const b=besteStufe(feldQ(f,la)),l=feldLiter(f,la);
-      return `<button class="wahl" data-a="leseJa" data-id="${d.id}" data-la="${la}" ${l<=0?'disabled':''}><b>${LESE[la]}</b><br><span class="mut">${num(l)}\u00a0l mit ${feldQ(f,la).oe}° Öchsle · reicht für: ${b?stufeText(b,feldQ(f,la).oe):'nichts'}</span></button>`}).join('');
+      return `<button class="wahl" data-a="leseJa" data-id="${d.id}" data-la="${la}" ${l<=0?'disabled':''}><b>${LESE[la]}</b><br><span class="mut">${num(l)}\u00a0l mit ${feldQ(f,la).oe}° Öchsle · reicht für: ${b?stufeText(b,feldQ(f,la).oe):'nichts'}${b?`<br>${verkaufAb(d.id,b)}`:''}</span></button>`}).join('');
     openSheet(`${sbild('lese')}<h3>${so.name} lesen</h3><p class="mut">Erst die Leseart, dann die Menge: Du kannst auch nur einen Teil lesen, der Rest bleibt hängen. Die Trauben müssen noch diesen Monat gekeltert werden.</p>${f.gefroren?'<p class="hilfe" style="margin:0 0 10px">Eiswein gibt es nur aus reifen oder aus überreifen Trauben, nicht aus beiden zusammen.</p>':''}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.round(leseFaktor()*100)}\u00a0%. Der Rest bleibt hängen.</p>`:''}${opt}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
   },
   // Teil-Lese: Nach der Leseart kommt der Regler für den Anteil des Feldes. Der Rest bleibt hängen und reift weiter.
