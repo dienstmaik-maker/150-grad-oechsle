@@ -62,9 +62,35 @@ button:disabled{opacity:.45;filter:grayscale(.7)}
 main>h3{font-size:17px;margin:16px 0 8px;padding-left:10px;border-left:4px solid var(--wein)}
 .info{position:relative;border-radius:12px;padding:9px 12px 9px 38px;margin:0 0 12px!important;font-size:14px;cursor:pointer}
 .info::before{content:'ℹ️';position:absolute;left:11px;top:8px;font-size:16px}
-.info.zu{line-height:1.4;max-height:calc(2.8em + 19px);padding-bottom:0;border-bottom:9px solid transparent;background-origin:border-box;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding-right:30px}.info.zu::after{content:'▾';position:absolute;right:11px;bottom:7px;color:#7b1e3a;font-weight:700}
-/* Zugeklappt: Der untere Rand ist durchsichtig, damit die dritte Zeile nicht im Innenabstand hervorschaut. */
-.info.zu::after{bottom:-3px}
+/* Zugeklappt: Nur der Text klappt auf zwei Zeilen zu, "Mehr im Buch" bleibt darunter sichtbar. */
+.info .it{display:block}.info.zu{padding-right:30px}.info.zu .it{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4}
+.info.zu::after{content:'▾';position:absolute;right:11px;bottom:7px;color:#7b1e3a;font-weight:700}
+/* Version 4.1: Link ins Buch, Gebiets-Steckbrief, Fußnote im Büro */
+.mib{display:block;width:max-content;margin:7px 0 0;font-size:13px;font-weight:700;color:#7b1e3a;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+.sb h3 small{display:block;font-weight:400;font-size:13px;color:var(--mut);margin-top:2px}
+.sb .sbz{margin:6px 0;font-size:14px;line-height:1.5}
+.sterne{color:#a87908;letter-spacing:1px;white-space:nowrap}.sterne i{font-style:normal;opacity:.28}
+.sb .lohnt{margin-top:8px;padding:6px 10px;border-radius:8px;background:rgba(123,30,58,.09);font-weight:700;color:#4a1526;font-size:14px}
+.gchips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}.gchips .wahl{flex:1 1 30%;margin:0;padding:9px 4px;text-align:center;font-weight:600;font-size:14px}
+.fussnote{font-size:12px;color:var(--mut);margin:2px 4px 14px;text-align:center}
+/* Das Buch: Vollbild im Papier-Stil wie der Winzerbote */
+#buch{display:none;position:fixed;inset:0;z-index:40;flex-direction:column;background:#f3e7ca url(bilder/papier.jpg) center/cover;color:#2b2118;--ink:#2b2118;--mut:#6b5a45;--line:#d3bf93;--wein:#7b1e3a;--card:#fbf4e1}
+#buch.an{display:flex}
+#buch .bkopf,#buch .binnen,#buch .bfuss{width:100%;max-width:620px;margin:0 auto}
+#buch .bkopf{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 14px 8px;border-bottom:1px solid #b9995a}
+#buch .bkopf b{font:26px/1.1 "Winzerbote Fraktur",Georgia,serif;color:#4a1526}
+#buch .binnen{flex:1;overflow:auto;padding:14px 18px 22px;font-size:15px;line-height:1.5}
+#buch .bfuss{display:flex;gap:8px;padding:8px 14px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #b9995a}
+#buch .bfuss button{flex:1}
+#buch .bnr{font:700 13px "Alegreya SC",Georgia,serif;color:#7b1e3a;letter-spacing:.5px}
+#buch h2{font:700 23px/1.2 Georgia,serif;color:#4a1526;margin:2px 0 10px}
+#buch .kurz{background:rgba(255,255,255,.5);border-left:4px solid #7b1e3a;border-radius:8px;padding:8px 12px;margin:0 0 12px}
+#buch ul,#buch ol{margin:0 0 12px;padding-left:20px}#buch li{margin:0 0 6px}#buch li ul,#buch li ol{margin:6px 0 0}
+#buch details{border-top:1px solid #b9995a;padding-top:8px;margin-top:4px}
+#buch summary{font:700 17px Georgia,serif;color:#4a1526;cursor:pointer;margin-bottom:8px}
+#buch .binh h3{font:700 15px "Alegreya SC",Georgia,serif;color:#7b1e3a;margin:16px 0 2px;letter-spacing:.5px}
+#buch .binh .bz{display:flex;gap:8px;padding:9px 2px;border-bottom:1px dotted #b9995a;font:16px Georgia,serif;cursor:pointer}
+#buch .binh .bz span{color:#7b1e3a;min-width:24px;font-weight:700}
 .chip{background:#f8f0dc;color:#2b2118;border:1px solid #b9995a;font-weight:600}.chip.an{background:#7b1e3a;color:#fff;border-color:#591015}
 h4.gk{font:700 15px/1.2 var(--schrift);margin:12px 0 4px;color:#4a1526}
 .pano,.mbild,.kbild{box-shadow:0 0 0 3px #5c3a21,0 0 0 4px #2b180c,0 4px 8px rgba(0,0,0,.35)}.pano,.mbild{margin-top:4px}
@@ -240,7 +266,9 @@ img.fass{height:1.1em;vertical-align:-.18em}
 <div id="app"></div>
 <div id="sheet"></div>
 <div id="titel"></div>
+<div id="buch"></div>
 <input type="file" id="datei" accept=".json,application/json" hidden>
+<script src="anleitung.js"></script>
 <script>
 'use strict';
 /* ================= Daten ================= */
@@ -297,7 +325,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='4.0';
+const VERSION='4.1';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=18000, WARTUNG=60, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -377,7 +405,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const misch=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rint(0,i);[a[i],a[j]]=[a[j],a[i]]}return a};
 const neuStart=()=>({name:'',region:'mosel',gegner:2,schwer:'mittel'});
 let S=null, TAB='gut', SUB='betrieb', NEU=neuStart(), SLOT=0, START=null, BSORT='wert', ZIEL=0;
-// Menü: drei Hauptreiter unten (Weingut, Kellerei, Stadt), jeder mit mehreren Orten. Eine Leiste dafür gibt es nicht mehr: Gewechselt wird durch Wischen über das Bild.
+// Menü (seit 4.0): drei Hauptreiter unten (Weingut, Kellerei, Stadt), direkt darüber die Leiste mit ihren Orten. Wischen über das Bild wechselt auch den Ort.
 // Die Reihenfolge der Orte folgt den Motiven im Panoramabild von links nach rechts. Je Ort: Kennung und Symbol für den Titel im Bild.
 const FASS='<img class="fass" src="bilder/fass.png" alt="">';
 const SUBS={
@@ -530,7 +558,7 @@ let PANO_ALT={tab:null,x:0,z:1}, ORT_ALT=null;
 function ortFarbe(tab){const h=document.documentElement; h.className='ort-'+tab; const m=$('meta[name="theme-color"]'); if(m) m.content=getComputedStyle(h).getPropertyValue('--kopf').trim()||'#7b1e3a'}
 // Bild oben in einem Fenster (Weinkontrolle, Auktion, Prämierung, Rathaus, Kellerbuch, Pleite).
 const sbild=n=>`<div class="sbild" style="background-image:url(bilder/${n}.jpg)"></div>`;
-// Das Bild des Ortes. Unten im Bild steht, wo man ist, die Symbole darunter zeigen die Orte des Hauptreiters und springen beim Antippen dorthin. Wetter-Effekte über dem Bild gibt es nicht mehr.
+// Das Bild des Ortes mit Holzrahmen. Unten im Bild steht, wo man ist. Gewechselt wird über die Leiste unten, durch Wischen übers Bild oder Tippen auf ein Motiv.
 function ortBild(titel){
   const L=SUBS[TAB];
   return `<div class="pano ${TAB}" data-a="bild"><i></i>${TAB==='gut'?wandHtml():''}<div class="ptitel"><b>${L.find(s=>s[0]===SUB)[1]} ${esc(titel)}</b></div></div>`;
@@ -996,7 +1024,7 @@ function weinQualHtml(){
     +['kab','spat','aus','ba','tba'].map(st=>z(STUFEN[st].name,pr(st)+'.')).join('')
     +z('Eiswein',`ab ${m.tafel}° Öchsle, nur gefrorene Trauben der Dezember-Lese, mit Edelfäulnis, ${LESE.reif} oder ${LESE.ueber}, nicht gemischt. Nur im Januar anmelden. Die Öchsle bestimmen den Wert wie bei Auslese (ab ${m.aus}°), Beerenauslese (ab ${m.ba}°) oder Trockenbeerenauslese (ab ${m.tba}°).`)
     +`<div class="hilfe"><b>⏳ Reifezeit in der Flasche bis zum Verkauf</b><br>Tafel- und Qualitätswein: 2\u00a0Monate.<br>Kabinett bis Trockenbeerenauslese: ${reife(x=>x)}.<br>Eiswein: ${reife(x=>Math.round(x*1.5))}.</div>`
-    +`<div class="hilfe"><b>📜 Gut zu wissen</b><br>Jeder Wein liegt mindestens einen Monat im Fass, höchstens sieben.<br>Ab Kabinett und beim Eiswein darfst du erst im Januar nach der Lese anmelden.<br>Überreife Trauben bringen 5° mehr Öchsle.<br>Edelfäulnis kann ab Oktober ab ${m.spat}° kommen, bei Regen oder mildem Wetter öfter, ab ${m.aus}° meist. Am häufigsten trifft sie die Sorte, die am besten ins Gebiet passt. Dann gibt es von dem Feld kein Kabinett und keine Spätlese mehr.<br>Kälteeinbruch im November: in jedem vierten Jahr, die Vorhersage warnt meist davor.<br>${frostText()}, nur dann gibt es Eiswein.<br>Bei der Lese zeigt jede Leseart, ab wann der Wein verkaufsfertig ist.</div>`
+    +`<div class="hilfe"><b>📜 Gut zu wissen</b><br>Jeder Wein liegt mindestens einen Monat im Fass, höchstens sieben.<br>Ab Kabinett und beim Eiswein darfst du erst im Januar nach der Lese anmelden.<br>Überreife Trauben bringen 5° mehr Öchsle.<br>Edelfäulnis kann ab Oktober ab ${m.spat}° kommen, bei Regen oder mildem Wetter öfter, ab ${m.aus}° meist. Am häufigsten trifft sie die Sorte, die am besten ins Gebiet passt. Dann gibt es von dem Feld kein Kabinett und keine Spätlese mehr.<br>Kälteeinbruch im November: in jedem vierten Jahr, die Vorhersage warnt meist davor.<br>${frostText()}, nur dann gibt es Eiswein.<br>Bei der Lese zeigt jede Leseart, ab wann der Wein verkaufsfertig ist.</div>${mib('stufen')}`
     +`<div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`;
 }
 // Was gefrorenen Trauben für Eiswein fehlt (ohne die Leseart, die wählt man beim Lesen).
@@ -1342,7 +1370,8 @@ function vStart(){
   ${[0,1,2].some(lies)?'<div class="btns" style="margin:0 0 12px"><button class="sec klein" data-a="menue">◀ Zu den Spielständen</button></div>':''}
   <div class="card"><h3>Wie heißt dein Weingut?</h3><input type="text" id="nm" maxlength="30" placeholder="Weingut Rebenreich" value="${esc(NEU.name)}"></div>
   <h2>Wähle dein Anbaugebiet</h2>
-  ${Object.entries(REGIONEN).map(([id,r])=>`<button class="wahl ${NEU.region===id?'an':''}" data-a="region" data-id="${id}"><b>${r.name}</b><br><span class="mut">${r.text}</span><br>${r.sorten.slice().sort((a,b)=>eignung(b,id)-eignung(a,id)).map(s=>`<span class="mut">${dot(s)}${SORTEN[s].name}: ${eigText(eignung(s,id))}</span>`).join('<br>')}</button>`).join('')}
+  <div class="gchips">${Object.entries(REGIONEN).map(([id,r])=>`<button class="wahl ${NEU.region===id?'an':''}" data-a="region" data-id="${id}">${gebietArt(r)[0]} ${r.name}</button>`).join('')}</div>
+  ${steckbrief(NEU.region)}
   <h2>Gegner</h2>
   <div class="zwei">${[2,3].map(n=>`<button class="wahl ${NEU.gegner===n?'an':''}" data-a="neuOpt" data-k="gegner" data-v="${n}"><b>${n} Computer-Winzer</b></button>`).join('')}</div>
   <h2>Schwierigkeit</h2>
@@ -1446,6 +1475,48 @@ function vGut(){
   const T={berg:'Weinberg',betrieb:S.name,aktuell:'Aktuelles',maschinen:'Maschinen',buero:'Büro'};
   return kopf(T[SUB])+{berg:vBerg,betrieb:vBetrieb,aktuell:vAktuell,maschinen:vMaschinen,buero:vBuero}[SUB]();
 }
+// Version 4.1: Steckbrief eines Gebiets. Alle Zahlen kommen aus REGIONEN, EIGNUNG, den Hürden und KAELTE, damit die Karte nach dem Abstimmen von selbst stimmt.
+// Spätfrost zur Blüte: April 10 %, Mai 3 % (wuerfelWetter), also in rund jedem achten Jahr, überall gleich.
+const SPAET_JAHR=8;
+const sterne=n=>`<span class="sterne">${'★'.repeat(n)}<i>${'★'.repeat(3-n)}</i></span>`;
+const gebietArt=r=>r.warm>0?['🔥','Warm']:r.warm<0?['🧊','Kühl']:['⛰️','Mitte'];
+function steckbrief(id,o={}){
+  const r=REGIONEN[id], [sym,art]=gebietArt(r), mi=r.min, pz=x=>Math.round(x*100)+'\u00a0%';
+  const bonus=r.wettPlus?'Steillagen-Ruf':r.preisF?'berühmte Lage':r.warm>0?'viel Sonne':'kalte Winter';
+  const stark=[r.warm>0?`${r.warm}° mehr Zucker${r.edelF?` und ${pz(r.edelF-1)} öfter Edelfäulnis`:''}.`:'',r.warm<0?`Niedrigere Hürden (Auslese ab ${mi.aus}°) und oft Frost für Eiswein.`:'',
+    r.wettPlus?`Bei Wettbewerben zählt jeder Wein ${r.wettPlus} Punkte mehr.`:'',r.preisF?`Jeder Wein bringt ${pz(r.preisF-1)} mehr Geld.`:''].join(' ').trim();
+  const schwach=r.warm>0?'Kaum Frost im Dezember, Eiswein ist selten.':r.warm<0?`${-r.warm}° weniger Zucker, edelsüße Weine sind schwer.`:'Kein Zuckervorteil und normale Hürden.';
+  const lohnt=r.warm>0?'Auf Edelfäulnis pokern':r.warm<0?'Auf Eiswein pokern':r.wettPlus?'Auf Medaillen setzen':'Auf den Verkauf setzen';
+  const so=r.sorten.slice().sort((a,b)=>eignung(b,id)-eignung(a,id)).map(s=>{const e=eignung(s,id); return `${dot(s)}${SORTEN[s].name} ${sterne(e>=1?3:e>=.85?2:1)}`}).join('<br>');
+  const kv=(a,x)=>`<div class="kv"><span>${a}</span><span>${x}</span></div>`;
+  return `<div class="card sb"><h3>${sym} ${r.name}<small>${art}, ${bonus}</small></h3><div class="sbz">${so}</div>
+    ${kv('💶 Geld',sterne(r.preisF?3:2))}${kv('🎖️ Ansehen',sterne(r.wettPlus?3:2))}
+    <div class="sbz">💪 ${stark}<br>⚠️ ${schwach}</div>
+    ${kv('Spätlese, Auslese, Beerenauslese',`${mi.spat}°, ${mi.aus}°, ${mi.ba}°`)}
+    ${kv('❄️ Frost im Dezember',`${pz(r.frost)} der Jahre`)}${kv('🌨️ Kälteeinbruch im November',`jedes ${Math.round(1/KAELTE)}. Jahr`)}${kv('🌸 Spätfrost zur Blüte',`rund jedes ${SPAET_JAHR}. Jahr`)}
+    <div class="lohnt">🎯 Lohnt sich hier: ${lohnt}</div>${o.buch?mib('gebiete'):''}</div>`;
+}
+// Version 4.1: Buch mit der Spielanleitung, Texte in anleitung.js. BUCH: null = zu, '' = Inhaltsverzeichnis, sonst die Kennung des Kapitels.
+// "📖 Mehr im Buch" in der Info-Karte schlägt das Kapitel des Ortes auf (BUCH_ORT), Fenster haben eigene Links (Kasse, Lese, Anmelden, Weinqualität).
+let BUCH=null;
+const BUCH_ORT={berg:'berg',betrieb:'betrieb',aktuell:'aktuell',maschinen:'maschinen',buero:'buero',buch:'buch',sabotage:'hintertuer',start:'keller',lager:'lager',amt:'rathaus',handel:'handel',laeden:'weinhandel',bank:'bank',arbeit:'arbeit'};
+const mib=id=>`<span class="mib" data-a="buch" data-id="${id}">📖 Mehr im Buch</span>`;
+const buchKap=()=>typeof ANLEITUNG==='undefined'?[]:ANLEITUNG.flatMap(t=>t.kap);
+// Im Kapitel Gebiete stehen statt fester Zahlen die sechs Steckbriefe aus dem Code.
+function gebieteGenauer(){
+  const h=m=>REIHE.filter(st=>m[st]).map(st=>`${STUFEN[st].name} ${m[st]}°`).join(', ');
+  return `<details open><summary>Genauer</summary><ul><li>Hürden in Mosel, Rheingau, Rheinhessen und Pfalz: ${h(MIN_NORMAL)}.</li><li>Hürden in Franken und Württemberg: ${h(MIN_KUEHL)}.</li>
+    <li>Die Sorte mit ★★★ startet mit dem vollen Zucker, die anderen mindestens 1° darunter. Die Qualitätspunkte zählen bei ★★ zu 85\u00a0%, bei ★ zu 70\u00a0%.</li></ul>${Object.keys(REGIONEN).map(id=>steckbrief(id)).join('')}</details>`;
+}
+function buchZeig(){
+  const b=$('#buch'); if(BUCH==null){b.className=''; b.innerHTML=''; return}
+  const K=buchKap(), i=K.findIndex(k=>k.id===BUCH), k=K[i], vor=K[i+1], zur=K[i-1];
+  const h=i<0?`<div class="binh"><h2>Inhalt</h2>${ANLEITUNG.map(t=>`<h3>${t.titel}</h3>${t.kap.map(k=>`<div class="bz" data-a="buch" data-id="${k.id}"><span>${k.nr}.</span>${k.titel}</div>`).join('')}`).join('')}</div>`
+    :`<div class="bnr">Kapitel ${k.nr} von ${K.length}</div><h2>${k.titel}</h2><div class="kurz"><b>Kurz gesagt:</b> ${k.kurz}</div>${k.p}${k.id==='gebiete'?gebieteGenauer():k.g?`<details><summary>Genauer</summary>${k.g}</details>`:''}`;
+  b.innerHTML=`<div class="bkopf"><b>Spielanleitung</b><button class="sec klein" data-a="buchZu" aria-label="Buch schließen">✕</button></div><div class="binnen">${h}</div>
+    <div class="bfuss"><button class="sec klein" data-a="buch" data-id="${zur?zur.id:''}" ${i<0?'disabled':''}>◀ ${zur?'Zurück':'Inhalt'}</button><button class="klein" data-a="buch" data-id="${i<0?K[0].id:vor?vor.id:''}">${i<0||vor?'Weiter ▶':'Zum Inhalt'}</button></div>`;
+  b.className='an'; $('.binnen',b).scrollTop=0;
+}
 function vBetrieb(){
   return `<div class="card"><h3>Dein Betrieb</h3>
     <div class="kv"><span>Anbaugebiet</span><span>${R().name}</span></div>
@@ -1459,12 +1530,9 @@ function vBetrieb(){
     <div class="kv"><span>Löhne im Monat</span><span>${eur(kosten().loehne)}</span></div>
     <div class="kv"><span>Feste Kosten im Monat</span><span>${(k=>eur(k.basis+k.loehne+k.tilgung+k.zins))(kosten())}</span></div>
     ${S.kredit?`<div class="kv"><span>Kredit, Restschuld</span><span>${eur(S.kredit.rest)}</span></div>`:''}
-    <div class="kv"><span>Schwierigkeit</span><span>${DIFF[S.schwer].name}</span></div>
-    <div class="kv"><span>Speicherplatz</span><span>Spielstand ${SLOT+1}</span></div>
   </div>
   ${verwHtml()}${hoffestHtml()}
-  ${tonKnoepfe()}
-  <div class="btns"><button class="sec klein" data-a="menue">💾 Spielstände</button><button class="sec klein" data-a="neuFrage">Neues Spiel beginnen</button></div>`;
+  <h3>🗺️ Dein Gebiet</h3>${steckbrief(S.region,{buch:1})}`;
 }
 // Gutsverwalter ab Gutsbesitzer: Schalter für das, was er beim Weiterblättern erledigt.
 const VERW={leute:'Fehlende Leute einstellen',duengen:'Düngen, wenn der Boden mager wird',flaschen:'Angemeldete Fässer abfüllen',reben:'Eingegangene Reben nachpflanzen'};
@@ -1533,10 +1601,17 @@ function vMaschinen(){
 function vBuero(){
   const E=(S.ehrungen||[]).slice().reverse(), wein=E.filter(e=>!e.a), auf=E.filter(e=>e.a);
   const zeile=e=>`<div class="rl"><span>${esc(e.i)}</span><div><b>${esc(e.t)}</b>${e.j?`<span class="mut">${MON[e.m]} ${e.j}</span>`:''}</div></div>`;
-  return `${vRangliste()}${bestenHtml()}
+  return `<div class="card"><h3>💾 Dein Spiel</h3>
+    <div class="kv"><span>Speicherplatz</span><span>Spielstand ${SLOT+1}</span></div><div class="kv"><span>Schwierigkeit</span><span>${DIFF[S.schwer].name}</span></div>
+    ${kz('Gespeichert wird von selbst nach jedem Monat. Hier lädst du einen anderen Spielstand oder sicherst ihn als Datei.',pk('menue','Spielstände','',{sec:1}))}
+    ${kz('Löscht diesen Spielstand und fängt von vorn an.',pk('neuFrage','Neues Spiel','',{sec:1}))}</div>
+  ${tonKnoepfe()}
+  <h3>🏆 Pokale und Ehrungen</h3>${vRangliste()}${bestenHtml()}
   ${S.rang>=R_LADEN?`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/weinbotschafter.jpg);height:150px"><b>🎗️ Weinbotschafter ${WO[S.region]}</b><span>Jeden Januar +${BOTSCHAFT_ANS} Ansehen für deine Reisen</span></div>`:''}
   <div class="card"><h3>🏅 Ehrungen für deine Weine</h3>${wein.length?wein.slice(0,8).map(zeile).join('')+(wein.length>8?`<div class="mut">und ${wein.length-8} ältere</div>`:''):'<div class="mut">Noch keine. Medaillen gibt es bei der Landesprämierung und beim Bundeswettbewerb.</div>'}</div>
-  <div class="card"><h3>🎖️ Deine Aufstiege</h3>${auf.length?auf.map(zeile).join(''):'<div class="mut">Noch keiner. Der erste Aufstieg führt zum Winzer.</div>'}</div>`;
+  <div class="card"><h3>🎖️ Deine Aufstiege</h3>${auf.length?auf.map(zeile).join(''):'<div class="mut">Noch keiner. Der erste Aufstieg führt zum Winzer.</div>'}</div>
+  <h3>📜 Spielanleitung</h3><div class="card">${kz(`Alles zum Nachschlagen in ${buchKap().length} kurzen Kapiteln, vom Ziel bis zum Arbeitsamt.`,pk('buch','Aufschlagen',''))}</div>
+  <div class="fussnote">Bilder, Musik und Geräusche sind mit KI erstellt (Musik mit Treblo, Geräusche mit ElevenLabs, elevenlabs.io).</div>`;
 }
 function vBerg(){
   const m=S.monat, ges=S.ha*HA_REBEN, bep=rebenGesamt(), frei=ges-bep, ant=ges?bep/ges*100:0;
@@ -1772,7 +1847,10 @@ function render(){
   $('#app').innerHTML=`<div id="top"><div><b>${MON[S.monat]} ${S.jahr}</b><small>${wetterText()} · ${R().name}</small></div><div class="geld" data-a="geldInfo"><b>${geldKurz(S.geld)}</b><small>${RAENGE[S.rang].kurz} · ${S.ansehen} Ansehen</small></div></div>
   <main>${v}</main>
   <nav id="dock">${SUBS[TAB]?`<div id="subs">${SUBS[TAB].map(s=>`<button class="${SUB===s[0]?'an':''}" data-a="sub" data-id="${s[0]}"><i>${s[1]}</i><b>${SUB_NAME[s[0]]}</b>${SUB===s[0]?'':badge(B[TAB+'/'+s[0]])}</button>`).join('')}</div>`:''}<div id="tabs">${tabs.map(t=>`<button class="${TAB===t[0]?'an':''}" data-a="tab" data-id="${t[0]}"><span>${t[1]}</span>${t[2]}${badge(B[t[0]])}</button>`).join('')}<button id="weiter" class="${fehlt?'zu':''}" data-a="weiter"><span>${fehlt?'🔒':'▶'}</span>${fehlt?'Leute fehlen':'Nächster Monat'}</button></div></nav>`;
-  for(const el of document.querySelectorAll('main>.mut')){el.classList.add('info'); el.dataset.a='infoAuf'; if(el.textContent.length>110&&!INFO_AUF.has(TAB+'/'+SUB)) el.classList.add('zu')}
+  // Orte ohne eigenen Erklärtext bekommen das "Kurz gesagt" aus ihrem Buchkapitel, damit alle 14 gleich aussehen.
+  const kb=buchKap().find(k=>k.id===BUCH_ORT[SUB]); if(kb&&!$('main>.mut')&&$('main>.pano')) $('main>.pano').insertAdjacentHTML('afterend',`<div class="mut">${kb.kurz}</div>`);
+  [...document.querySelectorAll('main>.mut')].forEach((el,i)=>{const lang=el.textContent.length>110; el.classList.add('info'); el.dataset.a='infoAuf';
+    el.innerHTML=`<span class="it">${el.innerHTML}</span>${i===0&&BUCH_ORT[SUB]?mib(BUCH_ORT[SUB]):''}`; if(lang&&!INFO_AUF.has(TAB+'/'+SUB)) el.classList.add('zu')});
   panoStell();
 }
 
@@ -1809,10 +1887,12 @@ function lese(id,la,p){
 
 /* ================= Aktionen ================= */
 const AKT={
+  buch(d){BUCH=d.id||''; buchZeig()},
+  buchZu(){BUCH=null; buchZeig()},
   geldInfo(){const K=kosten(), k=S.kredit, kv=(a,x,c)=>`<div class="kv"><span>${a}</span><span class="${c||''}">${x}</span></div>`;
     openSheet(`<h3>💰 Deine Kasse</h3>${kv('Kontostand',eur(S.geld),S.geld<0?'rot':'')}<h4 class="gk">Dieses Jahr bisher</h4>${kv('Einnahmen',eur(S.jahrEin),'gruen')}${kv('Ausgaben',eur(S.jahrAus),'rot')}${kv('Ergebnis',eur(S.jahrEin-S.jahrAus),S.jahrEin>=S.jahrAus?'gruen':'rot')}
     <h4 class="gk">Jeden Monat fällig</h4>${kv('Löhne',eur(K.loehne))}${kv('Feste Kosten',eur(K.basis))}${k?kv('Zinsen',eur(K.zins))+kv('Tilgung',eur(K.tilgung))+kv('Kredit offen',eur(k.rest)):''}${kv('Zusammen',eur(K.basis+K.loehne+K.zins+K.tilgung))}
-    <div class="btns"><button class="sec" data-a="zurBank">🏦 Zur Bank</button><button data-a="close">Okay</button></div>`)},
+    ${mib('geld')}<div class="btns"><button class="sec" data-a="zurBank">🏦 Zur Bank</button><button data-a="close">Okay</button></div>`)},
   zurBank(){closeSheet();geh('stadt','bank');render();window.scrollTo(0,0)},
   infoAuf(d,e){const el=e.target.closest('.info'), k=TAB+'/'+SUB; el.classList.toggle('zu'); if(el.classList.contains('zu')) INFO_AUF.delete(k); else INFO_AUF.add(k)},
   region(d){NEU.name=$('#nm').value;NEU.region=d.id;render()},
@@ -2009,7 +2089,7 @@ const AKT={
     const f=S.felder[d.id], so=SORTEN[d.id];
     const opt=['reif','ueber','alles'].map(la=>{const b=besteStufe(feldQ(f,la)),l=feldLiter(f,la);
       return `<button class="wahl" data-a="leseJa" data-id="${d.id}" data-la="${la}" ${l<=0?'disabled':''}><b>${LESE[la]}</b><br><span class="mut">${num(l)}\u00a0l mit ${feldQ(f,la).oe}° Öchsle · reicht für: ${b?stufeText(b,feldQ(f,la).oe):'nichts'}${b?`<br>${verkaufAb(d.id,b)}`:''}</span></button>`}).join('');
-    openSheet(`${sbild('lese')}<h3>${so.name} lesen</h3><p class="mut">Erst die Leseart, dann die Menge: Du kannst auch nur einen Teil lesen, der Rest bleibt hängen. Die Trauben müssen noch diesen Monat gekeltert werden.</p>${f.gefroren?`<p class="hilfe" style="margin:0 0 10px">${eisFehlt(f)?eisFehlt(f)+'. Es reicht nur für die Stufen oben.':'Eiswein gibt es nur aus reifen oder aus überreifen Trauben, nicht aus beiden zusammen.'}</p>`:S.monat===10?`<p class="hilfe" style="margin:0 0 10px">${frostText()}. Nur dann wird aus hängenden Trauben Eiswein, sonst verfaulen sie.</p>`:S.monat===9&&S.kaelteWarn===S.jahr?'<p class="rot">Die Vorhersage meldet einen Kälteeinbruch im November.</p>':''}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.round(leseFaktor()*100)}\u00a0%. Der Rest bleibt hängen.</p>`:''}${opt}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
+    openSheet(`${sbild('lese')}<h3>${so.name} lesen</h3><p class="mut">Erst die Leseart, dann die Menge: Du kannst auch nur einen Teil lesen, der Rest bleibt hängen. Die Trauben müssen noch diesen Monat gekeltert werden.</p>${f.gefroren?`<p class="hilfe" style="margin:0 0 10px">${eisFehlt(f)?eisFehlt(f)+'. Es reicht nur für die Stufen oben.':'Eiswein gibt es nur aus reifen oder aus überreifen Trauben, nicht aus beiden zusammen.'}</p>`:S.monat===10?`<p class="hilfe" style="margin:0 0 10px">${frostText()}. Nur dann wird aus hängenden Trauben Eiswein, sonst verfaulen sie.</p>`:S.monat===9&&S.kaelteWarn===S.jahr?'<p class="rot">Die Vorhersage meldet einen Kälteeinbruch im November.</p>':''}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.round(leseFaktor()*100)}\u00a0%. Der Rest bleibt hängen.</p>`:''}${opt}${mib('lese')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
   },
   // Teil-Lese: Nach der Leseart kommt der Regler für den Anteil des Feldes. Der Rest bleibt hängen und reift weiter.
   leseJa(d){
@@ -2120,7 +2200,7 @@ const AKT={
     const M=mani(l);
     const zeilen=[...REIHE].reverse().concat('feder').map(st=>{const g=pruefeAnmeldung(l,st),s=STUFEN[st],ill=M&&!maniLegal(l,st);
       return `<div class="stufe"><div class="row"><b>${g.length?'✗':'✓'} ${s.name}</b>${g.length?'':`<button class="klein ${ill?'wag':''}" data-a="anmeldeJa" data-id="${l.id}" data-st="${st}">${ill?`🤫 Unter der Hand (${eur(s.geb+schmier(l,st))})`:`Anmelden${s.geb?' ('+eur(s.geb)+')':''}`}</button>`}</div>${g.length?`<div class="mut">${g.map(esc).join(' · ')}</div>`:st==='eis'?`<div class="mut">Wertstufe: Öchsle einer ${EIS_WERT[eisStufe(l.oe)].name}${eisStufe(l.oe)?`, Preis +${Math.round((EIS_WERT[eisStufe(l.oe)].f-1)*100)}\u00a0%`:''}</div>`:''}</div>`}).join('');
-    openSheet(`${sbild('amt')}<h3>${esc(lotName(l))} anmelden</h3><p class="mut">${num(l.liter)}\u00a0l · ${l.oe}° Öchsle · ${LESE[l.leseart]} · Edelfäulnis ${l.edel?'ja':'nein'} · ${l.fassMonate} Monate im Fass</p>${M?`<p class="hilfe" style="margin:0 0 10px">🤫 Dieser Most ist ${maniText(l)}. Erlaubt ist das nur beim Tafelwein bis ${ZUCKER_ERLAUBT}\u00a0%. Alles andere geht nur unter der Hand gegen Schmiergeld, und der Wein gilt dann als gepanscht.</p>`:''}${zeilen}<div class="btns"><button class="sec" data-a="close">Schließen</button></div>`);
+    openSheet(`${sbild('amt')}<h3>${esc(lotName(l))} anmelden</h3><p class="mut">${num(l.liter)}\u00a0l · ${l.oe}° Öchsle · ${LESE[l.leseart]} · Edelfäulnis ${l.edel?'ja':'nein'} · ${l.fassMonate} Monate im Fass</p>${M?`<p class="hilfe" style="margin:0 0 10px">🤫 Dieser Most ist ${maniText(l)}. Erlaubt ist das nur beim Tafelwein bis ${ZUCKER_ERLAUBT}\u00a0%. Alles andere geht nur unter der Hand gegen Schmiergeld, und der Wein gilt dann als gepanscht.</p>`:''}${zeilen}${mib('keller')}<div class="btns"><button class="sec" data-a="close">Schließen</button></div>`);
   },
   anmeldeJa(d){
     const l=lot(d.id), st=d.st, s=STUFEN[st];
@@ -2193,7 +2273,7 @@ function zeigeTitel(){
   // Drei Knöpfe: Weiterspielen (nur mit Spielstand), Neues Spiel, Spiel laden. Darunter klein die Version und die Nennung, die ElevenLabs im Gratis-Tarif verlangt.
   const t=$('#titel'), hat=[0,1,2].some(lies); t.className='an'; delete t.dataset.a;
   t.innerHTML=`<h1>150 Grad Öchsle</h1><div class="unter">Vom kahlen Hang in den Festsaal des Weinbauverbands</div><div class="fuss"><div class="von">Ein Spiel von Maik Dienst</div>
-    <div class="tkn">${hat?'<button data-a="titelWeiter">Weiterspielen</button>':''}<button ${hat?'class="sec" ':''}data-a="titelNeu">Neues Spiel</button><button class="sec" data-a="titelLaden">Spiel laden</button></div>
+    <div class="tkn">${hat?'<button data-a="titelWeiter">Weiterspielen</button>':''}<button ${hat?'class="sec" ':''}data-a="titelNeu">Neues Spiel</button><button class="sec" data-a="titelLaden">Spiel laden</button><button class="sec klein" data-a="buch">📜 Spielanleitung</button></div>
     <div class="version">Version ${VERSION}<br>Bilder, Musik und Geräusche mit KI erstellt · Geräusche von ElevenLabs (elevenlabs.io)</div></div>`;
 }
 function zeigeGeschichte(){
@@ -2219,7 +2299,7 @@ document.addEventListener('pointerup',e=>{
 });
 document.addEventListener('keydown',e=>{
   if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight') return;
-  if($('#sheet').classList.contains('an')||$('#titel').classList.contains('an')||/INPUT|TEXTAREA/.test(e.target.tagName)) return;
+  if($('#sheet').classList.contains('an')||$('#titel').classList.contains('an')||$('#buch').classList.contains('an')||/INPUT|TEXTAREA/.test(e.target.tagName)) return;
   subNachbar(e.key==='ArrowLeft'?-1:1);
 });
 document.addEventListener('click',e=>{
@@ -2227,9 +2307,9 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]'); if(!b||b.disabled||Date.now()-WISCH_ZEIT<350) return;
   tonAn(); if(AC&&AC.state==='suspended') AC.resume();
   const a=b.dataset.a, vorn=/^(titel|gesch)/.test(a);
-  if(!vorn&&S&&S.pleite&&!['neuJa','tab','sub','close','weiter','menue','ton','infoWeiter'].includes(a)) return;
+  if(!vorn&&S&&S.pleite&&!['neuJa','tab','sub','close','weiter','menue','ton','infoWeiter','buch','buchZu'].includes(a)) return;
   // Solange der Weinprüfer wartet, geht nichts anderes.
-  if(!vorn&&S&&S.pruefer&&!['pruefJa','pruefBestechen','slMinus','slPlus','slOk','close','ton','menue'].includes(a)) return zeigePruefer();
+  if(!vorn&&S&&S.pruefer&&!['pruefJa','pruefBestechen','slMinus','slPlus','slOk','close','ton','menue','buch','buchZu'].includes(a)) return zeigePruefer();
   const f=AKT[a]; if(f){f(b.dataset,e); fx('klick')}
 });
 $('#datei').addEventListener('change',e=>{const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>dateiLaden(String(r.result),ZIEL); r.readAsText(f)});
