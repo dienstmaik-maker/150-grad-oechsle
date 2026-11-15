@@ -348,7 +348,7 @@ const WO={mosel:'an der Mosel',rheingau:'im Rheingau',rheinhessen:'in Rheinhesse
 const RAENGE=[
   {name:'Neuling',kurz:'Neuling',ans:0,ha:0,verm:0,rahmen:20000},
   {name:'Jungwinzer',kurz:'Jungwinzer',ans:15,ha:3,verm:100000,rahmen:40000,neu:'du darfst bei Auktionen mitbieten'},
-  {name:'Winzer',kurz:'Winzer',ans:50,ha:4,verm:180000,rahmen:80000,neu:'Export in die Niederlande'},
+  {name:'Winzer',kurz:'Winzer',ans:50,ha:4,verm:180000,rahmen:80000,neu:'Export in die Niederlande, Kellerausbau, Daueraufträge'},
   {name:'Winzermeister',kurz:'Winzermeister',ans:100,ha:5,verm:300000,rahmen:160000,neu:'Landesprämierung, Export nach Großbritannien, Erntemaschinen'},
   {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',ans:170,ha:6,verm:500000,rahmen:300000,neu:'Export in die USA, ein Gutsverwalter'},
   {name:'Gutsherr',kurz:'Gutsherr',ans:250,ha:8,verm:750000,rahmen:300000,neu:'Bundeswettbewerb, Export nach Japan, der große Vollernter',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.'},
@@ -404,7 +404,7 @@ const ANREG_ANS=30, ANREG_FEHL=3, PANSCH={zocker:.4,vorsicht:.08,qualitaet:.04},
 // Makler: ab Jungwinzer höchstens ein Hektar im Jahr zum MAKLER_PREIS, nur wenn für den nächsten Rang allein noch Land fehlt. Auktionen bleiben deutlich billiger.
 // Weinfest: ab Winzermeister bis zum Hoffest, einmal im Jahr von Juni bis August, kostet WEINFEST_PREIS und bringt WEINFEST_ANS Ansehen mal Wetter-Faktor.
 // Kellerausbau: drei Stufen ab Winzer (KELLER_PREISE). Jede Stufe kürzt die Reifezeit von Prädikatswein und Eiswein in der Flasche um einen Monat, und jeder Wein gewinnt beim Reifen KELLER_REIFE schneller an Wert.
-const MAKLER_PREIS=45000, WEINFEST_PREIS=30000, WEINFEST_ANS=12, KELLER_PREISE=[50000,120000,250000], KELLER_REIFE=.1, R_WEINFEST=R_LAND, R_KELLER=2;
+const MAKLER_PREIS=45000, WEINFEST_PREIS=30000, WEINFEST_ANS=12, KELLER_PREISE=[50000,120000,250000], KELLER_REIFE=.1, R_WEINFEST=R_LAND, R_KELLER=2, R_DAUER=2;
 const FESTE={weinfest:{name:'Weinfest',preis:WEINFEST_PREIS,ans:WEINFEST_ANS,text:'Ein Weinfest im Hof mit Zelt, Musik und deinem Wein',kurz:'Musik, Zwiebelkuchen und dein Wein für Nachbarn und Gäste'},hoffest:{name:'Hoffest',preis:HOFFEST_PREIS,ans:HOFFEST_ANS,text:'Ein großes Fest für das ganze Dorf',kurz:'Musik, Flammkuchen und dein Wein für das ganze Dorf'}};
 // Erntemaschinen (Paket 4, Variante C): die kleine ab Winzermeister, der große Vollernter ab Gutsherr. Maschinen ohne Typ (alte Spielstände) sind klein und bleiben, auch vor Winzermeister.
 const VOLL_PREIS=120000, VOLL_LEISTUNG=10000, VOLL_HELFER=10, VOLL_WARTUNG=300;
@@ -584,7 +584,7 @@ const PANO_MITTE={gut:{berg:.10,betrieb:.35,aktuell:.51,maschinen:.70,buero:.92}
 // PANO_ZOOM vergrößert das Bild je Hauptreiter (std) oder je Ort, damit ein Motiv das Fenster füllt. 1 = ganze Höhe sichtbar.
 const PANO_ZOOM={gut:{std:1.2},keller:{std:1},stadt:{std:1}};
 let PANO_ALT={tab:null,x:0,z:1}, ORT_ALT=null;
-// Version 4.4 (Probe): Wer aus "Das steht an" oder von der Pinnwand an einen Ort springt, sieht das Bild klein. Ein Tipp aufs Bild oder jeder andere Wechsel macht es wieder groß.
+// Version 4.4: Wer aus "Das steht an" oder von der Pinnwand an einen Ort springt, sieht das Bild klein. Ein Tipp aufs Bild oder jeder andere Wechsel macht es wieder groß.
 let BILD_KLEIN=false;
 // Je Ort eine eigene Hintergrundfarbe (Klasse am html-Element). Die Leiste des Handys ganz oben bekommt die Farbe der Kopfleiste.
 function ortFarbe(tab){const h=document.documentElement; h.className='ort-'+tab; const m=$('meta[name="theme-color"]'); if(m) m.content=getComputedStyle(h).getPropertyValue('--kopf').trim()||'#7b1e3a'}
@@ -1591,7 +1591,7 @@ function vBetrieb(){
 // Was am ehesten verdirbt, geht zuerst. Je Wein bleiben reserve Flaschen liegen, außer er hält nur noch zwei Monate. Bericht über S.dauerLog im Winzerboten.
 const DAUER_RESERVE=[0,100,500,1000];
 function dauerAuftrag(){
-  const d=S.dauer; if(!d||(!d.handel&&!d.laeden)) return;
+  const d=S.dauer; if(S.rang<R_DAUER||!d||(!d.handel&&!d.laeden)) return;
   const res=DAUER_RESERVE.includes(+d.reserve)?+d.reserve:0, frei=l=>lotRest(l)<=2?l.liter:Math.max(0,l.liter-res), L=[];
   const ls=()=>S.lots.filter(l=>l.status==='flasche'&&!l.regal&&l.liter>0&&preis(l)>0).sort(BSORT_F.dringend);
   let nL=0,eL=0,nH=0,eH=0;
@@ -1609,6 +1609,7 @@ function dauerAuftrag(){
   if(L.length) S.dauerLog=(S.dauerLog||[]).concat(L);
 }
 function dauerHtml(k){
+  if(S.rang<R_DAUER) return `<div class="card mut">📋 Daueraufträge gibt es ab dem Rang ${RAENGE[R_DAUER].name}.</div>`;
   const d=S.dauer||{}, an=!!d[k], t=k==='handel'?'Jeden Monat an den Großhandel verkaufen, so viel er zum vollen Preis nimmt':'Jeden Monat die Weinhandlungen mit passenden Weinen beliefern';
   return `<div class="card"><button class="wahl ${an?'an':''}" data-a="dauer" data-id="${k}" style="margin:0">${an?'✅':'⬜'} 📋 Dauerauftrag: ${t}</button>
   ${an?`<div class="mut" style="margin:8px 0 6px">Läuft bei jedem Weiterblättern, was am ehesten verdirbt, geht zuerst. Je Wein bleiben im Keller, außer kurz vorm Verderben:</div>
