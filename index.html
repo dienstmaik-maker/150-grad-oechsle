@@ -155,6 +155,12 @@ img.fass{height:1.1em;vertical-align:-.18em}
 #info .zehr>span{font-size:24px}
 #info .zliste{margin:0 0 12px;font-size:15px}
 #info .zliste>div{display:grid;grid-template-columns:24px 1fr auto;gap:6px;padding:3px 0;border-bottom:1px dotted rgba(90,60,30,.45)}
+#info .zliste small{display:block;font:400 12.5px/1.3 var(--schrift);opacity:.75}
+#info .zstand{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:6px;margin:0 0 12px}
+#info .zstand>div{border:1.5px solid #a87908;background:rgba(255,236,170,.3);border-radius:6px;padding:4px 6px;text-align:center}
+#info .zstand small{display:block;font-size:12px;opacity:.75}
+#info .zstand b{font-size:15.5px}
+#info .zknopf{display:flex;justify-content:center;margin:4px 0 14px}
 #info .zliste .du{font-weight:700;color:#5a1426}
 #info .zwetter{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid #5a3d22;margin:4px 0 10px;font-size:14.5px}
 #info .zwetter>div{padding:5px 8px}#info .zwetter>div+div{border-left:1px solid #5a3d22}
@@ -284,10 +290,11 @@ const KAELTE=.25, ZUCKER_MAX=20, ZUCKER_ERLAUBT=10, SCHMIER_ANTEIL=.1, SCHMIER_M
 const STRAFE_MIN=10000, STRAFE_ANS=15, STRAFE_ANS_WEITER=5, BESTECH_MIN=5000, BESTECH_MAX=50000, BESTECH_NEIN_ANS=10;
 const SAB_KONTAKT=20000, SAB_MIN=5000, SAB_MAX=50000, SAB_AUFFLIEGEN=.2, SAB_STRAFE=30000, SAB_STRAFE_ANS=20, SAB_RANG=R_BUND;
 const SAB={gift:['🧪 Wein vergiften','Sein bester Fasswein ist hin.'],buch:['📖 Kellerbuch fälschen','Seine Weine stehen als gepanscht im Buch. Bei seiner nächsten Kontrolle zahlt er Strafe und verliert Ansehen.'],berg:['🪓 Im Weinberg wüten','Ein Viertel seiner Reben und Flaschen ist weg.']};
+// ki: Tempo der Gegner, eingestellt mit dem Test-Spieler am 15.11.2026. Der erste Gegner wird Präsident nach rund 40 (Schwer), 50 (Mittel) und 70 Jahren (Einfach).
 const DIFF={
-  einfach:{name:'Einfach',text:'Ansehen wächst schneller, die Gegner sind gemütlich.',ans:1.25,ki:.8,feld:-4},
-  mittel:{name:'Mittel',text:'Ausgeglichen.',ans:1,ki:1,feld:0},
-  schwer:{name:'Schwer',text:'Ansehen wächst langsamer, die Gegner sind stark.',ans:.8,ki:1.2,feld:3}
+  einfach:{name:'Einfach',text:'Ansehen wächst schneller, die Gegner sind gemütlich.',ans:1.25,ki:.45,feld:-4},
+  mittel:{name:'Mittel',text:'Ausgeglichen.',ans:1,ki:.6,feld:0},
+  schwer:{name:'Schwer',text:'Ansehen wächst langsamer, die Gegner sind stark.',ans:.8,ki:.9,feld:3}
 };
 const GEGNER_TYP={
   vorsicht:{name:'Hannelore Brück',art:'die Vorsichtige',eink:[9000,12000],ans:[8,12],biet:.4,med:.2,ws:[18,30],weine:['einen Kabinett','eine Spätlese','einen Qualitätswein']},
@@ -315,6 +322,7 @@ const PREISE={
 // PANSCH: so oft panschen die Gegner im Oktober. Spitzenlage: SPITZE_HA Hektar ab SPITZE_START, bringt SPITZE_ANS Ansehen und SPITZE_OE Grad mehr im Juli.
 const LAGER_SCHWANK=.2, REBEN_ANGEBOT=.15, LADEN_EIGEN=6000, LADEN_EIGEN_F=1.45, BOTSCHAFT_ANS=10, HOFFEST_PREIS=180000, HOFFEST_ANS=40;
 const HOFFEST_WETTER={sonnig:1.25,mild:1,regen:.7,kalt:.85,frost:.85};
+const BESTEN_KEY='oechsle-besten';
 const ANREG_ANS=30, ANREG_FEHL=3, PANSCH={zocker:.4,vorsicht:.08,qualitaet:.04}, SPITZE_HA=2, SPITZE_START=200000, SPITZE_OE=5, SPITZE_ANS=15, LOHN_BILLIG=250;
 
 /* ================= Helfer ================= */
@@ -756,7 +764,7 @@ function gegnerMonat(){
     const alt=g.rang; g.rang=rangFuer(g.rang,g.ansehen,g.ha,gVerm(g));
     if(g.rang>alt){
       neu(9,`${g.name} steigt auf und ist jetzt ${RAENGE[g.rang].name}.`);
-      if(g.rang===R_MAX&&!S.sieger){S.sieger=g.name; schlag(100,`${g.name} ist Präsident!`,`${g.name} ${wo} wird Präsident des Weinbauverbands und gewinnt die Partie. Du kannst weiterspielen und deinen eigenen Aufstieg vollenden.`,'gegnerpraesident')}
+      if(g.rang===R_MAX&&!S.sieger) gegnerSieg(g,wo);
     }
   }
   N.sort((a,b)=>b.p-a.p);
@@ -1053,6 +1061,47 @@ function monatWeiter(){
   TAB='monat'; save(); render(); window.scrollTo(0,0);
   if(S.pleite) zeigePleite(); else if(S.pruefer) zeigePruefer();
 }
+// ---- Spielende: Sonderausgabe und Bestenliste ----
+function spielJahre(){return Math.max(1,Math.round(S.jahr-START_JAHR+S.monat/12))}
+function platzDu(){return 1+S.gegner.filter(g=>g.rang>S.rang||g.rang===S.rang&&g.ansehen>S.ansehen).length}
+function endStand(){return {jahre:spielJahre(),rang:S.rang,platz:platzDu(),verm:vermoegen(),ans:S.ansehen}}
+function besten(){try{const L=JSON.parse(localStorage.getItem(BESTEN_KEY)||'[]');return Array.isArray(L)?L:[]}catch(e){return []}}
+// Nur beim ersten Präsidenten der Partie. Siege zuerst nach Dauer, dann Niederlagen nach Rang und Ansehen, höchstens 10.
+function bestenEintrag(sieg,st){
+  if(window.BOT) return;
+  const L=besten(), d=Date.now(); S.bestenD=d;
+  L.push({name:S.name,sieg:sieg?1:0,jahre:st.jahre,rang:st.rang,ans:st.ans,verm:st.verm,region:S.region,schwer:S.schwer,sieger:S.sieger,d});
+  L.sort((a,b)=>b.sieg-a.sieg||(a.sieg?a.jahre-b.jahre:b.rang-a.rang||b.ans-a.ans));
+  try{localStorage.setItem(BESTEN_KEY,JSON.stringify(L.slice(0,10)))}catch(e){}
+}
+function bestenZeilen(){
+  return besten().map((e,i)=>({platz:i+1,du:S&&e.d===S.bestenD,name:e.name,
+    sub:`${e.sieg?'👑 Präsident':(RAENGE[e.rang]||RAENGE[0]).kurz+', Sieger '+e.sieger} · ${(REGIONEN[e.region]||{}).name||''} · ${(DIFF[e.schwer]||{}).name||''}`,
+    rechts:e.sieg?`${e.jahre} J.`:`${e.ans} A.`}));
+}
+function bestenHtml(){
+  const L=bestenZeilen();
+  return `<div class="card"><h3>🏆 Bestenliste</h3>${L.length?L.map(x=>`<div class="rl ${x.du?'du':''}"><span>${x.platz}.</span><div><b>${esc(x.name)}</b><span class="mut">${esc(x.sub)} · ${x.rechts.replace(' J.',' Jahre').replace(' A.',' Ansehen')}</span></div></div>`).join(''):'<div class="mut">Noch leer. Jede Partie kommt hier hinein, sobald jemand Präsident wird: Siege nach Dauer, Niederlagen nach Rang.</div>'}</div>`;
+}
+// Bilanz in der Sonderausgabe: Zahlen, Bestenliste, Knopf für ein neues Spiel.
+function endeHtml(k){
+  const st=k.stand||{}, L=bestenZeilen();
+  const z=(t,w)=>`<div><small>${t}</small><b>${w}</b></div>`;
+  return `<div class="zstand">${z('Gespielt',`${st.jahre} Jahre`)}${z('Rang',(RAENGE[st.rang]||RAENGE[0]).kurz)}${z('Platz',`${st.platz}. von ${S.gegner.length+1}`)}${z('Vermögen',eur(st.verm||0))}${z('Ansehen',st.ans)}</div>
+    ${L.length?`<div class="zart"><h3>Die Bestenliste</h3><div class="zliste">${L.map(x=>`<div class="${x.du?'du':''}"><span>${x.platz}.</span><b>${esc(x.name)}<small>${esc(x.sub)}</small></b><span>${x.rechts}</span></div>`).join('')}</div></div>`:''}
+    <div class="zknopf"><button class="sec" data-a="titelNeu">Neues Spiel</button></div>`;
+}
+function siegSpieler(){
+  S.sieger=S.name; const st=endStand();
+  schlag(100,`${S.name} ist Präsident!`,`Nach ${st.jahre} Jahren ${WO[S.region]} wählt der Weinbauverband dich an seine Spitze. Du hast die Partie gewonnen! Unten steht deine Bilanz. Du kannst weiterspielen oder ein neues Spiel beginnen.`,'sieg',{gold:1,sonder:1,ende:1,stand:st});
+  bestenEintrag(1,st);
+}
+const SIEG_SPRUCH={vorsicht:'„Immer schön langsam, dann wird das schon“, sagt sie beim Anstoßen.',qualitaet:'„Qualität setzt sich eben durch“, sagt er und meint vor allem sich selbst.',zocker:'„Alles auf eine Karte, und die Karte hat gestochen“, grinst er in die Kameras.'};
+function gegnerSieg(g,wo){
+  S.sieger=g.name; const st=endStand();
+  schlag(100,`${g.name} ist Präsident!`,`${g.name} ${wo} wird nach ${st.jahre} Jahren Präsident des Weinbauverbands und gewinnt die Partie. ${SIEG_SPRUCH[g.typ]||''} Kopf hoch: Du kannst weiterspielen und deinen eigenen Aufstieg vollenden.`,'gegnerpraesident',{sonder:1,ende:1,stand:st});
+  bestenEintrag(0,st);
+}
 // Alles, was Etappe 3 beim Monatswechsel tut: Aufstieg, Gegner, Wettbewerbe, Auktion, Märkte.
 function etappe3Monat(Z){
   const alt=S.rang; S.rang=rangFuer(S.rang,S.ansehen,flaecheBep(),vermoegen());
@@ -1061,7 +1110,8 @@ function etappe3Monat(Z){
     // Der Aufstieg steht als Ehrung im Büro und als Thema in der Zeitung.
     ehre(S.rang===R_MAX?'👑':'🎖️',`Aufstieg! Du bist jetzt ${r.name}.`,1,`Das bringt dir: ${bringt(S.rang)}.${r.weg?' '+r.weg:''}`);
     schlag(95,`Aufstieg: ${S.name} ist jetzt ${r.name}`,`Das bringt: ${bringt(S.rang)}.${r.weg?' '+r.weg:''}`,'aufstieg');
-    if(S.rang===R_MAX&&!S.sieger){S.sieger=S.name; schlag(100,`${S.name} ist Präsident!`,'Du hast die Partie gewonnen! Du kannst trotzdem weiterspielen.','sieg',{gold:1})}
+    if(S.rang===R_MAX&&!S.sieger) siegSpieler();
+    else if(S.rang===R_MAX) schlag(99,`${S.name} ist doch noch Präsident`,`${S.sieger} war schneller, aber jetzt hast du es auch an die Spitze des Weinbauverbands geschafft. Respekt!`,'sieg',{gold:1});
   }
   kontrolleMonat(Z); sabotageGegenDich(Z);
   if(S.monat===0&&S.rang>=R_LADEN) Z.push(`Als Weinbotschafter ${WO[S.region]} warst du auf Messen in aller Welt unterwegs. +${ruhm(BOTSCHAFT_ANS)} Ansehen.`);
@@ -1216,6 +1266,7 @@ function vSlots(){
     <div class="btns"><button data-a="slotLaden" data-id="${i}">Weiterspielen</button></div>
     <div class="btns"><button class="sec klein" data-a="slotSichern" data-id="${i}">Als Datei sichern</button><button class="wag klein" data-a="slotWegFrage" data-id="${i}">Löschen</button></div>`
     :`<div class="mut">Leer</div><div class="btns"><button data-a="slotNeu" data-id="${i}">Neues Spiel</button><button class="sec" data-a="slotDatei" data-id="${i}">Aus Datei laden</button></div>`}</div>`}).join('')}
+  ${bestenHtml()}
   <div class="mut" style="margin:0 0 12px">Gespeichert wird von selbst nach jedem Monat. Mit „Als Datei sichern“ bekommst du eine Datei, die du aufheben oder auf ein anderes Gerät mitnehmen kannst.</div>
   ${tonKnoepfe()}<div class="mut" style="margin:0 0 12px">Bilder, Musik und Geräusche sind mit KI erstellt (Musik mit Treblo, Geräusche mit ElevenLabs, elevenlabs.io).</div></main>`;
 }
@@ -1288,7 +1339,7 @@ function vMonat(){
     <h1 class="zschlag">${esc(k.t)}</h1>${foto(k)}
     ${k.text?`<p class="zlead ${/^\p{L}/u.test(k.text)?'init':''}">${esc(k.text)}</p>`:''}
     ${E.map(e=>`<div class="zehr"><span>${esc(e.i)}</span><b>${esc(e.t)}</b></div>`).join('')}
-    ${liste(k)}
+    ${liste(k)}${k.ende?endeHtml(k):''}
     <div class="zwetter"><div><small>Wetter heute</small>${wetterText()}</div><div><small>Vorhersage ${MON[(S.monat+1)%12]}</small>${WETTER[S.prognose].join(' ')}</div></div>
     ${art}
     ${W.length?`<div class="zart"><h3>Aus dem Weinberg</h3><ul>${W.map(z=>`<li>${esc(z)}</li>`).join('')}</ul></div>`:''}
@@ -1296,7 +1347,7 @@ function vMonat(){
     <div class="zzwei"><div>${haengt?oeBericht():marktBericht()}</div><div>${rechts}</div></div>
     ${F.length?`<div class="zfussz">${F.map(t=>`<p>${esc(t)}</p>`).join('')}</div>`:''}
   </div><div class="zende"></div></div>
-  <div class="ifuss"><button data-a="infoWeiter">Weiter ▶</button></div><div class="ischw"></div></div>`;
+  <div class="ifuss"><button data-a="infoWeiter">${k.ende?'Weiterspielen':'Weiter'} ▶</button></div><div class="ischw"></div></div>`;
 }
 // Kopf jeder Ansicht: das Bild des Ortes mit dem Titel darin.
 function kopf(titel){return ortBild(titel)}
@@ -1382,7 +1433,7 @@ function vMaschinen(){
 function vBuero(){
   const E=(S.ehrungen||[]).slice().reverse(), wein=E.filter(e=>!e.a), auf=E.filter(e=>e.a);
   const zeile=e=>`<div class="rl"><span>${esc(e.i)}</span><div><b>${esc(e.t)}</b>${e.j?`<span class="mut">${MON[e.m]} ${e.j}</span>`:''}</div></div>`;
-  return `${vRangliste()}
+  return `${vRangliste()}${bestenHtml()}
   ${S.rang>=R_LADEN?`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/weinbotschafter.jpg);height:150px"><b>🎗️ Weinbotschafter ${WO[S.region]}</b><span>Jeden Januar +${BOTSCHAFT_ANS} Ansehen für deine Reisen</span></div>`:''}
   <div class="card"><h3>🏅 Ehrungen für deine Weine</h3>${wein.length?wein.slice(0,8).map(zeile).join('')+(wein.length>8?`<div class="mut">und ${wein.length-8} ältere</div>`:''):'<div class="mut">Noch keine. Medaillen gibt es bei der Landesprämierung und beim Bundeswettbewerb.</div>'}</div>
   <div class="card"><h3>🎖️ Deine Aufstiege</h3>${auf.length?auf.map(zeile).join(''):'<div class="mut">Noch keiner. Der erste Aufstieg führt zum Winzer.</div>'}</div>`;
