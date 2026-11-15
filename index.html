@@ -142,8 +142,8 @@ img.fass{height:1.1em;vertical-align:-.18em}
 #info{position:fixed;inset:0;z-index:8;overflow-y:auto;background:#000;color:#f3efe6;--card:rgba(16,12,8,.58);--ink:#f3efe6;--mut:#d3cab8;--line:rgba(255,255,255,.18);--rot:#ff8f84;--gruen:#acd682;--gold:#f0c75a;--wein:#9b2a4a}
 #info .ibild{position:fixed;inset:0;background:#000 center/cover no-repeat;animation:izoom 24s ease-out forwards}
 #info.winter .ibild,#info.fruehling .ibild,#info.sommer .ibild,#info.herbst .ibild{background-position:center 38%}
-#info .iverl{position:fixed;inset:0;background:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.25) 22%,rgba(0,0,0,.72) 48%,rgba(0,0,0,.88))}
-#info .zt{position:relative;max-width:560px;margin:min(52vh,calc(100vh - 440px)) auto 0;padding:0 0 calc(92px + env(safe-area-inset-bottom));color:#3a2a1a;font-family:var(--schrift);--ink:#3a2a1a;--mut:#6e5638;--rot:#a3271d;--gruen:#4c6b2c;--gold:#8a6206;--line:rgba(90,60,30,.3);filter:drop-shadow(0 -4px 18px rgba(0,0,0,.55))}
+#info .iverl{position:fixed;inset:0;background:linear-gradient(transparent 55%,rgba(0,0,0,.55))}
+#info .zt{position:relative;max-width:560px;margin:calc(100vh - 150px - env(safe-area-inset-bottom)) auto 0;padding:0 0 calc(100vh - 70px);transform-origin:50% 0;color:#3a2a1a;font-family:var(--schrift);--ink:#3a2a1a;--mut:#6e5638;--rot:#a3271d;--gruen:#4c6b2c;--gold:#8a6206;--line:rgba(90,60,30,.3);filter:drop-shadow(0 -4px 18px rgba(0,0,0,.55))}
 #info .zkopf{aspect-ratio:1200/713;background:url(bilder/zeitung-kopf.webp) center/100% 100% no-repeat}
 #info .zmitte{background:url(bilder/zeitung-mitte.webp) 0 0/100% 100% no-repeat;padding:0 9% 4px;margin-top:-1px;overflow:hidden}
 #info .zende{aspect-ratio:1200/141;background:url(bilder/zeitung-fuss.webp) center/100% 100% no-repeat;margin-top:-1px}
@@ -189,6 +189,8 @@ img.fass{height:1.1em;vertical-align:-.18em}
 .schnitt{position:fixed;inset:0;z-index:9;background:#000;pointer-events:none;animation:iein .5s ease-out forwards}
 @keyframes iein{from{opacity:1}to{opacity:0}}
 @keyframes iaus{from{opacity:0}to{opacity:1}}
+@keyframes zwind{0%{transform:translateX(-18px) rotate(-3deg)}25%{transform:translateX(12px) rotate(2deg)}50%{transform:translateX(-7px) rotate(-1.1deg)}75%{transform:translateX(3px) rotate(.5deg)}100%{transform:none}}
+#info .zt.weht{animation:zwind 2.6s ease-out}
 @keyframes izoom{from{transform:scale(1.08)}to{transform:none}}
 @media (prefers-reduced-motion:reduce){#info .ibild,#info .ischw,.schnitt{animation:none}#info .ischw,.schnitt{opacity:0}#info.aus .ischw{opacity:1}}
 @keyframes ein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -1643,6 +1645,20 @@ function vBuch(){
   }
   return h;
 }
+// Winzerbote: Erst steht das Bild allein da, dann weht die Zeitung von unten herein, bis ein Drittel des Bildschirms bedeckt ist.
+// Hochschieben zum Lesen, ganz runter- oder hochschieben gibt das Bild frei, Tippen auf die versteckte Zeitung holt sie zurück.
+// ZW merkt sich Ausgabe und Position, damit ein neues Zeichnen derselben Ausgabe nicht wieder von vorn weht.
+let ZW=null;
+function zGleite(el,ziel,ms){const von=el.scrollTop,t0=performance.now();let ab=0;const halt=()=>ab=1;el.addEventListener('touchstart',halt,{once:true,passive:true});el.addEventListener('wheel',halt,{once:true,passive:true});
+  (function f(t){if(ab||!el.isConnected)return;const x=Math.min(1,(t-t0)/ms),e=1-Math.pow(1-x,3);el.scrollTop=von+(ziel-von)*e;if(x<1)requestAnimationFrame(f)})(t0)}
+function zWehen(){
+  const el=$('#info'); if(!el) return; const z=el.querySelector('.zt'), b=S.bericht||{}, key=`${b.titel}|${b.nr}`;
+  const ziel=()=>Math.max(0,z.offsetTop-innerHeight*2/3), ruhig=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if(ZW&&ZW.key===key) el.scrollTop=ZW.top;
+  else{ZW={key,top:0}; el.scrollTop=0; if(ruhig) el.scrollTop=ziel(); else setTimeout(()=>{if(!el.isConnected)return; z.classList.add('weht'); zGleite(el,ziel(),2200)},900)}
+  el.addEventListener('scroll',()=>{ZW.top=el.scrollTop},{passive:true});
+  z.addEventListener('click',e=>{if(e.target.closest('button'))return; const r=z.getBoundingClientRect(); if(r.top>innerHeight*.75||r.bottom<innerHeight*.25) zGleite(el,ziel(),900)});
+}
 function render(){
   if(!S){ortFarbe('gut'); ORT_ALT=null; musikOrt(musikWahl()); $('#app').innerHTML=START==='neu'||![0,1,2].some(lies)?vStart():vSlots(); return}
   if(SUBS[TAB]&&!SUBS[TAB].some(s=>s[0]===SUB)) SUB=START_SUB[TAB];
@@ -1652,7 +1668,7 @@ function render(){
   musikOrt(musikWahl());
   const fehlt=fehlText(), v={monat:vMonat,gut:vGut,keller:vKeller,stadt:vStadt}[TAB]();
   const tabs=[['gut','🏡','Weingut'],['keller',FASS,'Kellerei'],['stadt','🏛️','Stadt']];
-  if(TAB==='monat'){$('#app').innerHTML=v; return}
+  if(TAB==='monat'){$('#app').innerHTML=v; zWehen(); return}
   $('#app').innerHTML=`<div id="top"><div><b>${MON[S.monat]} ${S.jahr}</b><small>${wetterText()} · ${R().name}</small></div><div class="geld"><b>${eur(S.geld)}</b><small>${RAENGE[S.rang].kurz} · ${S.ansehen} Ansehen</small></div></div>
   <main>${v}</main>
   <nav id="tabs">${tabs.map(t=>`<button class="${TAB===t[0]?'an':''}" data-a="tab" data-id="${t[0]}"><span>${t[1]}</span>${t[2]}</button>`).join('')}<button id="weiter" class="${fehlt?'zu':''}" data-a="weiter"><span>${fehlt?'🔒':'▶'}</span>${fehlt?'Leute fehlen':'Nächster Monat'}</button></nav>`;
