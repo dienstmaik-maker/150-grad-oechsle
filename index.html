@@ -328,7 +328,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='4.1';
+const VERSION='4.2';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=18000, WARTUNG=60, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -337,10 +337,11 @@ const REBEN_JE_HELFER=1000, MASCH_HELFER=3, FASS_JE_LAGERARB=10000, FLASCHEN_JE_
 /* ---- Etappe 3: Ränge, Gegner, Auktionen, Wettbewerbe, Export ---- */
 const START_JAHR=2027, LANDWERT=15000;
 // Aufstiegstempo: Die ersten HA_FREI Hektar kosten im Monat HA_KOSTEN_KLEIN, jeder weitere HA_KOSTEN.
-// Der Großhandel kauft je Monat für MARKT_FREI Euro zum vollen Preis, je Rang für MARKT_RANG und je Exportland für MARKT_EXPORT mehr. Verkäufe an Weinhandlungen zählen mit. Darüber fällt der Preis bis auf MARKT_MIN, erreicht nach dem MARKT_BREIT-fachen des Budgets.
+// Der Großhandel kauft je Monat für MARKT_FREI Euro zum vollen Preis, je Rang für MARKT_RANG, je Exportland für MARKT_EXPORT und je bepflanztem Hektar über HA_FREI für MARKT_HA mehr.
+// Seit 4.2 (Paket 3, 15.11.2026) hängt das Budget vor allem an der Fläche, damit ein großes Gut nicht ärmer ist als ein kleines. Verkäufe an Weinhandlungen zählen mit. Darüber fällt der Preis bis auf MARKT_MIN, erreicht nach dem MARKT_BREIT-fachen des Budgets.
 // Jede Weinhandlung nimmt im Monat 1 bis LADEN_MAX mal LADEN_MENGE Flaschen. Der Wein im Keller zählt beim Vermögen nur mit WEIN_WERT seines Listenwerts und höchstens mit dem, was der Großhandel in einem Jahr zum vollen Preis kauft.
 // Die Gegner fangen mit GEGNER_START ihrer Stärke an und wachsen über GEGNER_JAHRE Jahre auf GEGNER_ENDE.
-const HA_FREI=3, HA_KOSTEN_KLEIN=50, HA_KOSTEN=400, MARKT_FREI=3000, MARKT_RANG=550, MARKT_EXPORT=1500, MARKT_MIN=.25, MARKT_BREIT=.75, GEGNER_START=.5, GEGNER_ENDE=1.4, GEGNER_JAHRE=25, LADEN_MENGE=50, LADEN_MAX=2, WEIN_WERT=.5;
+const HA_FREI=3, HA_KOSTEN_KLEIN=50, HA_KOSTEN=300, MARKT_FREI=3000, MARKT_RANG=250, MARKT_EXPORT=1000, MARKT_HA=450, MARKT_MIN=.25, MARKT_BREIT=.75, GEGNER_START=.5, GEGNER_ENDE=1.4, GEGNER_JAHRE=25, LADEN_MENGE=50, LADEN_MAX=2, WEIN_WERT=.5;
 const WO={mosel:'an der Mosel',rheingau:'im Rheingau',rheinhessen:'in Rheinhessen',pfalz:'in der Pfalz',franken:'in Franken',wuerttemberg:'in Württemberg'};
 // Zehn Stufen. ha ist beim Spieler die bepflanzte Fläche (flaecheBep), bei den Gegnern ihre Fläche.
 const RAENGE=[
@@ -628,7 +629,7 @@ function etappe3(n,schwer){
 function zahle(b){S.geld-=b;S.jahrAus+=b}
 function kassiere(b){S.geld+=b;S.jahrEin+=b;fx('kasse')}
 // Großhandel: Budget des Monats zum vollen Preis, was davon noch offen ist, und der Schnitt-Faktor auf den Preis für Wein im Listenwert von w Euro.
-function marktFrei(){return MARKT_FREI+MARKT_RANG*S.rang+MARKT_EXPORT*EXPORT.filter(e=>S.rang>=e.rang).length}
+function marktFrei(){return Math.round(MARKT_FREI+MARKT_RANG*S.rang+MARKT_EXPORT*EXPORT.filter(e=>S.rang>=e.rang).length+MARKT_HA*Math.max(0,flaecheBep()-HA_FREI))}
 function marktRest(){return Math.max(0,marktFrei()-(S.absatz||0))}
 function marktF(n){n=Math.max(0,n);const Q=marktFrei(),a=S.absatz||0,f=x=>x<=Q?1:Math.max(MARKT_MIN,1-(1-MARKT_MIN)*(x-Q)/(Q*MARKT_BREIT)); if(n<=0) return f(a); let s=0; for(let i=0;i<40;i++) s+=f(a+n*(i+.5)/40); return s/40}
 function R(){return REGIONEN[S.region]}
@@ -1738,7 +1739,7 @@ function vStadt(){
     const fl=S.lots.filter(l=>l.status==='flasche'&&!l.regal);
     h+=`<div class="mut" style="margin-bottom:8px">Marktlage: ${S.markt>1.04?'gut 📈':S.markt<.96?'schwach 📉':'normal'}${S.lage?S.lage.typ==='mode'?` · ${SORTEN[S.lage.sorte].name} gefragt, ${proz(S.lage.f)}`:` · Weinskandal, ${proz(S.lage.f)}`:''}</div>`;
     const ex=EXPORT.filter(e=>S.rang>=e.rang), naechst=EXPORT.find(e=>S.rang<e.rang);
-    h+=`<div class="card"><div class="mut">Der Großhandel zeigt dir je Wein den besten Absatzweg, der Zoll ist im Preis schon abgezogen. Zum vollen Preis kauft er diesen Monat noch für <b>${eur(marktRest())} von ${eur(marktFrei())}</b>. Was darüber geht, drückt den Preis, und was du an Weinhandlungen verkaufst, zählt mit. Jeder Rang hebt das Budget um ${eur(MARKT_RANG)}, jedes Exportland um ${eur(MARKT_EXPORT)}.</div>
+    h+=`<div class="card"><div class="mut">Der Großhandel zeigt dir je Wein den besten Absatzweg, der Zoll ist im Preis schon abgezogen. Zum vollen Preis kauft er diesen Monat noch für <b>${eur(marktRest())} von ${eur(marktFrei())}</b>. Was darüber geht, drückt den Preis, und was du an Weinhandlungen verkaufst, zählt mit. Jeder Rang hebt das Budget um ${eur(MARKT_RANG)}, jedes Exportland um ${eur(MARKT_EXPORT)}, jeder bepflanzte Hektar über ${HA_FREI} um ${eur(MARKT_HA)}.</div>
       ${ex.map(e=>`<div class="kv"><span>${e.flag} ${e.name}</span><span class="mut">${e.text}</span></div>`).join('')}
       ${naechst?`<div class="mut">Nächstes Exportland: ${naechst.flag} ${naechst.name}, ab dem Rang ${RAENGE[naechst.rang].name}.</div>`:''}</div>`;
     h+=fl.length?fl.map(l=>{const W=wege(l),L=lager(l);return `<div class="card"><b>${dot(l.sorte)}${lotName(l)}</b>${medHtml(l)}<div class="mut">${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte</div>${W.length?`<div class="kv"><span>Bester Absatzweg</span><span>${W[0].flag} ${W[0].name}</span></div>${kz(W.length>1?`Sonst: ${W.slice(1).map(w=>`${w.flag} ${eur2(w.p)}`).join(' · ')}`:'',pk('verkaufen','Verkaufen',eur2(W[0].p),{id:l.id,klein:'je Flasche'}))}`:`<div class="mut">Noch ${L.min-l.flMonate} Monate bis zur Verkaufsreife.</div>`}</div>`}).join(''):'<div class="card mut">Kein Flaschenwein im Lager.</div>';
