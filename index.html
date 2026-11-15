@@ -103,9 +103,9 @@ button.siegel:active{transform:translateY(2px) scale(.96);filter:brightness(.92)
    Fehlt das Geld, wird der Knopf grau (.arm), bleibt aber antippbar und sagt, was fehlt. */
 .kz{display:flex;align-items:center;gap:10px;margin-top:10px}.kz>div:first-child{flex:1;min-width:0;font-size:14px;color:var(--mut)}
 .kzk{display:flex;flex-direction:column;align-items:stretch;gap:7px;flex:none}.kz.reihe .kzk{flex-direction:row-reverse;gap:8px}
-button.pk{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:122px;min-height:52px;padding:10px 18px 13px;font-size:15px}
-button.pk>b{font:800 17px/1.1 var(--knopf);font-variant-caps:normal;font-variant-numeric:tabular-nums;letter-spacing:0;white-space:nowrap}
-button.pk>small{font:600 11.5px/1.15 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-caps:normal;letter-spacing:0;white-space:nowrap;opacity:.85}
+button.pk{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;min-width:122px;min-height:62px;padding:19px 24px 22px;font-size:15px}
+button.pk>b{font:800 16px/1.05 var(--knopf);font-variant-caps:normal;font-variant-numeric:tabular-nums;letter-spacing:0;white-space:nowrap}
+button.pk>small{font:600 10.5px/1.1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-caps:normal;letter-spacing:0;white-space:nowrap;opacity:.85}
 button.pk.arm{filter:grayscale(1) opacity(.55)}
 .bar{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin:4px 0 8px}.bar i{display:block;height:100%;background:var(--gruen)}
 .bar.w i{background:var(--wein)}.bar.g i{background:var(--gold)}
@@ -114,6 +114,7 @@ button.pk.arm{filter:grayscale(1) opacity(.55)}
 .weiss{background:var(--gruen)}.rotw{background:var(--blau)}
 .task{display:block;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--line);border-left:5px solid var(--gruen);margin:0 0 8px;font-weight:500;min-height:0}
 .task.rot{border-left-color:var(--rot);color:var(--ink)}
+details.stz{margin-top:8px}details.stz summary{cursor:pointer;font-weight:700;opacity:.8;padding:6px 0}
 .hilfe{background:color-mix(in srgb,var(--gold) 14%,transparent);border-radius:10px;padding:8px 10px;font-size:14px;margin-top:8px}
 /* Version 4.0: alle Bedienelemente unten in der Daumenzone. Oben die Unterreiter auf Pergament, darunter die Hauptleiste aus Holz. */
 #dock{position:fixed;left:0;right:0;bottom:0;z-index:6;filter:drop-shadow(0 -3px 6px rgba(0,0,0,.3))}
@@ -433,7 +434,16 @@ function ehre(i,t,a,x){(S.ehrungen=S.ehrungen||[]).push({i,t,a:a?1:0,j:S.jahr,m:
 
 // Drei Speicherplätze. Der frühere einzige Spielstand liegt auf Platz 1. SLOT ist der Platz, auf dem gerade gespielt wird.
 // START='neu' zeigt das Formular für ein neues Spiel, sonst kommt ohne laufendes Spiel die Liste der Spielstände.
-const gueltig=o=>!!(o&&o.v===1&&o.felder&&Array.isArray(o.lots)&&REGIONEN[o.region]);
+const gueltig=o=>!!(o&&typeof o==='object'&&o.v===1&&o.felder&&typeof o.felder==='object'&&Array.isArray(o.lots)&&REGIONEN[o.region]
+  &&typeof o.name==='string'&&Number.isFinite(o.geld)&&Number.isInteger(o.jahr)&&Number.isInteger(o.monat)&&o.monat>=0&&o.monat<12
+  &&o.lots.every(l=>l&&typeof l==='object'&&SORTEN[l.sorte]&&Number.isFinite(l.liter))&&(o.gegner==null||Array.isArray(o.gegner)));
+// Fremde Spielstände: spitze Klammern fliegen aus allen Texten, Bildnamen dürfen nur Buchstaben, Ziffern und Striche haben.
+function saeubern(x,k){
+  if(typeof x==='string') return k==='bild'&&!/^[\w-]*$/.test(x)?'':x.replace(/[<>]/g,'');
+  if(Array.isArray(x)) return x.map(v=>saeubern(v));
+  if(x&&typeof x==='object'){for(const q of Object.keys(x)) x[q]=saeubern(x[q],q); return x}
+  return x;
+}
 function save(){try{localStorage.setItem(KEYS[SLOT],JSON.stringify(S));localStorage.setItem(SLOT_KEY,SLOT)}catch(e){}}
 function lies(i){try{const o=JSON.parse(localStorage.getItem(KEYS[i])||'null');return gueltig(o)?o:null}catch(e){return null}}
 // Übernimmt einen gelesenen Spielstand und bringt alte Stände auf den heutigen Stand.
@@ -458,6 +468,7 @@ function dateiLaden(text,i){
   let o=null; try{o=JSON.parse(text)}catch(e){}
   if(lies(i)) return meldung('Das hat nicht geklappt','Der Speicherplatz ist schon belegt.');
   if(!gueltig(o)) return meldung('Das hat nicht geklappt','Die Datei ist kein Spielstand von 150 Grad Öchsle.');
+  o=saeubern(o);
   try{localStorage.setItem(KEYS[i],JSON.stringify(o))}catch(e){return meldung('Das hat nicht geklappt','Der Speicher des Browsers ist voll.')}
   render(); meldung('Geladen',`${o.name} liegt jetzt auf Spielstand ${i+1}.`);
 }
@@ -1245,7 +1256,9 @@ function etappe3Monat(Z){
   // Wettbewerbe: Ausschreibung im Februar (Land) und alle drei Jahre im Juni (Bund). Eingereicht wird im selben Monat, gewertet beim nächsten Monatswechsel.
   if(S.monat===1){
     neuerWettbewerb('land');
-    schlag(60,`Landesprämierung ${S.jahr} ausgeschrieben`,`Gesucht sind die besten Prädikatsweine vom Jahrgang ${S.jahr-1} ${WO[S.region]}. Eingereicht wird diesen Monat, das Ergebnis steht im nächsten Winzerboten.${S.rang>=R_LAND?' Deinen Wein reichst du unter „Das steht an“ ein.':` Mitmachen darfst du ab dem Rang ${RAENGE[R_LAND].name}.`}`,'praemierung',{archiv:1});
+    // Schlagzeile nur, wenn du mitmachen darfst. Sonst reicht eine Kurzmeldung.
+    if(S.rang>=R_LAND) schlag(60,`Landesprämierung ${S.jahr} ausgeschrieben`,`Gesucht sind die besten Prädikatsweine vom Jahrgang ${S.jahr-1} ${WO[S.region]}. Eingereicht wird diesen Monat, das Ergebnis steht im nächsten Winzerboten. Deinen Wein reichst du unter „Das steht an“ ein.`,'praemierung',{archiv:1});
+    else Z.push(`Die Landesprämierung ${S.jahr} ist ausgeschrieben. Mitmachen darfst du ab dem Rang ${RAENGE[R_LAND].name}.`);
   }
   if(S.monat===5&&S.jahr%3===0){
     neuerWettbewerb('bund');
@@ -1449,8 +1462,8 @@ function vMonat(){
   // Alte Spielstände kennen nur Zeilen: Die erste wird zur Schlagzeile.
   if(!b.kopf){const z=b.zeilen||[]; b={...b,kopf:z.length?{t:z[0],text:''}:{t:FLAUTE[S.monat],text:FLAUTE_TEXT[S.monat]},art:[],zeilen:z.slice(1)}}
   const k=b.kopf, W=b.wetter||[], E=(b.ehr||[]).filter(e=>!e.a), bild=monatBild(), Z=b.zeilen||[], F=b.fuss||[];
-  const foto=(x,kl)=>x.bild?`<div class="zfoto ${kl||''} ${x.archiv?'archiv':''} ${x.gold?'gold':''}" style="background-image:url(bilder/${x.bild}.jpg)"></div>`:'';
-  const liste=x=>x.liste?`<div class="zliste">${x.liste.map(r=>`<div class="${r.du?'du':''}"><span>${r.platz}.</span><b>${r.m?r.m+' ':''}${esc(r.name)}</b><span>${r.p} P.</span></div>`).join('')}</div>`:'';
+  const foto=(x,kl)=>x.bild&&/^[\w-]+$/.test(x.bild)?`<div class="zfoto ${kl||''} ${x.archiv?'archiv':''} ${x.gold?'gold':''}" style="background-image:url(bilder/${x.bild}.jpg)"></div>`:'';
+  const liste=x=>x.liste?`<div class="zliste">${x.liste.map(r=>`<div class="${r.du?'du':''}"><span>${esc(r.platz)}.</span><b>${r.m?esc(r.m)+' ':''}${esc(r.name)}</b><span>${esc(r.p)} P.</span></div>`).join('')}</div>`:'';
   // Artikel: höchstens ein kleines Foto, und nie dasselbe wie oben.
   let frei=1;
   const art=(b.art||[]).map(a=>{const f=frei&&a.bild&&a.bild!==k.bild?(frei=0,foto(a,'klein')):''; return `<div class="zart">${f}<h3>${esc(a.t)}</h3>${a.text?`<p>${esc(a.text)}</p>`:''}${liste(a)}</div>`}).join('');
@@ -1616,7 +1629,7 @@ function vBuero(){
   <h3>🏆 Pokale und Ehrungen</h3>${vRangliste()}${bestenHtml()}
   ${S.rang>=R_LADEN?`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/weinbotschafter.jpg);height:150px"><b>🎗️ Weinbotschafter ${WO[S.region]}</b><span>Jeden Januar +${BOTSCHAFT_ANS} Ansehen für deine Reisen</span></div>`:''}
   <div class="card"><h3>🏅 Ehrungen für deine Weine</h3>${wein.length?wein.slice(0,8).map(zeile).join('')+(wein.length>8?`<div class="mut">und ${wein.length-8} ältere</div>`:''):'<div class="mut">Noch keine. Medaillen gibt es bei der Landesprämierung und beim Bundeswettbewerb.</div>'}</div>
-  <div class="card"><h3>🎖️ Deine Aufstiege</h3>${auf.length?auf.map(zeile).join(''):'<div class="mut">Noch keiner. Der erste Aufstieg führt zum Winzer.</div>'}</div>
+  <div class="card"><h3>🎖️ Deine Aufstiege</h3>${auf.length?auf.map(zeile).join(''):'<div class="mut">Noch keiner. Der erste Aufstieg führt zum ${RAENGE[1].name}.</div>'}</div>
   <h3>📜 Spielanleitung</h3><div class="card">${kz(`Alles zum Nachschlagen in ${buchKap().length} kurzen Kapiteln, vom Ziel bis zum Arbeitsamt.`,pk('buch','Aufschlagen',''))}</div>
   <div class="fussnote">Bilder, Musik und Geräusche sind mit KI erstellt (Musik mit Treblo, Geräusche mit ElevenLabs, elevenlabs.io).</div>`;
 }
@@ -1932,6 +1945,7 @@ const AKT={
       a.gebot=x; a.fuehrer='du'; a.ende='du'; S.geld-=x; S.ha+=a.ha; fx('hammer',3);
       a.text=`Zum Ersten, zum Zweiten, zum Dritten! Der Weinberg mit ${a.ha}\u00a0Hektar gehört dir für ${eur(x)}. +${ruhm(3+Math.min(a.ha,7))} Ansehen. Dein Weingut hat jetzt ${S.ha}\u00a0Hektar.`;
       if(a.spitze){S.spitze=1; a.text+=` Die Spitzenlage gehört dir: +${ruhm(SPITZE_ANS)} Ansehen, und ab jetzt starten deine Trauben jeden Juli mit ${SPITZE_OE}° mehr.`}
+      if(S.geld<0) a.text+=` Dein Konto steht jetzt im Minus, das kostet 1 % Zinsen im Monat. Ein Kredit bei der Bank kostet nur ${Math.round(ZINS*100)} % im Jahr.`;
     }
     save();render();AKT.auktion();
   },
@@ -2096,16 +2110,10 @@ const AKT={
     const f=S.felder[d.id], so=SORTEN[d.id];
     const opt=['reif','ueber','alles'].map(la=>{const b=besteStufe(feldQ(f,la)),l=feldLiter(f,la);
       return `<button class="wahl" data-a="leseJa" data-id="${d.id}" data-la="${la}" ${l<=0?'disabled':''}><b>${LESE[la]}</b><br><span class="mut">${num(l)}\u00a0l mit ${feldQ(f,la).oe}° Öchsle · reicht für: ${b?stufeText(b,feldQ(f,la).oe):'nichts'}${b?`<br>${verkaufAb(d.id,b)}`:''}</span></button>`}).join('');
-    openSheet(`${sbild('lese')}<h3>${so.name} lesen</h3><p class="mut">Erst die Leseart, dann die Menge: Du kannst auch nur einen Teil lesen, der Rest bleibt hängen. Die Trauben müssen noch diesen Monat gekeltert werden.</p>${f.gefroren?`<p class="hilfe" style="margin:0 0 10px">${eisFehlt(f)?eisFehlt(f)+'. Es reicht nur für die Stufen oben.':'Eiswein gibt es nur aus reifen oder aus überreifen Trauben, nicht aus beiden zusammen.'}</p>`:S.monat===10?`<p class="hilfe" style="margin:0 0 10px">${frostText()}. Nur dann wird aus hängenden Trauben Eiswein, sonst verfaulen sie.</p>`:S.monat===9&&S.kaelteWarn===S.jahr?'<p class="rot">Die Vorhersage meldet einen Kälteeinbruch im November.</p>':''}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.round(leseFaktor()*100)}\u00a0%. Der Rest bleibt hängen.</p>`:''}${opt}${mib('lese')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
+    openSheet(`${sbild('lese')}<h3>${so.name} lesen</h3><p class="mut">Jedes Feld liest du nur einmal im Jahr. Was die Leseart nicht mitnimmt, ist danach verloren. Die Trauben müssen noch diesen Monat gekeltert werden.</p>${f.gefroren?`<p class="hilfe" style="margin:0 0 10px">${eisFehlt(f)?eisFehlt(f)+'. Es reicht nur für die Stufen oben.':'Eiswein gibt es nur aus reifen oder aus überreifen Trauben, nicht aus beiden zusammen.'}</p>`:S.monat===10?`<p class="hilfe" style="margin:0 0 10px">${frostText()}. Nur dann wird aus hängenden Trauben Eiswein, sonst verfaulen sie.</p>`:S.monat===9&&S.kaelteWarn===S.jahr?'<p class="rot">Die Vorhersage meldet einen Kälteeinbruch im November.</p>':''}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.round(leseFaktor()*100)}\u00a0%. Den Rest liest keiner, er ist verloren.</p>`:''}${opt}${mib('lese')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
   },
-  // Teil-Lese: Nach der Leseart kommt der Regler für den Anteil des Feldes. Der Rest bleibt hängen und reift weiter.
-  leseJa(d){
-    const f=S.felder[d.id], la=d.la, voll=feldLiter(f,la), m=S.monat;
-    closeSheet(); if(voll<=0) return;
-    mengeSheet({titel:`${SORTEN[d.id].name} lesen: wie viel?`,text:`Leseart: ${LESE[la]}. Was du hängen lässt, reift weiter${m===9?'. Ein Kälteeinbruch im November kann es aber vernichten':m===10?'. Ohne Frost im Dezember verfault es aber':m===11?', verfault aber nach dem Dezember':''}.`,min:10,max:100,step:10,start:100,okText:'Lesen',bild:'lese',
-      info:n=>`<b>${n}\u00a0% des Feldes</b>${num(voll*n/100)}\u00a0l Trauben${n<100?`, rund ${num(f.menge*(100-n)/100)}\u00a0l bleiben am Stock`:''}`,
-      ok:n=>lese(d.id,la,n/100)});
-  },
+  // Eine Lese je Feld und Jahr: Die Leseart nimmt das ganze Feld. Alte Spielstände mit angefangener Teil-Lese lesen so den Rest.
+  leseJa(d){const f=S.felder[d.id]; closeSheet(); if(feldLiter(f,d.la)<=0) return; lese(d.id,d.la,1)},
   /* ---- Hintertür: Panschen ---- */
   zuckern(d){
     const l=lot(d.id), k=d.k, zu=k==='zucker'; if(!l||l.status!=='trauben') return;
@@ -2205,8 +2213,15 @@ const AKT={
   anmelden(d){
     const l=lot(d.id);
     const M=mani(l);
-    const zeilen=[...REIHE].reverse().concat('feder').map(st=>{const g=pruefeAnmeldung(l,st),s=STUFEN[st],ill=M&&!maniLegal(l,st);
-      return `<div class="stufe"><div class="row"><b>${g.length?'✗':'✓'} ${s.name}</b>${g.length?'':`<button class="klein ${ill?'wag':''}" data-a="anmeldeJa" data-id="${l.id}" data-st="${st}">${ill?`🤫 Unter der Hand (${eur(s.geb+schmier(l,st))})`:`Anmelden${s.geb?' ('+eur(s.geb)+')':''}`}</button>`}</div>${g.length?`<div class="mut">${g.map(esc).join(' · ')}</div>`:st==='eis'?`<div class="mut">Wertstufe: Öchsle einer ${EIS_WERT[eisStufe(l.oe)].name}${eisStufe(l.oe)?`, Preis +${Math.round((EIS_WERT[eisStufe(l.oe)].f-1)*100)}\u00a0%`:''}</div>`:''}</div>`}).join('');
+    // Oben die Stufen, die jetzt gehen. Darunter der Hinweis auf Stufen, die nur am Januar scheitern. Der Rest ist zugeklappt.
+    const A=[...REIHE].reverse().concat('feder').map(st=>({st,g:pruefeAnmeldung(l,st)}));
+    const jan=a=>a.g.length&&S.jahr===l.jahrgang&&a.g.every(x=>/Januar/.test(x));
+    const ok=A.filter(a=>!a.g.length), spaeter=A.filter(jan), nein=A.filter(a=>a.g.length);
+    const zeile=({st,g})=>{const s=STUFEN[st],ill=M&&!maniLegal(l,st);
+      return `<div class="stufe"><div class="row"><b>${g.length?'✗':'✓'} ${s.name}</b>${g.length?'':`<button class="klein ${ill?'wag':''}" data-a="anmeldeJa" data-id="${l.id}" data-st="${st}">${ill?`🤫 Unter der Hand (${eur(s.geb+schmier(l,st))})`:`Anmelden${s.geb?' ('+eur(s.geb)+')':''}`}</button>`}</div>${g.length?`<div class="mut">${g.map(esc).join(' · ')}</div>`:st==='eis'?`<div class="mut">Wertstufe: Öchsle einer ${EIS_WERT[eisStufe(l.oe)].name}${eisStufe(l.oe)?`, Preis +${Math.round((EIS_WERT[eisStufe(l.oe)].f-1)*100)}\u00a0%`:''}</div>`:''}</div>`};
+    const zeilen=(ok.length?ok.map(zeile).join(''):'<div class="mut">Gerade geht keine Stufe.</div>')
+      +(spaeter.length?`<div class="hilfe" style="margin:10px 0">📅 Ab Januar möglich: <b>${spaeter.map(a=>STUFEN[a.st].name).join(', ')}</b>.${ok.length?' Meldest du jetzt an, verschenkst du die bessere Stufe.':''}</div>`:'')
+      +(nein.length?`<details class="stz"><summary>Nicht möglich (${nein.length})</summary>${nein.map(zeile).join('')}</details>`:'');
     openSheet(`${sbild('amt')}<h3>${esc(lotName(l))} anmelden</h3><p class="mut">${num(l.liter)}\u00a0l · ${l.oe}° Öchsle · ${LESE[l.leseart]} · Edelfäulnis ${l.edel?'ja':'nein'} · ${l.fassMonate} Monate im Fass</p>${M?`<p class="hilfe" style="margin:0 0 10px">🤫 Dieser Most ist ${maniText(l)}. Erlaubt ist das nur beim Tafelwein bis ${ZUCKER_ERLAUBT}\u00a0%. Alles andere geht nur unter der Hand gegen Schmiergeld, und der Wein gilt dann als gepanscht.</p>`:''}${zeilen}${mib('keller')}<div class="btns"><button class="sec" data-a="close">Schließen</button></div>`);
   },
   anmeldeJa(d){
@@ -2218,8 +2233,11 @@ const AKT={
     zahle(s.geb+sg);l.stufe=st;if(ill)l.pansch=true;
     if(st==='eis') l.eisW=eisStufe(l.oe);
     l.qp=qpFuer(l,st);
-    const ans=s.ans&&!ill?ruhm(s.ans):0;closeSheet();save();render();fx('stempel');
-    meldung('Angemeldet',`${lotName(l)} steht jetzt mit ${l.qp} Qualitätspunkten im Kellerbuch.`+(ill?` Der Beamte hat ${eur(sg)} eingesteckt. Bis der Wein verkauft ist, darf ihn kein Prüfer finden.`:'')+(ans?` +${ans} Ansehen.`:'')+(st==='feder'?' Federweißer muss noch diesen Monat in die Flasche.':' Jetzt darf er abgefüllt werden.'),'kellerbuch');
+    // Ansehen gibt es je Sorte, Jahrgang und Stufe nur einmal, auch wenn die Lese auf mehrere Fässer verteilt ist. S.ansGeb merkt sich das.
+    const ak=l.sorte+'|'+l.jahrgang+'|'+st, AG=S.ansGeb=(S.ansGeb||[]).filter(k=>+k.split('|')[1]>=S.jahr-2), erst=!AG.includes(ak);
+    if(s.ans&&!ill&&erst) AG.push(ak);
+    const ans=s.ans&&!ill&&erst?ruhm(s.ans):0;closeSheet();save();render();fx('stempel');
+    meldung('Angemeldet',`${lotName(l)} steht jetzt mit ${l.qp} Qualitätspunkten im Kellerbuch.`+(ill?` Der Beamte hat ${eur(sg)} eingesteckt. Bis der Wein verkauft ist, darf ihn kein Prüfer finden.`:'')+(ans?` +${ans} Ansehen.`:s.ans&&!ill?' Ansehen gab es für diesen Jahrgang und diese Stufe schon.':'')+(st==='feder'?' Federweißer muss noch diesen Monat in die Flasche.':' Jetzt darf er abgefüllt werden.'),'kellerbuch');
   },
   abfuellen(d){
     const l=lot(d.id); closeSheet();
@@ -2236,7 +2254,8 @@ const AKT={
   },
   kredit(){
     if(S.kredit) return;
-    mengeSheet({titel:'Kredit aufnehmen',bild:'bank',text:`Dein Kreditrahmen: ${eur(rahmen())}. Mindestens 5.000 €.`,max:rahmen(),step:1000,start:10000,okText:'Weiter',
+    if(rahmen()<5000) return meldung('Kein Kredit','Die Bank vergibt Kredite erst ab 5.000 €, dein Rahmen reicht dafür noch nicht.','bank');
+    mengeSheet({titel:'Kredit aufnehmen',bild:'bank',text:`Dein Kreditrahmen: ${eur(rahmen())}. Mindestens 5.000 €.`,min:5000,max:rahmen(),step:1000,start:Math.min(10000,rahmen()),okText:'Weiter',
       info:n=>`<b>${eur(n)}</b>Die Laufzeit wählst du im nächsten Schritt`,
       ok:n=>{
         if(n<5000) return meldung('Zu wenig','Die Bank vergibt Kredite erst ab 5.000 €.');

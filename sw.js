@@ -1,7 +1,7 @@
 // Helfer für die App: legt alle Dateien des Spiels aufs Gerät, damit es ohne Netz läuft.
-// Die Spielseite (index.html) kommt immer zuerst frisch aus dem Netz, so kommen neue Fassungen von selbst an. Ohne Netz gilt die gespeicherte.
+// Die Spielseite (index.html) und das Buch (anleitung.js) kommen immer zuerst frisch aus dem Netz, so kommen neue Fassungen von selbst an. Ohne Netz gilt die gespeicherte.
 // Bilder und Töne kommen aus dem Speicher. Ändert sich eines davon, die Nummer in LAGER erhöhen, dann lädt das Gerät alles neu.
-const LAGER = 'oechsle-3';
+const LAGER = 'oechsle-4';
 const DATEIEN = [
   './', 'index.html', 'manifest.webmanifest', 'anleitung.js',
   'bilder/amt.jpg',
@@ -88,17 +88,17 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const r = e.request, u = new URL(r.url);
   if (r.method !== 'GET' || u.origin !== location.origin) return;
-  e.respondWith(r.mode === 'navigate' || u.pathname.endsWith('/index.html') ? seite() : datei(r, u));
+  e.respondWith(r.mode === 'navigate' || u.pathname.endsWith('/index.html') ? seite('index.html') : u.pathname.endsWith('/anleitung.js') ? seite('anleitung.js') : datei(r, u));
 });
 
-// Spielseite: erst das Netz (höchstens 3 Sekunden warten), sonst die gespeicherte Fassung.
-async function seite() {
-  const c = await caches.open(LAGER), alt = await c.match('index.html');
+// Spielseite und Buch: erst das Netz (höchstens 3 Sekunden warten), sonst die gespeicherte Fassung.
+async function seite(name) {
+  const c = await caches.open(LAGER), alt = await c.match(name);
   try {
     const st = new AbortController(), uhr = setTimeout(() => st.abort(), alt ? 3000 : 20000);
-    const neu = await fetch('index.html', { cache: 'no-store', signal: st.signal });
+    const neu = await fetch(name, { cache: 'no-store', signal: st.signal });
     clearTimeout(uhr);
-    if (neu.ok) { c.put('index.html', neu.clone()); return neu; }
+    if (neu.ok) { c.put(name, neu.clone()); return neu; }
   } catch (e) {}
   return alt || Response.error();
 }
