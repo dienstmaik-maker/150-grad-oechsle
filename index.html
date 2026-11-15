@@ -17,6 +17,8 @@
 @font-face{font-family:"Alegreya";font-style:normal;font-weight:400 900;font-display:swap;src:url(schrift/alegreya.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 @font-face{font-family:"Alegreya";font-style:italic;font-weight:400;font-display:swap;src:url(schrift/alegreya-kursiv.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 @font-face{font-family:"Alegreya SC";font-style:normal;font-weight:400;font-display:swap;src:url(schrift/alegreya-sc.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+/* Fraktur nur für den Zeitungskopf, die Datei enthält nur die Buchstaben von "Der Winzerbote". */
+@font-face{font-family:"Winzerbote Fraktur";font-style:normal;font-weight:400;font-display:swap;src:url(schrift/fraktur.woff2) format("woff2")}
 @font-face{font-family:"Alegreya SC";font-style:normal;font-weight:700;font-display:swap;src:url(schrift/alegreya-sc-fett.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 /* Farben passend zu den Bildern: Weinlaub-Grün fürs Weingut, Pflaster-Ton für die Stadt, dunkles Holz für die Kellerei. --kopf ist die Leiste oben. */
 :root{--bg:#c3d99e;--card:#edf5dc;--ink:#232a1a;--mut:#53613d;--wein:#7b1e3a;--kopf:#7b1e3a;--gruen:#44692a;--blau:#4a4f8f;--line:#a4bf7e;--rot:#b3261e;--gold:#a87908;
@@ -145,7 +147,7 @@ img.fass{height:1.1em;vertical-align:-.18em}
 #info .zkopf{aspect-ratio:1200/713;background:url(bilder/zeitung-kopf.webp) center/100% 100% no-repeat}
 #info .zmitte{background:url(bilder/zeitung-mitte.webp) 0 0/100% 100% no-repeat;padding:0 9% 4px;margin-top:-1px;overflow:hidden}
 #info .zende{aspect-ratio:1200/141;background:url(bilder/zeitung-fuss.webp) center/100% 100% no-repeat;margin-top:-1px}
-#info .ztitel{text-align:center;white-space:nowrap;font:700 clamp(26px,7.6vw,42px)/1 var(--knopf);font-variant-caps:small-caps;letter-spacing:1px;color:#5a1426}
+#info .ztitel{text-align:center;white-space:nowrap;font:400 clamp(32px,9.4vw,50px)/1.05 "Winzerbote Fraktur",var(--knopf);letter-spacing:.5px;color:#3a1a0e}
 #info .zleiste{display:flex;justify-content:space-between;gap:6px;border-top:2px solid #5a3d22;border-bottom:1px solid #5a3d22;margin:8px 0 12px;padding:3px 0;font-size:12.5px;font-variant-caps:small-caps;letter-spacing:.4px}
 #info .zsonder{text-align:center;background:#7b1e3a;color:#fbeede;font:700 14px/1.6 var(--knopf);letter-spacing:2px;text-transform:uppercase;margin:-4px 0 10px}
 #info .zschlag{font:800 clamp(24px,7vw,32px)/1.12 var(--schrift);margin:0 0 10px;text-align:center;color:#2a1c10;text-shadow:none}

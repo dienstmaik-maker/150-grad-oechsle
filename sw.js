@@ -54,6 +54,7 @@ const DATEIEN = [
   'schrift/alegreya-sc-fett.woff2',
   'schrift/alegreya-sc.woff2',
   'schrift/alegreya.woff2',
+  'schrift/fraktur.woff2',
   'symbole/symbol-180.png',
   'symbole/symbol-192.png',
   'symbole/symbol-512.png',
