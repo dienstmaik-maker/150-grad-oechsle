@@ -231,6 +231,8 @@ img.fass{height:1.1em;vertical-align:-.18em}
 #info .zwetter{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid #5a3d22;margin:4px 0 10px;font-size:14.5px}
 #info .zwetter>div{padding:5px 8px}#info .zwetter>div+div{border-left:1px solid #5a3d22}
 #info .zwetter small,#info .zzwei h4{display:block;font:700 13px/1.3 var(--knopf);font-variant-caps:small-caps;color:var(--mut);margin:0 0 2px}
+#info .zrat{border:1.5px solid #5a3d22;padding:6px 10px 7px;margin:0 0 10px;font-size:14.5px;line-height:1.4;background:rgba(255,250,235,.35)}
+#info .zrat h4{font:700 13px/1.3 var(--knopf);font-variant-caps:small-caps;color:var(--mut);margin:0 0 2px}
 #info .zart{clear:both;border-top:1px solid rgba(90,60,30,.45);padding:9px 0 4px;overflow:hidden}
 #info .zart h3{font-size:17px;margin:0 0 4px}
 #info .zart p{margin:0 0 6px;font-size:15px;line-height:1.42;hyphens:auto}
@@ -1076,7 +1078,7 @@ function neuesSpiel(){
   neuePrognose();
   TOP=[]; FUSS=[];
   schlag(100,'Willkommen auf deinem Weingut',`${S.name} ${WO[S.region]} startet mit 3 Hektar kahlem Weinberg, leeren Fässern und 40.000 €. Bis März ist Pflanzzeit, im Weinberg wählst du deine Reben. Im ersten Jahr tragen junge Reben nur die Hälfte.`,'weingut');
-  schlag(50,'So kommst du herum','Wisch über das Bild nach links oder rechts, um dich auf dem Weingut, in der Kellerei und in der Stadt umzusehen. Tippen auf ein Motiv geht auch. Was ansteht, hängt an der Pinnwand im Weingut.');
+  schlag(50,'So kommst du herum','Unten wählst du Weingut, Kellerei oder Stadt, die Leiste darüber bringt dich zu den Orten. Wischen übers Bild geht auch. Ein Punkt am Reiter zeigt Neues oder Dringendes, ein Tipp aufs Geld öffnet die Kasse. Die ℹ️-Karte unter dem Bild erklärt jeden Ort, Spielstände, Ton und das Buch liegen im Büro.');
   schlag(40,'Leute für Weinberg und Keller','Je 1.000 Reben brauchst du das ganze Jahr einen Erntehelfer. Du hast einen, für mehr Reben stellst du vor dem Pflanzen beim Arbeitsamt in der Stadt ein. Der Lohn dort schwankt jeden Monat, wer eingestellt ist, behält seinen. Dein Lagerarbeiter betreut 10.000 l Fassraum und 20.000 leere Flaschen. Fehlen dir Leute, geht es nicht in den nächsten Monat.','arbeit');
   schlag(30,'Die Konkurrenz schläft nicht','Deine Gegner: '+S.gegner.map(g=>`${g.name}, ${GEGNER_TYP[g.typ].art}, ${WO[g.region]}`).join('; ')+'. Wer zuerst Präsident des Weinbauverbands wird, gewinnt.');
   S.bericht=zeitung([],[],[]);
@@ -1097,6 +1099,11 @@ function verfallListe(){
 // Der Winzerbote: Themen melden sich mit schlag() in TOP, das wichtigste wird Schlagzeile, der Rest Artikel. FUSS sammelt Kurzes für ganz unten.
 let TOP=[], FUSS=[];
 // p ist die Wichtigkeit, bild ein Foto aus bilder/, o weitere Angaben (archiv, sonder, gold, ende, liste, stand, wett).
+// Version 4.1: Rat vom alten Winzer, ein Tipp je Ausgabe in den ersten zwei Spieljahren (Texte in anleitung.js, Ausgabe 1 = erster Januar).
+function ratHtml(b,k){
+  const r=typeof RAT!=='undefined'&&!k.sonder&&!k.ende&&RAT[(b.nr||1)-1];
+  return r?`<div class="zrat"><h4>🧓 Rat vom alten Winzer</h4>${esc(r)}</div>`:'';
+}
 function schlag(p,t,text,bild,o){TOP.push({p,t,text:text||'',bild:bild||'',...(o||{})})}
 // Ohne Thema: Titel und Satz je Monat, ohne Foto.
 const FLAUTE=['Stille Wochen in den Weinbergen','Rebschnitt im ganzen Land','Der Saft steigt in die Reben','Die Knospen brechen auf','Die Reben blühen','Kleine Beeren am Stock','Die Trauben werden weich','Die Öchsle steigen','Lese-Zeit im ganzen Land','Goldenes Laub, späte Trauben','Ruhe in den Kellern','Kalte Nächte, ruhige Fässer'];
@@ -1461,7 +1468,7 @@ function vMonat(){
     ${E.map(e=>`<div class="zehr"><span>${esc(e.i)}</span><b>${esc(e.t)}</b></div>`).join('')}
     ${liste(k)}${k.ende?endeHtml(k):''}
     <div class="zwetter"><div><small>Wetter heute</small>${wetterText()}</div><div><small>Vorhersage ${MON[(S.monat+1)%12]}</small>${progText()}</div></div>
-    ${art}
+    ${ratHtml(b,k)}${art}
     ${W.length?`<div class="zart"><h3>Aus dem Weinberg</h3><ul>${W.map(z=>`<li>${esc(z)}</li>`).join('')}</ul></div>`:''}
     ${Z.length?`<div class="zart"><h3>Kurz gemeldet</h3><ul>${Z.map(z=>`<li>${esc(z)}</li>`).join('')}</ul></div>`:''}
     <div class="zzwei"><div>${haengt?oeBericht():marktBericht()}</div><div>${rechts}</div></div>
