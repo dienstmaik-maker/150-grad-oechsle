@@ -339,10 +339,10 @@ const REBEN_JE_HELFER=1000, MASCH_HELFER=3, FASS_JE_LAGERARB=10000, FLASCHEN_JE_
 const START_JAHR=2027, LANDWERT=15000;
 // Aufstiegstempo: Die ersten HA_FREI Hektar kosten im Monat HA_KOSTEN_KLEIN, jeder weitere HA_KOSTEN.
 // Der Großhandel kauft je Monat für MARKT_FREI Euro zum vollen Preis, je Rang für MARKT_RANG, je Exportland für MARKT_EXPORT und je bepflanztem Hektar über HA_FREI für MARKT_HA mehr.
-// Seit 4.2 (Paket 3, 15.11.2026) hängt das Budget vor allem an der Fläche, damit ein großes Gut nicht ärmer ist als ein kleines. Verkäufe an Weinhandlungen zählen mit. Darüber fällt der Preis bis auf MARKT_MIN, erreicht nach dem MARKT_BREIT-fachen des Budgets.
-// Jede Weinhandlung nimmt im Monat 1 bis LADEN_MAX mal LADEN_MENGE Flaschen. Der Wein im Keller zählt beim Vermögen nur mit WEIN_WERT seines Listenwerts und höchstens mit dem, was der Großhandel in einem Jahr zum vollen Preis kauft.
+// Seit 4.2 (Paket 3, 15.11.2026) hängt das Budget vor allem an der Fläche, damit ein großes Gut nicht ärmer ist als ein kleines. Verkäufe an Weinhandlungen zählen seit Paket 9 nicht mehr mit. Darüber fällt der Preis bis auf MARKT_MIN, erreicht nach dem MARKT_BREIT-fachen des Budgets.
+// Jede Weinhandlung nimmt im Monat 1 bis LADEN_MAX mal LADEN_MENGE Flaschen, seit Paket 9 nur Wein, der zu ihrem Wunsch passt (ladenPasst). Der Wein im Keller zählt beim Vermögen nur mit WEIN_WERT seines Listenwerts und höchstens mit dem, was der Großhandel in einem Jahr zum vollen Preis kauft.
 // Die Gegner fangen mit GEGNER_START ihrer Stärke an und wachsen über GEGNER_JAHRE Jahre auf GEGNER_ENDE.
-const HA_FREI=3, HA_KOSTEN_KLEIN=50, HA_KOSTEN=300, MARKT_FREI=3000, MARKT_RANG=250, MARKT_EXPORT=1000, MARKT_HA=450, MARKT_MIN=.25, MARKT_BREIT=.75, GEGNER_START=.5, GEGNER_ENDE=1.4, GEGNER_JAHRE=25, LADEN_MENGE=50, LADEN_MAX=2, WEIN_WERT=.5;
+const HA_FREI=3, HA_KOSTEN_KLEIN=50, HA_KOSTEN=300, MARKT_FREI=3000, MARKT_RANG=250, MARKT_EXPORT=1000, MARKT_HA=450, MARKT_MIN=.25, MARKT_BREIT=.75, GEGNER_START=.5, GEGNER_ENDE=1.4, GEGNER_JAHRE=25, LADEN_MENGE=50, LADEN_MAX=3, WEIN_WERT=.5;
 const WO={mosel:'an der Mosel',rheingau:'im Rheingau',rheinhessen:'in Rheinhessen',pfalz:'in der Pfalz',franken:'in Franken',wuerttemberg:'in Württemberg'};
 // Zehn Stufen. ha ist beim Spieler die bepflanzte Fläche (flaecheBep), bei den Gegnern ihre Fläche.
 const RAENGE=[
@@ -702,10 +702,8 @@ function ladenMonat(Z){
   S.lots=S.lots.filter(l=>l.liter>0);
   if(n){ein=Math.round(ein); kassiere(ein); Z.push(`Deine Weinhandlung hat ${num(n)} Flaschen für ${eur(ein)} verkauft.`)}
 }
-function ladenPreis(l,r){
-  const w=S.laeden[r].wunsch, passt=w==='sekt'?!!l.sekt:w==='edel'?STUFEN[l.stufe].rang>=5:!l.sekt&&SORTEN[l.sorte].farbe===w;
-  return Math.round(preis(l)*(passt?1.45:1.25)*100)/100;
-}
+function ladenPasst(l,r){const w=S.laeden[r].wunsch; return ladenOk(l)&&(w==='sekt'?!!l.sekt:w==='edel'?!l.sekt&&STUFEN[l.stufe].rang>=5:!l.sekt&&SORTEN[l.sorte].farbe===w)}
+function ladenPreis(l,r){return Math.round(preis(l)*1.3*100)/100}
 
 /* ================= Wettbewerbe ================= */
 function wettRang(){return S.wett&&S.wett.typ==='bund'?R_BUND:R_LAND}
@@ -1678,9 +1676,9 @@ function dauerAuftrag(){
   const res=DAUER_RESERVE.includes(+d.reserve)?+d.reserve:0, frei=l=>lotRest(l)<=2?l.liter:Math.max(0,l.liter-res), L=[];
   const ls=()=>S.lots.filter(l=>l.status==='flasche'&&!l.regal&&l.liter>0&&preis(l)>0).sort(BSORT_F.dringend);
   let nL=0,eL=0,nH=0,eH=0;
-  if(d.laeden) for(const [r,la] of Object.entries(S.laeden)) for(const l of ls().filter(ladenOk)){
+  if(d.laeden) for(const [r,la] of Object.entries(S.laeden)) for(const l of ls().filter(l=>ladenPasst(l,r))){
     if(la.rest<=0) break; const n=Math.min(frei(l),la.rest); if(n<=0) continue;
-    const p=ladenPreis(l,r); kassiere(Math.round(n*p)); S.absatz=(S.absatz||0)+n*p; la.rest-=n; l.liter-=n; nL+=n; eL+=n*p;
+    const p=ladenPreis(l,r); kassiere(Math.round(n*p)); la.rest-=n; l.liter-=n; nL+=n; eL+=n*p;
   }
   if(d.handel) for(const l of ls()){
     const w=wege(l)[0]; if(!w) continue; const n=Math.min(frei(l),Math.floor(marktRest()/w.p)); if(n<=0) continue;
@@ -1937,15 +1935,15 @@ function vStadt(){
       h+=kann.length?'<h3>Ins Regal stellen</h3>'+kann.map(l=>`<button class="wahl" data-a="regal" data-id="${l.id}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${num(l.liter)} Flaschen · im Regal ${eur2(preis(l)*LADEN_EIGEN_F)} · Großhandel ${eur2(wege(l)[0].p)}</span></button>`).join(''):'<div class="card mut">Gerade hast du keinen verkaufsreifen Flaschenwein fürs Regal.</div>';
       h+=`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/laden.jpg)"><b>Weinhandlungen in anderen Gebieten</b><span>nehmen jeden Monat eine kleine Menge</span></div>`;
     }
-    h+=`<div class="mut" style="margin-bottom:8px">Weinhandlungen in den anderen Anbaugebieten zahlen mehr als der Großhandel, nehmen aber nur Prädikatsweine und Sekt und jeden Monat nur eine kleine Menge. ${n?`Du hast ${n} ${n===1?'passenden Wein':'passende Weine'}.`:''}</div>`;
+    h+=`<div class="mut" style="margin-bottom:8px">Weinhandlungen in den anderen Anbaugebieten zahlen mehr als der Großhandel, nehmen aber nur Prädikatswein und Sekt, jede nur das, was sie gerade sucht. ${n?`Du hast ${n} ${n===1?'passenden Wein':'passende Weine'}.`:''}</div>`;
     // Version 5.0: Ohne passenden Wein sagt ein Hinweis, was fehlt und ab wann es geht.
     if(!n){const bald=S.lots.filter(l=>l.status==='flasche'&&!l.regal&&!preis(l)&&(l.sekt||STUFEN[l.stufe].rang>=3)).map(l=>({l,n:lager(l).min-l.flMonate})).sort((a,b)=>a.n-b.n)[0];
       h+=`<div class="hilfe" style="margin-bottom:8px">🍷 <b>Noch kein passender Wein.</b> ${bald?`Als Erstes reif: ${esc(lotName(bald.l))} im ${inMonaten(bald.n)}.`:`Weinhandlungen nehmen nur Prädikatswein ab Kabinett oder Sekt. Für Kabinett liest du reife Trauben ab ${R().min.kab}° ohne Edelfäulnis, anmelden darfst du ab Januar, danach reift er je nach Sorte noch einige Monate in der Flasche (📖 Weinlexikon im Kellerbuch).`} Bis dahin verkaufst du im Großhandel.</div>`}
     h+=dauerHtml('laeden');
     h+=Object.entries(S.laeden).map(([r,d])=>`<div class="card"><h3>Weinhandlung ${WO[r]}</h3>
-      <div class="kv"><span>Sucht diesen Monat</span><span>${WUNSCH[d.wunsch]}</span></div>
+      <div class="kv"><span>Sucht diesen Monat nur</span><span>${WUNSCH[d.wunsch]}</span></div>
       <div class="kv"><span>Nimmt noch</span><span>${num(d.rest)} Flaschen</span></div>
-      ${kz('',pk('ladenAngebot','Anbieten','',{id:r,aus:!(n&&d.rest>0)}))}</div>`).join('');
+      ${kz('',pk('ladenAngebot','Anbieten','',{id:r,aus:!(d.rest>0&&S.lots.some(l=>ladenPasst(l,r)))}))}</div>`).join('');
   }
   if(SUB==='bank'){
     const k=S.kredit, K=kosten(), ab=S.bericht&&S.bericht.k, kv=(a,x)=>x?`<div class="kv"><span>${a}</span><span>${eur(x)}</span></div>`:'';
@@ -2158,16 +2156,16 @@ const AKT={
     wettSheet(`${sbild('praemierung')}<h3>🏅 Eingereicht</h3><p>${esc(w.ein.name)} steht bei der Jury ${w.typ==='land'?'der Landesprämierung':'des Bundeswettbewerbs'}. Probiert wird diesen Monat, das Ergebnis steht im nächsten Winzerboten.</p><div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`);
   },
   ladenAngebot(d){
-    const r=d.id, la=S.laeden[r], ls=S.lots.filter(ladenOk).sort((a,b)=>ladenPreis(b,r)-ladenPreis(a,r));
-    openSheet(`${sbild('laden')}<h3>Weinhandlung ${WO[r]}</h3><p class="mut">Sucht ${WUNSCH[la.wunsch]} und nimmt noch ${num(la.rest)} Flaschen. Zum Vergleich steht der beste Preis im Großhandel dabei.</p>
+    const r=d.id, la=S.laeden[r], ls=S.lots.filter(l=>ladenPasst(l,r)).sort((a,b)=>ladenPreis(b,r)-ladenPreis(a,r));
+    openSheet(`${sbild('laden')}<h3>Weinhandlung ${WO[r]}</h3><p class="mut">Sucht nur <b>${WUNSCH[la.wunsch]}</b> und nimmt noch ${num(la.rest)} Flaschen. Zum Vergleich steht der beste Preis im Großhandel dabei.</p>${ls.length?'':`<div class="card mut">Gerade hast du keinen ${WUNSCH[la.wunsch]} für diese Weinhandlung.</div>`}
       ${ls.map(l=>`<button class="wahl" data-a="ladenVerkauf" data-id="${l.id}" data-r="${r}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${num(l.liter)} Flaschen · hier ${eur2(ladenPreis(l,r))} · Großhandel ${eur2(wege(l)[0].p)}</span></button>`).join('')}
       <div class="btns"><button class="sec" data-a="close">Schließen</button></div>`);
   },
   ladenVerkauf(d){
     const l=lot(d.id), la=S.laeden[d.r], p=ladenPreis(l,d.r), max=Math.min(l.liter,la.rest);
-    mengeSheet({titel:`${lotName(l)} an die Weinhandlung`,bild:'laden',text:`${eur2(p)} je Flasche, höchstens ${num(la.rest)} Flaschen. Die Weinhandlung zahlt immer voll, der Verkauf zählt aber beim Großhandel mit.`,max,rangeStep:1,step:max>200?10:1,start:max,okText:'Verkaufen',
+    mengeSheet({titel:`${lotName(l)} an die Weinhandlung`,bild:'laden',text:`${eur2(p)} je Flasche, höchstens ${num(la.rest)} Flaschen. Die Weinhandlung zahlt immer voll, der Großhandel merkt davon nichts.`,max,rangeStep:1,step:max>200?10:1,start:max,okText:'Verkaufen',
       info:n=>`<b>${num(n)} Flaschen</b>bringt dir ${eur(n*p)}`,
-      ok:n=>{kassiere(n*p);S.absatz=(S.absatz||0)+n*p;la.rest-=n;l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l)}});
+      ok:n=>{kassiere(n*p);la.rest-=n;l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l)}});
   },
   tab(d,e){BILD_KLEIN=!!(e&&e.target.closest&&e.target.closest('.task,.zettel')); if(d.id===TAB&&!d.sub&&window.scrollY>20&&!BILD_KLEIN){window.scrollTo({top:0,behavior:'smooth'});return} geh(d.id,d.sub);render();window.scrollTo(0,0)},
   infoWeiter(){
