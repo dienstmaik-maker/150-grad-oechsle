@@ -189,8 +189,8 @@ img.fass{height:1.1em;vertical-align:-.18em}
 .schnitt{position:fixed;inset:0;z-index:9;background:#000;pointer-events:none;animation:iein .5s ease-out forwards}
 @keyframes iein{from{opacity:1}to{opacity:0}}
 @keyframes iaus{from{opacity:0}to{opacity:1}}
-@keyframes zwind{0%{transform:translateX(-18px) rotate(-3deg)}25%{transform:translateX(12px) rotate(2deg)}50%{transform:translateX(-7px) rotate(-1.1deg)}75%{transform:translateX(3px) rotate(.5deg)}100%{transform:none}}
-#info .zt.weht{animation:zwind 2.6s ease-out}
+#info .zt.zu{clip-path:inset(0 0 100% 0)}
+#info .zrolle{position:fixed;top:0;left:50%;width:min(100%,560px);height:30px;margin-left:max(-50%,-280px);z-index:2;pointer-events:none;border-radius:15px;background:linear-gradient(#8a6a3e,#e9d6a8 30%,#f6e8c4 45%,#c9a86e 75%,#6b4a24);box-shadow:0 6px 12px rgba(0,0,0,.45)}
 @keyframes izoom{from{transform:scale(1.08)}to{transform:none}}
 @media (prefers-reduced-motion:reduce){#info .ibild,#info .ischw,.schnitt{animation:none}#info .ischw,.schnitt{opacity:0}#info.aus .ischw{opacity:1}}
 @keyframes ein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -1645,17 +1645,25 @@ function vBuch(){
   }
   return h;
 }
-// Winzerbote: Erst steht das Bild allein da, dann weht die Zeitung von unten herein, bis ein Drittel des Bildschirms bedeckt ist.
+// Winzerbote: Erst steht das Bild allein da, dann rollt sich die Zeitung wie eine Schriftrolle vom oberen Rand ab, bis ihr Kopf oben steht.
 // Hochschieben zum Lesen, ganz runter- oder hochschieben gibt das Bild frei, Tippen auf die versteckte Zeitung holt sie zurück.
 // ZW merkt sich Ausgabe und Position, damit ein neues Zeichnen derselben Ausgabe nicht wieder von vorn weht.
 let ZW=null;
 function zGleite(el,ziel,ms){const von=el.scrollTop,t0=performance.now();let ab=0;const halt=()=>ab=1;el.addEventListener('touchstart',halt,{once:true,passive:true});el.addEventListener('wheel',halt,{once:true,passive:true});
   (function f(t){if(ab||!el.isConnected)return;const x=Math.min(1,(t-t0)/ms),e=1-Math.pow(1-x,3);el.scrollTop=von+(ziel-von)*e;if(x<1)requestAnimationFrame(f)})(t0)}
+// Aufrollen: Die Zeitung steht schon an ihrem Platz und wird von oben nach unten freigegeben, die Rolle läuft an der Kante mit.
+function zRolle(el,z,ziel){
+  if(!el.isConnected) return; el.scrollTop=ziel; ZW.top=ziel; z.classList.remove('zu');
+  const h=z.offsetHeight, sicht=Math.min(innerHeight,h), ms=1300, e='cubic-bezier(.25,.6,.3,1)';
+  const r=document.createElement('div'); r.className='zrolle'; el.appendChild(r);
+  z.animate([{clipPath:`inset(0 0 ${h}px 0)`},{clipPath:`inset(0 0 ${h-sicht}px 0)`}],{duration:ms,easing:e});
+  r.animate([{transform:'translateY(-15px)'},{transform:`translateY(${sicht-15}px)`,opacity:1,offset:ms/(ms+250)},{transform:`translateY(${sicht+20}px)`,opacity:0}],{duration:ms+250,easing:e,fill:'forwards'}).onfinish=()=>r.remove();
+}
 function zWehen(){
   const el=$('#info'); if(!el) return; const z=el.querySelector('.zt'), b=S.bericht||{}, key=`${b.titel}|${b.nr}`;
-  const ziel=()=>Math.max(0,z.offsetTop-innerHeight*2/3), ruhig=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const ziel=()=>z.offsetTop, ruhig=matchMedia('(prefers-reduced-motion:reduce)').matches;
   if(ZW&&ZW.key===key) el.scrollTop=ZW.top;
-  else{ZW={key,top:0}; el.scrollTop=0; if(ruhig) el.scrollTop=ziel(); else setTimeout(()=>{if(!el.isConnected)return; z.classList.add('weht'); zGleite(el,ziel(),2200)},900)}
+  else{ZW={key,top:0}; if(ruhig) el.scrollTop=ziel(); else{z.classList.add('zu'); setTimeout(()=>zRolle(el,z,ziel()),900)}}
   el.addEventListener('scroll',()=>{ZW.top=el.scrollTop},{passive:true});
   z.addEventListener('click',e=>{if(e.target.closest('button'))return; const r=z.getBoundingClientRect(); if(r.top>innerHeight*.75||r.bottom<innerHeight*.25) zGleite(el,ziel(),900)});
 }
