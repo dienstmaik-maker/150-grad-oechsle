@@ -71,7 +71,7 @@ main>h3{font-size:17px;margin:16px 0 8px;padding-left:10px;border-left:4px solid
 .sb .sbz{margin:6px 0;font-size:14px;line-height:1.5}
 .sterne{color:#a87908;letter-spacing:1px;white-space:nowrap}.sterne i{font-style:normal;opacity:.28}
 .sb .lohnt{margin-top:8px;padding:6px 10px;border-radius:8px;background:rgba(123,30,58,.09);font-weight:700;color:#4a1526;font-size:14px}
-.gchips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}.gchips .wahl{flex:1 1 30%;margin:0;padding:9px 4px;text-align:center;font-weight:600;font-size:14px}
+.gchips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}.gchips .wahl{flex:1 1 30%;margin:0;padding:9px 4px;text-align:center;font-weight:600;font-size:14px}.gchips .gs{display:block;font-size:17px;line-height:1.3}
 .fussnote{font-size:12px;color:var(--mut);margin:2px 4px 14px;text-align:center}
 /* Das Buch: Vollbild im Papier-Stil wie der Winzerbote */
 #buch{display:none;position:fixed;inset:0;z-index:40;flex-direction:column;background:#f3e7ca url(bilder/papier.jpg) center/cover;color:#2b2118;--ink:#2b2118;--mut:#6b5a45;--line:#d3bf93;--wein:#7b1e3a;--card:#fbf4e1}
@@ -546,7 +546,7 @@ function fx(name,mal){
     else setTimeout(()=>spiel(new Audio('ton/'+name+'.mp3')),i*400);
   }
 }
-function tonKnoepfe(){return `<div class="card"><h3>Ton</h3><div class="btns"><button class="sec klein" data-a="ton" data-id="musik">🎵 Musik: ${TON.musik?'an':'aus'}</button><button class="sec klein" data-a="ton" data-id="fx">🔔 Geräusche: ${TON.fx?'an':'aus'}</button></div></div>`}
+function tonKnoepfe(){return `<div class="card"><h3>🔊 Ton</h3><div class="btns"><button class="sec klein" data-a="ton" data-id="musik">🎵 Musik: ${TON.musik?'an':'aus'}</button><button class="sec klein" data-a="ton" data-id="fx">🔔 Geräusche: ${TON.fx?'an':'aus'}</button></div></div>`}
 
 /* ================= Bilder ================= */
 // Alle Bilder liegen als Dateien im Ordner bilder (gebaut von _medien_bauen.py).
@@ -1377,7 +1377,7 @@ function vStart(){
   ${[0,1,2].some(lies)?'<div class="btns" style="margin:0 0 12px"><button class="sec klein" data-a="menue">◀ Zu den Spielständen</button></div>':''}
   <div class="card"><h3>Wie heißt dein Weingut?</h3><input type="text" id="nm" maxlength="30" placeholder="Weingut Rebenreich" value="${esc(NEU.name)}"></div>
   <h2>Wähle dein Anbaugebiet</h2>
-  <div class="gchips">${Object.entries(REGIONEN).map(([id,r])=>`<button class="wahl ${NEU.region===id?'an':''}" data-a="region" data-id="${id}">${gebietArt(r)[0]} ${r.name}</button>`).join('')}</div>
+  <div class="gchips">${Object.entries(REGIONEN).map(([id,r])=>`<button class="wahl ${NEU.region===id?'an':''}" data-a="region" data-id="${id}"><span class="gs">${gebietArt(r)[0]}</span>${r.name}</button>`).join('')}</div>
   ${steckbrief(NEU.region)}
   <h2>Gegner</h2>
   <div class="zwei">${[2,3].map(n=>`<button class="wahl ${NEU.gegner===n?'an':''}" data-a="neuOpt" data-k="gegner" data-v="${n}"><b>${n} Computer-Winzer</b></button>`).join('')}</div>
@@ -1499,7 +1499,7 @@ function steckbrief(id,o={}){
   return `<div class="card sb"><h3>${sym} ${r.name}<small>${art}, ${bonus}</small></h3><div class="sbz">${so}</div>
     ${kv('💶 Geld',sterne(r.preisF?3:2))}${kv('🎖️ Ansehen',sterne(r.wettPlus?3:2))}
     <div class="sbz">💪 ${stark}<br>⚠️ ${schwach}</div>
-    ${kv('Spätlese, Auslese, Beerenauslese',`${mi.spat}°, ${mi.aus}°, ${mi.ba}°`)}
+    <div class="sbz">📏 Hürden: Spätlese ${mi.spat}°, Auslese ${mi.aus}°, Beerenauslese ${mi.ba}°</div>
     ${kv('❄️ Frost im Dezember',`${pz(r.frost)} der Jahre`)}${kv('🌨️ Kälteeinbruch im November',`jedes ${Math.round(1/KAELTE)}. Jahr`)}${kv('🌸 Spätfrost zur Blüte',`rund jedes ${SPAET_JAHR}. Jahr`)}
     <div class="lohnt">🎯 Lohnt sich hier: ${lohnt}</div>${o.buch?mib('gebiete'):''}</div>`;
 }
