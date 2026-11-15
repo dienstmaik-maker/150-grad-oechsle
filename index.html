@@ -34,10 +34,10 @@ html.ort-keller{--bg:#1a110a;--card:#2a1b11;--ink:#f1e8dc;--mut:#a89a8c;--wein:#
 }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);transition:background-color .35s;color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
-#top{position:sticky;top:0;z-index:5;background:var(--kopf);transition:background-color .35s;color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+#top{position:sticky;top:0;z-index:5;background:var(--kopf);transition:background-color .35s;color:#fff;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
 #top b{font-size:17px}#top small{opacity:.85;display:block;font-size:12px}
 #top .geld{text-align:right;font-variant-numeric:tabular-nums}
-main{padding:12px 16px 96px;max-width:560px;margin:0 auto}
+main{padding:12px 16px calc(130px + env(safe-area-inset-bottom));max-width:560px;margin:0 auto}
 h2{font:700 21px/1.2 var(--schrift);margin:6px 0 10px}h3{font:700 18px/1.25 var(--schrift);margin:0 0 6px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 12px}
 .mut{color:var(--mut);font-size:14px}.rot{color:var(--rot)}.gruen{color:var(--gruen)}.gold{color:var(--gold)}
@@ -66,12 +66,20 @@ button.siegel:active{transform:translateY(2px) scale(.96);filter:brightness(.92)
 .task{display:block;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--line);border-left:5px solid var(--gruen);margin:0 0 8px;font-weight:500;min-height:0}
 .task.rot{border-left-color:var(--rot);color:var(--ink)}
 .hilfe{background:color-mix(in srgb,var(--gold) 14%,transparent);border-radius:10px;padding:8px 10px;font-size:14px;margin-top:8px}
-#tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--card);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom)}
-#tabs button{flex:1;background:none;color:var(--mut);border-radius:0;padding:8px 2px;font-size:11px;font-weight:600;min-height:58px;display:flex;flex-direction:column;align-items:center;gap:2px}
-#tabs button span{font-size:21px}#tabs button img{height:25px;display:block;margin:3px 0 1px}#tabs button.an{color:var(--wein)}
+/* Version 4.0: alle Bedienelemente unten in der Daumenzone. Oben die Unterreiter auf Pergament, darunter die Hauptleiste aus Holz. */
+#dock{position:fixed;left:0;right:0;bottom:0;z-index:6;filter:drop-shadow(0 -3px 6px rgba(0,0,0,.3))}
+#subs{display:flex;max-width:560px;margin:0 auto;padding:4px 6px 0;gap:3px;background:linear-gradient(#efe2c4,#e2d1b3);border-top:2px solid #5c3a21;border-radius:14px 14px 0 0}
+#subs button{position:relative;flex:1;min-width:0;min-height:48px;padding:4px 1px 5px;border:0;border-image:none;border-radius:10px 10px 0 0;background:none;color:#6b5236;font:600 10.5px/1.1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-caps:normal;letter-spacing:0;text-shadow:none;display:flex;flex-direction:column;align-items:center;gap:2px;transition:background-color .2s,color .2s}
+#subs button>i{font-style:normal;font-size:19px;line-height:22px;transition:transform .2s}#subs button>i img{height:20px;vertical-align:-3px}
+#subs button>b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+#subs button.an{background:#f8f0dc;color:#7b1e3a;box-shadow:inset 0 -3px 0 #8b1e24}#subs button.an>i{transform:scale(1.18) translateY(-1px)}#subs button.an>b{font-weight:800}
+#tabs{display:flex;align-items:stretch;padding:4px 4px env(safe-area-inset-bottom);background-color:#5c3a21;background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 2px,transparent 2px 9px),repeating-linear-gradient(90deg,rgba(0,0,0,.09) 0 1px,transparent 1px 23px),linear-gradient(#6e4729,#4a2e18);border-top:2px solid #2b180c}
+#tabs button{position:relative;flex:1;background:none;color:#ead6ae;border-radius:10px;padding:6px 2px;margin:2px 2px 4px;font-size:11.5px;font-weight:600;min-height:56px;display:flex;flex-direction:column;align-items:center;gap:2px;text-shadow:0 1px 1px #000;transition:background-color .2s,transform .2s}
+#tabs button span{font-size:21px}#tabs button img{height:25px;display:block;margin:3px 0 1px}#tabs button.an{background:#f5ebd6;color:#7b1e3a;text-shadow:none;font-weight:800;box-shadow:inset 0 0 0 2px #8b1e24,inset 0 0 0 4px #f5ebd6,inset 0 0 0 5px rgba(139,30,36,.45),0 2px 4px rgba(0,0,0,.45);transform:translateY(-3px)}
 #tabs #weiter{flex:1.3;margin:6px 8px 6px 2px;border-radius:0;border-image:var(--schild) 50% 48 fill/50% 15px stretch;color:var(--kschrift);text-shadow:var(--kschatten);font:700 13px/1.1 var(--knopf);font-variant-caps:small-caps;letter-spacing:.03em;min-height:46px;justify-content:center;padding:5px 16px;filter:drop-shadow(0 2px 1px rgba(0,0,0,.4))}
-#tabs #weiter{flex-direction:row;gap:6px}#tabs #weiter span{font-size:14px}
+#tabs #weiter{flex-direction:row;gap:6px;--schild:url(bilder/knopf-haupt.webp);--kschrift:#5c1226;--kschatten:none;margin:5px 4px 7px 4px}#tabs #weiter span{font-size:14px}
 #tabs #weiter.zu{filter:grayscale(1) brightness(.9)}
+.badge{position:absolute;top:5px;right:calc(50% - 21px);width:10px;height:10px;border-radius:50%;background:#e5a93c;box-shadow:0 0 0 2px #f5ebd6}.badge.rot{background:#c62828}#tabs .badge{top:4px;right:calc(50% - 22px);box-shadow:0 0 0 2px #4a2e18}#tabs button.an .badge{box-shadow:0 0 0 2px #f5ebd6}
 /* Steht nichts mehr an, pulsiert der Knopf sanft. */
 #tabs #weiter.frei{animation:wpuls 2.6s ease-in-out infinite}
 @keyframes wpuls{50%{filter:drop-shadow(0 0 7px rgba(255,214,120,.95)) brightness(1.07)}}
@@ -355,6 +363,11 @@ const SUBS={
   stadt:[['amt','🏛️'],['handel','🏪'],['laeden','🍷'],['bank','🏦'],['arbeit','👷']]
 };
 const START_SUB={gut:'betrieb',keller:'start',stadt:'amt'};
+// Kurze Namen für die Unterreiter-Leiste unten.
+const SUB_NAME={berg:'Weinberg',betrieb:'Betrieb',aktuell:'Aktuelles',maschinen:'Maschinen',buero:'Büro',buch:'Kellerbuch',sabotage:'Hintertür',start:'Keller',lager:'Lager',amt:'Rathaus',handel:'Großhandel',laeden:'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'};
+// Punkte an den Reitern: rot bei Dringendem aus "Das steht an", gelb bei allem anderen.
+function badges(){const B={};for(const a of aufgaben()){if(!a.tab) continue;for(const k of [a.tab,a.tab+'/'+(a.sub||START_SUB[a.tab])]) B[k]=B[k]==='rot'||a.rot?'rot':'neu'}return B}
+const badge=b=>b?`<span class="badge ${b==='rot'?'rot':''}"></span>`:'';
 // Wechselt den Hauptreiter. Ohne Unterreiter geht es zur Startansicht des Hauptreiters.
 function geh(tab,sub){TAB=tab; SUB=sub||START_SUB[tab]||SUB}
 // Ehrungen für das Büro: Medaillen und Aufstiege. a=1 kennzeichnet einen Aufstieg, x ist ein Zusatz für die Infoseite (was die Ehrung bringt).
@@ -493,7 +506,7 @@ const sbild=n=>`<div class="sbild" style="background-image:url(bilder/${n}.jpg)"
 // Das Bild des Ortes. Unten im Bild steht, wo man ist, die Symbole darunter zeigen die Orte des Hauptreiters und springen beim Antippen dorthin. Wetter-Effekte über dem Bild gibt es nicht mehr.
 function ortBild(titel){
   const L=SUBS[TAB];
-  return `<div class="pano ${TAB}" data-a="bild"><i></i>${TAB==='gut'?wandHtml():''}<div class="ptitel"><b>${L.find(s=>s[0]===SUB)[1]} ${esc(titel)}</b><span class="punkte">${L.map(s=>`<span class="${s[0]===SUB?'an':''}" data-a="sub" data-id="${s[0]}">${s[1]}</span>`).join('')}</span></div></div>`;
+  return `<div class="pano ${TAB}" data-a="bild"><i></i>${TAB==='gut'?wandHtml():''}<div class="ptitel"><b>${L.find(s=>s[0]===SUB)[1]} ${esc(titel)}</b></div></div>`;
 }
 // Bild hinter der Zeitung: die Frostnacht beim Kälteeinbruch im November, sonst die Jahreszeit. Was es zu feiern gibt, zeigt das Foto in der Zeitung.
 function monatBild(){
@@ -1701,11 +1714,11 @@ function render(){
   const ort=SUBS[TAB]?TAB+'/'+SUB:TAB; if(ort!==ORT_ALT){if(ORT_ALT&&(ort==='keller/buch'||ort==='gut/aktuell')) fx('menue'); ORT_ALT=ort}
   musikOrt(musikWahl());
   const fehlt=fehlText(), v={monat:vMonat,gut:vGut,keller:vKeller,stadt:vStadt}[TAB]();
-  const tabs=[['gut','🏡','Weingut'],['keller',FASS,'Kellerei'],['stadt','🏛️','Stadt']];
+  const tabs=[['gut','🏡','Weingut'],['keller',FASS,'Kellerei'],['stadt','🏛️','Stadt']], B=badges();
   if(TAB==='monat'){$('#app').innerHTML=v; zWehen(); return}
   $('#app').innerHTML=`<div id="top"><div><b>${MON[S.monat]} ${S.jahr}</b><small>${wetterText()} · ${R().name}</small></div><div class="geld"><b>${eur(S.geld)}</b><small>${RAENGE[S.rang].kurz} · ${S.ansehen} Ansehen</small></div></div>
   <main>${v}</main>
-  <nav id="tabs">${tabs.map(t=>`<button class="${TAB===t[0]?'an':''}" data-a="tab" data-id="${t[0]}"><span>${t[1]}</span>${t[2]}</button>`).join('')}<button id="weiter" class="${fehlt?'zu':''}" data-a="weiter"><span>${fehlt?'🔒':'▶'}</span>${fehlt?'Leute fehlen':'Nächster Monat'}</button></nav>`;
+  <nav id="dock">${SUBS[TAB]?`<div id="subs">${SUBS[TAB].map(s=>`<button class="${SUB===s[0]?'an':''}" data-a="sub" data-id="${s[0]}"><i>${s[1]}</i><b>${SUB_NAME[s[0]]}</b>${SUB===s[0]?'':badge(B[TAB+'/'+s[0]])}</button>`).join('')}</div>`:''}<div id="tabs">${tabs.map(t=>`<button class="${TAB===t[0]?'an':''}" data-a="tab" data-id="${t[0]}"><span>${t[1]}</span>${t[2]}${badge(B[t[0]])}</button>`).join('')}<button id="weiter" class="${fehlt?'zu':''}" data-a="weiter"><span>${fehlt?'🔒':'▶'}</span>${fehlt?'Leute fehlen':'Nächster Monat'}</button></div></nav>`;
   panoStell();
 }
 
@@ -1803,7 +1816,7 @@ const AKT={
       info:n=>`<b>${num(n)} Flaschen</b>bringt dir ${eur(n*p)}`,
       ok:n=>{kassiere(n*p);S.absatz=(S.absatz||0)+n*p;la.rest-=n;l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l)}});
   },
-  tab(d){geh(d.id,d.sub);render();window.scrollTo(0,0)},
+  tab(d){if(d.id===TAB&&!d.sub&&window.scrollY>20){window.scrollTo({top:0,behavior:'smooth'});return} geh(d.id,d.sub);render();window.scrollTo(0,0)},
   infoWeiter(){
     const el=$('#info'); if(!el||el.classList.contains('aus')) return;
     el.classList.add('aus');
