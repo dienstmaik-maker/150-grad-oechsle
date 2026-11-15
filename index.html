@@ -328,9 +328,9 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='4.2';
+const VERSION='4.3';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
-const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=18000, WARTUNG=60, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
+const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
 // Ein Lagerarbeiter betreut FASS_JE_LAGERARB Liter Fassraum und FLASCHEN_JE_LAGERARB leere Flaschen. Fehlen Leute, sperrt "Nächster Monat".
 const REBEN_JE_HELFER=1000, MASCH_HELFER=3, FASS_JE_LAGERARB=10000, FLASCHEN_JE_LAGERARB=20000;
@@ -399,6 +399,15 @@ const LAGER_SCHWANK=.2, REBEN_ANGEBOT=.15, LADEN_EIGEN=6000, LADEN_EIGEN_F=1.45,
 const HOFFEST_WETTER={sonnig:1.25,mild:1,regen:.7,kalt:.85,frost:.85};
 const BESTEN_KEY='oechsle-besten';
 const ANREG_ANS=30, ANREG_FEHL=3, PANSCH={zocker:.4,vorsicht:.08,qualitaet:.04}, SPITZE_HA=2, SPITZE_START=200000, SPITZE_OE=5, SPITZE_ANS=15, LOHN_BILLIG=250;
+// Paket 4 (15.11.2026): Ziele fürs Geld und Land ohne Auktionsglück.
+// Makler: ab Jungwinzer höchstens ein Hektar im Jahr zum MAKLER_PREIS, nur solange Land für den nächsten Rang fehlt. Auktionen bleiben deutlich billiger.
+// Weinfest: ab Winzermeister bis zum Hoffest, einmal im Jahr von Juni bis August, kostet WEINFEST_PREIS und bringt WEINFEST_ANS Ansehen mal Wetter-Faktor.
+// Kellerausbau: drei Stufen ab Winzer (KELLER_PREISE). Jede Stufe kürzt die Reifezeit von Prädikatswein und Eiswein in der Flasche um einen Monat, und jeder Wein gewinnt beim Reifen KELLER_REIFE schneller an Wert.
+const MAKLER_PREIS=45000, WEINFEST_PREIS=30000, WEINFEST_ANS=12, KELLER_PREISE=[50000,120000,250000], KELLER_REIFE=.1, R_WEINFEST=R_LAND, R_KELLER=2;
+const FESTE={weinfest:{name:'Weinfest',preis:WEINFEST_PREIS,ans:WEINFEST_ANS,text:'Ein Weinfest im Hof mit Zelt, Musik und deinem Wein',kurz:'Musik, Zwiebelkuchen und dein Wein für Nachbarn und Gäste'},hoffest:{name:'Hoffest',preis:HOFFEST_PREIS,ans:HOFFEST_ANS,text:'Ein großes Fest für das ganze Dorf',kurz:'Musik, Flammkuchen und dein Wein für das ganze Dorf'}};
+function festArt(){return S.rang>=R_HOFFEST?'hoffest':S.rang>=R_WEINFEST?'weinfest':''}
+// Der Makler verkauft, wenn der Spieler den Rang hat, dieses Jahr noch nicht gekauft hat und ihm Land für den nächsten Rang fehlt.
+function maklerGrund(){if(S.rang<R_AUKTION) return `Der Makler arbeitet erst für dich ab dem Rang ${RAENGE[R_AUKTION].name}.`; if(S.maklerJahr===S.jahr) return 'Dieses Jahr hat er dir schon einen Hektar verkauft. Nächstes Jahr wieder.'; const n=RAENGE[S.rang+1]; if(!n||S.ha>=n.ha) return 'Für den nächsten Rang hast du genug Land, da verkauft er dir nichts.'; return ''}
 
 /* ================= Helfer ================= */
 const $=s=>document.querySelector(s);
@@ -1037,7 +1046,7 @@ function weinQualHtml(){
     +z('Qualitätswein',pr('qba')+'.')
     +['kab','spat','aus','ba','tba'].map(st=>z(STUFEN[st].name,pr(st)+'.')).join('')
     +z('Eiswein',`ab ${m.tafel}° Öchsle, nur gefrorene Trauben der Dezember-Lese, mit Edelfäulnis, ${LESE.reif} oder ${LESE.ueber}, nicht gemischt. Nur im Januar anmelden. Die Öchsle bestimmen den Wert wie bei Auslese (ab ${m.aus}°), Beerenauslese (ab ${m.ba}°) oder Trockenbeerenauslese (ab ${m.tba}°).`)
-    +`<div class="hilfe"><b>⏳ Reifezeit in der Flasche bis zum Verkauf</b><br>Tafel- und Qualitätswein: 2\u00a0Monate.<br>Kabinett bis Trockenbeerenauslese: ${reife(x=>x)}.<br>Eiswein: ${reife(x=>Math.round(x*1.5))}.</div>`
+    +`<div class="hilfe"><b>⏳ Reifezeit in der Flasche bis zum Verkauf</b><br>Tafel- und Qualitätswein: 2\u00a0Monate.<br>Kabinett bis Trockenbeerenauslese: ${reife(x=>Math.max(1,x-(S.keller||0)))}.<br>Eiswein: ${reife(x=>Math.max(1,Math.round(x*1.5)-(S.keller||0)))}.${S.keller?`<br>Dein ausgebauter Keller kürzt das schon um ${S.keller} ${S.keller===1?'Monat':'Monate'}.`:''}</div>`
     +`<div class="hilfe"><b>📜 Gut zu wissen</b><br>Jeder Wein liegt mindestens einen Monat im Fass, höchstens sieben.<br>Ab Kabinett und beim Eiswein darfst du erst im Januar nach der Lese anmelden.<br>Überreife Trauben bringen 5° mehr Öchsle.<br>Edelfäulnis kann ab Oktober ab ${m.spat}° kommen, bei Regen oder mildem Wetter öfter, ab ${m.aus}° meist. Am häufigsten trifft sie die Sorte, die am besten ins Gebiet passt. Dann gibt es von dem Feld kein Kabinett und keine Spätlese mehr.<br>Kälteeinbruch im November: in jedem vierten Jahr, die Vorhersage warnt meist davor.<br>${frostText()}, nur dann gibt es Eiswein.<br>Bei der Lese zeigt jede Leseart, ab wann der Wein verkaufsfertig ist.</div>${mib('stufen')}`
     +`<div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`;
 }
@@ -1063,11 +1072,11 @@ function leseHilfe(f){
 /* ================= Lagerung und Preis ================= */
 function lager(l){const b=lagerBasis(l);return l.sekt?{min:9,max:b.max,rate:b.rate}:b}
 function lagerBasis(l){
-  const so=SORTEN[l.sorte];
+  const so=SORTEN[l.sorte], K=S.keller||0, rf=so.reife*(1+KELLER_REIFE*K);
   if(l.stufe==='feder') return {min:0,max:2,rate:0};
-  if(l.stufe==='tafel'||l.stufe==='qba') return {min:2,max:Math.max(24,Math.round(so.maxL/3)),rate:so.reife/2};
-  if(l.stufe==='eis') return {min:Math.round(so.minL*1.5),max:Infinity,rate:so.reife};
-  return {min:so.minL,max:so.maxL,rate:so.reife};
+  if(l.stufe==='tafel'||l.stufe==='qba') return {min:2,max:Math.max(24,Math.round(so.maxL/3)),rate:rf/2};
+  if(l.stufe==='eis') return {min:Math.max(1,Math.round(so.minL*1.5)-K),max:Infinity,rate:rf};
+  return {min:Math.max(1,so.minL-K),max:so.maxL,rate:rf};
 }
 // Ein Weinskandal drückt alle Preise, eine Mode im Ausland hebt eine Sorte. S.lage={typ,f,rest,sorte}.
 function lageF(l){const g=S.lage; return !g?1:g.typ==='mode'?(l.sorte===g.sorte?g.f:1):g.f}
@@ -1130,9 +1139,9 @@ function monatWeiter(){
   TOP=[]; FUSS=[];
   // Hoffest und Gutsverwalter aus dem alten Monat kommen in diese Ausgabe. Beim Hoffest zählt das Wetter des Festmonats.
   if(S.fest){
-    const w=S.fest.w, f=HOFFEST_WETTER[w]||1, a=ruhm(Math.round(HOFFEST_ANS*f));
+    const w=S.fest.w, f=HOFFEST_WETTER[w]||1, F=FESTE[S.fest.art||'hoffest'], n=F.name, a=ruhm(Math.round(F.ans*f));
     const T={sonnig:'Bei strahlender Sonne kamen Hunderte Gäste',mild:'Bei mildem Wetter kamen viele Gäste',regen:'Im Regen kamen nur wenige Gäste',kalt:'Bei kühlem Wetter blieben einige Gäste zu Hause',frost:'Bei klirrender Kälte blieben einige Gäste zu Hause'};
-    schlag(65,f>1?`Rauschendes Hoffest bei ${S.name}`:f<.8?`Hoffest bei ${S.name} fällt ins Wasser`:`Hoffest bei ${S.name}`,`${T[w]||T.mild}, es gab Musik, Flammkuchen und deinen Wein. Das ganze Dorf redet davon: +${a} Ansehen.`,'hoffest'); S.fest=null;
+    schlag(65,f>1?`Rauschendes ${n} bei ${S.name}`:f<.8?`${n} bei ${S.name} fällt ins Wasser`:`${n} bei ${S.name}`,`${T[w]||T.mild}, es gab Musik, ${S.fest.art==='weinfest'?'Zwiebelkuchen':'Flammkuchen'} und deinen Wein. Das ganze Dorf redet davon: +${a} Ansehen.`,'hoffest'); S.fest=null;
   }
   if(S.verwLog&&S.verwLog.length) schlag(15,'Aus dem Gutsbüro',`Dein Gutsverwalter meldet: ${S.verwLog.join(', ')}.`);
   S.verwLog=null;
@@ -1176,7 +1185,7 @@ function monatWeiter(){
   if(S.lage&&--S.lage.rest<=0){Z.push(S.lage.typ==='mode'?`Die Mode im Ausland ist vorbei, ${SORTEN[S.lage.sorte].name} kostet wieder so viel wie üblich.`:'Der Weinskandal ist vergessen, die Weinpreise erholen sich.'); S.lage=null}
   neuesLohnAngebot();
   const W=wachse(S.monat);
-  if(S.monat>=8&&S.monat<=10) for(const ma of S.maschinen) ma.zustand=Math.max(10,ma.zustand-rint(5,9));
+  if(S.monat>=8&&S.monat<=10) for(const ma of S.maschinen) ma.zustand=Math.max(10,ma.zustand-rint(8,14));
   // Wetter als Thema für die Zeitung. Die Einzelheiten je Rebsorte stehen unter "Aus dem Weinberg".
   if(S.monat===10&&S.kaelte===S.jahr) schlag(70,'Kälteeinbruch im November',`Über Nacht ist es bitterkalt geworden. Wer noch Trauben hängen hatte, hat sie verloren.${W.some(z=>z.startsWith('Kälteeinbruch'))?' Bei dir ist erfroren, was noch am Stock hing.':' Deine Trauben hat es nicht erwischt.'}`,'frost');
   if(S.monat===9&&S.kaelteWarn===S.jahr) schlag(60,'Wetterdienst warnt vor Kälteeinbruch','Für November sagt der Wetterdienst bitterkalte Nächte voraus. Wer noch Trauben hängen hat, sollte jetzt lesen.','frost');
@@ -1379,7 +1388,7 @@ function aufgaben(){
   }}
   if(m>=7&&R().sorten.some(id=>{const f=S.felder[id];return f.menge>0&&!f.gelesen&&(m<11||f.gefroren)})) A.push({t:'Lese möglich',tab:'gut',sub:'berg'});
   if(S.rang>=R_LADEN&&!regalWeine().length&&S.lots.some(l=>l.status==='flasche'&&preis(l)>0)) A.push({t:'🍷 Das Regal deiner Weinhandlung ist leer',tab:'stadt',sub:'laeden'});
-  if(S.rang>=R_HOFFEST&&m>=5&&m<=7&&S.festJahr!==S.jahr&&S.geld>=HOFFEST_PREIS) A.push({t:'🎉 Das Geld reicht für ein Hoffest',tab:'gut',sub:'betrieb'});
+  {const art=festArt(); if(art&&m>=5&&m<=7&&S.festJahr!==S.jahr&&S.geld>=FESTE[art].preis) A.push({t:`🎉 Das Geld reicht für ein ${FESTE[art].name}`,tab:'gut',sub:'betrieb'})}
   const vk=S.lots.filter(l=>preis(l)>0&&!l.regal).length;
   if(vk) A.push({t:`${vk} ${vk===1?'Wein ist':'Weine sind'} verkaufsreif`,tab:'stadt',sub:'handel'});
   return A;
@@ -1422,7 +1431,7 @@ function vRang(){
   if(S.sieger) h+=`<div class="hilfe" style="margin:0 0 6px">🏆 Gewonnen hat: ${esc(S.sieger)}</div>`;
   if(n) h+=`<div class="mut">Für den Aufstieg zum Rang ${n.name} brauchst du alles drei zugleich.</div>
     <div class="kv"><span>Ansehen</span><span>${S.ansehen} von ${n.ans}</span></div>${bar(S.ansehen,n.ans)}
-    <div class="kv"><span>Bepflanzt</span><span>${bep.toLocaleString('de-DE')} von ${n.ha}\u00a0Hektar</span></div>${barF(n.ha)}${nach}
+    <div class="kv"><span>Bepflanzt</span><span>${bep.toLocaleString('de-DE')} von ${n.ha}\u00a0Hektar</span></div>${barF(n.ha)}${nach}${S.ha<n.ha&&!maklerGrund()?`<div class="mut" style="margin:-4px 0 8px">Keine Auktion in Sicht? Der Makler im Rathaus verkauft dir einen Hektar für ${eur(MAKLER_PREIS)}.</div>`:''}
     <div class="kv"><span>Vermögen</span><span>${eur(v)} von ${eur(n.verm)}</span></div>${bar(v,n.verm)}
     <div class="mut">Der Aufstieg bringt: ${bringt(r+1)}.</div>`;
   else h+=`<div class="kv"><span>Ansehen</span><span>${S.ansehen}</span></div><div class="kv"><span>Vermögen</span><span>${eur(v)}</span></div><div class="mut">Höher geht es nicht.</div>`;
@@ -1564,12 +1573,13 @@ function verwHtml(){
   ${Object.entries(VERW).map(([k,t])=>`<button class="wahl ${v[k]?'an':''}" data-a="verw" data-id="${k}">${v[k]?'✅':'⬜'} ${t}</button>`).join('')}</div>`;
 }
 // Hoffest ab Verbandsvorstand: Juni bis August, einmal im Jahr.
+// Weinfest ab Winzermeister, ab Verbandsvorstand wird daraus das Hoffest. Beide teilen sich Bild, Monate und S.festJahr.
 function hoffestHtml(){
-  if(S.rang<R_HOFFEST) return '';
-  const m=S.monat, zeit=m>=5&&m<=7, schon=S.festJahr===S.jahr;
-  return `<div class="card"><div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/hoffest.jpg)"><b>🎉 Hoffest</b><span>Juni bis August, einmal im Jahr</span></div>
-  <div class="mut">${schon?(S.fest?'Das Fest steigt diesen Monat, der Bericht kommt im nächsten Winzerboten.':`Das Hoffest ${S.jahr} ist gefeiert. Nächstes Jahr wieder.`):`Ein großes Fest für das ganze Dorf kostet ${eur(HOFFEST_PREIS)} und bringt rund ${HOFFEST_ANS} Ansehen. Das Wetter im Festmonat entscheidet mit: Sonne bringt mehr, Regen weniger.`}</div>
-  ${kz('',pk('hoffest','Feiern',eur(HOFFEST_PREIS),{aus:!(zeit&&!schon),arm:S.geld<HOFFEST_PREIS}))}</div>`;
+  const art=festArt(); if(!art) return '';
+  const F=FESTE[art], m=S.monat, zeit=m>=5&&m<=7, schon=S.festJahr===S.jahr;
+  return `<div class="card"><div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/hoffest.jpg)"><b>🎉 ${F.name}</b><span>Juni bis August, einmal im Jahr</span></div>
+  <div class="mut">${schon?(S.fest?'Das Fest steigt diesen Monat, der Bericht kommt im nächsten Winzerboten.':`Das ${F.name} ${S.jahr} ist gefeiert. Nächstes Jahr wieder.`):`${F.text} kostet ${eur(F.preis)} und bringt rund ${F.ans} Ansehen. Das Wetter im Festmonat entscheidet mit: Sonne bringt mehr, Regen weniger.${art==='weinfest'?` Ab dem Rang ${RAENGE[R_HOFFEST].name} wird daraus das große Hoffest.`:''}`}</div>
+  ${kz('',pk('hoffest','Feiern',eur(F.preis),{aus:!(zeit&&!schon),arm:S.geld<F.preis}))}</div>`;
 }
 // Gutsverwalter: läuft beim Weiterblättern vor der Leute-Sperre. Was er tut, steht in S.verwLog für die nächste Zeitung.
 function verwalter(){
@@ -1705,10 +1715,20 @@ function vLager(){
     <div class="kv"><span>Fassraum belegt</span><span>${num(bel)} von ${num(S.fassraum)}\u00a0l</span></div><div class="bar w"><i style="width:${S.fassraum?bel/S.fassraum*100:0}%"></i></div>
     <div class="mut">Deine Lagerarbeiter (${S.lagerarb}) betreuen bis zu ${num(S.lagerarb*FASS_JE_LAGERARB)}\u00a0l Fassraum.</div>
     ${(k=>kz(`Möglich sind noch ${num(Math.max(0,k))}\u00a0l.`,pk('kaufFass','Kaufen',eur2(fassPreis()),{klein:'je Liter',arm:k<500||S.geld<500*fassPreis()})))(S.lagerarb*FASS_JE_LAGERARB-S.fassraum)}</div>
+  ${kellerAusHtml()}
   <div class="card"><h3>Flaschen</h3>
     <div class="kv"><span>Leere Flaschen (1 l)</span><span>${num(S.flaschen)}</span></div>
     <div class="mut">Deine Lagerarbeiter betreuen bis zu ${num(S.lagerarb*FLASCHEN_JE_LAGERARB)} leere Flaschen.</div>
     ${(k=>kz(`Möglich sind noch ${num(Math.max(0,k))} Flaschen.`,pk('kaufFlaschen','Kaufen',eur2(flaschePreis()),{klein:'je Flasche',arm:k<100||S.geld<100*flaschePreis()})))(S.lagerarb*FLASCHEN_JE_LAGERARB-S.flaschen)}</div>`;
+}
+// Kellerausbau in drei Stufen ab Winzer.
+function kellerAusHtml(){
+  const K=S.keller||0, pr=KELLER_PREISE[K], N=KELLER_PREISE.length;
+  const was='Jede Stufe lässt Prädikatsweine und Eiswein einen Monat früher verkaufsreif werden, und jeder Wein gewinnt beim Reifen in der Flasche schneller an Wert.';
+  let h=`<div class="card"><h3>🏗️ Kellerausbau</h3><div class="kv"><span>Ausgebaut</span><span>Stufe ${K} von ${N}</span></div><div class="bar w"><i style="width:${K/N*100}%"></i></div>`;
+  if(pr==null) return h+`<div class="mut">Dein Keller ist fertig ausgebaut. Prädikatsweine und Eiswein sind ${N} Monate früher verkaufsreif.</div></div>`;
+  if(S.rang<R_KELLER) return h+`<div class="mut">${was} Ausbauen kannst du ab dem Rang ${RAENGE[R_KELLER].name}.</div></div>`;
+  return h+`<div class="mut">${was}</div>${kz('',pk('kellerAus','Ausbauen',eur(pr),{klein:`Stufe ${K+1}`,arm:S.geld<pr}))}</div>`;
 }
 // Hintertür im Keller: Panschen und Sabotage.
 function vSabotage(){
@@ -1729,6 +1749,11 @@ function vStadt(){
   if(SUB==='amt'){
     const fa=S.lots.filter(l=>l.status==='fass'&&!l.stufe);
     h+=`<h3>Wein anmelden</h3>`+(fa.length?fa.map(l=>`<div class="card"><b>${dot(l.sorte)}${lotName(l)}</b><div class="mut">${num(l.liter)}\u00a0l · ${l.oe}° Öchsle · ${LESE[l.leseart]} · Edelfäulnis ${l.edel?'ja':'nein'}${mani(l)?' · 🤫 '+maniText(l):''}</div><div class="btns"><button data-a="anmelden" data-id="${l.id}">Anmelden</button></div></div>`).join(''):'<div class="card mut">Kein Fasswein wartet auf die Anmeldung.</div>');
+    if(S.rang>=R_AUKTION&&S.rang<R_MAX){
+      const g=maklerGrund();
+      h+=`<h3>Makler</h3><div class="card"><div class="mut">Der Makler kennt Winzer, die ihr Land lieber still verkaufen. Ein Hektar kostet bei ihm ${eur(MAKLER_PREIS)}, bei einer Auktion meist viel weniger. Er verkauft dir höchstens einen Hektar im Jahr und nur, solange dir Land für den nächsten Rang fehlt.</div>
+      ${kz(g,pk('makler','Kaufen',eur(MAKLER_PREIS),{klein:'1 Hektar',aus:!!g,arm:S.geld<MAKLER_PREIS}))}</div>`;
+    }
     if(S.rang>=R_HOFFEST){
       const schon=S.anregJahr===S.jahr;
       h+=`<h3>Kontrolle anregen</h3><div class="card"><div class="mut" style="margin-bottom:8px">Einmal im Jahr kannst du dem Prüfer einen Hinweis geben. Findet er bei einem Gegner gepanschten Wein, kostet ihn das ${ANREG_ANS} Ansehen und Strafe. Findet er nichts, kostet dich die falsche Verdächtigung ${ANREG_FEHL} Ansehen. Gerüchte im Winzerboten helfen beim Raten.${schon?' Für dieses Jahr hast du deinen Hinweis schon gegeben.':''}</div>
@@ -2060,15 +2085,38 @@ const AKT={
   },
   weiterJa(){closeSheet();monatWeiter()},
   verw(d){S.verw=S.verw||{}; S.verw[d.id]=!S.verw[d.id]; save(); const y=window.scrollY; render(); window.scrollTo(0,y)},
+  makler(){
+    const g=maklerGrund(); if(g) return meldung('Der Makler hat nichts für dich',g);
+    if(S.geld<MAKLER_PREIS) return meldung('Zu wenig Geld',`Ein Hektar kostet beim Makler ${eur(MAKLER_PREIS)}. Einen Kredit gibt es bei der Bank.`);
+    openSheet(`<h3>🏠 Einen Hektar kaufen?</h3><p>Der Makler hat einen Weinberg mit 1\u00a0Hektar ${WO[S.region]} für ${eur(MAKLER_PREIS)}.</p><p class="mut">Für den Aufstieg zählt er erst, wenn er bepflanzt ist. Gepflanzt wird von Januar bis März.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button data-a="maklerJa">Kaufen</button></div>`);
+  },
+  maklerJa(){
+    if(maklerGrund()||S.geld<MAKLER_PREIS) return;
+    S.geld-=MAKLER_PREIS; S.ha+=1; S.maklerJahr=S.jahr; fx('stempel'); closeSheet(); save(); render();
+    meldung('Der Vertrag ist unterschrieben',`Dir gehört jetzt 1 Hektar mehr, zusammen ${S.ha} Hektar.${S.monat<=2?' Du kannst ihn gleich bepflanzen.':' Bepflanzen kannst du ihn ab Januar.'}`);
+  },
+  kellerAus(){
+    const K=S.keller||0, pr=KELLER_PREISE[K];
+    if(S.rang<R_KELLER||pr==null) return;
+    if(S.geld<pr) return meldung('Zu wenig Geld',`Die nächste Stufe kostet ${eur(pr)}.`,'fassgang');
+    openSheet(`${sbild('fassgang')}<h3>🏗️ Keller ausbauen?</h3><p>Stufe ${K+1} von ${KELLER_PREISE.length} kostet ${eur(pr)}.</p><p class="mut">Danach dürfen Prädikatsweine und Eiswein ${K+1} ${K?'Monate':'Monat'} früher aus dem Keller, und jeder Wein gewinnt beim Reifen schneller an Wert.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button data-a="kellerAusJa">Ausbauen</button></div>`);
+  },
+  kellerAusJa(){
+    const K=S.keller||0, pr=KELLER_PREISE[K];
+    if(S.rang<R_KELLER||pr==null||S.geld<pr) return;
+    zahle(pr); S.keller=K+1; fx('stempel'); closeSheet(); save(); render();
+    meldung('Der Keller ist ausgebaut',`Stufe ${S.keller} von ${KELLER_PREISE.length} ist fertig. Prädikatsweine und Eiswein sind jetzt ${S.keller} ${S.keller===1?'Monat':'Monate'} früher verkaufsreif.`,'fassgang');
+  },
   hoffest(){
-    if(S.rang<R_HOFFEST||S.festJahr===S.jahr||S.monat<5||S.monat>7) return;
-    if(S.geld<HOFFEST_PREIS) return meldung('Zu wenig Geld',`Das Hoffest kostet ${eur(HOFFEST_PREIS)}.`,'hoffest');
-    const a=Math.round(HOFFEST_ANS*(HOFFEST_WETTER[S.wetter]||1)*DIFF[S.schwer].ans);
-    openSheet(`${sbild('hoffest')}<h3>🎉 Hoffest feiern?</h3><p>Musik, Flammkuchen und dein Wein für das ganze Dorf. Das kostet ${eur(HOFFEST_PREIS)}.</p><p class="mut">Gefeiert wird Ende ${MON[S.monat]}, das Wetter: ${WETTER[S.wetter].join(' ')}. Damit bringt das Fest rund ${a} Ansehen.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button data-a="hoffestJa">Feiern</button></div>`);
+    const art=festArt(), F=FESTE[art];
+    if(!art||S.festJahr===S.jahr||S.monat<5||S.monat>7) return;
+    if(S.geld<F.preis) return meldung('Zu wenig Geld',`Das ${F.name} kostet ${eur(F.preis)}.`,'hoffest');
+    const a=Math.round(F.ans*(HOFFEST_WETTER[S.wetter]||1)*DIFF[S.schwer].ans);
+    openSheet(`${sbild('hoffest')}<h3>🎉 ${F.name} feiern?</h3><p>${F.kurz}. Das kostet ${eur(F.preis)}.</p><p class="mut">Gefeiert wird Ende ${MON[S.monat]}, das Wetter: ${WETTER[S.wetter].join(' ')}. Damit bringt das Fest rund ${a} Ansehen.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button data-a="hoffestJa">Feiern</button></div>`);
   },
   hoffestJa(){
-    if(S.festJahr===S.jahr||S.geld<HOFFEST_PREIS) return;
-    zahle(HOFFEST_PREIS); S.festJahr=S.jahr; S.fest={w:S.wetter}; fx('stempel'); closeSheet(); save(); render();
+    const art=festArt(); if(!art||S.festJahr===S.jahr||S.geld<FESTE[art].preis) return;
+    zahle(FESTE[art].preis); S.festJahr=S.jahr; S.fest={w:S.wetter,art}; fx('stempel'); closeSheet(); save(); render();
     meldung('Die Einladungen sind raus','Das Fest steigt Ende des Monats. Wie es war, steht im nächsten Winzerboten.','hoffest');
   },
   anreg(d){
