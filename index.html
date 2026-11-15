@@ -290,12 +290,12 @@ const SORTEN={
 // So erreicht die beste Sorte in allen sechs Gebieten dieselbe Verteilung der Stufen. Verschieden bleibt nur der Frost im Dezember.
 const MIN_NORMAL={tafel:50,qba:60,kab:75,spat:85,aus:95,ba:125,tba:150}, MIN_KUEHL={tafel:45,qba:53,kab:68,spat:78,aus:88,ba:118,tba:150};
 const REGIONEN={
-  mosel:{name:'Mosel',sorten:['riesling','mueller','spaetb'],warm:0,frost:.25,wettPlus:3,text:'Steile Schieferhänge, Riesling-Land. Steillagen-Ruf: Bei Wettbewerben zählt jeder Wein 3 Punkte mehr. Normale Hürden, Auslese ab 95°.',min:MIN_NORMAL},
-  rheingau:{name:'Rheingau',sorten:['riesling','spaetb','silvaner'],warm:0,frost:.25,preisF:1.1,text:'Berühmtes Riesling-Land: Jeder Wein bringt 10 % mehr Geld. Normale Hürden, Auslese ab 95°.',min:MIN_NORMAL},
+  mosel:{name:'Mosel',sorten:['riesling','mueller','spaetb'],warm:0,edelSpatF:.5,frost:.25,wettPlus:3,text:'Steile Schieferhänge, Riesling-Land. Steillagen-Ruf: Bei Wettbewerben zählt jeder Wein 3 Punkte mehr. Normale Hürden, Auslese ab 95°.',min:MIN_NORMAL},
+  rheingau:{name:'Rheingau',sorten:['riesling','spaetb','silvaner'],warm:0,edelSpatF:.5,frost:.25,preisF:1.1,text:'Berühmtes Riesling-Land: Jeder Wein bringt 10 % mehr Geld. Normale Hürden, Auslese ab 95°.',min:MIN_NORMAL},
   rheinhessen:{name:'Rheinhessen',sorten:['mueller','silvaner','portug'],warm:3,edelF:1.1,frost:.12,text:'Warmes Silvaner-Land: mehr Zucker und öfter Edelfäulnis, dafür selten Frost für Eiswein. Normale Hürden, Auslese ab 95°.',min:MIN_NORMAL},
   pfalz:{name:'Pfalz',sorten:['riesling','mueller','portug'],warm:3,edelF:1.1,frost:.10,text:'Warm mit milden Wintern: mehr Zucker und öfter Edelfäulnis, dafür kaum Frost für Eiswein. Normale Hürden, Auslese ab 95°.',min:MIN_NORMAL},
-  franken:{name:'Franken',sorten:['silvaner','mueller','spaetb'],warm:-11,frost:.45,text:'Kühle Silvaner-Heimat mit kalten Wintern, Eiswein-Land. Weniger Zucker, niedrigere Hürden, Auslese ab 88°.',min:MIN_KUEHL},
-  wuerttemberg:{name:'Württemberg',sorten:['troll','riesling','spaetb'],warm:-11,frost:.43,text:'Kühles Rotwein-Land mit Trollinger und kalten Wintern, Eiswein-Land. Weniger Zucker, niedrigere Hürden, Auslese ab 88°.',min:MIN_KUEHL}
+  franken:{name:'Franken',sorten:['silvaner','mueller','spaetb'],warm:-11,edelAus:true,frost:.45,text:'Kühle Silvaner-Heimat mit kalten Wintern, Eiswein-Land. Weniger Zucker, niedrigere Hürden, Auslese ab 88°.',min:MIN_KUEHL},
+  wuerttemberg:{name:'Württemberg',sorten:['troll','riesling','spaetb'],warm:-11,edelAus:true,frost:.43,text:'Kühles Rotwein-Land mit Trollinger und kalten Wintern, Eiswein-Land. Weniger Zucker, niedrigere Hürden, Auslese ab 88°.',min:MIN_KUEHL}
 };
 // Eignung der Rebsorte im Gebiet: 1 = sehr gut, .85 = gut, .7 = geht noch. Wirkt als Faktor auf die Qualitätspunkte.
 const EIGNUNG={mosel:{riesling:1,mueller:.85,spaetb:.7},rheingau:{riesling:1,spaetb:.85,silvaner:.7},rheinhessen:{silvaner:1,mueller:.85,portug:.7},
@@ -329,7 +329,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='4.5';
+const VERSION='5.0';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -957,6 +957,8 @@ const wetterText=()=>`${WETTER[S.wetter].join(' ')}, ${S.temp!=null?S.temp:tempF
 // Edelfäulnis (seit 3.3): Ab Oktober kann sie jeden Monat kommen, sobald ein Feld den Spätlese-Wert erreicht, mit EDEL_CHANCE.spat, bei Regen oder mildem Wetter mit .feucht.
 // Ab dem Auslese-Wert (auch schon im August und September) kommt sie mit .aus. Bleibt sie dort aus, kommt sie dieses Jahr nicht mehr (f.edelGeprueft).
 // Die Chance gilt für die Sorte, die am besten zum Gebiet passt. Die anderen bekommen sie mal Eignung hoch zwei, warme Gebiete mit edelF öfter.
+// Version 5.0 (Paket 8): In kühlen Gebieten (edelAus) kommt sie erst ab dem Auslese-Wert, in der Mitte (edelSpatF) unter dem Auslese-Wert nur mit halber Chance.
+// So bleiben dort Kabinett und Spätlese öfter heil. Warme Gebiete bleiben wie seit 3.3.
 // Ihr Zuschlag je Monat hängt an der Zahl der Sonnenmonate des Jahres (Juni bis Oktober), EDEL_PLUS[0] bis EDEL_PLUS[5].
 // Abgestimmt 15.11.2026 mit 4000 Jahrgängen je Gebiet: Edelfäulnis bis November bei der besten Sorte in rund 75 % der Jahre (warm 85 %, kühl 68 %), bei den anderen rund 50 und 38 %.
 // Beerenauslese aufwärts (beste Sorte, Lese im Oktober bei Kältewarnung, sonst im November): warm 37 %, Mitte 27 %, kühl 18 %. Eiswein möglich: warm 6 %, Mitte 16 %, kühl 27 %.
@@ -992,8 +994,8 @@ function wachse(m){
         else{f.menge=0; L.push(`Kein Frost: Die hängenden ${so.name}-Trauben sind verfault.`)}
       }
       const aus=f.oe>=reg.min.aus;
-      if(f.menge>0&&!f.edel&&!f.edelGeprueft&&(aus||(m>=9&&f.oe>=reg.min.spat))){
-        f.edel=Math.random()<Math.min(.95,(aus?EDEL_CHANCE.aus:w==='regen'||w==='mild'?EDEL_CHANCE.feucht:EDEL_CHANCE.spat)*(reg.edelF||1)*eignung(id)**2);
+      if(f.menge>0&&!f.edel&&!f.edelGeprueft&&(aus||(!reg.edelAus&&m>=9&&f.oe>=reg.min.spat))){
+        f.edel=Math.random()<Math.min(.95,(aus?EDEL_CHANCE.aus:(w==='regen'||w==='mild'?EDEL_CHANCE.feucht:EDEL_CHANCE.spat)*(reg.edelSpatF||1))*(reg.edelF||1)*eignung(id)**2);
         if(f.edel) L.push(`Edelfäulnis beim ${so.name} bei ${f.oe}° Öchsle! Der Zucker steigt jetzt ${S.sonne>=3?'kräftig':'schneller'}, die Menge schrumpft. Kabinett und Spätlese gibt es von diesem Feld nicht mehr.${aus?'':` Bis zur Auslese fehlen noch ${reg.min.aus-f.oe}°, lass die Trauben am besten noch einen Monat hängen.`}`);
         else if(aus){f.edelGeprueft=true; L.push(`Der ${so.name} hat den Auslese-Wert von ${reg.min.aus}° erreicht, aber die Edelfäulnis bleibt dieses Jahr aus.`)}
       }
@@ -1045,6 +1047,9 @@ function feldLiter(f,la){const r=f.reif/100,u=f.ueber/100; return Math.round(f.m
 // Ab wann ein Wein frühestens verkauft werden darf, wenn er jetzt gelesen wird.
 // Gekeltert wird im Lesemonat, nach einem Monat im Fass darf er angemeldet und abgefüllt werden, ab Kabinett und beim Eiswein erst im Januar.
 // Danach muss er die Mindestzeit aus lagerBasis in der Flasche liegen. n zählt die Monate ab jetzt.
+// Version 5.0: Edelfäulnis-Regel des Gebiets als kurzer Text (kühl erst ab Auslese, Mitte vorher selten).
+function edelRegel(){const r=R(), m=r.min; return r.edelAus?`Edelfäulnis kommt hier erst ab dem Auslese-Wert von ${m.aus}°, dann meist`:r.edelSpatF?`Edelfäulnis kann ab Oktober ab ${m.spat}° kommen, aber selten, ab ${m.aus}° meist`:`Edelfäulnis kann ab Oktober ab ${m.spat}° kommen, bei Regen oder mildem Wetter öfter, ab ${m.aus}° meist`}
+const inMonaten=n=>{const t=S.monat+n; return `${MON[t%12]} ${S.jahr+Math.floor(t/12)}`};
 function verkaufAb(sorte,st){
   const abf=STUFEN[st].rang>=3?12:S.monat+1, t=abf+lagerBasis({sorte,stufe:st}).min, n=t-S.monat;
   return `⏳ verkaufsfertig frühestens ${MON[t%12]} ${S.jahr+Math.floor(t/12)} (in ${n} ${n===1?'Monat':'Monaten'})`;
@@ -1061,7 +1066,7 @@ function weinQualHtml(){
     +['kab','spat','aus','ba','tba'].map(st=>z(STUFEN[st].name,pr(st)+'.')).join('')
     +z('Eiswein',`ab ${m.tafel}° Öchsle, nur gefrorene Trauben der Dezember-Lese, mit Edelfäulnis, ${LESE.reif} oder ${LESE.ueber}, nicht gemischt. Nur im Januar anmelden. Die Öchsle bestimmen den Wert wie bei Auslese (ab ${m.aus}°), Beerenauslese (ab ${m.ba}°) oder Trockenbeerenauslese (ab ${m.tba}°).`)
     +`<div class="hilfe"><b>⏳ Reifezeit in der Flasche bis zum Verkauf</b><br>Tafel- und Qualitätswein: 2\u00a0Monate.<br>Kabinett bis Trockenbeerenauslese: ${reife(x=>Math.max(1,x-(S.keller||0)))}.<br>Eiswein: ${reife(x=>Math.max(1,Math.round(x*1.5)-(S.keller||0)))}.${S.keller?`<br>Dein ausgebauter Keller kürzt das schon um ${S.keller} ${S.keller===1?'Monat':'Monate'}.`:''}</div>`
-    +`<div class="hilfe"><b>📜 Gut zu wissen</b><br>Jeder Wein liegt mindestens einen Monat im Fass, höchstens sieben.<br>Ab Kabinett und beim Eiswein darfst du erst im Januar nach der Lese anmelden.<br>Überreife Trauben bringen 5° mehr Öchsle.<br>Edelfäulnis kann ab Oktober ab ${m.spat}° kommen, bei Regen oder mildem Wetter öfter, ab ${m.aus}° meist. Am häufigsten trifft sie die Sorte, die am besten ins Gebiet passt. Dann gibt es von dem Feld kein Kabinett und keine Spätlese mehr.<br>Kälteeinbruch im November: in jedem vierten Jahr, die Vorhersage warnt meist davor.<br>${frostText()}, nur dann gibt es Eiswein.<br>Bei der Lese zeigt jede Leseart, ab wann der Wein verkaufsfertig ist.</div>${mib('stufen')}`
+    +`<div class="hilfe"><b>📜 Gut zu wissen</b><br>Jeder Wein liegt mindestens einen Monat im Fass, höchstens sieben.<br>Ab Kabinett und beim Eiswein darfst du erst im Januar nach der Lese anmelden.<br>Überreife Trauben bringen 5° mehr Öchsle.<br>${edelRegel()}. Am häufigsten trifft sie die Sorte, die am besten ins Gebiet passt. Dann gibt es von dem Feld kein Kabinett und keine Spätlese mehr.<br>Kälteeinbruch im November: in jedem vierten Jahr, die Vorhersage warnt meist davor.<br>${frostText()}, nur dann gibt es Eiswein.<br>Bei der Lese zeigt jede Leseart, ab wann der Wein verkaufsfertig ist.</div>${mib('stufen')}`
     +`<div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`;
 }
 // Was gefrorenen Trauben für Eiswein fehlt (ohne die Leseart, die wählt man beim Lesen).
@@ -1612,8 +1617,8 @@ const gebietArt=r=>r.warm>0?['🔥','Warm']:r.warm<0?['🧊','Kühl']:['⛰️',
 function steckbrief(id,o={}){
   const r=REGIONEN[id], [sym,art]=gebietArt(r), mi=r.min, pz=x=>Math.round(x*100)+'\u00a0%';
   const bonus=r.wettPlus?'Steillagen-Ruf':r.preisF?'berühmte Lage':r.warm>0?'viel Sonne':'kalte Winter';
-  const stark=[r.warm>0?`${r.warm}° mehr Zucker${r.edelF?` und ${pz(r.edelF-1)} öfter Edelfäulnis`:''}.`:'',r.warm<0?`Niedrigere Hürden (Auslese ab ${mi.aus}°) und oft Frost für Eiswein.`:'',
-    r.wettPlus?`Bei Wettbewerben zählt jeder Wein ${r.wettPlus} Punkte mehr.`:'',r.preisF?`Jeder Wein bringt ${pz(r.preisF-1)} mehr Geld.`:''].join(' ').trim();
+  const stark=[r.warm>0?`${r.warm}° mehr Zucker${r.edelF?` und ${pz(r.edelF-1)} öfter Edelfäulnis`:''}.`:'',r.warm<0?`Niedrigere Hürden (Auslese ab ${mi.aus}°) und oft Frost für Eiswein. Edelfäulnis erst ab dem Auslese-Wert, das schont Kabinett und Spätlese.`:'',
+    r.wettPlus?`Bei Wettbewerben zählt jeder Wein ${r.wettPlus} Punkte mehr.`:'',r.preisF?`Jeder Wein bringt ${pz(r.preisF-1)} mehr Geld.`:'',r.edelSpatF?'Edelfäulnis kommt vor dem Auslese-Wert nur selten, Kabinett und Spätlese bleiben öfter heil.':''].join(' ').trim();
   const schwach=r.warm>0?'Kaum Frost im Dezember, Eiswein ist selten.':r.warm<0?`${-r.warm}° weniger Zucker, edelsüße Weine sind schwer.`:'Kein Zuckervorteil und normale Hürden.';
   const lohnt=r.warm>0?'Auf Edelfäulnis pokern':r.warm<0?'Auf Eiswein pokern':r.wettPlus?'Auf Medaillen setzen':'Auf den Verkauf setzen';
   const so=r.sorten.slice().sort((a,b)=>eignung(b,id)-eignung(a,id)).map(s=>{const e=eignung(s,id); return `${dot(s)}${SORTEN[s].name} ${sterne(e>=1?3:e>=.85?2:1)}`}).join('<br>');
@@ -1820,7 +1825,7 @@ function vBerg(){
       <div class="kv"><span>Menge am Stock</span><span>${num(f.menge)}\u00a0l</span></div>
       <div class="kv"><span>Reif</span><span>${f.reif}\u00a0%</span></div><div class="bar"><i style="width:${f.reif}%"></i></div>
       <div class="kv"><span>davon überreif</span><span>${f.ueber}\u00a0%</span></div><div class="bar w"><i style="width:${f.ueber}%"></i></div>
-      <div class="kv"><span>Edelfäulnis</span><span>${f.edel?'ja':f.edelGeprueft?'bleibt dieses Jahr aus':`nein, ab Oktober möglich ab ${R().min.spat}°`}</span></div>
+      <div class="kv"><span>Edelfäulnis</span><span>${f.edel?'ja':f.edelGeprueft?'bleibt dieses Jahr aus':R().edelAus?`nein, möglich ab ${R().min.aus}°`:`nein, ab Oktober möglich ab ${R().min.spat}°`}</span></div>
       ${f.gefroren?'<div class="kv"><span>Zustand</span><span>❄️ gefroren</span></div>':''}
       ${f.teil?'<div class="mut">Ein Teil ist schon gelesen, der Rest hängt noch.</div>':''}
       ${m>=7?`<div class="hilfe">${leseHilfe(f)}${m===9?`<br><span class="rot">${S.kaelteWarn===S.jahr?'Die Vorhersage meldet einen Kälteeinbruch im November! Dann erfriert alles, was noch hängt.':'Achtung: In jedem vierten Jahr kommt im November ein Kälteeinbruch, dann erfriert alles, was noch hängt. Die Vorhersage warnt meist davor.'}</span>`:''}${m===10?`<br><span class="rot">Achtung: Ohne Frost im Dezember verfault alles, was noch hängt.</span><br>${frostText()}.`:''}</div>`:'<div class="mut">Lese ab August.</div>'}`;
@@ -1916,9 +1921,11 @@ function vStadt(){
     h+=dauerHtml('handel');
     // Version 4.4: kurze Zeilen wie im Kellerbuch. Der Preis ist der beste Absatzweg mit der Marktlage nach den Verkäufen dieses Monats.
     const mf=marktF(0);
+    // Version 5.0: Ist noch nichts verkaufsreif, steht oben, wann der erste Wein so weit ist.
+    if(fl.length&&!fl.some(l=>preis(l))){const b=fl.map(l=>({l,n:lager(l).min-l.flMonate})).sort((a,b)=>a.n-b.n)[0]; h+=`<div class="hilfe" style="margin-bottom:8px">⏳ Noch nichts verkaufsreif. Als Erstes reif: ${esc(lotName(b.l))} im ${inMonaten(b.n)}.</div>`}
     h+=fl.length?bsortChips()+fl.slice().sort(BSORT_F[BSORT]).map(l=>{const W=wege(l),L=lager(l),H=haltText(l),kopf=`<b>${dot(l.sorte)}${esc(lotName(l))}${l.med&&l.med.length?' 🏅':''}</b>`,z2=`<div class="bz2">${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte</div>`,z3=`<div class="bz3 ${H.r<=2?'rot':''}">${H.t}</div>`;
       if(!W.length){const n=L.min-l.flMonate; return `<button class="bzeile" data-a="buchDetail" data-id="${l.id}"><div class="bz1">${kopf}<span>reif in ${n} ${n===1?'Monat':'Monaten'}</span></div>${z2}${z3}</button>`}
-      const w=W[0]; return `<button class="bzeile" data-a="verkaufen" data-id="${l.id}"><div class="bz1">${kopf}<span>${w.name==='Inland'?'':w.flag+' '}${eur2(w.p*mf)}${mf<.995?' 📉':''}</span></div>${z2}${z3}</button>`}).join(''):'<div class="card mut">Kein Flaschenwein im Lager.</div>';
+      const w=W[0]; return `<button class="bzeile" data-a="verkaufen" data-id="${l.id}"><div class="bz1">${kopf}<span>${w.name==='Inland'?'':w.flag+' '}${eur2(w.p*mf)}${mf<.995?' 📉':''}</span></div>${z2}${z3}</button>`}).join(''):'<div class="card mut">Kein Flaschenwein im Lager. Wein aus dem Fass meldest du im Rathaus an und füllst ihn danach im Keller ab. Tafel- und Qualitätswein sind zwei Monate danach verkaufsreif.</div>';
   }
   if(SUB==='laeden'){
     const n=S.lots.filter(ladenOk).length;
@@ -1930,7 +1937,10 @@ function vStadt(){
       h+=kann.length?'<h3>Ins Regal stellen</h3>'+kann.map(l=>`<button class="wahl" data-a="regal" data-id="${l.id}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${num(l.liter)} Flaschen · im Regal ${eur2(preis(l)*LADEN_EIGEN_F)} · Großhandel ${eur2(wege(l)[0].p)}</span></button>`).join(''):'<div class="card mut">Gerade hast du keinen verkaufsreifen Flaschenwein fürs Regal.</div>';
       h+=`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/laden.jpg)"><b>Weinhandlungen in anderen Gebieten</b><span>nehmen jeden Monat eine kleine Menge</span></div>`;
     }
-    h+=`<div class="mut" style="margin-bottom:8px">Weinhandlungen in den anderen Anbaugebieten zahlen mehr als der Großhandel, nehmen aber nur Prädikatsweine und Sekt und jeden Monat nur eine kleine Menge. ${n?`Du hast ${n} ${n===1?'passenden Wein':'passende Weine'}.`:'Du hast gerade keinen passenden, verkaufsreifen Wein.'}</div>`;
+    h+=`<div class="mut" style="margin-bottom:8px">Weinhandlungen in den anderen Anbaugebieten zahlen mehr als der Großhandel, nehmen aber nur Prädikatsweine und Sekt und jeden Monat nur eine kleine Menge. ${n?`Du hast ${n} ${n===1?'passenden Wein':'passende Weine'}.`:''}</div>`;
+    // Version 5.0: Ohne passenden Wein sagt ein Hinweis, was fehlt und ab wann es geht.
+    if(!n){const bald=S.lots.filter(l=>l.status==='flasche'&&!l.regal&&!preis(l)&&(l.sekt||STUFEN[l.stufe].rang>=3)).map(l=>({l,n:lager(l).min-l.flMonate})).sort((a,b)=>a.n-b.n)[0];
+      h+=`<div class="hilfe" style="margin-bottom:8px">🍷 <b>Noch kein passender Wein.</b> ${bald?`Als Erstes reif: ${esc(lotName(bald.l))} im ${inMonaten(bald.n)}.`:`Weinhandlungen nehmen nur Prädikatswein ab Kabinett oder Sekt. Für Kabinett liest du reife Trauben ab ${R().min.kab}° ohne Edelfäulnis, anmelden darfst du ab Januar, danach reift er je nach Sorte noch einige Monate in der Flasche (📖 Weinlexikon im Kellerbuch).`} Bis dahin verkaufst du im Großhandel.</div>`}
     h+=dauerHtml('laeden');
     h+=Object.entries(S.laeden).map(([r,d])=>`<div class="card"><h3>Weinhandlung ${WO[r]}</h3>
       <div class="kv"><span>Sucht diesen Monat</span><span>${WUNSCH[d.wunsch]}</span></div>
