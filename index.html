@@ -53,6 +53,7 @@ button.siegel:active{transform:translateY(2px) scale(.96);filter:brightness(.92)
 .btns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.btns button{flex:1 1 auto}
 .bar{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin:4px 0 8px}.bar i{display:block;height:100%;background:var(--gruen)}
 .bar.w i{background:var(--wein)}.bar.g i{background:var(--gold)}
+.bar.fl{position:relative}.bar.fl i{position:absolute;left:0;top:0}.bar.fl i.hell{opacity:.35}
 .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px}
 .weiss{background:var(--gruen)}.rotw{background:var(--blau)}
 .task{display:block;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--line);border-left:5px solid var(--gruen);margin:0 0 8px;font-weight:500;min-height:0}
@@ -231,22 +232,29 @@ const START_JAHR=2027, LANDWERT=15000;
 // Der Großhandel kauft je Monat für MARKT_FREI Euro zum vollen Preis, je Rang für MARKT_RANG und je Exportland für MARKT_EXPORT mehr. Verkäufe an Weinhandlungen zählen mit. Darüber fällt der Preis bis auf MARKT_MIN, erreicht nach dem MARKT_BREIT-fachen des Budgets.
 // Jede Weinhandlung nimmt im Monat 1 bis LADEN_MAX mal LADEN_MENGE Flaschen. Der Wein im Keller zählt beim Vermögen nur mit WEIN_WERT seines Listenwerts und höchstens mit dem, was der Großhandel in einem Jahr zum vollen Preis kauft.
 // Die Gegner fangen mit GEGNER_START ihrer Stärke an und wachsen über GEGNER_JAHRE Jahre auf GEGNER_ENDE.
-const HA_FREI=3, HA_KOSTEN_KLEIN=50, HA_KOSTEN=400, MARKT_FREI=3000, MARKT_RANG=1000, MARKT_EXPORT=1500, MARKT_MIN=.25, MARKT_BREIT=.75, GEGNER_START=.5, GEGNER_ENDE=1.4, GEGNER_JAHRE=25, LADEN_MENGE=50, LADEN_MAX=2, WEIN_WERT=.5;
+const HA_FREI=3, HA_KOSTEN_KLEIN=50, HA_KOSTEN=400, MARKT_FREI=3000, MARKT_RANG=550, MARKT_EXPORT=1500, MARKT_MIN=.25, MARKT_BREIT=.75, GEGNER_START=.5, GEGNER_ENDE=1.4, GEGNER_JAHRE=25, LADEN_MENGE=50, LADEN_MAX=2, WEIN_WERT=.5;
 const WO={mosel:'an der Mosel',rheingau:'im Rheingau',rheinhessen:'in Rheinhessen',pfalz:'in der Pfalz',franken:'in Franken',wuerttemberg:'in Württemberg'};
+// Zehn Stufen. ha ist beim Spieler die bepflanzte Fläche (flaecheBep), bei den Gegnern ihre Fläche.
 const RAENGE=[
   {name:'Neuling',kurz:'Neuling',ans:0,ha:0,verm:0,rahmen:20000},
-  {name:'Winzer',kurz:'Winzer',ans:15,ha:3,verm:100000,rahmen:40000,neu:'du darfst bei Auktionen mitbieten'},
-  {name:'Winzermeister',kurz:'Winzermeister',ans:100,ha:5,verm:300000,rahmen:40000,neu:'Landesprämierung, Export in die Niederlande und nach Großbritannien'},
-  {name:'Gutsherr',kurz:'Gutsherr',ans:250,ha:8,verm:750000,rahmen:160000,neu:'Bundeswettbewerb',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.'},
-  {name:'Weinbaurat',kurz:'Weinbaurat',ans:480,ha:13,verm:1800000,rahmen:300000,neu:'Export in die USA und nach Japan'},
-  {name:'Präsident des Weinbauverbands',kurz:'Präsident',ans:850,ha:20,verm:3000000,rahmen:500000,neu:'der Sieg'}
+  {name:'Jungwinzer',kurz:'Jungwinzer',ans:15,ha:3,verm:100000,rahmen:40000,neu:'du darfst bei Auktionen mitbieten'},
+  {name:'Winzer',kurz:'Winzer',ans:50,ha:4,verm:180000,rahmen:80000,neu:'Export in die Niederlande'},
+  {name:'Winzermeister',kurz:'Winzermeister',ans:100,ha:5,verm:300000,rahmen:160000,neu:'Landesprämierung, Export nach Großbritannien'},
+  {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',ans:170,ha:6,verm:500000,rahmen:300000,neu:'Export in die USA, ein Gutsverwalter'},
+  {name:'Gutsherr',kurz:'Gutsherr',ans:250,ha:8,verm:750000,rahmen:300000,neu:'Bundeswettbewerb, Export nach Japan',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.'},
+  {name:'Weinbaurat',kurz:'Weinbaurat',ans:360,ha:10,verm:1200000,rahmen:300000,neu:'eine eigene Weinhandlung, das Amt des Weinbotschafters'},
+  {name:'Verbandsvorstand',kurz:'Vorstand',ans:480,ha:13,verm:1800000,rahmen:300000,neu:'das Hoffest, du kannst Kontrollen anregen'},
+  {name:'Vizepräsident',kurz:'Vizepräsident',ans:650,ha:16,verm:2400000,rahmen:300000,neu:'die Chance auf eine Spitzenlage'},
+  {name:'Präsident des Weinbauverbands',kurz:'Präsident',ans:850,ha:20,verm:3000000,rahmen:300000,neu:'der Sieg'}
 ];
+// Ab welcher Stufe (Index in RAENGE) etwas geht. RANG_ALT rechnet die sechs Ränge alter Spielstände um.
+const R_MAX=RAENGE.length-1, R_AUKTION=1, R_LAND=3, R_VERWALTER=4, R_BUND=5, R_LADEN=6, R_HOFFEST=7, R_SPITZE=8, RANG_ALT=[0,1,3,5,7,9];
 // Was ein Aufstieg bringt: der Kreditrahmen nur, wenn er wächst, dazu die Freischaltung des Rangs.
 function bringt(i){const r=RAENGE[i],T=[];if(r.rahmen>RAENGE[i-1].rahmen)T.push('Kreditrahmen '+eur(r.rahmen));T.push(r.neu);return T.join(', ')}
 // Schummelei: Kälteeinbruch im November, Panschen, Weinkontrolle, Sabotage. Alle Zahlen an einer Stelle.
 const KAELTE=.25, ZUCKER_MAX=20, ZUCKER_ERLAUBT=10, SCHMIER_ANTEIL=.1, SCHMIER_MIN=2000;
 const STRAFE_MIN=10000, STRAFE_ANS=15, STRAFE_ANS_WEITER=5, BESTECH_MIN=5000, BESTECH_MAX=50000, BESTECH_NEIN_ANS=10;
-const SAB_KONTAKT=20000, SAB_MIN=5000, SAB_MAX=50000, SAB_AUFFLIEGEN=.2, SAB_STRAFE=30000, SAB_STRAFE_ANS=20, SAB_RANG=3;
+const SAB_KONTAKT=20000, SAB_MIN=5000, SAB_MAX=50000, SAB_AUFFLIEGEN=.2, SAB_STRAFE=30000, SAB_STRAFE_ANS=20, SAB_RANG=R_BUND;
 const SAB={gift:['🧪 Wein vergiften','Sein bester Fasswein ist hin.'],buch:['📖 Kellerbuch fälschen','Seine Weine stehen als gepanscht im Buch. Bei seiner nächsten Kontrolle zahlt er Strafe und verliert Ansehen.'],berg:['🪓 Im Weinberg wüten','Ein Viertel seiner Reben und Flaschen ist weg.']};
 const DIFF={
   einfach:{name:'Einfach',text:'Ansehen wächst schneller, die Gegner sind gemütlich.',ans:1.25,ki:.8,feld:-4},
@@ -260,9 +268,9 @@ const GEGNER_TYP={
 };
 const EXPORT=[
   {id:'nl',name:'Niederlande',flag:'🇳🇱',rang:2,text:'mag einfache Weine bis Kabinett',f:l=>STUFEN[l.stufe].rang<=3?1.12:1.04},
-  {id:'gb',name:'Großbritannien',flag:'🇬🇧',rang:2,text:'zahlt gut für Riesling und Sekt',f:l=>l.sekt?1.25:l.sorte==='riesling'?1.2:1.06},
+  {id:'gb',name:'Großbritannien',flag:'🇬🇧',rang:3,text:'zahlt gut für Riesling und Sekt',f:l=>l.sekt?1.25:l.sorte==='riesling'?1.2:1.06},
   {id:'us',name:'USA',flag:'🇺🇸',rang:4,text:'sucht Spätlese und höher',f:l=>STUFEN[l.stufe].rang>=4?1.3:1},
-  {id:'jp',name:'Japan',flag:'🇯🇵',rang:4,text:'zahlt Spitzenpreise für edelsüße Weine',f:l=>STUFEN[l.stufe].rang>=6?1.5:1.1}
+  {id:'jp',name:'Japan',flag:'🇯🇵',rang:5,text:'zahlt Spitzenpreise für edelsüße Weine',f:l=>STUFEN[l.stufe].rang>=6?1.5:1.1}
 ];
 const WUNSCH={weiss:'Weißwein',rot:'Rotwein',sekt:'Sekt',edel:'Auslese und höher'};
 const NACHBARN=['Familie Kessler','Winzer Albrecht','Gebrüder Thielen','Winzerin Maas','Familie Dörr','Winzer Paulus','Winzerin Ohlig','Familie Brandner'];
@@ -303,7 +311,9 @@ const gueltig=o=>!!(o&&o.v===1&&o.felder&&Array.isArray(o.lots)&&REGIONEN[o.regi
 function save(){try{localStorage.setItem(KEYS[SLOT],JSON.stringify(S));localStorage.setItem(SLOT_KEY,SLOT)}catch(e){}}
 function lies(i){try{const o=JSON.parse(localStorage.getItem(KEYS[i])||'null');return gueltig(o)?o:null}catch(e){return null}}
 // Übernimmt einen gelesenen Spielstand und bringt alte Stände auf den heutigen Stand.
-function nimm(o){S=o;if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altEdel();lohnAbgleich();altEhrungen()}
+function nimm(o){S=o;if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen()}
+// Alte Spielstände mit sechs Rängen: Rang des Spielers und der Gegner auf die zehn Stufen umrechnen. S.v3 merkt sich, dass das passiert ist.
+function altRang(){if(S.v3) return; S.rang=RANG_ALT[S.rang]||0; for(const g of S.gegner) g.rang=RANG_ALT[g.rang]||0; S.v3=1}
 // Alte Spielstände: Die Werbung gibt es nicht mehr. Die Ehrungen fürs Büro entstehen aus den Medaillen der Weine im Keller und dem Rang.
 function altEhrungen(){
   delete S.werbung;
@@ -473,7 +483,7 @@ function altEdel(){
 }
 // Legt alles an, was Etappe 3 braucht. Läuft bei neuen Spielen und bei alten Spielständen.
 function etappe3(n,schwer){
-  Object.assign(S,{schwer,rang:0,sieger:null,wett:null,auktion:null,sektJahr:0,exLage:{nl:1,gb:1,us:1,jp:1}});
+  Object.assign(S,{schwer,rang:0,v3:1,sieger:null,wett:null,auktion:null,sektJahr:0,exLage:{nl:1,gb:1,us:1,jp:1}});
   const typen=misch(['vorsicht','qualitaet','zocker']).slice(0,n), andere=misch(Object.keys(REGIONEN).filter(r=>r!==S.region));
   S.gegner=typen.map((typ,i)=>({id:i,typ,name:GEGNER_TYP[typ].name,region:i===0&&Math.random()<.3?S.region:andere[i],ha:3,geld:40000,kredit:0,ansehen:0,rang:0}));
   neueLaeden(); S.absatz=0;
@@ -486,6 +496,8 @@ function marktRest(){return Math.max(0,marktFrei()-(S.absatz||0))}
 function marktF(n){n=Math.max(0,n);const Q=marktFrei(),a=S.absatz||0,f=x=>x<=Q?1:Math.max(MARKT_MIN,1-(1-MARKT_MIN)*(x-Q)/(Q*MARKT_BREIT)); if(n<=0) return f(a); let s=0; for(let i=0;i<40;i++) s+=f(a+n*(i+.5)/40); return s/40}
 function R(){return REGIONEN[S.region]}
 function rebenGesamt(){return R().sorten.reduce((a,id)=>a+S.felder[id].reben,0)}
+// Bepflanzte Hektar mit einer Nachkommastelle. Zählt für deinen Aufstieg, gekaufte Fläche allein reicht nicht.
+function flaecheBep(){return Math.round(rebenGesamt()/HA_REBEN*10)/10}
 const verlustSpanne=b=>VERLUST.find(v=>b>=v[0]);
 // Bodenschnitt des laufenden Jahres: die Monatsenden bisher und der heutige Stand.
 function bodenSchnitt(){return Math.round(((S.bodenSum||0)+S.boden)/((S.bodenN||0)+1))}
@@ -507,7 +519,7 @@ function lotWert(l){
 }
 function vermoegen(){return Math.round(S.geld-(S.kredit?S.kredit.rest:0)+S.ha*LANDWERT+S.maschinen.reduce((a,m)=>a+MASCH_PREIS*.5*m.zustand/100,0)+Math.min(12*marktFrei(),WEIN_WERT*S.lots.reduce((a,l)=>a+lotWert(l),0)))}
 function gVerm(g){return Math.round(g.geld-g.kredit+g.ha*LANDWERT)}
-function rangFuer(ab,ans,ha,verm){let r=ab;while(r<5){const n=RAENGE[r+1];if(ans>=n.ans&&ha>=n.ha&&verm>=n.verm)r++;else break}return r}
+function rangFuer(ab,ans,ha,verm){let r=ab;while(r<R_MAX){const n=RAENGE[r+1];if(ans>=n.ans&&ha>=n.ha&&verm>=n.verm)r++;else break}return r}
 function medHtml(l){return l.med&&l.med.length?`<div class="gold" style="font-size:14px">${l.med.map(esc).join(' · ')}</div>`:''}
 
 /* ================= Absatzwege ================= */
@@ -525,7 +537,7 @@ function ladenPreis(l,r){
 }
 
 /* ================= Wettbewerbe ================= */
-function wettRang(){return S.wett&&S.wett.typ==='bund'?3:2}
+function wettRang(){return S.wett&&S.wett.typ==='bund'?R_BUND:R_LAND}
 function reifeBonus(l){return Math.min(12,Math.round((reifeFaktor(l)-1)*8))}
 function wettFaehig(l){
   const w=S.wett; if(!w||!l||!l.stufe||l.pansch) return false;
@@ -535,7 +547,7 @@ function wettFaehig(l){
 function neuerWettbewerb(typ){
   const d=DIFF[S.schwer].feld, bund=typ==='bund', F=[], namen=misch(GUETER);
   for(let i=0;i<(bund?8:9);i++) F.push({name:namen[i],p:(bund?rint(20,44):i<2?rint(20,34):rint(8,26))+d});
-  for(const g of S.gegner) if(bund||g.region===S.region){const t=GEGNER_TYP[g.typ];F.push({name:g.name,ki:g.id,p:rint(t.ws[0],t.ws[1])+Math.round(g.rang*(bund?2:1.5))+(bund?4:0)+d})}
+  for(const g of S.gegner) if(bund||g.region===S.region){const t=GEGNER_TYP[g.typ];F.push({name:g.name,ki:g.id,p:rint(t.ws[0],t.ws[1])+Math.round(g.rang*(bund?1.1:.85))+(bund?4:0)+d})}
   S.wett={typ,feld:F,fertig:false};
 }
 // l ist der eingereichte Wein oder null, wenn der Spieler nicht mitmacht. Verteilt die Preise.
@@ -615,7 +627,7 @@ function gegnerMonat(){
       if(g.geld+(g.typ==='zocker'?30000:0)>=pr&&Math.random()<t.biet*st){g.geld-=pr; g.ha+=ha; g.ansehen+=(3+Math.min(ha,7))*st; neu(4,`${g.name} ersteigert ${ha} Hektar ${wo}.`)}
     }
     if(g.typ==='zocker'){
-      if(!g.kredit&&Math.random()<.04){const k=20000*(g.rang+1); g.geld+=k; g.kredit=Math.round(k*1.2); neu(2,`${g.name} nimmt einen Kredit über ${eur(k)} auf.`)}
+      if(!g.kredit&&Math.random()<.04){const k=12000*(g.rang+1); g.geld+=k; g.kredit=Math.round(k*1.2); neu(2,`${g.name} nimmt einen Kredit über ${eur(k)} auf.`)}
       if(m===9){
         if(Math.random()<.4){
           if(Math.random()<.35){g.ansehen=Math.max(0,g.ansehen-20); g.geld-=Math.round(Math.max(2000,g.geld*.1)); neu(5,`Weinkontrolle bei ${g.name}: gepanschter Wein gefunden. Das kostet Strafe und Ansehen.`)}
@@ -633,7 +645,7 @@ function gegnerMonat(){
     const alt=g.rang; g.rang=rangFuer(g.rang,g.ansehen,g.ha,gVerm(g));
     if(g.rang>alt){
       neu(9,`${g.name} steigt auf und ist jetzt ${RAENGE[g.rang].name}.`);
-      if(g.rang===5&&!S.sieger){S.sieger=g.name; neu(10,`🏆 ${g.name} gewinnt die Partie. Du kannst weiterspielen und deinen eigenen Aufstieg vollenden.`)}
+      if(g.rang===R_MAX&&!S.sieger){S.sieger=g.name; neu(10,`🏆 ${g.name} gewinnt die Partie. Du kannst weiterspielen und deinen eigenen Aufstieg vollenden.`)}
     }
   }
   N.sort((a,b)=>b.p-a.p);
@@ -897,26 +909,26 @@ function monatWeiter(){
 }
 // Alles, was Etappe 3 beim Monatswechsel tut: Aufstieg, Gegner, Wettbewerbe, Auktion, Märkte.
 function etappe3Monat(Z){
-  const alt=S.rang; S.rang=rangFuer(S.rang,S.ansehen,S.ha,vermoegen());
+  const alt=S.rang; S.rang=rangFuer(S.rang,S.ansehen,flaecheBep(),vermoegen());
   if(S.rang>alt){
     const r=RAENGE[S.rang];
     // Der Aufstieg steht als Ehrung oben auf der Infoseite und im Büro.
-    ehre(S.rang===5?'👑':'🎖️',`Aufstieg! Du bist jetzt ${r.name}.`,1,`Das bringt dir: ${bringt(S.rang)}.${r.weg?' '+r.weg:''}`);
-    if(S.rang===5&&!S.sieger){S.sieger=S.name; Z.push('🏆 Du hast die Partie gewonnen! Du kannst trotzdem weiterspielen.')}
+    ehre(S.rang===R_MAX?'👑':'🎖️',`Aufstieg! Du bist jetzt ${r.name}.`,1,`Das bringt dir: ${bringt(S.rang)}.${r.weg?' '+r.weg:''}`);
+    if(S.rang===R_MAX&&!S.sieger){S.sieger=S.name; Z.push('🏆 Du hast die Partie gewonnen! Du kannst trotzdem weiterspielen.')}
   }
   kontrolleMonat(Z); sabotageGegenDich(Z);
   Z.push(...gegnerMonat().map(t=>'📰 '+t));
   if(S.monat===2){
     neuerWettbewerb('land');
-    Z.push(S.rang>=2?'🏅 Die Landesprämierung läuft. Du kannst diesen Monat einen Prädikatswein vom letzten Jahrgang einreichen.':'🏅 Die Landesprämierung läuft. Mitmachen darfst du ab dem Rang Winzermeister.');
+    Z.push(S.rang>=R_LAND?'🏅 Die Landesprämierung läuft. Du kannst diesen Monat einen Prädikatswein vom letzten Jahrgang einreichen.':`🏅 Die Landesprämierung läuft. Mitmachen darfst du ab dem Rang ${RAENGE[R_LAND].name}.`);
   }
   if(S.monat===4&&S.jahr%3===0){
     neuerWettbewerb('bund');
-    Z.push(S.rang>=3?'🏅 Der Bundeswettbewerb läuft, er findet nur alle drei Jahre statt. Du kannst diesen Monat einen Wein einreichen.':'🏅 Der Bundeswettbewerb läuft. Mitmachen darfst du ab dem Rang Gutsherr.');
+    Z.push(S.rang>=R_BUND?'🏅 Der Bundeswettbewerb läuft, er findet nur alle drei Jahre statt. Du kannst diesen Monat einen Wein einreichen.':`🏅 Der Bundeswettbewerb läuft. Mitmachen darfst du ab dem Rang ${RAENGE[R_BUND].name}.`);
   }
   if((S.jahr-START_JAHR)*12+S.monat>=6&&Math.random()<1/18){
     neueAuktion();
-    Z.push(`🔨 Auktion: ${S.auktion.ha} Hektar Weinberg ${WO[S.region]} kommen diesen Monat unter den Hammer.${S.rang<1?' Mitbieten darfst du ab dem Rang Winzer.':''}`);
+    Z.push(`🔨 Auktion: ${S.auktion.ha} Hektar Weinberg ${WO[S.region]} kommen diesen Monat unter den Hammer.${S.rang<R_AUKTION?` Mitbieten darfst du ab dem Rang ${RAENGE[R_AUKTION].name}.`:''}`);
   }
   neueLaeden(); S.absatz=0;
   for(const e of EXPORT) S.exLage[e.id]=clamp(S.exLage[e.id]+rnd(-.05,.05),.9,1.12);
@@ -992,7 +1004,7 @@ function zeigePleite(){
 function aufgaben(){
   const A=[], m=S.monat, frei=S.ha*HA_REBEN-rebenGesamt();
   if(S.mahnung) A.push({t:`${S.mahnung}. Mahnung: Schulden über dem Kreditrahmen`,rot:1,tab:'stadt',sub:'bank'});
-  if(S.auktion&&!S.auktion.ende&&S.rang>=1) A.push({t:`🔨 Auktion diesen Monat: ${S.auktion.ha} Hektar, Gebot steht bei ${eur(S.auktion.gebot)}`,akt:'auktion'});
+  if(S.auktion&&!S.auktion.ende&&S.rang>=R_AUKTION) A.push({t:`🔨 Auktion diesen Monat: ${S.auktion.ha} Hektar, Gebot steht bei ${eur(S.auktion.gebot)}`,akt:'auktion'});
   if(S.wett&&!S.wett.fertig&&S.rang>=wettRang()) A.push({t:`🏅 ${WETTNAME[S.wett.typ]}: diesen Monat einen Wein einreichen`,akt:'wettbewerb'});
   if(fehlText()) A.push({t:`${fehlText()}, vorher geht es nicht in den nächsten Monat`,rot:1,tab:'stadt',sub:'arbeit'});
   if(m>=5&&m<=10&&leseFaktor()<1&&R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)) A.push({t:`Ernteleistung reicht nur für ${Math.round(leseFaktor()*100)} % der Reben`,rot:1,tab:'stadt',sub:'arbeit'});
@@ -1044,13 +1056,17 @@ function vSlots(){
   ${tonKnoepfe()}<div class="mut" style="margin:0 0 12px">Bilder, Musik und Geräusche sind mit KI erstellt (Musik mit Treblo, Geräusche mit ElevenLabs, elevenlabs.io).</div></main>`;
 }
 function vRang(){
-  const r=S.rang, n=RAENGE[r+1], v=vermoegen();
-  const bar=(ist,soll)=>`<div class="bar ${ist>=soll?'':'g'}"><i style="width:${soll?clamp(ist/soll*100,0,100):100}%"></i></div>`;
-  let h=`<div class="card"><h3>Dein Rang: ${RAENGE[r].name}</h3>`;
+  const r=S.rang, n=RAENGE[r+1], v=vermoegen(), bep=flaecheBep(), frei=Math.round((S.ha-bep)*10)/10;
+  const w=(ist,soll)=>soll?clamp(ist/soll*100,0,100):100;
+  const bar=(ist,soll)=>`<div class="bar ${ist>=soll?'':'g'}"><i style="width:${w(ist,soll)}%"></i></div>`;
+  // Fläche: hell die gekaufte, dunkel die bepflanzte. Zählen tut nur die bepflanzte.
+  const barF=soll=>`<div class="bar fl ${bep>=soll?'':'g'}"><i class="hell" style="width:${w(S.ha,soll)}%"></i><i style="width:${w(bep,soll)}%"></i></div>`;
+  const nach=frei>0?`<div class="mut" style="margin:-4px 0 8px">Noch ${num(frei*HA_REBEN)} Reben frei zum Nachpflanzen (${frei.toLocaleString('de-DE')} ha).</div>`:'';
+  let h=`<div class="card"><h3>Dein Rang: ${RAENGE[r].name}</h3><div class="mut">Stufe ${r+1} von ${RAENGE.length}</div>`;
   if(S.sieger) h+=`<div class="hilfe" style="margin:0 0 6px">🏆 Gewonnen hat: ${esc(S.sieger)}</div>`;
   if(n) h+=`<div class="mut">Für den Aufstieg zum Rang ${n.name} brauchst du alles drei zugleich.</div>
     <div class="kv"><span>Ansehen</span><span>${S.ansehen} von ${n.ans}</span></div>${bar(S.ansehen,n.ans)}
-    <div class="kv"><span>Fläche</span><span>${S.ha} von ${n.ha} Hektar</span></div>${bar(S.ha,n.ha)}
+    <div class="kv"><span>Bepflanzt</span><span>${bep.toLocaleString('de-DE')} von ${n.ha} Hektar</span></div>${barF(n.ha)}${nach}
     <div class="kv"><span>Vermögen</span><span>${eur(v)} von ${eur(n.verm)}</span></div>${bar(v,n.verm)}
     <div class="mut">Der Aufstieg bringt: ${bringt(r+1)}.</div>`;
   else h+=`<div class="kv"><span>Ansehen</span><span>${S.ansehen}</span></div><div class="kv"><span>Vermögen</span><span>${eur(v)}</span></div><div class="mut">Höher geht es nicht.</div>`;
@@ -1380,7 +1396,7 @@ const AKT={
   neuOpt(d){NEU.name=$('#nm').value;NEU[d.k]=d.k==='gegner'?+d.v:d.v;const y=window.scrollY;render();window.scrollTo(0,y)},
   start(){NEU.name=$('#nm').value;neuesSpiel();window.scrollTo(0,0)},
   auktion(){
-    const a=S.auktion; if(!a||S.rang<1) return;
+    const a=S.auktion; if(!a||S.rang<R_AUKTION) return;
     if(a.ende) return openSheet(`${sbild('auktion')}<h3>🔨 Auktion beendet</h3><p>${esc(a.text)}</p><div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`);
     const x=aukNaechstes(), lim=aukLimit();
     openSheet(`${sbild('auktion')}<h3>🔨 Auktion: ${a.ha} Hektar ${WO[S.region]}</h3>
@@ -1392,7 +1408,7 @@ const AKT={
       <div class="btns"><button class="sec klein" data-a="close">Später weitermachen</button></div>`);
   },
   bieten(){
-    const a=S.auktion; if(!a||a.ende||S.rang<1) return;
+    const a=S.auktion; if(!a||a.ende||S.rang<R_AUKTION) return;
     const x=aukNaechstes(); if(x>aukLimit()) return;
     const K=a.bieter.filter(b=>b.limit>=x+a.schritt);
     if(K.length){
