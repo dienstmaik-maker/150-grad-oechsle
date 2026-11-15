@@ -647,7 +647,7 @@ function wettAuswerten(){
   else if(N.length) text+=' '+N.join(' ');
   // Rangliste in der Zeitung: das Treppchen, dazu du und die Gegner, wenn sie dahinter landen.
   const L=F.filter((x,i)=>i<3||x.du||x.ki!=null).map(x=>({platz:x.platz,name:x.name,p:x.p,m:x.m||'',du:x.du||0}));
-  schlag(ich<0?42:ich<3?78:72,titel,text,'praemierung',{gold:ich>=0&&ich<3?1:0,liste:L,wett:{typ:w.typ,platz:ich}});
+  schlag(ich<0?42:ich<3?78:72,titel,text,'praemierung',{archiv:1,gold:ich>=0&&ich<3?1:0,liste:L,wett:{typ:w.typ,platz:ich}});
 }
 
 /* ================= Auktionen ================= */
@@ -723,8 +723,8 @@ function gegnerMonat(){
     // Angeregte Kontrolle: Der Prüfer kommt. g.pansch zählt die Monate, in denen er gepanschten Wein finden würde.
     if(g.angeregt){
       g.angeregt=0;
-      if(g.pansch>0){const st=Math.max(STRAFE_MIN,Math.round(g.geld*.15/100)*100); g.pansch=0; g.geruecht=false; g.ansehen=Math.max(0,g.ansehen-ANREG_ANS); g.geld-=st; schlag(64,`Panscherei bei ${g.name} aufgeflogen`,`Auf deinen Hinweis hin hat der Prüfer den Keller von ${g.name} ${wo} durchsucht und gepanschten Wein gefunden. Das kostet ${eur(st)} Strafe und ${ANREG_ANS} Ansehen.`,'kontrolle')}
-      else{ruhm(-ANREG_FEHL); schlag(64,`Kontrolle bei ${g.name} ohne Befund`,`Der Prüfer hat bei ${g.name} ${wo} nichts gefunden. Dass der Hinweis von dir kam, hat sich herumgesprochen. Das kostet dich ${ANREG_FEHL} Ansehen.`,'kontrolle')}
+      if(g.pansch>0){const st=Math.max(STRAFE_MIN,Math.round(g.geld*.15/100)*100); g.pansch=0; g.geruecht=false; g.ansehen=Math.max(0,g.ansehen-ANREG_ANS); g.geld-=st; schlag(64,`Panscherei bei ${g.name} aufgeflogen`,`Auf deinen Hinweis hin hat der Prüfer den Keller von ${g.name} ${wo} durchsucht und gepanschten Wein gefunden. Das kostet ${eur(st)} Strafe und ${ANREG_ANS} Ansehen.`,'kontrolle',{archiv:1})}
+      else{ruhm(-ANREG_FEHL); schlag(64,`Kontrolle bei ${g.name} ohne Befund`,`Der Prüfer hat bei ${g.name} ${wo} nichts gefunden. Dass der Hinweis von dir kam, hat sich herumgesprochen. Das kostet dich ${ANREG_FEHL} Ansehen.`,'kontrolle',{archiv:1})}
     }
     if(g.pansch>0&&--g.pansch<=0) g.geruecht=false;
     // Auch die Gegner fangen mit kahlem Weinberg an: Jahr 1 bringt 20 %, Jahr 2 60 %, danach voll.
@@ -1054,7 +1054,7 @@ function monatWeiter(){
   if((S.monat===3||S.monat===4)&&S.wetter==='frost'&&rebenGesamt()) schlag(62,'Spätfrost zur Blüte','Eine Frostnacht hat die Blüte geschädigt. Die Ernte fällt dieses Jahr kleiner aus.','frost');
   if(S.monat===0) schlag(28,'Prädikatsweine anmelden','Die Weine vom letzten Jahrgang können jetzt im Rathaus als Prädikatswein angemeldet werden. Bis März ist außerdem Pflanzzeit.','kellerbuch',{archiv:1});
   if(S.monat<=2) schlag(20,'Rebenmarkt geöffnet',rebenMarktText()+'. Gepflanzt wird bis Ende März.','weingut',{archiv:1});
-  if(S.monat===11){const t=steuerSchau(); if(t.steuer>0) schlag(35,'Steuer-Tipp zum Jahresende',`Bisher sind es rund ${eur(t.gew)} Gewinn in diesem Jahr. Darauf fallen im Januar rund ${eur(t.steuer)} Steuer an. Was du im Dezember noch kaufst, zum Beispiel Fassraum, Flaschen, Dünger oder eine Maschinenwartung, senkt den Gewinn. Kredit tilgen senkt ihn nicht.`)}
+  if(S.monat===11){const t=steuerSchau(); if(t.steuer>0) schlag(35,'Steuer-Tipp zum Jahresende',`Bisher sind es rund ${eur(t.gew)} Gewinn in diesem Jahr. Darauf fallen im Januar rund ${eur(t.steuer)} Steuer an. Was du im Dezember noch kaufst, zum Beispiel Fassraum, Flaschen, Dünger oder eine Maschinenwartung, senkt den Gewinn. Kredit tilgen senkt ihn nicht.`,'amt',{archiv:1})}
   if(S.monat===7) schlag(30,'Die Lese beginnt','Ab jetzt kannst du lesen. Wer länger hängen lässt, bekommt mehr Öchsle, riskiert aber Regen, Fäulnis und Frost.','lese',{archiv:1});
   if(schulden()>rahmen()){
     S.mahnung++;
@@ -1117,7 +1117,7 @@ function etappe3Monat(Z){
     const r=RAENGE[S.rang];
     // Der Aufstieg steht als Ehrung im Büro und als Thema in der Zeitung.
     ehre(S.rang===R_MAX?'👑':'🎖️',`Aufstieg! Du bist jetzt ${r.name}.`,1,`Das bringt dir: ${bringt(S.rang)}.${r.weg?' '+r.weg:''}`);
-    schlag(95,`Aufstieg: ${S.name} ist jetzt ${r.name}`,`Das bringt: ${bringt(S.rang)}.${r.weg?' '+r.weg:''}`,'aufstieg');
+    schlag(95,`Aufstieg: ${S.name} ist jetzt ${r.name}`,`Das bringt: ${bringt(S.rang)}.${r.weg?' '+r.weg:''}`,'aufstieg',{sonder:1,gold:1});
     if(S.rang===R_MAX&&!S.sieger) siegSpieler();
     else if(S.rang===R_MAX) schlag(99,`${S.name} ist doch noch Präsident`,`${S.sieger} war schneller, aber jetzt hast du es auch an die Spitze des Weinbauverbands geschafft. Respekt!`,'sieg',{gold:1});
   }
@@ -1127,17 +1127,17 @@ function etappe3Monat(Z){
   // Wettbewerbe: Ausschreibung im Februar (Land) und alle drei Jahre im Juni (Bund). Eingereicht wird im selben Monat, gewertet beim nächsten Monatswechsel.
   if(S.monat===1){
     neuerWettbewerb('land');
-    schlag(60,`Landesprämierung ${S.jahr} ausgeschrieben`,`Gesucht sind die besten Prädikatsweine vom Jahrgang ${S.jahr-1} ${WO[S.region]}. Eingereicht wird diesen Monat, das Ergebnis steht im nächsten Winzerboten.${S.rang>=R_LAND?' Deinen Wein reichst du unter „Das steht an“ ein.':` Mitmachen darfst du ab dem Rang ${RAENGE[R_LAND].name}.`}`,'praemierung');
+    schlag(60,`Landesprämierung ${S.jahr} ausgeschrieben`,`Gesucht sind die besten Prädikatsweine vom Jahrgang ${S.jahr-1} ${WO[S.region]}. Eingereicht wird diesen Monat, das Ergebnis steht im nächsten Winzerboten.${S.rang>=R_LAND?' Deinen Wein reichst du unter „Das steht an“ ein.':` Mitmachen darfst du ab dem Rang ${RAENGE[R_LAND].name}.`}`,'praemierung',{archiv:1});
   }
   if(S.monat===5&&S.jahr%3===0){
     neuerWettbewerb('bund');
-    schlag(60,`Bundeswettbewerb ${S.jahr} ausgeschrieben`,`Nur alle drei Jahre treten die besten Winzer des Landes gegeneinander an, mit verkaufsreifen Prädikatsweinen und Sekten aus der Flasche. Eingereicht wird diesen Monat, das Ergebnis steht im nächsten Winzerboten.${S.rang>=R_BUND?' Deinen Wein reichst du unter „Das steht an“ ein.':` Mitmachen darfst du ab dem Rang ${RAENGE[R_BUND].name}.`}`,'praemierung');
+    schlag(60,`Bundeswettbewerb ${S.jahr} ausgeschrieben`,`Nur alle drei Jahre treten die besten Winzer des Landes gegeneinander an, mit verkaufsreifen Prädikatsweinen und Sekten aus der Flasche. Eingereicht wird diesen Monat, das Ergebnis steht im nächsten Winzerboten.${S.rang>=R_BUND?' Deinen Wein reichst du unter „Das steht an“ ein.':` Mitmachen darfst du ab dem Rang ${RAENGE[R_BUND].name}.`}`,'praemierung',{archiv:1});
   }
   // Auktion über drei Monate: angekündigt, dann wird geboten, danach steht das Ergebnis unten in der Zeitung.
   // Alte Spielstände ohne phase hatten ihren Bietmonat schon und bekommen jetzt das Ergebnis.
   const a=S.auktion, wo=WO[S.region], ab=S.rang>=R_AUKTION, nichtDu=` Mitbieten darfst du ab dem Rang ${RAENGE[R_AUKTION].name}.`;
   if(a&&a.phase!==0){FUSS.push('🔨 '+aukErgebnis()); S.auktion=null}
-  else if(a){a.phase=1; schlag(56,a.spitze?`Heute wird geboten: die Spitzenlage ${wo}`:`Heute wird geboten: ${a.ha}\u00a0Hektar ${wo}`,`Im Saal sitzen ${a.bieter.length} Bieter, das Startgebot liegt bei ${eur(a.start)}.${ab?' Mitbieten kannst du diesen Monat unter „Das steht an“.':nichtDu}`,a.spitze?'spitzenlage':'auktion')}
+  else if(a){a.phase=1; schlag(56,a.spitze?`Heute wird geboten: die Spitzenlage ${wo}`:`Heute wird geboten: ${a.ha}\u00a0Hektar ${wo}`,`Im Saal sitzen ${a.bieter.length} Bieter, das Startgebot liegt bei ${eur(a.start)}.${ab?' Mitbieten kannst du diesen Monat unter „Das steht an“.':nichtDu}`,a.spitze?'spitzenlage':'auktion',{archiv:a.spitze?0:1})}
   // Spitzenlage: ab Vizepräsident alle drei Jahre eine Chance, in einem Auktionsmonat zur Hälfte. Nur Nachbarn bieten mit.
   if(!S.auktion&&!S.spitze&&S.rang>=R_SPITZE&&AUK_MONATE.includes(S.monat)&&S.jahr-(S.spitzeVers||0)>=3&&Math.random()<.5){
     neueAuktion(1); S.spitzeVers=S.jahr;
@@ -1145,7 +1145,7 @@ function etappe3Monat(Z){
   }
   if(!S.auktion&&AUK_MONATE.includes(S.monat)&&(S.jahr-START_JAHR)*12+S.monat>=6&&Math.random()<AUK_CHANCE){
     neueAuktion();
-    schlag(55,`Weinberg ${wo} zu versteigern`,`Nächsten Monat kommen ${S.auktion.ha}\u00a0Hektar unter den Hammer, das Startgebot liegt bei ${eur(S.auktion.start)}.${ab?' Halte Geld oder Kreditrahmen bereit.':nichtDu}`,'auktion');
+    schlag(55,`Weinberg ${wo} zu versteigern`,`Nächsten Monat kommen ${S.auktion.ha}\u00a0Hektar unter den Hammer, das Startgebot liegt bei ${eur(S.auktion.start)}.${ab?' Halte Geld oder Kreditrahmen bereit.':nichtDu}`,'auktion',{archiv:1});
   }
   ladenMonat(Z);
   neueLaeden(); S.absatz=0;
@@ -1159,9 +1159,9 @@ function strafeHoehe(){return Math.max(STRAFE_MIN,Math.round(2*panschListe().red
 function strafeAns(){return STRAFE_ANS+STRAFE_ANS_WEITER*(panschListe().length-1)}
 function kontrolleMonat(Z){
   const k=S.kontr; if(--k.in>0) return;
-  if(!panschListe().length){kontrNeu(); schlag(45,'Weinkontrolle ohne Befund',`Der Prüfer blättert durch dein Kellerbuch und findet nichts zu beanstanden. +${ruhm(2)} Ansehen.`,'kontrolle'); return}
+  if(!panschListe().length){kontrNeu(); schlag(45,'Weinkontrolle ohne Befund',`Der Prüfer blättert durch dein Kellerbuch und findet nichts zu beanstanden. +${ruhm(2)} Ansehen.`,'kontrolle',{archiv:1}); return}
   // Gepanschter Wein im Keller: Der Spieler entscheidet im Dialog, ob er besticht. Bis dahin ist alles andere gesperrt.
-  S.pruefer=1; schlag(85,'Weinkontrolle im Keller','Der Prüfer steht unangemeldet im Keller und will dein Kellerbuch sehen.','kontrolle');
+  S.pruefer=1; schlag(85,'Weinkontrolle im Keller','Der Prüfer steht unangemeldet im Keller und will dein Kellerbuch sehen.','kontrolle',{archiv:1});
 }
 const bestechChance=n=>.5+.35*(n-BESTECH_MIN)/(BESTECH_MAX-BESTECH_MIN);
 function zeigePruefer(){
