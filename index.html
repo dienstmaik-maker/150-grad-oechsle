@@ -329,7 +329,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='4.4';
+const VERSION='4.5';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -743,6 +743,7 @@ function wettAuswerten(){
       if(pr.geld) kassiere(pr.geld);
       titel=`${pr.t} für ${S.name}!`;
       text=`${e.name} holt ${pr.t} ${wo}. Das bringt ${was}.${l?'':' Der Wein ist schon verkauft, die Ehre bleibt trotzdem.'}`;
+      if(i===0&&S.gegner.length){const g=S.gegner[rint(0,S.gegner.length-1)]; if(GEGNER_SPRUCH[g.typ]) text+=' '+GEGNER_SPRUCH[g.typ].erfolg(g.name)}
     }else if(x.ki!=null){
       const g=S.gegner[x.ki]; g.ansehen+=pr.ans*DIFF[S.schwer].ki; g.geld+=pr.geld;
       N.push(`${g.name} holt ${pr.t}.`);
@@ -878,6 +879,7 @@ function gegnerMonat(){
     const alt=g.rang; g.rang=rangFuer(g.rang,g.ansehen,g.ha,gVerm(g));
     if(g.rang>alt){
       neu(9,`${g.name} steigt auf und ist jetzt ${RAENGE[g.rang].name}.`);
+      if(alt<=S.rang&&g.rang>S.rang&&GEGNER_SPRUCH[g.typ]) neu(9,GEGNER_SPRUCH[g.typ].vorbei(g.name));
       if(g.rang===R_MAX&&!S.sieger) gegnerSieg(g,wo);
     }
   }
@@ -1135,16 +1137,88 @@ let TOP=[], FUSS=[];
 // Version 4.1: Rat vom alten Winzer, ein Tipp je Ausgabe in den ersten zwei Spieljahren (Texte in anleitung.js, Ausgabe 1 = erster Januar).
 function ratHtml(b,k){
   const r=typeof RAT!=='undefined'&&!k.sonder&&!k.ende&&RAT[(b.nr||1)-1];
-  return r?`<div class="zrat"><h4>🧓 Rat vom alten Winzer</h4>${esc(r)}</div>`:'';
+  if(r) return `<div class="zrat"><h4>🧓 Rat vom alten Winzer</h4>${esc(r)}</div>`;
+  const u=!k.sonder&&!k.ende&&b.rub&&typeof b.rub==='object'?b.rub:null;
+  return u?`<div class="zrat"><h4>${esc(u.h)}</h4>${esc(u.text)}${u.von?`<br><i>${esc(u.von)}</i>`:''}</div>`:'';
 }
 function schlag(p,t,text,bild,o){TOP.push({p,t,text:text||'',bild:bild||'',...(o||{})})}
 // Ohne Thema: Titel und Satz je Monat, ohne Foto.
 const FLAUTE=['Stille Wochen in den Weinbergen','Rebschnitt im ganzen Land','Der Saft steigt in die Reben','Die Knospen brechen auf','Die Reben blühen','Kleine Beeren am Stock','Die Trauben werden weich','Die Öchsle steigen','Lese-Zeit im ganzen Land','Goldenes Laub, späte Trauben','Ruhe in den Kellern','Kalte Nächte, ruhige Fässer'];
 const FLAUTE_TEXT=['Die Reben ruhen, die Winzer planen das neue Jahr und schärfen die Scheren.','Überall wird geschnitten und gebunden. Wer jetzt sauber arbeitet, erntet im Herbst besser.','Wenn die Rebe weint, ist der Winter vorbei. Bald zeigen sich die ersten Knospen.','Zartes Grün an den Stöcken. Jede kalte Nacht lässt die Winzer jetzt bangen.','Ein feiner Duft liegt über den Hängen. Jetzt entscheidet sich, wie viele Trauben es gibt.','Aus den Blüten sind kleine, harte Beeren geworden. Der Sommer kann kommen.','Die Beeren färben sich und werden weich. Ab jetzt zählt jede Sonnenstunde.','Mit jeder warmen Woche steigt der Zucker in den Trauben. Die Winzer messen fleißig.','In den Weinbergen wird geschnitten und geschleppt, in den Kellern gärt der junge Most.','Das Laub färbt sich, die späten Trauben hängen noch. Mutige warten auf mehr Öchsle.','Die Lese ist vorbei, in den Fässern reift der neue Jahrgang heran.','Frost in der Nacht, Stille im Keller. Manche hoffen noch auf Eiswein.'];
+// Version 4.5 (Paket 6): je Monat zwei weitere ruhige Schlagzeilen. flauteKopf nimmt zufällig eine der drei, nie dieselbe wie beim letzten Mal (S.flauteZ).
+const FLAUTE_MEHR=[
+  [['Frostklare Tage im Weinberg','Die Hänge liegen still, nur die Krähen ziehen ihre Runden. In den Stuben wird über Rebsorten und Preise gestritten.'],['Winzer am Ofen','Wer jetzt Zeit hat, rechnet. Die meisten kommen zu dem Schluss, dass das letzte Jahr besser hätte sein können.']],
+  [['Scheren klappern im ganzen Land','Ein Auge Rebe zu viel, und im Herbst hängen die Trauben dünn. Die Alten schneiden streng, die Jungen mutig.'],['Das Holz kommt aus dem Weinberg','Überall brennen kleine Feuer mit altem Rebholz. Es riecht nach Rauch und ein bisschen nach Frühling.']],
+  [['Die Rebe weint','Aus den frischen Schnitten tropft der Saft. Für die Winzer ist das das schönste Zeichen, dass der Winter vorbei ist.'],['Pflanzzeit geht zu Ende','Wer jetzt noch Reben in die Erde bringt, muss sich beeilen. In den Rebschulen wird es leer.']],
+  [['Bange Nächte','Ein klarer Himmel freut die Spaziergänger und ärgert die Winzer. Eine Frostnacht reicht, um die jungen Triebe zu verbrennen.'],['Erstes Grün an den Hängen','Die Knospen sind aufgebrochen, die Hänge bekommen einen grünen Schimmer. Jetzt bloß kein Frost mehr.']],
+  [['Blütenduft über den Hängen','Ganz zart und nur ein paar Tage lang riecht es in den Weinbergen nach Blüte. Wer es kennt, bleibt kurz stehen.'],['Bloß kein Regen jetzt','Während die Reben blühen, schauen alle Winzer gleichzeitig in den Himmel. Nasse Blüten bringen lockere Trauben.']],
+  [['Grüne Kugeln am Stock','Die Beeren sind noch hart und sauer, aber schon gut zu zählen. Erste Winzer wagen eine Schätzung für den Herbst.'],['Laubarbeit in vollem Gang','Blätter zupfen, Triebe kürzen, Gassen mähen. Im Juni hat kein Winzer Zeit für etwas anderes.']],
+  [['Farbe kommt in die Trauben','Die roten Sorten färben sich, die weißen werden goldgelb und weich. Ab jetzt zählt jede Sonnenstunde.'],['Hitze in den Steillagen','Wer mittags im Weinberg steht, versteht, warum die Alten um fünf Uhr anfangen.']],
+  [['Die Wespen sind da','Sie riechen den Zucker früher als jedes Messgerät. Für die Winzer heißt das: Es geht bald los.'],['Messgerät im Dauereinsatz','Überall stehen Winzer zwischen den Reben und halten Beeren gegen das Licht. Das Öchsle-Fieber ist ausgebrochen.']],
+  [['Traktoren auf allen Wegen','Auf den Straßen geht es nur noch im Schritttempo voran. Wer es eilig hat, muss eben warten.'],['Volle Kisten, krumme Rücken','In den Weinbergen wird geschnitten und geschleppt. Abends riecht das ganze Dorf nach frischem Most.']],
+  [['Nebel am Morgen, Sonne am Mittag','Das beste Wetter für späte Trauben. Mancher Winzer hofft jetzt auf die Edelfäulnis.'],['Die Weinfeste sind vorbei','In den Dörfern werden die Bänke weggeräumt, in den Kellern wird es ernst.']],
+  [['Der junge Wein schmeckt','Überall wird probiert, gelobt und geschimpft. Jeder Winzer findet seinen Jahrgang besser als den des Nachbarn.'],['Kahle Stöcke, volle Fässer','Das Laub ist gefallen, die Arbeit wandert in den Keller.']],
+  [['Warten auf den Frost','Ein paar Mutige haben noch Trauben hängen. Sie schauen jeden Abend aufs Thermometer.'],['Stille Nacht im Keller','Die Fässer ruhen, der Wein arbeitet langsam vor sich hin. Für die Winzer die ruhigste Zeit im Jahr.']]
+];
+function flauteKopf(){
+  const m=S.monat, V=[[FLAUTE[m],FLAUTE_TEXT[m]],...FLAUTE_MEHR[m]];
+  let i=rint(0,V.length-1); if(S.flauteZ===m*10+i) i=(i+1)%V.length; S.flauteZ=m*10+i;
+  return {p:0,t:V[i][0],text:V[i][1],bild:''};
+}
+// Version 4.5: Die Geschichte aus dem Vorspann geht weiter. Je Partie einmal, gemerkt in S.gesch. Als Artikel mit Wichtigkeit 45, Aufstieg und Wetter bleiben vorn.
+const DORF={
+  most:['Im alten Keller gärt es wieder','Zum ersten Mal seit Jahren blubbert es im Gewölbekeller. Die Ratte hat sich das Ganze von der obersten Fassreihe aus angesehen und wirkte fast ein bisschen beeindruckt.'],
+  winter1:['Ein Winter ist geschafft','Am Stammtisch wird mitgezählt. Einen Winter hast du hinter dir, zwei fehlen noch, dann ist die Wette verloren. Der Wirt hat die Wettkasse schon mal hinter den Tresen gestellt.'],
+  r1:['Die Nachbarn grüßen zurück','{nachbar} hat dir über den Zaun zugenickt und gefragt, welchen Dünger du nimmst. Im Dorf gilt das als Ritterschlag.'],
+  wette:['Die Wette ist verloren','Drei Winter, und {gut} gibt es immer noch. Der Wirt hat die Wettkasse geleert und davon eine Runde auf dich ausgegeben. Bezahlt haben ausgerechnet die, die am lautesten gelacht haben.'],
+  r3:['Die Hausherrin hat einen Namen','Deine Leute nennen die Ratte im Keller inzwischen Frau Öchsle. Sie bekommt jeden Abend ein Stück Käse und hält dafür die Mäuse vom Korkenlager fern. Eine Hausherrin eben.'],
+  r5:['Eine Einladung in den Festsaal','Der Weinbauverband lädt dich zum ersten Mal zur Jahresversammlung ein. Du sitzt in der letzten Reihe, aber den Stuhl ganz vorne siehst du gut. Er ist noch frei.'],
+  r8:['Nur noch ein Stuhl weiter','Im Festsaal sitzt du jetzt in der ersten Reihe, direkt neben dem großen Stuhl. Der Präsident hat dir beim Händeschütteln etwas zu fest die Hand gedrückt.']
+};
+// Platzhalter in den Dorf- und Rubrik-Texten: {gut}, {wo}, {nachbar}, {gegner} und {er} (sie oder er, passend zum Gegner).
+function fuelle(x){
+  const g=S.gegner&&S.gegner.length?S.gegner[rint(0,S.gegner.length-1)]:null;
+  return x.replace(/\{gut\}/g,S.name).replace(/\{wo\}/g,WO[S.region]).replace(/\{nachbar\}/g,()=>NACHBARN[rint(0,NACHBARN.length-1)])
+    .replace(/\{gegner\}/g,g?g.name:'ein Nachbar').replace(/\{er\}/g,g&&g.typ==='vorsicht'?'sie':'er');
+}
+function dorf(k){
+  S.gesch=S.gesch||{}; if(S.gesch[k]||!DORF[k]) return; S.gesch[k]=1;
+  schlag(45,'🏘️ '+DORF[k][0],fuelle(DORF[k][1]));
+}
+function geschichteMonat(){
+  if(S.jahr===START_JAHR&&S.lots.some(l=>l.status==='fass')) dorf('most');
+  if(S.monat===0&&S.jahr===START_JAHR+1) dorf('winter1');
+  if(S.monat===0&&S.jahr===START_JAHR+3) dorf('wette');
+}
+// Sprüche der Gegner: vorbei = er überholt dich, du = du überholst ihn, erfolg = nach deinem Sieg in einem Wettbewerb.
+const GEGNER_SPRUCH={
+  vorsicht:{vorbei:n=>`„Langsam ist auch eine Geschwindigkeit“, sagt ${n}, als sie an dir vorbeizieht.`,du:n=>`${n} gratuliert dir mit einem Korb Äpfel. „Nicht übermütig werden“, steht auf dem Zettel.`,erfolg:n=>`${n} hat deine Medaille in der Zeitung ausgeschnitten. Wofür, sagt sie nicht.`},
+  qualitaet:{vorbei:n=>`„Das war zu erwarten“, sagt ${n} über seinen Vorsprung. Er sagt das öfter.`,du:n=>`${n} lässt ausrichten, Glück sei keine Leistung. Gratuliert hat er trotzdem.`,erfolg:n=>`${n} will deinen Siegerwein jetzt selbst nachprüfen lassen. Die Jury hat abgelehnt.`},
+  zocker:{vorbei:n=>`„Tschüss, Nachbar!“, ruft ${n} und hupt beim Vorbeifahren am Weingut.`,du:n=>`${n} hat bei deinem Aufstieg so getan, als würde er telefonieren.`,erfolg:n=>`${n} behauptet, er hätte dieses Jahr gar nicht mitgemacht, sonst wäre es anders gelaufen.`}
+};
+const bisZiel=r=>{const n=R_MAX-r;return n<=0?'Am Ziel: Präsident':n===1?'Nur noch eine Stufe bis zum Präsidenten!':`Noch ${n} Stufen bis zum Präsidenten`};
+// Version 4.5: Ab dem dritten Jahr steht statt "Rat vom alten Winzer" eine Rubrik in der Ecke. S.rubSack ist ein gemischter Stapel aller Texte, erst wenn er leer ist, kommt alles wieder.
+const RUBRIK={
+  k:{h:'☕ Dorfklatsch',t:['{nachbar} hat beim Weinfest das Tanzbein geschwungen. Das Bein soll sich inzwischen erholt haben.','Im Dorf wird erzählt, {gegner} rede mit den Reben. Angeblich antworten sie.','Der Hund von {nachbar} hat schon wieder Trauben gefressen. Diesmal nur die Spätlese.','Beim Bäcker gibt es jetzt Rieslingbrot. Niemand weiß genau, was darin ist.','{nachbar} hat einen neuen Traktor. Er ist rot, laut und viel zu groß für die Gasse.','Am Stammtisch wird gestritten, ob Rotwein zu Fisch passt. Die Antwort steht seit drei Wochen aus.','Der Pfarrer segnet dieses Jahr auch die Erntemaschinen. Die von {gegner} gleich zweimal.','{nachbar} schwört, im Weinberg einen Fuchs mit Sonnenbrille gesehen zu haben. Der Wirt schwört, dass es nach dem dritten Schoppen war.','Die Ortsdurchfahrt wird gesperrt, weil die Winzer ein Fass über die Straße rollen. Es ist leer, sie üben nur.','{gegner} soll sich einen Hut gekauft haben, „für den Festsaal“. Im Dorf wird schon gewettet, wann {er} ihn das erste Mal trägt.','Die Kinder der Grundschule haben Trauben gelesen und den Saft selbst gepresst. Er war besser als manche Spätlese im Ort.','{nachbar} hat den Zaun zu {gut} neu gestrichen. Nur auf der eigenen Seite.']},
+  l:{h:'✉️ Leserbrief',t:['„Früher hatte der Wein noch Öchsle! Heute schmeckt alles nach Marketing.“|Ein Rentner {wo}','„Warum darf der Federweiße nur einen Monat verkauft werden? Ich trinke ihn das ganze Jahr.“|Ein Leser, der das ganze Jahr trinkt','„Mein Mann sitzt seit drei Wochen im Keller und misst. Kann mir jemand sagen, wann er wiederkommt?“|Eine besorgte Ehefrau','„Der Winzerbote schreibt zu wenig übers Wetter.“|Ein Leser, der das Wetter mag','„Sehr geehrte Redaktion, auch Müller-Thurgau hat Gefühle.“|Freundeskreis Müller-Thurgau','„Ich habe meine Lese um einen Tag verschoben und alles richtig gemacht. Das wollte ich nur mal sagen.“|Ein zufriedener Winzer','„Wer hat in der Nacht meine Erntekisten umgestapelt? Sie stehen jetzt schöner da, aber trotzdem.“|Ein Winzer {wo}','„Bitte mehr Kreuzworträtsel.“|Eine Leserin','„Eiswein ist doch einfach nur kalter Wein. Ich verstehe die Aufregung nicht.“|Ein Gast aus der Stadt','„Mein Opa sagt, früher war der Winter kälter. Mein Opa sagt das über alles.“|Ein Enkel']},
+  s:{h:'💬 Spruch des Monats',t:['„Im Wein liegt die Wahrheit, im Keller die Arbeit.“','„Gute Trauben warten nicht, gute Winzer schon.“','„Ein Jahr ohne Frost ist wie ein Fass ohne Boden: zu schön, um wahr zu sein.“','„Wer im Herbst jammert, hat im Frühling geschlafen.“','„Erst messen, dann lesen, dann prahlen.“','„Der beste Dünger ist der Schatten des Winzers.“','„Geduld ist das teuerste Gewürz im Keller.“','„Ein guter Jahrgang hat viele Väter, ein schlechter nur das Wetter.“','„Wer jeden Monat verkauft, muss nie alles auf einmal verkaufen.“','„Die Rebe kennt keinen Feierabend, der Winzer auch nicht.“','„Lieber eine Spätlese in der Hand als eine Beerenauslese am Stock.“','„Öchsle zählt man im Herbst, Freunde im Winter.“']}
+};
+function rubrikNeu(nr){
+  if(!S||(typeof RAT!=='undefined'&&RAT[nr-1])||nr<=24) return null;
+  if(!Array.isArray(S.rubSack)||!S.rubSack.length){
+    const A=Object.keys(RUBRIK).flatMap(k=>RUBRIK[k].t.map((_,i)=>k+i));
+    for(let i=A.length-1;i>0;i--){const j=rint(0,i); [A[i],A[j]]=[A[j],A[i]]}
+    S.rubSack=A;
+  }
+  const c=String(S.rubSack.pop()), R0=RUBRIK[c[0]], x=R0&&R0.t[+c.slice(1)];
+  if(!x) return null;
+  const [text,von]=fuelle(x).split('|');
+  return {h:R0.h,text,von:von||''};
+}
 // Baut die Ausgabe aus TOP, FUSS und den Zeilen für "Kurz gemeldet".
 function zeitung(Z,W,ehr,k){
-  const T=TOP.slice().sort((a,b)=>b.p-a.p), kopf=T.shift()||{p:0,t:FLAUTE[S.monat],text:FLAUTE_TEXT[S.monat],bild:''};
-  return {titel:`${MON[S.monat]} ${S.jahr}`,nr:(S.jahr-START_JAHR)*12+S.monat+1,kopf,art:T,zeilen:Z,wetter:W,fuss:FUSS.slice(),ehr,k};
+  const T=TOP.slice().sort((a,b)=>b.p-a.p), kopf=T.shift()||flauteKopf(), nr=(S.jahr-START_JAHR)*12+S.monat+1;
+  return {titel:`${MON[S.monat]} ${S.jahr}`,nr,rub:kopf.sonder||kopf.ende?null:rubrikNeu(nr),kopf,art:T,zeilen:Z,wetter:W,fuss:FUSS.slice(),ehr,k};
 }
 function monatWeiter(){
   const Z=[], weg=verfallListe(); let uz=0, steuer=0;
@@ -1215,7 +1289,7 @@ function monatWeiter(){
     if(S.mahnung>=3){S.pleite=true; schlag(90,`Pfändung bei ${S.name}`,'Der Gerichtsvollzieher steht vor der Tür. Dein Weingut ist pleite.','pleite')}
     else{ruhm(-3); schlag(58,`${S.mahnung}. Mahnung der Bank`,`Deine Schulden von ${eur(schulden())} liegen über dem Kreditrahmen von ${eur(rahmen())}. Das kostet 3 Ansehen. Nach der dritten Mahnung wird gepfändet.`,'bank')}
   }else{S.mahnung=0; if(S.geld<0) Z.push('Dein Konto ist im Minus. Die Bank nimmt dafür 1 % Zinsen im Monat.')}
-  if(!S.pleite) etappe3Monat(Z);
+  if(!S.pleite){geschichteMonat(); etappe3Monat(Z)}
   // Die Zeitung zeigt den Bericht: kopf ist die Schlagzeile, art die Artikel, zeilen "Kurz gemeldet", wetter die Ereignisse im Weinberg, ehr die neuen Ehrungen.
   // k ist das, was zum Monatswechsel abgebucht wurde (steht bei der Bank).
   const ehr=(S.ehrungen||[]).slice(S.ehrZeig||0); S.ehrZeig=(S.ehrungen||[]).length;
@@ -1255,13 +1329,13 @@ function endeHtml(k){
 }
 function siegSpieler(){
   S.sieger=S.name; const st=endStand();
-  schlag(100,`${S.name} ist Präsident!`,`Nach ${st.jahre} Jahren ${WO[S.region]} wählt der Weinbauverband dich an seine Spitze. Du hast die Partie gewonnen! Unten steht deine Bilanz. Du kannst weiterspielen oder ein neues Spiel beginnen.`,'sieg',{gold:1,sonder:1,ende:1,stand:st});
+  schlag(100,`${S.name} ist Präsident!`,`Nach ${st.jahre} Jahren ${WO[S.region]} wählt der Weinbauverband dich an seine Spitze. Du hast die Partie gewonnen! Der Stuhl im Festsaal gehört jetzt dir. Unten im Gewölbekeller bekommt Frau Öchsle zur Feier ein ganzes Stück Käse. Unten steht deine Bilanz. Du kannst weiterspielen oder ein neues Spiel beginnen.`,'sieg',{gold:1,sonder:1,ende:1,stand:st});
   bestenEintrag(1,st);
 }
 const SIEG_SPRUCH={vorsicht:'„Immer schön langsam, dann wird das schon“, sagt sie beim Anstoßen.',qualitaet:'„Qualität setzt sich eben durch“, sagt er und meint vor allem sich selbst.',zocker:'„Alles auf eine Karte, und die Karte hat gestochen“, grinst er in die Kameras.'};
 function gegnerSieg(g,wo){
   S.sieger=g.name; const st=endStand();
-  schlag(100,`${g.name} ist Präsident!`,`${g.name} ${wo} wird nach ${st.jahre} Jahren Präsident des Weinbauverbands und gewinnt die Partie. ${SIEG_SPRUCH[g.typ]||''} Kopf hoch: Du kannst weiterspielen und deinen eigenen Aufstieg vollenden.`,'gegnerpraesident',{sonder:1,ende:1,stand:st});
+  schlag(100,`${g.name} ist Präsident!`,`${g.name} ${wo} wird nach ${st.jahre} Jahren Präsident des Weinbauverbands und gewinnt die Partie. ${SIEG_SPRUCH[g.typ]||''} Der Stuhl im Festsaal ist besetzt. Aber Stühle werden auch wieder frei. Kopf hoch: Du kannst weiterspielen und deinen eigenen Aufstieg vollenden.`,'gegnerpraesident',{sonder:1,ende:1,stand:st});
   bestenEintrag(0,st);
 }
 // Alles, was Etappe 3 beim Monatswechsel tut: Aufstieg, Gegner, Wettbewerbe, Auktion, Märkte.
@@ -1269,6 +1343,9 @@ function etappe3Monat(Z){
   const alt=S.rang; S.rang=rangFuer(S.rang,S.ansehen,flaecheBep(),vermoegen());
   if(S.rang>alt){
     const r=RAENGE[S.rang];
+    for(let i=alt+1;i<=S.rang;i++) dorf('r'+i);
+    // Überholst du mehrere Gegner auf einmal, kommt nur ein Spruch, sonst wird es am Anfang zu viel.
+    {const U=S.gegner.filter(g=>g.rang>=alt&&g.rang<S.rang&&GEGNER_SPRUCH[g.typ]); if(U.length){const g=U[rint(0,U.length-1)]; Z.push(GEGNER_SPRUCH[g.typ].du(g.name))}}
     // Der Aufstieg steht als Ehrung im Büro und als Thema in der Zeitung.
     ehre(S.rang===R_MAX?'👑':'🎖️',`Aufstieg! Du bist jetzt ${r.name}.`,1,`Das bringt dir: ${bringt(S.rang)}.${r.weg?' '+r.weg:''}`);
     schlag(95,`Aufstieg: ${S.name} ist jetzt ${r.name}`,`Das bringt: ${bringt(S.rang)}.${r.weg?' '+r.weg:''}`,'aufstieg',{sonder:1,gold:1});
@@ -1421,6 +1498,7 @@ function vStart(){
   <div class="zwei">${[2,3].map(n=>`<button class="wahl ${NEU.gegner===n?'an':''}" data-a="neuOpt" data-k="gegner" data-v="${n}"><b>${n} Computer-Winzer</b></button>`).join('')}</div>
   <h2>Schwierigkeit</h2>
   ${Object.entries(DIFF).map(([id,d])=>`<button class="wahl ${NEU.schwer===id?'an':''}" data-a="neuOpt" data-k="schwer" data-v="${id}"><b>${d.name}</b><br><span class="mut">${d.text}</span></button>`).join('')}
+  <div class="mut" style="margin:12px 0 0">Eine Partie dauert rund 30 bis 40 Spieljahre. Gespeichert wird nach jedem Monat, du kannst also jederzeit aufhören.</div>
   <div class="btns"><button data-a="start">Spiel starten</button></div></main>`;
 }
 // Liste der drei Speicherplätze: weiterspielen, neu anfangen, als Datei sichern, aus Datei laden, löschen.
@@ -1458,7 +1536,7 @@ function vRangliste(){
     ...S.gegner.map(g=>({name:g.name,sub:`${GEGNER_TYP[g.typ].art}, ${REGIONEN[g.region].name}`,rang:g.rang,ans:Math.round(g.ansehen),ha:g.ha,verm:gVerm(g)}))]
     .sort((a,b)=>b.rang-a.rang||b.ans-a.ans);
   return `<div class="card"><h3>Rangliste</h3>${S.sieger?`<div class="hilfe" style="margin:0 0 6px">🏆 Gewonnen hat: ${esc(S.sieger)}</div>`:''}
-    ${L.map((x,i)=>`<div class="rl ${x.du?'du':''}"><span>${i+1}.</span><div><b>${esc(x.name)}</b><span class="mut">${esc(x.sub)}<br>${RAENGE[x.rang].kurz} · ${x.ans} Ansehen · ${x.ha}\u00a0ha · ${eur(x.verm)}</span></div></div>`).join('')}</div>`;
+    ${L.map((x,i)=>`<div class="rl ${x.du?'du':''}"><span>${i+1}.</span><div><b>${esc(x.name)}</b><span class="mut">${esc(x.sub)}<br>${RAENGE[x.rang].kurz} · ${x.ans} Ansehen · ${x.ha}\u00a0ha · ${eur(x.verm)}<br>${bisZiel(x.rang)}</span></div></div>`).join('')}</div>`;
 }
 // Version 4.4: Steht etwas an, das nicht warten kann? Ruhige Hinweise (verkaufsreif, Pflanzzeit mit freiem Platz, Steuer-Tipps, Fest, leeres Regal) zählen nicht.
 function stehtAn(){return aufgaben().some(a=>!a.ruhig)}
