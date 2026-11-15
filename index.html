@@ -143,7 +143,7 @@ img.fass{height:1.1em;vertical-align:-.18em}
 #info .ibild{position:fixed;inset:0;background:#000 center/cover no-repeat;animation:izoom 24s ease-out forwards}
 #info.winter .ibild,#info.fruehling .ibild,#info.sommer .ibild,#info.herbst .ibild{background-position:center 38%}
 #info .iverl{position:fixed;inset:0;background:linear-gradient(transparent 55%,rgba(0,0,0,.55))}
-#info .zt{position:relative;max-width:560px;margin:calc(100vh - 150px - env(safe-area-inset-bottom)) auto 0;padding:0 0 calc(100vh - 70px);transform-origin:50% 0;color:#3a2a1a;font-family:var(--schrift);--ink:#3a2a1a;--mut:#6e5638;--rot:#a3271d;--gruen:#4c6b2c;--gold:#8a6206;--line:rgba(90,60,30,.3);filter:drop-shadow(0 -4px 18px rgba(0,0,0,.55))}
+#info .zt{position:relative;max-width:560px;margin:14px auto 0;padding:0 0 calc(100vh - 14px);transform-origin:50% 0;color:#3a2a1a;font-family:var(--schrift);--ink:#3a2a1a;--mut:#6e5638;--rot:#a3271d;--gruen:#4c6b2c;--gold:#8a6206;--line:rgba(90,60,30,.3);filter:drop-shadow(0 -4px 18px rgba(0,0,0,.55))}
 #info .zkopf{aspect-ratio:1200/713;background:url(bilder/zeitung-kopf.webp) center/100% 100% no-repeat}
 #info .zmitte{background:url(bilder/zeitung-mitte.webp) 0 0/100% 100% no-repeat;padding:0 9% 4px;margin-top:-1px;overflow:hidden}
 #info .zende{aspect-ratio:1200/141;background:url(bilder/zeitung-fuss.webp) center/100% 100% no-repeat;margin-top:-1px}
@@ -191,6 +191,7 @@ img.fass{height:1.1em;vertical-align:-.18em}
 @keyframes iaus{from{opacity:0}to{opacity:1}}
 #info .zt.zu{clip-path:inset(0 0 100% 0)}
 #info .zrolle{position:fixed;top:0;left:50%;width:min(100%,560px);height:30px;margin-left:max(-50%,-280px);z-index:2;pointer-events:none;border-radius:15px;background:linear-gradient(#8a6a3e,#e9d6a8 30%,#f6e8c4 45%,#c9a86e 75%,#6b4a24);box-shadow:0 6px 12px rgba(0,0,0,.45)}
+#info .zrolle.oben{z-index:3;pointer-events:auto;cursor:pointer}
 @keyframes izoom{from{transform:scale(1.08)}to{transform:none}}
 @media (prefers-reduced-motion:reduce){#info .ibild,#info .ischw,.schnitt{animation:none}#info .ischw,.schnitt{opacity:0}#info.aus .ischw{opacity:1}}
 @keyframes ein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -1646,7 +1647,7 @@ function vBuch(){
   return h;
 }
 // Winzerbote: Erst steht das Bild allein da, dann rollt sich die Zeitung wie eine Schriftrolle vom oberen Rand ab, bis ihr Kopf oben steht.
-// Hochschieben zum Lesen, ganz runter- oder hochschieben gibt das Bild frei, Tippen auf die versteckte Zeitung holt sie zurück.
+// Oben hängt immer die Rolle. Ganz hochgeschoben verschwindet die Zeitung darin und gibt das Bild frei, Tippen auf die Rolle rollt sie wieder ab.
 // ZW merkt sich Ausgabe und Position, damit ein neues Zeichnen derselben Ausgabe nicht wieder von vorn weht.
 let ZW=null;
 function zGleite(el,ziel,ms){const von=el.scrollTop,t0=performance.now();let ab=0;const halt=()=>ab=1;el.addEventListener('touchstart',halt,{once:true,passive:true});el.addEventListener('wheel',halt,{once:true,passive:true});
@@ -1661,11 +1662,12 @@ function zRolle(el,z,ziel){
 }
 function zWehen(){
   const el=$('#info'); if(!el) return; const z=el.querySelector('.zt'), b=S.bericht||{}, key=`${b.titel}|${b.nr}`;
-  const ziel=()=>z.offsetTop, ruhig=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const ziel=()=>0, ruhig=matchMedia('(prefers-reduced-motion:reduce)').matches;
   if(ZW&&ZW.key===key) el.scrollTop=ZW.top;
   else{ZW={key,top:0}; if(ruhig) el.scrollTop=ziel(); else{z.classList.add('zu'); setTimeout(()=>zRolle(el,z,ziel()),900)}}
   el.addEventListener('scroll',()=>{ZW.top=el.scrollTop},{passive:true});
-  z.addEventListener('click',e=>{if(e.target.closest('button'))return; const r=z.getBoundingClientRect(); if(r.top>innerHeight*.75||r.bottom<innerHeight*.25) zGleite(el,ziel(),900)});
+  const o=document.createElement('div'); o.className='zrolle oben'; o.addEventListener('click',()=>zGleite(el,0,900)); el.appendChild(o);
+  z.addEventListener('click',e=>{if(e.target.closest('button'))return; if(z.getBoundingClientRect().bottom<innerHeight*.25) zGleite(el,0,900)});
 }
 function render(){
   if(!S){ortFarbe('gut'); ORT_ALT=null; musikOrt(musikWahl()); $('#app').innerHTML=START==='neu'||![0,1,2].some(lies)?vStart():vSlots(); return}
