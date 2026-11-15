@@ -62,7 +62,9 @@ button:disabled{opacity:.45;filter:grayscale(.7)}
 main>h3{font-size:17px;margin:16px 0 8px;padding-left:10px;border-left:4px solid var(--wein)}
 .info{position:relative;border-radius:12px;padding:9px 12px 9px 38px;margin:0 0 12px!important;font-size:14px;cursor:pointer}
 .info::before{content:'ℹ️';position:absolute;left:11px;top:8px;font-size:16px}
-.info.zu{line-height:1.4;max-height:calc(2.8em + 18px);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding-right:30px}.info.zu::after{content:'▾';position:absolute;right:11px;bottom:7px;color:#7b1e3a;font-weight:700}
+.info.zu{line-height:1.4;max-height:calc(2.8em + 19px);padding-bottom:0;border-bottom:9px solid transparent;background-origin:border-box;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding-right:30px}.info.zu::after{content:'▾';position:absolute;right:11px;bottom:7px;color:#7b1e3a;font-weight:700}
+/* Zugeklappt: Der untere Rand ist durchsichtig, damit die dritte Zeile nicht im Innenabstand hervorschaut. */
+.info.zu::after{bottom:-3px}
 .chip{background:#f8f0dc;color:#2b2118;border:1px solid #b9995a;font-weight:600}.chip.an{background:#7b1e3a;color:#fff;border-color:#591015}
 h4.gk{font:700 15px/1.2 var(--schrift);margin:12px 0 4px;color:#4a1526}
 .pano,.mbild,.kbild{box-shadow:0 0 0 3px #5c3a21,0 0 0 4px #2b180c,0 4px 8px rgba(0,0,0,.35)}.pano,.mbild{margin-top:4px}
@@ -71,6 +73,14 @@ h4.gk{font:700 15px/1.2 var(--schrift);margin:12px 0 4px;color:#4a1526}
 button.siegel{width:74px;height:74px;min-height:0;padding:0;border-image:none;border-radius:50%;font:700 19px/1 var(--knopf);color:#fbe7c6;text-shadow:0 1px 1px #4a0d1c;background:radial-gradient(circle at 35% 30%,#c9486a,#8e1c38 55%,#64102a);box-shadow:inset 0 0 0 5px rgba(110,18,42,.9),inset 0 0 0 7px rgba(255,215,195,.28),inset 0 -6px 9px rgba(0,0,0,.35),0 3px 5px rgba(0,0,0,.45);filter:none}
 button.siegel:active{transform:translateY(2px) scale(.96);filter:brightness(.92)}
 .btns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.btns button{flex:1 1 auto}
+/* Version 4.0: Kauf- und Verkaufsknöpfe mit dem Preis drauf, rechts in der Karte. Links steht eine kurze Erklärung.
+   Fehlt das Geld, wird der Knopf grau (.arm), bleibt aber antippbar und sagt, was fehlt. */
+.kz{display:flex;align-items:center;gap:10px;margin-top:10px}.kz>div:first-child{flex:1;min-width:0;font-size:14px;color:var(--mut)}
+.kzk{display:flex;flex-direction:column;align-items:stretch;gap:7px;flex:none}.kz.reihe .kzk{flex-direction:row-reverse;gap:8px}
+button.pk{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:122px;min-height:52px;padding:10px 18px 13px;font-size:15px}
+button.pk>b{font:800 17px/1.1 var(--knopf);font-variant-caps:normal;font-variant-numeric:tabular-nums;letter-spacing:0;white-space:nowrap}
+button.pk>small{font:600 11.5px/1.15 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-caps:normal;letter-spacing:0;white-space:nowrap;opacity:.85}
+button.pk.arm{filter:grayscale(1) opacity(.55)}
 .bar{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin:4px 0 8px}.bar i{display:block;height:100%;background:var(--gruen)}
 .bar.w i{background:var(--wein)}.bar.g i{background:var(--gold)}
 .bar.fl{position:relative}.bar.fl i{position:absolute;left:0;top:0}.bar.fl i.hell{opacity:.35}
@@ -287,7 +297,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='3.3';
+const VERSION='4.0';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=18000, WARTUNG=60, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -1470,7 +1480,7 @@ function hoffestHtml(){
   const m=S.monat, zeit=m>=5&&m<=7, schon=S.festJahr===S.jahr;
   return `<div class="card"><div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/hoffest.jpg)"><b>🎉 Hoffest</b><span>Juni bis August, einmal im Jahr</span></div>
   <div class="mut">${schon?(S.fest?'Das Fest steigt diesen Monat, der Bericht kommt im nächsten Winzerboten.':`Das Hoffest ${S.jahr} ist gefeiert. Nächstes Jahr wieder.`):`Ein großes Fest für das ganze Dorf kostet ${eur(HOFFEST_PREIS)} und bringt rund ${HOFFEST_ANS} Ansehen. Das Wetter im Festmonat entscheidet mit: Sonne bringt mehr, Regen weniger.`}</div>
-  <div class="btns"><button data-a="hoffest" ${zeit&&!schon?'':'disabled'}>Hoffest feiern (${eur(HOFFEST_PREIS)})</button></div></div>`;
+  ${kz('',pk('hoffest','Feiern',eur(HOFFEST_PREIS),{aus:!(zeit&&!schon),arm:S.geld<HOFFEST_PREIS}))}</div>`;
 }
 // Gutsverwalter: läuft beim Weiterblättern vor der Leute-Sperre. Was er tut, steht in S.verwLog für die nächste Zeitung.
 function verwalter(){
@@ -1497,6 +1507,14 @@ function verwalter(){
   if(L.length){S.verwLog=(S.verwLog||[]).concat(L); save()}
 }
 // Aktuelles: der Rang und darunter die anklickbaren Hinweise, die zur passenden Stelle führen.
+// Version 4.0: Kauf- und Verkaufsknopf mit dem Preis drauf. o: id, n (data-Werte), sec (zweiter Knopf), aus (gesperrt),
+// arm (Geld fehlt: grau, aber antippbar, die Aktion erklärt es), klein (kleine Zeile unter dem Preis, etwa der Preis je Stück).
+function pk(a,t,p,o={}){
+  const at=['id','n'].filter(x=>o[x]!=null).map(x=>` data-${x}="${o[x]}"`).join('');
+  return `<button class="pk${o.sec?' sec':''}${o.arm?' arm':''}" data-a="${a}"${at}${o.aus?' disabled':''}><span>${t}</span>${p?`<b>${p}</b>`:''}${o.klein?`<small>${o.klein}</small>`:''}</button>`;
+}
+// Zeile unten in der Karte: links eine kurze Erklärung, rechts die Knöpfe untereinander.
+function kz(links,...kn){return `<div class="kz${links?'':' reihe'}"><div>${links||''}</div><div class="kzk">${kn.join('')}</div></div>`}
 function vAktuell(){
   return `${vRang()}<h3>Das steht an</h3>${aufgabenHtml()}
   <div class="btns" style="margin:4px 0 12px"><button class="sec klein" data-a="tab" data-id="monat">📅 Monatsbericht ansehen</button></div>`;
@@ -1507,8 +1525,9 @@ function vMaschinen(){
   h+=S.maschinen.length?S.maschinen.map((ma,i)=>`<div class="card"><h3>🚜 Erntemaschine ${i+1}</h3>
     <div class="kv"><span>Zustand</span><span>${ma.zustand}\u00a0%</span></div><div class="bar"><i style="width:${ma.zustand}%"></i></div>
     <div class="kv"><span>Leistung</span><span>${num(MASCH_LEISTUNG*ma.zustand/100)} Reben</span></div>
-    <div class="btns"><button class="klein" data-a="maschWarten" data-id="${i}" ${ma.zustand>=100?'disabled':''}>Warten</button>${saison?`<button class="klein sec" data-a="maschVerkauf" data-id="${i}">Verkaufen (${eur(MASCH_PREIS*.5*ma.zustand/100)})</button>`:''}</div></div>`).join(''):'<div class="card mut">Du hast noch keine Erntemaschine.</div>';
-  return h+`<div class="btns"><button data-a="maschKauf" ${saison?'':'disabled'}>Maschine kaufen (${eur(MASCH_PREIS)})</button></div>`;
+    ${kz(saison?'':'Verkaufen geht wieder ab Januar.',pk('maschWarten','Warten','',{id:i,aus:ma.zustand>=100,arm:S.geld<WARTUNG,klein:`${eur(WARTUNG)} je %`}),saison?pk('maschVerkauf','Verkaufen','+'+eur(MASCH_PREIS*.5*ma.zustand/100),{id:i,sec:1}):'')}</div>`).join(''):'<div class="card mut">Du hast noch keine Erntemaschine.</div>';
+  return h+`<div class="card"><h3>🚜 Neue Erntemaschine</h3><div class="mut">Schafft ${num(MASCH_LEISTUNG)} Reben bei der Lese und zählt wie ${MASCH_HELFER} Erntehelfer.</div>
+    ${kz(saison?'':'Zu kaufen von Januar bis März.',pk('maschKauf','Kaufen',eur(MASCH_PREIS),{aus:!saison,arm:S.geld<MASCH_PREIS}))}</div>`;
 }
 // Büro als Pokalraum: Rangliste, Medaillen der eigenen Weine und die Aufstiege.
 function vBuero(){
@@ -1534,7 +1553,7 @@ function vBerg(){
   <div class="card"><h3>Düngung</h3>
     <div class="kv"><span>Boden</span><span>${S.boden}\u00a0%</span></div><div class="bar"><i style="width:${S.boden}%"></i></div>
     <div class="mut ${S.boden<80?'rot':''}">Für die Weinqualität: ${bodenText(S.boden)}</div>
-    <div class="row"><span class="mut">Gedüngt: ${S.duengungen} von 3 Mal · ${eur(DUENGER_HA*S.ha)}</span><button class="klein" data-a="duengen" ${S.duengungen>=3||S.boden>=100?'disabled':''}>Düngen</button></div>
+    ${kz(`Gedüngt: ${S.duengungen} von 3 Mal`,pk('duengen','Düngen',eur(DUENGER_HA*S.ha),{aus:S.duengungen>=3||S.boden>=100,arm:S.geld<DUENGER_HA*S.ha}))}
     <div class="mut" style="margin-top:6px">Der Boden verliert jeden Monat ${BODEN_MONAT} Punkte, in einem Regenmonat ${BODEN_REGEN}, und mit jeder Lese 4. Einmal Düngen bringt 30.</div>
     ${S.nass!=null?`<div class="mut rot">🌧️ Der Regen im ${MON[S.nass]} hat den Boden ausgewaschen.</div>`:''}
     <div class="mut" style="margin-top:6px">Reben: Bodenschnitt dieses Jahr ${bodenSchnitt()}\u00a0%, voraussichtlich ${vs[1]+fp} bis ${vs[2]+fp}\u00a0% Verlust zum Jahreswechsel${fp?' (mit Frost)':''}.</div></div>`;
@@ -1588,12 +1607,12 @@ function vLager(){
   const bel=fassBelegt();
   return `<div class="card"><h3>Fässer</h3>
     <div class="kv"><span>Fassraum belegt</span><span>${num(bel)} von ${num(S.fassraum)}\u00a0l</span></div><div class="bar w"><i style="width:${S.fassraum?bel/S.fassraum*100:0}%"></i></div>
-    <div class="mut">Deine Lagerarbeiter (${S.lagerarb}) betreuen bis zu ${num(S.lagerarb*FASS_JE_LAGERARB)}\u00a0l Fassraum. ${eur2(fassPreis())} je Liter.</div>
-    <div class="btns"><button class="klein" data-a="kaufFass">Fassraum kaufen</button></div></div>
+    <div class="mut">Deine Lagerarbeiter (${S.lagerarb}) betreuen bis zu ${num(S.lagerarb*FASS_JE_LAGERARB)}\u00a0l Fassraum.</div>
+    ${(k=>kz(`Möglich sind noch ${num(Math.max(0,k))}\u00a0l.`,pk('kaufFass','Kaufen',eur2(fassPreis()),{klein:'je Liter',arm:k<500||S.geld<500*fassPreis()})))(S.lagerarb*FASS_JE_LAGERARB-S.fassraum)}</div>
   <div class="card"><h3>Flaschen</h3>
     <div class="kv"><span>Leere Flaschen (1 l)</span><span>${num(S.flaschen)}</span></div>
-    <div class="mut">Deine Lagerarbeiter betreuen bis zu ${num(S.lagerarb*FLASCHEN_JE_LAGERARB)} leere Flaschen. ${eur2(flaschePreis())} je Flasche.</div>
-    <div class="btns"><button class="klein" data-a="kaufFlaschen">Flaschen kaufen</button></div></div>`;
+    <div class="mut">Deine Lagerarbeiter betreuen bis zu ${num(S.lagerarb*FLASCHEN_JE_LAGERARB)} leere Flaschen.</div>
+    ${(k=>kz(`Möglich sind noch ${num(Math.max(0,k))} Flaschen.`,pk('kaufFlaschen','Kaufen',eur2(flaschePreis()),{klein:'je Flasche',arm:k<100||S.geld<100*flaschePreis()})))(S.lagerarb*FLASCHEN_JE_LAGERARB-S.flaschen)}</div>`;
 }
 // Hintertür im Keller: Panschen und Sabotage.
 function vSabotage(){
@@ -1627,7 +1646,7 @@ function vStadt(){
     h+=`<div class="card"><div class="mut">Der Großhandel zeigt dir je Wein den besten Absatzweg, der Zoll ist im Preis schon abgezogen. Zum vollen Preis kauft er diesen Monat noch für <b>${eur(marktRest())} von ${eur(marktFrei())}</b>. Was darüber geht, drückt den Preis, und was du an Weinhandlungen verkaufst, zählt mit. Jeder Rang hebt das Budget um ${eur(MARKT_RANG)}, jedes Exportland um ${eur(MARKT_EXPORT)}.</div>
       ${ex.map(e=>`<div class="kv"><span>${e.flag} ${e.name}</span><span class="mut">${e.text}</span></div>`).join('')}
       ${naechst?`<div class="mut">Nächstes Exportland: ${naechst.flag} ${naechst.name}, ab dem Rang ${RAENGE[naechst.rang].name}.</div>`:''}</div>`;
-    h+=fl.length?fl.map(l=>{const W=wege(l),L=lager(l);return `<div class="card"><b>${dot(l.sorte)}${lotName(l)}</b>${medHtml(l)}<div class="mut">${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte</div>${W.length?`<div class="kv"><span>Bester Preis: ${W[0].flag} ${W[0].name}</span><span>${eur2(W[0].p)}</span></div>${W.length>1?`<div class="mut">Sonst: ${W.slice(1).map(w=>`${w.flag} ${eur2(w.p)}`).join(' · ')}</div>`:''}<div class="btns"><button data-a="verkaufen" data-id="${l.id}">Verkaufen</button></div>`:`<div class="mut">Noch ${L.min-l.flMonate} Monate bis zur Verkaufsreife.</div>`}</div>`}).join(''):'<div class="card mut">Kein Flaschenwein im Lager.</div>';
+    h+=fl.length?fl.map(l=>{const W=wege(l),L=lager(l);return `<div class="card"><b>${dot(l.sorte)}${lotName(l)}</b>${medHtml(l)}<div class="mut">${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte</div>${W.length?`<div class="kv"><span>Bester Absatzweg</span><span>${W[0].flag} ${W[0].name}</span></div>${kz(W.length>1?`Sonst: ${W.slice(1).map(w=>`${w.flag} ${eur2(w.p)}`).join(' · ')}`:'',pk('verkaufen','Verkaufen',eur2(W[0].p),{id:l.id,klein:'je Flasche'}))}`:`<div class="mut">Noch ${L.min-l.flMonate} Monate bis zur Verkaufsreife.</div>`}</div>`}).join(''):'<div class="card mut">Kein Flaschenwein im Lager.</div>';
   }
   if(SUB==='laeden'){
     const n=S.lots.filter(ladenOk).length;
@@ -1643,7 +1662,7 @@ function vStadt(){
     h+=Object.entries(S.laeden).map(([r,d])=>`<div class="card"><h3>Weinhandlung ${WO[r]}</h3>
       <div class="kv"><span>Sucht diesen Monat</span><span>${WUNSCH[d.wunsch]}</span></div>
       <div class="kv"><span>Nimmt noch</span><span>${num(d.rest)} Flaschen</span></div>
-      <div class="btns"><button class="klein" data-a="ladenAngebot" data-id="${r}" ${n&&d.rest>0?'':'disabled'}>Wein anbieten</button></div></div>`).join('');
+      ${kz('',pk('ladenAngebot','Anbieten','',{id:r,aus:!(n&&d.rest>0)}))}</div>`).join('');
   }
   if(SUB==='bank'){
     const k=S.kredit, K=kosten(), ab=S.bericht&&S.bericht.k, kv=(a,x)=>x?`<div class="kv"><span>${a}</span><span>${eur(x)}</span></div>`:'';
@@ -1660,8 +1679,8 @@ function vStadt(){
       <div class="kv"><span>Rate diesen Monat</span><span>${eur(K.tilgung+K.zins)}</span></div>
       <div class="kv"><span>Restlaufzeit</span><span>${Math.ceil(k.rest/k.tilgung)} Monate</span></div>
       <div class="mut">Die Rate wird jeden Monat von selbst abgebucht.</div>
-      <div class="btns"><button data-a="tilgen" ${S.geld<k.rest?'disabled':''}>Sofort ablösen (${eur(k.rest)})</button></div></div>`
-     :`<div class="card"><h3>Kredit</h3><div class="mut">Ab 5.000 €, Laufzeit 12 bis 48 Monate, 6 % Zinsen im Jahr auf die Restschuld. Die Rate wird von selbst abgebucht, vorzeitig ablösen geht jederzeit.</div><div class="btns"><button data-a="kredit">Kredit aufnehmen</button></div></div>`;
+      ${kz('Sofort ablösen geht jederzeit, ohne Gebühr.',pk('tilgen','Ablösen',eur(k.rest),{arm:S.geld<k.rest}))}</div>`
+     :`<div class="card"><h3>Kredit</h3><div class="mut">Ab 5.000 €, Laufzeit 12 bis 48 Monate, 6 % Zinsen im Jahr auf die Restschuld. Die Rate wird von selbst abgebucht, vorzeitig ablösen geht jederzeit.</div>${kz('',pk('kredit','Aufnehmen','',{klein:`bis ${eur(rahmen())}`}))}</div>`;
   }
   if(SUB==='arbeit'){
     const bed=rebenGesamt(), lei=leistung(), fe=leuteFehlen(), ms=S.maschinen.length;
@@ -1671,7 +1690,7 @@ function vStadt(){
       ${a.length?`<div class="kv"><span>Ihre Löhne</span><span>${lohnListe(k)}</span></div><div class="kv"><span>Lohnkosten im Monat</span><span>${eur(lohnSumme(k))}</span></div>`:''}
       <div class="kv"><span>Angebot diesen Monat</span>${lohnAngebot(k)}</div>`};
     const lohnKnoepfe=k=>{const a=S.loehne[k];
-      return `<div class="btns"><button class="sec klein" data-a="helfer" data-id="${k}" data-n="-1" ${S[k]<1?'disabled':''}>Entlassen${a.length?` (${eur(a[a.length-1])})`:''}</button><button class="klein" data-a="helfer" data-id="${k}" data-n="1">Einstellen (${eur(S.angebot[k])})</button></div>`};
+      return kz('',pk('helfer','Einstellen',eur(VERMITTLUNG),{id:k,n:1,arm:S.geld<VERMITTLUNG&&!leuteFehlen()[k],klein:`+${eur(S.angebot[k])} Lohn`}),pk('helfer','Entlassen','',{id:k,n:-1,sec:1,aus:S[k]<1,klein:a.length?`−${eur(a[a.length-1])} Lohn`:''}))};
     h+=`<div class="mut" style="margin-bottom:8px">Der Lohn beim Arbeitsamt schwankt jeden Monat zwischen ${eur(LOHN_MIN)} und ${eur(LOHN_MAX)}. Wer eingestellt ist, behält seinen Lohn. Die Vermittlung kostet einmalig ${eur(VERMITTLUNG)}. Entlassen wird immer der teuerste. Deine Leute brauchst du das ganze Jahr: Fehlt jemand, geht es nicht in den nächsten Monat.</div>
     <div class="card"><h3>Erntehelfer</h3>
       ${lohnTeil('helfer')}
@@ -2138,7 +2157,7 @@ const AKT={
       }});
   },
   kreditJa(d){const n=+d.n,m=+d.m;closeSheet();if(S.kredit)return;S.kredit={rest:n,tilgung:Math.ceil(n/m)};S.geld+=n;fx('kasse');save();render()},
-  tilgen(){const k=S.kredit;if(!k||S.geld<k.rest)return;S.geld-=k.rest;S.kredit=null;fx('stempel');save();render()},
+  tilgen(){const k=S.kredit;if(!k)return;if(S.geld<k.rest)return meldung('Zu wenig Geld',`Zum Ablösen brauchst du ${eur(k.rest)} auf dem Konto.`,'bank');S.geld-=k.rest;S.kredit=null;fx('stempel');save();render()},
   helfer(d){
     const k=d.id, a=S.loehne[k];
     // Niemand darf festhängen: Fehlen Leute dieser Art, geht Einstellen auch ohne Geld, das Konto rutscht dann ins Minus.
