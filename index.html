@@ -343,7 +343,8 @@ const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100,
 // Ein Lagerarbeiter betreut FASS_JE_LAGERARB Liter Fassraum und FLASCHEN_JE_LAGERARB leere Flaschen. Fehlen Leute, sperrt "Nächster Monat".
 const REBEN_JE_HELFER=1000, MASCH_HELFER=3, FASS_JE_LAGERARB=10000, FLASCHEN_JE_LAGERARB=20000;
 /* ---- Etappe 3: Ränge, Gegner, Auktionen, Wettbewerbe, Export ---- */
-const START_JAHR=2027, LANDWERT=15000;
+// START_GELD: seit 7.0 (Schritt C, Maik 16.11.2026) 60.000 € statt 40.000 €, weil am Start nur die ★★★-Sorte geht und Riesling erst nach 18 Monaten Geld bringt. Endgültig in Schritt H.
+const START_JAHR=2027, LANDWERT=15000, START_GELD=60000;
 // Aufstiegstempo: Die ersten HA_FREI Hektar kosten im Monat HA_KOSTEN_KLEIN, jeder weitere HA_KOSTEN.
 // Der Großhandel kauft je Monat für MARKT_FREI Euro zum vollen Preis, je Rang für MARKT_RANG, je Stufe des Exporthandels für MARKT_EXPORT und je bepflanztem Hektar über HA_FREI für MARKT_HA mehr.
 // Seit 4.2 (Paket 3, 15.11.2026) hängt das Budget vor allem an der Fläche, damit ein großes Gut nicht ärmer ist als ein kleines. Verkäufe an Weinhandlungen zählen seit Paket 9 nicht mehr mit. Darüber fällt der Preis bis auf MARKT_MIN, erreicht nach dem MARKT_BREIT-fachen des Budgets.
@@ -1150,7 +1151,7 @@ function preis(l){
 /* ================= Spielstart ================= */
 function neuesSpiel(){
   const reg=REGIONEN[NEU.region];
-  S={v:1,v7:1,name:NEU.name.trim()||'Weingut Rebenreich',region:NEU.region,jahr:2027,monat:0,geld:40000,ha:3,boden:80,duengungen:0,
+  S={v:1,v7:1,name:NEU.name.trim()||'Weingut Rebenreich',region:NEU.region,jahr:2027,monat:0,geld:START_GELD,ha:3,boden:80,duengungen:0,
     felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',sonne:0,markt:1,ansehen:0,
     jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:1,lagerarb:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0}};
   for(const id of reg.sorten){S.felder[id]={reben:0,jung:0}; feldReset(S.felder[id])}
@@ -1158,7 +1159,7 @@ function neuesSpiel(){
   lohnAbgleich();
   neuePrognose();
   TOP=[]; FUSS=[];
-  schlag(100,'Willkommen auf deinem Weingut',`${S.name} ${WO[S.region]} startet mit 3 Hektar kahlem Weinberg, leeren Fässern und 40.000 €. Bis März ist Pflanzzeit, im Weinberg pflanzt du deinen ${SORTEN[sortenFolge()[0]].name}. Die zweite und dritte Rebsorte bringt der Aufstieg. Im ersten Jahr tragen junge Reben nur die Hälfte.`,'weingut');
+  schlag(100,'Willkommen auf deinem Weingut',`${S.name} ${WO[S.region]} startet mit 3 Hektar kahlem Weinberg, leeren Fässern und ${eur(START_GELD)}. Bis März ist Pflanzzeit, im Weinberg pflanzt du deinen ${SORTEN[sortenFolge()[0]].name}. Die zweite und dritte Rebsorte bringt der Aufstieg. Im ersten Jahr tragen junge Reben nur die Hälfte.`,'weingut');
   schlag(50,'So kommst du herum','Unten wählst du Weingut, Kellerei oder Stadt, die Leiste darüber bringt dich zu den Orten. Wischen übers Bild geht auch. Ein Punkt am Reiter zeigt Neues oder Dringendes, ein Tipp aufs Geld öffnet die Kasse. Die ℹ️-Karte unter dem Bild erklärt jeden Ort, Spielstände, Ton und das Buch liegen im Büro.');
   schlag(40,'Leute für Weinberg und Keller','Je 1.000 Reben brauchst du das ganze Jahr einen Erntehelfer. Du hast einen, für mehr Reben stellst du vor dem Pflanzen beim Arbeitsamt in der Stadt ein. Der Lohn dort schwankt jeden Monat, wer eingestellt ist, behält seinen. Dein Lagerarbeiter betreut 10.000 l Fassraum und 20.000 leere Flaschen. Fehlen dir Leute, geht es nicht in den nächsten Monat.','arbeit');
   schlag(30,'Die Konkurrenz schläft nicht','Deine Gegner: '+S.gegner.map(g=>`${g.name}, ${GEGNER_TYP[g.typ].art}, ${WO[g.region]}`).join('; ')+'. Wer zuerst Präsident des Weinbauverbands wird, gewinnt.');
