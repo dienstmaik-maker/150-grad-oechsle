@@ -359,7 +359,7 @@ const RAENGE=[
   {name:'Jungwinzer',kurz:'Jungwinzer',ans:15,ha:3,verm:100000,rahmen:40000,neu:'du darfst bei Auktionen mitbieten, {sorte}, Kellerausbau'},
   {name:'Winzer',kurz:'Winzer',ans:50,ha:4,verm:180000,rahmen:80000,neu:'Sekt, der Exporthandel'},
   {name:'Winzermeister',kurz:'Winzermeister',ans:100,ha:5,verm:300000,rahmen:160000,neu:'Landesprämierung, Erntemaschinen'},
-  {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',ans:170,ha:6,verm:500000,rahmen:300000,neu:'{sorte}, ein Gutsverwalter, der auch Daueraufträge übernimmt'},
+  {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',ans:170,ha:6,verm:500000,rahmen:300000,neu:'{sorte}'},
   {name:'Gutsherr',kurz:'Gutsherr',ans:250,ha:8,verm:750000,rahmen:300000,neu:'Bundeswettbewerb, der große Vollernter',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.'},
   {name:'Weinbaurat',kurz:'Weinbaurat',ans:360,ha:10,verm:1200000,rahmen:300000,neu:'eine eigene Weinhandlung, das Amt des Weinbotschafters'},
   {name:'Verbandsvorstand',kurz:'Vorstand',ans:480,ha:13,verm:1800000,rahmen:300000,neu:'das Hoffest, du kannst Kontrollen anregen'},
@@ -367,7 +367,7 @@ const RAENGE=[
   {name:'Präsident des Weinbauverbands',kurz:'Präsident',ans:850,ha:20,verm:3000000,rahmen:300000,neu:'der Sieg'}
 ];
 // Ab welcher Stufe (Index in RAENGE) etwas geht. RANG_ALT rechnet die sechs Ränge alter Spielstände um.
-const R_MAX=RAENGE.length-1, R_AUKTION=1, R_LAND=3, R_VERWALTER=4, R_BUND=5, R_LADEN=6, R_HOFFEST=7, R_SPITZE=8, RANG_ALT=[0,1,3,5,7,9];
+const R_MAX=RAENGE.length-1, R_AUKTION=1, R_LAND=3, R_BUND=5, R_LADEN=6, R_HOFFEST=7, R_SPITZE=8, RANG_ALT=[0,1,3,5,7,9];
 // Version 7.0 (Schritt C): Freischalt-Plan aus Schritt A. Die Rebsorten kommen nacheinander nach ihren Sternen im Gebiet (sortenFolge):
 // die ★★★-Sorte von Anfang an, die ★★-Sorte ab R_SORTE2, die ★-Sorte ab R_SORTE3. Sekt ab R_SEKT, der Exporthandel ab R_EXPORT, Kellerausbau ab R_KELLER (weiter unten).
 const R_SORTE2=1, R_SORTE3=4, R_SEKT=2, R_EXPORT=2, SORTE_RANG=[0,R_SORTE2,R_SORTE3];
@@ -375,9 +375,56 @@ function sortenFolge(r){r=r||S.region; return REGIONEN[r].sorten.slice().sort((a
 function sorteAb(id,r){return SORTE_RANG[sortenFolge(r).indexOf(id)]??0}
 function sorteFrei(id){return S.rang>=sorteAb(id)}
 function sektFrei(){return S.rang>=R_SEKT}
+// Version 7.0 (Schritt D): drei Manager statt Gutsverwalter, nach dem Plan aus Schritt A ("Fundament für 7.0" in der Projektnotiz).
+// MANAGER: je Stufe der Bereich, die Stufe, ab welchem Rang (Index in RAENGE) sie geht und welche Aufgaben (Schlüssel aus MGR_AUFGABEN) sie dazubringt.
+// kosten: Einstellen (Stufe 1) oder Befördern, aus MGR_KOSTEN. lohn: Monatslohn auf dieser Stufe, aus MGR_LOHN, läuft über die Löhne.
+// Kosten und Lohn stehen bis Schritt H auf 0 (neutral, wie der frühere Verwalter). Startwerte für Schritt H: 5.000 / 20.000 / 60.000 € und 500 / 1.000 / 2.000 € im Monat.
+// Leere Stufen bekommen ihre Aufgaben in Schritt E: Handel 3 (Regal, Wettbewerb, Fest), Keller 2 (Sekt), Keller 3 (schnellere Reife).
+// Spielstand: S.manager={handel|keller|weingut:{stufe,an:{aufgabe:1},zuletzt}}, die Reserve der Daueraufträge wie bisher in S.dauer.reserve.
+const MGR_KOSTEN=[0,0,0], MGR_LOHN=[0,0,0];
+const MGR_BEREICHE={
+  handel:{name:'Handels-Manager',sym:'🤝',ort:'Stadt'},
+  keller:{name:'Kellermeister',sym:'🍷',ort:'Keller'},
+  weingut:{name:'Weingut-Manager',sym:'🌿',ort:'Weingut'}
+};
+const MGR_AUFGABEN={
+  laeden:{kurz:'Weinhandlungen beliefern',text:'Jeden Monat die Weinhandlungen mit passenden Weinen beliefern'},
+  handel:{kurz:'an den Großhandel verkaufen',text:'Jeden Monat an den Großhandel verkaufen, so viel er zum vollen Preis nimmt'},
+  flaschen:{kurz:'Fässer abfüllen',text:'Angemeldete Fässer abfüllen und die Flaschen dafür kaufen'},
+  lager:{kurz:'Lagerarbeiter einstellen',text:'Fehlende Lagerarbeiter einstellen'},
+  reben:{kurz:'Reben nachpflanzen',text:'Eingegangene Reben nachpflanzen'},
+  duengen:{kurz:'düngen',text:'Düngen, wenn der Boden mager wird'},
+  helfer:{kurz:'Erntehelfer einstellen',text:'Fehlende Erntehelfer einstellen'}
+};
+// Reihenfolge je Rang wie im Freischalt-Plan, so stehen sie auch im Aufstiegstext.
+const MANAGER=[
+  {bereich:'handel',stufe:1,rang:2,aufgaben:['laeden']},
+  {bereich:'keller',stufe:1,rang:3,aufgaben:['flaschen','lager']},
+  {bereich:'weingut',stufe:1,rang:4,aufgaben:['reben']},
+  {bereich:'handel',stufe:2,rang:4,aufgaben:['handel']},
+  {bereich:'keller',stufe:2,rang:5,aufgaben:[]},
+  {bereich:'weingut',stufe:2,rang:6,aufgaben:['duengen']},
+  {bereich:'handel',stufe:3,rang:7,aufgaben:[]},
+  {bereich:'weingut',stufe:3,rang:8,aufgaben:['helfer']},
+  {bereich:'keller',stufe:3,rang:8,aufgaben:[]}
+].map(e=>Object.assign(e,{kosten:MGR_KOSTEN[e.stufe-1],lohn:MGR_LOHN[e.stufe-1]}));
+function mgrSt(b){return ((S.manager||{})[b]||{}).stufe||0}
+function mgrEintrag(b,st){return MANAGER.find(e=>e.bereich===b&&e.stufe===st)}
+function mgrNaechste(b){return mgrEintrag(b,mgrSt(b)+1)}
+function mgrAufgabe(k){return MANAGER.find(e=>e.aufgaben.includes(k))}
+// aufgabeDa: Der Manager ist auf der Stufe, die die Aufgabe bringt. aufgabeAktiv: dazu ist ihr Schalter an.
+function aufgabeDa(k){const e=mgrAufgabe(k); return !!e&&mgrSt(e.bereich)>=e.stufe}
+function aufgabeAktiv(k){return aufgabeDa(k)&&!!(S.manager[mgrAufgabe(k).bereich].an||{})[k]}
+function mgrLohn(){let s=0; for(const b in S.manager||{}) s+=(mgrEintrag(b,mgrSt(b))||{}).lohn||0; return s}
+// Für den Aufstiegstext: neue Manager und Beförderungen des Rangs i, gleiche Stufen zusammengefasst.
+function mgrBringt(i){
+  const E=MANAGER.filter(e=>e.rang===i), g={};
+  for(const e of E.filter(e=>e.stufe>1)) (g[e.stufe]=g[e.stufe]||[]).push(MGR_BEREICHE[e.bereich].name);
+  return [...E.filter(e=>e.stufe===1).map(e=>`ein ${MGR_BEREICHE[e.bereich].name}`),...Object.entries(g).map(([s,n])=>n.length>1?`Stufe ${s} für ${n.join(' und ')}`:`Stufe ${s} für den ${n[0]}`)];
+}
 // Was ein Aufstieg bringt: die Freischaltungen des Rangs, höchstens drei. Seit 5.1 (Paket 10) steht der Kreditrahmen als eigener Satz dahinter (rahmenSatz), nur wenn er wächst.
-// Seit 7.0 steht {sorte} für die Rebsorte, die mit dem Rang kommt, mit ihrem Namen im Gebiet.
-function bringt(i){const n=SORTE_RANG.indexOf(i), id=n>0&&S?sortenFolge()[n]:null; return RAENGE[i].neu.replace('{sorte}',`die ${n===1?'zweite':'dritte'} Rebsorte${id?' '+SORTEN[id].name:''}`)}
+// Seit 7.0 steht {sorte} für die Rebsorte, die mit dem Rang kommt, mit ihrem Namen im Gebiet. Die Manager hängt mgrBringt an.
+function bringt(i){const n=SORTE_RANG.indexOf(i), id=n>0&&S?sortenFolge()[n]:null; return [RAENGE[i].neu.replace('{sorte}',`die ${n===1?'zweite':'dritte'} Rebsorte${id?' '+SORTEN[id].name:''}`),...mgrBringt(i)].join(', ')}
 function rahmenSatz(i){const r=RAENGE[i];return r.rahmen>RAENGE[i-1].rahmen?` Dein Kreditrahmen steigt auf ${eur(r.rahmen)}.`:''}
 // Schummelei: Kälteeinbruch im November, Panschen, Weinkontrolle, Sabotage. Alle Zahlen an einer Stelle.
 const KAELTE=.25, ZUCKER_MAX=20, ZUCKER_ERLAUBT=10, SCHMIER_ANTEIL=.1, SCHMIER_MIN=2000;
@@ -423,7 +470,7 @@ const ANREG_ANS=30, ANREG_FEHL=3, PANSCH={zocker:.4,vorsicht:.08,qualitaet:.04},
 // Makler: ab Jungwinzer höchstens ein Hektar im Jahr zum MAKLER_PREIS, nur wenn für den nächsten Rang allein noch Land fehlt. Auktionen bleiben deutlich billiger.
 // Weinfest: ab Winzermeister bis zum Hoffest, einmal im Jahr von Juni bis August, kostet WEINFEST_PREIS und bringt WEINFEST_ANS Ansehen mal Wetter-Faktor.
 // Kellerausbau: drei Stufen, seit 7.0 ab Jungwinzer (KELLER_PREISE). Jede Stufe kürzt die Reifezeit von Prädikatswein und Eiswein in der Flasche um einen Monat, und jeder Wein gewinnt beim Reifen KELLER_REIFE schneller an Wert.
-const MAKLER_PREIS=45000, WEINFEST_PREIS=30000, WEINFEST_ANS=12, KELLER_PREISE=[50000,120000,250000], KELLER_REIFE=.1, R_WEINFEST=R_LAND, R_KELLER=1, R_DAUER=R_VERWALTER;
+const MAKLER_PREIS=45000, WEINFEST_PREIS=30000, WEINFEST_ANS=12, KELLER_PREISE=[50000,120000,250000], KELLER_REIFE=.1, R_WEINFEST=R_LAND, R_KELLER=1;
 const FESTE={weinfest:{name:'Weinfest',preis:WEINFEST_PREIS,ans:WEINFEST_ANS,text:'Ein Weinfest im Hof mit Zelt, Musik und deinem Wein',kurz:'Musik, Zwiebelkuchen und dein Wein für Nachbarn und Gäste'},hoffest:{name:'Hoffest',preis:HOFFEST_PREIS,ans:HOFFEST_ANS,text:'Ein großes Fest für das ganze Dorf',kurz:'Musik, Flammkuchen und dein Wein für das ganze Dorf'}};
 // Erntemaschinen (Paket 4, Variante C): die kleine ab Winzermeister, der große Vollernter ab Gutsherr. Maschinen ohne Typ (alte Spielstände) sind klein und bleiben, auch vor Winzermeister.
 const VOLL_PREIS=120000, VOLL_LEISTUNG=10000, VOLL_HELFER=10, VOLL_WARTUNG=300;
@@ -941,7 +988,7 @@ function lohnAbgleich(){
   for(const k of LOHN_ARTEN){const a=S.loehne[k]; while(a.length<S[k]) a.push(LOHN_START); a.length=S[k]; a.sort((x,y)=>x-y)}
   if(!S.angebot) neuesLohnAngebot();
 }
-function kosten(){const k=S.kredit;return {basis:150+HA_KOSTEN_KLEIN*Math.min(S.ha,HA_FREI)+HA_KOSTEN*Math.max(0,S.ha-HA_FREI),loehne:lohnSumme('helfer')+lohnSumme('lagerarb'),tilgung:k?Math.min(k.rest,k.tilgung):0,zins:k?Math.round(k.rest*ZINS/12):0}}
+function kosten(){const k=S.kredit;return {basis:150+HA_KOSTEN_KLEIN*Math.min(S.ha,HA_FREI)+HA_KOSTEN*Math.max(0,S.ha-HA_FREI),loehne:lohnSumme('helfer')+lohnSumme('lagerarb')+mgrLohn(),tilgung:k?Math.min(k.rest,k.tilgung):0,zins:k?Math.round(k.rest*ZINS/12):0}}
 function schulden(){return (S.kredit?S.kredit.rest:0)+Math.max(0,-S.geld)}
 // Version 5.1 (Paket 10): Die SEKT_ANS Ansehen gibt es einmal im Jahr, sobald zusammen SEKT_ANS_HA Flaschen je bepflanztem Hektar versektet sind, mindestens für HA_FREI Hektar.
 const SEKT_ANS=3, SEKT_ANS_HA=200;
@@ -1270,15 +1317,15 @@ function zeitung(Z,W,ehr,k){
 function monatWeiter(){
   const Z=[], weg=verfallListe(); let uz=0, steuer=0;
   TOP=[]; FUSS=[];
-  // Hoffest und Gutsverwalter aus dem alten Monat kommen in diese Ausgabe. Beim Hoffest zählt das Wetter des Festmonats.
+  // Hoffest und Manager-Berichte aus dem alten Monat kommen in diese Ausgabe. Beim Hoffest zählt das Wetter des Festmonats.
   if(S.fest){
     const w=S.fest.w, f=HOFFEST_WETTER[w]||1, F=FESTE[S.fest.art||'hoffest'], n=F.name, a=ruhm(Math.round(F.ans*f));
     const T={sonnig:'Bei strahlender Sonne kamen Hunderte Gäste',mild:'Bei mildem Wetter kamen viele Gäste',regen:'Im Regen kamen nur wenige Gäste',kalt:'Bei kühlem Wetter blieben einige Gäste zu Hause',frost:'Bei klirrender Kälte blieben einige Gäste zu Hause'};
     schlag(65,f>1?`Rauschendes ${n} bei ${S.name}`:f<.8?`${n} bei ${S.name} fällt ins Wasser`:`${n} bei ${S.name}`,`${T[w]||T.mild}, es gab Musik, ${S.fest.art==='weinfest'?'Zwiebelkuchen':'Flammkuchen'} und deinen Wein. Das ganze Dorf redet davon: +${a} Ansehen.`,'hoffest'); S.fest=null;
   }
-  if(S.verwLog&&S.verwLog.length) schlag(15,'Aus dem Gutsbüro',`Dein Gutsverwalter meldet: ${S.verwLog.join(', ')}.`);
-  S.verwLog=null;
-  if(S.dauerLog&&S.dauerLog.length) Z.push(`📋 Dauerauftrag: ${S.dauerLog.join(', ')}.`);
+  if(S.mgrLog){const T=['weingut','keller'].filter(b=>(S.mgrLog[b]||[]).length).map(b=>`Dein ${MGR_BEREICHE[b].name} meldet: ${S.mgrLog[b].join(', ')}.`); if(T.length) schlag(15,'Aus dem Gutsbüro',T.join(' '))}
+  S.mgrLog=null;
+  if(S.dauerLog&&S.dauerLog.length) Z.push(`📋 Dein ${MGR_BEREICHE.handel.name}: ${S.dauerLog.join(', ')}.`);
   S.dauerLog=null;
   if(SPRUNG.length){Z.unshift(...SPRUNG); SPRUNG=[]}
   // Der Wettbewerb aus dem Vormonat wird jetzt gewertet, das Ergebnis steht in dieser Ausgabe.
@@ -1716,49 +1763,78 @@ function vBetrieb(){
     <div class="kv"><span>Feste Kosten im Monat</span><span>${(k=>eur(k.basis+k.loehne+k.tilgung+k.zins))(kosten())}</span></div>
     ${S.kredit?`<div class="kv"><span>Kredit, Restschuld</span><span>${eur(S.kredit.rest)}</span></div>`:''}
   </div>
-  ${verwHtml()}${hoffestHtml()}
+  ${mgrHtml()}${hoffestHtml()}
   <h3>🗺️ Dein Gebiet</h3>${steckbrief(S.region,{buch:1})}`;
 }
-// Gutsverwalter ab Gutsbesitzer: Schalter für das, was er beim Weiterblättern erledigt.
-// Version 4.4: Daueraufträge für den Verkauf, S.dauer={handel,laeden,reserve}. Sie laufen beim Weiterblättern vor dem Monatswechsel:
-// erst die Weinhandlungen (sie zahlen mehr), dann der Großhandel bis zum Budget, nie unter dem vollen Preis.
-// Was am ehesten verdirbt, geht zuerst. Je Wein bleiben reserve Flaschen liegen, außer er hält nur noch zwei Monate. Bericht über S.dauerLog im Winzerboten.
+// Daueraufträge für den Verkauf (seit 4.4, seit 7.0 beim Handels-Manager: Weinhandlungen ab Stufe 1, Großhandel ab Stufe 2).
+// Sie laufen beim Weiterblättern vor dem Monatswechsel: erst die Weinhandlungen (sie zahlen mehr), dann der Großhandel bis zum Budget, nie unter dem vollen Preis.
+// Was am ehesten verdirbt, geht zuerst. Je Wein bleiben S.dauer.reserve Flaschen liegen, außer er hält nur noch zwei Monate. Bericht über S.dauerLog im Winzerboten.
 const DAUER_RESERVE=[0,100,500,1000];
 function dauerAuftrag(){
-  const d=S.dauer; if(S.rang<R_DAUER||!d||(!d.handel&&!d.laeden)) return;
+  const d=S.dauer||{}, aL=aufgabeAktiv('laeden'), aH=aufgabeAktiv('handel'); if(!aL&&!aH) return;
   const res=DAUER_RESERVE.includes(+d.reserve)?+d.reserve:0, frei=l=>lotRest(l)<=2?l.liter:Math.max(0,l.liter-res), L=[];
   const ls=()=>S.lots.filter(l=>l.status==='flasche'&&!l.regal&&l.liter>0&&preis(l)>0).sort(BSORT_F.dringend);
   let nL=0,eL=0,nH=0,eH=0;
-  if(d.laeden) for(const [r,la] of Object.entries(S.laeden)) for(const l of ls().filter(l=>ladenPasst(l,r))){
+  if(aL) for(const [r,la] of Object.entries(S.laeden)) for(const l of ls().filter(l=>ladenPasst(l,r))){
     if(la.rest<=0) break; const n=Math.min(frei(l),la.rest); if(n<=0) continue;
     const p=ladenPreis(l,r); kassiere(Math.round(n*p)); la.rest-=n; l.liter-=n; nL+=n; eL+=n*p;
   }
-  if(d.handel) for(const l of ls()){
+  if(aH) for(const l of ls()){
     const w=wege(l)[0]; if(!w) continue; const n=Math.min(frei(l),Math.floor(marktRest()/w.p)); if(n<=0) continue;
     kassiere(Math.round(n*w.p)); S.absatz=(S.absatz||0)+n*w.p; l.liter-=n; nH+=n; eH+=n*w.p;
   }
   S.lots=S.lots.filter(l=>l.liter>0);
   if(nL) L.push(`${num(nL)} Flaschen an Weinhandlungen für ${eur(eL)}`);
   if(nH) L.push(`${num(nH)} Flaschen an den Großhandel für ${eur(eH)}`);
-  if(L.length) S.dauerLog=(S.dauerLog||[]).concat(L);
+  if(L.length){S.dauerLog=(S.dauerLog||[]).concat(L); S.manager.handel.zuletzt=L.join(', ')}
 }
+function reserveChips(){const d=S.dauer||{}; return `<div class="chips" style="flex-wrap:wrap">${DAUER_RESERVE.map(n=>`<button class="chip ${(+d.reserve||0)===n?'an':''}" data-a="dauerRes" data-id="${n}">${n?num(n):'keine'}</button>`).join('')}</div>`}
+// Im Großhandel (k='handel') und im Weinhandel (k='laeden'): der Schalter des Dauerauftrags, oder wer ihn ab wann übernimmt.
 function dauerHtml(k){
-  if(S.rang<R_DAUER) return `<div class="card mut">📋 Daueraufträge übernimmt ab dem Rang ${RAENGE[R_DAUER].name} dein Gutsverwalter. Bis dahin verkaufst du selbst.</div>`;
-  const d=S.dauer||{}, an=!!d[k], t=DAUER_TEXT[k];
-  return `<div class="card"><button class="wahl ${an?'an':''}" data-a="dauer" data-id="${k}" style="margin:0">${an?'✅':'⬜'} 📋 Dauerauftrag: ${t}</button>
-  ${an?`<div class="mut" style="margin:8px 0 6px">Läuft bei jedem Weiterblättern, was am ehesten verdirbt, geht zuerst. Je Wein bleiben im Keller, außer kurz vorm Verderben:</div>
-  <div class="chips" style="flex-wrap:wrap">${DAUER_RESERVE.map(n=>`<button class="chip ${(+d.reserve||0)===n?'an':''}" data-a="dauerRes" data-id="${n}">${n?num(n):'keine'}</button>`).join('')}</div>`:''}</div>`;
+  const e=mgrAufgabe(k), M=MGR_BEREICHE[e.bereich], st=mgrSt(e.bereich), was=k==='laeden'?'für die Weinhandlungen':'für den Großhandel';
+  if(!aufgabeDa(k)){
+    const wie=S.rang<e.rang?`ab dem Rang ${RAENGE[e.rang].name} dein ${M.name}${e.stufe>1?` auf Stufe ${e.stufe}`:''}. Bis dahin verkaufst du selbst.`
+      :`dein ${M.name}, sobald du ihn im Arbeitsamt ${st?`auf Stufe ${e.stufe} beförderst`:e.stufe>1?`einstellst und auf Stufe ${e.stufe} beförderst`:'einstellst'}.`;
+    return `<div class="card"><div class="mut">📋 Den Dauerauftrag ${was} übernimmt ${wie}</div>${S.rang>=e.rang?kz('',pk('arbeitsamt','Zum Arbeitsamt','')):''}</div>`;
+  }
+  const an=aufgabeAktiv(k);
+  return `<div class="card"><button class="wahl ${an?'an':''}" data-a="mgrAn" data-id="${k}" style="margin:0">${an?'✅':'⬜'} 📋 Dauerauftrag: ${MGR_AUFGABEN[k].text}</button>
+  ${an?`<div class="mut" style="margin:8px 0 6px">Dein ${M.name} erledigt das bei jedem Weiterblättern, was am ehesten verdirbt, geht zuerst. Je Wein bleiben im Keller, außer kurz vorm Verderben:</div>
+  ${reserveChips()}`:''}</div>`;
 }
-// Seit 5.1 (Paket 10) übernimmt der Gutsverwalter die Daueraufträge. Die Schalter stehen bei ihm und wie bisher im Großhandel und in der Weinhandlung.
-const DAUER_TEXT={handel:'Jeden Monat an den Großhandel verkaufen, so viel er zum vollen Preis nimmt',laeden:'Jeden Monat die Weinhandlungen mit passenden Weinen beliefern'};
-const VERW={leute:'Fehlende Leute einstellen',duengen:'Düngen, wenn der Boden mager wird',flaschen:'Angemeldete Fässer abfüllen',reben:'Eingegangene Reben nachpflanzen'};
-function verwHtml(){
-  if(S.rang<R_VERWALTER) return '';
-  const v=S.verw||{};
-  return `<div class="card"><h3>🧑‍💼 Dein Gutsverwalter</h3><div class="mut" style="margin-bottom:8px">Er erledigt beim Weiterblättern, was du hier einschaltest, und berichtet im Winzerboten. Einkäufe zahlt er aus deiner Kasse, sein Lohn ist im Betrieb schon drin.</div>
-  ${Object.entries(VERW).map(([k,t])=>`<button class="wahl ${v[k]?'an':''}" data-a="verw" data-id="${k}">${v[k]?'✅':'⬜'} ${t}</button>`).join('')}
-  ${Object.entries(DAUER_TEXT).map(([k,t])=>`<button class="wahl ${(S.dauer||{})[k]?'an':''}" data-a="dauer" data-id="${k}">${(S.dauer||{})[k]?'✅':'⬜'} 📋 ${t}</button>`).join('')}
-  <div class="mut">Wie viel je Wein im Keller bleibt, stellst du im Großhandel ein.</div></div>`;
+// Version 7.0 (Schritt D): Manager im Betrieb (statt Gutsverwalter), im Arbeitsamt und als Fenster von unten.
+// Schritt F setzt die Zeile oben in Weingut, Keller und Stadt davor, die dasselbe Fenster öffnet (AKT.mgr).
+function mgrZeile(b){const M=MGR_BEREICHE[b], st=mgrSt(b), e=mgrEintrag(b,1); return `${M.sym} ${M.name}: ${st?`Stufe ${st}`:S.rang>=e.rang?'noch nicht eingestellt':`ab dem Rang ${RAENGE[e.rang].name}`}`}
+function mgrHtml(){
+  if(S.rang<Math.min(...MANAGER.map(e=>e.rang))) return '';
+  return `<div class="card"><h3>🧑‍💼 Deine Manager</h3><div class="mut" style="margin-bottom:8px">Sie erledigen beim Weiterblättern, was du einschaltest, und berichten im Winzerboten. Einkäufe zahlen sie aus deiner Kasse. Eingestellt und befördert wird im Arbeitsamt.</div>
+  ${Object.keys(MGR_BEREICHE).map(b=>`<button class="wahl" data-a="mgr" data-id="${b}">${mgrZeile(b)}</button>`).join('')}</div>`;
+}
+function mgrStufenText(e,st){return `${e.stufe<=st?'✅':S.rang>=e.rang?'⬜':'🔒'} Stufe ${e.stufe} ab ${RAENGE[e.rang].name}${e.aufgaben.length?': '+e.aufgaben.map(k=>MGR_AUFGABEN[k].kurz).join(', '):''}`}
+function mgrKnopf(b){const n=mgrNaechste(b); if(!n) return ''; return pk('mgrStufe',n.stufe===1?'Einstellen':`Auf Stufe ${n.stufe} befördern`,n.kosten?eur(n.kosten):'',{id:b,aus:S.rang<n.rang,arm:S.geld<n.kosten,klein:S.rang<n.rang?`ab ${RAENGE[n.rang].name}`:n.lohn?`${eur(n.lohn)} Lohn im Monat`:''})}
+// Karte im Arbeitsamt nach der Vorlage von Erntehelfern und Lagerarbeitern.
+function mgrKarte(b){
+  const M=MGR_BEREICHE[b], st=mgrSt(b), E=MANAGER.filter(e=>e.bereich===b);
+  return `<div class="card"><h3>${M.sym} ${M.name}</h3>
+  <div class="kv"><span>Stufe</span><span>${st?`${st} von ${E.length}`:'nicht eingestellt'}</span></div>
+  ${st?`<div class="kv"><span>Lohn im Monat</span><span>${eur(mgrEintrag(b,st).lohn)}</span></div>`:''}
+  <div class="mut">${E.map(e=>mgrStufenText(e,st)).join('<br>')}</div>
+  ${kz('',mgrKnopf(b),st?pk('mgr','Aufgaben','',{id:b,sec:1}):'')}</div>`;
+}
+// Fenster von unten: ein Schalter je Aufgabe der erreichten Stufen, Lohn, Knopf zum Befördern.
+let MGR_OFFEN=null;
+function mgrFenster(b){
+  const M=MGR_BEREICHE[b], st=mgrSt(b), E=MANAGER.filter(e=>e.bereich===b), m=(S.manager||{})[b]||{};
+  const teil=e=>e.stufe>st?`<div class="mut" style="margin:0 0 8px">${mgrStufenText(e,st)}</div>`
+    :e.aufgaben.map(k=>{const an=aufgabeAktiv(k); return `<button class="wahl ${an?'an':''}" data-a="mgrAn" data-id="${k}">${an?'✅':'⬜'} ${k==='laeden'||k==='handel'?'📋 ':''}${MGR_AUFGABEN[k].text}</button>`}).join('');
+  return `<h3>${M.sym} ${st?'Dein '+M.name:M.name}</h3>
+  <div class="mut" style="margin-bottom:8px">${st?`Stufe ${st} von ${E.length}. Er erledigt beim Weiterblättern, was du hier einschaltest, und berichtet im Winzerboten. Einkäufe zahlt er aus deiner Kasse.`:`Noch nicht eingestellt. Ab dem Rang ${RAENGE[E[0].rang].name} gibt es ihn im Arbeitsamt.`}</div>
+  ${st?`<div class="kv"><span>Lohn im Monat</span><span>${eur(mgrEintrag(b,st).lohn)}</span></div>`:''}
+  ${m.zuletzt?`<div class="kv"><span>Zuletzt</span><span>${esc(m.zuletzt)}</span></div>`:''}
+  ${E.map(teil).join('')}
+  ${aufgabeAktiv('laeden')&&b==='handel'||aufgabeAktiv('handel')&&b==='handel'?`<div class="mut" style="margin:8px 0 6px">Je Wein bleiben im Keller, außer kurz vorm Verderben:</div>${reserveChips()}`:''}
+  ${mgrNaechste(b)?kz('',mgrKnopf(b)):''}
+  <div class="btns"><button class="sec" data-a="close">Zurück</button></div>`;
 }
 // Hoffest ab Verbandsvorstand: Juni bis August, einmal im Jahr.
 // Weinfest ab Winzermeister, ab Verbandsvorstand wird daraus das Hoffest. Beide teilen sich Bild, Monate und S.festJahr.
@@ -1769,30 +1845,36 @@ function hoffestHtml(){
   <div class="mut">${schon?(S.fest?'Das Fest steigt diesen Monat, der Bericht kommt im nächsten Winzerboten.':`Das ${F.name} ${S.jahr} ist gefeiert. Nächstes Jahr wieder.`):`${F.text} kostet ${eur(F.preis)} und bringt rund ${F.ans} Ansehen. Das Wetter im Festmonat entscheidet mit: Sonne bringt mehr, Regen weniger.${art==='weinfest'?` Ab dem Rang ${RAENGE[R_HOFFEST].name} wird daraus das große Hoffest.`:''}`}</div>
   ${kz('',pk('hoffest','Feiern',eur(F.preis),{aus:!(zeit&&!schon),arm:S.geld<F.preis}))}</div>`;
 }
-// Gutsverwalter: läuft beim Weiterblättern vor der Leute-Sperre. Was er tut, steht in S.verwLog für die nächste Zeitung.
-function verwalter(){
-  const v=S.verw; if(S.rang<R_VERWALTER||!v) return;
-  const L=[], m=S.monat; let neu=0;
-  const stell=k=>{zahle(VERMITTLUNG); S[k]++; S.loehne[k].push(S.angebot[k]); S.loehne[k].sort((x,y)=>x-y); neu++};
-  if(v.reben&&m<=2&&S.verlust) for(const id of R().sorten){
+// Was früher der Gutsverwalter tat, seit 7.0 (Schritt D) aufgeteilt: Weingut-Manager (Reben, Düngen, Erntehelfer) und Kellermeister (Abfüllen, Lagerarbeiter).
+// Läuft beim Weiterblättern vor der Leute-Sperre, in derselben Reihenfolge wie beim Verwalter. Berichte stehen in S.mgrLog für die nächste Zeitung.
+function mgrBetrieb(){
+  if(!S.manager) return;
+  const LW=[], LK=[], m=S.monat, neu={helfer:0,lagerarb:0}, hf=aufgabeAktiv('helfer'), la=aufgabeAktiv('lager');
+  const stell=k=>{zahle(VERMITTLUNG); S[k]++; S.loehne[k].push(S.angebot[k]); S.loehne[k].sort((x,y)=>x-y); neu[k]++};
+  if(aufgabeAktiv('reben')&&m<=2&&S.verlust) for(const id of R().sorten){
     const pr=rebenPreis(id), platz=()=>Math.min(S.verlust[id]||0,S.ha*HA_REBEN-rebenGesamt(),Math.floor(Math.max(0,S.geld-5000)/pr/10)*10);
-    if(v.leute){let i=0; while(platz()>=10&&helferKraft()*REBEN_JE_HELFER<rebenGesamt()+platz()&&S.geld>5000+VERMITTLUNG&&i++<20) stell('helfer')}
+    if(hf){let i=0; while(platz()>=10&&helferKraft()*REBEN_JE_HELFER<rebenGesamt()+platz()&&S.geld>5000+VERMITTLUNG&&i++<20) stell('helfer')}
     const n=Math.floor(Math.min(platz(),helferKraft()*REBEN_JE_HELFER-rebenGesamt())/10)*10;
-    if(n>0){zahle(Math.round(n*pr*100)/100); const f=S.felder[id]; f.reben+=n; f.jung+=n; S.verlust[id]-=n; L.push(`${num(n)} ${SORTEN[id].name}-Reben nachgepflanzt`)}
+    if(n>0){zahle(Math.round(n*pr*100)/100); const f=S.felder[id]; f.reben+=n; f.jung+=n; S.verlust[id]-=n; LW.push(`${num(n)} ${SORTEN[id].name}-Reben nachgepflanzt`)}
   }
-  if(v.duengen&&S.duengungen<3&&S.boden<100&&(S.boden<=70||(m===7&&S.boden<90))&&S.geld>=DUENGER_HA*S.ha){zahle(DUENGER_HA*S.ha); S.duengungen++; S.boden=Math.min(100,S.boden+30); L.push('gedüngt')}
-  if(v.flaschen) for(const l of S.lots.filter(l=>l.status==='fass'&&l.stufe)){
+  if(aufgabeAktiv('duengen')&&S.duengungen<3&&S.boden<100&&(S.boden<=70||(m===7&&S.boden<90))&&S.geld>=DUENGER_HA*S.ha){zahle(DUENGER_HA*S.ha); S.duengungen++; S.boden=Math.min(100,S.boden+30); LW.push('gedüngt')}
+  if(aufgabeAktiv('flaschen')) for(const l of S.lots.filter(l=>l.status==='fass'&&l.stufe)){
     const fehlt=l.liter-S.flaschen, fp=flaschePreis();
     if(fehlt>0){
-      if(v.leute){let i=0; while(S.lagerarb*FLASCHEN_JE_LAGERARB<S.flaschen+fehlt&&S.geld>VERMITTLUNG+fehlt*fp&&i++<20) stell('lagerarb')}
+      if(la){let i=0; while(S.lagerarb*FLASCHEN_JE_LAGERARB<S.flaschen+fehlt&&S.geld>VERMITTLUNG+fehlt*fp&&i++<20) stell('lagerarb')}
       if(S.lagerarb*FLASCHEN_JE_LAGERARB>=S.flaschen+fehlt&&S.geld>=fehlt*fp){zahle(Math.round(fehlt*fp*100)/100); S.flaschen+=fehlt}
     }
-    if(S.flaschen>=l.liter){S.flaschen-=l.liter; l.status='flasche'; l.flMonate=0; L.push(`${lotName(l)} abgefüllt`)}
+    if(S.flaschen>=l.liter){S.flaschen-=l.liter; l.status='flasche'; l.flMonate=0; LK.push(`${lotName(l)} abgefüllt`)}
   }
-  if(v.leute){const fe=leuteFehlen(); for(const k of LOHN_ARTEN) for(let i=0;i<fe[k];i++) stell(k)}
-  if(neu) L.unshift(`${neu} ${neu===1?'Person':'Leute'} eingestellt`);
-  if(L.length){S.verwLog=(S.verwLog||[]).concat(L); save()}
+  {const fe=leuteFehlen(); if(hf) for(let i=0;i<fe.helfer;i++) stell('helfer'); if(la) for(let i=0;i<fe.lagerarb;i++) stell('lagerarb')}
+  if(neu.helfer) LW.unshift(`${neu.helfer} Erntehelfer eingestellt`);
+  if(neu.lagerarb) LK.unshift(`${neu.lagerarb} Lagerarbeiter eingestellt`);
+  mgrMelde('weingut',LW); mgrMelde('keller',LK);
+  if(LW.length||LK.length) save();
 }
+function mgrMelde(b,L){if(!L.length) return; S.mgrLog=S.mgrLog||{}; S.mgrLog[b]=(S.mgrLog[b]||[]).concat(L); S.manager[b].zuletzt=L.join(', ')}
+// Alles, was die Manager beim Weiterblättern erledigen (früher verwalter() und dauerAuftrag()).
+function managerArbeit(){mgrBetrieb(); dauerAuftrag()}
 // Aktuelles: der Rang und darunter die anklickbaren Hinweise, die zur passenden Stelle führen.
 // Version 4.0: Kauf- und Verkaufsknopf mit dem Preis drauf. o: id, n (data-Werte), sec (zweiter Knopf), aus (gesperrt),
 // arm (Geld fehlt: grau, aber antippbar, die Aktion erklärt es), klein (kleine Zeile unter dem Preis, etwa der Preis je Stück).
@@ -2050,7 +2132,10 @@ function vStadt(){
       <div class="kv"><span>Leere Flaschen</span><span>${num(S.flaschen)}, betreut bis ${num(S.lagerarb*FLASCHEN_JE_LAGERARB)}</span></div>
       ${ohneGeld('lagerarb')}
       <div class="mut">Ein Lagerarbeiter betreut ${num(FASS_JE_LAGERARB)}\u00a0l Fassraum und ${num(FLASCHEN_JE_LAGERARB)} leere Flaschen. Mehr Fassraum oder Flaschen kaufen kannst du erst mit mehr Leuten.</div>
-      ${lohnKnoepfe('lagerarb')}</div>`;
+      ${lohnKnoepfe('lagerarb')}</div>
+    <h3>\ud83e\uddd1\u200d\ud83d\udcbc Manager</h3>
+    <div class="mut" style="margin-bottom:8px">Manager nehmen dir Arbeit ab. Jeder kommt mit einem Rang dazu, und mit sp\u00e4teren R\u00e4ngen kannst du ihn bef\u00f6rdern. Jede Stufe bringt neue Aufgaben, die du einzeln einschaltest.</div>
+    ${Object.keys(MGR_BEREICHE).map(mgrKarte).join('')}`;
   }
   return h;
 }
@@ -2297,7 +2382,7 @@ const AKT={
   geschWeg(){titelZu()},
   weiter(){
     if(S.pleite) return zeigePleite();
-    verwalter(); dauerAuftrag();
+    managerArbeit();
     // Leute-Regel: Ohne genug Erntehelfer und Lagerarbeiter geht es nicht in den nächsten Monat.
     const fl=fehlText(), fe=leuteFehlen();
     if(fl) return leuteSheet('⚠️ Zu wenig Leute',`<p>${fl}. Vorher geht es nicht in den nächsten Monat.</p>
@@ -2313,7 +2398,7 @@ const AKT={
     closeSheet(); const L=[];
     for(let n=0;n<SPRUNG_MAX;n++){
       if(S.pleite) return zeigePleite();
-      verwalter(); dauerAuftrag();
+      managerArbeit();
       if(fehlText()||verfallListe().length||(S.monat===11&&steuerSchau().steuer>0)){if(n) break; return AKT.weiter()}
       SPRUNG=L.slice(); monatWeiter();
       if(S.pleite||S.pruefer) return;
@@ -2323,9 +2408,26 @@ const AKT={
       await new Promise(r=>setTimeout(r,120));
     }
   },
-  dauer(d){S.dauer=S.dauer||{}; S.dauer[d.id]=S.dauer[d.id]?0:1; save(); const y=window.scrollY; render(); window.scrollTo(0,y)},
-  dauerRes(d){S.dauer=S.dauer||{}; S.dauer.reserve=+d.id; save(); const y=window.scrollY; render(); window.scrollTo(0,y)},
-  verw(d){S.verw=S.verw||{}; S.verw[d.id]=!S.verw[d.id]; save(); const y=window.scrollY; render(); window.scrollTo(0,y)},
+  // Version 7.0 (Schritt D): Manager. mgr öffnet das Fenster, mgrStufe stellt ein oder befördert um eine Stufe, mgrAn schaltet eine Aufgabe.
+  mgr(d){MGR_OFFEN=d.id; openSheet(mgrFenster(d.id))},
+  mgrStufe(d){
+    const b=d.id, n=mgrNaechste(b); if(!n) return;
+    if(S.rang<n.rang) return meldung('Noch nicht',`${n.stufe===1?'Einstellen':'Befördern'} geht ab dem Rang ${RAENGE[n.rang].name}.`);
+    if(S.geld<n.kosten) return meldung('Zu wenig Geld',`Das kostet ${eur(n.kosten)}. Einen Kredit gibt es bei der Bank.`);
+    if(n.kosten) zahle(n.kosten);
+    S.manager=S.manager||{}; const m=S.manager[b]=S.manager[b]||{stufe:0,an:{}}; m.stufe=n.stufe;
+    save(); const y=window.scrollY; render(); window.scrollTo(0,y); AKT.mgr({id:b});
+  },
+  mgrAn(d){
+    const e=mgrAufgabe(d.id); if(!e||!aufgabeDa(d.id)) return;
+    const m=S.manager[e.bereich]; m.an=m.an||{}; m.an[d.id]=m.an[d.id]?0:1;
+    save(); const y=window.scrollY; render(); window.scrollTo(0,y);
+    if(MGR_OFFEN&&$('#sheet').classList.contains('an')) openSheet(mgrFenster(MGR_OFFEN));
+  },
+  dauerRes(d){
+    S.dauer=S.dauer||{}; S.dauer.reserve=+d.id; save(); const y=window.scrollY; render(); window.scrollTo(0,y);
+    if(MGR_OFFEN&&$('#sheet').classList.contains('an')) openSheet(mgrFenster(MGR_OFFEN));
+  },
   makler(){
     const g=maklerGrund(); if(g) return meldung('Der Makler hat nichts für dich',g);
     if(S.geld<MAKLER_PREIS) return meldung('Zu wenig Geld',`Ein Hektar kostet beim Makler ${eur(MAKLER_PREIS)}. Einen Kredit gibt es bei der Bank.`);
