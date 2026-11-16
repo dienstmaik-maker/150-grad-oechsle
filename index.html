@@ -329,7 +329,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='5.0';
+const VERSION='5.1';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -340,17 +340,18 @@ const START_JAHR=2027, LANDWERT=15000;
 // Aufstiegstempo: Die ersten HA_FREI Hektar kosten im Monat HA_KOSTEN_KLEIN, jeder weitere HA_KOSTEN.
 // Der Großhandel kauft je Monat für MARKT_FREI Euro zum vollen Preis, je Rang für MARKT_RANG, je Exportland für MARKT_EXPORT und je bepflanztem Hektar über HA_FREI für MARKT_HA mehr.
 // Seit 4.2 (Paket 3, 15.11.2026) hängt das Budget vor allem an der Fläche, damit ein großes Gut nicht ärmer ist als ein kleines. Verkäufe an Weinhandlungen zählen seit Paket 9 nicht mehr mit. Darüber fällt der Preis bis auf MARKT_MIN, erreicht nach dem MARKT_BREIT-fachen des Budgets.
-// Jede Weinhandlung nimmt im Monat 1 bis LADEN_MAX mal LADEN_MENGE Flaschen, seit Paket 9 nur Wein, der zu ihrem Wunsch passt (ladenPasst). Der Wein im Keller zählt beim Vermögen nur mit WEIN_WERT seines Listenwerts und höchstens mit dem, was der Großhandel in einem Jahr zum vollen Preis kauft.
+// Jede Weinhandlung nimmt im Monat 1 bis LADEN_MAX mal LADEN_MENGE Flaschen, seit Paket 9 nur Wein, der zu ihrem Wunsch passt (ladenPasst).
+// Seit 5.1 (Paket 10) kommen je bepflanztem Hektar über HA_FREI LADEN_HA Flaschen dazu, über denselben Flächenwert wie MARKT_HA (haUeber). Sie zahlen LADEN_AUF mal den Listenpreis. Der Wein im Keller zählt beim Vermögen nur mit WEIN_WERT seines Listenwerts und höchstens mit dem, was der Großhandel in einem Jahr zum vollen Preis kauft.
 // Die Gegner fangen mit GEGNER_START ihrer Stärke an und wachsen über GEGNER_JAHRE Jahre auf GEGNER_ENDE.
-const HA_FREI=3, HA_KOSTEN_KLEIN=50, HA_KOSTEN=300, MARKT_FREI=3000, MARKT_RANG=250, MARKT_EXPORT=1000, MARKT_HA=450, MARKT_MIN=.25, MARKT_BREIT=.75, GEGNER_START=.5, GEGNER_ENDE=1.4, GEGNER_JAHRE=25, LADEN_MENGE=50, LADEN_MAX=3, WEIN_WERT=.5;
+const HA_FREI=3, HA_KOSTEN_KLEIN=50, HA_KOSTEN=300, MARKT_FREI=3000, MARKT_RANG=250, MARKT_EXPORT=1000, MARKT_HA=450, MARKT_MIN=.25, MARKT_BREIT=.75, GEGNER_START=.5, GEGNER_ENDE=1.4, GEGNER_JAHRE=25, LADEN_MENGE=30, LADEN_HA=5, LADEN_MAX=3, LADEN_AUF=1.2, WEIN_WERT=.5;
 const WO={mosel:'an der Mosel',rheingau:'im Rheingau',rheinhessen:'in Rheinhessen',pfalz:'in der Pfalz',franken:'in Franken',wuerttemberg:'in Württemberg'};
 // Zehn Stufen. ha ist beim Spieler die bepflanzte Fläche (flaecheBep), bei den Gegnern ihre Fläche.
 const RAENGE=[
   {name:'Neuling',kurz:'Neuling',ans:0,ha:0,verm:0,rahmen:20000},
   {name:'Jungwinzer',kurz:'Jungwinzer',ans:15,ha:3,verm:100000,rahmen:40000,neu:'du darfst bei Auktionen mitbieten'},
-  {name:'Winzer',kurz:'Winzer',ans:50,ha:4,verm:180000,rahmen:80000,neu:'Export in die Niederlande, Kellerausbau, Daueraufträge'},
+  {name:'Winzer',kurz:'Winzer',ans:50,ha:4,verm:180000,rahmen:80000,neu:'Export in die Niederlande, Kellerausbau'},
   {name:'Winzermeister',kurz:'Winzermeister',ans:100,ha:5,verm:300000,rahmen:160000,neu:'Landesprämierung, Export nach Großbritannien, Erntemaschinen'},
-  {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',ans:170,ha:6,verm:500000,rahmen:300000,neu:'Export in die USA, ein Gutsverwalter'},
+  {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',ans:170,ha:6,verm:500000,rahmen:300000,neu:'Export in die USA, ein Gutsverwalter, der auch Daueraufträge übernimmt'},
   {name:'Gutsherr',kurz:'Gutsherr',ans:250,ha:8,verm:750000,rahmen:300000,neu:'Bundeswettbewerb, Export nach Japan, der große Vollernter',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.'},
   {name:'Weinbaurat',kurz:'Weinbaurat',ans:360,ha:10,verm:1200000,rahmen:300000,neu:'eine eigene Weinhandlung, das Amt des Weinbotschafters'},
   {name:'Verbandsvorstand',kurz:'Vorstand',ans:480,ha:13,verm:1800000,rahmen:300000,neu:'das Hoffest, du kannst Kontrollen anregen'},
@@ -359,8 +360,9 @@ const RAENGE=[
 ];
 // Ab welcher Stufe (Index in RAENGE) etwas geht. RANG_ALT rechnet die sechs Ränge alter Spielstände um.
 const R_MAX=RAENGE.length-1, R_AUKTION=1, R_LAND=3, R_VERWALTER=4, R_BUND=5, R_LADEN=6, R_HOFFEST=7, R_SPITZE=8, RANG_ALT=[0,1,3,5,7,9];
-// Was ein Aufstieg bringt: der Kreditrahmen nur, wenn er wächst, dazu die Freischaltung des Rangs.
-function bringt(i){const r=RAENGE[i],T=[];if(r.rahmen>RAENGE[i-1].rahmen)T.push('Kreditrahmen '+eur(r.rahmen));T.push(r.neu);return T.join(', ')}
+// Was ein Aufstieg bringt: die Freischaltungen des Rangs, höchstens drei. Seit 5.1 (Paket 10) steht der Kreditrahmen als eigener Satz dahinter (rahmenSatz), nur wenn er wächst.
+function bringt(i){return RAENGE[i].neu}
+function rahmenSatz(i){const r=RAENGE[i];return r.rahmen>RAENGE[i-1].rahmen?` Dein Kreditrahmen steigt auf ${eur(r.rahmen)}.`:''}
 // Schummelei: Kälteeinbruch im November, Panschen, Weinkontrolle, Sabotage. Alle Zahlen an einer Stelle.
 const KAELTE=.25, ZUCKER_MAX=20, ZUCKER_ERLAUBT=10, SCHMIER_ANTEIL=.1, SCHMIER_MIN=2000;
 const STRAFE_MIN=10000, STRAFE_ANS=15, STRAFE_ANS_WEITER=5, BESTECH_MIN=5000, BESTECH_MAX=50000, BESTECH_NEIN_ANS=10;
@@ -404,7 +406,7 @@ const ANREG_ANS=30, ANREG_FEHL=3, PANSCH={zocker:.4,vorsicht:.08,qualitaet:.04},
 // Makler: ab Jungwinzer höchstens ein Hektar im Jahr zum MAKLER_PREIS, nur wenn für den nächsten Rang allein noch Land fehlt. Auktionen bleiben deutlich billiger.
 // Weinfest: ab Winzermeister bis zum Hoffest, einmal im Jahr von Juni bis August, kostet WEINFEST_PREIS und bringt WEINFEST_ANS Ansehen mal Wetter-Faktor.
 // Kellerausbau: drei Stufen ab Winzer (KELLER_PREISE). Jede Stufe kürzt die Reifezeit von Prädikatswein und Eiswein in der Flasche um einen Monat, und jeder Wein gewinnt beim Reifen KELLER_REIFE schneller an Wert.
-const MAKLER_PREIS=45000, WEINFEST_PREIS=30000, WEINFEST_ANS=12, KELLER_PREISE=[50000,120000,250000], KELLER_REIFE=.1, R_WEINFEST=R_LAND, R_KELLER=2, R_DAUER=2;
+const MAKLER_PREIS=45000, WEINFEST_PREIS=30000, WEINFEST_ANS=12, KELLER_PREISE=[50000,120000,250000], KELLER_REIFE=.1, R_WEINFEST=R_LAND, R_KELLER=2, R_DAUER=R_VERWALTER;
 const FESTE={weinfest:{name:'Weinfest',preis:WEINFEST_PREIS,ans:WEINFEST_ANS,text:'Ein Weinfest im Hof mit Zelt, Musik und deinem Wein',kurz:'Musik, Zwiebelkuchen und dein Wein für Nachbarn und Gäste'},hoffest:{name:'Hoffest',preis:HOFFEST_PREIS,ans:HOFFEST_ANS,text:'Ein großes Fest für das ganze Dorf',kurz:'Musik, Flammkuchen und dein Wein für das ganze Dorf'}};
 // Erntemaschinen (Paket 4, Variante C): die kleine ab Winzermeister, der große Vollernter ab Gutsherr. Maschinen ohne Typ (alte Spielstände) sind klein und bleiben, auch vor Winzermeister.
 const VOLL_PREIS=120000, VOLL_LEISTUNG=10000, VOLL_HELFER=10, VOLL_WARTUNG=300;
@@ -647,7 +649,9 @@ function etappe3(n,schwer){
 function zahle(b){S.geld-=b;S.jahrAus+=b}
 function kassiere(b){S.geld+=b;S.jahrEin+=b;fx('kasse')}
 // Großhandel: Budget des Monats zum vollen Preis, was davon noch offen ist, und der Schnitt-Faktor auf den Preis für Wein im Listenwert von w Euro.
-function marktFrei(){return Math.round(MARKT_FREI+MARKT_RANG*S.rang+MARKT_EXPORT*EXPORT.filter(e=>S.rang>=e.rang).length+MARKT_HA*Math.max(0,flaecheBep()-HA_FREI))}
+function marktFrei(){return Math.round(MARKT_FREI+MARKT_RANG*S.rang+MARKT_EXPORT*EXPORT.filter(e=>S.rang>=e.rang).length+MARKT_HA*haUeber())}
+// Bepflanzte Hektar über HA_FREI: daran hängen das Budget des Großhandels und die Menge der Weinhandlungen.
+function haUeber(){return Math.max(0,flaecheBep()-HA_FREI)}
 function marktRest(){return Math.max(0,marktFrei()-(S.absatz||0))}
 function marktF(n){n=Math.max(0,n);const Q=marktFrei(),a=S.absatz||0,f=x=>x<=Q?1:Math.max(MARKT_MIN,1-(1-MARKT_MIN)*(x-Q)/(Q*MARKT_BREIT)); if(n<=0) return f(a); let s=0; for(let i=0;i<40;i++) s+=f(a+n*(i+.5)/40); return s/40}
 function R(){return REGIONEN[S.region]}
@@ -688,7 +692,7 @@ function wege(l){
   for(const e of EXPORT) if(S.rang>=e.rang) W.push({name:e.name,flag:e.flag,p:Math.round(p*e.f(l)*S.exLage[e.id]*100)/100});
   return W.sort((a,b)=>b.p-a.p);
 }
-function neueLaeden(){S.laeden={};for(const r of Object.keys(REGIONEN)) if(r!==S.region) S.laeden[r]={rest:rint(1,LADEN_MAX)*LADEN_MENGE,wunsch:['weiss','rot','sekt','edel'][rint(0,3)]}}
+function neueLaeden(){S.laeden={};for(const r of Object.keys(REGIONEN)) if(r!==S.region) S.laeden[r]={rest:Math.round(rint(1,LADEN_MAX)*(LADEN_MENGE+LADEN_HA*haUeber())),wunsch:['weiss','rot','sekt','edel'][rint(0,3)]}}
 function ladenOk(l){return l.status==='flasche'&&!l.regal&&preis(l)>0&&(l.sekt||STUFEN[l.stufe].rang>=3)}
 // Eigene Weinhandlung ab Weinbaurat: Weine im Regal (l.regal) verkaufen sich jeden Monat von selbst, das Teuerste zuerst, bis LADEN_EIGEN Euro Listenwert.
 function regalWeine(){return S.lots.filter(l=>l.regal&&l.status==='flasche')}
@@ -703,7 +707,7 @@ function ladenMonat(Z){
   if(n){ein=Math.round(ein); kassiere(ein); Z.push(`Deine Weinhandlung hat ${num(n)} Flaschen für ${eur(ein)} verkauft.`)}
 }
 function ladenPasst(l,r){const w=S.laeden[r].wunsch; return ladenOk(l)&&(w==='sekt'?!!l.sekt:w==='edel'?!l.sekt&&STUFEN[l.stufe].rang>=5:!l.sekt&&SORTEN[l.sorte].farbe===w)}
-function ladenPreis(l,r){return Math.round(preis(l)*1.3*100)/100}
+function ladenPreis(l,r){return Math.round(preis(l)*LADEN_AUF*100)/100}
 
 /* ================= Wettbewerbe ================= */
 function wettRang(){return S.wett&&S.wett.typ==='bund'?R_BUND:R_LAND}
@@ -913,6 +917,11 @@ function lohnAbgleich(){
 }
 function kosten(){const k=S.kredit;return {basis:150+HA_KOSTEN_KLEIN*Math.min(S.ha,HA_FREI)+HA_KOSTEN*Math.max(0,S.ha-HA_FREI),loehne:lohnSumme('helfer')+lohnSumme('lagerarb'),tilgung:k?Math.min(k.rest,k.tilgung):0,zins:k?Math.round(k.rest*ZINS/12):0}}
 function schulden(){return (S.kredit?S.kredit.rest:0)+Math.max(0,-S.geld)}
+// Version 5.1 (Paket 10): Die SEKT_ANS Ansehen gibt es einmal im Jahr, sobald zusammen SEKT_ANS_HA Flaschen je bepflanztem Hektar versektet sind, mindestens für HA_FREI Hektar.
+const SEKT_ANS=3, SEKT_ANS_HA=200;
+function sektSchwelle(){return Math.round(SEKT_ANS_HA*Math.max(HA_FREI,flaecheBep()))}
+function sektMenge(){if(!S.sektMenge||S.sektMenge.j!==S.jahr) S.sektMenge={j:S.jahr,n:0}; return S.sektMenge}
+function sektAnsText(){if(S.sektJahr===S.jahr) return `Die ${SEKT_ANS} Ansehen für Sekt hast du dieses Jahr schon.`; const r=sektSchwelle()-sektMenge().n; return `Ab ${num(sektSchwelle())} Flaschen Sekt im Jahr gibt es ${SEKT_ANS} Ansehen, dieses Jahr fehlen noch ${num(Math.max(0,r))}.`}
 function sektFaehig(l){return l.status==='flasche'&&!l.regal&&!l.sekt&&l.stufe!=='feder'&&l.flMonate>=lagerBasis(l).min}
 function dot(id){return `<i class="dot ${SORTEN[id].farbe==='weiss'?'weiss':'rotw'}"></i>`}
 
@@ -1350,8 +1359,8 @@ function etappe3Monat(Z){
     // Überholst du mehrere Gegner auf einmal, kommt nur ein Spruch, sonst wird es am Anfang zu viel.
     {const U=S.gegner.filter(g=>g.rang>=alt&&g.rang<S.rang&&GEGNER_SPRUCH[g.typ]); if(U.length){const g=U[rint(0,U.length-1)]; Z.push(GEGNER_SPRUCH[g.typ].du(g.name))}}
     // Der Aufstieg steht als Ehrung im Büro und als Thema in der Zeitung.
-    ehre(S.rang===R_MAX?'👑':'🎖️',`Aufstieg! Du bist jetzt ${r.name}.`,1,`Das bringt dir: ${bringt(S.rang)}.${r.weg?' '+r.weg:''}`);
-    schlag(95,`Aufstieg: ${S.name} ist jetzt ${r.name}`,`Das bringt: ${bringt(S.rang)}.${r.weg?' '+r.weg:''}`,'aufstieg',{sonder:1,gold:1});
+    ehre(S.rang===R_MAX?'👑':'🎖️',`Aufstieg! Du bist jetzt ${r.name}.`,1,`Das bringt dir: ${bringt(S.rang)}.${rahmenSatz(S.rang)}${r.weg?' '+r.weg:''}`);
+    schlag(95,`Aufstieg: ${S.name} ist jetzt ${r.name}`,`Das bringt: ${bringt(S.rang)}.${rahmenSatz(S.rang)}${r.weg?' '+r.weg:''}`,'aufstieg',{sonder:1,gold:1});
     if(S.rang===R_MAX&&!S.sieger) siegSpieler();
     else if(S.rang===R_MAX) schlag(99,`${S.name} ist doch noch Präsident`,`${S.sieger} war schneller, aber jetzt hast du es auch an die Spitze des Weinbauverbands geschafft. Respekt!`,'sieg',{gold:1});
   }
@@ -1529,7 +1538,7 @@ function vRang(){
     <div class="kv"><span>Ansehen</span><span>${S.ansehen} von ${n.ans}</span></div>${bar(S.ansehen,n.ans)}
     <div class="kv"><span>Bepflanzt</span><span>${bep.toLocaleString('de-DE')} von ${n.ha}\u00a0Hektar</span></div>${barF(n.ha)}${nach}${S.ha<n.ha&&!maklerGrund()?`<div class="mut" style="margin:-4px 0 8px">Keine Auktion in Sicht? Der Makler im Rathaus verkauft dir einen Hektar für ${eur(MAKLER_PREIS)}.</div>`:''}
     <div class="kv"><span>Vermögen</span><span>${eur(v)} von ${eur(n.verm)}</span></div>${bar(v,n.verm)}
-    <div class="mut">Der Aufstieg bringt: ${bringt(r+1)}.</div>`;
+    <div class="mut">Der Aufstieg zum Rang ${n.name} bringt: ${bringt(r+1)}.${rahmenSatz(r+1)}</div>`;
   else h+=`<div class="kv"><span>Ansehen</span><span>${S.ansehen}</span></div><div class="kv"><span>Vermögen</span><span>${eur(v)}</span></div><div class="mut">Höher geht es nicht.</div>`;
   return h+'</div>';
 }
@@ -1690,18 +1699,22 @@ function dauerAuftrag(){
   if(L.length) S.dauerLog=(S.dauerLog||[]).concat(L);
 }
 function dauerHtml(k){
-  if(S.rang<R_DAUER) return `<div class="card mut">📋 Daueraufträge gibt es ab dem Rang ${RAENGE[R_DAUER].name}.</div>`;
-  const d=S.dauer||{}, an=!!d[k], t=k==='handel'?'Jeden Monat an den Großhandel verkaufen, so viel er zum vollen Preis nimmt':'Jeden Monat die Weinhandlungen mit passenden Weinen beliefern';
+  if(S.rang<R_DAUER) return `<div class="card mut">📋 Daueraufträge übernimmt ab dem Rang ${RAENGE[R_DAUER].name} dein Gutsverwalter. Bis dahin verkaufst du selbst.</div>`;
+  const d=S.dauer||{}, an=!!d[k], t=DAUER_TEXT[k];
   return `<div class="card"><button class="wahl ${an?'an':''}" data-a="dauer" data-id="${k}" style="margin:0">${an?'✅':'⬜'} 📋 Dauerauftrag: ${t}</button>
   ${an?`<div class="mut" style="margin:8px 0 6px">Läuft bei jedem Weiterblättern, was am ehesten verdirbt, geht zuerst. Je Wein bleiben im Keller, außer kurz vorm Verderben:</div>
   <div class="chips" style="flex-wrap:wrap">${DAUER_RESERVE.map(n=>`<button class="chip ${(+d.reserve||0)===n?'an':''}" data-a="dauerRes" data-id="${n}">${n?num(n):'keine'}</button>`).join('')}</div>`:''}</div>`;
 }
+// Seit 5.1 (Paket 10) übernimmt der Gutsverwalter die Daueraufträge. Die Schalter stehen bei ihm und wie bisher im Großhandel und in der Weinhandlung.
+const DAUER_TEXT={handel:'Jeden Monat an den Großhandel verkaufen, so viel er zum vollen Preis nimmt',laeden:'Jeden Monat die Weinhandlungen mit passenden Weinen beliefern'};
 const VERW={leute:'Fehlende Leute einstellen',duengen:'Düngen, wenn der Boden mager wird',flaschen:'Angemeldete Fässer abfüllen',reben:'Eingegangene Reben nachpflanzen'};
 function verwHtml(){
   if(S.rang<R_VERWALTER) return '';
   const v=S.verw||{};
   return `<div class="card"><h3>🧑‍💼 Dein Gutsverwalter</h3><div class="mut" style="margin-bottom:8px">Er erledigt beim Weiterblättern, was du hier einschaltest, und berichtet im Winzerboten. Einkäufe zahlt er aus deiner Kasse, sein Lohn ist im Betrieb schon drin.</div>
-  ${Object.entries(VERW).map(([k,t])=>`<button class="wahl ${v[k]?'an':''}" data-a="verw" data-id="${k}">${v[k]?'✅':'⬜'} ${t}</button>`).join('')}</div>`;
+  ${Object.entries(VERW).map(([k,t])=>`<button class="wahl ${v[k]?'an':''}" data-a="verw" data-id="${k}">${v[k]?'✅':'⬜'} ${t}</button>`).join('')}
+  ${Object.entries(DAUER_TEXT).map(([k,t])=>`<button class="wahl ${(S.dauer||{})[k]?'an':''}" data-a="dauer" data-id="${k}">${(S.dauer||{})[k]?'✅':'⬜'} 📋 ${t}</button>`).join('')}
+  <div class="mut">Wie viel je Wein im Keller bleibt, stellst du im Großhandel ein.</div></div>`;
 }
 // Hoffest ab Verbandsvorstand: Juni bis August, einmal im Jahr.
 // Weinfest ab Winzermeister, ab Verbandsvorstand wird daraus das Hoffest. Beide teilen sich Bild, Monate und S.festJahr.
@@ -2483,9 +2496,9 @@ const AKT={
   sekt(d){
     const l=lot(d.id), max=Math.min(l.liter,Math.floor(S.geld/SEKT_KOSTEN));
     if(max<1) return meldung('Zu wenig Geld',`Versekten kostet ${eur2(SEKT_KOSTEN)} je Flasche.`);
-    mengeSheet({titel:`${lotName(l)} zu Sekt machen`,text:`${eur2(SEKT_KOSTEN)} je Flasche. Der Sekt ruht danach 9 Monate und bringt dann deutlich mehr als der Grundwein. Der erste Sekt im Jahr bringt Ansehen.`,max,rangeStep:1,step:l.liter>2000?100:l.liter>200?10:1,start:max,okText:'Versekten',
+    mengeSheet({titel:`${lotName(l)} zu Sekt machen`,text:`${eur2(SEKT_KOSTEN)} je Flasche. Der Sekt ruht danach 9 Monate und bringt dann deutlich mehr als der Grundwein. ${sektAnsText()}`,max,rangeStep:1,step:l.liter>2000?100:l.liter>200?10:1,start:max,okText:'Versekten',
       info:n=>`<b>${num(n)} Flaschen</b>kostet ${eur(n*SEKT_KOSTEN)}`,
-      ok:n=>{fx('korken');zahle(n*SEKT_KOSTEN);S.lots.push({...l,id:S.nextId++,liter:n,sekt:true,flMonate:0,qp:l.qp+5,med:(l.med||[]).slice(),bund:false});l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l);if(S.sektJahr!==S.jahr&&!l.pansch){S.sektJahr=S.jahr;ruhm(3)}}});
+      ok:n=>{fx('korken');zahle(n*SEKT_KOSTEN);S.lots.push({...l,id:S.nextId++,liter:n,sekt:true,flMonate:0,qp:l.qp+5,med:(l.med||[]).slice(),bund:false});l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l);if(!l.pansch){const m=sektMenge(); m.n+=n; if(S.sektJahr!==S.jahr&&m.n>=sektSchwelle()){S.sektJahr=S.jahr;ruhm(SEKT_ANS)}}}});
   },
   kredit(){
     if(S.kredit) return;
