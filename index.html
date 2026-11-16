@@ -289,6 +289,8 @@ const SORTEN={
 // Die beiden sind dafür 7° kühler (warm), und ihre Edelfäulnis bringt 7° mehr je Monat (edelPlus), weil die Trockenbeerenauslese überall bei 150° liegt.
 // So erreicht die beste Sorte in allen sechs Gebieten dieselbe Verteilung der Stufen. Verschieden bleibt nur der Frost im Dezember.
 const MIN_NORMAL={tafel:50,qba:60,kab:75,spat:85,aus:95,ba:125,tba:150}, MIN_KUEHL={tafel:45,qba:53,kab:68,spat:78,aus:88,ba:118,tba:150};
+// Boni je Gebiet, ohne Eintrag gilt 1 oder 0: preisF (Faktor auf jeden Preis), wettPlus (Punkte bei Wettbewerben),
+// seit 6.0 (Schritt 3) ertragF (Faktor auf die Lese-Menge) und sektPreisF (Faktor auf den Sekt-Preis). Steckbrief und Gegner rechnen sie mit (regionF).
 const REGIONEN={
   mosel:{name:'Mosel',sorten:['riesling','mueller','spaetb'],warm:0,edelSpatF:.5,frost:.25,wettPlus:3,text:'Steile Schieferhänge, Riesling-Land. Steillagen-Ruf: Bei Wettbewerben zählt jeder Wein 3 Punkte mehr. Normale Hürden, Auslese ab 95°.',min:MIN_NORMAL},
   rheingau:{name:'Rheingau',sorten:['riesling','spaetb','silvaner'],warm:0,edelSpatF:.5,frost:.25,preisF:1.1,text:'Berühmtes Riesling-Land: Jeder Wein bringt 10 % mehr Geld. Normale Hürden, Auslese ab 95°.',min:MIN_NORMAL},
@@ -304,6 +306,11 @@ const eignung=(id,r)=>(EIGNUNG[r||S.region]||{})[id]||.85;
 // Zucker der Sorte im Gebiet: Die beste Sorte startet überall gleich. Die anderen behalten ihren Abzug und liegen mindestens 1° darunter.
 const zuckerIm=(id,r)=>eignung(id,r)>=1?0:Math.min(-1,SORTEN[id].zucker);
 const eigText=e=>e>=1?'★★★ sehr gut geeignet':e>=.85?'★★ gut geeignet':'★ geht noch';
+// Version 6.0 (Schritt 3): Sterne am Preis. Faktor je Stern der Sorte im Gebiet, zusätzlich zu den Qualitätspunkten, in preis, lotWert und leseWert.
+// Die Gegner bekommen den Faktor für ★★★, weil sie mit ihrer besten Sorte rechnen. Neutral gestellt (1), abgestimmt wird in Schritt 4.
+const STERN_PREIS_3=1, STERN_PREIS_2=1, STERN_PREIS_1=1;
+const sternZahl=(id,r)=>{const e=eignung(id,r); return e>=1?3:e>=.85?2:1};
+const sternF=(id,r)=>[0,STERN_PREIS_1,STERN_PREIS_2,STERN_PREIS_3][sternZahl(id,r)];
 // Boden bei der Lese: ab 90 % sehr gut, ab 80 % gut, darunter Punktabzug.
 const bodenQP=b=>b==null?0:b>=90?2:b>=80?0:b>=70?-2:b>=60?-4:-6;
 const bodenText=b=>b>=90?'sehr gut (+2 Qualitätspunkte)':b>=80?'gut':`zu mager (${bodenQP(b)} Qualitätspunkte), Nachdüngen hilft`;
@@ -678,7 +685,7 @@ function reifeFaktor(l){const L=lager(l);return l.status==='flasche'?Math.min(4,
 function lotWert(l){
   if(l.status==='trauben') return 0;
   if(!l.stufe) return l.liter*2;
-  return l.liter*STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*reifeFaktor(l)*sektF(l)*(l.status==='fass'?.7:1);
+  return l.liter*STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*reifeFaktor(l)*sektF(l)*sternF(l.sorte)*(l.status==='fass'?.7:1);
 }
 function vermoegen(){return Math.round(S.geld-(S.kredit?S.kredit.rest:0)+S.ha*LANDWERT+S.maschinen.reduce((a,m)=>a+mTyp(m).preis*.5*m.zustand/100,0)+Math.min(12*marktFrei(),WEIN_WERT*S.lots.reduce((a,l)=>a+lotWert(l),0)))}
 function gVerm(g){return Math.round(g.geld-g.kredit+g.ha*LANDWERT)}
@@ -843,7 +850,8 @@ function gegnerMonat(){
     const st=st0*(GEGNER_START+(GEGNER_ENDE-GEGNER_START)*clamp(((g.jahre||1)-1)/GEGNER_JAHRE,0,1));
     if(m===0){
       // g.schaden: Anteil der Ernte, den eine Sabotage im Vorjahr gekostet hat.
-      const gew=Math.round(g.ha*rnd(t.eink[0],t.eink[1])*st*auf*(1-(g.schaden||0))*(REGIONEN[g.region].preisF||1)/100)*100; g.schaden=0;
+      // Schritt 3 (6.0): Das Gebiet wirkt über regionF auf das Einkommen, wie bei dir über Preis, Lese-Menge, Sekt und Sterne.
+      const gew=Math.round(g.ha*rnd(t.eink[0],t.eink[1])*st*auf*(1-(g.schaden||0))*regionF(g.region)/100)*100; g.schaden=0;
       // Auch die Gegner zahlen Steuer auf den Jahresgewinn und pflanzen nach, sobald ihr Weinberg voll trägt.
       g.geld+=gew-(gew>0?Math.round(gew*STEUER/100)*100:0)-(auf===1?g.ha*GEGNER_ABNUTZ:0);
       if(gew>0&&auf===1) g.ansehen+=2*st;
@@ -922,7 +930,12 @@ const SEKT_ANS=3, SEKT_ANS_HA=200;
 // Version 6.0: Sekt nur aus Qualitätswein und Kabinett. Sekt bringt das 1,6-fache, Sekt-Stars (sektStar in SORTEN) dazu SEKT_STAR.
 // Sekt aus höheren Stufen in alten Spielständen bleibt, wie er ist.
 const SEKT_F=1.6, SEKT_STAR=1.1, SEKT_STUFEN=['qba','kab'];
-function sektF(l){return l.sekt?SEKT_F*(SORTEN[l.sorte].sektStar?SEKT_STAR:1):1}
+// Schritt 3: dazu sektPreisF des Gebiets aus REGIONEN (ohne Eintrag 1). Der Name ist nicht sektF, weil es diese Funktion schon gibt.
+function sektF(l){return l.sekt?SEKT_F*(SORTEN[l.sorte].sektStar?SEKT_STAR:1)*(R().sektPreisF||1):1}
+// Schritt 3: Faktor des Gebiets auf das Jahreseinkommen der Gegner. preisF und ertragF voll, Sterne mit ★★★ (ihre beste Sorte),
+// sektPreisF nur auf den Anteil GEGNER_SEKT, weil Sekt beim Test-Spieler rund 6 bis 14 % der Einnahmen bringt (Messung Schritt 2).
+const GEGNER_SEKT=.1;
+function regionF(id){const r=REGIONEN[id]; return (r.preisF||1)*(r.ertragF||1)*(1+GEGNER_SEKT*((r.sektPreisF||1)-1))*STERN_PREIS_3}
 function sektSchwelle(){return Math.round(SEKT_ANS_HA*Math.max(HA_FREI,flaecheBep()))}
 function sektMenge(){if(!S.sektMenge||S.sektMenge.j!==S.jahr) S.sektMenge={j:S.jahr,n:0}; return S.sektMenge}
 function sektAnsText(){if(S.sektJahr===S.jahr) return `Die ${SEKT_ANS} Ansehen für Sekt hast du dieses Jahr schon.`; const r=sektSchwelle()-sektMenge().n; return `Ab ${num(sektSchwelle())} Flaschen Sekt im Jahr gibt es ${SEKT_ANS} Ansehen, dieses Jahr fehlen noch ${num(Math.max(0,r))}.`}
@@ -986,7 +999,7 @@ function wachse(m){
   for(const id of reg.sorten){
     const f=S.felder[id], so=SORTEN[id]; if(!f.reben) continue;
     if((m===3||m===4)&&w==='frost'){f.frostF=.7; L.push(`Spätfrost schädigt die Blüte beim ${so.name}.`)}
-    if(m===5) f.menge=Math.round((f.reben-f.jung+f.jung*.5)*so.ertrag*(.6+.4*S.boden/100)*f.frostF*rnd(.9,1.1));
+    if(m===5) f.menge=Math.round((f.reben-f.jung+f.jung*.5)*so.ertrag*(reg.ertragF||1)*(.6+.4*S.boden/100)*f.frostF*rnd(.9,1.1));
     if(m===6){f.oe=OE_START+zuckerIm(id)+reg.warm+wbonus(w)+rint(-2,2)+(S.spitze?SPITZE_OE:0); f.reif=5; f.ueber=0; f.plus=0}
     if(m>=7&&f.menge>0&&!f.gelesen){
       // f.plus merkt den Öchsle-Zuwachs des Monats für die Infoseite.
@@ -1053,7 +1066,7 @@ const stufeText=(st,oe)=>STUFEN[st].name+(st==='eis'?` (Öchsle einer ${EIS_WERT
 function feldQ(f,la){return {oe:Math.min(150,f.oe+(la==='ueber'?5:0)),leseart:la,edel:f.edel,eis:f.gefroren}}
 // Version 4.4: ungefährer Listenwert einer Lese als Flaschenwein der Stufe st, ohne Reife und Marktlage.
 function leseWert(id,la,st,liter){const q=feldQ(S.felder[id],la), qp=qpFuer({sorte:id,oe:q.oe,sonne:S.sonne,boden:S.boden},st);
-  return Math.round(liter*STUFEN[st].preis*(st==='eis'?EIS_WERT[eisStufe(q.oe)].f:1)*(1+qp/100)*(R().preisF||1)/100)*100}
+  return Math.round(liter*STUFEN[st].preis*(st==='eis'?EIS_WERT[eisStufe(q.oe)].f:1)*(1+qp/100)*sternF(id)*(R().preisF||1)/100)*100}
 function feldLiter(f,la){const r=f.reif/100,u=f.ueber/100; return Math.round(f.menge*r*(la==='reif'?1-u:la==='ueber'?u:1)*leseFaktor())}
 // Ab wann ein Wein frühestens verkauft werden darf, wenn er jetzt gelesen wird.
 // Gekeltert wird im Lesemonat, nach einem Monat im Fass darf er angemeldet und abgefüllt werden, ab Kabinett und beim Eiswein erst im Januar.
@@ -1114,7 +1127,7 @@ function preis(l){
   if(l.status!=='flasche') return 0;
   const L=lager(l); if(l.flMonate<L.min) return 0;
   const alter=Math.min(4,1+(l.flMonate-L.min)/12*L.rate);
-  return Math.round(STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*alter*S.markt*lageF(l)*sektF(l)*(R().preisF||1)*100)/100;
+  return Math.round(STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*alter*S.markt*lageF(l)*sektF(l)*sternF(l.sorte)*(R().preisF||1)*100)/100;
 }
 
 /* ================= Spielstart ================= */
@@ -1629,8 +1642,9 @@ function steckbrief(id,o={}){
   const r=REGIONEN[id], [sym,art]=gebietArt(r), mi=r.min, pz=x=>Math.round(x*100)+'\u00a0%';
   const bonus=r.wettPlus?'Steillagen-Ruf':r.preisF?'berühmte Lage':r.warm>0?'viel Sonne':'kalte Winter';
   const stark=[r.warm>0?`${r.warm}° mehr Zucker${r.edelF?` und ${pz(r.edelF-1)} öfter Edelfäulnis`:''}.`:'',r.warm<0?`Niedrigere Hürden (Auslese ab ${mi.aus}°) und oft Frost für Eiswein. Edelfäulnis erst ab dem Auslese-Wert, das schont Kabinett und Spätlese.`:'',
-    r.wettPlus?`Bei Wettbewerben zählt jeder Wein ${r.wettPlus} Punkte mehr.`:'',r.preisF?`Jeder Wein bringt ${pz(r.preisF-1)} mehr Geld.`:'',r.edelSpatF?'Edelfäulnis kommt vor dem Auslese-Wert nur selten, Kabinett und Spätlese bleiben öfter heil.':''].join(' ').trim();
-  const schwach=r.warm>0?'Kaum Frost im Dezember, Eiswein ist selten.':r.warm<0?`${-r.warm}° weniger Zucker, edelsüße Weine sind schwer.`:'Kein Zuckervorteil und normale Hürden.';
+    r.wettPlus?`Bei Wettbewerben zählt jeder Wein ${r.wettPlus} Punkte mehr.`:'',r.preisF?`Jeder Wein bringt ${pz(r.preisF-1)} mehr Geld.`:'',r.ertragF>1?`Die Reben tragen ${pz(r.ertragF-1)} mehr.`:'',r.sektPreisF>1?`Sekt bringt ${pz(r.sektPreisF-1)} mehr Geld.`:'',r.edelSpatF?'Edelfäulnis kommt vor dem Auslese-Wert nur selten, Kabinett und Spätlese bleiben öfter heil.':''].join(' ').trim();
+  const schwach=[r.warm>0?'Kaum Frost im Dezember, Eiswein ist selten.':r.warm<0?`${-r.warm}° weniger Zucker, edelsüße Weine sind schwer.`:'Kein Zuckervorteil und normale Hürden.',
+    r.ertragF<1?`Die Reben tragen ${pz(1-r.ertragF)} weniger.`:'',r.sektPreisF<1?`Sekt bringt ${pz(1-r.sektPreisF)} weniger Geld.`:''].join(' ').trim();
   const lohnt=r.warm>0?'Auf Edelfäulnis pokern':r.warm<0?'Auf Eiswein pokern':r.wettPlus?'Auf Medaillen setzen':'Auf den Verkauf setzen';
   const so=r.sorten.slice().sort((a,b)=>eignung(b,id)-eignung(a,id)).map(s=>{const e=eignung(s,id); return `${dot(s)}${SORTEN[s].name} ${sterne(e>=1?3:e>=.85?2:1)}`}).join('<br>');
   const kv=(a,x)=>`<div class="kv"><span>${a}</span><span>${x}</span></div>`;
@@ -1647,11 +1661,16 @@ let BUCH=null;
 const BUCH_ORT={berg:'berg',betrieb:'betrieb',aktuell:'aktuell',maschinen:'maschinen',buero:'buero',buch:'buch',sabotage:'hintertuer',start:'keller',lager:'lager',amt:'rathaus',handel:'handel',laeden:'weinhandel',bank:'bank',arbeit:'arbeit'};
 const mib=id=>`<span class="mib" data-a="buch" data-id="${id}">📖 Mehr im Buch</span>`;
 const buchKap=()=>typeof ANLEITUNG==='undefined'?[]:ANLEITUNG.flatMap(t=>t.kap);
+// Schritt 3 (6.0): Satz zu den Sternen am Preis aus STERN_PREIS_3 bis _1. Stehen alle auf 1, erscheint nichts.
+function sternPreisText(){
+  const L=[[3,STERN_PREIS_3],[2,STERN_PREIS_2],[1,STERN_PREIS_1]].filter(([n,f])=>f!==1).map(([n,f])=>`bei ${'★'.repeat(n)} ${Math.round(Math.abs(f-1)*100)} % ${f>1?'mehr':'weniger'}`);
+  return L.length?` Dazu bringt der Wein ${L.join(', ')} Geld.`:'';
+}
 // Im Kapitel Gebiete stehen statt fester Zahlen die sechs Steckbriefe aus dem Code.
 function gebieteGenauer(){
   const h=m=>REIHE.filter(st=>m[st]).map(st=>`${STUFEN[st].name} ${m[st]}°`).join(', ');
   return `<details open><summary>Genauer</summary><ul><li>Hürden in Mosel, Rheingau, Rheinhessen und Pfalz: ${h(MIN_NORMAL)}.</li><li>Hürden in Franken und Württemberg: ${h(MIN_KUEHL)}.</li>
-    <li>Die Sorte mit ★★★ startet mit dem vollen Zucker, die anderen mindestens 1° darunter. Die Qualitätspunkte zählen bei ★★ zu 85\u00a0%, bei ★ zu 70\u00a0%.</li></ul>${Object.keys(REGIONEN).map(id=>steckbrief(id)).join('')}</details>`;
+    <li>Die Sorte mit ★★★ startet mit dem vollen Zucker, die anderen mindestens 1° darunter. Die Qualitätspunkte zählen bei ★★ zu 85\u00a0%, bei ★ zu 70\u00a0%.${sternPreisText()}</li></ul>${Object.keys(REGIONEN).map(id=>steckbrief(id)).join('')}</details>`;
 }
 function buchZeig(){
   const b=$('#buch'); if(BUCH==null){b.className=''; b.innerHTML=''; return}
@@ -1829,7 +1848,7 @@ function vBerg(){
   for(const id of R().sorten){
     const f=S.felder[id], so=SORTEN[id];
     h+=`<div class="card"><div class="row"><h3>${dot(id)}${so.name}</h3><span class="mut">${num(f.reben)} Reben</span></div><div class="mut">${eigText(eignung(id))}</div>`;
-    if(!f.reben) h+=`<div class="mut">Nicht angebaut. ${eur2(rebenPreis(id))} je Rebe, rund ${String(so.ertrag).replace('.',',')}\u00a0l je Rebe.</div>`;
+    if(!f.reben) h+=`<div class="mut">Nicht angebaut. ${eur2(rebenPreis(id))} je Rebe, rund ${String(Math.round(so.ertrag*(R().ertragF||1)*10)/10).replace('.',',')}\u00a0l je Rebe.</div>`;
     else if(f.gelesen) h+=`<div class="mut">✂️ Für dieses Jahr gelesen.</div>${S.lots.some(l=>l.status==='trauben'&&l.sorte===id)?`<div class="btns"><button class="klein sec" data-a="tab" data-id="keller">Zum Keltern</button></div>`:''}`;
     else if(f.teil&&f.menge<=0) h+=`<div class="mut">Ein Teil ist gelesen, der Rest ist verloren.</div>`;
     else if(m<5) h+=`<div class="mut">${phase[m]}${f.jung?` · ${num(f.jung)} junge Reben`:''}</div>`;
