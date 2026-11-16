@@ -260,6 +260,54 @@ img.fass{height:1.1em;vertical-align:-.18em}
 #info .ischw{position:fixed;inset:0;background:#000;pointer-events:none;animation:iein .9s ease-out forwards}
 #info.aus .ischw{animation:iaus .45s ease-in forwards}
 .schnitt{position:fixed;inset:0;z-index:9;background:#000;pointer-events:none;animation:iein .5s ease-out forwards}
+/* Version 7.2: Aufstiegsfeier (Feier-Bild, Urkunde, Konfetti; ohne Fraktur, weil fraktur.woff2 nur die Buchstaben von "Der Winzerbote" enthält), Stempel auf der Sonderausgabe, goldene Rang-Karte, Urkundenwand */
+#info .zsonder.stempeln{animation:stempel .32s cubic-bezier(.3,1.5,.5,1) 2.25s both}
+@keyframes stempel{from{transform:scale(2.4) rotate(-7deg);opacity:0}to{transform:none;opacity:1}}
+#feier{position:fixed;inset:0;z-index:8;overflow-y:auto;background:#000;color:#f3efe6}
+#feier .fbild{position:fixed;inset:0;background:#000 center/cover no-repeat;animation:izoom 24s ease-out forwards}
+#feier .fbild.still{animation:none;filter:blur(2px);transform:scale(1.04)}
+#feier .fverl{position:fixed;inset:0;background:linear-gradient(transparent 45%,rgba(0,0,0,.75))}
+#feier .fdunkel{position:fixed;inset:0;background:rgba(10,6,3,.62)}
+#feier .konf{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:1}
+#feier .konf i{position:absolute;top:-4%;width:7px;height:11px;border-radius:1px;opacity:.9;animation:konf linear infinite}
+@keyframes konf{from{translate:0 -20px}to{translate:30px 110vh;rotate:540deg}}
+#feier .fkarte{position:fixed;left:0;right:0;margin:0 auto;bottom:calc(96px + env(safe-area-inset-bottom));width:min(92vw,540px);box-sizing:border-box;z-index:2;background:rgba(16,12,8,.72);border:1.5px solid #c9a227;border-radius:10px;padding:12px 16px 14px;box-shadow:0 6px 24px rgba(0,0,0,.5);animation:hoch .7s ease-out .6s both}
+#feier .fkarte small{display:block;font:700 13px/1.3 var(--knopf);letter-spacing:1px;text-transform:uppercase;color:#f0c75a}
+#feier .fkarte h2{margin:4px 0 6px;font:800 clamp(21px,6vw,27px)/1.15 var(--schrift);color:#fff}
+#feier .fkarte p{margin:0;font:400 16px/1.42 var(--schrift);color:#eadfca}
+#feier .fin{position:relative;z-index:2;max-width:560px;margin:0 auto;padding:22px 16px calc(110px + env(safe-area-inset-bottom))}
+#feier .fkopf{text-align:center;font:700 clamp(24px,7.4vw,34px)/1.1 var(--knopf);letter-spacing:.5px;color:#f0c75a;text-shadow:0 2px 8px rgba(0,0,0,.6);margin:0 0 12px;animation:ein .6s ease-out both}
+.urk{position:relative;aspect-ratio:1000/670;background:url(bilder/urkunde.webp) center/100% 100% no-repeat;filter:drop-shadow(0 6px 16px rgba(0,0,0,.55));color:#3a2a1a;font-family:var(--schrift)}
+.urk.neu{animation:urkein .7s cubic-bezier(.2,.9,.3,1.1) .15s both}
+@keyframes urkein{from{transform:translateY(30px) scale(.9) rotate(-2deg);opacity:0}to{transform:none;opacity:1}}
+.urk .utext{position:absolute;inset:17% 15% 22%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:1px}
+.urk .utitel{font:700 clamp(17px,5.6vw,28px)/1 var(--knopf);letter-spacing:1.5px;color:#5a1426;margin-bottom:3px}
+.urk p{margin:0;font-size:clamp(10.5px,3vw,14px);line-height:1.2;font-style:italic}
+.urk .uname{font:700 clamp(14px,4.6vw,22px)/1.15 var(--schrift)}
+.urk .urang{font:800 clamp(16px,5.4vw,26px)/1.1 var(--schrift);color:#7b1e3a}
+.urk small{font-size:clamp(9.5px,2.6vw,12.5px);opacity:.75;margin-top:2px}
+.urk .usiegel{position:absolute;left:50.3%;top:87.3%;width:11.6%;aspect-ratio:1;translate:-50% -50%;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 34% 30%,#d8505b,#9a1828 58%,#5e0b17);box-shadow:0 2px 4px rgba(0,0,0,.45),inset 0 -2px 4px rgba(0,0,0,.35),inset 0 2px 3px rgba(255,190,190,.35)}
+.urk .usiegel span{font-size:clamp(12px,3.6vw,20px);filter:sepia(1) saturate(2.5) hue-rotate(-30deg) brightness(.75)}
+.urk.neu .usiegel{animation:siegel .35s cubic-bezier(.3,1.4,.5,1) .9s both}
+@keyframes siegel{from{transform:scale(2.6);opacity:0}to{transform:none;opacity:1}}
+.urk.gross{margin:6px 0 2px}
+#feier .fgruss{margin:14px 2px 0;font:italic 400 16px/1.45 var(--schrift);color:#eadfca;text-align:center;animation:ein .6s ease-out 1.2s both}
+#feier .fliste{margin-top:14px;background:rgba(16,12,8,.7);border:1.5px solid #c9a227;border-radius:10px;padding:10px 14px 8px}
+#feier .fliste h3{margin:0 0 6px;font:700 14px/1.3 var(--knopf);letter-spacing:.8px;text-transform:uppercase;color:#f0c75a}
+#feier .fliste>div{display:flex;gap:10px;align-items:baseline;padding:5px 0;border-top:1px solid rgba(240,199,90,.2);font:400 16px/1.35 var(--schrift);animation:ein .45s ease-out both}
+#feier .fliste>div:first-of-type{border-top:0}
+#feier .fliste span{font-size:20px;width:26px;text-align:center;flex:none}
+#feier .ifuss{position:fixed;left:0;right:0;bottom:0;z-index:3;padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(0,0,0,.85) 40%)}
+#feier .ifuss button{display:block;width:100%;max-width:560px;margin:0 auto;font-size:18px;min-height:54px}
+#feier .ischw{position:fixed;inset:0;z-index:4;background:#000;pointer-events:none;animation:iein .9s ease-out forwards}
+#feier.aus .ischw{animation:iaus .45s ease-in forwards}
+.card.rneu{border:2px solid #c9a227;box-shadow:0 0 0 1px rgba(201,162,39,.35),0 0 16px rgba(240,199,90,.45)}
+.rneuB{display:inline-block;background:#c9a227;color:#2a1c10;font:700 11px/1.5 var(--knopf);letter-spacing:1px;text-transform:uppercase;border-radius:4px;padding:0 6px;vertical-align:2px}
+.uwand{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.umini{all:unset;box-sizing:border-box;cursor:pointer;aspect-ratio:1000/670;background:url(bilder/urkunde.webp) center/100% 100% no-repeat;border:3px solid #6b4a24;border-radius:3px;box-shadow:0 2px 5px rgba(0,0,0,.35),inset 0 0 0 1px #c9a227;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#5a1426;text-align:center;padding:0 12%}
+.umini b{font:700 11.5px/1.1 var(--schrift)}
+.umini small{font:400 9.5px/1.2 var(--schrift);color:#6e5638}
+@media (prefers-reduced-motion:reduce){#feier .fbild,#feier .ischw,#feier .konf,.urk.neu,.urk.neu .usiegel,#feier .fliste>div,#feier .fkarte,#info .zsonder.stempeln{animation:none}#feier .ischw{opacity:0}#feier.aus .ischw{opacity:1}#feier .konf{display:none}}
 @keyframes iein{from{opacity:1}to{opacity:0}}
 @keyframes iaus{from{opacity:0}to{opacity:1}}
 #info .zt.zu{clip-path:inset(0 0 100% 0)}
@@ -400,7 +448,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='7.1';
+const VERSION='7.2';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -505,7 +553,9 @@ function mgrBringt(i){
 }
 // Was ein Aufstieg bringt: die Freischaltungen des Rangs, höchstens drei. Seit 5.1 (Paket 10) steht der Kreditrahmen als eigener Satz dahinter (rahmenSatz), nur wenn er wächst.
 // Seit 7.0 steht {sorte} für die Rebsorte, die mit dem Rang kommt, mit ihrem Namen im Gebiet. Die Manager hängt mgrBringt an.
-function bringt(i){const n=SORTE_RANG.indexOf(i), id=n>0&&S?sortenFolge()[n]:null; return [RAENGE[i].neu.replace('{sorte}',`die ${n===1?'zweite':'dritte'} Rebsorte${id?' '+SORTEN[id].name:''}`),...mgrBringt(i)].join(', ')}
+// Seit 7.2 liefert bringtTeile die einzelnen Punkte für die Urkunde, bringt fügt sie für Zeitung und Rang-Karte zusammen.
+function bringtTeile(i){const n=SORTE_RANG.indexOf(i), id=n>0&&S?sortenFolge()[n]:null; return [...RAENGE[i].neu.replace('{sorte}',`die ${n===1?'zweite':'dritte'} Rebsorte${id?' '+SORTEN[id].name:''}`).split(', '),...mgrBringt(i)]}
+function bringt(i){return bringtTeile(i).join(', ')}
 function rahmenSatz(i){const r=RAENGE[i];return r.rahmen>RAENGE[i-1].rahmen?` Dein Kreditrahmen steigt auf ${eur(r.rahmen)}.`:''}
 // Schummelei: Kälteeinbruch im November, Panschen, Weinkontrolle, Sabotage. Alle Zahlen an einer Stelle.
 const KAELTE=.25, ZUCKER_MAX=20, ZUCKER_ERLAUBT=10, SCHMIER_ANTEIL=.1, SCHMIER_MIN=2000;
@@ -613,7 +663,8 @@ const badge=b=>b?`<span class="badge ${b==='rot'?'rot':''}"></span>`:'';
 function geh(tab,sub){TAB=tab; SUB=sub||START_SUB[tab]||SUB}
 // Ehrungen für das Büro: Medaillen und Aufstiege. a=1 kennzeichnet einen Aufstieg, x ist ein Zusatz für die Infoseite (was die Ehrung bringt).
 // S.ehrZeig zählt, wie viele Ehrungen die Infoseite schon gezeigt hat. Neue blendet sie beim nächsten Monatswechsel ein.
-function ehre(i,t,a,x){(S.ehrungen=S.ehrungen||[]).push({i,t,a:a?1:0,j:S.jahr,m:S.monat,x:x||''})}
+// Seit 7.2 merkt sich ein Aufstieg seinen Rang in r, für die Urkundenwand im Büro.
+function ehre(i,t,a,x,r){(S.ehrungen=S.ehrungen||[]).push({i,t,a:a?1:0,j:S.jahr,m:S.monat,x:x||'',...(r!=null?{r}:{})})}
 
 // Drei Speicherplätze. Der frühere einzige Spielstand liegt auf Platz 1. SLOT ist der Platz, auf dem gerade gespielt wird.
 // START='neu' zeigt das Formular für ein neues Spiel, sonst kommt ohne laufendes Spiel die Liste der Spielstände.
@@ -728,6 +779,7 @@ function musikWahl(){
   if(!S) return 'gut';
   if(S.pleite) return 'pfand';
   if(SMUSIK) return SMUSIK;
+  if(TAB==='feier') return 'auf';
   if(TAB==='monat'){const E=(S.bericht&&S.bericht.ehr)||[]; return E.some(e=>e.a)?'auf':E.length?'wett':'gut'}
   return MUSIK[TAB]?TAB:'gut';
 }
@@ -1492,6 +1544,31 @@ const GEGNER_SPRUCH={
   qualitaet:{vorbei:n=>`„Das war zu erwarten“, sagt ${n} über seinen Vorsprung. Er sagt das öfter.`,du:n=>`${n} lässt ausrichten, Glück sei keine Leistung. Gratuliert hat er trotzdem.`,erfolg:n=>`${n} will deinen Siegerwein jetzt selbst nachprüfen lassen. Die Jury hat abgelehnt.`},
   zocker:{vorbei:n=>`„Tschüss, Nachbar!“, ruft ${n} und hupt beim Vorbeifahren am Weingut.`,du:n=>`${n} hat bei deinem Aufstieg so getan, als würde er telefonieren.`,erfolg:n=>`${n} behauptet, er hätte dieses Jahr gar nicht mitgemacht, sonst wäre es anders gelaufen.`}
 };
+// Version 7.2: Aufstiegsfeier. Glückwunsch je Rang (Index in RAENGE), von Maik vor dem Hochladen freizugeben.
+const FEIER_GRUSS=['',
+  'Der alte Winzer von nebenan klopft dir auf die Schulter: „Hab ich doch gleich gesagt, aus dir wird was.“ Dann will er probieren.',
+  'Die Landfrauen bringen einen Kranz aus Weinlaub fürs Hoftor. Er hängt etwas schief, aber mit viel Liebe.',
+  'Der Bürgermeister kommt persönlich vorbei und trinkt dein letztes Glas Spätlese aus.',
+  'Die Blaskapelle spielt im Hof, das halbe Dorf feiert mit. Der Bürgermeister hält eine Rede und verwechselt deinen Namen nur einmal.',
+  'Im Hof wird bis Mitternacht gefeiert. Der Tubaspieler schwört, er habe noch nie so guten Wein getrunken. Das schwört er auf jedem Fest.',
+  'Im Festsaal des Verbands steckt dir der Präsident die goldene Traubennadel an. Der Applaus ist lang, die Rede zum Glück kurz.',
+  'Der Verband begrüßt dich im Vorstand. Dein Platz an der langen Tafel ist ab jetzt ganz vorn, direkt unter dem Kronleuchter.',
+  'Der ganze Saal steht auf. Der Präsident flüstert dir zu: „Mein Stuhl ist bequem. Lass dir ruhig noch etwas Zeit.“'];
+// Feier-Bild: bis Winzermeister keins (nur Urkunde vor dem Aufstiegsbild), Weingutsbesitzer und Gutsherr im eigenen Hof, ab Weinbaurat im Festsaal.
+const FEIER_HOF=4, FEIER_SAAL=6;
+const feierBild=i=>i>=FEIER_SAAL?'ehrung-saal':i>=FEIER_HOF?'ehrung-hof':'aufstieg';
+const feierOrt=i=>i>=FEIER_SAAL?'Ehrung im Festsaal des Verbands':'Ehrung im eigenen Hof';
+// Leserbrief eines Gegners einen Monat nach deinem Aufstieg. r ist der neue Rang, n dein Weingut.
+const GEGNER_GLUECK={
+  vorsicht:[(r,n)=>`„Herzlichen Glückwunsch zum ${r}! Ich hoffe, ${n} hat jetzt auch genug Fässer. Man weiß ja nie.“`,(r,n)=>`„Glückwunsch an ${n}. Ich habe mir die Urkunde angesehen, das Papier ist wirklich gut.“`],
+  qualitaet:[(r,n)=>`„${r}, soso. Die Ernennung ist verdient, der Wein auf dem Fest war es nicht.“`,(r,n)=>`„Ich gratuliere ${n}. Bei meinem Aufstieg war die Blaskapelle allerdings besser gestimmt.“`],
+  zocker:[(r,n)=>`„${r}? Hätte ich auch geschafft, wenn ich gewollt hätte. Glückwunsch trotzdem, ehrlich!“`,(r,n)=>`„Ich wette eine Kiste Sekt, dass ${n} beim nächsten Aufstieg langsamer ist als ich.“`]
+};
+function aufBrief(r){
+  const G=S.gegner.filter(g=>GEGNER_GLUECK[g.typ]); if(!G.length||!RAENGE[r]) return;
+  const g=G[rint(0,G.length-1)], T=GEGNER_GLUECK[g.typ];
+  schlag(40,'✉️ Leserbrief zu deinem Aufstieg',`${T[rint(0,T.length-1)](RAENGE[r].name,S.name)} Eingesandt von ${g.name}, ${GEGNER_TYP[g.typ].art}.`);
+}
 const bisZiel=r=>{const n=R_MAX-r;return n<=0?'Am Ziel: Präsident':n===1?'Nur noch eine Stufe bis zum Präsidenten!':`Noch ${n} Stufen bis zum Präsidenten`};
 // Version 4.5: Ab dem dritten Jahr steht statt "Rat vom alten Winzer" eine Rubrik in der Ecke. S.rubSack ist ein gemischter Stapel aller Texte, erst wenn er leer ist, kommt alles wieder.
 const RUBRIK={
@@ -1659,14 +1736,20 @@ function gegnerSieg(g,wo){
 }
 // Alles, was Etappe 3 beim Monatswechsel tut: Aufstieg, Gegner, Wettbewerbe, Auktion, Märkte.
 function etappe3Monat(Z){
+  // Version 7.2: Eine Feier gilt nur für den Monat ihres Aufstiegs. Der Leserbrief eines Gegners kommt einen Monat danach.
+  S.feier=null;
+  if(S.aufBrief){aufBrief(S.aufBrief); S.aufBrief=0}
   const alt=S.rang; S.rang=rangFuer(S.rang,S.ansehen,flaecheBep(),vermoegen());
   if(S.rang>alt){
     const r=RAENGE[S.rang];
     for(let i=alt+1;i<=S.rang;i++) dorf('r'+i);
     // Überholst du mehrere Gegner auf einmal, kommt nur ein Spruch, sonst wird es am Anfang zu viel.
     {const U=S.gegner.filter(g=>g.rang>=alt&&g.rang<S.rang&&GEGNER_SPRUCH[g.typ]); if(U.length){const g=U[rint(0,U.length-1)]; Z.push(GEGNER_SPRUCH[g.typ].du(g.name))}}
-    // Der Aufstieg steht als Ehrung im Büro und als Thema in der Zeitung.
-    ehre(S.rang===R_MAX?'👑':'🎖️',`Aufstieg! Du bist jetzt ${r.name}.`,1,`Das bringt dir: ${bringt(S.rang)}.${rahmenSatz(S.rang)}${r.weg?' '+r.weg:''}`);
+    // Der Aufstieg steht als Ehrung im Büro und als Thema in der Zeitung. Seit 7.2 bekommt jeder Rang eine eigene Ehrung (eine Urkunde an der Wand).
+    for(let i=alt+1;i<=S.rang;i++){const ri=RAENGE[i]; ehre(i===R_MAX?'👑':'🎖️',`Aufstieg! Du bist jetzt ${ri.name}.`,1,`Das bringt dir: ${bringt(i)}.${rahmenSatz(i)}${ri.weg?' '+ri.weg:''}`,i)}
+    // Version 7.2: Feier nach der Zeitung, goldene Rang-Karte für diesen Monat. Der Präsident hat sein eigenes Finale.
+    S.rangNeu=S.jahr*12+S.monat;
+    if(S.rang<R_MAX){S.feier={von:alt,zu:S.rang}; S.aufBrief=S.rang}
     schlag(95,`Aufstieg: ${S.name} ist jetzt ${r.name}`,`Das bringt: ${bringt(S.rang)}.${rahmenSatz(S.rang)}${r.weg?' '+r.weg:''}`,'aufstieg',{sonder:1,gold:1});
     if(S.rang===R_MAX&&!S.sieger) siegSpieler();
     else if(S.rang===R_MAX) schlag(99,`${S.name} ist doch noch Präsident`,`${S.sieger} war schneller, aber jetzt hast du es auch an die Spitze des Weinbauverbands geschafft. Respekt!${S.gesch&&S.gesch.flasche&&!S.flascheAuf?(S.flascheAuf=S.jahr,' Die Flasche vom ersten Jahrgang wird heute Abend doch noch geöffnet.'):''}`,S.flascheAuf===S.jahr?GEN_BILD.sieg:'sieg',{gold:1});
@@ -1841,7 +1924,9 @@ function vRang(){
   // Fläche: hell die gekaufte, dunkel die bepflanzte. Zählen tut nur die bepflanzte.
   const barF=soll=>`<div class="bar fl ${bep>=soll?'':'g'}"><i class="hell" style="width:${w(S.ha,soll)}%"></i><i style="width:${w(bep,soll)}%"></i></div>`;
   const nach=frei>0?`<div class="mut" style="margin:-4px 0 8px">Noch ${num(frei*HA_REBEN)} Reben frei zum Nachpflanzen (${frei.toLocaleString('de-DE')}\u00a0ha).</div>`:'';
-  let h=`<div class="card"><h3>Aktueller Rang: ${RAENGE[r].name}</h3><div class="mut">Stufe ${r+1} von ${RAENGE.length} · ${genNr()}. Generation, die nächste übernimmt im Januar ${genJahr(genNr())}</div>`;
+  // Version 7.2: Im Monat des Aufstiegs leuchtet die Karte golden.
+  const neu=S.rangNeu===S.jahr*12+S.monat;
+  let h=`<div class="card${neu?' rneu':''}"><h3>${neu?'<span class="rneuB">Neu</span> ':''}Aktueller Rang: ${RAENGE[r].name}</h3><div class="mut">Stufe ${r+1} von ${RAENGE.length} · ${genNr()}. Generation, die nächste übernimmt im Januar ${genJahr(genNr())}</div>`;
   if(S.sieger) h+=`<div class="hilfe" style="margin:0 0 6px">🏆 Gewonnen hat: ${esc(S.sieger)}</div>`;
   if(n) h+=`<div class="mut">Für den Aufstieg zum Rang ${n.name} brauchst du alles drei zugleich.</div>
     <div class="kv"><span>Ansehen</span><span>${S.ansehen} von ${n.ans}</span></div>${bar(S.ansehen,n.ans)}
@@ -1918,6 +2003,57 @@ function vMonat(){
     ${F.length?`<div class="zfussz">${F.map(t=>`<p>${esc(t)}</p>`).join('')}</div>`:''}
   </div><div class="zende"></div></div>
   <div class="ifuss"><button data-a="infoWeiter">${k.ende?'Weiterspielen':'Weiter'} ▶</button></div><div class="ischw"></div></div>`;
+}
+// ---- Version 7.2: Aufstiegsfeier nach dem Winzerboten ----
+// FSTUFE 0 ist das Feier-Bild (ab Weingutsbesitzer), 1 die Urkunde. FT hält die Zeitgeber für Siegel und Freischaltungen.
+let FSTUFE=1, FT=[];
+function feierStopp(){FT.forEach(clearTimeout); FT=[]}
+// Kurzer Schnitt aus Schwarz beim Wechsel zwischen Zeitung, Feier und Aktuelles.
+function schnitt(){const s=document.createElement('div');s.className='schnitt';document.body.appendChild(s);setTimeout(()=>s.remove(),600)}
+const FREI_SYM=[[/Manager|Stufe/,'👔'],[/Rebsorte/,'🍇'],[/Auktion/,'🔨'],[/Sekt/,'🍾'],[/Export/,'🚢'],[/Keller/i,'🛢️'],[/prämierung|wettbewerb/i,'🏅'],[/ernte|vollernter/i,'🚜'],
+  [/Weinhandlung/,'🏪'],[/botschafter/i,'🎗️'],[/Hoffest/,'🎉'],[/Kontrolle/,'🔍'],[/Spitzenlage/,'⛰️']];
+const gross=t=>t.charAt(0).toUpperCase()+t.slice(1);
+// Alles, was die Ränge von+1 bis zu bringen, als Liste [Symbol, Text]. Der Kreditrahmen steht zuletzt.
+function feierPunkte(von,zu){
+  const P=[];
+  for(let i=von+1;i<=zu;i++) for(const t of bringtTeile(i)) P.push([(FREI_SYM.find(s=>s[0].test(t))||[0,'🔓'])[1],gross(t)]);
+  if(RAENGE[zu].rahmen>RAENGE[von].rahmen) P.push(['🏦',`Kreditrahmen ${eur(RAENGE[zu].rahmen)}`]);
+  for(let i=von+1;i<=zu;i++) if(RAENGE[i].weg) P.push(['⚠️',RAENGE[i].weg]);
+  return P;
+}
+// Die Urkunde selbst: Papier mit Rand, Text in der freien Mitte, Siegel im Kreis unten.
+function urkHtml(i,m,j,kl){
+  return `<div class="urk ${kl||''}"><div class="utext"><div class="utitel">Urkunde</div><p>Der Weinbauverband ernennt</p><b class="uname">${esc(S.name)}</b><p>zum Rang</p><b class="urang">${esc(RAENGE[i].name)}</b><small>${MON[m]} ${j} · ${esc(REGIONEN[S.region].name)}</small></div><div class="usiegel"><span>🍇</span></div></div>`;
+}
+function konfetti(n){
+  const F=['#f0c75a','#d9a520','#fbeede','#9b2a4a','#e8b84a'];
+  return `<div class="konf">${Array.from({length:n},(_,k)=>`<i style="left:${(k*37+11)%100}%;animation-delay:${((k*.29)%4).toFixed(2)}s;animation-duration:${(4.2+(k%5)*.7).toFixed(1)}s;background:${F[k%F.length]};transform:rotate(${k*47%360}deg)"></i>`).join('')}</div>`;
+}
+function vFeier(){
+  const F=S.feier||{von:Math.max(0,S.rang-1),zu:S.rang}, i=F.zu, r=RAENGE[i], bild=feierBild(i);
+  if(FSTUFE===0) return `<div id="feier"><div class="fbild" style="background-image:url(bilder/${bild}.jpg)"></div>${konfetti(42)}<div class="fverl"></div>
+    <div class="fkarte"><small>🎉 ${feierOrt(i)}</small><h2>${esc(S.name)} ist jetzt ${esc(r.name)}!</h2><p>${esc(FEIER_GRUSS[i]||'')}</p></div>
+    <div class="ifuss"><button data-a="feierWeiter">Zur Urkunde ▶</button></div><div class="ischw"></div></div>`;
+  const P=feierPunkte(F.von,i);
+  return `<div id="feier" class="urkseite"><div class="fbild still" style="background-image:url(bilder/${bild}.jpg)"></div><div class="fdunkel"></div>${konfetti(24)}
+    <div class="fin"><div class="fkopf">Herzlichen Glückwunsch!</div>${urkHtml(i,S.monat,S.jahr,'neu')}
+    ${i<FEIER_HOF&&FEIER_GRUSS[i]?`<p class="fgruss">${esc(FEIER_GRUSS[i])}</p>`:''}
+    <div class="fliste"><h3>Das bringt dir dein neuer Rang</h3>${P.map((p,k)=>`<div style="animation-delay:${(1.7+k*.45).toFixed(2)}s"><span>${p[0]}</span>${esc(p[1])}</div>`).join('')}</div></div>
+    <div class="ifuss"><button data-a="feierEnde">Anstoßen 🥂</button></div><div class="ischw"></div></div>`;
+}
+// Töne passend zu den Bewegungen: das Siegel fällt nach 0,9 s (Stempel bei 1,25 s), dann je Punkt ein leiser Klick.
+function feierStart(){
+  feierStopp(); if(FSTUFE!==1) return;
+  const n=feierPunkte((S.feier||{von:S.rang-1}).von,(S.feier||{zu:S.rang}).zu).length;
+  FT.push(setTimeout(()=>fx('stempel'),1250));
+  for(let k=0;k<n;k++) FT.push(setTimeout(()=>fx('klick'),1750+k*450));
+}
+// Urkundenwand im Büro: jede Aufstiegs-Ehrung als kleine Urkunde. Alte Ehrungen ohne r finden ihren Rang über den Namen.
+function urkRang(e){if(e.r!=null) return e.r; const m=/jetzt (.+)\.$/.exec(e.t||''); return m?RAENGE.findIndex(x=>x.name===m[1]):-1}
+function urkWand(){
+  const U=(S.ehrungen||[]).map((e,n)=>[e,n]).filter(([e])=>e.a&&urkRang(e)>=0);
+  if(!U.length) return `<div class="mut">Noch keine. Der erste Aufstieg führt zum ${RAENGE[1].name}, dann hängt hier deine erste Urkunde.</div>`;
+  return `<div class="uwand">${U.map(([e,n])=>`<button class="umini" data-a="urkunde" data-n="${n}"><b>${esc(RAENGE[urkRang(e)].kurz)}</b><small>${e.j?`${MON[e.m].slice(0,3)} ${e.j}`:''}</small></button>`).join('')}</div><div class="mut" style="margin-top:6px">Tipp auf eine Urkunde, dann siehst du sie groß.</div>`;
 }
 // Kopf jeder Ansicht: das Bild des Ortes mit dem Titel darin.
 // Seit 7.0 (Schritt F) steht in Weingut, Kellerei und Stadt darunter die Zeile des zuständigen Managers (mgrInfo).
@@ -2227,7 +2363,7 @@ function vBuero(){
   <h3>🏆 Pokale und Ehrungen</h3>${vRangliste()}
   <div class="card"><h3>🏅 Ehrungen für deine Weine</h3>${wein.length?`<div class="gold" style="font-size:17px;margin-bottom:6px">${ehrSumme(wein)}</div><div class="mut">Zuletzt:</div>`+wein.slice(0,3).map(zeile).join(''):'<div class="mut">Noch keine. Medaillen gibt es bei der Landesprämierung und beim Bundeswettbewerb.</div>'}</div>
   ${S.rang>=R_LADEN?`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/weinbotschafter.jpg);height:150px"><b>🎗️ Weinbotschafter ${WO[S.region]}</b><span>Jeden Januar +${BOTSCHAFT_ANS} Ansehen für deine Reisen</span></div>`:''}
-  <div class="card"><h3>🎖️ Deine Aufstiege</h3>${auf.length?auf.map(zeile).join(''):'<div class="mut">Noch keiner. Der erste Aufstieg führt zum ${RAENGE[1].name}.</div>'}</div>
+  <div class="card"><h3>🎖️ Deine Urkunden</h3>${urkWand()}</div>
   ${chronikHtml()}
   ${bestenHtml()}
   ${tonKnoepfe()}
@@ -2494,7 +2630,9 @@ function zWehen(){
   const el=$('#info'); if(!el) return; const z=el.querySelector('.zt'), b=S.bericht||{}, key=`${b.titel}|${b.nr}`;
   const ziel=()=>0, ruhig=matchMedia('(prefers-reduced-motion:reduce)').matches;
   if(ZW&&ZW.key===key) el.scrollTop=ZW.top;
-  else{ZW={key,top:0}; if(ruhig) el.scrollTop=ziel(); else{z.classList.add('zu'); setTimeout(()=>zRolle(el,z,ziel()),900)}}
+  else{ZW={key,top:0}; if(ruhig) el.scrollTop=ziel(); else{z.classList.add('zu'); setTimeout(()=>zRolle(el,z,ziel()),900)}
+    // Version 7.2: Bei einer Sonderausgabe knallt der Stempel drauf, sobald die Zeitung ausgerollt ist.
+    const so=z.querySelector('.zsonder'); if(so&&!(b.kopf&&b.kopf.ende)){so.classList.add('stempeln'); setTimeout(()=>{if(so.isConnected) fx('stempel')},ruhig?100:2350)}}
   el.addEventListener('scroll',()=>{ZW.top=el.scrollTop},{passive:true});
   const o=document.createElement('div'); o.className='zrolle oben'; o.addEventListener('click',()=>zGleite(el,0,900)); el.appendChild(o);
   z.addEventListener('click',e=>{if(e.target.closest('button'))return; if(z.getBoundingClientRect().bottom<innerHeight*.25) zGleite(el,0,900)});
@@ -2506,7 +2644,8 @@ function render(){
   ortFarbe(SUBS[TAB]?TAB:'gut');
   const ort=SUBS[TAB]?TAB+'/'+SUB:TAB; if(ort!==ORT_ALT){if(ORT_ALT&&(ort==='keller/buch'||ort==='gut/aktuell')) fx('menue'); ORT_ALT=ort}
   musikOrt(musikWahl());
-  const fehlt=fehlText(), v={monat:vMonat,gut:vGut,keller:vKeller,stadt:vStadt}[TAB]();
+  const fehlt=fehlText(), v={monat:vMonat,feier:vFeier,gut:vGut,keller:vKeller,stadt:vStadt}[TAB]();
+  if(TAB==='feier'){$('#app').innerHTML=v; feierStart(); return}
   const tabs=[['gut','🏡','Weingut'],['keller',FASS,'Kellerei'],['stadt','🏛️','Stadt']], B=badges();
   if(TAB==='monat'){$('#app').innerHTML=v; zWehen(); return}
   $('#app').innerHTML=`<div id="top"><div><b>${MON[S.monat]} ${S.jahr}</b><small>${wetterText()} · ${R().name}</small></div><div class="geld" data-a="geldInfo"><b>${geldKurz(S.geld)}</b><small>${RAENGE[S.rang].kurz} · ${S.ansehen} Ansehen</small></div></div>
@@ -2626,7 +2765,18 @@ const AKT={
   infoWeiter(){
     const el=$('#info'); if(!el||el.classList.contains('aus')) return;
     el.classList.add('aus');
-    setTimeout(()=>{geh('gut','aktuell');render();window.scrollTo(0,0);const s=document.createElement('div');s.className='schnitt';document.body.appendChild(s);setTimeout(()=>s.remove(),600)},matchMedia('(prefers-reduced-motion:reduce)').matches?0:450);
+    // Seit 7.2 kommt nach einem Aufstieg erst die Feier, dann Aktuelles.
+    setTimeout(()=>{if(S.feier){TAB='feier'; FSTUFE=S.feier.zu>=FEIER_HOF?0:1} else geh('gut','aktuell'); render();window.scrollTo(0,0);schnitt()},matchMedia('(prefers-reduced-motion:reduce)').matches?0:450);
+  },
+  feierWeiter(){feierStopp(); FSTUFE=1; render(); schnitt()},
+  feierEnde(){
+    const el=$('#feier'); if(!el||el.classList.contains('aus')) return;
+    feierStopp(); fx('korken'); S.feier=null; save(); el.classList.add('aus');
+    setTimeout(()=>{geh('gut','aktuell');render();window.scrollTo(0,0);schnitt()},matchMedia('(prefers-reduced-motion:reduce)').matches?0:450);
+  },
+  urkunde(d){
+    const e=(S.ehrungen||[])[+d.n]; if(!e) return; const i=urkRang(e);
+    openSheet(`<h2>🎖️ ${esc(RAENGE[i].name)}</h2>${urkHtml(i,e.m||0,e.j||S.jahr,'gross')}${e.x?`<div class="mut" style="margin:10px 0">${esc(e.x)}</div>`:''}<div class="btns"><button data-a="close">Schließen</button></div>`,'auf');
   },
   sub(d){BILD_KLEIN=false;SUB=d.id;render();window.scrollTo(0,0)},
   arbeitsamt(){closeSheet();geh('stadt','arbeit');render();window.scrollTo(0,0)},
@@ -3052,7 +3202,7 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]'); if(!b||b.disabled||Date.now()-WISCH_ZEIT<350) return;
   tonAn(); if(AC&&AC.state==='suspended') AC.resume();
   const a=b.dataset.a, vorn=/^(titel|gesch)/.test(a);
-  if(!vorn&&S&&S.pleite&&!['neuJa','tab','sub','close','weiter','menue','ton','infoWeiter','buch','buchZu'].includes(a)) return;
+  if(!vorn&&S&&S.pleite&&!['neuJa','tab','sub','close','weiter','menue','ton','infoWeiter','feierWeiter','feierEnde','buch','buchZu'].includes(a)) return;
   // Solange der Weinprüfer wartet, geht nichts anderes.
   if(!vorn&&S&&S.pruefer&&!['pruefJa','pruefBestechen','slMinus','slPlus','slOk','close','ton','menue','buch','buchZu'].includes(a)) return zeigePruefer();
   // Schritt G 7.0: Solange die Übergabe offen ist, geht nur das Übergeben.
