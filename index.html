@@ -70,6 +70,9 @@ main>h3{font-size:17px;margin:16px 0 8px;padding-left:10px;border-left:4px solid
 .sb h3 small{display:block;font-weight:400;font-size:13px;color:var(--mut);margin-top:2px}
 .sb .sbz{margin:6px 0;font-size:14px;line-height:1.5}
 .sterne{color:#a87908;letter-spacing:1px;white-space:nowrap}.sterne i{font-style:normal;opacity:.28}
+.sb .schild{display:inline-block;margin:2px 0 4px;padding:3px 10px;border-radius:12px;font-size:13px;font-weight:700;background:rgba(123,30,58,.09);color:#4a1526}
+.sb .schild.leicht{background:rgba(60,130,60,.14);color:#24521f}.sb .schild.riskant{background:rgba(170,40,30,.14);color:#6e1a12}
+.sb .strat{margin:4px 0 0;padding-left:20px}.sb .strat li{margin:2px 0}
 .sb .lohnt{margin-top:8px;padding:6px 10px;border-radius:8px;background:rgba(123,30,58,.09);font-weight:700;color:#4a1526;font-size:14px}
 .gchips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}.gchips .wahl{flex:1 1 30%;margin:0;padding:9px 4px;text-align:center;font-weight:600;font-size:14px}.gchips .gs{display:block;width:44px;height:44px;margin:0 auto 4px}
 .fussnote{font-size:12px;color:var(--mut);margin:2px 4px 14px;text-align:center}
@@ -149,6 +152,7 @@ input[type=text]{width:100%;font:inherit;padding:12px;border-radius:12px;border:
 .wahl.mgrinfo{display:flex;align-items:center;gap:12px;padding:8px 12px;margin:0 0 10px}
 .mgrinfo .mbild{position:relative;flex:0 0 48px;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:24px;background:radial-gradient(circle at 35% 30%,#fff8e8,#e3cd9e) center/cover;border:2px solid var(--wein)}
 .mgrinfo .mbild i{position:absolute;right:-5px;bottom:-5px;min-width:20px;height:20px;padding:0 4px;border-radius:10px;background:var(--wein);color:#fff;font:700 12px/20px system-ui,sans-serif;text-align:center;box-shadow:0 0 0 2px #f8f0dc}
+.mgrportraet{width:96px;height:96px;margin:0 auto 10px;border-radius:50%;background:#f8f0dc center/cover no-repeat;border:3px solid var(--wein);box-shadow:0 3px 8px rgba(0,0,0,.3)}
 .mgrinfo .mtext{flex:1;min-width:0}.mgrinfo .mtext b{display:block;font-size:16px;line-height:1.3}
 .mgrinfo .mtext span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:13px;line-height:1.35;color:var(--mut)}
 .mgrinfo .pfeil{flex:0 0 auto;font-size:22px;color:var(--mut)}
@@ -307,6 +311,25 @@ const REGIONEN={
   franken:{name:'Franken',sorten:['silvaner','mueller','spaetb'],warm:-10,edelAus:true,frost:.45,text:'Kühle Silvaner-Heimat mit kalten Wintern, Eiswein-Land. Weniger Zucker, niedrigere Hürden, Auslese ab 88°.',min:MIN_KUEHL},
   wuerttemberg:{name:'Württemberg',sorten:['troll','riesling','spaetb'],warm:-10,edelAus:true,frost:.43,text:'Kühles Rotwein-Land mit Trollinger und kalten Wintern, Eiswein-Land. Weniger Zucker, niedrigere Hürden, Auslese ab 88°.',min:MIN_KUEHL}
 };
+// Version 7.0 (Schritt I): Texte für den Steckbrief. stufe aus den Messungen von Schritt H (Präsident auf Mittel in der Mitte: Rheinhessen und Pfalz
+// um Jahr 100, Rheingau und Mosel 108 bis 122, Franken und Württemberg 116 bis 117 mit großer Streuung und weniger Geld). Franken und Württemberg
+// sind nach Maiks Wunsch die riskanten Eiswein-Gebiete für Könner. stil ist das Spielstil-Schild, sekt das Sekt-Potenzial (1 bis 3 Flaschen),
+// lohnt und strat (zwei bis drei Schritte) stehen im Steckbrief bei "Neues Spiel" und unter "Dein Gebiet".
+const GEBIET_TEXT={
+  mosel:{stufe:'mittel',stil:'Gut planbar',sekt:3,lohnt:'Auf Wettbewerbe und Riesling-Auslese setzen, Sekt in kühlen Jahren',
+    strat:['Riesling braucht lange im Keller, die ersten Jahre sind knapp. Federweißer bringt im Herbst schnelles Geld für den Notfall.','Gute Weine zum Wettbewerb: Der Steillagen-Ruf bringt jedem Wein 3 Punkte mehr.','Ab Winzer Sekt aus Riesling machen, er ist ein Sekt-Star.']},
+  rheingau:{stufe:'mittel',stil:'Sehr verlässlich',sekt:3,lohnt:'Auf den Verkauf setzen, Riesling darf lange reifen',
+    strat:['Riesling braucht lange im Keller, die ersten Jahre sind knapp. Nicht zu viel Land auf einmal kaufen.','Jeder Wein bringt 10 % mehr, lange Reife lohnt sich hier besonders.','Spätburgunder kommt schon als Jungwinzer, mit dem Riesling hast du zwei Sekt-Stars.']},
+  rheinhessen:{stufe:'leicht',stil:'Kalkulierbar',sekt:1,lohnt:'Auf Edelfäulnis und große Mengen setzen',
+    strat:['Silvaner bringt schon nach 6 Monaten Geld, der Start ist entspannt.','Im Herbst ruhig länger hängen lassen: mehr Zucker und öfter Edelfäulnis machen Auslese und Beerenauslese leicht.','Sekt nur nebenbei, hier wächst keine Sekt-Star-Sorte.']},
+  pfalz:{stufe:'leicht',stil:'Flexibel',sekt:2,lohnt:'Auf Edelfäulnis pokern, Riesling als Sekt',
+    strat:['Riesling braucht lange im Keller, die ersten Jahre sind knapp. Federweißer hilft im Herbst über die Runden.','Warm und sonnig: Edelfäulnis kommt oft, edelsüße Weine gelingen hier am leichtesten.','Eiswein gibt es fast nie, dafür verzeiht die Pfalz viele Wege.']},
+  franken:{stufe:'riskant',stil:'Hohes Risiko',sekt:1,lohnt:'Auf Eiswein pokern',
+    strat:['Die Hürden sind niedriger: Schon mit wenig Zucker wird aus Silvaner Kabinett und Spätlese.','Bei Edelfäulnis im Herbst ein Feld hängen lassen und auf Frost im Dezember hoffen. Eiswein bringt hier am meisten.','Für Könner: Franken bringt weniger Geld als die anderen Gebiete, jeder Fehler wiegt schwerer.']},
+  wuerttemberg:{stufe:'riskant',stil:'Kalkuliertes Risiko',sekt:2,lohnt:'Auf Rotwein setzen, Eiswein nur gezielt',
+    strat:['Trollinger trägt viel und ist nach 6 Monaten verkaufsreif, damit kommt am Anfang Geld rein.','Eiswein nur mit Riesling oder Spätburgunder versuchen, den Trollinger lieber rechtzeitig lesen.','Für Könner: Württemberg bringt weniger Geld als die warmen Gebiete, jeder Fehler wiegt schwerer.']}
+};
+const GEBIET_STUFE={leicht:['🟢','Leicht'],mittel:['🟡','Mittel'],riskant:['🔴','Riskant']};
 // Eignung der Rebsorte im Gebiet: 1 = sehr gut, .85 = gut, .7 = geht noch. Wirkt als Faktor auf die Qualitätspunkte.
 const EIGNUNG={mosel:{riesling:1,mueller:.85,spaetb:.7},rheingau:{riesling:1,spaetb:.85,silvaner:.7},rheinhessen:{silvaner:1,mueller:.85,portug:.7},
   pfalz:{riesling:1,portug:.85,mueller:.7},franken:{silvaner:1,mueller:.85,spaetb:.7},wuerttemberg:{troll:1,riesling:.85,spaetb:.7}};
@@ -397,12 +420,15 @@ const MGR_PUFFER=[0,20000,50000,100000,250000], MGR_PUFFER_START=20000;
 // MGR_REIFE auf die Reife-Rate (wie KELLER_REIFE), MGR_REIFE_MIN Monate früher verkaufsreif. Seit Schritt H 0,1 und 1 (vorher neutral auf 0).
 const MGR_REIFE=.1, MGR_REIFE_MIN=1;
 function mgrReife(){return mgrSt('keller')>=3?{rate:MGR_REIFE,min:MGR_REIFE_MIN}:{rate:0,min:0}}
-// Schritt F: tab ist der Hauptreiter, in dem die Zeile des Managers oben steht. bild bleibt leer bis Schritt I (Porträt in bilder/), bis dahin zeigt die Zeile das Symbol.
+// Schritt F: tab ist der Hauptreiter, in dem die Zeile des Managers oben steht. bild ist das Porträt in bilder/ (seit Schritt I), ohne Bild zeigt die Zeile das Symbol.
+// w:1 heißt weiblich (seit Schritt I macht eine Frau den Handel, Maik 16.11.2026), mgrG(b) liefert dann "Deine", "sie", "eine" und so weiter.
 const MGR_BEREICHE={
-  handel:{name:'Handels-Manager',sym:'🤝',ort:'Stadt',tab:'stadt',bild:''},
-  keller:{name:'Kellermeister',sym:'🍷',ort:'Keller',tab:'keller',bild:''},
-  weingut:{name:'Weingut-Manager',sym:'🌿',ort:'Weingut',tab:'gut',bild:''}
+  handel:{name:'Handels-Managerin',sym:'🤝',ort:'Stadt',tab:'stadt',bild:'manager-handel.jpg',w:1},
+  keller:{name:'Kellermeister',sym:'🍷',ort:'Keller',tab:'keller',bild:'manager-keller.jpg'},
+  weingut:{name:'Weingut-Manager',sym:'🌿',ort:'Weingut',tab:'gut',bild:'manager-weingut.jpg'}
 };
+const MGR_G=[{Dein:'Dein',dein:'dein',Er:'Er',er:'er',ihn:'ihn',ein:'ein',den:'den'},{Dein:'Deine',dein:'deine',Er:'Sie',er:'sie',ihn:'sie',ein:'eine',den:'die'}];
+function mgrG(b){return MGR_G[MGR_BEREICHE[b].w?1:0]}
 const MGR_AUFGABEN={
   laeden:{kurz:'Weinhandlungen beliefern',text:'Jeden Monat die Weinhandlungen mit passenden Weinen beliefern'},
   handel:{kurz:'an den Großhandel verkaufen',text:'Jeden Monat an den Großhandel verkaufen, so viel er zum vollen Preis nimmt'},
@@ -440,8 +466,9 @@ function mgrLohn(){let s=0; for(const b in S.manager||{}) s+=(mgrEintrag(b,mgrSt
 // Für den Aufstiegstext: neue Manager und Beförderungen des Rangs i, gleiche Stufen zusammengefasst.
 function mgrBringt(i){
   const E=MANAGER.filter(e=>e.rang===i), g={};
-  for(const e of E.filter(e=>e.stufe>1)) (g[e.stufe]=g[e.stufe]||[]).push(MGR_BEREICHE[e.bereich].name);
-  return [...E.filter(e=>e.stufe===1).map(e=>`ein ${MGR_BEREICHE[e.bereich].name}`),...Object.entries(g).map(([s,n])=>n.length>1?`Stufe ${s} für ${n.join(' und ')}`:`Stufe ${s} für den ${n[0]}`)];
+  for(const e of E.filter(e=>e.stufe>1)) (g[e.stufe]=g[e.stufe]||[]).push(e.bereich);
+  const N=b=>MGR_BEREICHE[b].name;
+  return [...E.filter(e=>e.stufe===1).map(e=>`${mgrG(e.bereich).ein} ${N(e.bereich)}`),...Object.entries(g).map(([s,n])=>n.length>1?`Stufe ${s} für ${n.map(N).join(' und ')}`:`Stufe ${s} für ${mgrG(n[0]).den} ${N(n[0])}`)];
 }
 // Was ein Aufstieg bringt: die Freischaltungen des Rangs, höchstens drei. Seit 5.1 (Paket 10) steht der Kreditrahmen als eigener Satz dahinter (rahmenSatz), nur wenn er wächst.
 // Seit 7.0 steht {sorte} für die Rebsorte, die mit dem Rang kommt, mit ihrem Namen im Gebiet. Die Manager hängt mgrBringt an.
@@ -455,9 +482,9 @@ const SAB={gift:['🧪 Wein vergiften','Sein bester Fasswein ist hin.'],buch:['�
 // ki: Tempo der Gegner, eingestellt mit dem Test-Spieler in Schritt H von 7.0 (16.11.2026). Der erste Gegner wird Präsident auf Schwer in Jahr 106 bis 112,
 // auf Mittel um Jahr 139, auf Einfach in 170 Jahren nie. Auf Schwer gewinnt der Test-Spieler etwa jede vierte Partie.
 const DIFF={
-  einfach:{name:'Einfach',text:'Ansehen wächst schneller, die Gegner sind gemütlich.',ans:1.25,ki:.45,feld:-4},
-  mittel:{name:'Mittel',text:'Ausgeglichen.',ans:1,ki:.6,feld:0},
-  schwer:{name:'Schwer',text:'Ansehen wächst langsamer, die Gegner sind stark.',ans:.9,ki:.77,feld:3}
+  einfach:{name:'Einfach',text:'Ansehen wächst schneller, die Gegner sind gemütlich. Du hast alle Zeit der Welt.',ans:1.25,ki:.45,feld:-4},
+  mittel:{name:'Mittel',text:'Ausgeglichen. Die Gegner brauchen rund 140 Jahre bis an die Spitze, mit guter Arbeit bist du früher da.',ans:1,ki:.6,feld:0},
+  schwer:{name:'Schwer',text:'Ansehen wächst etwas langsamer, die Gegner sind stark und schnell. Machbar, aber da musst du richtig gut sein.',ans:.9,ki:.77,feld:3}
 };
 const GEGNER_TYP={
   vorsicht:{name:'Hannelore Brück',art:'die Vorsichtige',eink:[9000,12000],ans:[8,12],biet:.4,med:.2,ws:[18,30],weine:['einen Kabinett','eine Spätlese','einen Qualitätswein']},
@@ -469,9 +496,9 @@ const GEGNER_TYP={
 // die Erbschaftssteuer ERB_STEUER geht aufs Vermögen (vermoegen, bei den Gegnern gVerm), damit Landkauf kurz vorher nichts spart.
 // Reicht das Geld nicht, wird der Rest ein Kredit über ERB_LAUFZEIT Monate (S.kredit.erb), der nicht gegen den Kreditrahmen zählt. Pleite geht daran niemand.
 // Die Zeitung kündigt die Übergabe GEN_VORAUS Jahre vorher an. Die Gegner übergeben nach denselben Regeln ein bis drei Jahre später (g.genVers) an einen Erben gleicher Art.
-// GEN_BILD sind Platzhalter, die Bilder mit der Flasche kommen in Schritt I.
+// GEN_BILD: die Flasche im Regal (Anfang), mit dem Kellerschlüssel auf dem Küchentisch (Übergabe) und offen im Festsaal (Sieg), seit Schritt I.
 const GEN_JAHRE=40, ERB_ANSEHEN=.8, ERB_STEUER=.2, ERB_LAUFZEIT=48, GEN_VORAUS=2;
-const GEN_BILD={anfang:'keller',uebergabe:'weingut'};
+const GEN_BILD={anfang:'flasche-regal',uebergabe:'flasche-kueche',sieg:'flasche-festsaal'};
 const ERB_NAMEN={t:['Anna','Lena','Marie','Johanna','Clara','Paula','Greta','Ida'],s:['Paul','Jonas','Felix','Lukas','Emil','Anton','Jakob','Karl']};
 const GEGNER_ERBE={
   vorsicht:{namen:['Johanna','Margarete','Luise','Henriette','Mathilde','Ida'],text:(alt,neu,wo)=>`${alt} übergibt ihr Weingut ${wo} an ihre Tochter ${neu}. „Erst mal bleibt alles, wie es ist“, sagt die neue Chefin.`},
@@ -570,7 +597,7 @@ function saeubern(x,k){
 function save(){try{localStorage.setItem(KEYS[SLOT],JSON.stringify(S));localStorage.setItem(SLOT_KEY,SLOT)}catch(e){}}
 // Seit 7.0 (Schritt C): Spielstände aus 5.1 und älter laufen nicht weiter (Maik 16.11.2026). Neue tragen v7, lies gibt nur diese zurück.
 // liesAlt findet die alten. Sie bleiben liegen, bis ein neues Spiel den Platz überschreibt oder der Spieler sie löscht, die Bestenliste bleibt.
-const ALT_SATZ='Dieser Spielstand stammt aus einer älteren Version und läuft hier nicht weiter, hier fängst du neu an.';
+const ALT_SATZ='Dieser Spielstand stammt aus einer älteren Version und läuft hier nicht weiter. Die Bestenliste bleibt, die Ehrungen gehen mit dem alten Spielstand. Hier fängst du neu an.';
 function roh(i){try{const o=JSON.parse(localStorage.getItem(KEYS[i])||'null');return gueltig(o)?o:null}catch(e){return null}}
 function lies(i){const o=roh(i);return o&&o.v7?o:null}
 function liesAlt(i){const o=roh(i);return o&&!o.v7?o:null}
@@ -916,17 +943,32 @@ function aukErgebnis(){
 // Je Ereignis: ok sagt, ob es gerade passen kann, los führt es aus und meldet es mit Wichtigkeit 80 in der Zeitung.
 function feldHaengt(){return R().sorten.filter(id=>{const f=S.felder[id];return f.reben&&f.menge>0&&!f.gelesen})}
 function kritikerWein(l){return l.status==='flasche'&&l.stufe&&STUFEN[l.stufe].rang>=3}
+// Version 7.0 (Schritt I): In der langen Partie kommt der Weinskandal rund alle anderthalb Jahre, die Erbschaft alle drei.
+// Damit nicht immer derselbe Text steht, wechseln die Varianten der Reihe nach durch (S.vz), ohne Zufall.
+const VARIANTEN={
+  skandal:[['Weinskandal erschüttert das Land','Ein Großhändler hat Frostschutzmittel in seinen Wein gemischt, jetzt trauen die Leute keinem Winzer mehr.'],
+    ['Gefälschte Etiketten aufgeflogen','Ein Abfüller hat billigen Tafelwein tausendfach als Spätlese verkauft. Jetzt schauen die Kunden jeder Flasche misstrauisch aufs Etikett.'],
+    ['Fernsehbericht schockt Weinfreunde','Ein Fernsehmagazin zeigt verschimmelte Fässer in einer Großkellerei. Seitdem lassen viele Kunden den Wein im Regal stehen.'],
+    ['Zucker im Most','Mehrere Kellereien haben heimlich Zucker in den Most gekippt. Die Zeitungen sind voll davon, die Kunden halten sich zurück.'],
+    ['Wasser im Wein','Ein Händler hat seinen Wein mit Leitungswasser gestreckt. Der Spott ist groß, die Kauflust klein.']],
+  erbschaft:['Eine entfernte Großtante hat dir {b} hinterlassen. Sie hat deinen Wein wohl heimlich gemocht.',
+    'Ein alter Stammgast hat dich in seinem Testament bedacht: {b}. „Für den besten Schoppen im Ort“, steht darin.',
+    'Ein Onkel aus Übersee, von dem keiner etwas wusste, hat dir {b} vermacht.',
+    'Die Witwe eines Weinhändlers hinterlässt dir {b}. Ihr Mann habe immer von deinem Keller geschwärmt.',
+    'Ein Schulfreund aus der Familie hat dir {b} hinterlassen, mit einem Zettel: „Mach was Gutes draus.“']
+};
+function variante(k){S.vz=S.vz||{}; const V=VARIANTEN[k], i=(S.vz[k]=(S.vz[k]||0)+1)-1; return V[i%V.length]}
 const EREIGNIS={
   gut:{
     supersommer:{ok:()=>(S.monat===6||S.monat===7)&&feldHaengt().length,los(){const n=rint(6,9); for(const id of feldHaengt()) S.felder[id].oe=Math.min(150,S.felder[id].oe+n); S.sonne++; schlag(80,'Supersommer!',`Wochenlang Sonne satt ${WO[S.region]}. Deine Trauben legen ${n}° Öchsle zu, und der Sommer zählt als zusätzlicher Sonnenmonat.`,'supersommer')}},
     mode:{ok:()=>!S.lage,los(){const id=R().sorten.slice().sort((a,b)=>eignung(b)-eignung(a))[0], f=1+rnd(.2,.4), n=rint(4,6); S.lage={typ:'mode',f,rest:n,sorte:id}; schlag(80,`${SORTEN[id].name} ist im Ausland gefragt`,`Ein Fernsehkoch schwärmt vom ${SORTEN[id].name} ${WO[S.region]}, und plötzlich wollen ihn alle. ${n} Monate lang bringt er ${Math.round((f-1)*100)}\u00a0% mehr.`,'rieslingmode')}},
-    erbschaft:{ok:()=>true,los(){const b=Math.round(rint(8,20)*1000*(1+S.rang/2)/100)*100; S.geld+=b; fx('kasse'); schlag(80,'Unverhoffte Erbschaft',`Eine entfernte Großtante hat dir ${eur(b)} hinterlassen. Sie hat deinen Wein wohl heimlich gemocht. Das Geld ist steuerfrei.`,'erbschaft')}},
+    erbschaft:{ok:()=>true,los(){const b=Math.round(rint(8,20)*1000*(1+S.rang/2)/100)*100; S.geld+=b; fx('kasse'); schlag(80,'Unverhoffte Erbschaft',`${variante('erbschaft').replace('{b}',eur(b))} Das Geld ist steuerfrei.`,'erbschaft')}},
     kritiker:{ok:()=>S.lots.some(kritikerWein),los(){const l=S.lots.filter(kritikerWein).sort((a,b)=>b.qp-a.qp)[0], q=rint(3,5); l.qp+=q; const a=ruhm(6); schlag(80,`Kritiker lobt deinen ${lotName(l)}`,`Ein bekannter Weinkritiker hat deinen ${lotName(l)} probiert und schwärmt in seiner Kolumne. Der Wein bekommt ${q} Qualitätspunkte mehr, dazu +${a} Ansehen.`,'weinkritiker')}}
   },
   schlecht:{
     hagel:{ok:()=>S.monat>=5&&S.monat<=8&&feldHaengt().length,los(){const p=rnd(.2,.4); for(const id of feldHaengt()){const f=S.felder[id]; f.menge=Math.round(f.menge*(1-p))} schlag(80,`Hagel ${WO[S.region]}`,`Ein Unwetter mit Hagelkörnern so groß wie Murmeln ist über deine Weinberge gezogen. Rund ${Math.round(p*100)}\u00a0% der Trauben sind hin.`,'hagel')}},
     maschine:{ok:()=>S.maschinen.length,los(){const ma=S.maschinen[rint(0,S.maschinen.length-1)], n=rint(20,40); ma.zustand=Math.max(10,ma.zustand-n); schlag(80,'Maschinenschaden',`Dein${ma.gross?' Vollernter':'e Erntemaschine'} hat einen Felsbrocken erwischt. Der Zustand sinkt um ${n} auf ${ma.zustand}\u00a0%. Eine Wartung bringt sie wieder in Schuss.`,'maschine')}},
-    skandal:{ok:()=>!S.lage,los(){const f=1-rnd(.2,.35), n=rint(3,5); S.lage={typ:'skandal',f,rest:n}; schlag(80,'Weinskandal erschüttert das Land',`Ein Großhändler hat Frostschutzmittel in seinen Wein gemischt, jetzt trauen die Leute keinem Winzer mehr. ${n} Monate lang bringen alle Weine ${Math.round((1-f)*100)}\u00a0% weniger.`,'weinskandal')}},
+    skandal:{ok:()=>!S.lage,los(){const f=1-rnd(.2,.35), n=rint(3,5), [t,x]=variante('skandal'); S.lage={typ:'skandal',f,rest:n}; schlag(80,t,`${x} ${n} Monate lang bringen alle Weine ${Math.round((1-f)*100)}\u00a0% weniger.`,'weinskandal')}},
     helferweg:{ok:()=>S.helfer>0&&S.loehne.helfer[0]<=LOHN_BILLIG&&S.geld>4000,los(){const b=clamp(Math.round(S.geld*rnd(.05,.1)/100)*100,2000,30000); S.loehne.helfer.shift(); S.helfer--; S.geld-=b; schlag(80,'Erntehelfer über alle Berge',`Dein billigster Erntehelfer ist über Nacht verschwunden, und mit ihm ${eur(b)} aus der Kasse. Ersatz findest du beim Arbeitsamt.`,'helferweg')}}
   }
 };
@@ -1209,7 +1251,7 @@ function weinQualHtml(){
   const pr=st=>{const d=STUFEN[st];return `ab ${mindest(st)}° Öchsle, ${d.lese?LESE[d.lese]:'jede Leseart'}${d.edel===true?', mit Edelfäulnis':d.edel===false?', ohne Edelfäulnis':''}`};
   const reife=f=>so.map(id=>`${SORTEN[id].name} ${f(SORTEN[id].minL)}\u00a0Monate`).join(', ');
   return `${sbild('kellerbuch')}<h3>Weinlexikon</h3><p class="mut">Was ein Wein für jede Stufe braucht, mit den Hürden in ${R().name}.</p>`
-    +z('Federweißer',`ab ${m.tafel}° Öchsle, jede Leseart. Nur im Monat nach der Lese anmelden und abfüllen, gleich verkaufbar, hält 3\u00a0Monate.`)
+    +z('Federweißer',`ab ${m.tafel}° Öchsle, jede Leseart. Nur im Monat nach der Lese anmelden und abfüllen, gleich verkaufbar, hält 3\u00a0Monate. Der Weinhändler nimmt ihn in jeder Menge zum vollen Preis, schnelles Geld für den Notfall. Reich wird damit keiner.`)
     +z('Tafelwein',pr('tafel')+'.')
     +z('Qualitätswein',pr('qba')+'.')
     +['kab','spat','aus','ba','tba'].map(st=>z(STUFEN[st].name,pr(st)+'.')).join('')
@@ -1396,7 +1438,7 @@ function zeigeErz(){
 // Generationen-Chronik im Büro.
 function chronikHtml(){
   const C=S.chronik||[], n=genNr(), e=S.erbe, wer=(nr,name,art)=>nr===1?'die Gründung':name?`${esc(name)}, ${art==='s'?'der Sohn':'die Tochter'}`:'die nächste Generation';
-  return `<div class="card"><h3>🕰️ Generationen-Chronik</h3><div class="mut" style="margin-bottom:6px">Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation. Vom Ansehen bleiben ${pz(ERB_ANSEHEN)}, ${pz(ERB_STEUER)} vom Vermögen gehen als Erbschaftssteuer weg, alles andere bleibt.</div>
+  return `<div class="card"><h3>🕰️ Generationen-Chronik</h3><div class="mut" style="margin-bottom:6px">Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation. Vom Ansehen bleiben ${pz(ERB_ANSEHEN)}, ${pz(ERB_STEUER)} vom Vermögen gehen als Erbschaftssteuer weg, alles andere bleibt.${mib('generationen')}</div>
     ${C.map(c=>`<div class="rl"><span>${c.n}.</span><div><b>${c.von} bis ${c.bis}: ${wer(c.n,c.name,c.art)}</b><span class="mut">übergeben als ${RAENGE[c.rang].kurz} mit ${c.ans} Ansehen, Erbschaftssteuer ${eur(c.steuer)}</span></div></div>`).join('')}
     <div class="rl du"><span>${n}.</span><div><b>seit ${genJahr(n-1)}: ${wer(n,e&&e.name,e&&e.art)}</b><span class="mut">${S.flascheAuf?'Die Flasche vom ersten Jahrgang ist getrunken. ':S.gesch&&S.gesch.flasche?'Die Flasche vom ersten Jahrgang liegt noch im Fach. ':''}Nächste Übergabe im Januar ${genJahr(n)}</span></div></div></div>`;
 }
@@ -1417,9 +1459,25 @@ const GEGNER_SPRUCH={
 const bisZiel=r=>{const n=R_MAX-r;return n<=0?'Am Ziel: Präsident':n===1?'Nur noch eine Stufe bis zum Präsidenten!':`Noch ${n} Stufen bis zum Präsidenten`};
 // Version 4.5: Ab dem dritten Jahr steht statt "Rat vom alten Winzer" eine Rubrik in der Ecke. S.rubSack ist ein gemischter Stapel aller Texte, erst wenn er leer ist, kommt alles wieder.
 const RUBRIK={
-  k:{h:'☕ Dorfklatsch',t:['{nachbar} hat beim Weinfest das Tanzbein geschwungen. Das Bein soll sich inzwischen erholt haben.','Im Dorf wird erzählt, {gegner} rede mit den Reben. Angeblich antworten sie.','Der Hund von {nachbar} hat schon wieder Trauben gefressen. Diesmal nur die Spätlese.','Beim Bäcker gibt es jetzt Rieslingbrot. Niemand weiß genau, was darin ist.','{nachbar} hat einen neuen Traktor. Er ist rot, laut und viel zu groß für die Gasse.','Am Stammtisch wird gestritten, ob Rotwein zu Fisch passt. Die Antwort steht seit drei Wochen aus.','Der Pfarrer segnet dieses Jahr auch die Erntemaschinen. Die von {gegner} gleich zweimal.','{nachbar} schwört, im Weinberg einen Fuchs mit Sonnenbrille gesehen zu haben. Der Wirt schwört, dass es nach dem dritten Schoppen war.','Die Ortsdurchfahrt wird gesperrt, weil die Winzer ein Fass über die Straße rollen. Es ist leer, sie üben nur.','{gegner} soll sich einen Hut gekauft haben, „für den Festsaal“. Im Dorf wird schon gewettet, wann {er} ihn das erste Mal trägt.','Die Kinder der Grundschule haben Trauben gelesen und den Saft selbst gepresst. Er war besser als manche Spätlese im Ort.','{nachbar} hat den Zaun zu {gut} neu gestrichen. Nur auf der eigenen Seite.']},
-  l:{h:'✉️ Leserbrief',t:['„Früher hatte der Wein noch Öchsle! Heute schmeckt alles nach Marketing.“|Ein Rentner {wo}','„Warum darf der Federweiße nur einen Monat verkauft werden? Ich trinke ihn das ganze Jahr.“|Ein Leser, der das ganze Jahr trinkt','„Mein Mann sitzt seit drei Wochen im Keller und misst. Kann mir jemand sagen, wann er wiederkommt?“|Eine besorgte Ehefrau','„Der Winzerbote schreibt zu wenig übers Wetter.“|Ein Leser, der das Wetter mag','„Sehr geehrte Redaktion, auch Müller-Thurgau hat Gefühle.“|Freundeskreis Müller-Thurgau','„Ich habe meine Lese um einen Tag verschoben und alles richtig gemacht. Das wollte ich nur mal sagen.“|Ein zufriedener Winzer','„Wer hat in der Nacht meine Erntekisten umgestapelt? Sie stehen jetzt schöner da, aber trotzdem.“|Ein Winzer {wo}','„Bitte mehr Kreuzworträtsel.“|Eine Leserin','„Eiswein ist doch einfach nur kalter Wein. Ich verstehe die Aufregung nicht.“|Ein Gast aus der Stadt','„Mein Opa sagt, früher war der Winter kälter. Mein Opa sagt das über alles.“|Ein Enkel']},
-  s:{h:'💬 Spruch des Monats',t:['„Im Wein liegt die Wahrheit, im Keller die Arbeit.“','„Gute Trauben warten nicht, gute Winzer schon.“','„Ein Jahr ohne Frost ist wie ein Fass ohne Boden: zu schön, um wahr zu sein.“','„Wer im Herbst jammert, hat im Frühling geschlafen.“','„Erst messen, dann lesen, dann prahlen.“','„Der beste Dünger ist der Schatten des Winzers.“','„Geduld ist das teuerste Gewürz im Keller.“','„Ein guter Jahrgang hat viele Väter, ein schlechter nur das Wetter.“','„Wer jeden Monat verkauft, muss nie alles auf einmal verkaufen.“','„Die Rebe kennt keinen Feierabend, der Winzer auch nicht.“','„Lieber eine Spätlese in der Hand als eine Beerenauslese am Stock.“','„Öchsle zählt man im Herbst, Freunde im Winter.“']}
+  k:{h:'☕ Dorfklatsch',t:['{nachbar} hat beim Weinfest das Tanzbein geschwungen. Das Bein soll sich inzwischen erholt haben.','Im Dorf wird erzählt, {gegner} rede mit den Reben. Angeblich antworten sie.','Der Hund von {nachbar} hat schon wieder Trauben gefressen. Diesmal nur die Spätlese.','Beim Bäcker gibt es jetzt Rieslingbrot. Niemand weiß genau, was darin ist.','{nachbar} hat einen neuen Traktor. Er ist rot, laut und viel zu groß für die Gasse.','Am Stammtisch wird gestritten, ob Rotwein zu Fisch passt. Die Antwort steht seit drei Wochen aus.','Der Pfarrer segnet dieses Jahr auch die Erntemaschinen. Die von {gegner} gleich zweimal.','{nachbar} schwört, im Weinberg einen Fuchs mit Sonnenbrille gesehen zu haben. Der Wirt schwört, dass es nach dem dritten Schoppen war.','Die Ortsdurchfahrt wird gesperrt, weil die Winzer ein Fass über die Straße rollen. Es ist leer, sie üben nur.','{gegner} soll sich einen Hut gekauft haben, „für den Festsaal“. Im Dorf wird schon gewettet, wann {er} ihn das erste Mal trägt.','Die Kinder der Grundschule haben Trauben gelesen und den Saft selbst gepresst. Er war besser als manche Spätlese im Ort.','{nachbar} hat den Zaun zu {gut} neu gestrichen. Nur auf der eigenen Seite.',
+    '{nachbar} hat beim Kellerfest den Korkenzieher verloren. Gefunden wurde er im Hut des Bürgermeisters.','Die Feuerwehr übt dieses Jahr mit Traubensaft. Wasser sei zu langweilig, sagt der Kommandant.',
+    'Im Dorf wird erzählt, {gegner} lasse die Fässer nachts von einer Katze bewachen.','Der Gesangverein probt jetzt im Gewölbekeller. Die Akustik ist gut, der Heimweg weniger.',
+    '{nachbar} hat sich eine Wetterstation gekauft. Seitdem weiß das ganze Dorf als Erstes, wann es regnet.','Am Stammtisch wird gestritten, wer die älteste Rebe im Ort hat. Die Rebe selbst schweigt.',
+    'Die Kirchturmuhr geht seit der Lese zehn Minuten vor. Keiner hat Zeit, sie zu stellen.','{gegner} wurde beim Bäcker gesehen, wie {er} heimlich die Öchsle eines Rosinenbrötchens gemessen hat.',
+    'Der Bürgermeister hat eine Rede über den Weinbau gehalten und dabei dreimal Riesling und Silvaner verwechselt.','Im Weinberg von {nachbar} steht eine neue Vogelscheuche. Die Stare sitzen am liebsten auf ihrem Hut.',
+    'Auf dem Wochenmarkt gibt es jetzt Traubenkernöl. Der Verkäufer verspricht, es helfe gegen alles außer Hagel.','Der Dorfpolizist hat einen Traktor geblitzt. Ein neuer Rekord, sagt der Fahrer stolz.']},
+  l:{h:'✉️ Leserbrief',t:['„Früher hatte der Wein noch Öchsle! Heute schmeckt alles nach Marketing.“|Ein Rentner {wo}','„Warum hält der Federweiße nur drei Monate? Ich trinke ihn das ganze Jahr.“|Ein Leser, der das ganze Jahr trinkt','„Mein Mann sitzt seit drei Wochen im Keller und misst. Kann mir jemand sagen, wann er wiederkommt?“|Eine besorgte Ehefrau','„Der Winzerbote schreibt zu wenig übers Wetter.“|Ein Leser, der das Wetter mag','„Sehr geehrte Redaktion, auch Müller-Thurgau hat Gefühle.“|Freundeskreis Müller-Thurgau','„Ich habe meine Lese um einen Tag verschoben und alles richtig gemacht. Das wollte ich nur mal sagen.“|Ein zufriedener Winzer','„Wer hat in der Nacht meine Erntekisten umgestapelt? Sie stehen jetzt schöner da, aber trotzdem.“|Ein Winzer {wo}','„Bitte mehr Kreuzworträtsel.“|Eine Leserin','„Eiswein ist doch einfach nur kalter Wein. Ich verstehe die Aufregung nicht.“|Ein Gast aus der Stadt','„Mein Opa sagt, früher war der Winter kälter. Mein Opa sagt das über alles.“|Ein Enkel',
+    '„Warum heißt er Federweißer, wenn er doch trüb ist?“|Ein Leser, der es genau wissen will','„Mein Nachbar sagt, Sekt ist nur Wein mit Schluckauf. Stimmt das?“|Eine Leserin {wo}',
+    '„Seit vierzig Jahren lese ich den Winzerboten. Früher war er dicker.“|Ein treuer Abonnent','„Könnte der Wetterdienst bitte einmal recht haben, wenn es darauf ankommt?“|Ein Winzer mit nassen Füßen',
+    '„Ich habe eine Trockenbeerenauslese probiert. Jetzt schmeckt mir kein Tafelwein mehr. Wer zahlt mir das?“|Ein verwöhnter Gaumen','„Meine Katze schläft nur noch im Weinkeller. Ist das normal?“|Eine Leserin {wo}',
+    '„Warum steht im Wetterkasten nie, wann meine Schwiegermutter kommt?“|Ein Leser mit Sorgen','„Die Rätselecke ist zu leicht. Das Lösungswort war schon wieder Riesling.“|Ein Rätselfreund',
+    '„Wer seine Reben nicht düngt, braucht sich über nichts zu wundern. Das musste mal gesagt werden.“|Ein alter Winzer {wo}','„Mein Enkel will Winzer werden. Den Kellerschlüssel kriegt er trotzdem noch nicht.“|Ein Großvater {wo}',
+    '„Ich möchte mich beim Hagel entschuldigen. Ich habe ihn im Sommer herbeigewünscht, als es so heiß war.“|Ein reuiger Leser','„Muss der Winzerbote jeden Monat erscheinen? Ich komme mit dem Lesen nicht hinterher.“|Ein gemütlicher Leser']},
+  s:{h:'💬 Spruch des Monats',t:['„Im Wein liegt die Wahrheit, im Keller die Arbeit.“','„Gute Trauben warten nicht, gute Winzer schon.“','„Ein Jahr ohne Frost ist wie ein Fass ohne Boden: zu schön, um wahr zu sein.“','„Wer im Herbst jammert, hat im Frühling geschlafen.“','„Erst messen, dann lesen, dann prahlen.“','„Der beste Dünger ist der Schatten des Winzers.“','„Geduld ist das teuerste Gewürz im Keller.“','„Ein guter Jahrgang hat viele Väter, ein schlechter nur das Wetter.“','„Wer jeden Monat verkauft, muss nie alles auf einmal verkaufen.“','„Die Rebe kennt keinen Feierabend, der Winzer auch nicht.“','„Lieber eine Spätlese in der Hand als eine Beerenauslese am Stock.“','„Öchsle zählt man im Herbst, Freunde im Winter.“',
+    '„Der Keller vergisst nichts, der Winzer manchmal.“','„Wer den Boden pflegt, erntet mehr als Trauben.“','„Ein Fass ist nie zu groß, nur der Jahrgang zu klein.“',
+    '„Im Juni zählt man Blüten, im Oktober Sorgen.“','„Frost im Dezember ist ein Geschenk, Frost im Mai eine Rechnung.“','„Der Weinberg gehört dem Großvater, die Arbeit dem Enkel.“',
+    '„Wer alles auf einmal liest, hat hinterher nichts zu erzählen.“','„Guter Wein braucht Sonne, Geduld und einen trockenen Keller.“','„Ein Korken hält den Wein, ein Versprechen die Familie.“',
+    '„Das Wetter macht den Jahrgang, der Winzer den Wein.“','„Reich wird man im Keller, nicht am Marktstand.“','„Die Rebe wächst langsam, der gute Ruf noch langsamer.“']}
 };
 function rubrikNeu(nr){
   if(!S||(typeof RAT!=='undefined'&&RAT[nr-1])||nr<=24) return null;
@@ -1449,7 +1507,7 @@ function monatWeiter(){
   }
   if(S.mgrLog){const T=['weingut','keller'].filter(b=>(S.mgrLog[b]||[]).length).map(b=>`Dein ${MGR_BEREICHE[b].name} meldet: ${S.mgrLog[b].join(', ')}.`); if(T.length) schlag(15,'Aus dem Gutsbüro',T.join(' '))}
   S.mgrLog=null;
-  if(S.dauerLog&&S.dauerLog.length) Z.push(`📋 Dein ${MGR_BEREICHE.handel.name}: ${S.dauerLog.join(', ')}.`);
+  if(S.dauerLog&&S.dauerLog.length) Z.push(`📋 ${mgrG('handel').Dein} ${MGR_BEREICHE.handel.name}: ${S.dauerLog.join(', ')}.`);
   S.dauerLog=null;
   if(SPRUNG.length){Z.unshift(...SPRUNG); SPRUNG=[]}
   // Der Wettbewerb aus dem Vormonat wird jetzt gewertet, das Ergebnis steht in dieser Ausgabe.
@@ -1553,8 +1611,8 @@ function flascheSieg(){
     :` Am Abend wird im Festsaal die Flasche vom ersten Jahrgang geöffnet, ${S.jahr-f} Jahre nachdem sie ins Fach kam. Das Etikett kann keiner mehr lesen, aber den Satz darauf kennen alle: „Für den Tag, an dem einer von uns Präsident wird.“ Heute ist dieser Tag.`;
 }
 function siegSpieler(){
-  S.sieger=S.name; const st=endStand();
-  schlag(100,`${S.name} ist Präsident!`,`Nach ${st.jahre} Jahren ${WO[S.region]} wählt der Weinbauverband dich an seine Spitze. Du hast die Partie gewonnen! Der Stuhl im Festsaal gehört jetzt dir.${flascheSieg()} Unten im Gewölbekeller bekommt Frau Öchsle${genNr()>1?', eine späte Nachfahrin der ersten,':''} zur Feier ein ganzes Stück Käse. Unten steht deine Bilanz. Du kannst weiterspielen oder ein neues Spiel beginnen.`,'sieg',{gold:1,sonder:1,ende:1,stand:st});
+  S.sieger=S.name; const st=endStand(), fl=flascheSieg();
+  schlag(100,`${S.name} ist Präsident!`,`Nach ${st.jahre} Jahren ${WO[S.region]} wählt der Weinbauverband dich an seine Spitze. Du hast die Partie gewonnen! Der Stuhl im Festsaal gehört jetzt dir.${fl} Unten im Gewölbekeller bekommt Frau Öchsle${genNr()>1?', eine späte Nachfahrin der ersten,':''} zur Feier ein ganzes Stück Käse. Unten steht deine Bilanz. Du kannst weiterspielen oder ein neues Spiel beginnen.`,fl?GEN_BILD.sieg:'sieg',{gold:1,sonder:1,ende:1,stand:st});
   bestenEintrag(1,st);
 }
 const SIEG_SPRUCH={vorsicht:'„Immer schön langsam, dann wird das schon“, sagt sie beim Anstoßen.',qualitaet:'„Qualität setzt sich eben durch“, sagt er und meint vor allem sich selbst.',zocker:'„Alles auf eine Karte, und die Karte hat gestochen“, grinst er in die Kameras.'};
@@ -1575,7 +1633,7 @@ function etappe3Monat(Z){
     ehre(S.rang===R_MAX?'👑':'🎖️',`Aufstieg! Du bist jetzt ${r.name}.`,1,`Das bringt dir: ${bringt(S.rang)}.${rahmenSatz(S.rang)}${r.weg?' '+r.weg:''}`);
     schlag(95,`Aufstieg: ${S.name} ist jetzt ${r.name}`,`Das bringt: ${bringt(S.rang)}.${rahmenSatz(S.rang)}${r.weg?' '+r.weg:''}`,'aufstieg',{sonder:1,gold:1});
     if(S.rang===R_MAX&&!S.sieger) siegSpieler();
-    else if(S.rang===R_MAX) schlag(99,`${S.name} ist doch noch Präsident`,`${S.sieger} war schneller, aber jetzt hast du es auch an die Spitze des Weinbauverbands geschafft. Respekt!${S.gesch&&S.gesch.flasche&&!S.flascheAuf?(S.flascheAuf=S.jahr,' Die Flasche vom ersten Jahrgang wird heute Abend doch noch geöffnet.'):''}`,'sieg',{gold:1});
+    else if(S.rang===R_MAX) schlag(99,`${S.name} ist doch noch Präsident`,`${S.sieger} war schneller, aber jetzt hast du es auch an die Spitze des Weinbauverbands geschafft. Respekt!${S.gesch&&S.gesch.flasche&&!S.flascheAuf?(S.flascheAuf=S.jahr,' Die Flasche vom ersten Jahrgang wird heute Abend doch noch geöffnet.'):''}`,S.flascheAuf===S.jahr?GEN_BILD.sieg:'sieg',{gold:1});
   }
   kontrolleMonat(Z); sabotageGegenDich(Z);
   if(S.monat===0&&S.rang>=R_LADEN) Z.push(`Als Weinbotschafter ${WO[S.region]} warst du auf Messen in aller Welt unterwegs. +${ruhm(BOTSCHAFT_ANS)} Ansehen.`);
@@ -1724,7 +1782,7 @@ function vStart(){
   <div class="zwei">${[2,3].map(n=>`<button class="wahl ${NEU.gegner===n?'an':''}" data-a="neuOpt" data-k="gegner" data-v="${n}"><b>${n} Computer-Winzer</b></button>`).join('')}</div>
   <h2>Schwierigkeit</h2>
   ${Object.entries(DIFF).map(([id,d])=>`<button class="wahl ${NEU.schwer===id?'an':''}" data-a="neuOpt" data-k="schwer" data-v="${id}"><b>${d.name}</b><br><span class="mut">${d.text}</span></button>`).join('')}
-  <div class="mut" style="margin:12px 0 0">Eine Partie dauert rund 30 bis 40 Spieljahre. Gespeichert wird nach jedem Monat, du kannst also jederzeit aufhören.</div>
+  <div class="mut" style="margin:12px 0 0">Eine Partie dauert rund 100 bis 120 Spieljahre. Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation, Präsident wird meist erst dein Enkel. Gespeichert wird nach jedem Monat, du kannst also jederzeit aufhören.</div>
   <div class="btns"><button data-a="start">Spiel starten</button></div></main>`;
 }
 // Liste der drei Speicherplätze: weiterspielen, neu anfangen, als Datei sichern, aus Datei laden, löschen.
@@ -1844,16 +1902,20 @@ function steckbrief(id,o={}){
     r.wettPlus?`Bei Wettbewerben zählt jeder Wein ${r.wettPlus} Punkte mehr.`:'',r.preisF?`Jeder Wein bringt ${pz(r.preisF-1)} mehr Geld.`:'',r.ertragF>1?`Die Reben tragen ${pz(r.ertragF-1)} mehr.`:'',r.sektPreisF>1?`Sekt bringt ${pz(r.sektPreisF-1)} mehr Geld.`:'',r.edelSpatF?'Edelfäulnis kommt vor dem Auslese-Wert nur selten, Kabinett und Spätlese bleiben öfter heil.':''].join(' ').trim();
   const schwach=[r.warm>0?'Kaum Frost im Dezember, Eiswein ist selten.':r.warm<0?`${-r.warm}° weniger Zucker, edelsüße Weine sind schwer.`:'Kein Zuckervorteil und normale Hürden.',
     r.ertragF<1?`Die Reben tragen ${pz(1-r.ertragF)} weniger.`:'',r.sektPreisF<1?`Sekt bringt ${pz(1-r.sektPreisF)} weniger Geld.`:''].join(' ').trim();
-  const lohnt=r.warm>0?'Auf Edelfäulnis pokern':r.warm<0?'Auf Eiswein pokern':r.wettPlus?'Auf Medaillen setzen':'Auf den Verkauf setzen';
+  const G=GEBIET_TEXT[id], [ssym,stufe]=GEBIET_STUFE[G.stufe], lohnt=G.lohnt;
+  const stars=sortenFolge(id).filter(s=>SORTEN[s].sektStar).map(s=>SORTEN[s].name);
+  const sekt=`<span class="sterne">${'🍾'.repeat(G.sekt)}<i>${'🍾'.repeat(3-G.sekt)}</i></span>`;
   // Seit 7.0: dazu, ab wann die Sorte kommt (sortenFolge, SORTE_RANG).
   const so=sortenFolge(id).map((s,i)=>{const e=eignung(s,id); return `${dot(s)}${SORTEN[s].name} ${sterne(e>=1?3:e>=.85?2:1)} <span class="mut">${i?`ab ${RAENGE[SORTE_RANG[i]].name}`:'zum Start'}</span>`}).join('<br>');
   const kv=(a,x)=>`<div class="kv"><span>${a}</span><span>${x}</span></div>`;
-  return `<div class="card sb"><h3>${sym} ${r.name}<small>${art}, ${bonus}</small></h3><div class="sbz">${so}</div>
-    ${kv('💶 Geld',sterne(r.preisF?3:2))}${kv('🎖️ Ansehen',sterne(r.wettPlus?3:2))}
+  return `<div class="card sb"><h3>${sym} ${r.name}<small>${art}, ${bonus}</small></h3><div class="schild ${G.stufe}">${ssym} ${stufe} · ${G.stil}</div><div class="sbz">${so}</div>
+    ${kv('💶 Geld',sterne(r.preisF?3:2))}${kv('🎖️ Ansehen',sterne(r.wettPlus?3:2))}${kv('🍾 Sekt-Potenzial',sekt)}
+    <div class="mut" style="font-size:13px">${stars.length?`Sekt-Stars hier: ${stars.join(' und ')}, sie bringen als Sekt ${Math.round((SEKT_STAR-1)*100)} % mehr.`:'Hier wächst keine Sekt-Star-Sorte.'} Sekt gibt es ab ${RAENGE[R_SEKT].name}.</div>
     <div class="sbz">💪 ${stark}<br>⚠️ ${schwach}</div>
     <div class="sbz">📏 Hürden: Spätlese ${mi.spat}°, Auslese ${mi.aus}°, Beerenauslese ${mi.ba}°</div>
     ${kv('❄️ Frost im Dezember',`${pz(r.frost)} der Jahre`)}${kv('🌨️ Kälteeinbruch im November',`jedes ${Math.round(1/KAELTE)}. Jahr`)}${kv('🌸 Spätfrost zur Blüte',`rund jedes ${SPAET_JAHR}. Jahr`)}
-    <div class="lohnt">🎯 Lohnt sich hier: ${lohnt}</div>${o.buch?mib('gebiete'):''}</div>`;
+    <div class="lohnt">🎯 Lohnt sich hier: ${lohnt}</div>
+    <div class="sbz"><b>So gehst du vor</b><ol class="strat">${G.strat.map(x=>`<li>${x}</li>`).join('')}</ol></div>${o.buch?mib('gebiete'):''}</div>`;
 }
 // Version 4.1: Buch mit der Spielanleitung, Texte in anleitung.js. BUCH: null = zu, '' = Inhaltsverzeichnis, sonst die Kennung des Kapitels.
 // "📖 Mehr im Buch" in der Info-Karte schlägt das Kapitel des Ortes auf (BUCH_ORT), Fenster haben eigene Links (Kasse, Lese, Anmelden, Weinlexikon).
@@ -1923,15 +1985,15 @@ function dauerAuftrag(){
 function reserveChips(){const d=S.dauer||{}; return `<div class="chips" style="flex-wrap:wrap">${DAUER_RESERVE.map(n=>`<button class="chip ${(+d.reserve||0)===n?'an':''}" data-a="dauerRes" data-id="${n}">${n?num(n):'keine'}</button>`).join('')}</div>`}
 // Im Großhandel (k='handel') und im Weinhandel (k='laeden'): der Schalter des Dauerauftrags, oder wer ihn ab wann übernimmt.
 function dauerHtml(k){
-  const e=mgrAufgabe(k), M=MGR_BEREICHE[e.bereich], st=mgrSt(e.bereich), was=k==='laeden'?'für die Weinhandlungen':'für den Großhandel';
+  const e=mgrAufgabe(k), M=MGR_BEREICHE[e.bereich], G=mgrG(e.bereich), st=mgrSt(e.bereich), was=k==='laeden'?'für die Weinhandlungen':'für den Großhandel';
   if(!aufgabeDa(k)){
-    const wie=S.rang<e.rang?`ab dem Rang ${RAENGE[e.rang].name} dein ${M.name}${e.stufe>1?` auf Stufe ${e.stufe}`:''}. Bis dahin verkaufst du selbst.`
-      :`dein ${M.name}, sobald du ihn im Arbeitsamt ${st?`auf Stufe ${e.stufe} beförderst`:e.stufe>1?`einstellst und auf Stufe ${e.stufe} beförderst`:'einstellst'}.`;
+    const wie=S.rang<e.rang?`ab dem Rang ${RAENGE[e.rang].name} ${G.dein} ${M.name}${e.stufe>1?` auf Stufe ${e.stufe}`:''}. Bis dahin verkaufst du selbst.`
+      :`${G.dein} ${M.name}, sobald du ${G.ihn} im Arbeitsamt ${st?`auf Stufe ${e.stufe} beförderst`:e.stufe>1?`einstellst und auf Stufe ${e.stufe} beförderst`:'einstellst'}.`;
     return `<div class="card"><div class="mut">📋 Den Dauerauftrag ${was} übernimmt ${wie}</div>${S.rang>=e.rang?kz('',pk('arbeitsamt','Zum Arbeitsamt','')):''}</div>`;
   }
   const an=aufgabeAktiv(k);
   return `<div class="card"><button class="wahl ${an?'an':''}" data-a="mgrAn" data-id="${k}" style="margin:0">${an?'✅':'⬜'} 📋 Dauerauftrag: ${MGR_AUFGABEN[k].text}</button>
-  ${an?`<div class="mut" style="margin:8px 0 6px">Dein ${M.name} erledigt das bei jedem Weiterblättern, was am ehesten verdirbt, geht zuerst. Je Wein bleiben im Keller, außer kurz vorm Verderben:</div>
+  ${an?`<div class="mut" style="margin:8px 0 6px">${G.Dein} ${M.name} erledigt das bei jedem Weiterblättern, was am ehesten verdirbt, geht zuerst. Je Wein bleiben im Keller, außer kurz vorm Verderben:</div>
   ${reserveChips()}`:''}</div>`;
 }
 // Version 7.0 (Schritt D): Manager im Betrieb (statt Gutsverwalter), im Arbeitsamt und als Fenster von unten.
@@ -1974,14 +2036,15 @@ function mgrFenster(b){
   const teil=e=>e.stufe>st?`<div class="mut" style="margin:0 0 8px">${mgrStufenText(e,st)}</div>`
     :e.aufgaben.map(k=>{const an=aufgabeAktiv(k); return `<button class="wahl ${an?'an':''}" data-a="mgrAn" data-id="${k}">${an?'✅':'⬜'} ${k==='laeden'||k==='handel'?'📋 ':''}${MGR_AUFGABEN[k].text}</button>`}).join('')
       +mgrExtra(e).map(t=>`<div class="mut" style="margin:0 0 8px">✅ ${t}, ohne Schalter</div>`).join('');
-  return `<h3>${M.sym} ${st?'Dein '+M.name:M.name}</h3>
-  <div class="mut" style="margin-bottom:8px">${st?`Stufe ${st} von ${E.length}. Er erledigt beim Weiterblättern, was du hier einschaltest, und berichtet im Winzerboten. Einkäufe zahlt er aus deiner Kasse.`:`Noch nicht eingestellt. Ab dem Rang ${RAENGE[E[0].rang].name} gibt es ihn im Arbeitsamt.`}</div>
+  const G=mgrG(b);
+  return `${M.bild?`<div class="mgrportraet" style="background-image:url(bilder/${M.bild})"></div>`:''}<h3>${M.sym} ${st?G.Dein+' '+M.name:M.name}</h3>
+  <div class="mut" style="margin-bottom:8px">${st?`Stufe ${st} von ${E.length}. ${G.Er} erledigt beim Weiterblättern, was du hier einschaltest, und berichtet im Winzerboten. Einkäufe zahlt ${G.er} aus deiner Kasse.`:`Noch nicht eingestellt. Ab dem Rang ${RAENGE[E[0].rang].name} gibt es ${G.ihn} im Arbeitsamt.`}</div>
   ${st?`<div class="kv"><span>Lohn im Monat</span><span>${eur(mgrEintrag(b,st).lohn)}</span></div>`:''}
   ${m.zuletzt?`<div class="kv"><span>Zuletzt</span><span>${esc(m.zuletzt)}</span></div>`:''}
   ${E.map(teil).join('')}
   ${b==='handel'&&(aufgabeAktiv('laeden')||aufgabeAktiv('handel')||aufgabeAktiv('regal'))?`<div class="mut" style="margin:8px 0 6px">Je Wein bleiben im Keller, außer kurz vorm Verderben:</div>${reserveChips()}`:''}
-  ${b==='keller'&&(aufgabeAktiv('sekt')||aufgabeAktiv('keltern'))||b==='handel'&&aufgabeAktiv('fest')?`<div class="mut" style="margin:8px 0 6px">${b==='keller'?'Für '+[aufgabeAktiv('sekt')&&'Sekt',aufgabeAktiv('keltern')&&'Fassraum'].filter(Boolean).join(' und '):'Für das Fest'} gibt er nur so viel aus, dass mindestens das auf dem Konto bleibt:</div>${pufferChips(b)}`:''}
-  ${mgrNaechste(b)?kz('',mgrKnopf(b)):''}
+  ${b==='keller'&&(aufgabeAktiv('sekt')||aufgabeAktiv('keltern'))||b==='handel'&&aufgabeAktiv('fest')?`<div class="mut" style="margin:8px 0 6px">${b==='keller'?'Für '+[aufgabeAktiv('sekt')&&'Sekt',aufgabeAktiv('keltern')&&'Fassraum'].filter(Boolean).join(' und '):'Für das Fest'} gibt ${G.er} nur so viel aus, dass mindestens das auf dem Konto bleibt:</div>${pufferChips(b)}`:''}
+  ${mgrNaechste(b)?kz('',mgrKnopf(b)):''}${mib('manager')}
   <div class="btns"><button class="sec" data-a="close">Zurück</button></div>`;
 }
 // Hoffest ab Verbandsvorstand: Juni bis August, einmal im Jahr.
@@ -1991,7 +2054,7 @@ function hoffestHtml(){
   const F=FESTE[art], m=S.monat, zeit=m>=5&&m<=7, schon=S.festJahr===S.jahr;
   return `<div class="card"><div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/hoffest.jpg)"><b>🎉 ${F.name}</b><span>Juni bis August, einmal im Jahr</span></div>
   <div class="mut">${schon?(S.fest?'Das Fest steigt diesen Monat, der Bericht kommt im nächsten Winzerboten.':`Das ${F.name} ${S.jahr} ist gefeiert. Nächstes Jahr wieder.`):`${F.text} kostet ${eur(F.preis)} und bringt rund ${F.ans} Ansehen. Das Wetter im Festmonat entscheidet mit: Sonne bringt mehr, Regen weniger.${art==='weinfest'?` Ab dem Rang ${RAENGE[R_HOFFEST].name} wird daraus das große Hoffest.`:''}`}</div>
-  ${!schon&&aufgabeAktiv('fest')?`<div class="hilfe" style="margin-bottom:8px">🤝 Dein ${MGR_BEREICHE.handel.name} richtet das Fest aus, bei Sonne oder spätestens im August.</div>`:''}
+  ${!schon&&aufgabeAktiv('fest')?`<div class="hilfe" style="margin-bottom:8px">🤝 ${mgrG('handel').Dein} ${MGR_BEREICHE.handel.name} richtet das Fest aus, bei Sonne oder spätestens im August.</div>`:''}
   ${kz('',pk('hoffest','Feiern',eur(F.preis),{aus:!(zeit&&!schon),arm:S.geld<F.preis}))}</div>`;
 }
 // Was früher der Gutsverwalter tat, seit 7.0 (Schritt D) aufgeteilt: Weingut-Manager (Reben, Düngen, Erntehelfer) und Kellermeister (Abfüllen, Lagerarbeiter).
@@ -2283,7 +2346,7 @@ function vStadt(){
     if(S.rang>=R_LADEN){
       const rg=regalWeine(), kann=S.lots.filter(l=>l.status==='flasche'&&!l.regal&&preis(l)>0).sort((a,b)=>preis(b)-preis(a));
       h+=`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/weinhandlung.jpg)"><b>Deine Weinhandlung</b><span>${rg.length?`${num(rg.reduce((a,l)=>a+l.liter,0))} Flaschen im Regal`:'Das Regal ist leer'}</span></div>
-      <div class="mut" style="margin-bottom:8px">Was im Regal steht, verkauft sich jeden Monat von selbst, das Teuerste zuerst, bis ${eur(LADEN_EIGEN)} Listenwert. Dafür bekommst du ${Math.round((LADEN_EIGEN_F-1)*100)}\u00a0% mehr als den Listenpreis. Regalweine fehlen im Großhandel.</div>${aufgabeAktiv('regal')?`<div class="hilfe" style="margin-bottom:8px">🤝 Dein ${MGR_BEREICHE.handel.name} füllt das Regal beim Weiterblättern, mit Wein für rund ${MGR_REGAL} Monate.</div>`:''}`;
+      <div class="mut" style="margin-bottom:8px">Was im Regal steht, verkauft sich jeden Monat von selbst, das Teuerste zuerst, bis ${eur(LADEN_EIGEN)} Listenwert. Dafür bekommst du ${Math.round((LADEN_EIGEN_F-1)*100)}\u00a0% mehr als den Listenpreis. Regalweine fehlen im Großhandel.</div>${aufgabeAktiv('regal')?`<div class="hilfe" style="margin-bottom:8px">🤝 ${mgrG('handel').Dein} ${MGR_BEREICHE.handel.name} füllt das Regal beim Weiterblättern, mit Wein für rund ${MGR_REGAL} Monate.</div>`:''}`;
       h+=rg.map(l=>`<button class="bzeile" data-a="buchDetail" data-id="${l.id}"><div class="bz1"><b>${dot(l.sorte)}${esc(lotName(l))}</b><span>${preis(l)?eur2(preis(l)*LADEN_EIGEN_F):'nicht verkaufsreif'}</span></div><div class="bz2">${num(l.liter)} Flaschen im Regal</div></button>`).join('');
       h+=kann.length?'<h3>Ins Regal stellen</h3>'+kann.map(l=>`<button class="wahl" data-a="regal" data-id="${l.id}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${num(l.liter)} Flaschen · im Regal ${eur2(preis(l)*LADEN_EIGEN_F)} · Großhandel ${eur2(wege(l)[0].p)}</span></button>`).join(''):'<div class="card mut">Gerade hast du keinen verkaufsreifen Flaschenwein fürs Regal.</div>';
       h+=`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/laden.jpg)"><b>Weinhandlungen in anderen Gebieten</b><span>nehmen jeden Monat eine kleine Menge</span></div>`;
@@ -2904,7 +2967,7 @@ const AKT={
   },
   verkaufen(d){
     const l=lot(d.id), w=wege(l)[0]; if(!w||l.regal) return; const p=w.p, fw=federHandel(l);
-    mengeSheet({titel:`${lotName(l)} verkaufen`,text:`${w.flag} ${w.name}: ${eur2(p)} je Flasche. ${fw?'Der Weinhändler nimmt Federweißer in jeder Menge zum vollen Preis. Das zählt nicht gegen dein Budget beim Großhandel.':marktRest()?`Zum vollen Preis kauft der Großhandel diesen Monat noch für ${eur(marktRest())}, danach sinkt er.`:'Der Markt ist diesen Monat satt, der Preis ist gedrückt. Nächsten Monat zahlt der Großhandel wieder voll.'}${fw?'':' Was du behältst, reift weiter.'}`,max:l.liter,rangeStep:1,step:l.liter>2000?100:l.liter>200?10:1,start:fw?l.liter:Math.min(l.liter,Math.floor(marktRest()/p)||l.liter),okText:'Verkaufen',
+    mengeSheet({titel:`${lotName(l)} verkaufen`,text:`${w.flag} ${w.name}: ${eur2(p)} je Flasche. ${fw?'Federweißer kauft der Weinhändler in jeder Menge zum vollen Preis, am Budget des Großhandels vorbei. Schnelles Geld für den Notfall, aber reich wird damit keiner. Er hält nur 3 Monate.':marktRest()?`Zum vollen Preis kauft der Großhandel diesen Monat noch für ${eur(marktRest())}, danach sinkt er.`:'Der Markt ist diesen Monat satt, der Preis ist gedrückt. Nächsten Monat zahlt der Großhandel wieder voll.'}${fw?'':' Was du behältst, reift weiter.'}`,max:l.liter,rangeStep:1,step:l.liter>2000?100:l.liter>200?10:1,start:fw?l.liter:Math.min(l.liter,Math.floor(marktRest()/p)||l.liter),okText:'Verkaufen',
       info:n=>{const f=fw?1:marktF(n*p);return `<b>${num(n)} Flaschen</b>bringt dir ${eur(n*p*f)}${f<.995?`<br>📉 im Schnitt ${eur2(p*f)} je Flasche, der Markt ist satt`:''}`},
       ok:n=>{kassiere(Math.round(n*p*(fw?1:marktF(n*p))));if(!fw)S.absatz=(S.absatz||0)+n*p;l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l)}});
   }

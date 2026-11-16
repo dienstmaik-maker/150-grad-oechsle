@@ -1,7 +1,7 @@
 // Helfer für die App: legt alle Dateien des Spiels aufs Gerät, damit es ohne Netz läuft.
 // Die Spielseite (index.html) und das Buch (anleitung.js) kommen immer zuerst frisch aus dem Netz, so kommen neue Fassungen von selbst an. Ohne Netz gilt die gespeicherte.
 // Bilder und Töne kommen aus dem Speicher. Ändert sich eines davon, die Nummer in LAGER erhöhen, dann lädt das Gerät alles neu.
-const LAGER = 'oechsle-11';
+const LAGER = 'oechsle-12';
 const DATEIEN = [
   './', 'index.html', 'manifest.webmanifest', 'anleitung.js',
   'bilder/amt.jpg',
@@ -12,6 +12,9 @@ const DATEIEN = [
   'bilder/erbschaft.jpg',
   'bilder/fass.png',
   'bilder/fassgang.jpg',
+  'bilder/flasche-festsaal.jpg',
+  'bilder/flasche-kueche.jpg',
+  'bilder/flasche-regal.jpg',
   'bilder/frost.jpg',
   'bilder/fruehling.jpg',
   'bilder/gebiet-franken.webp',
@@ -36,6 +39,9 @@ const DATEIEN = [
   'bilder/laden.jpg',
   'bilder/lese.jpg',
   'bilder/maschine.jpg',
+  'bilder/manager-handel.jpg',
+  'bilder/manager-keller.jpg',
+  'bilder/manager-weingut.jpg',
   'bilder/papier.jpg',
   'bilder/pleite.jpg',
   'bilder/praemierung.jpg',
