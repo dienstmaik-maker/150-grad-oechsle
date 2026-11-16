@@ -278,10 +278,10 @@ img.fass{height:1.1em;vertical-align:-.18em}
 /* ================= Daten ================= */
 const MON=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const SORTEN={
-  riesling:{name:'Riesling',farbe:'weiss',ertrag:4,zucker:0,preis:6,minL:18,maxL:360,q:10,reife:.12},
+  riesling:{name:'Riesling',farbe:'weiss',ertrag:4,zucker:0,preis:6,minL:18,maxL:360,q:10,reife:.12,sektStar:true},
   mueller:{name:'Müller-Thurgau',farbe:'weiss',ertrag:5.6,zucker:-4,preis:3,minL:6,maxL:96,q:3,reife:.05},
   silvaner:{name:'Silvaner',farbe:'weiss',ertrag:5,zucker:-2,preis:4,minL:6,maxL:120,q:5,reife:.07},
-  spaetb:{name:'Spätburgunder',farbe:'rot',ertrag:3.8,zucker:2,preis:5.5,minL:12,maxL:180,q:8,reife:.10},
+  spaetb:{name:'Spätburgunder',farbe:'rot',ertrag:3.8,zucker:2,preis:5.5,minL:12,maxL:180,q:8,reife:.10,sektStar:true},
   portug:{name:'Portugieser',farbe:'rot',ertrag:6,zucker:-5,preis:2.8,minL:3,maxL:48,q:2,reife:.04},
   troll:{name:'Trollinger',farbe:'rot',ertrag:5.6,zucker:-3,preis:3.2,minL:6,maxL:60,q:3,reife:.05}
 };
@@ -678,7 +678,7 @@ function reifeFaktor(l){const L=lager(l);return l.status==='flasche'?Math.min(4,
 function lotWert(l){
   if(l.status==='trauben') return 0;
   if(!l.stufe) return l.liter*2;
-  return l.liter*STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*reifeFaktor(l)*(l.sekt?1.6:1)*(l.status==='fass'?.7:1);
+  return l.liter*STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*reifeFaktor(l)*sektF(l)*(l.status==='fass'?.7:1);
 }
 function vermoegen(){return Math.round(S.geld-(S.kredit?S.kredit.rest:0)+S.ha*LANDWERT+S.maschinen.reduce((a,m)=>a+mTyp(m).preis*.5*m.zustand/100,0)+Math.min(12*marktFrei(),WEIN_WERT*S.lots.reduce((a,l)=>a+lotWert(l),0)))}
 function gVerm(g){return Math.round(g.geld-g.kredit+g.ha*LANDWERT)}
@@ -919,10 +919,14 @@ function kosten(){const k=S.kredit;return {basis:150+HA_KOSTEN_KLEIN*Math.min(S.
 function schulden(){return (S.kredit?S.kredit.rest:0)+Math.max(0,-S.geld)}
 // Version 5.1 (Paket 10): Die SEKT_ANS Ansehen gibt es einmal im Jahr, sobald zusammen SEKT_ANS_HA Flaschen je bepflanztem Hektar versektet sind, mindestens für HA_FREI Hektar.
 const SEKT_ANS=3, SEKT_ANS_HA=200;
+// Version 6.0: Sekt nur aus Qualitätswein und Kabinett. Sekt bringt das 1,6-fache, Sekt-Stars (sektStar in SORTEN) dazu SEKT_STAR.
+// Sekt aus höheren Stufen in alten Spielständen bleibt, wie er ist.
+const SEKT_F=1.6, SEKT_STAR=1.1, SEKT_STUFEN=['qba','kab'];
+function sektF(l){return l.sekt?SEKT_F*(SORTEN[l.sorte].sektStar?SEKT_STAR:1):1}
 function sektSchwelle(){return Math.round(SEKT_ANS_HA*Math.max(HA_FREI,flaecheBep()))}
 function sektMenge(){if(!S.sektMenge||S.sektMenge.j!==S.jahr) S.sektMenge={j:S.jahr,n:0}; return S.sektMenge}
 function sektAnsText(){if(S.sektJahr===S.jahr) return `Die ${SEKT_ANS} Ansehen für Sekt hast du dieses Jahr schon.`; const r=sektSchwelle()-sektMenge().n; return `Ab ${num(sektSchwelle())} Flaschen Sekt im Jahr gibt es ${SEKT_ANS} Ansehen, dieses Jahr fehlen noch ${num(Math.max(0,r))}.`}
-function sektFaehig(l){return l.status==='flasche'&&!l.regal&&!l.sekt&&l.stufe!=='feder'&&l.flMonate>=lagerBasis(l).min}
+function sektFaehig(l){return l.status==='flasche'&&!l.regal&&!l.sekt&&SEKT_STUFEN.includes(l.stufe)&&l.flMonate>=lagerBasis(l).min}
 function dot(id){return `<i class="dot ${SORTEN[id].farbe==='weiss'?'weiss':'rotw'}"></i>`}
 
 /* ================= Wetter ================= */
@@ -1110,7 +1114,7 @@ function preis(l){
   if(l.status!=='flasche') return 0;
   const L=lager(l); if(l.flMonate<L.min) return 0;
   const alter=Math.min(4,1+(l.flMonate-L.min)/12*L.rate);
-  return Math.round(STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*alter*S.markt*lageF(l)*(l.sekt?1.6:1)*(R().preisF||1)*100)/100;
+  return Math.round(STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*alter*S.markt*lageF(l)*sektF(l)*(R().preisF||1)*100)/100;
 }
 
 /* ================= Spielstart ================= */
@@ -1864,7 +1868,7 @@ function vKellerStart(){
     <div class="mut ${l.fassMonate>=5?'rot':''}">Verdirbt in ${8-l.fassMonate} Monaten, wenn er nicht abgefüllt ist.</div>
     ${l.stufe?`<div class="btns"><button data-a="abfuellen" data-id="${l.id}">Abfüllen (${num(l.liter)} Flaschen)</button></div>`:`<div class="mut">Noch nicht angemeldet. Abfüllen geht erst nach der Anmeldung im Rathaus.</div><div class="btns"><button class="klein sec" data-a="anmelden" data-id="${l.id}">Im Rathaus anmelden</button></div>`}</div>`).join(''):'<div class="card mut">Alle Fässer sind leer.</div>');
   const sk=S.lots.filter(sektFaehig);
-  h+=`<h3>Sekt herstellen</h3>`+(sk.length?sk.map(l=>`<div class="card"><b>${dot(l.sorte)}${lotName(l)}</b><div class="mut">${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte</div><div class="btns"><button class="klein sec" data-a="sekt" data-id="${l.id}">Zu Sekt machen</button></div></div>`).join(''):'<div class="card mut">Sekt entsteht aus reifem Flaschenwein. Gerade ist keiner so weit.</div>');
+  h+=`<h3>Sekt herstellen</h3><div class="mut" style="margin-bottom:8px">Sekt gibt es nur aus Qualitätswein und Kabinett, alles darüber ist zu wertvoll. Riesling und Spätburgunder bringen als Sekt ${Math.round((SEKT_STAR-1)*100)} % mehr.</div>`+(sk.length?sk.map(l=>`<div class="card"><b>${dot(l.sorte)}${lotName(l)}</b><div class="mut">${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte</div><div class="btns"><button class="klein sec" data-a="sekt" data-id="${l.id}">Zu Sekt machen</button></div></div>`).join(''):'<div class="card mut">Sekt entsteht aus reifem Qualitätswein oder Kabinett in der Flasche. Gerade ist keiner so weit.</div>');
   return h;
 }
 // Lager: hier werden Fässer und Flaschen gekauft.
@@ -2496,7 +2500,7 @@ const AKT={
   sekt(d){
     const l=lot(d.id), max=Math.min(l.liter,Math.floor(S.geld/SEKT_KOSTEN));
     if(max<1) return meldung('Zu wenig Geld',`Versekten kostet ${eur2(SEKT_KOSTEN)} je Flasche.`);
-    mengeSheet({titel:`${lotName(l)} zu Sekt machen`,text:`${eur2(SEKT_KOSTEN)} je Flasche. Der Sekt ruht danach 9 Monate und bringt dann deutlich mehr als der Grundwein. ${sektAnsText()}`,max,rangeStep:1,step:l.liter>2000?100:l.liter>200?10:1,start:max,okText:'Versekten',
+    mengeSheet({titel:`${lotName(l)} zu Sekt machen`,text:`${eur2(SEKT_KOSTEN)} je Flasche. Der Sekt ruht danach 9 Monate und bringt dann deutlich mehr als der Grundwein${SORTEN[l.sorte].sektStar?`, als ${SORTEN[l.sorte].name} sogar noch ${Math.round((SEKT_STAR-1)*100)} % mehr`:''}. ${sektAnsText()}`,max,rangeStep:1,step:l.liter>2000?100:l.liter>200?10:1,start:max,okText:'Versekten',
       info:n=>`<b>${num(n)} Flaschen</b>kostet ${eur(n*SEKT_KOSTEN)}`,
       ok:n=>{fx('korken');zahle(n*SEKT_KOSTEN);S.lots.push({...l,id:S.nextId++,liter:n,sekt:true,flMonate:0,qp:l.qp+5,med:(l.med||[]).slice(),bund:false});l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l);if(!l.pansch){const m=sektMenge(); m.n+=n; if(S.sektJahr!==S.jahr&&m.n>=sektSchwelle()){S.sektJahr=S.jahr;ruhm(SEKT_ANS)}}}});
   },
