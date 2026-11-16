@@ -294,8 +294,8 @@ const SORTEN={
   troll:{name:'Trollinger',farbe:'rot',ertrag:5.6,zucker:-3,preis:3.2,minL:6,maxL:60,q:3,reife:.05}
 };
 // Hürden in zwei Stufen: vier Gebiete mit normalen Mindestwerten, Franken und Württemberg mit niedrigeren.
-// Die beiden sind dafür 7° kühler (warm), und ihre Edelfäulnis bringt 7° mehr je Monat (edelPlus), weil die Trockenbeerenauslese überall bei 150° liegt.
-// So erreicht die beste Sorte in allen sechs Gebieten dieselbe Verteilung der Stufen. Verschieden bleibt nur der Frost im Dezember.
+// Die beiden sind dafür 10° kühler (warm), unter dem Strich also 3° hinter Mosel und Rheingau. Seit 7.0 (Schritt H) -10 statt -11:
+// Mit -11 schaffte der Test-Spieler in Franken den Präsidenten nur in 4 von 9 Partien, mit -10 in 9 von 9 (Mitte Jahr 116). Sie bleiben die riskanten Gebiete.
 const MIN_NORMAL={tafel:50,qba:60,kab:75,spat:85,aus:95,ba:125,tba:150}, MIN_KUEHL={tafel:45,qba:53,kab:68,spat:78,aus:88,ba:118,tba:150};
 // Boni je Gebiet, ohne Eintrag gilt 1 oder 0: preisF (Faktor auf jeden Preis), wettPlus (Punkte bei Wettbewerben),
 // seit 6.0 (Schritt 3) ertragF (Faktor auf die Lese-Menge) und sektPreisF (Faktor auf den Sekt-Preis). Steckbrief und Gegner rechnen sie mit (regionF).
@@ -304,8 +304,8 @@ const REGIONEN={
   rheingau:{name:'Rheingau',sorten:['riesling','spaetb','silvaner'],warm:0,edelSpatF:.5,frost:.25,preisF:1.1,text:'Berühmtes Riesling-Land: Jeder Wein bringt 10 % mehr Geld. Normale Hürden, Auslese ab 95°.',min:MIN_NORMAL},
   rheinhessen:{name:'Rheinhessen',sorten:['mueller','silvaner','portug'],warm:3,edelF:1.1,frost:.12,text:'Warmes Silvaner-Land: mehr Zucker und öfter Edelfäulnis, dafür selten Frost für Eiswein. Normale Hürden, Auslese ab 95°.',min:MIN_NORMAL},
   pfalz:{name:'Pfalz',sorten:['riesling','mueller','portug'],warm:3,edelF:1.1,frost:.10,text:'Warm mit milden Wintern: mehr Zucker und öfter Edelfäulnis, dafür kaum Frost für Eiswein. Normale Hürden, Auslese ab 95°.',min:MIN_NORMAL},
-  franken:{name:'Franken',sorten:['silvaner','mueller','spaetb'],warm:-11,edelAus:true,frost:.45,text:'Kühle Silvaner-Heimat mit kalten Wintern, Eiswein-Land. Weniger Zucker, niedrigere Hürden, Auslese ab 88°.',min:MIN_KUEHL},
-  wuerttemberg:{name:'Württemberg',sorten:['troll','riesling','spaetb'],warm:-11,edelAus:true,frost:.43,text:'Kühles Rotwein-Land mit Trollinger und kalten Wintern, Eiswein-Land. Weniger Zucker, niedrigere Hürden, Auslese ab 88°.',min:MIN_KUEHL}
+  franken:{name:'Franken',sorten:['silvaner','mueller','spaetb'],warm:-10,edelAus:true,frost:.45,text:'Kühle Silvaner-Heimat mit kalten Wintern, Eiswein-Land. Weniger Zucker, niedrigere Hürden, Auslese ab 88°.',min:MIN_KUEHL},
+  wuerttemberg:{name:'Württemberg',sorten:['troll','riesling','spaetb'],warm:-10,edelAus:true,frost:.43,text:'Kühles Rotwein-Land mit Trollinger und kalten Wintern, Eiswein-Land. Weniger Zucker, niedrigere Hürden, Auslese ab 88°.',min:MIN_KUEHL}
 };
 // Eignung der Rebsorte im Gebiet: 1 = sehr gut, .85 = gut, .7 = geht noch. Wirkt als Faktor auf die Qualitätspunkte.
 const EIGNUNG={mosel:{riesling:1,mueller:.85,spaetb:.7},rheingau:{riesling:1,spaetb:.85,silvaner:.7},rheinhessen:{silvaner:1,mueller:.85,portug:.7},
@@ -359,20 +359,21 @@ const START_JAHR=2027, LANDWERT=15000, START_GELD=60000;
 // Jede Weinhandlung nimmt im Monat 1 bis LADEN_MAX mal LADEN_MENGE Flaschen, seit Paket 9 nur Wein, der zu ihrem Wunsch passt (ladenPasst).
 // Seit 5.1 (Paket 10) kommen je bepflanztem Hektar über HA_FREI LADEN_HA Flaschen dazu, über denselben Flächenwert wie MARKT_HA (haUeber). Sie zahlen LADEN_AUF mal den Listenpreis. Der Wein im Keller zählt beim Vermögen nur mit WEIN_WERT seines Listenwerts und höchstens mit dem, was der Großhandel in einem Jahr zum vollen Preis kauft.
 // Die Gegner fangen mit GEGNER_START ihrer Stärke an und wachsen über GEGNER_JAHRE Jahre auf GEGNER_ENDE.
-const HA_FREI=3, HA_KOSTEN_KLEIN=50, HA_KOSTEN=300, MARKT_FREI=3000, MARKT_RANG=250, MARKT_EXPORT=1000, MARKT_HA=450, MARKT_MIN=.25, MARKT_BREIT=.75, GEGNER_START=.5, GEGNER_ENDE=1.4, GEGNER_JAHRE=25, LADEN_MENGE=30, LADEN_HA=5, LADEN_MAX=3, LADEN_AUF=1.2, WEIN_WERT=.5;
+const HA_FREI=3, HA_KOSTEN_KLEIN=50, HA_KOSTEN=300, MARKT_FREI=3000, MARKT_RANG=250, MARKT_EXPORT=1000, MARKT_HA=900, MARKT_MIN=.25, MARKT_BREIT=.75, GEGNER_START=.5, GEGNER_ENDE=4, GEGNER_JAHRE=100, LADEN_MENGE=30, LADEN_HA=5, LADEN_MAX=3, LADEN_AUF=1.2, WEIN_WERT=.5;
 const WO={mosel:'an der Mosel',rheingau:'im Rheingau',rheinhessen:'in Rheinhessen',pfalz:'in der Pfalz',franken:'in Franken',wuerttemberg:'in Württemberg'};
 // Zehn Stufen. ha ist beim Spieler die bepflanzte Fläche (flaecheBep), bei den Gegnern ihre Fläche.
+// Hürden seit 7.0 (Schritt H, 16.11.2026): abgestimmt auf rund 120 Spieljahre. Der Test-Spieler wird auf Mittel in der Mitte in Jahr 109 Präsident (h16_gesamt_warm10).
 const RAENGE=[
   {name:'Neuling',kurz:'Neuling',ans:0,ha:0,verm:0,rahmen:20000},
   {name:'Jungwinzer',kurz:'Jungwinzer',ans:15,ha:3,verm:100000,rahmen:40000,neu:'du darfst bei Auktionen mitbieten, {sorte}, Kellerausbau'},
-  {name:'Winzer',kurz:'Winzer',ans:50,ha:4,verm:180000,rahmen:80000,neu:'Sekt, der Exporthandel'},
-  {name:'Winzermeister',kurz:'Winzermeister',ans:100,ha:5,verm:300000,rahmen:160000,neu:'Landesprämierung, Erntemaschinen'},
-  {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',ans:170,ha:6,verm:500000,rahmen:300000,neu:'{sorte}'},
-  {name:'Gutsherr',kurz:'Gutsherr',ans:250,ha:8,verm:750000,rahmen:300000,neu:'Bundeswettbewerb, der große Vollernter',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.'},
-  {name:'Weinbaurat',kurz:'Weinbaurat',ans:360,ha:10,verm:1200000,rahmen:300000,neu:'eine eigene Weinhandlung, das Amt des Weinbotschafters'},
-  {name:'Verbandsvorstand',kurz:'Vorstand',ans:480,ha:13,verm:1800000,rahmen:300000,neu:'das Hoffest, du kannst Kontrollen anregen'},
-  {name:'Vizepräsident',kurz:'Vizepräsident',ans:650,ha:16,verm:2400000,rahmen:300000,neu:'die Chance auf eine Spitzenlage'},
-  {name:'Präsident des Weinbauverbands',kurz:'Präsident',ans:850,ha:20,verm:3000000,rahmen:300000,neu:'der Sieg'}
+  {name:'Winzer',kurz:'Winzer',ans:60,ha:4,verm:250000,rahmen:80000,neu:'Sekt, der Exporthandel'},
+  {name:'Winzermeister',kurz:'Winzermeister',ans:150,ha:5,verm:600000,rahmen:160000,neu:'Landesprämierung, Erntemaschinen'},
+  {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',ans:300,ha:6,verm:1500000,rahmen:300000,neu:'{sorte}'},
+  {name:'Gutsherr',kurz:'Gutsherr',ans:500,ha:8,verm:3500000,rahmen:300000,neu:'Bundeswettbewerb, der große Vollernter',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.'},
+  {name:'Weinbaurat',kurz:'Weinbaurat',ans:700,ha:10,verm:6000000,rahmen:300000,neu:'eine eigene Weinhandlung, das Amt des Weinbotschafters'},
+  {name:'Verbandsvorstand',kurz:'Vorstand',ans:1250,ha:13,verm:12000000,rahmen:300000,neu:'das Hoffest, du kannst Kontrollen anregen'},
+  {name:'Vizepräsident',kurz:'Vizepräsident',ans:2800,ha:16,verm:16000000,rahmen:300000,neu:'die Chance auf eine Spitzenlage'},
+  {name:'Präsident des Weinbauverbands',kurz:'Präsident',ans:4600,ha:20,verm:24500000,rahmen:300000,neu:'der Sieg'}
 ];
 // Ab welcher Stufe (Index in RAENGE) etwas geht. RANG_ALT rechnet die sechs Ränge alter Spielstände um.
 const R_MAX=RAENGE.length-1, R_AUKTION=1, R_LAND=3, R_BUND=5, R_LADEN=6, R_HOFFEST=7, R_SPITZE=8, RANG_ALT=[0,1,3,5,7,9];
@@ -389,12 +390,12 @@ function sektFrei(){return S.rang>=R_SEKT}
 // Kosten und Lohn stehen bis Schritt H auf 0 (neutral, wie der frühere Verwalter). Startwerte für Schritt H: 5.000 / 20.000 / 60.000 € und 500 / 1.000 / 2.000 € im Monat.
 // Schritt E: Handel 3 (Regal, Wettbewerb, Fest), Keller 2 (Sekt, seit Schritt F dazu Keltern mit Fassraum), Keller 3 (schnellere Reife, über MGR_REIFE und MGR_REIFE_MIN, kein Schalter).
 // Spielstand: S.manager={handel|keller|weingut:{stufe,an:{aufgabe:1},zuletzt,puffer}}, die Reserve der Daueraufträge wie bisher in S.dauer.reserve.
-const MGR_KOSTEN=[0,0,0], MGR_LOHN=[0,0,0];
+const MGR_KOSTEN=[5000,20000,60000], MGR_LOHN=[500,1000,2000];
 // Schritt E: Geldgrenze für Sekt (Kellermeister) und Fest (Handels-Manager). So viel bleibt mindestens auf dem Konto, Auswahl im Manager-Fenster.
 const MGR_PUFFER=[0,20000,50000,100000,250000], MGR_PUFFER_START=20000;
 // Schritt E: Kellermeister Stufe 3, Wein reift bei ihm schneller und besser. Wirkt wie eine zusätzliche Stufe Kellerausbau:
-// MGR_REIFE auf die Reife-Rate (wie KELLER_REIFE), MGR_REIFE_MIN Monate früher verkaufsreif. Bis Schritt H neutral auf 0, Startwerte dort 0,1 und 1.
-const MGR_REIFE=0, MGR_REIFE_MIN=0;
+// MGR_REIFE auf die Reife-Rate (wie KELLER_REIFE), MGR_REIFE_MIN Monate früher verkaufsreif. Seit Schritt H 0,1 und 1 (vorher neutral auf 0).
+const MGR_REIFE=.1, MGR_REIFE_MIN=1;
 function mgrReife(){return mgrSt('keller')>=3?{rate:MGR_REIFE,min:MGR_REIFE_MIN}:{rate:0,min:0}}
 // Schritt F: tab ist der Hauptreiter, in dem die Zeile des Managers oben steht. bild bleibt leer bis Schritt I (Porträt in bilder/), bis dahin zeigt die Zeile das Symbol.
 const MGR_BEREICHE={
@@ -451,11 +452,12 @@ const KAELTE=.25, ZUCKER_MAX=20, ZUCKER_ERLAUBT=10, SCHMIER_ANTEIL=.1, SCHMIER_M
 const STRAFE_MIN=10000, STRAFE_ANS=15, STRAFE_ANS_WEITER=5, BESTECH_MIN=5000, BESTECH_MAX=50000, BESTECH_NEIN_ANS=10;
 const SAB_KONTAKT=20000, SAB_MIN=5000, SAB_MAX=50000, SAB_AUFFLIEGEN=.2, SAB_STRAFE=30000, SAB_STRAFE_ANS=20, SAB_RANG=R_BUND;
 const SAB={gift:['🧪 Wein vergiften','Sein bester Fasswein ist hin.'],buch:['📖 Kellerbuch fälschen','Seine Weine stehen als gepanscht im Buch. Bei seiner nächsten Kontrolle zahlt er Strafe und verliert Ansehen.'],berg:['🪓 Im Weinberg wüten','Ein Viertel seiner Reben und Flaschen ist weg.']};
-// ki: Tempo der Gegner, eingestellt mit dem Test-Spieler am 15.11.2026. Der erste Gegner wird Präsident nach rund 40 (Schwer), 50 (Mittel) und 70 Jahren (Einfach).
+// ki: Tempo der Gegner, eingestellt mit dem Test-Spieler in Schritt H von 7.0 (16.11.2026). Der erste Gegner wird Präsident auf Schwer in Jahr 106 bis 112,
+// auf Mittel um Jahr 139, auf Einfach in 170 Jahren nie. Auf Schwer gewinnt der Test-Spieler etwa jede vierte Partie.
 const DIFF={
   einfach:{name:'Einfach',text:'Ansehen wächst schneller, die Gegner sind gemütlich.',ans:1.25,ki:.45,feld:-4},
   mittel:{name:'Mittel',text:'Ausgeglichen.',ans:1,ki:.6,feld:0},
-  schwer:{name:'Schwer',text:'Ansehen wächst langsamer, die Gegner sind stark.',ans:.8,ki:.9,feld:3}
+  schwer:{name:'Schwer',text:'Ansehen wächst langsamer, die Gegner sind stark.',ans:.9,ki:.77,feld:3}
 };
 const GEGNER_TYP={
   vorsicht:{name:'Hannelore Brück',art:'die Vorsichtige',eink:[9000,12000],ans:[8,12],biet:.4,med:.2,ws:[18,30],weine:['einen Kabinett','eine Spätlese','einen Qualitätswein']},
@@ -794,8 +796,12 @@ function rangFuer(ab,ans,ha,verm){let r=ab;while(r<R_MAX){const n=RAENGE[r+1];if
 function medHtml(l){return l.med&&l.med.length?`<div class="gold" style="font-size:14px">${l.med.map(esc).join(' · ')}</div>`:''}
 
 /* ================= Absatzwege ================= */
+// Seit 7.0 (Schritt H, Maik 16.11.2026): Federweißer nimmt der Weinhändler in jeder Menge zum vollen Inlandspreis ab.
+// Er zählt nicht gegen das Budget des Großhandels (S.absatz) und drückt den Preis nicht. Exporthandel gibt es für ihn nicht.
+const federHandel=l=>l.stufe==='feder'&&!l.sekt;
 function wege(l){
   const p=preis(l); if(!p) return [];
+  if(federHandel(l)) return [{name:'Weinhändler',flag:'🍂',p}];
   const W=[{name:'Inland',flag:'🇩🇪',p}];
   if(S.rang>=R_EXPORT) W.push({name:'Exporthandel',flag:'🌍',p:Math.round(p*EXPORT_F[exportArt(l)]*S.exLage.ex*100)/100});
   return W.sort((a,b)=>b.p-a.p);
@@ -1203,7 +1209,7 @@ function weinQualHtml(){
   const pr=st=>{const d=STUFEN[st];return `ab ${mindest(st)}° Öchsle, ${d.lese?LESE[d.lese]:'jede Leseart'}${d.edel===true?', mit Edelfäulnis':d.edel===false?', ohne Edelfäulnis':''}`};
   const reife=f=>so.map(id=>`${SORTEN[id].name} ${f(SORTEN[id].minL)}\u00a0Monate`).join(', ');
   return `${sbild('kellerbuch')}<h3>Weinlexikon</h3><p class="mut">Was ein Wein für jede Stufe braucht, mit den Hürden in ${R().name}.</p>`
-    +z('Federweißer',`ab ${m.tafel}° Öchsle, jede Leseart. Nur im Monat nach der Lese anmelden und abfüllen, gleich verkaufbar, hält 2\u00a0Monate.`)
+    +z('Federweißer',`ab ${m.tafel}° Öchsle, jede Leseart. Nur im Monat nach der Lese anmelden und abfüllen, gleich verkaufbar, hält 3\u00a0Monate.`)
     +z('Tafelwein',pr('tafel')+'.')
     +z('Qualitätswein',pr('qba')+'.')
     +['kab','spat','aus','ba','tba'].map(st=>z(STUFEN[st].name,pr(st)+'.')).join('')
@@ -1236,7 +1242,7 @@ function lager(l){const b=lagerBasis(l);return l.sekt?{min:9,max:b.max,rate:b.ra
 function lagerBasis(l){
   // Seit 7.0 (Schritt E) zählt der Kellermeister auf Stufe 3 wie ein Stück Kellerausbau dazu (mgrReife, bis Schritt H neutral).
   const so=SORTEN[l.sorte], mr=mgrReife(), K=(S.keller||0)+mr.min, rf=so.reife*(1+KELLER_REIFE*(S.keller||0)+mr.rate);
-  if(l.stufe==='feder') return {min:0,max:2,rate:0};
+  if(l.stufe==='feder') return {min:0,max:3,rate:0};
   if(l.stufe==='tafel'||l.stufe==='qba') return {min:2,max:Math.max(24,Math.round(so.maxL/3)),rate:rf/2};
   if(l.stufe==='eis') return {min:Math.max(1,Math.round(so.minL*1.5)-K),max:Infinity,rate:rf};
   return {min:Math.max(1,so.minL-K),max:so.maxL,rate:rf};
@@ -1906,8 +1912,8 @@ function dauerAuftrag(){
     const p=ladenPreis(l,r); kassiere(Math.round(n*p)); la.rest-=n; l.liter-=n; nL+=n; eL+=n*p;
   }
   if(aH) for(const l of ls()){
-    const w=wege(l)[0]; if(!w) continue; const n=Math.min(frei(l),Math.floor(marktRest()/w.p)); if(n<=0) continue;
-    kassiere(Math.round(n*w.p)); S.absatz=(S.absatz||0)+n*w.p; l.liter-=n; nH+=n; eH+=n*w.p;
+    const w=wege(l)[0]; if(!w) continue; const fw=federHandel(l), n=fw?l.liter:Math.min(frei(l),Math.floor(marktRest()/w.p)); if(n<=0) continue;
+    kassiere(Math.round(n*w.p)); if(!fw) S.absatz=(S.absatz||0)+n*w.p; l.liter-=n; nH+=n; eH+=n*w.p;
   }
   S.lots=S.lots.filter(l=>l.liter>0);
   if(nL) L.push(`${num(nL)} Flaschen an Weinhandlungen für ${eur(eL)}`);
@@ -2270,7 +2276,7 @@ function vStadt(){
     if(fl.length&&!fl.some(l=>preis(l))){const b=fl.map(l=>({l,n:lager(l).min-l.flMonate})).sort((a,b)=>a.n-b.n)[0]; h+=`<div class="hilfe" style="margin-bottom:8px">⏳ Noch nichts verkaufsreif. Als Erstes reif: ${esc(lotName(b.l))} im ${inMonaten(b.n)}.</div>`}
     h+=fl.length?bsortChips()+fl.slice().sort(BSORT_F[BSORT]).map(l=>{const W=wege(l),L=lager(l),H=haltText(l),kopf=`<b>${dot(l.sorte)}${esc(lotName(l))}${l.med&&l.med.length?' 🏅':''}</b>`,z2=`<div class="bz2">${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte</div>`,z3=`<div class="bz3 ${H.r<=2?'rot':''}">${H.t}</div>`;
       if(!W.length){const n=L.min-l.flMonate; return `<button class="bzeile" data-a="buchDetail" data-id="${l.id}"><div class="bz1">${kopf}<span>reif in ${n} ${n===1?'Monat':'Monaten'}</span></div>${z2}${z3}</button>`}
-      const w=W[0]; return `<button class="bzeile" data-a="verkaufen" data-id="${l.id}"><div class="bz1">${kopf}<span>${w.name==='Inland'?'':w.flag+' '}${eur2(w.p*mf)}${mf<.995?' 📉':''}</span></div>${z2}${z3}</button>`}).join(''):'<div class="card mut">Kein Flaschenwein im Lager. Wein aus dem Fass meldest du im Rathaus an und füllst ihn danach im Keller ab. Tafel- und Qualitätswein sind zwei Monate danach verkaufsreif.</div>';
+      const w=W[0]; return `<button class="bzeile" data-a="verkaufen" data-id="${l.id}"><div class="bz1">${kopf}<span>${w.name==='Inland'?'':w.flag+' '}${eur2(w.p*(federHandel(l)?1:mf))}${mf<.995&&!federHandel(l)?' 📉':''}</span></div>${z2}${z3}</button>`}).join(''):'<div class="card mut">Kein Flaschenwein im Lager. Wein aus dem Fass meldest du im Rathaus an und füllst ihn danach im Keller ab. Tafel- und Qualitätswein sind zwei Monate danach verkaufsreif.</div>';
   }
   if(SUB==='laeden'){
     const n=S.lots.filter(ladenOk).length;
@@ -2897,10 +2903,10 @@ const AKT={
       info:n=>`<b>auf ${ma.zustand+n}\u00a0%</b>kostet ${eur(n*W)}`,ok:n=>{fx('stempel');zahle(n*W);ma.zustand+=n}});
   },
   verkaufen(d){
-    const l=lot(d.id), w=wege(l)[0]; if(!w||l.regal) return; const p=w.p;
-    mengeSheet({titel:`${lotName(l)} verkaufen`,text:`${w.flag} ${w.name}: ${eur2(p)} je Flasche. ${marktRest()?`Zum vollen Preis kauft der Großhandel diesen Monat noch für ${eur(marktRest())}, danach sinkt er.`:'Der Markt ist diesen Monat satt, der Preis ist gedrückt. Nächsten Monat zahlt der Großhandel wieder voll.'} Was du behältst, reift weiter.`,max:l.liter,rangeStep:1,step:l.liter>2000?100:l.liter>200?10:1,start:Math.min(l.liter,Math.floor(marktRest()/p)||l.liter),okText:'Verkaufen',
-      info:n=>{const f=marktF(n*p);return `<b>${num(n)} Flaschen</b>bringt dir ${eur(n*p*f)}${f<.995?`<br>📉 im Schnitt ${eur2(p*f)} je Flasche, der Markt ist satt`:''}`},
-      ok:n=>{kassiere(Math.round(n*p*marktF(n*p)));S.absatz=(S.absatz||0)+n*p;l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l)}});
+    const l=lot(d.id), w=wege(l)[0]; if(!w||l.regal) return; const p=w.p, fw=federHandel(l);
+    mengeSheet({titel:`${lotName(l)} verkaufen`,text:`${w.flag} ${w.name}: ${eur2(p)} je Flasche. ${fw?'Der Weinhändler nimmt Federweißer in jeder Menge zum vollen Preis. Das zählt nicht gegen dein Budget beim Großhandel.':marktRest()?`Zum vollen Preis kauft der Großhandel diesen Monat noch für ${eur(marktRest())}, danach sinkt er.`:'Der Markt ist diesen Monat satt, der Preis ist gedrückt. Nächsten Monat zahlt der Großhandel wieder voll.'}${fw?'':' Was du behältst, reift weiter.'}`,max:l.liter,rangeStep:1,step:l.liter>2000?100:l.liter>200?10:1,start:fw?l.liter:Math.min(l.liter,Math.floor(marktRest()/p)||l.liter),okText:'Verkaufen',
+      info:n=>{const f=fw?1:marktF(n*p);return `<b>${num(n)} Flaschen</b>bringt dir ${eur(n*p*f)}${f<.995?`<br>📉 im Schnitt ${eur2(p*f)} je Flasche, der Markt ist satt`:''}`},
+      ok:n=>{kassiere(Math.round(n*p*(fw?1:marktF(n*p))));if(!fw)S.absatz=(S.absatz||0)+n*p;l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l)}});
   }
 };
 /* ================= Titelbild und Geschichte ================= */
