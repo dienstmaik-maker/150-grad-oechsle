@@ -145,6 +145,14 @@ input[type=text]{width:100%;font:inherit;padding:12px;border-radius:12px;border:
 .slval{text-align:center;font-size:15px;margin:8px 0}.slval b{font-size:24px;display:block}
 .wahl{display:block;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1.5px solid var(--line);margin:0 0 8px;font-weight:500}
 .wahl.an{border-color:var(--wein);box-shadow:0 0 0 2px var(--wein) inset}
+/* Version 7.0 (Schritt F): Zeile des Managers unter dem Kopfbild von Weingut, Kellerei und Stadt. Rundes Bild, bis Schritt I ein Platzhalter mit Symbol, die Stufe als Zahl am Bild. */
+.wahl.mgrinfo{display:flex;align-items:center;gap:12px;padding:8px 12px;margin:0 0 10px}
+.mgrinfo .mbild{position:relative;flex:0 0 48px;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:24px;background:radial-gradient(circle at 35% 30%,#fff8e8,#e3cd9e) center/cover;border:2px solid var(--wein)}
+.mgrinfo .mbild i{position:absolute;right:-5px;bottom:-5px;min-width:20px;height:20px;padding:0 4px;border-radius:10px;background:var(--wein);color:#fff;font:700 12px/20px system-ui,sans-serif;text-align:center;box-shadow:0 0 0 2px #f8f0dc}
+.mgrinfo .mtext{flex:1;min-width:0}.mgrinfo .mtext b{display:block;font-size:16px;line-height:1.3}
+.mgrinfo .mtext span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:13px;line-height:1.35;color:var(--mut)}
+.mgrinfo .pfeil{flex:0 0 auto;font-size:22px;color:var(--mut)}
+.mgrinfo.leer .mbild{border-style:dashed;filter:grayscale(.7);opacity:.75}
 .chips{display:flex;gap:6px;overflow-x:auto;margin:0 -16px 12px;padding:0 16px 4px}
 .chip{flex:none;min-height:40px;padding:6px 12px;font-size:14px;background:var(--card);color:var(--ink);border:1px solid var(--line)}
 .wq{padding:7px 0;border-bottom:1px solid var(--line)}.wq b{display:block}.wq span{font-size:14px}
@@ -379,7 +387,7 @@ function sektFrei(){return S.rang>=R_SEKT}
 // MANAGER: je Stufe der Bereich, die Stufe, ab welchem Rang (Index in RAENGE) sie geht und welche Aufgaben (Schlüssel aus MGR_AUFGABEN) sie dazubringt.
 // kosten: Einstellen (Stufe 1) oder Befördern, aus MGR_KOSTEN. lohn: Monatslohn auf dieser Stufe, aus MGR_LOHN, läuft über die Löhne.
 // Kosten und Lohn stehen bis Schritt H auf 0 (neutral, wie der frühere Verwalter). Startwerte für Schritt H: 5.000 / 20.000 / 60.000 € und 500 / 1.000 / 2.000 € im Monat.
-// Schritt E: Handel 3 (Regal, Wettbewerb, Fest), Keller 2 (Sekt), Keller 3 (schnellere Reife, über MGR_REIFE und MGR_REIFE_MIN, kein Schalter).
+// Schritt E: Handel 3 (Regal, Wettbewerb, Fest), Keller 2 (Sekt, seit Schritt F dazu Keltern mit Fassraum), Keller 3 (schnellere Reife, über MGR_REIFE und MGR_REIFE_MIN, kein Schalter).
 // Spielstand: S.manager={handel|keller|weingut:{stufe,an:{aufgabe:1},zuletzt,puffer}}, die Reserve der Daueraufträge wie bisher in S.dauer.reserve.
 const MGR_KOSTEN=[0,0,0], MGR_LOHN=[0,0,0];
 // Schritt E: Geldgrenze für Sekt (Kellermeister) und Fest (Handels-Manager). So viel bleibt mindestens auf dem Konto, Auswahl im Manager-Fenster.
@@ -388,10 +396,11 @@ const MGR_PUFFER=[0,20000,50000,100000,250000], MGR_PUFFER_START=20000;
 // MGR_REIFE auf die Reife-Rate (wie KELLER_REIFE), MGR_REIFE_MIN Monate früher verkaufsreif. Bis Schritt H neutral auf 0, Startwerte dort 0,1 und 1.
 const MGR_REIFE=0, MGR_REIFE_MIN=0;
 function mgrReife(){return mgrSt('keller')>=3?{rate:MGR_REIFE,min:MGR_REIFE_MIN}:{rate:0,min:0}}
+// Schritt F: tab ist der Hauptreiter, in dem die Zeile des Managers oben steht. bild bleibt leer bis Schritt I (Porträt in bilder/), bis dahin zeigt die Zeile das Symbol.
 const MGR_BEREICHE={
-  handel:{name:'Handels-Manager',sym:'🤝',ort:'Stadt'},
-  keller:{name:'Kellermeister',sym:'🍷',ort:'Keller'},
-  weingut:{name:'Weingut-Manager',sym:'🌿',ort:'Weingut'}
+  handel:{name:'Handels-Manager',sym:'🤝',ort:'Stadt',tab:'stadt',bild:''},
+  keller:{name:'Kellermeister',sym:'🍷',ort:'Keller',tab:'keller',bild:''},
+  weingut:{name:'Weingut-Manager',sym:'🌿',ort:'Weingut',tab:'gut',bild:''}
 };
 const MGR_AUFGABEN={
   laeden:{kurz:'Weinhandlungen beliefern',text:'Jeden Monat die Weinhandlungen mit passenden Weinen beliefern'},
@@ -402,6 +411,7 @@ const MGR_AUFGABEN={
   duengen:{kurz:'düngen',text:'Düngen, wenn der Boden mager wird'},
   helfer:{kurz:'Erntehelfer einstellen',text:'Fehlende Erntehelfer einstellen'},
   sekt:{kurz:'Sekt herstellen',text:'Sekt herstellen, bis die Sekt-Schwelle des Jahres erreicht ist, aus Qualitätswein und Kabinett'},
+  keltern:{kurz:'keltern und Fassraum kaufen',text:'Die Lese keltern und fehlenden Fassraum kaufen'},
   regal:{kurz:'Regal füllen',text:'Das Regal deiner Weinhandlung füllen'},
   wett:{kurz:'Wettbewerbe',text:'Den besten Wein zu Landesprämierung und Bundeswettbewerb einreichen'},
   fest:{kurz:'Fest ausrichten',text:'Jedes Jahr das Weinfest oder Hoffest ausrichten, bei Sonne oder spätestens im August'}
@@ -412,7 +422,7 @@ const MANAGER=[
   {bereich:'keller',stufe:1,rang:3,aufgaben:['flaschen','lager']},
   {bereich:'weingut',stufe:1,rang:4,aufgaben:['reben']},
   {bereich:'handel',stufe:2,rang:4,aufgaben:['handel']},
-  {bereich:'keller',stufe:2,rang:5,aufgaben:['sekt']},
+  {bereich:'keller',stufe:2,rang:5,aufgaben:['sekt','keltern']},
   {bereich:'weingut',stufe:2,rang:6,aufgaben:['duengen']},
   {bereich:'handel',stufe:3,rang:7,aufgaben:['regal','wett','fest']},
   {bereich:'weingut',stufe:3,rang:8,aufgaben:['helfer']},
@@ -1233,7 +1243,7 @@ function neuesSpiel(){
 function verfallListe(){
   const v=[];
   for(const l of S.lots){
-    if(l.status==='trauben') v.push(`${num(l.liter)}\u00a0l ${SORTEN[l.sorte].name}-Trauben sind nicht gekeltert`);
+    if(l.status==='trauben') v.push(`${num(l.liter)}\u00a0l ${SORTEN[l.sorte].name}-Trauben sind nicht gekeltert${l.mgrNot&&aufgabeAktiv('keltern')?(l.mgrNot==='geld'?`, dein ${MGR_BEREICHE.keller.name} kauft keinen Fassraum unter deiner Geldgrenze`:`, deinem ${MGR_BEREICHE.keller.name} fehlen Lagerarbeiter für mehr Fassraum`):''}`);
     else if(l.status==='fass'&&l.stufe==='feder') v.push(`Federweißer ${l.jahrgang} ${SORTEN[l.sorte].name} ist nicht abgefüllt`);
     else if(l.status==='fass'&&l.fassMonate>=7) v.push(`${lotName(l)} liegt zu lange im Fass`);
     else if(l.status==='flasche'&&l.flMonate>=lager(l).max) v.push(`${lotName(l)} hat seine Haltbarkeit erreicht`);
@@ -1570,7 +1580,7 @@ function aufgaben(){
   if(S.wett&&!S.wett.fertig&&!S.wett.ein&&S.rang>=wettRang()&&!aufgabeAktiv('wett')) A.push({t:`🏅 ${WETTNAME[S.wett.typ]}: diesen Monat einen Wein einreichen`,akt:'wettbewerb'});
   if(fehlText()) A.push({t:`${fehlText()}, vorher geht es nicht in den nächsten Monat`,rot:1,tab:'stadt',sub:'arbeit'});
   if(m>=5&&m<=10&&leseFaktor()<1&&R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)) A.push({t:`Ernteleistung reicht nur für ${Math.round(leseFaktor()*100)}\u00a0% der Reben`,rot:1,tab:'stadt',sub:'arbeit'});
-  for(const l of S.lots) if(l.status==='trauben') A.push({t:`${SORTEN[l.sorte].name}-Trauben müssen diesen Monat gekeltert werden`,rot:1,tab:'keller'});
+  for(const l of S.lots) if(l.status==='trauben') A.push(aufgabeAktiv('keltern')?{t:`${SORTEN[l.sorte].name}-Trauben: dein ${MGR_BEREICHE.keller.name} keltert beim Weiterblättern`,tab:'keller',ruhig:1}:{t:`${SORTEN[l.sorte].name}-Trauben müssen diesen Monat gekeltert werden`,rot:1,tab:'keller'});
   for(const l of S.lots) if(l.status==='fass'){
     if(l.stufe==='feder') A.push({t:`Federweißer ${SORTEN[l.sorte].name} muss diesen Monat abgefüllt werden`,rot:1,tab:'keller'});
     else if(l.fassMonate>=5) A.push({t:`${lotName(l)}: verdirbt im Fass in ${8-l.fassMonate} Monaten`,rot:1,tab:l.stufe?'keller':'stadt',sub:l.stufe?'':'amt'});
@@ -1710,7 +1720,8 @@ function vMonat(){
   <div class="ifuss"><button data-a="infoWeiter">${k.ende?'Weiterspielen':'Weiter'} ▶</button></div><div class="ischw"></div></div>`;
 }
 // Kopf jeder Ansicht: das Bild des Ortes mit dem Titel darin.
-function kopf(titel){return ortBild(titel)}
+// Seit 7.0 (Schritt F) steht in Weingut, Kellerei und Stadt darunter die Zeile des zuständigen Managers (mgrInfo).
+function kopf(titel){return ortBild(titel)+mgrInfo()}
 function vGut(){
   const T={berg:'Weinberg',betrieb:S.name,aktuell:'Aktuelles',maschinen:'Maschinen',buero:'Büro'};
   return kopf(T[SUB])+{berg:vBerg,betrieb:vBetrieb,aktuell:vAktuell,maschinen:vMaschinen,buero:vBuero}[SUB]();
@@ -1818,8 +1829,19 @@ function dauerHtml(k){
   ${reserveChips()}`:''}</div>`;
 }
 // Version 7.0 (Schritt D): Manager im Betrieb (statt Gutsverwalter), im Arbeitsamt und als Fenster von unten.
-// Schritt F setzt die Zeile oben in Weingut, Keller und Stadt davor, die dasselbe Fenster öffnet (AKT.mgr).
+// Seit Schritt F steht oben in Weingut, Keller und Stadt die Zeile des Managers (mgrInfo), die dasselbe Fenster öffnet (AKT.mgr).
 function mgrZeile(b){const M=MGR_BEREICHE[b], st=mgrSt(b), e=mgrEintrag(b,1); return `${M.sym} ${M.name}: ${st?`Stufe ${st}`:S.rang>=e.rang?'noch nicht eingestellt':`ab dem Rang ${RAENGE[e.rang].name}`}`}
+// Schritt F: Zeile des Managers unter dem Kopfbild. Rundes Bild mit der Stufe als Zahl, Titel und Stufe, ein Satz, was er zuletzt erledigt hat.
+// Ohne Manager steht dort, ab welchem Rang es ihn im Arbeitsamt gibt. Ein Tipp öffnet sein Fenster von unten (AKT.mgr), oben wird nur angezeigt.
+function mgrWann(z){const j=Math.floor(z/12); return MON[z%12]+(j!==S.jahr?' '+j:'')}
+function mgrInfo(){
+  const b=Object.keys(MGR_BEREICHE).find(k=>MGR_BEREICHE[k].tab===TAB); if(!b) return '';
+  const M=MGR_BEREICHE[b], st=mgrSt(b), e=mgrEintrag(b,1), m=(S.manager||{})[b]||{}, A=MANAGER.filter(x=>x.bereich===b&&x.stufe<=st).flatMap(x=>x.aufgaben);
+  const t=!st?(S.rang>=e.rang?'Kannst du jetzt im Arbeitsamt einstellen.':`Gibt es ab dem Rang ${RAENGE[e.rang].name} im Arbeitsamt.`)
+    :A.length&&!A.some(aufgabeAktiv)?'Alle Aufgaben sind aus. Tipp hier, um sie einzuschalten.'
+    :m.zuletzt?(m.zm!=null?mgrWann(m.zm)+': ':'')+m.zuletzt:'Legt beim nächsten Weiterblättern los.';
+  return `<button class="wahl mgrinfo${st?'':' leer'}" data-a="mgr" data-id="${b}"><span class="mbild"${M.bild?` style="background-image:url(bilder/${M.bild})"`:''}>${M.bild?'':M.sym}${st?`<i>${st}</i>`:''}</span><span class="mtext"><b>${M.name}${st?` · Stufe ${st}`:''}</b><span>${esc(t)}</span></span><span class="pfeil">›</span></button>`;
+}
 function mgrHtml(){
   if(S.rang<Math.min(...MANAGER.map(e=>e.rang))) return '';
   return `<div class="card"><h3>🧑‍💼 Deine Manager</h3><div class="mut" style="margin-bottom:8px">Sie erledigen beim Weiterblättern, was du einschaltest, und berichten im Winzerboten. Einkäufe zahlen sie aus deiner Kasse. Eingestellt und befördert wird im Arbeitsamt.</div>
@@ -1852,7 +1874,7 @@ function mgrFenster(b){
   ${m.zuletzt?`<div class="kv"><span>Zuletzt</span><span>${esc(m.zuletzt)}</span></div>`:''}
   ${E.map(teil).join('')}
   ${b==='handel'&&(aufgabeAktiv('laeden')||aufgabeAktiv('handel')||aufgabeAktiv('regal'))?`<div class="mut" style="margin:8px 0 6px">Je Wein bleiben im Keller, außer kurz vorm Verderben:</div>${reserveChips()}`:''}
-  ${b==='keller'&&aufgabeAktiv('sekt')||b==='handel'&&aufgabeAktiv('fest')?`<div class="mut" style="margin:8px 0 6px">${b==='keller'?'Für Sekt':'Für das Fest'} gibt er nur so viel aus, dass mindestens das auf dem Konto bleibt:</div>${pufferChips(b)}`:''}
+  ${b==='keller'&&(aufgabeAktiv('sekt')||aufgabeAktiv('keltern'))||b==='handel'&&aufgabeAktiv('fest')?`<div class="mut" style="margin:8px 0 6px">${b==='keller'?'Für '+[aufgabeAktiv('sekt')&&'Sekt',aufgabeAktiv('keltern')&&'Fassraum'].filter(Boolean).join(' und '):'Für das Fest'} gibt er nur so viel aus, dass mindestens das auf dem Konto bleibt:</div>${pufferChips(b)}`:''}
   ${mgrNaechste(b)?kz('',mgrKnopf(b)):''}
   <div class="btns"><button class="sec" data-a="close">Zurück</button></div>`;
 }
@@ -1879,6 +1901,24 @@ function mgrBetrieb(){
     if(n>0){zahle(Math.round(n*pr*100)/100); const f=S.felder[id]; f.reben+=n; f.jung+=n; S.verlust[id]-=n; LW.push(`${num(n)} ${SORTEN[id].name}-Reben nachgepflanzt`)}
   }
   if(aufgabeAktiv('duengen')&&S.duengungen<3&&S.boden<100&&(S.boden<=70||(m===7&&S.boden<90))&&S.geld>=DUENGER_HA*S.ha){zahle(DUENGER_HA*S.ha); S.duengungen++; S.boden=Math.min(100,S.boden+30); LW.push('gedüngt')}
+  // Schritt F: Kellermeister ab Stufe 2 keltert die Lese beim Weiterblättern und kauft fehlenden Fassraum in Schritten von 500 l wie von Hand.
+  // Für den Kauf lässt er mgrPuffer auf dem Konto, fehlende Lagerarbeiter stellt er nur mit der Aufgabe 'lager' ein. Reicht es nicht, bleiben die Trauben liegen
+  // und die "Letzte Warnung" nennt den Grund (l.mgrNot). Mit Verlust keltern ("Trotzdem keltern") entscheidet nur der Spieler.
+  if(aufgabeAktiv('keltern')){
+    const pu=mgrPuffer('keller'), fp=fassPreis(); let kauf=0;
+    for(const l of S.lots.filter(l=>l.status==='trauben')){
+      const fehlt=l.liter-(S.fassraum-fassBelegt());
+      if(fehlt>0){
+        const n=Math.ceil(fehlt/500)*500, kost=Math.round(n*fp*100)/100;
+        if(la){let i=0; while(S.lagerarb*FASS_JE_LAGERARB<S.fassraum+n&&S.geld-pu>=VERMITTLUNG+kost&&i++<20) stell('lagerarb')}
+        if(S.lagerarb*FASS_JE_LAGERARB<S.fassraum+n){l.mgrNot='leute'; continue}
+        if(S.geld-pu<kost){l.mgrNot='geld'; continue}
+        zahle(kost); S.fassraum+=n; kauf+=n;
+      }
+      delete l.mgrNot; l.status='fass'; l.fassMonate=0; LK.push(`${num(l.liter)}\u00a0l ${SORTEN[l.sorte].name} gekeltert`);
+    }
+    if(kauf) LK.push(`${num(kauf)}\u00a0l Fassraum gekauft`);
+  }
   if(aufgabeAktiv('flaschen')) for(const l of S.lots.filter(l=>l.status==='fass'&&l.stufe)){
     const fehlt=l.liter-S.flaschen, fp=flaschePreis();
     if(fehlt>0){
@@ -1904,7 +1944,8 @@ function mgrBetrieb(){
 }
 function mgrPuffer(b){const p=((S.manager||{})[b]||{}).puffer; return MGR_PUFFER.includes(p)?p:MGR_PUFFER_START}
 // Berichte des Handels-Managers stehen wie die Daueraufträge als Zeile im Winzerboten (S.dauerLog).
-function handelMelde(L){if(!L.length) return; S.dauerLog=(S.dauerLog||[]).concat(L); S.manager.handel.zuletzt=S.dauerLog.join(', ')}
+// Seit Schritt F merkt sich jeder Manager mit zm (Jahr*12+Monat), wann er zuletzt berichtet hat, für die Zeile oben (mgrInfo).
+function handelMelde(L){if(!L.length) return; S.dauerLog=(S.dauerLog||[]).concat(L); S.manager.handel.zuletzt=S.dauerLog.join(', '); S.manager.handel.zm=S.jahr*12+S.monat}
 // Schritt E: Handels-Manager Stufe 3. Regal füllen (MGR_REGAL Monate Vorrat, nur Wein mit mindestens MGR_REGAL_HALT Monaten Haltbarkeit,
 // je Wein bleibt die Reserve der Daueraufträge, was kurz vorm Verderben im Regal steht, nimmt er für den Dauerauftrag heraus),
 // den besten zugelassenen Wein zum Wettbewerb einreichen (wie die Liste in AKT.wettbewerb sortiert), das Fest bei Sonne oder spätestens im August ausrichten.
@@ -1935,7 +1976,7 @@ function mgrHandel(){
   }
   handelMelde(L); if(L.length) save();
 }
-function mgrMelde(b,L){if(!L.length) return; S.mgrLog=S.mgrLog||{}; S.mgrLog[b]=(S.mgrLog[b]||[]).concat(L); S.manager[b].zuletzt=L.join(', ')}
+function mgrMelde(b,L){if(!L.length) return; S.mgrLog=S.mgrLog||{}; S.mgrLog[b]=(S.mgrLog[b]||[]).concat(L); S.manager[b].zuletzt=L.join(', '); S.manager[b].zm=S.jahr*12+S.monat}
 // Alles, was die Manager beim Weiterblättern erledigen (früher verwalter() und dauerAuftrag()).
 function managerArbeit(){mgrBetrieb(); mgrHandel(); dauerAuftrag()}
 // Aktuelles: der Rang und darunter die anklickbaren Hinweise, die zur passenden Stelle führen.
@@ -2048,7 +2089,7 @@ function vKellerStart(){
     <div class="kv"><span>Fassraum</span><span>${num(bel)} von ${num(S.fassraum)}\u00a0l</span></div><div class="bar w"><i style="width:${S.fassraum?bel/S.fassraum*100:0}%"></i></div>
     <div class="kv"><span>Leere Flaschen (1 l)</span><span>${num(S.flaschen)}</span></div>
     <div class="btns"><button class="klein sec" data-a="sub" data-id="lager">Zum Lager</button><button class="klein sec" data-a="sub" data-id="buch">Zum Kellerbuch</button></div></div>`;
-  h+=`<h3>Wein keltern</h3>`+(tr.length?tr.map(l=>`<div class="card"><b>${dot(l.sorte)}${SORTEN[l.sorte].name}</b><div class="mut">${num(l.liter)}\u00a0l Trauben · ${l.oe}° Öchsle · ${LESE[l.leseart]}${mani(l)?' · 🤫 '+maniText(l):''}</div><div class="rot mut">Muss diesen Monat ins Fass, sonst verdirbt alles.</div><div class="btns"><button data-a="keltern" data-id="${l.id}">Keltern</button></div></div>`).join(''):'<div class="card mut">Keine Trauben im Kelterhaus.</div>');
+  h+=`<h3>Wein keltern</h3>`+(aufgabeAktiv('keltern')?`<div class="hilfe" style="margin-bottom:8px">🍷 Dein ${MGR_BEREICHE.keller.name} keltert beim Weiterblättern und kauft fehlenden Fassraum dazu.</div>`:'')+(tr.length?tr.map(l=>`<div class="card"><b>${dot(l.sorte)}${SORTEN[l.sorte].name}</b><div class="mut">${num(l.liter)}\u00a0l Trauben · ${l.oe}° Öchsle · ${LESE[l.leseart]}${mani(l)?' · 🤫 '+maniText(l):''}</div><div class="rot mut">Muss diesen Monat ins Fass, sonst verdirbt alles.</div><div class="btns"><button data-a="keltern" data-id="${l.id}">Keltern</button></div></div>`).join(''):'<div class="card mut">Keine Trauben im Kelterhaus.</div>');
   h+=`<h3>Wein in Flaschen abfüllen</h3>`+(fa.length?fa.map(l=>`<div class="card"><b>${dot(l.sorte)}${lotName(l)}</b>
     <div class="mut">${num(l.liter)}\u00a0l · ${l.oe}° Öchsle · seit ${l.fassMonate} ${l.fassMonate===1?'Monat':'Monaten'} im Fass</div>
     <div class="mut ${l.fassMonate>=5?'rot':''}">Verdirbt in ${8-l.fassMonate} Monaten, wenn er nicht abgefüllt ist.</div>
@@ -2266,7 +2307,7 @@ function render(){
   <main>${v}</main>
   <nav id="dock">${SUBS[TAB]?`<div id="subs">${SUBS[TAB].map(s=>`<button class="${SUB===s[0]?'an':''}" data-a="sub" data-id="${s[0]}"><i>${s[1]}</i><b>${SUB_NAME[s[0]]}</b>${SUB===s[0]?'':badge(B[TAB+'/'+s[0]])}</button>`).join('')}</div>`:''}<div id="tabs">${tabs.map(t=>`<button class="${TAB===t[0]?'an':''}" data-a="tab" data-id="${t[0]}"><span>${t[1]}</span>${t[2]}${badge(B[t[0]])}</button>`).join('')}<button id="weiter" class="${fehlt?'zu':''}" data-a="weiter"><span>${fehlt?'🔒':'▶'}</span>${fehlt?'Leute fehlen':'Nächster Monat'}</button></div></nav>`;
   // Orte ohne eigenen Erklärtext bekommen das "Kurz gesagt" aus ihrem Buchkapitel, damit alle 14 gleich aussehen.
-  const kb=buchKap().find(k=>k.id===BUCH_ORT[SUB]); if(kb&&!$('main>.mut')&&$('main>.pano')) $('main>.pano').insertAdjacentHTML('afterend',`<div class="mut">${kb.kurz}</div>`);
+  const kb=buchKap().find(k=>k.id===BUCH_ORT[SUB]); if(kb&&!$('main>.mut')&&$('main>.pano')) ($('main>.mgrinfo')||$('main>.pano')).insertAdjacentHTML('afterend',`<div class="mut">${kb.kurz}</div>`);
   [...document.querySelectorAll('main>.mut')].forEach((el,i)=>{const lang=el.textContent.length>110; el.classList.add('info'); el.dataset.a='infoAuf';
     el.innerHTML=`<span class="it">${el.innerHTML}</span>${i===0&&BUCH_ORT[SUB]?mib(BUCH_ORT[SUB]):''}`; if(lang&&!INFO_AUF.has(TAB+'/'+SUB)) el.classList.add('zu')});
   panoStell();
