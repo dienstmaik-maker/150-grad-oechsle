@@ -462,6 +462,24 @@ const GEGNER_TYP={
   qualitaet:{name:'Konrad Steinfeld',art:'der Qualitätsfanatiker',eink:[8000,13000],ans:[10,15],biet:.45,med:.45,ws:[26,42],weine:['eine Auslese','eine Beerenauslese','eine Spätlese','eine Trockenbeerenauslese']},
   zocker:{name:'Ricky Maurer',art:'der Zocker',eink:[-1000,21000],ans:[4,12],biet:.5,med:.25,ws:[14,40],weine:['einen Tafelwein','eine Auslese','einen Kabinett','eine Beerenauslese']}
 };
+// Version 7.0 (Schritt G): Generationswechsel nach dem Fundament aus Schritt A. Zum Jahreswechsel nach je GEN_JAHRE Spieljahren übernimmt die nächste Generation (S.gen).
+// Es bleiben Fläche, Reben, Keller, Wein, Maschinen, Leute, Manager, Exporthandel, alle Freischaltungen und der Rang. Vom Ansehen bleibt ERB_ANSEHEN,
+// die Erbschaftssteuer ERB_STEUER geht aufs Vermögen (vermoegen, bei den Gegnern gVerm), damit Landkauf kurz vorher nichts spart.
+// Reicht das Geld nicht, wird der Rest ein Kredit über ERB_LAUFZEIT Monate (S.kredit.erb), der nicht gegen den Kreditrahmen zählt. Pleite geht daran niemand.
+// Die Zeitung kündigt die Übergabe GEN_VORAUS Jahre vorher an. Die Gegner übergeben nach denselben Regeln ein bis drei Jahre später (g.genVers) an einen Erben gleicher Art.
+// GEN_BILD sind Platzhalter, die Bilder mit der Flasche kommen in Schritt I.
+const GEN_JAHRE=40, ERB_ANSEHEN=.8, ERB_STEUER=.2, ERB_LAUFZEIT=48, GEN_VORAUS=2;
+const GEN_BILD={anfang:'keller',uebergabe:'weingut'};
+const ERB_NAMEN={t:['Anna','Lena','Marie','Johanna','Clara','Paula','Greta','Ida'],s:['Paul','Jonas','Felix','Lukas','Emil','Anton','Jakob','Karl']};
+const GEGNER_ERBE={
+  vorsicht:{namen:['Johanna','Margarete','Luise','Henriette','Mathilde','Ida'],text:(alt,neu,wo)=>`${alt} übergibt ihr Weingut ${wo} an ihre Tochter ${neu}. „Erst mal bleibt alles, wie es ist“, sagt die neue Chefin.`},
+  qualitaet:{namen:['Friedrich','Maximilian','Leopold','Ferdinand','Konstantin','Albrecht'],text:(alt,neu,wo)=>`${alt} übergibt sein Weingut ${wo} an seinen Sohn ${neu}. Der soll schon als Kind die Öchsle im Kakao gemessen haben.`},
+  zocker:{namen:['Kevin','Dustin','Marvin','Ronny','Jason','Mike'],text:(alt,neu,wo)=>`${alt} übergibt sein Weingut ${wo} an seinen Sohn ${neu}. Erste Amtshandlung: ein Sportwagen mit Weinkiste im Kofferraum.`}
+};
+function genNr(){return S.gen||1}
+function genJahr(n){return START_JAHR+GEN_JAHRE*n}
+function erbRest(){const k=S.kredit; return k&&k.erb?Math.min(k.erb,k.rest):0}
+function erbSchaetzung(){return Math.max(0,Math.round(vermoegen()*ERB_STEUER/100)*100)}
 // Version 7.0 (Schritt C): ein Exporthandel ab R_EXPORT statt der vier Länder. Er zahlt je nach Wein mehr als das Inland (EXPORT_F, die besten Werte der früheren Länder)
 // und nimmt mit jedem Rang mehr ab: Je Exportstufe steigt das Budget des Großhandels um MARKT_EXPORT, eine Stufe je Rang ab R_EXPORT, höchstens EXPORT_STUFEN.
 // Bis Schritt H so gestellt, dass ab Gutsherr dieselbe Menge wie früher mit vier Ländern geht. S.exLage.ex schwankt jeden Monat zwischen 0,9 und 1,12.
@@ -733,7 +751,7 @@ function altEdel(){
 function etappe3(n,schwer){
   Object.assign(S,{schwer,rang:0,v3:1,sieger:null,wett:null,auktion:null,sektJahr:0,exLage:{ex:1}});
   const typen=misch(['vorsicht','qualitaet','zocker']).slice(0,n), andere=misch(Object.keys(REGIONEN).filter(r=>r!==S.region));
-  S.gegner=typen.map((typ,i)=>({id:i,typ,name:GEGNER_TYP[typ].name,region:i===0&&Math.random()<.3?S.region:andere[i],ha:3,geld:40000,kredit:0,ansehen:0,rang:0}));
+  S.gegner=typen.map((typ,i)=>({id:i,typ,name:GEGNER_TYP[typ].name,region:i===0&&Math.random()<.3?S.region:andere[i],ha:3,geld:40000,kredit:0,ansehen:0,rang:0,gen:1,genVers:rint(1,3)}));
   neueLaeden(); S.absatz=0;
 }
 function zahle(b){S.geld-=b;S.jahrAus+=b}
@@ -919,6 +937,16 @@ function ereignisMonat(){
 
 /* ================= Computer-Winzer ================= */
 // Läuft einmal im Monat für jeden Gegner und liefert die Nachrichten des Monats.
+// Übergabe beim Gegner: neuer Vorname aus GEGNER_ERBE, Nachname und Art bleiben. Steuer aufs Vermögen, was fehlt, wird Kredit. Gibt die Zeitungsmeldung zurück.
+function gegnerErbe(g){
+  const E=GEGNER_ERBE[g.typ], teile=g.name.split(' '), vor=teile.shift(), fam=teile.join(' '), alt=g.name;
+  g.vornamen=(g.vornamen||[]).concat(vor);
+  const frei=E.namen.filter(x=>!g.vornamen.includes(x)), vn=(frei.length?frei:E.namen)[rint(0,(frei.length?frei:E.namen).length-1)];
+  const steuer=Math.max(0,Math.round(gVerm(g)*ERB_STEUER/100)*100), bar=Math.min(steuer,Math.max(0,g.geld));
+  g.geld-=bar; g.kredit+=steuer-bar; g.ansehen*=ERB_ANSEHEN;
+  g.name=vn+' '+fam; g.gen=(g.gen||1)+1; g.genVers=rint(1,3);
+  return E.text(alt,vn,WO[g.region]);
+}
 function gegnerMonat(){
   const N=[], m=S.monat, st0=DIFF[S.schwer].ki, neu=(p,t)=>N.push({p,t});
   for(const g of S.gegner){
@@ -932,6 +960,8 @@ function gegnerMonat(){
     if(g.pansch>0&&--g.pansch<=0) g.geruecht=false;
     // Auch die Gegner fangen mit kahlem Weinberg an: Jahr 1 bringt 20 %, Jahr 2 60 %, danach voll.
     if(m===0) g.jahre=(g.jahre||0)+1;
+    // Schritt G 7.0: Generationswechsel ein bis drei Jahre nach deinem, nach denselben Regeln.
+    if(m===0&&S.jahr-START_JAHR>=GEN_JAHRE*(g.gen||1)+(g.genVers||1)) neu(9,gegnerErbe(g));
     const auf=Math.min(1,.2+.4*((g.jahre||0)-1));
     // Aufstiegstempo: Die Gegner fangen gemütlich an und werden über die Jahre stärker.
     const st=st0*(GEGNER_START+(GEGNER_ENDE-GEGNER_START)*clamp(((g.jahre||1)-1)/GEGNER_JAHRE,0,1));
@@ -1234,7 +1264,7 @@ function neuesSpiel(){
   schlag(100,'Willkommen auf deinem Weingut',`${S.name} ${WO[S.region]} startet mit 3 Hektar kahlem Weinberg, leeren Fässern und ${eur(START_GELD)}. Bis März ist Pflanzzeit, im Weinberg pflanzt du deinen ${SORTEN[sortenFolge()[0]].name}. Die zweite und dritte Rebsorte bringt der Aufstieg. Im ersten Jahr tragen junge Reben nur die Hälfte.`,'weingut');
   schlag(50,'So kommst du herum','Unten wählst du Weingut, Kellerei oder Stadt, die Leiste darüber bringt dich zu den Orten. Wischen übers Bild geht auch. Ein Punkt am Reiter zeigt Neues oder Dringendes, ein Tipp aufs Geld öffnet die Kasse. Die ℹ️-Karte unter dem Bild erklärt jeden Ort, Spielstände, Ton und das Buch liegen im Büro.');
   schlag(40,'Leute für Weinberg und Keller','Je 1.000 Reben brauchst du das ganze Jahr einen Erntehelfer. Du hast einen, für mehr Reben stellst du vor dem Pflanzen beim Arbeitsamt in der Stadt ein. Der Lohn dort schwankt jeden Monat, wer eingestellt ist, behält seinen. Dein Lagerarbeiter betreut 10.000 l Fassraum und 20.000 leere Flaschen. Fehlen dir Leute, geht es nicht in den nächsten Monat.','arbeit');
-  schlag(30,'Die Konkurrenz schläft nicht','Deine Gegner: '+S.gegner.map(g=>`${g.name}, ${GEGNER_TYP[g.typ].art}, ${WO[g.region]}`).join('; ')+'. Wer zuerst Präsident des Weinbauverbands wird, gewinnt.');
+  schlag(30,'Die Konkurrenz schläft nicht','Deine Gegner: '+S.gegner.map(g=>`${g.name}, ${GEGNER_TYP[g.typ].art}, ${WO[g.region]}`).join('; ')+`. Wer zuerst Präsident des Weinbauverbands wird, gewinnt. Alle ${GEN_JAHRE} Jahre übernimmt bei allen die nächste Generation.`);
   S.bericht=zeitung([],[],[]);
   START=null; TAB='monat'; save(); render();
 }
@@ -1304,7 +1334,70 @@ function dorf(k){
   S.gesch=S.gesch||{}; if(S.gesch[k]||!DORF[k]) return; S.gesch[k]=1;
   schlag(45,'🏘️ '+DORF[k][0],fuelle(DORF[k][1]));
 }
+// ---- Schritt G 7.0: Generationswechsel und die Geschichte mit der Flasche vom ersten Jahrgang ----
+// GEN_TEXT: Schriftstücke von unten. anfang beim ersten abgefüllten Wein, g2 und g3 bei der ersten und zweiten Übergabe,
+// weiter bei jeder späteren, offen bei einer Übergabe, wenn du schon Präsident bist und die Flasche getrunken ist.
+const pz=x=>Math.round(x*100)+' %';
+const GEN_TEXT={
+  anfang:{t:'Eine Flasche für später',p:()=>['Der erste eigene Wein ist in der Flasche. Eine davon kommt nicht ins Lager, sondern in ein eigenes kleines Fach im Gewölbekeller. Aufs Etikett schreibst du: „Für den Tag, an dem einer von uns Präsident wird.“','Am Stammtisch lachen sie, als du davon erzählst. „Ob ich das selbst erlebe, weiß ich nicht“, sagst du. „Aber einer von uns macht sie auf.“','Die Ratte im Keller hat das Fach sofort begutachtet. Korken mag sie zum Glück nicht.'],
+    mut:()=>`Eine Partie kann über mehrere Generationen gehen. Alle ${GEN_JAHRE} Jahre übernimmt dein Kind das Weingut mit allem, was du aufgebaut hast. Wer zuerst Präsident wird, gewinnt, egal in welcher Generation.`},
+  g2:{t:'Der Schlüssel und die Flasche',p:()=>[`${GEN_JAHRE} Jahre nach dem ersten Spatenstich liegen zwei Dinge auf dem Küchentisch: der alte Kellerschlüssel und die Flasche vom ersten Jahrgang. Das Etikett ist schon ein wenig vergilbt.`,'„Den Schlüssel kannst du benutzen“, sagst du zu deinem Kind. „Die Flasche noch nicht.“']},
+  g3:{t:'Ein Satz, den jeder kennt',p:()=>[`${2*GEN_JAHRE} Jahre liegt die Flasche jetzt im Fach. Das Etikett ist vergilbt, die Schrift kaum noch zu lesen. Aber dein Kind kennt den Satz auswendig: „Für den Tag, an dem einer von uns Präsident wird.“`,'Am Stammtisch sitzen längst die Enkel derer, die damals gewettet haben. Gelacht wird nicht mehr. Der Schlüssel wechselt die Hand, die Flasche bleibt im Fach.']},
+  weiter:{t:'Wieder wechselt der Schlüssel',p:()=>['Noch eine Generation, noch ein Kellerschlüssel auf dem Küchentisch. Die Flasche liegt immer noch im Fach, und der Staub darauf ist älter als jeder im Haus.','„Irgendwann“, sagt man in der Familie, wenn jemand nach ihr fragt. Der Stuhl im Festsaal wartet auch noch.']},
+  offen:{t:'Der Schlüssel wechselt die Hand',p:()=>['Wieder liegt der alte Kellerschlüssel auf dem Küchentisch. Die Flasche vom ersten Jahrgang ist längst getrunken, ihr Etikett hängt gerahmt im Gutsbüro.','„Präsident waren wir schon“, sagst du zu deinem Kind. „Jetzt zeig, dass es kein Glück war.“']}
+};
+// Zum Januar: Ankündigung GEN_VORAUS Jahre vorher, Erinnerung ein Jahr vorher, dann die Übergabe.
+function generationMonat(Z){
+  if(S.monat!==0) return;
+  const j=S.jahr-START_JAHR, n=genNr();
+  if(j===GEN_JAHRE*n-GEN_VORAUS) schlag(68,`In ${GEN_VORAUS} Jahren übernimmt die nächste Generation`,`Die Jahre am Hang hinterlassen Spuren. Im Januar ${genJahr(n)} übergibst du ${S.name} an dein Kind. Bleiben wird alles, was du aufgebaut hast: Fläche, Reben, Keller, Wein, Maschinen, Leute, Manager und dein Rang. Vom Ansehen nimmt die nächste Generation ${pz(ERB_ANSEHEN)} mit, und das Finanzamt verlangt ${pz(ERB_STEUER)} vom Vermögen als Erbschaftssteuer, nach heutigem Stand rund ${eur(erbSchaetzung())}. Reicht das Geld nicht, leiht die Bank den Rest, auch über den Kreditrahmen hinaus.`,GEN_BILD.uebergabe);
+  else if(j===GEN_JAHRE*n-1) Z.push(`👪 Nächsten Januar übernimmt die nächste Generation. Erbschaftssteuer nach heutigem Stand rund ${eur(erbSchaetzung())}, vom Ansehen bleiben ${pz(ERB_ANSEHEN)}.`);
+  else if(j===GEN_JAHRE*n) uebergabe();
+}
+function uebergabe(){
+  const n=genNr(), v=vermoegen(), steuer=Math.max(0,Math.round(v*ERB_STEUER/100)*100), bar=Math.min(steuer,Math.max(0,S.geld)), kr=steuer-bar, ansVor=S.ansehen, alt=S.erbe||{};
+  S.geld-=bar;
+  if(kr>0){const k=S.kredit||(S.kredit={rest:0,tilgung:0}); k.rest+=kr; k.tilgung+=Math.ceil(kr/ERB_LAUFZEIT); k.erb=(k.erb||0)+kr}
+  S.ansehen=Math.round(S.ansehen*ERB_ANSEHEN);
+  (S.chronik=S.chronik||[]).push({n,name:alt.name||'',art:alt.art||'',von:genJahr(n-1),bis:S.jahr,rang:S.rang,ans:ansVor,verm:v,steuer,kredit:kr});
+  S.gen=n+1;
+  const wahl=a=>a[rint(0,a.length-1)];
+  S.erbe={k:S.flascheAuf?'offen':n===1?'g2':n===2?'g3':'weiter',offen:1,name:'',art:Math.random()<.5?'t':'s',vt:wahl(ERB_NAMEN.t),vs:wahl(ERB_NAMEN.s),steuer,kredit:kr,verm:v,ansVor,ans:S.ansehen};
+  schlag(97,`${S.name} in neuen Händen`,`Zum Jahreswechsel geht das Weingut ${WO[S.region]} an die ${n+1}. Generation. Erbschaftssteuer: ${eur(steuer)}${kr?`, davon ${eur(kr)} als Kredit bei der Bank`:''}. Vom Ansehen bleiben ${pz(ERB_ANSEHEN)}, jetzt ${S.ansehen}. Rang, Fläche, Keller, Wein und alle Leute bleiben.`,GEN_BILD.uebergabe,{gold:1,erbe:1});
+  if(window.BOT) erbeBenennen(S.erbe.art==='t'?S.erbe.vt:S.erbe.vs);
+}
+function erbeOffen(){return !!(S&&S.erbe&&S.erbe.offen)}
+function erbeVorschlag(){const e=S.erbe; return e.art==='s'?e.vs:e.vt}
+// Das Schriftstück zur Übergabe: Geschichte, Zahlen, dann Tochter oder Sohn und der Vorname. Bis zum Übergeben geht nichts anderes.
+function zeigeErbe(){
+  const e=S.erbe, T=GEN_TEXT[e.k]||GEN_TEXT.weiter, alt=$('#erbname'), name=alt?alt.value:e.name;
+  openSheet(`${sbild(GEN_BILD.uebergabe)}<h3>${esc(T.t)}</h3>${T.p().map(x=>`<p>${esc(x)}</p>`).join('')}
+    <p class="mut">Erbschaftssteuer: ${eur(e.steuer)}, ${pz(ERB_STEUER)} von ${eur(e.verm)} Vermögen.${e.kredit?` Davon leiht dir die Bank ${eur(e.kredit)} über ${ERB_LAUFZEIT} Monate, das zählt nicht gegen deinen Kreditrahmen.`:''} Ansehen: ${e.ansVor} vorher, ${e.ans} jetzt. Rang, Fläche, Keller, Wein, Leute und Manager bleiben.</p>
+    <h3>Wer übernimmt?</h3><div class="chips">${[['t','Die Tochter'],['s','Der Sohn']].map(([k,t])=>`<button class="chip ${e.art===k?'an':''}" data-a="erbeArt" data-id="${k}">${t}</button>`).join('')}</div>
+    <input type="text" id="erbname" maxlength="20" placeholder="${esc(erbeVorschlag())}" value="${esc(name)}">
+    <div class="btns"><button data-a="erbeJa">Übergeben</button></div>`);
+}
+function erbeBenennen(name){
+  const e=S.erbe; e.name=name; e.offen=0;
+  const b=S.bericht||{}, wer=e.art==='s'?'der Sohn':'die Tochter';
+  for(const x of [...TOP,b.kopf,...(b.art||[])]) if(x&&x.erbe&&!x.benannt){x.benannt=1; x.t=`${name} übernimmt ${S.name}`; x.text=`${name}, ${wer}, hat den Kellerschlüssel bekommen. `+x.text}
+}
+// Schriftstück ohne Eingabe (bisher nur der Anfang). S.erz merkt es bis zum nächsten Zeichnen, der Test-Spieler schließt es gleich wieder.
+function zeigeErz(){
+  const T=GEN_TEXT[S.erz]; S.erz=null; save(); if(!T) return;
+  openSheet(`${sbild(GEN_BILD[T===GEN_TEXT.anfang?'anfang':'uebergabe'])}<h3>${esc(T.t)}</h3>${T.p().map(x=>`<p>${esc(x)}</p>`).join('')}${T.mut?`<p class="mut">${esc(T.mut())}</p>`:''}<div class="btns"><button data-a="close">Weiter</button></div>`);
+}
+// Generationen-Chronik im Büro.
+function chronikHtml(){
+  const C=S.chronik||[], n=genNr(), e=S.erbe, wer=(nr,name,art)=>nr===1?'die Gründung':name?`${esc(name)}, ${art==='s'?'der Sohn':'die Tochter'}`:'die nächste Generation';
+  return `<div class="card"><h3>🕰️ Generationen-Chronik</h3><div class="mut" style="margin-bottom:6px">Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation. Vom Ansehen bleiben ${pz(ERB_ANSEHEN)}, ${pz(ERB_STEUER)} vom Vermögen gehen als Erbschaftssteuer weg, alles andere bleibt.</div>
+    ${C.map(c=>`<div class="rl"><span>${c.n}.</span><div><b>${c.von} bis ${c.bis}: ${wer(c.n,c.name,c.art)}</b><span class="mut">übergeben als ${RAENGE[c.rang].kurz} mit ${c.ans} Ansehen, Erbschaftssteuer ${eur(c.steuer)}</span></div></div>`).join('')}
+    <div class="rl du"><span>${n}.</span><div><b>seit ${genJahr(n-1)}: ${wer(n,e&&e.name,e&&e.art)}</b><span class="mut">${S.flascheAuf?'Die Flasche vom ersten Jahrgang ist getrunken. ':S.gesch&&S.gesch.flasche?'Die Flasche vom ersten Jahrgang liegt noch im Fach. ':''}Nächste Übergabe im Januar ${genJahr(n)}</span></div></div></div>`;
+}
 function geschichteMonat(){
+  // Schritt G 7.0: Beim ersten abgefüllten Wein (ohne Sekt) kommt die Flasche ins Fach. S.gesch.flasche merkt das Jahr.
+  S.gesch=S.gesch||{};
+  if(!S.gesch.flasche&&S.lots.some(l=>l.status==='flasche'&&!l.sekt)){S.gesch.flasche=S.jahr; S.erz='anfang'}
   if(S.jahr===START_JAHR&&S.lots.some(l=>l.status==='fass')) dorf('most');
   if(S.monat===0&&S.jahr===START_JAHR+1) dorf('winter1');
   if(S.monat===0&&S.jahr===START_JAHR+3) dorf('wette');
@@ -1359,7 +1452,7 @@ function monatWeiter(){
   S.lots=S.lots.filter(l=>!(l.status==='trauben'||(l.status==='fass'&&(l.stufe==='feder'||l.fassMonate>=7))||(l.status==='flasche'&&l.flMonate>=lager(l).max)));
   for(const l of S.lots){if(l.status==='fass')l.fassMonate++; else if(l.status==='flasche')l.flMonate++}
   const K=kosten(); zahle(K.basis+K.loehne+K.zins); S.geld-=K.tilgung;
-  if(S.kredit){S.kredit.rest-=K.tilgung; if(S.kredit.rest<=0){S.kredit=null; Z.push('Dein Kredit ist abbezahlt.')}}
+  if(S.kredit){S.kredit.rest-=K.tilgung; if(S.kredit.erb) S.kredit.erb=Math.max(0,S.kredit.erb-K.tilgung); if(S.kredit.rest<=0){S.kredit=null; Z.push('Dein Kredit ist abbezahlt.')}}
   if(S.geld<0){uz=Math.round(-S.geld*.01); zahle(uz)}
   // Für den Bodenschnitt zählt der Stand am Monatsende. S.nass merkt den Regenmonat für den Hinweis im Weinberg.
   S.bodenSum=(S.bodenSum||0)+S.boden; S.bodenN=(S.bodenN||0)+1;
@@ -1403,18 +1496,19 @@ function monatWeiter(){
   if(S.monat<=2) schlag(20,'Rebenmarkt geöffnet',rebenMarktText()+'. Gepflanzt wird bis Ende März.','weingut',{archiv:1});
   if(S.monat===11){const t=steuerSchau(); if(t.steuer>0) schlag(35,'Steuer-Tipp zum Jahresende',`Bisher sind es rund ${eur(t.gew)} Gewinn in diesem Jahr. Darauf fallen im Januar rund ${eur(t.steuer)} Steuer an. Was du im Dezember noch kaufst, zum Beispiel Fassraum, Flaschen, Dünger oder eine Maschinenwartung, senkt den Gewinn. Kredit tilgen senkt ihn nicht.`,'amt',{archiv:1})}
   if(S.monat===7) schlag(30,'Die Lese beginnt','Ab jetzt kannst du lesen. Wer länger hängen lässt, bekommt mehr Öchsle, riskiert aber Regen, Fäulnis und Frost.','lese',{archiv:1});
-  if(schulden()>rahmen()){
+  // Schritt G 7.0: Der Kredit für die Erbschaftssteuer (erbRest) zählt nicht gegen den Kreditrahmen.
+  if(schulden()-erbRest()>rahmen()){
     S.mahnung++;
     if(S.mahnung>=3){S.pleite=true; schlag(90,`Pfändung bei ${S.name}`,'Der Gerichtsvollzieher steht vor der Tür. Dein Weingut ist pleite.','pleite')}
-    else{ruhm(-3); schlag(58,`${S.mahnung}. Mahnung der Bank`,`Deine Schulden von ${eur(schulden())} liegen über dem Kreditrahmen von ${eur(rahmen())}. Das kostet 3 Ansehen. Nach der dritten Mahnung wird gepfändet.`,'bank')}
+    else{ruhm(-3); schlag(58,`${S.mahnung}. Mahnung der Bank`,`Deine Schulden von ${eur(schulden()-erbRest())} liegen über dem Kreditrahmen von ${eur(rahmen())}. Das kostet 3 Ansehen. Nach der dritten Mahnung wird gepfändet.`,'bank')}
   }else{S.mahnung=0; if(S.geld<0) Z.push('Dein Konto ist im Minus. Die Bank nimmt dafür 1 % Zinsen im Monat.')}
-  if(!S.pleite){geschichteMonat(); etappe3Monat(Z)}
+  if(!S.pleite){generationMonat(Z); geschichteMonat(); etappe3Monat(Z)}
   // Die Zeitung zeigt den Bericht: kopf ist die Schlagzeile, art die Artikel, zeilen "Kurz gemeldet", wetter die Ereignisse im Weinberg, ehr die neuen Ehrungen.
   // k ist das, was zum Monatswechsel abgebucht wurde (steht bei der Bank).
   const ehr=(S.ehrungen||[]).slice(S.ehrZeig||0); S.ehrZeig=(S.ehrungen||[]).length;
   S.bericht=zeitung(Z,W,ehr,{basis:K.basis,loehne:K.loehne,rate:K.tilgung+K.zins,ueberz:uz,steuer});
   TAB='monat'; save(); render(); window.scrollTo(0,0);
-  if(S.pleite) zeigePleite(); else if(S.pruefer) zeigePruefer();
+  if(S.pleite) zeigePleite(); else if(S.pruefer) zeigePruefer(); else if(erbeOffen()) zeigeErbe(); else if(S.erz) zeigeErz();
 }
 // ---- Spielende: Sonderausgabe und Bestenliste ----
 function spielJahre(){return Math.max(1,Math.round(S.jahr-START_JAHR+S.monat/12))}
@@ -1425,13 +1519,13 @@ function besten(){try{const L=JSON.parse(localStorage.getItem(BESTEN_KEY)||'[]')
 function bestenEintrag(sieg,st){
   if(window.BOT) return;
   const L=besten(), d=Date.now(); S.bestenD=d;
-  L.push({name:S.name,sieg:sieg?1:0,jahre:st.jahre,rang:st.rang,ans:st.ans,verm:st.verm,region:S.region,schwer:S.schwer,sieger:S.sieger,d});
+  L.push({name:S.name,sieg:sieg?1:0,jahre:st.jahre,rang:st.rang,ans:st.ans,verm:st.verm,region:S.region,schwer:S.schwer,sieger:S.sieger,gen:genNr(),d});
   L.sort((a,b)=>b.sieg-a.sieg||(a.sieg?a.jahre-b.jahre:b.rang-a.rang||b.ans-a.ans));
   try{localStorage.setItem(BESTEN_KEY,JSON.stringify(L.slice(0,10)))}catch(e){}
 }
 function bestenZeilen(){
   return besten().map((e,i)=>({platz:i+1,du:S&&e.d===S.bestenD,name:e.name,
-    sub:`${e.sieg?'👑 Präsident':(RAENGE[e.rang]||RAENGE[0]).kurz+', Sieger '+e.sieger} · ${(REGIONEN[e.region]||{}).name||''} · ${(DIFF[e.schwer]||{}).name||''}`,
+    sub:`${e.sieg?'👑 Präsident':(RAENGE[e.rang]||RAENGE[0]).kurz+', Sieger '+e.sieger} · ${(REGIONEN[e.region]||{}).name||''} · ${(DIFF[e.schwer]||{}).name||''}${e.gen>1?` · ${e.gen}. Generation`:''}`,
     rechts:e.sieg?`${e.jahre} J.`:`${e.ans} A.`}));
 }
 function bestenHtml(){
@@ -1446,15 +1540,21 @@ function endeHtml(k){
     ${L.length?`<div class="zart"><h3>Die Bestenliste</h3><div class="zliste">${L.map(x=>`<div class="${x.du?'du':''}"><span>${x.platz}.</span><b>${esc(x.name)}<small>${esc(x.sub)}</small></b><span>${x.rechts}</span></div>`).join('')}</div></div>`:''}
     <div class="zknopf"><button class="sec" data-a="titelNeu">Neues Spiel</button></div>`;
 }
+// Schritt G 7.0: Beim Sieg wird die Flasche vom ersten Jahrgang geöffnet. Wer es in der ersten Generation schafft, macht sie selbst auf.
+function flascheSieg(){
+  const f=S.gesch&&S.gesch.flasche; if(!f||S.flascheAuf) return ''; S.flascheAuf=S.jahr;
+  return genNr()===1?' Am Abend holst du die Flasche vom ersten Jahrgang aus dem Keller und öffnest sie im Festsaal. Am Stammtisch hatten sie damals gelacht, heute trinken sie mit. „Einer von uns macht sie auf, hab ich gesagt“, sagst du. „Dass ich es selbst bin, hätte ich nicht gedacht.“'
+    :` Am Abend wird im Festsaal die Flasche vom ersten Jahrgang geöffnet, ${S.jahr-f} Jahre nachdem sie ins Fach kam. Das Etikett kann keiner mehr lesen, aber den Satz darauf kennen alle: „Für den Tag, an dem einer von uns Präsident wird.“ Heute ist dieser Tag.`;
+}
 function siegSpieler(){
   S.sieger=S.name; const st=endStand();
-  schlag(100,`${S.name} ist Präsident!`,`Nach ${st.jahre} Jahren ${WO[S.region]} wählt der Weinbauverband dich an seine Spitze. Du hast die Partie gewonnen! Der Stuhl im Festsaal gehört jetzt dir. Unten im Gewölbekeller bekommt Frau Öchsle zur Feier ein ganzes Stück Käse. Unten steht deine Bilanz. Du kannst weiterspielen oder ein neues Spiel beginnen.`,'sieg',{gold:1,sonder:1,ende:1,stand:st});
+  schlag(100,`${S.name} ist Präsident!`,`Nach ${st.jahre} Jahren ${WO[S.region]} wählt der Weinbauverband dich an seine Spitze. Du hast die Partie gewonnen! Der Stuhl im Festsaal gehört jetzt dir.${flascheSieg()} Unten im Gewölbekeller bekommt Frau Öchsle${genNr()>1?', eine späte Nachfahrin der ersten,':''} zur Feier ein ganzes Stück Käse. Unten steht deine Bilanz. Du kannst weiterspielen oder ein neues Spiel beginnen.`,'sieg',{gold:1,sonder:1,ende:1,stand:st});
   bestenEintrag(1,st);
 }
 const SIEG_SPRUCH={vorsicht:'„Immer schön langsam, dann wird das schon“, sagt sie beim Anstoßen.',qualitaet:'„Qualität setzt sich eben durch“, sagt er und meint vor allem sich selbst.',zocker:'„Alles auf eine Karte, und die Karte hat gestochen“, grinst er in die Kameras.'};
 function gegnerSieg(g,wo){
   S.sieger=g.name; const st=endStand();
-  schlag(100,`${g.name} ist Präsident!`,`${g.name} ${wo} wird nach ${st.jahre} Jahren Präsident des Weinbauverbands und gewinnt die Partie. ${SIEG_SPRUCH[g.typ]||''} Der Stuhl im Festsaal ist besetzt. Aber Stühle werden auch wieder frei. Kopf hoch: Du kannst weiterspielen und deinen eigenen Aufstieg vollenden.`,'gegnerpraesident',{sonder:1,ende:1,stand:st});
+  schlag(100,`${g.name} ist Präsident!`,`${g.name} ${wo} wird nach ${st.jahre} Jahren Präsident des Weinbauverbands und gewinnt die Partie. ${SIEG_SPRUCH[g.typ]||''} Der Stuhl im Festsaal ist besetzt${S.gesch&&S.gesch.flasche&&!S.flascheAuf?', und deine Flasche vom ersten Jahrgang bleibt im Fach':''}. Aber Stühle werden auch wieder frei. Kopf hoch: Du kannst weiterspielen und deinen eigenen Aufstieg vollenden.`,'gegnerpraesident',{sonder:1,ende:1,stand:st});
   bestenEintrag(0,st);
 }
 // Alles, was Etappe 3 beim Monatswechsel tut: Aufstieg, Gegner, Wettbewerbe, Auktion, Märkte.
@@ -1469,7 +1569,7 @@ function etappe3Monat(Z){
     ehre(S.rang===R_MAX?'👑':'🎖️',`Aufstieg! Du bist jetzt ${r.name}.`,1,`Das bringt dir: ${bringt(S.rang)}.${rahmenSatz(S.rang)}${r.weg?' '+r.weg:''}`);
     schlag(95,`Aufstieg: ${S.name} ist jetzt ${r.name}`,`Das bringt: ${bringt(S.rang)}.${rahmenSatz(S.rang)}${r.weg?' '+r.weg:''}`,'aufstieg',{sonder:1,gold:1});
     if(S.rang===R_MAX&&!S.sieger) siegSpieler();
-    else if(S.rang===R_MAX) schlag(99,`${S.name} ist doch noch Präsident`,`${S.sieger} war schneller, aber jetzt hast du es auch an die Spitze des Weinbauverbands geschafft. Respekt!`,'sieg',{gold:1});
+    else if(S.rang===R_MAX) schlag(99,`${S.name} ist doch noch Präsident`,`${S.sieger} war schneller, aber jetzt hast du es auch an die Spitze des Weinbauverbands geschafft. Respekt!${S.gesch&&S.gesch.flasche&&!S.flascheAuf?(S.flascheAuf=S.jahr,' Die Flasche vom ersten Jahrgang wird heute Abend doch noch geöffnet.'):''}`,'sieg',{gold:1});
   }
   kontrolleMonat(Z); sabotageGegenDich(Z);
   if(S.monat===0&&S.rang>=R_LADEN) Z.push(`Als Weinbotschafter ${WO[S.region]} warst du auf Messen in aller Welt unterwegs. +${ruhm(BOTSCHAFT_ANS)} Ansehen.`);
@@ -1641,7 +1741,7 @@ function vRang(){
   // Fläche: hell die gekaufte, dunkel die bepflanzte. Zählen tut nur die bepflanzte.
   const barF=soll=>`<div class="bar fl ${bep>=soll?'':'g'}"><i class="hell" style="width:${w(S.ha,soll)}%"></i><i style="width:${w(bep,soll)}%"></i></div>`;
   const nach=frei>0?`<div class="mut" style="margin:-4px 0 8px">Noch ${num(frei*HA_REBEN)} Reben frei zum Nachpflanzen (${frei.toLocaleString('de-DE')}\u00a0ha).</div>`:'';
-  let h=`<div class="card"><h3>Aktueller Rang: ${RAENGE[r].name}</h3><div class="mut">Stufe ${r+1} von ${RAENGE.length}</div>`;
+  let h=`<div class="card"><h3>Aktueller Rang: ${RAENGE[r].name}</h3><div class="mut">Stufe ${r+1} von ${RAENGE.length} · ${genNr()}. Generation, die nächste übernimmt im Januar ${genJahr(genNr())}</div>`;
   if(S.sieger) h+=`<div class="hilfe" style="margin:0 0 6px">🏆 Gewonnen hat: ${esc(S.sieger)}</div>`;
   if(n) h+=`<div class="mut">Für den Aufstieg zum Rang ${n.name} brauchst du alles drei zugleich.</div>
     <div class="kv"><span>Ansehen</span><span>${S.ansehen} von ${n.ans}</span></div>${bar(S.ansehen,n.ans)}
@@ -1653,7 +1753,7 @@ function vRang(){
 }
 function vRangliste(){
   const v=vermoegen();
-  const L=[{name:S.name,du:1,sub:'du, '+R().name,rang:S.rang,ans:S.ansehen,ha:S.ha,verm:v},
+  const L=[{name:S.name,du:1,sub:`du${S.erbe&&S.erbe.name?' ('+S.erbe.name+')':''}, ${R().name}`,rang:S.rang,ans:S.ansehen,ha:S.ha,verm:v},
     ...S.gegner.map(g=>({name:g.name,sub:`${GEGNER_TYP[g.typ].art}, ${REGIONEN[g.region].name}`,rang:g.rang,ans:Math.round(g.ansehen),ha:g.ha,verm:gVerm(g)}))]
     .sort((a,b)=>b.rang-a.rang||b.ans-a.ans);
   return `<div class="card"><h3>Rangliste</h3>${S.sieger?`<div class="hilfe" style="margin:0 0 6px">🏆 Gewonnen hat: ${esc(S.sieger)}</div>`:''}
@@ -2023,6 +2123,7 @@ function vBuero(){
   <div class="card"><h3>🏅 Ehrungen für deine Weine</h3>${wein.length?`<div class="gold" style="font-size:17px;margin-bottom:6px">${ehrSumme(wein)}</div><div class="mut">Zuletzt:</div>`+wein.slice(0,3).map(zeile).join(''):'<div class="mut">Noch keine. Medaillen gibt es bei der Landesprämierung und beim Bundeswettbewerb.</div>'}</div>
   ${S.rang>=R_LADEN?`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/weinbotschafter.jpg);height:150px"><b>🎗️ Weinbotschafter ${WO[S.region]}</b><span>Jeden Januar +${BOTSCHAFT_ANS} Ansehen für deine Reisen</span></div>`:''}
   <div class="card"><h3>🎖️ Deine Aufstiege</h3>${auf.length?auf.map(zeile).join(''):'<div class="mut">Noch keiner. Der erste Aufstieg führt zum ${RAENGE[1].name}.</div>'}</div>
+  ${chronikHtml()}
   ${bestenHtml()}
   ${tonKnoepfe()}
   <div class="card"><h3>💾 Dein Spiel</h3>
@@ -2498,6 +2599,9 @@ const AKT={
     else monatWeiter();
   },
   weiterJa(){closeSheet();monatWeiter()},
+  // Schritt G 7.0: Übergabe an die nächste Generation. Ohne Eingabe gilt der Vorschlag.
+  erbeArt(d){if(!erbeOffen()) return; S.erbe.art=d.id==='s'?'s':'t'; zeigeErbe()},
+  erbeJa(){if(!erbeOffen()) return; const n=(($('#erbname')||{}).value||'').trim().slice(0,20)||erbeVorschlag(); erbeBenennen(n); closeSheet(); save(); render(); window.scrollTo(0,0)},
   async weiterBis(){
     closeSheet(); const L=[];
     for(let n=0;n<SPRUNG_MAX;n++){
@@ -2505,7 +2609,7 @@ const AKT={
       managerArbeit();
       if(fehlText()||verfallListe().length||(S.monat===11&&steuerSchau().steuer>0)){if(n) break; return AKT.weiter()}
       SPRUNG=L.slice(); monatWeiter();
-      if(S.pleite||S.pruefer) return;
+      if(S.pleite||S.pruefer||erbeOffen()||$('#sheet').classList.contains('an')) return;
       const top=TOP.slice().sort((a,b)=>b.p-a.p)[0];
       if((top&&top.p>=SPRUNG_WICHTIG)||stehtAn()) break;
       L.push(`⏩ ${MON[S.monat]}: ${top?top.t:'ein ruhiger Monat'}`);
@@ -2802,7 +2906,7 @@ const AKT={
 /* ================= Titelbild und Geschichte ================= */
 // Das Titelbild steht bei jedem Start vorn. Der erste Tipp darauf schaltet auch den Ton frei.
 // Die Geschichte läuft vor jedem neuen Spiel Satz für Satz über das Titelbild. Ein Tipp zeigt alles auf einmal, "Überspringen" geht immer.
-const GESCHICHTE=['Neun Jahre lang hast du für andere geschuftet.','Dann stand in der Zeitung eine kleine Anzeige: drei Hektar Weinberg, ein alter Gewölbekeller, günstig abzugeben.','Du hast dein Erspartes zusammengekratzt und unterschrieben, bevor dir jemand die Sache ausreden konnte.','Jetzt stehst du vor kahlen Hängen, leeren Fässern und einer Ratte, die sich im Keller wie die Hausherrin benimmt.','Im Dorf wetten sie schon, dass du keine drei Winter durchhältst, und die Winzer von nebenan warten nur auf deinen ersten Fehler.','Zeig es ihnen: Oben im Festsaal des Weinbauverbands steht ein Stuhl, und der ist noch frei.'];
+const GESCHICHTE=['Neun Jahre lang hast du für andere geschuftet.','Dann stand in der Zeitung eine kleine Anzeige: drei Hektar Weinberg, ein alter Gewölbekeller, günstig abzugeben.','Du hast dein Erspartes zusammengekratzt und unterschrieben, bevor dir jemand die Sache ausreden konnte.','Jetzt stehst du vor kahlen Hängen, leeren Fässern und einer Ratte, die sich im Keller wie die Hausherrin benimmt.','Im Dorf wetten sie schon, dass du keine drei Winter durchhältst, und die Winzer von nebenan warten nur auf deinen ersten Fehler.','Zeig es ihnen: Oben im Festsaal des Weinbauverbands steht ein Stuhl, und der ist noch frei.','Ob du selbst einmal darauf sitzt oder erst deine Enkel, wird sich zeigen.'];
 const SATZ_TAKT=3.2;
 function zeigeTitel(){
   // Drei Knöpfe: Weiterspielen (nur mit Spielstand), Neues Spiel, Spiel laden. Darunter klein die Version und die Nennung, die ElevenLabs im Gratis-Tarif verlangt.
@@ -2846,6 +2950,8 @@ document.addEventListener('click',e=>{
   if(!vorn&&S&&S.pleite&&!['neuJa','tab','sub','close','weiter','menue','ton','infoWeiter','buch','buchZu'].includes(a)) return;
   // Solange der Weinprüfer wartet, geht nichts anderes.
   if(!vorn&&S&&S.pruefer&&!['pruefJa','pruefBestechen','slMinus','slPlus','slOk','close','ton','menue','buch','buchZu'].includes(a)) return zeigePruefer();
+  // Schritt G 7.0: Solange die Übergabe offen ist, geht nur das Übergeben.
+  if(!vorn&&erbeOffen()&&!['erbeJa','erbeArt','ton','menue','buch','buchZu'].includes(a)) return zeigeErbe();
   const f=AKT[a]; if(f){f(b.dataset,e); fx('klick')}
 });
 $('#datei').addEventListener('change',e=>{const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>dateiLaden(String(r.result),ZIEL); r.readAsText(f)});
