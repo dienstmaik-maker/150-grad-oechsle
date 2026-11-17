@@ -2598,25 +2598,32 @@ function vStadt(){
       stand:D.stand,
       i:`Antippen verkauft. Der Preis je Flasche gilt für den besten Absatzweg, Zoll ist abgezogen. 📉 heißt: Der Markt ist diesen Monat satt. Was zuerst verdirbt, steht oben.${S.rang>=R_LADEN?' Weine im Regal deiner Weinhandlung fehlen hier.':''} Wein aus dem Fass meldest du im Rathaus an und füllst ihn danach im Keller ab. Tafel- und Qualitätswein sind zwei Monate danach verkaufsreif.${D.text}`});
   }
+  // Weinhandel (seit 7.4 auf dem Fenster-Baustein), Reihenfolge nach der Regel "was diesen Monat ansteht, Handgriffe, Zustand, Gesperrtes":
+  // die Weinhandlungen der anderen Gebiete mit ihrem Wunsch des Monats, dann "Ins Regal stellen" und "Dein Regal" der eigenen Weinhandlung (ab R_LADEN).
+  // Vorher steht "Eigene Weinhandlung" zugeklappt mit Schloss unten. Die beiden kleinen Bilder sind raus, sie kommen in den Fenstern von unten.
   if(SUB==='laeden'){
-    const n=S.lots.filter(ladenOk).length;
+    const n=S.lots.filter(ladenOk).length, D=dauerInfo('laeden'), HM=`${mgrG('handel').Dein} ${MGR_BEREICHE.handel.name}`, mr=aufgabeAktiv('regal'), mehr=Math.round((LADEN_EIGEN_F-1)*100);
+    // Ohne passenden Wein sagt ein Hinweis, was fehlt und ab wann es geht (seit 5.0). Wie man zu Kabinett kommt, steht im i.
+    const bald=n?null:S.lots.filter(l=>l.status==='flasche'&&!l.regal&&!preis(l)&&(l.sekt||STUFEN[l.stufe].rang>=3)).map(l=>({l,n:lager(l).min-l.flMonate})).sort((a,b)=>a.n-b.n)[0];
+    h+=fenster('laeden','Weinhandlungen',Object.entries(S.laeden).map(([r,d])=>{const k=S.lots.filter(l=>ladenPasst(l,r)).length;
+        return fz(`Weinhandlung ${WO[r]}`,`Sucht diesen Monat nur ${WUNSCH[d.wunsch]}`,
+          d.rest<=0?'Nimmt diesen Monat nichts mehr.':`Nimmt noch ${num(d.rest)} Flaschen, ${k?`${k} ${k===1?'Wein passt':'Weine passen'}`:'du hast keinen passenden Wein'}.`,
+          `<button class="klein" data-a="ladenAngebot" data-id="${r}"${d.rest>0&&k?'':' disabled'}>Anbieten</button>`)}),{
+      hin:[D.hin,!n&&`🍷 <b>Noch kein passender Wein.</b> ${bald?`Als Erstes reif: ${esc(lotName(bald.l))} im ${inMonaten(bald.n)}.`:'Weinhandlungen nehmen nur Prädikatswein ab Kabinett oder Sekt.'} Bis dahin verkaufst du im Großhandel.`],
+      stand:D.stand,
+      i:`Weinhandlungen in den anderen Anbaugebieten zahlen mehr als der Großhandel. Sie nehmen aber nur Prädikatswein und Sekt, jede nur das, was sie gerade sucht, und jeden Monat nur eine kleine Menge. Für Kabinett liest du reife Trauben ab ${R().min.kab}° ohne Edelfäulnis, anmelden darfst du ab Januar, danach reift er je nach Sorte noch einige Monate in der Flasche (📖 Weinlexikon im Kellerbuch).${D.text}`});
+    const regalI=`Was im Regal steht, verkauft sich jeden Monat von selbst, das Teuerste zuerst, bis ${eur(LADEN_EIGEN)} Listenwert. Dafür bekommst du ${mehr} % mehr als den Listenpreis. Regalweine fehlen im Großhandel.`;
     if(S.rang>=R_LADEN){
       const rg=regalWeine(), kann=S.lots.filter(l=>l.status==='flasche'&&!l.regal&&preis(l)>0).sort((a,b)=>preis(b)-preis(a));
-      h+=`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/weinhandlung.jpg)"><b>Deine Weinhandlung</b><span>${rg.length?`${num(rg.reduce((a,l)=>a+l.liter,0))} Flaschen im Regal`:'Das Regal ist leer'}</span></div>
-      <div class="mut" style="margin-bottom:8px">Was im Regal steht, verkauft sich jeden Monat von selbst, das Teuerste zuerst, bis ${eur(LADEN_EIGEN)} Listenwert. Dafür bekommst du ${Math.round((LADEN_EIGEN_F-1)*100)}\u00a0% mehr als den Listenpreis. Regalweine fehlen im Großhandel.</div>${aufgabeAktiv('regal')?`<div class="hilfe" style="margin-bottom:8px">🤝 ${mgrG('handel').Dein} ${MGR_BEREICHE.handel.name} füllt das Regal beim Weiterblättern, mit Wein für rund ${MGR_REGAL} Monate.</div>`:''}`;
-      h+=rg.map(l=>`<button class="bzeile" data-a="buchDetail" data-id="${l.id}"><div class="bz1"><b>${dot(l.sorte)}${esc(lotName(l))}</b><span>${preis(l)?eur2(preis(l)*LADEN_EIGEN_F):'nicht verkaufsreif'}</span></div><div class="bz2">${num(l.liter)} Flaschen im Regal</div></button>`).join('');
-      h+=kann.length?'<h3>Ins Regal stellen</h3>'+kann.map(l=>`<button class="wahl" data-a="regal" data-id="${l.id}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${num(l.liter)} Flaschen · im Regal ${eur2(preis(l)*LADEN_EIGEN_F)} · Großhandel ${eur2(wege(l)[0].p)}</span></button>`).join(''):'<div class="card mut">Gerade hast du keinen verkaufsreifen Flaschenwein fürs Regal.</div>';
-      h+=`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/laden.jpg)"><b>Weinhandlungen in anderen Gebieten</b><span>nehmen jeden Monat eine kleine Menge</span></div>`;
-    }
-    h+=`<div class="mut" style="margin-bottom:8px">Weinhandlungen in den anderen Anbaugebieten zahlen mehr als der Großhandel, nehmen aber nur Prädikatswein und Sekt, jede nur das, was sie gerade sucht. ${n?`Du hast ${n} ${n===1?'passenden Wein':'passende Weine'}.`:''}</div>`;
-    // Version 5.0: Ohne passenden Wein sagt ein Hinweis, was fehlt und ab wann es geht.
-    if(!n){const bald=S.lots.filter(l=>l.status==='flasche'&&!l.regal&&!preis(l)&&(l.sekt||STUFEN[l.stufe].rang>=3)).map(l=>({l,n:lager(l).min-l.flMonate})).sort((a,b)=>a.n-b.n)[0];
-      h+=`<div class="hilfe" style="margin-bottom:8px">🍷 <b>Noch kein passender Wein.</b> ${bald?`Als Erstes reif: ${esc(lotName(bald.l))} im ${inMonaten(bald.n)}.`:`Weinhandlungen nehmen nur Prädikatswein ab Kabinett oder Sekt. Für Kabinett liest du reife Trauben ab ${R().min.kab}° ohne Edelfäulnis, anmelden darfst du ab Januar, danach reift er je nach Sorte noch einige Monate in der Flasche (📖 Weinlexikon im Kellerbuch).`} Bis dahin verkaufst du im Großhandel.</div>`}
-    {const D=dauerInfo('laeden'), t=D.hin||D.stand; if(t) h+=`<div class="hilfe" style="margin-bottom:8px">${t}</div>`}
-    h+=Object.entries(S.laeden).map(([r,d])=>`<div class="card"><h3>Weinhandlung ${WO[r]}</h3>
-      <div class="kv"><span>Sucht diesen Monat nur</span><span>${WUNSCH[d.wunsch]}</span></div>
-      <div class="kv"><span>Nimmt noch</span><span>${num(d.rest)} Flaschen</span></div>
-      ${kz('',pk('ladenAngebot','Anbieten','',{id:r,aus:!(d.rest>0&&S.lots.some(l=>ladenPasst(l,r)))}))}</div>`).join('');
+      h+=fenster('regalRein','Ins Regal stellen',kann.map(l=>`<button class="bzeile" data-a="regal" data-id="${l.id}"><div class="bz1"><b>${dot(l.sorte)}${esc(lotName(l))}</b><span>${eur2(preis(l)*LADEN_EIGEN_F)}</span></div><div class="bz2">${num(l.liter)} Flaschen · im Großhandel ${eur2(wege(l)[0].p)}</div></button>`),{
+        leer:'Gerade hast du keinen verkaufsreifen Flaschenwein fürs Regal.',
+        hin:[mr&&`${MGR_BEREICHE.handel.sym} ${HM} füllt das Regal beim Weiterblättern.`],
+        i:`Antippen stellt einen Wein ins Regal, rechts steht sein Preis dort. ${regalI}${mr?` ${HM} füllt das Regal von selbst, mit Wein für rund ${MGR_REGAL} Monate.`:''}`});
+      h+=fenster('regal','Dein Regal',rg.length?`<div class="kv"><span>Flaschen im Regal</span><span>${num(rg.reduce((a,l)=>a+l.liter,0))}</span></div>
+        <div class="fzl ab">${rg.map(l=>`<button class="bzeile" data-a="buchDetail" data-id="${l.id}"><div class="bz1"><b>${dot(l.sorte)}${esc(lotName(l))}</b><span>${preis(l)?eur2(preis(l)*LADEN_EIGEN_F):'nicht verkaufsreif'}</span></div><div class="bz2">${num(l.liter)} Flaschen</div></button>`).join('')}</div>`:[],{
+        leer:'Das Regal ist leer.',
+        i:`${regalI} Antippen zeigt alle Angaben, dort nimmst du einen Wein auch wieder aus dem Regal.`});
+    } else h+=fenster('regal','Eigene Weinhandlung','',{zu:`ab dem Rang ${RAENGE[R_LADEN].name}`,i:`Ab dem Rang ${RAENGE[R_LADEN].name} hast du eine eigene Weinhandlung. ${regalI}`});
   }
   if(SUB==='bank'){
     const k=S.kredit, K=kosten(), ab=S.bericht&&S.bericht.k, kv=(a,x)=>x?`<div class="kv"><span>${a}</span><span>${eur(x)}</span></div>`:'';
