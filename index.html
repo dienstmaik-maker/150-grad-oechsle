@@ -377,6 +377,11 @@ button.fi.wort{width:auto;padding:0 11px;font:600 13px/1 system-ui,-apple-system
 .fz{padding:9px 0;border-top:1px solid rgba(154,106,53,.38)}.fz:first-child{border-top:0;padding-top:0}.fz:last-child{padding-bottom:0}
 .fz .kz{margin-top:5px;min-height:40px}.fz .kz button{white-space:nowrap}
 .fen.zu{opacity:.88}.fen.zu .fkopf{background:none;border-bottom:0}.fen.zu h3{color:var(--mut)}.fen.zu .finfo{border-top:1px solid rgba(154,106,53,.5);border-bottom:0}
+/* Antippbare Zeilen im Fenster (Kellerbuch, Großhandel, Regal): wie .fz mit Trennlinie, ohne eigene Karte. .ab setzt die Liste vom Zustand darüber ab. */
+.fzl.ab{margin-top:8px;padding-top:9px;border-top:1px solid rgba(154,106,53,.38)}
+.fzl>.bzeile{background:none;border:0;border-top:1px solid rgba(154,106,53,.38);border-radius:0;box-shadow:none;margin:0;padding:9px 0}
+.fzl>.bzeile:first-child{border-top:0;padding-top:0}.fzl>.bzeile:last-child{padding-bottom:0}
+.finfo .kv{font-size:14px;padding:2px 0}
 </style>
 </head>
 <body>
@@ -2673,24 +2678,20 @@ const BSORT_F={wert:(a,b)=>preis(b)*b.liter-preis(a)*a.liter||lotWert(b)-lotWert
 const bsortChips=()=>`<div class="chips">${[['wert','Nach Wert'],['alter','Nach Alter'],['dringend','Nach Dringlichkeit']].map(s=>`<button class="chip ${BSORT===s[0]?'an':''}" data-a="bsort" data-id="${s[0]}">${s[1]}</button>`).join('')}</div>`;
 // Haltbarkeit als kurzer Text, wie im Kellerbuch.
 function haltText(l){const fl=l.status==='flasche', r=fl?(lager(l).max===Infinity?Infinity:lager(l).max-l.flMonate):8-l.fassMonate; return {r,t:r===Infinity?'unbegrenzt haltbar':`noch ${r} ${r===1?'Monat':'Monate'} haltbar${fl?'':' im Fass'}`}}
+// Kellerbuch (seit 7.4 auf dem Fenster-Baustein): ein Fenster "Deine Weine" mit Zahl und geschätztem Wert, darunter je Wein eine kurze Zeile.
+// Die Liste steht fest nach Dringlichkeit. Antippen zeigt alle Angaben und die passenden Knöpfe. Statt des i steht oben rechts das graue Wort "Weinlexikon".
 function vBuch(){
-  // Sortieren: nach Wert (teuerster zuerst), Alter (ältester Jahrgang zuerst) oder Dringlichkeit (was am ehesten verdirbt zuerst).
-  const ls=S.lots.filter(l=>l.status!=='trauben').slice().sort(BSORT_F[BSORT]);
-  // Oben ein schmales Bild mit Zahl und geschätztem Wert, darunter je Wein eine kurze Zeile. Antippen zeigt alle Angaben und die passenden Knöpfe.
-  const wert=ls.reduce((a,l)=>a+lotWert(l),0);
-  let h=`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/kellerbuch.jpg)"><b>${ls.length?`${ls.length} ${ls.length===1?'Wein':'Weine'} im Kellerbuch`:'Das Kellerbuch ist leer'}</b><span>${ls.length?`Geschätzter Wert ${eur(Math.round(wert/100)*100)}`:'Hier stehen später alle deine Weine.'}</span></div>`;
-  const lex=`<div class="btns" style="margin-top:8px"><button class="sec klein" data-a="weinQual">📖 Weinlexikon</button></div>`;
-  if(!ls.length) return h+'<div class="card mut">Noch keine Einträge. Hier stehen später alle deine Weine im Fass und in der Flasche.</div>'+lex;
-  h+=bsortChips();
-  for(const l of ls){
-    const fl=l.status==='flasche', L=l.stufe?lager(l):null, p=preis(l), r=fl?(L.max===Infinity?Infinity:L.max-l.flMonate):8-l.fassMonate;
-    const pr=p?eur2(p):fl?`reif in ${L.min-l.flMonate} ${L.min-l.flMonate===1?'Monat':'Monaten'}`:'im Fass';
-    const halt=r===Infinity?'unbegrenzt haltbar':`noch ${r} ${r===1?'Monat':'Monate'} haltbar${fl?'':' im Fass'}`;
-    h+=`<button class="bzeile" data-a="buchDetail" data-id="${l.id}"><div class="bz1"><b>${dot(l.sorte)}${esc(lotName(l))}${l.pansch?' 🤫':''}${l.regal?' 🏪':''}${l.med&&l.med.length?' 🏅':''}</b><span>${pr}</span></div>
+  const ls=S.lots.filter(l=>l.status!=='trauben').slice().sort(BSORT_F.dringend), wert=ls.reduce((a,l)=>a+lotWert(l),0), o={iWort:'Weinlexikon',iAkt:'weinQual'};
+  if(!ls.length) return fenster('weine','Deine Weine',[],{...o,leer:'Noch keine Einträge. Hier stehen später alle deine Weine im Fass und in der Flasche.'});
+  return fenster('weine','Deine Weine',`<div class="kv"><span>Weine im Fass und in der Flasche</span><span>${ls.length}</span></div>
+    <div class="kv"><span>Geschätzter Wert</span><span>${eur(Math.round(wert/100)*100)}</span></div>
+    <div class="fstand" style="margin:2px 0 0">Antippen zeigt alle Angaben. Was zuerst verdirbt, steht oben.</div>
+    <div class="fzl ab">${ls.map(l=>{
+      const fl=l.status==='flasche', L=l.stufe?lager(l):null, p=preis(l), H=haltText(l);
+      const pr=p?eur2(p):fl?`reif in ${L.min-l.flMonate} ${L.min-l.flMonate===1?'Monat':'Monaten'}`:'im Fass';
+      return `<button class="bzeile" data-a="buchDetail" data-id="${l.id}"><div class="bz1"><b>${dot(l.sorte)}${esc(lotName(l))}${l.pansch?' 🤫':''}${l.regal?' 🏪':''}${l.med&&l.med.length?' 🏅':''}</b><span>${pr}</span></div>
       <div class="bz2">${l.stufe?l.qp+' Qualitätspunkte':'nicht angemeldet'} · ${num(l.liter)} ${fl?'Flaschen':'l im Fass'}</div>
-      <div class="bz3 ${r<=2?'rot':''}">${halt}</div></button>`;
-  }
-  return h+lex;
+      <div class="bz3 ${H.r<=2?'rot':''}">${H.t}</div></button>`}).join('')}</div>`,o);
 }
 // Winzerbote: Erst steht das Bild allein da, dann rollt sich die Zeitung wie eine Schriftrolle vom oberen Rand ab, bis ihr Kopf oben steht.
 // Oben hängt immer die Rolle. Ganz hochgeschoben verschwindet die Zeitung darin und gibt das Bild frei, Tippen auf die Rolle rollt sie wieder ab.
