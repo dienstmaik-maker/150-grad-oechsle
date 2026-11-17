@@ -113,7 +113,7 @@ button.pk.arm{filter:grayscale(1) opacity(.55)}
 .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px}
 .weiss{background:var(--gruen)}.rotw{background:var(--blau)}
 .task{display:block;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--line);border-left:5px solid var(--gruen);margin:0 0 8px;font-weight:500;min-height:0}
-.task.rot{border-left-color:var(--rot);color:var(--ink)}
+.task.rot{border-left-color:var(--rot);color:var(--ink)}.task.gelb{border-left-color:#e5a93c}.task.hin{border-left-color:#b9ad93}
 details.stz{margin-top:8px}details.stz summary{cursor:pointer;font-weight:700;opacity:.8;padding:6px 0}
 .hilfe{background:color-mix(in srgb,var(--gold) 14%,transparent);border-radius:10px;padding:8px 10px;font-size:14px;margin-top:8px}
 /* Version 4.0: alle Bedienelemente unten in der Daumenzone. Oben die Unterreiter auf Pergament, darunter die Hauptleiste aus Holz. */
@@ -480,7 +480,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='7.8.1';
+const VERSION='7.9';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -687,7 +687,15 @@ const geldKurz=b=>Math.abs(b)>=1e6?(b/1e6).toLocaleString('de-DE',{maximumFracti
 // Kurze Namen für die Unterreiter-Leiste unten.
 const SUB_NAME={berg:'Weinberg',betrieb:'Betrieb',aktuell:'Aktuelles',maschinen:'Maschinen',buero:'Büro',buch:'Kellerbuch',sabotage:'Hintertür',start:'Keller',lager:'Lager',amt:'Rathaus',handel:'Großhandel',laeden:'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'};
 // Punkte an den Reitern: rot bei Dringendem aus "Das steht an", gelb bei allem anderen.
-function badges(){const B={};for(const a of aufgaben()){if(!a.tab) continue;for(const k of [a.tab,a.tab+'/'+(a.sub||START_SUB[a.tab])]) B[k]=B[k]==='rot'||a.rot?'rot':'neu'}return B}
+// Seit 7.9 gibt es drei Arten: Rot (rot:1) hält das Weiterblättern an, Gelb zeigt nur den Punkt, Hinweise (ruhig:1) bekommen keinen Punkt.
+function badges(){const B={}, A=aufgaben(); if(ladenPunkt()) A.push({tab:'stadt',sub:'laeden'}); for(const a of A){if(!a.tab||a.ruhig) continue;for(const k of [a.tab,a.tab+'/'+(a.sub||START_SUB[a.tab])]) B[k]=B[k]==='rot'||a.rot?'rot':'neu'}return B}
+// Seit 7.9: gelber Punkt am Weinhandel, wenn eine Weinhandlung diesen Monat einen deiner Weine nimmt (ab Kabinett oder Sekt) oder dein eigenes Regal Wein brauchen kann.
+// Er verschwindet, sobald die Seite einmal offen war (S.ladenSeh), und kommt im nächsten Monat wieder. Was der Handels-Manager erledigt, bekommt keinen Punkt.
+function ladenPunkt(){
+  if(S.ladenSeh===S.jahr*12+S.monat) return false;
+  const fremd=!aufgabeAktiv('laeden')&&Object.keys(S.laeden||{}).some(r=>S.laeden[r].rest>0&&S.lots.some(l=>ladenPasst(l,r)));
+  return fremd||(S.rang>=R_LADEN&&!aufgabeAktiv('regal')&&S.lots.some(ladenOk));
+}
 const badge=b=>b?`<span class="badge ${b==='rot'?'rot':''}"></span>`:'';
 // Wechselt den Hauptreiter. Ohne Unterreiter geht es zur Startansicht des Hauptreiters.
 function geh(tab,sub){TAB=tab; SUB=sub||START_SUB[tab]||SUB}
@@ -1050,7 +1058,7 @@ function wettAuswerten(){
   else if(N.length) text+=' '+N.join(' ');
   // Rangliste in der Zeitung: das Treppchen, dazu du und die Gegner, wenn sie dahinter landen.
   const L=F.filter((x,i)=>i<3||x.du||x.ki!=null).map(x=>({platz:x.platz,name:x.name,p:x.p,m:x.m||'',du:x.du||0}));
-  schlag(ich<0?42:ich<3?78:72,titel,text,'praemierung',{archiv:1,gold:ich>=0&&ich<3?1:0,liste:L,wett:{typ:w.typ,platz:ich}});
+  schlag(ich<0?42:ich<3?78:72,titel,text,'praemierung',{archiv:1,gold:ich>=0&&ich<3?1:0,liste:L,wett:{typ:w.typ,platz:ich},du:ich>=0&&ich<3?1:0});
 }
 
 /* ================= Auktionen ================= */
@@ -1077,6 +1085,13 @@ function aukOhneDich(){
   a.ende=sieger.name; a.gebot=pr;
   if(sieger.ki!=null){const g=S.gegner[sieger.ki]; g.geld-=pr; g.ha+=a.ha; g.ansehen+=(3+Math.min(a.ha,7))*DIFF[S.schwer].ki}
   return a.text=`${sieger.name} bekommt den Zuschlag: ${a.ha}\u00a0Hektar ${WO[S.region]} für ${eur(pr)}.`;
+}
+// Seit 7.9 für das Rathaus: Wann kann frühestens wieder geboten werden, und wann ist der nächste Wettbewerb?
+// Geboten wird im Monat nach der Ankündigung. Steht für diesen Monat nichts an, zählt erst die nächste Ankündigung.
+function aukNaechst(){const m=AUK_MONATE.find(m=>m>S.monat); return m==null?`${MON[(AUK_MONATE[0]+1)%12]} ${S.jahr+1}`:`${MON[(m+1)%12]} ${S.jahr+(m===11?1:0)}`}
+function wettNaechst(typ){
+  if(typ==='land') return `Februar ${S.monat<1?S.jahr:S.jahr+1}`;
+  let j=S.jahr+(S.monat>=5?1:0); while(j%3) j++; return `Juni ${j}`;
 }
 // Phase 0: angekündigt, nächsten Monat wird geboten. Text für "Das steht an", leer wenn nichts ansteht.
 function aukInfo(){const a=S.auktion; return a&&a.phase===0&&S.rang>=R_AUKTION?`🔨 Nächsten Monat Auktion: ${a.ha}\u00a0Hektar, Start bei ${eur(a.start)}`:''}
@@ -1112,16 +1127,16 @@ const VARIANTEN={
 function variante(k){S.vz=S.vz||{}; const V=VARIANTEN[k], i=(S.vz[k]=(S.vz[k]||0)+1)-1; return V[i%V.length]}
 const EREIGNIS={
   gut:{
-    supersommer:{ok:()=>(S.monat===6||S.monat===7)&&feldHaengt().length,los(){const n=rint(6,9); for(const id of feldHaengt()) S.felder[id].oe=Math.min(150,S.felder[id].oe+n); S.sonne++; schlag(80,'Supersommer!',`Wochenlang Sonne satt ${WO[S.region]}. Deine Trauben legen ${n}° Öchsle zu, und der Sommer zählt als zusätzlicher Sonnenmonat.`,'supersommer')}},
-    mode:{ok:()=>!S.lage,los(){const id=R().sorten.slice().sort((a,b)=>eignung(b)-eignung(a))[0], f=1+rnd(.2,.4), n=rint(4,6); S.lage={typ:'mode',f,rest:n,sorte:id}; schlag(80,`${SORTEN[id].name} ist im Ausland gefragt`,`Ein Fernsehkoch schwärmt vom ${SORTEN[id].name} ${WO[S.region]}, und plötzlich wollen ihn alle. ${n} Monate lang bringt er ${Math.round((f-1)*100)}\u00a0% mehr.`,'rieslingmode')}},
-    erbschaft:{ok:()=>true,los(){const b=Math.round(rint(8,20)*1000*(1+S.rang/2)/100)*100; S.geld+=b; fx('kasse'); schlag(80,'Unverhoffte Erbschaft',`${variante('erbschaft').replace('{b}',eur(b))} Das Geld ist steuerfrei.`,'erbschaft')}},
-    kritiker:{ok:()=>S.lots.some(kritikerWein),los(){const l=S.lots.filter(kritikerWein).sort((a,b)=>b.qp-a.qp)[0], q=rint(3,5); l.qp+=q; const a=ruhm(6); schlag(80,`Kritiker lobt deinen ${lotName(l)}`,`Ein bekannter Weinkritiker hat deinen ${lotName(l)} probiert und schwärmt in seiner Kolumne. Der Wein bekommt ${q} Qualitätspunkte mehr, dazu +${a} Ansehen.`,'weinkritiker')}}
+    supersommer:{ok:()=>(S.monat===6||S.monat===7)&&feldHaengt().length,los(){const n=rint(6,9); for(const id of feldHaengt()) S.felder[id].oe=Math.min(150,S.felder[id].oe+n); S.sonne++; schlag(80,'Supersommer!',`Wochenlang Sonne satt ${WO[S.region]}. Deine Trauben legen ${n}° Öchsle zu, und der Sommer zählt als zusätzlicher Sonnenmonat.`,'supersommer',{du:1})}},
+    mode:{ok:()=>!S.lage,los(){const id=R().sorten.slice().sort((a,b)=>eignung(b)-eignung(a))[0], f=1+rnd(.2,.4), n=rint(4,6); S.lage={typ:'mode',f,rest:n,sorte:id}; schlag(80,`${SORTEN[id].name} ist im Ausland gefragt`,`Ein Fernsehkoch schwärmt vom ${SORTEN[id].name} ${WO[S.region]}, und plötzlich wollen ihn alle. ${n} Monate lang bringt er ${Math.round((f-1)*100)}\u00a0% mehr.`,'rieslingmode',{du:1})}},
+    erbschaft:{ok:()=>true,los(){const b=Math.round(rint(8,20)*1000*(1+S.rang/2)/100)*100; S.geld+=b; fx('kasse'); schlag(80,'Unverhoffte Erbschaft',`${variante('erbschaft').replace('{b}',eur(b))} Das Geld ist steuerfrei.`,'erbschaft',{du:1})}},
+    kritiker:{ok:()=>S.lots.some(kritikerWein),los(){const l=S.lots.filter(kritikerWein).sort((a,b)=>b.qp-a.qp)[0], q=rint(3,5); l.qp+=q; const a=ruhm(6); schlag(80,`Kritiker lobt deinen ${lotName(l)}`,`Ein bekannter Weinkritiker hat deinen ${lotName(l)} probiert und schwärmt in seiner Kolumne. Der Wein bekommt ${q} Qualitätspunkte mehr, dazu +${a} Ansehen.`,'weinkritiker',{du:1})}}
   },
   schlecht:{
-    hagel:{ok:()=>S.monat>=5&&S.monat<=8&&feldHaengt().length,los(){const p=rnd(.2,.4); for(const id of feldHaengt()){const f=S.felder[id]; f.menge=Math.round(f.menge*(1-p))} schlag(80,`Hagel ${WO[S.region]}`,`Ein Unwetter mit Hagelkörnern so groß wie Murmeln ist über deine Weinberge gezogen. Rund ${Math.round(p*100)}\u00a0% der Trauben sind hin.`,'hagel')}},
-    maschine:{ok:()=>S.maschinen.length,los(){const ma=S.maschinen[rint(0,S.maschinen.length-1)], n=rint(20,40); ma.zustand=Math.max(10,ma.zustand-n); schlag(80,'Maschinenschaden',`Dein${ma.gross?' Vollernter':'e Erntemaschine'} hat einen Felsbrocken erwischt. Der Zustand sinkt um ${n} auf ${ma.zustand}\u00a0%. Eine Wartung bringt sie wieder in Schuss.`,'maschine')}},
-    skandal:{ok:()=>!S.lage&&monatNr()>=(S.skAb||0),los(){const f=1-rnd(.2,.35), n=rint(3,5), [t,x]=variante('skandal'); S.lage={typ:'skandal',f,rest:n}; S.skAb=monatNr()+SKANDAL_PAUSE; schlag(80,t,`${x} ${n} Monate lang bringen alle Weine ${Math.round((1-f)*100)}\u00a0% weniger.`,'weinskandal')}},
-    helferweg:{ok:()=>S.helfer>0&&S.loehne.helfer[0]<=LOHN_BILLIG&&S.geld>4000,los(){const b=clamp(Math.round(S.geld*rnd(.05,.1)/100)*100,2000,30000); S.loehne.helfer.shift(); S.helfer--; S.geld-=b; schlag(80,'Erntehelfer über alle Berge',`Dein billigster Erntehelfer ist über Nacht verschwunden, und mit ihm ${eur(b)} aus der Kasse. Ersatz findest du beim Arbeitsamt.`,'helferweg')}}
+    hagel:{ok:()=>S.monat>=5&&S.monat<=8&&feldHaengt().length,los(){const p=rnd(.2,.4); for(const id of feldHaengt()){const f=S.felder[id]; f.menge=Math.round(f.menge*(1-p))} schlag(80,`Hagel ${WO[S.region]}`,`Ein Unwetter mit Hagelkörnern so groß wie Murmeln ist über deine Weinberge gezogen. Rund ${Math.round(p*100)}\u00a0% der Trauben sind hin.`,'hagel',{du:1})}},
+    maschine:{ok:()=>S.maschinen.length,los(){const ma=S.maschinen[rint(0,S.maschinen.length-1)], n=rint(20,40); ma.zustand=Math.max(10,ma.zustand-n); schlag(80,'Maschinenschaden',`Dein${ma.gross?' Vollernter':'e Erntemaschine'} hat einen Felsbrocken erwischt. Der Zustand sinkt um ${n} auf ${ma.zustand}\u00a0%. Eine Wartung bringt sie wieder in Schuss.`,'maschine',{du:1})}},
+    skandal:{ok:()=>!S.lage&&monatNr()>=(S.skAb||0),los(){const f=1-rnd(.2,.35), n=rint(3,5), [t,x]=variante('skandal'); S.lage={typ:'skandal',f,rest:n}; S.skAb=monatNr()+SKANDAL_PAUSE; schlag(80,t,`${x} ${n} Monate lang bringen alle Weine ${Math.round((1-f)*100)}\u00a0% weniger.`,'weinskandal',{du:1})}},
+    helferweg:{ok:()=>S.helfer>0&&S.loehne.helfer[0]<=LOHN_BILLIG&&S.geld>4000,los(){const b=clamp(Math.round(S.geld*rnd(.05,.1)/100)*100,2000,30000); S.loehne.helfer.shift(); S.helfer--; S.geld-=b; schlag(80,'Erntehelfer über alle Berge',`Dein billigster Erntehelfer ist über Nacht verschwunden, und mit ihm ${eur(b)} aus der Kasse. Ersatz findest du beim Arbeitsamt.`,'helferweg',{du:1})}}
   }
 };
 // S.erIn zählt die Monate bis zum nächsten Ereignis. Passt es gerade nicht, wartet es auf den nächsten ruhigen Monat.
@@ -1461,7 +1476,7 @@ function neuesSpiel(){
   lohnAbgleich();
   neuePrognose();
   TOP=[]; FUSS=[];
-  schlag(100,'Willkommen auf deinem Weingut',`${S.ich?`${S.ich} übernimmt ${S.name} ${WO[S.region]}: 3 Hektar kahler Weinberg, leere Fässer und ${eur(START_GELD)}.`:`${S.name} ${WO[S.region]} startet mit 3 Hektar kahlem Weinberg, leeren Fässern und ${eur(START_GELD)}.`} Bis März ist Pflanzzeit, im Weinberg pflanzt du deinen ${SORTEN[sortenFolge()[0]].name}. Die zweite und dritte Rebsorte bringt der Aufstieg. Im ersten Jahr tragen junge Reben nur die Hälfte.`,'weingut');
+  schlag(100,'Willkommen auf deinem Weingut',`${S.ich?`${S.ich} übernimmt ${S.name} ${WO[S.region]}: 3 Hektar kahler Weinberg, leere Fässer und ${eur(START_GELD)}.`:`${S.name} ${WO[S.region]} startet mit 3 Hektar kahlem Weinberg, leeren Fässern und ${eur(START_GELD)}.`} Bis März ist Pflanzzeit, im Weinberg pflanzt du deinen ${SORTEN[sortenFolge()[0]].name}. Die zweite und dritte Rebsorte bringt der Aufstieg. Im ersten Jahr tragen junge Reben nur die Hälfte.`,'weingut',{du:1});
   schlag(50,'So kommst du herum','Unten wählst du Weingut, Kellerei oder Stadt, die Leiste darüber bringt dich zu den Orten. Wischen übers Bild geht auch. Ein Punkt am Reiter zeigt Neues oder Dringendes, ein Tipp aufs Geld öffnet die Kasse. Das kleine i oben rechts in jedem Fenster erklärt, was du dort tust. Spielstände, Ton und das Buch liegen im Büro.');
   schlag(40,'Leute für Weinberg und Keller','Je 1.000 Reben brauchst du das ganze Jahr einen Erntehelfer. Du hast einen, für mehr Reben stellst du vor dem Pflanzen beim Arbeitsamt in der Stadt ein. Der Lohn dort schwankt jeden Monat, wer eingestellt ist, behält seinen. Dein Lagerarbeiter betreut 10.000 l Fassraum und 20.000 leere Flaschen. Fehlen dir Leute, geht es nicht in den nächsten Monat.','arbeit');
   schlag(30,'Die Konkurrenz schläft nicht','Deine Gegner: '+S.gegner.map(g=>`${g.name}, ${GEGNER_TYP[g.typ].art}, ${WO[g.region]}`).join('; ')+`. Wer zuerst Präsident des Weinbauverbands wird, gewinnt. Alle ${GEN_JAHRE} Jahre übernimmt bei allen die nächste Generation.`);
@@ -1503,6 +1518,7 @@ function ratAus(b){
   return u?{h:u.h,text:u.text,von:u.von||''}:null;
 }
 function ratJetzt(){const r=ratAus(S.bericht); if(r) S.ratLetzt=r; return r||S.ratLetzt||null}
+// Seit 7.9: o.du=1 heißt, die Schlagzeile betrifft dich selbst. Nur dann hält "Weiter bis etwas ansteht" an.
 function schlag(p,t,text,bild,o){TOP.push({p,t,text:text||'',bild:bild||'',...(o||{})})}
 // Ohne Thema: Titel und Satz je Monat, ohne Foto.
 const FLAUTE=['Stille Wochen in den Weinbergen','Rebschnitt im ganzen Land','Der Saft steigt in die Reben','Die Knospen brechen auf','Die Reben blühen','Kleine Beeren am Stock','Die Trauben werden weich','Die Öchsle steigen','Lese-Zeit im ganzen Land','Goldenes Laub, späte Trauben','Ruhe in den Kellern','Kalte Nächte, ruhige Fässer'];
@@ -1571,7 +1587,7 @@ const GEN_TEXT={
 function generationMonat(Z){
   if(S.monat!==0) return;
   const j=S.jahr-START_JAHR, n=genNr();
-  if(j===GEN_JAHRE*n-GEN_VORAUS) schlag(68,`In ${GEN_VORAUS} Jahren übernimmt die nächste Generation`,`Die Jahre am Hang hinterlassen Spuren. Im Januar ${genJahr(n)} übergibst du ${S.name} an dein Kind. Bleiben wird alles, was du aufgebaut hast: Fläche, Reben, Keller, Wein, Maschinen, Leute, Manager und dein Rang. Vom Ansehen nimmt die nächste Generation ${pz(ERB_ANSEHEN)} mit, und das Finanzamt verlangt ${pz(ERB_STEUER)} vom Vermögen als Erbschaftssteuer, nach heutigem Stand rund ${eur(erbSchaetzung())}. Reicht das Geld nicht, leiht die Bank den Rest, auch über den Kreditrahmen hinaus.`,GEN_BILD.uebergabe);
+  if(j===GEN_JAHRE*n-GEN_VORAUS) schlag(68,`In ${GEN_VORAUS} Jahren übernimmt die nächste Generation`,`Die Jahre am Hang hinterlassen Spuren. Im Januar ${genJahr(n)} übergibst du ${S.name} an dein Kind. Bleiben wird alles, was du aufgebaut hast: Fläche, Reben, Keller, Wein, Maschinen, Leute, Manager und dein Rang. Vom Ansehen nimmt die nächste Generation ${pz(ERB_ANSEHEN)} mit, und das Finanzamt verlangt ${pz(ERB_STEUER)} vom Vermögen als Erbschaftssteuer, nach heutigem Stand rund ${eur(erbSchaetzung())}. Reicht das Geld nicht, leiht die Bank den Rest, auch über den Kreditrahmen hinaus.`,GEN_BILD.uebergabe,{du:1});
   else if(j===GEN_JAHRE*n-1) Z.push(`👪 Nächsten Januar übernimmt die nächste Generation. Erbschaftssteuer nach heutigem Stand rund ${eur(erbSchaetzung())}, vom Ansehen bleiben ${pz(ERB_ANSEHEN)}.`);
   else if(j===GEN_JAHRE*n) uebergabe();
 }
@@ -1585,7 +1601,7 @@ function uebergabe(){
   const wahl=a=>a[rint(0,a.length-1)];
   const rat=S.rang>=2?(S.ratte=(S.ratte||1)+1):0;
   S.erbe={ratte:rat,k:S.flascheAuf?'offen':n===1?'g2':n===2?'g3':'weiter',offen:1,name:'',art:Math.random()<.5?'t':'s',vt:wahl(ERB_NAMEN.t),vs:wahl(ERB_NAMEN.s),steuer,kredit:kr,verm:v,ansVor,ans:S.ansehen};
-  schlag(97,`${S.name} in neuen Händen`,`Zum Jahreswechsel geht das Weingut ${WO[S.region]} an die ${n+1}. Generation. Erbschaftssteuer: ${eur(steuer)}${kr?`, davon ${eur(kr)} als Kredit bei der Bank`:''}. Vom Ansehen bleiben ${pz(ERB_ANSEHEN)}, jetzt ${S.ansehen}. Rang, Fläche, Keller, Wein und alle Leute bleiben.`,GEN_BILD.uebergabe,{gold:1,erbe:1});
+  schlag(97,`${S.name} in neuen Händen`,`Zum Jahreswechsel geht das Weingut ${WO[S.region]} an die ${n+1}. Generation. Erbschaftssteuer: ${eur(steuer)}${kr?`, davon ${eur(kr)} als Kredit bei der Bank`:''}. Vom Ansehen bleiben ${pz(ERB_ANSEHEN)}, jetzt ${S.ansehen}. Rang, Fläche, Keller, Wein und alle Leute bleiben.`,GEN_BILD.uebergabe,{gold:1,erbe:1,du:1});
   if(window.BOT) erbeBenennen(S.erbe.art==='t'?S.erbe.vt:S.erbe.vs);
 }
 function erbeOffen(){return !!(S&&S.erbe&&S.erbe.offen)}
@@ -1739,10 +1755,10 @@ function monatWeiter(){
   const W=wachse(S.monat);
   if(S.monat>=8&&S.monat<=10) for(const ma of S.maschinen) ma.zustand=Math.max(10,ma.zustand-rint(8,14));
   // Wetter als Thema für die Zeitung. Die Einzelheiten je Rebsorte stehen unter "Aus dem Weinberg".
-  if(S.monat===10&&S.kaelte===S.jahr) schlag(70,'Kälteeinbruch im November',`Über Nacht ist es bitterkalt geworden. Wer noch Trauben hängen hatte, hat sie verloren.${W.some(z=>z.startsWith('Kälteeinbruch'))?' Bei dir ist erfroren, was noch am Stock hing.':' Deine Trauben hat es nicht erwischt.'}`,'frost');
-  if(S.monat===9&&S.kaelteWarn===S.jahr) schlag(60,'Wetterdienst warnt vor Kälteeinbruch','Für November sagt der Wetterdienst bitterkalte Nächte voraus. Wer noch Trauben hängen hat, sollte jetzt lesen.','frost');
-  if(S.monat===11&&R().sorten.some(id=>S.felder[id].gefroren&&S.felder[id].menge>0)) schlag(66,'Frost! Eiswein ist möglich','Die Trauben hängen gefroren am Stock. Wer jetzt liest, kann Eiswein keltern.','frost');
-  if((S.monat===3||S.monat===4)&&S.wetter==='frost'&&rebenGesamt()) schlag(62,'Spätfrost zur Blüte','Eine Frostnacht hat die Blüte geschädigt. Die Ernte fällt dieses Jahr kleiner aus.','frost');
+  if(S.monat===10&&S.kaelte===S.jahr) schlag(70,'Kälteeinbruch im November',`Über Nacht ist es bitterkalt geworden. Wer noch Trauben hängen hatte, hat sie verloren.${W.some(z=>z.startsWith('Kälteeinbruch'))?' Bei dir ist erfroren, was noch am Stock hing.':' Deine Trauben hat es nicht erwischt.'}`,'frost',{du:W.some(z=>z.startsWith('Kälteeinbruch'))?1:0});
+  if(S.monat===9&&S.kaelteWarn===S.jahr) schlag(60,'Wetterdienst warnt vor Kälteeinbruch','Für November sagt der Wetterdienst bitterkalte Nächte voraus. Wer noch Trauben hängen hat, sollte jetzt lesen.','frost',{du:R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)?1:0});
+  if(S.monat===11&&R().sorten.some(id=>S.felder[id].gefroren&&S.felder[id].menge>0)) schlag(66,'Frost! Eiswein ist möglich','Die Trauben hängen gefroren am Stock. Wer jetzt liest, kann Eiswein keltern.','frost',{du:1});
+  if((S.monat===3||S.monat===4)&&S.wetter==='frost'&&rebenGesamt()) schlag(62,'Spätfrost zur Blüte','Eine Frostnacht hat die Blüte geschädigt. Die Ernte fällt dieses Jahr kleiner aus.','frost',{du:1});
   if(S.monat===0) schlag(28,'Prädikatsweine anmelden','Die Weine vom letzten Jahrgang können jetzt im Rathaus als Prädikatswein angemeldet werden. Bis März ist außerdem Pflanzzeit.','kellerbuch',{archiv:1});
   if(S.monat<=2) schlag(20,'Rebenmarkt geöffnet',rebenMarktText()+'. Gepflanzt wird bis Ende März.','weingut',{archiv:1});
   if(S.monat===11){const t=steuerSchau(); if(t.steuer>0) schlag(35,'Steuer-Tipp zum Jahresende',`Bisher sind es rund ${eur(t.gew)} Gewinn in diesem Jahr. Darauf fallen im Januar rund ${eur(t.steuer)} Steuer an. Was du im Dezember noch kaufst, zum Beispiel Fassraum, Flaschen, Dünger oder eine Maschinenwartung, senkt den Gewinn. Kredit tilgen senkt ihn nicht.`,'amt',{archiv:1})}
@@ -1750,8 +1766,8 @@ function monatWeiter(){
   // Schritt G 7.0: Der Kredit für die Erbschaftssteuer (erbRest) zählt nicht gegen den Kreditrahmen.
   if(schulden()-erbRest()>rahmen()){
     S.mahnung++;
-    if(S.mahnung>=3){S.pleite=true; schlag(90,`Pfändung bei ${S.name}`,'Der Gerichtsvollzieher steht vor der Tür. Dein Weingut ist pleite.','pleite')}
-    else{ruhm(-3); schlag(58,`${S.mahnung}. Mahnung der Bank`,`Deine Schulden von ${eur(schulden()-erbRest())} liegen über dem Kreditrahmen von ${eur(rahmen())}. Das kostet 3 Ansehen. Nach der dritten Mahnung wird gepfändet.`,'bank')}
+    if(S.mahnung>=3){S.pleite=true; schlag(90,`Pfändung bei ${S.name}`,'Der Gerichtsvollzieher steht vor der Tür. Dein Weingut ist pleite.','pleite',{du:1})}
+    else{ruhm(-3); schlag(58,`${S.mahnung}. Mahnung der Bank`,`Deine Schulden von ${eur(schulden()-erbRest())} liegen über dem Kreditrahmen von ${eur(rahmen())}. Das kostet 3 Ansehen. Nach der dritten Mahnung wird gepfändet.`,'bank',{du:1})}
   }else{S.mahnung=0; if(S.geld<0) Z.push('Dein Konto ist im Minus. Die Bank nimmt dafür 1 % Zinsen im Monat.')}
   if(!S.pleite){generationMonat(Z); geschichteMonat(); etappe3Monat(Z)}
   // Die Zeitung zeigt den Bericht: kopf ist die Schlagzeile, art die Artikel, zeilen "Kurz gemeldet", wetter die Ereignisse im Weinberg, ehr die neuen Ehrungen.
@@ -1816,12 +1832,12 @@ function flascheSieg(){
 function siegSpieler(){
   S.sieger=S.name; const st=endStand(), fl=flascheSieg();
   // Seit 7.7 steht Frau Öchsle mit ihrem Käse im Sieg-Kapitel der Feier, die Bestenliste wird schon beim Aufstieg erneuert.
-  schlag(100,`Du bist ${anr('Präsident','Präsidentin')}!`,`Nach ${jahreTxt(st.jahre)} ${WO[S.region]} wählt der Weinbauverband dich${S.ich?', '+S.ich+',':''} an seine Spitze. Du hast die Partie gewonnen! Der Stuhl im Festsaal gehört jetzt dir.${fl} Unten steht deine Bilanz. Du kannst weiterspielen oder ein neues Spiel beginnen.`,fl?GEN_BILD.sieg:'sieg',{gold:1,sonder:1,ende:1,stand:st});
+  schlag(100,`Du bist ${anr('Präsident','Präsidentin')}!`,`Nach ${jahreTxt(st.jahre)} ${WO[S.region]} wählt der Weinbauverband dich${S.ich?', '+S.ich+',':''} an seine Spitze. Du hast die Partie gewonnen! Der Stuhl im Festsaal gehört jetzt dir.${fl} Unten steht deine Bilanz. Du kannst weiterspielen oder ein neues Spiel beginnen.`,fl?GEN_BILD.sieg:'sieg',{gold:1,sonder:1,ende:1,stand:st,du:1});
 }
 const SIEG_SPRUCH={vorsicht:'„Immer schön langsam, dann wird das schon“, sagt sie beim Anstoßen.',qualitaet:'„Qualität setzt sich eben durch“, sagt er und meint vor allem sich selbst.',zocker:'„Alles auf eine Karte, und die Karte hat gestochen“, grinst er in die Kameras.'};
 function gegnerSieg(g,wo){
   S.sieger=g.name; const st=endStand();
-  schlag(100,`${g.name} ist Präsident!`,`${g.name} ${wo} wird nach ${jahreTxt(st.jahre)} Präsident des Weinbauverbands und gewinnt die Partie. ${SIEG_SPRUCH[g.typ]||''} Der Stuhl im Festsaal ist besetzt${S.gesch&&S.gesch.flasche&&!S.flascheAuf?', und deine Flasche vom ersten Jahrgang bleibt im Fach':''}. Aber Stühle werden auch wieder frei. Kopf hoch: Du kannst weiterspielen und deinen eigenen Aufstieg vollenden.`,'gegnerpraesident',{sonder:1,ende:1,stand:st});
+  schlag(100,`${g.name} ist Präsident!`,`${g.name} ${wo} wird nach ${jahreTxt(st.jahre)} Präsident des Weinbauverbands und gewinnt die Partie. ${SIEG_SPRUCH[g.typ]||''} Der Stuhl im Festsaal ist besetzt${S.gesch&&S.gesch.flasche&&!S.flascheAuf?', und deine Flasche vom ersten Jahrgang bleibt im Fach':''}. Aber Stühle werden auch wieder frei. Kopf hoch: Du kannst weiterspielen und deinen eigenen Aufstieg vollenden.`,'gegnerpraesident',{sonder:1,ende:1,stand:st,du:1});
 }
 // Alles, was Etappe 3 beim Monatswechsel tut: Aufstieg, Gegner, Wettbewerbe, Auktion, Märkte.
 function etappe3Monat(Z){
@@ -1841,9 +1857,9 @@ function etappe3Monat(Z){
     // Version 7.2: Feier nach der Zeitung, goldene Rang-Karte für diesen Monat. Seit 7.7 feiert auch der Präsident (Sieg-Szene), der Leserbrief bleibt bis Vizepräsident.
     S.rangNeu=S.jahr*12+S.monat;
     S.feier={von:alt,zu:S.rang,platz:bestenEintrag()}; if(S.rang<R_MAX) S.aufBrief=S.rang;
-    schlag(95,`Aufstieg: Du bist jetzt ${rangN(S.rang)}`,`Das bringt: ${bringt(S.rang)}.${rahmenSatz(S.rang)}${r.weg?' '+anr(r.weg,r.wegW):''}`,'aufstieg',{sonder:1,gold:1});
+    schlag(95,`Aufstieg: Du bist jetzt ${rangN(S.rang)}`,`Das bringt: ${bringt(S.rang)}.${rahmenSatz(S.rang)}${r.weg?' '+anr(r.weg,r.wegW):''}`,'aufstieg',{sonder:1,gold:1,du:1});
     if(S.rang===R_MAX&&!S.sieger) siegSpieler();
-    else if(S.rang===R_MAX) schlag(99,`Du bist doch noch ${anr('Präsident','Präsidentin')}`,`${S.sieger} war schneller, aber jetzt hast du es auch an die Spitze des Weinbauverbands geschafft. Respekt!${S.gesch&&S.gesch.flasche&&!S.flascheAuf?(S.flascheAuf=S.jahr,' Die Flasche vom ersten Jahrgang wird heute Abend doch noch geöffnet.'):''}`,S.flascheAuf===S.jahr?GEN_BILD.sieg:'sieg',{gold:1});
+    else if(S.rang===R_MAX) schlag(99,`Du bist doch noch ${anr('Präsident','Präsidentin')}`,`${S.sieger} war schneller, aber jetzt hast du es auch an die Spitze des Weinbauverbands geschafft. Respekt!${S.gesch&&S.gesch.flasche&&!S.flascheAuf?(S.flascheAuf=S.jahr,' Die Flasche vom ersten Jahrgang wird heute Abend doch noch geöffnet.'):''}`,S.flascheAuf===S.jahr?GEN_BILD.sieg:'sieg',{gold:1,du:1});
   }
   kontrolleMonat(Z); sabotageGegenDich(Z);
   if(S.monat===0&&S.rang>=R_LADEN) Z.push(`Als Weinbotschafter ${WO[S.region]} warst du auf Messen in aller Welt unterwegs. +${ruhm(BOTSCHAFT_ANS)} Ansehen.`);
@@ -1852,18 +1868,18 @@ function etappe3Monat(Z){
   if(S.monat===1){
     neuerWettbewerb('land');
     // Schlagzeile nur, wenn du mitmachen darfst. Sonst reicht eine Kurzmeldung.
-    if(S.rang>=R_LAND) schlag(60,`Landesprämierung ${S.jahr} ausgeschrieben`,`Gesucht sind die besten Prädikatsweine vom Jahrgang ${S.jahr-1} ${WO[S.region]}. Eingereicht wird diesen Monat, das Ergebnis steht im nächsten Winzerboten. Deinen Wein reichst du unter „Das steht an“ ein.`,'praemierung',{archiv:1});
+    if(S.rang>=R_LAND) schlag(60,`Landesprämierung ${S.jahr} ausgeschrieben`,`Gesucht sind die besten Prädikatsweine vom Jahrgang ${S.jahr-1} ${WO[S.region]}. Eingereicht wird diesen Monat, das Ergebnis steht im nächsten Winzerboten. Deinen Wein reichst du im Rathaus ein.`,'praemierung',{archiv:1});
     else Z.push(`Die Landesprämierung ${S.jahr} ist ausgeschrieben. Mitmachen darfst du ab dem Rang ${RAENGE[R_LAND].name}.`);
   }
   if(S.monat===5&&S.jahr%3===0){
     neuerWettbewerb('bund');
-    schlag(60,`Bundeswettbewerb ${S.jahr} ausgeschrieben`,`Nur alle drei Jahre treten die besten Winzer des Landes gegeneinander an, mit verkaufsreifen Prädikatsweinen und Sekten aus der Flasche. Eingereicht wird diesen Monat, das Ergebnis steht im nächsten Winzerboten.${S.rang>=R_BUND?' Deinen Wein reichst du unter „Das steht an“ ein.':` Mitmachen darfst du ab dem Rang ${RAENGE[R_BUND].name}.`}`,'praemierung',{archiv:1});
+    schlag(60,`Bundeswettbewerb ${S.jahr} ausgeschrieben`,`Nur alle drei Jahre treten die besten Winzer des Landes gegeneinander an, mit verkaufsreifen Prädikatsweinen und Sekten aus der Flasche. Eingereicht wird diesen Monat, das Ergebnis steht im nächsten Winzerboten.${S.rang>=R_BUND?' Deinen Wein reichst du im Rathaus ein.':` Mitmachen darfst du ab dem Rang ${RAENGE[R_BUND].name}.`}`,'praemierung',{archiv:1});
   }
   // Auktion über drei Monate: angekündigt, dann wird geboten, danach steht das Ergebnis unten in der Zeitung.
   // Alte Spielstände ohne phase hatten ihren Bietmonat schon und bekommen jetzt das Ergebnis.
   const a=S.auktion, wo=WO[S.region], ab=S.rang>=R_AUKTION, nichtDu=` Mitbieten darfst du ab dem Rang ${RAENGE[R_AUKTION].name}.`;
   if(a&&a.phase!==0){FUSS.push('🔨 '+aukErgebnis()); S.auktion=null}
-  else if(a){a.phase=1; schlag(56,a.spitze?`Heute wird geboten: die Spitzenlage ${wo}`:`Heute wird geboten: ${a.ha}\u00a0Hektar ${wo}`,`Im Saal sitzen ${a.bieter.length} Bieter, das Startgebot liegt bei ${eur(a.start)}.${ab?' Mitbieten kannst du diesen Monat unter „Das steht an“.':nichtDu}`,a.spitze?'spitzenlage':'auktion',{archiv:a.spitze?0:1})}
+  else if(a){a.phase=1; schlag(56,a.spitze?`Heute wird geboten: die Spitzenlage ${wo}`:`Heute wird geboten: ${a.ha}\u00a0Hektar ${wo}`,`Im Saal sitzen ${a.bieter.length} Bieter, das Startgebot liegt bei ${eur(a.start)}.${ab?' Mitbieten kannst du diesen Monat im Rathaus.':nichtDu}`,a.spitze?'spitzenlage':'auktion',{archiv:a.spitze?0:1})}
   // Spitzenlage: ab Vizepräsident alle drei Jahre eine Chance, in einem Auktionsmonat zur Hälfte. Nur Nachbarn bieten mit.
   if(!S.auktion&&!S.spitze&&S.rang>=R_SPITZE&&AUK_MONATE.includes(S.monat)&&S.jahr-(S.spitzeVers||0)>=3&&Math.random()<.5){
     neueAuktion(1); S.spitzeVers=S.jahr;
@@ -1887,7 +1903,7 @@ function kontrolleMonat(Z){
   const k=S.kontr; if(--k.in>0) return;
   if(!panschListe().length){kontrNeu(); schlag(45,'Weinkontrolle ohne Befund',`Der Prüfer blättert durch dein Kellerbuch und findet nichts zu beanstanden. +${ruhm(2)} Ansehen.`,'kontrolle',{archiv:1}); return}
   // Gepanschter Wein im Keller: Der Spieler entscheidet im Dialog, ob er besticht. Bis dahin ist alles andere gesperrt.
-  S.pruefer=1; schlag(85,'Weinkontrolle im Keller','Der Prüfer steht unangemeldet im Keller und will dein Kellerbuch sehen.','kontrolle',{archiv:1});
+  S.pruefer=1; schlag(85,'Weinkontrolle im Keller','Der Prüfer steht unangemeldet im Keller und will dein Kellerbuch sehen.','kontrolle',{archiv:1,du:1});
 }
 const bestechChance=n=>.5+.35*(n-BESTECH_MIN)/(BESTECH_MAX-BESTECH_MIN);
 function zeigePruefer(){
@@ -1934,11 +1950,11 @@ function sabotageGegenDich(Z){
   S.sabDich=S.jahr;
   if(F.length&&(Math.random()<.5||!B.length)){
     const l=F[0]; S.lots=S.lots.filter(x=>x!==l);
-    schlag(85,'Sabotage im Keller!',`Nachts war jemand in deinem Keller: ${num(l.liter)}\u00a0l ${lotName(l)} sind vergiftet und mussten weg. Man munkelt, ${g.name} stecke dahinter.`,'sabotage');
+    schlag(85,'Sabotage im Keller!',`Nachts war jemand in deinem Keller: ${num(l.liter)}\u00a0l ${lotName(l)} sind vergiftet und mussten weg. Man munkelt, ${g.name} stecke dahinter.`,'sabotage',{du:1});
   }else{
     let weg=0;
     for(const id of B){const f=S.felder[id], tot=Math.round(f.reben*.15/100)*100; f.reben-=tot; f.jung=Math.min(f.jung,f.reben); weg+=tot; if(f.menge>0&&!f.gelesen) f.menge=Math.round(f.menge*.85)}
-    schlag(85,'Sabotage im Weinberg!',`Nachts hat jemand in deinem Weinberg gewütet: ${num(weg)} Reben sind zerstört. Man munkelt, ${g.name} stecke dahinter.`,'sabotage');
+    schlag(85,'Sabotage im Weinberg!',`Nachts hat jemand in deinem Weinberg gewütet: ${num(weg)} Reben sind zerstört. Man munkelt, ${g.name} stecke dahinter.`,'sabotage',{du:1});
   }
 }
 function zeigePleite(){
@@ -1946,12 +1962,21 @@ function zeigePleite(){
 }
 
 /* ================= Aufgaben-Liste ================= */
+// Grenzwerte seit 7.9: Düngen ist Rot ab 50 % Boden. "Konto gefährlich niedrig" heißt: weniger als die festen Kosten von zwei Monaten.
+const DUENG_ROT=50;
+function kontoKnapp(){const k=kosten(); return 2*(k.basis+k.loehne+k.tilgung+k.zins)}
 function aufgaben(){
   const A=[], m=S.monat, frei=S.ha*HA_REBEN-rebenGesamt();
+  // Seit 7.9 drei Arten: rot:1 kann nicht warten und hält das Weiterblättern an. Ohne Merkmal ist es Gelb (Punkt am Reiter, kein Halt).
+  // ruhig:1 ist nur ein Hinweis ohne Punkt. halt:1 hält an, obwohl es Gelb ist (nur die Lese).
   if(S.mahnung) A.push({t:`${S.mahnung}. Mahnung: Schulden über dem Kreditrahmen`,rot:1,tab:'stadt',sub:'bank'});
-  if(aukInfo()) A.push({t:aukInfo(),akt:'auktion'});
-  if(S.auktion&&S.auktion.phase!==0&&!S.auktion.ende&&S.rang>=R_AUKTION) A.push({t:`🔨 Auktion diesen Monat: ${S.auktion.ha}\u00a0Hektar, Gebot steht bei ${eur(S.auktion.gebot)}`,akt:'auktion'});
-  if(S.wett&&!S.wett.fertig&&!S.wett.ein&&S.rang>=wettRang()&&!aufgabeAktiv('wett')) A.push({t:`🏅 ${WETTNAME[S.wett.typ]}: diesen Monat einen Wein einreichen`,akt:'wettbewerb'});
+  else if(S.geld<0) A.push({t:`Konto im Minus (${eur(S.geld)}): Das kostet 1\u00a0% Zinsen im Monat, ab zur Bank`,rot:1,tab:'stadt',sub:'bank'});
+  else if(S.geld<kontoKnapp()) A.push({t:`Konto gefährlich niedrig: ${eur(S.geld)} reichen keine zwei Monate`,tab:'stadt',sub:'bank'});
+  if(aukInfo()) A.push({t:aukInfo(),tab:'stadt',sub:'amt',ruhig:1});
+  // Auktionstag: Rot nur, wenn Konto plus freier Kreditrahmen fürs nächste Gebot reichen. Sonst bleibt es ein Hinweis.
+  if(S.auktion&&S.auktion.phase!==0&&!S.auktion.ende&&S.rang>=R_AUKTION){const kann=aukNaechstes()<=aukLimit(); A.push({t:`🔨 Auktion diesen Monat: ${S.auktion.ha}\u00a0Hektar, Gebot steht bei ${eur(S.auktion.gebot)}`+(kann?'':'. Zum Mitbieten reicht dein Geld nicht'),tab:'stadt',sub:'amt',...(kann?{rot:1}:{ruhig:1})})}
+  // Wettbewerb: Rot nur mit einem zugelassenen Wein. Reicht der Manager ein, steht hier nichts.
+  if(S.wett&&!S.wett.fertig&&!S.wett.ein&&S.rang>=wettRang()&&!aufgabeAktiv('wett')){const pass=S.lots.some(wettFaehig); A.push({t:`🏅 ${WETTNAME[S.wett.typ]}: `+(pass?'diesen Monat einen Wein einreichen':'diesen Monat, du hast aber keinen zugelassenen Wein'),tab:'stadt',sub:'amt',...(pass?{rot:1}:{ruhig:1})})}
   if(fehlText()) A.push({t:`${fehlText()}, vorher geht es nicht in den nächsten Monat`,rot:1,tab:'stadt',sub:'arbeit'});
   if(m>=5&&m<=10&&leseFaktor()<.75&&R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)) A.push({t:`Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0% der Reben`,rot:1,tab:'stadt',sub:'arbeit'});
   for(const l of S.lots) if(l.status==='trauben') A.push(aufgabeAktiv('keltern')?{t:`${SORTEN[l.sorte].name}-Trauben: dein ${MGR_BEREICHE.keller.name} keltert beim Weiterblättern`,tab:'keller',ruhig:1}:{t:`${SORTEN[l.sorte].name}-Trauben müssen diesen Monat gekeltert werden`,rot:1,tab:'keller'});
@@ -1962,18 +1987,18 @@ function aufgaben(){
   const anm=S.lots.filter(l=>l.status==='fass'&&!l.stufe&&['feder',...REIHE].some(st=>!pruefeAnmeldung(l,st).length)).length;
   if(anm) A.push({t:`${anm} ${anm===1?'Fass kann':'Fässer können'} im Rathaus angemeldet werden`,tab:'stadt',sub:'amt'});
   const abf=S.lots.filter(l=>l.status==='fass'&&l.stufe&&l.stufe!=='feder');
-  for(const l of abf) A.push({t:`${lotName(l)} kann abgefüllt werden`+(S.flaschen<l.liter?` (es fehlen ${num(l.liter-S.flaschen)} Flaschen)`:''),tab:'keller'});
+  for(const l of abf) A.push({t:`${lotName(l)} kann abgefüllt werden`+(S.flaschen<l.liter?` (es fehlen ${num(l.liter-S.flaschen)} Flaschen)`:''),tab:'keller',ruhig:aufgabeAktiv('flaschen')?1:0});
   for(const l of S.lots) if(l.status==='flasche'&&lager(l).max-l.flMonate<=2) A.push({t:`${lotName(l)}: nur noch ${lager(l).max-l.flMonate} Monate haltbar`,rot:1,tab:'stadt',sub:'handel'});
-  if(m<=2&&S.verlust) for(const id of R().sorten) if(S.verlust[id]) A.push({t:`Über den Winter sind ${num(S.verlust[id])} ${SORTEN[id].name}-Reben eingegangen. Nachpflanzen`,tab:'gut',sub:'berg'});
+  if(m<=2&&S.verlust) for(const id of R().sorten) if(S.verlust[id]) A.push({t:`Über den Winter sind ${num(S.verlust[id])} ${SORTEN[id].name}-Reben eingegangen. Nachpflanzen`,tab:'gut',sub:'berg',ruhig:aufgabeAktiv('reben')?1:0});
   if(m<=2&&frei>0) A.push({t:`Pflanzzeit: Platz für ${num(frei)} Reben`,tab:'gut',sub:'berg',ruhig:1});
-  // Version 7.3: Düngen steht an, sobald der Boden auf 70 % oder weniger fällt. Düngt der Weingut-Manager, nur ein ruhiger Hinweis.
-  if(S.boden<=70&&S.duengungen<3) A.push(aufgabeAktiv('duengen')?{t:`Boden bei ${S.boden}\u00a0%: dein ${MGR_BEREICHE.weingut.name} düngt beim Weiterblättern`,tab:'gut',sub:'berg',ruhig:1}:{t:`🌱 Boden bei ${S.boden}\u00a0%: Düngen ist dran`,tab:'gut',sub:'berg'});
+  // Version 7.3: Düngen steht an, sobald der Boden auf 70 % oder weniger fällt (Gelb), seit 7.9 Rot ab DUENG_ROT. Düngt der Weingut-Manager, nur ein ruhiger Hinweis.
+  if(S.boden<=70&&S.duengungen<3) A.push(aufgabeAktiv('duengen')?{t:`Boden bei ${S.boden}\u00a0%: dein ${MGR_BEREICHE.weingut.name} düngt beim Weiterblättern`,tab:'gut',sub:'berg',ruhig:1}:{t:`🌱 Boden bei ${S.boden}\u00a0%: Düngen ist ${S.boden<=DUENG_ROT?'überfällig':'dran'}`,tab:'gut',sub:'berg',rot:S.boden<=DUENG_ROT?1:0});
   if(m===11){const t=steuerSchau(); if(t.steuer>0){
     A.push({t:`💶 Im Januar rund ${eur(t.steuer)} Steuer auf ${eur(t.gew)} Gewinn. Fassraum oder Flaschen kaufen senkt sie`,tab:'keller',sub:'lager',ruhig:1});
     if(S.duengungen<3&&S.boden<100) A.push({t:`💶 Steuer senken: noch düngen (${S.duengungen} von 3 Mal)`,tab:'gut',sub:'berg',ruhig:1});
     if(S.maschinen.some(x=>x.zustand<100)) A.push({t:'💶 Steuer senken: Maschinen warten',tab:'gut',sub:'maschinen',ruhig:1});
   }}
-  if(m>=7&&R().sorten.some(id=>{const f=S.felder[id];return f.menge>0&&!f.gelesen&&(m<11||f.gefroren)})) A.push({t:'Lese möglich',tab:'gut',sub:'berg'});
+  if(m>=7&&R().sorten.some(id=>{const f=S.felder[id];return f.menge>0&&!f.gelesen&&(m<11||f.gefroren)})) A.push({t:'Lese möglich',tab:'gut',sub:'berg',...(m===7?{ruhig:1}:{halt:1})});
   if(S.rang>=R_LADEN&&!aufgabeAktiv('regal')&&!regalWeine().length&&S.lots.some(l=>l.status==='flasche'&&preis(l)>0)) A.push({t:'🍷 Das Regal deiner Weinhandlung ist leer',tab:'stadt',sub:'laeden',ruhig:1});
   {const art=festArt(); if(art&&m>=5&&m<=7&&S.festJahr!==S.jahr&&S.geld>=FESTE[art].preis) A.push({t:`🎉 Das Geld reicht für ein ${FESTE[art].name}`,tab:'gut',sub:'betrieb',ruhig:1})}
   const vk=S.lots.filter(l=>preis(l)>0&&!l.regal).length;
@@ -2043,12 +2068,15 @@ function vRangliste(){
     buch:'gegner',hin:[S.sieger&&`🏆 Gewonnen hat: ${esc(S.sieger)}`],
     i:'Hier stehst du mit deinen Gegnern. Vorn steht der höchste Rang, bei gleichem Rang entscheidet das Ansehen. Was die anderen treiben, steht im Winzerboten.'});
 }
-// Version 4.4: Steht etwas an, das nicht warten kann? Ruhige Hinweise (verkaufsreif, Pflanzzeit mit freiem Platz, Steuer-Tipps, Fest, leeres Regal) zählen nicht.
-function stehtAn(){return aufgaben().some(a=>!a.ruhig)}
-// "Weiter bis etwas ansteht": blättert ruhige Monate am Stück, höchstens zwölf. Hält an bei einer Aufgabe, einer Schlagzeile ab Wichtigkeit 55
+// Seit 7.9: Steht etwas an, das nicht warten kann? Das ist alles in Rot, dazu die Lese (halt). Gelb und Hinweise zählen nicht.
+function stehtAn(){return aufgaben().some(a=>a.rot||a.halt)}
+// Gründe, aus denen "Weiter bis etwas ansteht" nach einem Monatswechsel anhält. Leer heißt: weiterblättern.
+// Schlagzeilen halten nur an, wenn sie dich selbst betreffen (Merkmal du bei schlag()), alle anderen stehen danach unter "Kurz gemeldet".
+function sprungHalt(){return [...TOP.filter(x=>x.du).map(x=>'Schlagzeile: '+x.t),...aufgaben().filter(a=>a.rot||a.halt).map(a=>(a.rot?'Rot: ':'Lese: ')+a.t)]}
+// "Weiter bis etwas ansteht": blättert ruhige Monate am Stück, höchstens zwölf. Hält an, sobald sprungHalt() einen Grund nennt,
 // oder einer Warnung beim Weiterblättern. SPRUNG trägt die Schlagzeilen der übersprungenen Monate in die letzte Zeitung ("Kurz gemeldet").
 let SPRUNG=[];
-const SPRUNG_MAX=12, SPRUNG_WICHTIG=55;
+const SPRUNG_MAX=12;
 /* ---- Infoseite: erscheint nach jedem Monatswechsel als Vollbild, die Zeitung "Der Winzerbote" vor dem Bild der Jahreszeit. Kopfleiste und Reiter fehlen, "Weiter" blendet aus und führt zu Aktuelles ---- */
 const PHASE=['Winterruhe','Winterruhe','Austrieb','Austrieb','Blüte','Fruchtansatz'];
 function lohnAngebot(k){const n=S.angebot[k], lage=lohnLage(n);return `<span class="${lage==='günstig'?'gruen':lage==='teuer'?'rot':''}">${eur(n)}, ${lage}</span>`}
@@ -2561,10 +2589,10 @@ function fz(name,angaben,zustand,...kn){return `<div class="fz"><b>${name}</b>${
 // Aktuelles (seit 7.4 auf dem Fenster-Baustein): "Das steht an" ganz oben (Maik, Version 4.4), der Rang darunter.
 function vAktuell(){
   const A=aufgaben(), an=stehtAn();
-  return fenster('ansteht','Das steht an',A.length?A.map(a=>`<button class="task ${a.rot?'rot':''}" data-a="${a.akt||'tab'}" data-id="${a.tab||''}" data-sub="${a.sub||''}">${a.rot?'⚠️ ':''}${esc(a.t)}</button>`).join(''):[],{
+  return fenster('ansteht','Das steht an',A.length?A.map(a=>`<button class="task ${a.rot?'rot':a.ruhig?'hin':'gelb'}" data-a="${a.akt||'tab'}" data-id="${a.tab||''}" data-sub="${a.sub||''}">${a.rot?'⚠️ ':''}${esc(a.t)}</button>`).join(''):[],{
     leer:'Diesen Monat steht nichts an. Du kannst weiterblättern.',
     kn:an?`<button class="sec klein" data-a="tab" data-id="monat">📰 Winzerbote</button>`:`<div class="zweikn"><button class="sec klein" data-a="tab" data-id="monat">📰 Winzerbote</button><button class="klein" data-a="weiterBis">⏩ Weiter bis etwas ansteht</button></div>`,
-    i:'Hier steht, was diesen Monat zu tun ist. Ein Tipp führt dich direkt an den Ort. Rot heißt: Das kann nicht warten. Steht nichts Dringendes an, blättert „Weiter bis etwas ansteht“ die ruhigen Monate am Stück durch, höchstens zwölf. Auch Auktionen und Wettbewerbe stehen hier, sobald du bieten oder einreichen kannst. „Winzerbote“ zeigt die letzte Ausgabe noch einmal. Den Rat vom alten Winzer findest du an der Pinnwand im Bild.'})+vRang();
+    i:'Hier steht, was diesen Monat zu tun ist. Ein Tipp führt dich direkt an den Ort. <b>Rot</b> kann nicht warten, <b>Gelb</b> hat Zeit, <b>Grau</b> ist nur ein Hinweis. Die Punkte an den Reitern zeigen dasselbe, Hinweise bekommen keinen Punkt.<br><br>⏩ „Weiter bis etwas ansteht“ blättert am Stück, höchstens zwölf Monate. Es hält nur bei Rot und bei Schlagzeilen, die dich selbst betreffen. Bei Gelb und bei Hinweisen blättert es weiter. Ausnahme ist die Lese: Von September bis November hält es einmal im Monat, solange Trauben hängen, im Dezember nur bei gefrorenen Trauben.<br><br>Geboten und eingereicht wird im Rathaus, der Tipp hier führt dich hin. „Winzerbote“ zeigt die letzte Ausgabe noch einmal. Den Rat vom alten Winzer findest du an der Pinnwand im Bild.'})+vRang();
 }
 // Maschinen (seit 7.4 auf dem Fenster-Baustein): "Deine Maschinen" mit einer Zeile je Maschine, darunter je Bauart ein Fenster zum Kaufen.
 // Was der Rang noch sperrt, steht zugeklappt mit Schloss unten: die kleine Maschine ab Winzermeister, der Vollernter ab Gutsherr.
@@ -2781,6 +2809,31 @@ function vStadt(){
         `<button class="klein" data-a="anmelden" data-id="${l.id}">Anmelden</button>`)}).join('')}</div>`
       :`<div class="fleer" style="margin-top:6px">Kein Fasswein wartet auf die Anmeldung.</div>`),{
       i:'Im Rathaus meldest du deinen Fasswein an. Erst dann bekommt er seine Stufe und darf in die Flasche. Welche Stufen für einen Wein möglich sind, siehst du nach dem Tipp auf „Anmelden“. Was zuerst verdirbt, steht oben.'});
+    // Seit 7.9: feste Fenster "Wettbewerbe" und "Auktionen". Einreichen und Bieten gehen hier, die Tipps in "Das steht an" führen her.
+    const wI=`Bei der Landesprämierung im Februar treten die Winzer deines Gebiets mit Prädikatsweinen vom letzten Jahrgang an (ab dem Rang ${RAENGE[R_LAND].name}). Der Bundeswettbewerb ist alle drei Jahre im Juni, mit verkaufsreifen Prädikatsweinen und Sekten aus der Flasche (ab dem Rang ${RAENGE[R_BUND].name}). Eingereicht wird im Monat der Ausschreibung, das Ergebnis steht im nächsten Winzerboten. Ein Platz auf dem Treppchen bringt Ansehen und Qualitätspunkte für den Wein.`;
+    if(S.rang<R_LAND) zu.push(fenster('wettb','Wettbewerbe','',{zu:`ab dem Rang ${RAENGE[R_LAND].name}`,i:wI}));
+    else{
+      const w=S.wett&&!S.wett.fertig?S.wett:null, mb=aufgabeAktiv('wett')?mgrAufgabe('wett').bereich:'';
+      const wz=typ=>{
+        const name=WETTNAME[typ], rg=typ==='bund'?R_BUND:R_LAND;
+        if(S.rang<rg) return fz('🔒 '+name,`ab dem Rang ${RAENGE[rg].name}`);
+        if(!w||w.typ!==typ) return fz(name,`Gerade nichts, als Nächstes im ${wettNaechst(typ)}.`);
+        const n=S.lots.filter(wettFaehig).length;
+        return fz(`${name} ${S.jahr}`,w.ein?`Eingereicht: ${esc(w.ein.name)}`:n?`${n} ${n===1?'Wein ist':'Weine sind'} zugelassen`:'Du hast gerade keinen zugelassenen Wein.',
+          w.ein?'Tauschen geht bis zum Monatsende.':n&&!mb?'<span class="rot">Einreichen geht nur diesen Monat.</span>':'',
+          `<button class="klein${w.ein||!n?' sec':''}" data-a="wettbewerb">${w.ein?'Tauschen':n?'Einreichen':'Ansehen'}</button>`)};
+      h+=fenster('wettb','Wettbewerbe',[wz('land'),wz('bund')],{hin:[mb&&`${MGR_BEREICHE[mb].sym} ${mgrG(mb).Dein} ${MGR_BEREICHE[mb].name} reicht beim Weiterblättern deinen besten Wein ein.`],i:wI});
+    }
+    const aI=`Bei einer Auktion kommt Land unter den Hammer, meist viel billiger als beim Makler. Der Winzerbote kündigt sie einen Monat vorher an, im Monat danach bietest du hier mit. Mitgehen kannst du bis Konto plus freier Kreditrahmen. Auktionen gibt es nicht jedes Jahr, geboten wird wenn, dann im ${AUK_MONATE.map(m=>MON[(m+1)%12]).join(', ').replace(/, ([^,]*)$/,' oder $1')}.`;
+    if(S.rang<R_AUKTION) zu.push(fenster('auktionen','Auktionen','',{zu:`ab dem Rang ${RAENGE[R_AUKTION].name}`,i:aI}));
+    else{
+      const a=S.auktion, was=a?`${a.spitze?'Spitzenlage':'Weinberg'} mit ${a.ha}\u00a0Hektar`:'', lim=Math.max(0,aukLimit());
+      h+=fenster('auktionen','Auktionen',!a?[]
+        :a.phase===0?[fz(was,`Geboten wird im ${MON[(S.monat+1)%12]} · Startgebot ${eur(a.start)}`,lim>=a.start?`Du kannst bis ${eur(lim)} mitgehen.`:`<span class="rot">Fürs Startgebot fehlen dir ${eur(a.start-lim)}.</span>`,`<button class="klein sec" data-a="auktion">Ansehen</button>`)]
+        :a.ende?[fz(was,'Die Auktion ist beendet.','',`<button class="klein sec" data-a="auktion">Ansehen</button>`)]
+        :[fz(was,`${a.fuehrer?'Höchstgebot':'Startgebot'} ${eur(a.gebot)}${a.fuehrer?' von '+esc(a.fuehrer):''}`,aukNaechstes()<=lim?'<span class="rot">Geboten wird nur diesen Monat.</span>':'Zum Mitbieten reicht dein Geld nicht.',`<button class="klein" data-a="auktion">Bieten</button>`)],
+        {leer:`Gerade nichts, als Nächstes frühestens im ${aukNaechst()}.`,i:aI});
+    }
     const mkI=`Der Makler kennt Winzer, die ihr Land lieber still verkaufen. Ein Hektar kostet bei ihm ${eur(MAKLER_PREIS)}, bei einer Auktion meist viel weniger. Er verkauft dir höchstens einen Hektar im Jahr und nur, wenn dir für den nächsten Rang allein noch Land fehlt.`;
     if(S.rang<R_AUKTION) zu.push(fenster('makler','Makler','',{zu:`ab dem Rang ${RAENGE[R_AUKTION].name}`,i:mkI}));
     else if(S.rang<R_MAX){
@@ -2801,7 +2854,7 @@ function vStadt(){
   // Großhandel (seit 7.4 auf dem Fenster-Baustein): "Markt diesen Monat" mit Marktlage und Budget, darunter "Deine Weine" als Liste zum Antippen.
   // Die Liste steht fest nach Dringlichkeit. Budget und Exporthandel stehen im i, vom Dauerauftrag bleibt eine Zeile (dauerInfo).
   if(SUB==='handel'){
-    const fl=S.lots.filter(l=>l.status==='flasche'&&!l.regal).sort(BSORT_F.dringend), mf=marktF(0), exSt=exportStufen(), pzx=f=>`+${Math.round((f-1)*100)} %`, D=dauerInfo('handel');
+    const fl=S.lots.filter(l=>l.status==='flasche'&&!l.regal).sort(BSORT_F.dringend), exSt=exportStufen(), pzx=f=>`+${Math.round((f-1)*100)} %`, D=dauerInfo('handel');
     h+=fenster('markt','Markt diesen Monat',`<div class="kv"><span>Marktlage</span><span>${S.markt>1.04?'gut 📈':S.markt<.96?'schwach 📉':'normal'}</span></div>
       ${S.lage?`<div class="kv"><span>${S.lage.typ==='mode'?SORTEN[S.lage.sorte].name+' gefragt':'Weinskandal'}</span><span>${proz(S.lage.f)}</span></div>`:''}
       <div class="kv"><span>Budget übrig</span><span>${eur(marktRest())} von ${eur(marktFrei())}</span></div>`,{
@@ -2814,11 +2867,15 @@ function vStadt(){
     // Kurze Zeilen wie im Kellerbuch. Der Preis ist der beste Absatzweg mit der Marktlage nach den Verkäufen dieses Monats.
     h+=fenster('weine','Deine Weine',fl.map(l=>{const W=wege(l),L=lager(l),H=haltText(l),nm=`<b>${dot(l.sorte)}${esc(lotName(l))}${l.med&&l.med.length?' 🏅':''}</b>`,z2=`<div class="bz2">${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte</div>`,z3=`<div class="bz3 ${H.r<=2?'rot':''}">${H.t}</div>`;
       if(!W.length){const n=L.min-l.flMonate; return `<button class="bzeile" data-a="buchDetail" data-id="${l.id}"><div class="bz1">${nm}<span>reif in ${n} ${n===1?'Monat':'Monaten'}</span></div>${z2}${z3}</button>`}
-      const w=W[0]; return `<button class="bzeile" data-a="verkaufen" data-id="${l.id}"><div class="bz1">${nm}<span>${w.name==='Inland'?'':w.flag+' '}${eur2(w.p*(federHandel(l)?1:mf))}${mf<.995&&!federHandel(l)?' 📉':''}</span></div>${z2}${z3}</button>`}),{
+      // Seit 7.9 (Weg A): Unter dem Preis steht, wie viele Flaschen der Großhandel diesen Monat noch zum vollen Preis nimmt. Gerechnet wird mit dem Rest
+      // des Budgets, also nach jedem Verkauf neu. Vorher galt marktF(0), der Preis der ersten Flasche: Der blieb voll, auch wenn das Budget gerade aufgebraucht war.
+      const w=W[0], fw=federHandel(l), voll=fw?l.liter:Math.min(l.liter,Math.floor(marktRest()/w.p)), satt=!fw&&voll<1;
+      const zv=fw?'':`<div class="bz2">${satt?`alle zusammen im Schnitt ${eur2(w.p*marktF(l.liter*w.p))} je Flasche`:voll>=l.liter?'alle zum vollen Preis':`noch ${voll===1?'1 Flasche':num(voll)+' Flaschen'} zum vollen Preis`}</div>`;
+      return `<button class="bzeile" data-a="verkaufen" data-id="${l.id}"><div class="bz1">${nm}<span>${satt?'Markt satt 📉':(w.name==='Inland'?'':w.flag+' ')+eur2(w.p)}</span></div>${z2}${zv}${z3}</button>`}),{
       leer:'Kein Flaschenwein im Lager.',
       hin:[D.hin,erst&&`⏳ Noch nichts verkaufsreif. Als Erstes reif: ${esc(lotName(erst.l))} im ${inMonaten(erst.n)}.`],
       stand:D.stand,
-      i:`Antippen verkauft. Der Preis je Flasche gilt für den besten Absatzweg, Zoll ist abgezogen. 📉 heißt: Der Markt ist diesen Monat satt. Was zuerst verdirbt, steht oben.${S.rang>=R_LADEN?' Weine im Regal deiner Weinhandlung fehlen hier.':''} Wein aus dem Fass meldest du im Rathaus an und füllst ihn danach im Keller ab. Tafel- und Qualitätswein sind zwei Monate danach verkaufsreif.${D.text}`});
+      i:`Antippen verkauft. Der Preis je Flasche gilt für den besten Absatzweg, Zoll ist abgezogen. Darunter steht, wie viele Flaschen der Großhandel diesen Monat noch zum vollen Preis nimmt. „Markt satt 📉“ heißt: Das Budget ist weg, jede weitere Flasche drückt den Preis. Was zuerst verdirbt, steht oben.${S.rang>=R_LADEN?' Weine im Regal deiner Weinhandlung fehlen hier.':''} Wein aus dem Fass meldest du im Rathaus an und füllst ihn danach im Keller ab. Tafel- und Qualitätswein sind zwei Monate danach verkaufsreif.${D.text}`});
   }
   // Weinhandel (seit 7.4 auf dem Fenster-Baustein), Reihenfolge nach der Regel "was diesen Monat ansteht, Handgriffe, Zustand, Gesperrtes":
   // die Weinhandlungen der anderen Gebiete mit ihrem Wunsch des Monats, dann "Ins Regal stellen" und "Dein Regal" der eigenen Weinhandlung (ab R_LADEN).
@@ -2953,6 +3010,7 @@ function render(){
   ortFarbe(SUBS[TAB]?TAB:'gut');
   const ort=SUBS[TAB]?TAB+'/'+SUB:TAB; if(ort!==ORT_ALT){FI_AUF.clear(); if(ORT_ALT&&(ort==='keller/buch'||ort==='gut/aktuell')) fx('menue'); ORT_ALT=ort}
   musikOrt(musikWahl());
+  if(ort==='stadt/laeden') S.ladenSeh=S.jahr*12+S.monat;
   const fehlt=fehlText(), v={monat:vMonat,feier:vFeier,gut:vGut,keller:vKeller,stadt:vStadt}[TAB]();
   if(TAB==='feier'){$('#app').innerHTML=v; feierStart(); return}
   const tabs=[['gut','🏡','Weingut'],['keller',FASS,'Kellerei'],['stadt','🏛️','Stadt']], B=badges();
@@ -3183,7 +3241,7 @@ const AKT={
       SPRUNG=L.slice(); monatWeiter();
       if(S.pleite||S.pruefer||erbeOffen()||$('#sheet').classList.contains('an')) return;
       const top=TOP.slice().sort((a,b)=>b.p-a.p)[0];
-      if((top&&top.p>=SPRUNG_WICHTIG)||stehtAn()) break;
+      if(sprungHalt().length) break;
       L.push(`⏩ ${MON[S.monat]}: ${top?top.t:'ein ruhiger Monat'}`);
       await new Promise(r=>setTimeout(r,120));
     }
