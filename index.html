@@ -1024,6 +1024,9 @@ function panoStell(){
   if(PANO_ALT.tab===TAB&&(PANO_ALT.x!==x||PANO_ALT.z!==z)){p.style.backgroundPositionX=PANO_ALT.x+'%'; p.style.backgroundSize=gr(PANO_ALT.z); wandStell(el,r,PANO_ALT.x,PANO_ALT.z); p.getBoundingClientRect(); p.classList.add('gleit'); const w=$('.wand',el); if(w) w.classList.add('gleit')}
   p.style.backgroundPositionX=x+'%'; p.style.backgroundSize=gr(z); wandStell(el,r,x,z); PANO_ALT={tab:TAB,x,z};
 }
+// Seit 8.1: Ändert sich die Fenstergröße (Handy drehen, Browser breiter), Streifen und Urkunde ohne Gleiten neu ausrichten. Sonst blieb die Urkunde am alten Platz stehen (Maik 17.11.2026).
+let PANO_RS=0;
+addEventListener('resize',()=>{cancelAnimationFrame(PANO_RS); PANO_RS=requestAnimationFrame(()=>{if(!S||!$('.pano>i')) return; PANO_ALT={tab:null,x:0,z:1}; const w=$('.wand'); if(w) w.classList.remove('gleit'); panoStell()})});
 // Tipp ins Bild: Welches Motiv liegt dem Tipp am nächsten? fr ist die Stelle im ganzen Streifen (0 bis 1).
 function panoTipp(e){
   const el=e.target.closest('.pano'); if(!el||!PANO_MITTE[TAB]) return null;
