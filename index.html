@@ -3350,7 +3350,7 @@ function fuLeuchte(z){
 }
 
 function render(){
-  if(!S){fuehrerWeg(); ortFarbe('gut'); ORT_ALT=null; musikOrt(musikWahl()); $('#app').innerHTML=START==='neu'||![0,1,2].some(i=>roh(i))?vStart():vSlots(); return}
+  if(!S){fuehrerWeg(); FU_PAUSE=false; ortFarbe('gut'); ORT_ALT=null; musikOrt(musikWahl()); $('#app').innerHTML=START==='neu'||![0,1,2].some(i=>roh(i))?vStart():vSlots(); return}
   fuehrerPruef(); if(!SUBS[TAB]) fuehrerWeg();
   if(SUBS[TAB]&&!SUBS[TAB].some(s=>s[0]===SUB)) SUB=START_SUB[TAB];
   // Kellerbuch und Pinnwand öffnen sich mit einem eigenen Geräusch.
