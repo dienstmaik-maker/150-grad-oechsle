@@ -193,7 +193,7 @@ img.fass{height:1.1em;vertical-align:-.18em}
 #titel h1{font:700 42px/1.05 Georgia,"Times New Roman",serif;margin:5vh 0 8px;text-shadow:0 2px 10px rgba(0,0,0,.85)}
 #titel .unter{font-size:15px;text-shadow:0 1px 4px #000}
 #titel .fuss{margin-top:auto}
-#titel .von{font-size:15px;margin-bottom:16px;text-shadow:0 1px 4px #000}
+#titel .von{font-size:15px;margin-bottom:16px;text-shadow:0 1px 4px #000}#titel .tester{font-size:13px;opacity:.85}
 #titel .tipp{font-size:17px;font-weight:600;text-shadow:0 1px 4px #000;animation:puls 2.2s ease-in-out infinite}
 /* Startseite: drei Knöpfe über dem Bild, darunter klein die Version. */
 #titel .tkn{display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px;margin:0 auto}
@@ -536,7 +536,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='8.2.1';
+const VERSION='8.2.2';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -4306,7 +4306,7 @@ const SATZ_TAKT=3.2;
 function zeigeTitel(){
   // Drei Knöpfe: Weiterspielen (nur mit Spielstand), Neues Spiel, Spiel laden. Darunter klein die Version und die Nennung, die ElevenLabs im Gratis-Tarif verlangt.
   const t=$('#titel'), hat=[0,1,2].some(lies), alt=!hat&&[0,1,2].some(liesAlt); t.className='an'; delete t.dataset.a;
-  t.innerHTML=`<h1>150 Grad Öchsle</h1><div class="unter">Vom kahlen Hang in den Festsaal des Weinbauverbands</div><div class="fuss"><div class="von">Ein Spiel von Maik Dienst</div>
+  t.innerHTML=`<h1>150 Grad Öchsle</h1><div class="unter">Vom kahlen Hang in den Festsaal des Weinbauverbands</div><div class="fuss"><div class="von">Ein Spiel von Maik Dienst<br><span class="tester">Chef-Tester: Timo Dienst</span></div>
     <div class="tkn">${hat?'<button data-a="titelWeiter">Weiterspielen</button>':''}<button ${hat?'class="sec" ':''}data-a="titelNeu">Neues Spiel</button><button class="sec" data-a="titelLaden">Spiel laden</button><button class="sec klein" data-a="buch">📜 Spielanleitung</button></div>
     ${alt?'<div class="version" style="font-size:14px;margin-bottom:6px">Dein Spielstand stammt aus einer älteren Version und läuft hier nicht weiter. Mit „Neues Spiel“ fängst du neu an.</div>':''}
     <div class="version">Version ${VERSION}<br>Bilder, Musik und Geräusche mit KI erstellt · Geräusche von ElevenLabs (elevenlabs.io)</div></div>`;
