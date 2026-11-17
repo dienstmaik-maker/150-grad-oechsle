@@ -382,6 +382,9 @@ button.fi.wort{width:auto;padding:0 11px;font:600 13px/1 system-ui,-apple-system
 .fzl>.bzeile{background:none;border:0;border-top:1px solid rgba(154,106,53,.38);border-radius:0;box-shadow:none;margin:0;padding:9px 0}
 .fzl>.bzeile:first-child{border-top:0;padding-top:0}.fzl>.bzeile:last-child{padding-bottom:0}
 .finfo .kv{font-size:14px;padding:2px 0}
+/* Block B: Aufgaben, Manager-Zeilen und Bilder im Fenster, der aufgeklappte Steckbrief. */
+.fin>.task:last-of-type,.fin>.wahl:last-of-type{margin-bottom:0}.fin .task,.fin .wahl{box-shadow:none}
+.fin>.kbild{margin:0 0 10px}.fklapp{margin-top:8px;padding-top:8px;border-top:1px solid rgba(154,106,53,.38)}
 </style>
 </head>
 <body>
@@ -1551,9 +1554,9 @@ function zeigeErz(){
 // Generationen-Chronik im Büro.
 function chronikHtml(){
   const C=S.chronik||[], n=genNr(), e=S.erbe, wer=(nr,name,art)=>nr===1?'die Gründung':name?`${esc(name)}, ${art==='s'?'der Sohn':'die Tochter'}`:'die nächste Generation';
-  return `<div class="card"><h3>🕰️ Generationen-Chronik</h3><div class="mut" style="margin-bottom:6px">Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation. Vom Ansehen bleiben ${pz(ERB_ANSEHEN)}, ${pz(ERB_STEUER)} vom Vermögen gehen als Erbschaftssteuer weg, alles andere bleibt.${mib('generationen')}</div>
-    ${C.map(c=>`<div class="rl"><span>${c.n}.</span><div><b>${c.von} bis ${c.bis}: ${wer(c.n,c.name,c.art)}</b><span class="mut">übergeben als ${RAENGE[c.rang].kurz} mit ${c.ans} Ansehen, Erbschaftssteuer ${eur(c.steuer)}</span></div></div>`).join('')}
-    <div class="rl du"><span>${n}.</span><div><b>seit ${genJahr(n-1)}: ${wer(n,e&&e.name,e&&e.art)}</b><span class="mut">${S.flascheAuf?'Die Flasche vom ersten Jahrgang ist getrunken. ':S.gesch&&S.gesch.flasche?'Die Flasche vom ersten Jahrgang liegt noch im Fach. ':''}Nächste Übergabe im Januar ${genJahr(n)}</span></div></div></div>`;
+  return fenster('chronik','Generationen-Chronik',`${C.map(c=>`<div class="rl"><span>${c.n}.</span><div><b>${c.von} bis ${c.bis}: ${wer(c.n,c.name,c.art)}</b><span class="mut">übergeben als ${RAENGE[c.rang].kurz} mit ${c.ans} Ansehen, Erbschaftssteuer ${eur(c.steuer)}</span></div></div>`).join('')}
+    <div class="rl du"><span>${n}.</span><div><b>seit ${genJahr(n-1)}: ${wer(n,e&&e.name,e&&e.art)}</b><span class="mut">${S.flascheAuf?'Die Flasche vom ersten Jahrgang ist getrunken. ':S.gesch&&S.gesch.flasche?'Die Flasche vom ersten Jahrgang liegt noch im Fach. ':''}Nächste Übergabe im Januar ${genJahr(n)}</span></div></div>`,{
+    buch:'generationen',i:`Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation. Vom Ansehen bleiben ${pz(ERB_ANSEHEN)}, ${pz(ERB_STEUER)} vom Vermögen gehen als Erbschaftssteuer weg, alles andere bleibt.`});
 }
 function geschichteMonat(){
   // Schritt G 7.0: Beim ersten abgefüllten Wein (ohne Sekt) kommt die Flasche ins Fach. S.gesch.flasche merkt das Jahr.
@@ -1944,32 +1947,33 @@ function vSlots(){
   <div class="mut" style="margin:0 0 12px">Gespeichert wird von selbst nach jedem Monat. Mit „Als Datei sichern“ bekommst du eine Datei, die du aufheben oder auf ein anderes Gerät mitnehmen kannst.</div>
   ${tonKnoepfe()}<div class="mut" style="margin:0 0 12px">Bilder, Musik und Geräusche sind mit KI erstellt (Musik mit Treblo, Geräusche mit ElevenLabs, elevenlabs.io).</div></main>`;
 }
+// Fenster "Aktueller Rang" in Aktuelles (seit 7.4 auf dem Fenster-Baustein). Im Monat des Aufstiegs leuchtet es golden (seit 7.2).
 function vRang(){
   const r=S.rang, n=RAENGE[r+1], v=vermoegen(), bep=flaecheBep(), frei=Math.round((S.ha-bep)*10)/10;
   const w=(ist,soll)=>soll?clamp(ist/soll*100,0,100):100;
   const bar=(ist,soll)=>`<div class="bar ${ist>=soll?'':'g'}"><i style="width:${w(ist,soll)}%"></i></div>`;
   // Fläche: hell die gekaufte, dunkel die bepflanzte. Zählen tut nur die bepflanzte.
   const barF=soll=>`<div class="bar fl ${bep>=soll?'':'g'}"><i class="hell" style="width:${w(S.ha,soll)}%"></i><i style="width:${w(bep,soll)}%"></i></div>`;
-  const nach=frei>0?`<div class="mut" style="margin:-4px 0 8px">Noch ${num(frei*HA_REBEN)} Reben frei zum Nachpflanzen (${frei.toLocaleString('de-DE')}\u00a0ha).</div>`:'';
-  // Version 7.2: Im Monat des Aufstiegs leuchtet die Karte golden.
+  const nach=frei>0?`<div class="mut" style="margin:-4px 0 8px">Noch ${num(frei*HA_REBEN)} Reben frei zum Nachpflanzen (${frei.toLocaleString('de-DE')} ha).</div>`:'';
   const neu=S.rangNeu===S.jahr*12+S.monat;
-  let h=`<div class="card${neu?' rneu':''}"><h3>${neu?'<span class="rneuB">Neu</span> ':''}Aktueller Rang: ${RAENGE[r].name}</h3><div class="mut">Stufe ${r+1} von ${RAENGE.length} · ${genNr()}. Generation, die nächste übernimmt im Januar ${genJahr(genNr())}</div>`;
-  if(S.sieger) h+=`<div class="hilfe" style="margin:0 0 6px">🏆 Gewonnen hat: ${esc(S.sieger)}</div>`;
-  if(n) h+=`<div class="mut">Für den Aufstieg zum Rang ${n.name} brauchst du alles drei zugleich.</div>
-    <div class="kv"><span>Ansehen</span><span>${S.ansehen} von ${n.ans}</span></div>${bar(S.ansehen,n.ans)}
-    <div class="kv"><span>Bepflanzt</span><span>${bep.toLocaleString('de-DE')} von ${n.ha}\u00a0Hektar</span></div>${barF(n.ha)}${nach}${S.ha<n.ha&&!maklerGrund()?`<div class="mut" style="margin:-4px 0 8px">Keine Auktion in Sicht? Der Makler im Rathaus verkauft dir einen Hektar für ${eur(MAKLER_PREIS)}.</div>`:''}
+  const h=n?`<div class="kv"><span>Ansehen</span><span>${S.ansehen} von ${n.ans}</span></div>${bar(S.ansehen,n.ans)}
+    <div class="kv"><span>Bepflanzt</span><span>${bep.toLocaleString('de-DE')} von ${n.ha} Hektar</span></div>${barF(n.ha)}${nach}${S.ha<n.ha&&!maklerGrund()?`<div class="mut" style="margin:-4px 0 8px">Keine Auktion in Sicht? Der Makler im Rathaus verkauft dir einen Hektar für ${eur(MAKLER_PREIS)}.</div>`:''}
     <div class="kv"><span>Vermögen</span><span>${eur(v)} von ${eur(n.verm)}</span></div>${bar(v,n.verm)}
-    <div class="mut">Der Aufstieg zum Rang ${n.name} bringt: ${bringt(r+1)}.${rahmenSatz(r+1)}</div>`;
-  else h+=`<div class="kv"><span>Ansehen</span><span>${S.ansehen}</span></div><div class="kv"><span>Vermögen</span><span>${eur(v)}</span></div><div class="mut">Höher geht es nicht.</div>`;
-  return h+'</div>';
+    <div class="mut">Der Aufstieg zum Rang ${n.name} bringt: ${bringt(r+1)}.${rahmenSatz(r+1)}</div>`
+    :`<div class="kv"><span>Ansehen</span><span>${S.ansehen}</span></div><div class="kv"><span>Vermögen</span><span>${eur(v)}</span></div><div class="fleer" style="margin-top:6px">Höher geht es nicht.</div>`;
+  return fenster('rang',`${neu?'<span class="rneuB">Neu</span> ':''}Aktueller Rang: ${RAENGE[r].name}`,h,{kl:neu?'rneu':'',buch:'ziel',
+    hin:[S.sieger&&`🏆 Gewonnen hat: ${esc(S.sieger)}`],
+    stand:`Stufe ${r+1} von ${RAENGE.length} · ${genNr()}. Generation, die nächste übernimmt im Januar ${genJahr(genNr())}${n?`<br>Für den Aufstieg zum Rang ${n.name} brauchst du alles drei zugleich.`:''}`,
+    i:'Wer zuerst Präsident des Weinbauverbands wird, gewinnt. Jeder Aufstieg braucht Ansehen, bepflanzte Fläche und Vermögen zugleich. Bei der Fläche zählt nur, was bepflanzt ist: Der helle Balken zeigt dein gekauftes Land, der dunkle das bepflanzte.'});
 }
 function vRangliste(){
   const v=vermoegen();
   const L=[{name:S.name,du:1,sub:`du${S.erbe&&S.erbe.name?' ('+S.erbe.name+')':''}, ${R().name}`,rang:S.rang,ans:S.ansehen,ha:S.ha,verm:v},
     ...S.gegner.map(g=>({name:g.name,sub:`${GEGNER_TYP[g.typ].art}, ${REGIONEN[g.region].name}`,rang:g.rang,ans:Math.round(g.ansehen),ha:g.ha,verm:gVerm(g)}))]
     .sort((a,b)=>b.rang-a.rang||b.ans-a.ans);
-  return `<div class="card"><h3>Rangliste</h3>${S.sieger?`<div class="hilfe" style="margin:0 0 6px">🏆 Gewonnen hat: ${esc(S.sieger)}</div>`:''}
-    ${L.map((x,i)=>`<div class="rl ${x.du?'du':''}"><span>${i+1}.</span><div><b>${esc(x.name)}</b><span class="mut">${esc(x.sub)}<br>${RAENGE[x.rang].kurz} · ${x.ans} Ansehen · ${x.ha}\u00a0ha · ${eur(x.verm)}<br>${bisZiel(x.rang)}</span></div></div>`).join('')}</div>`;
+  return fenster('rangliste','Rangliste',L.map((x,i)=>`<div class="rl ${x.du?'du':''}"><span>${i+1}.</span><div><b>${esc(x.name)}</b><span class="mut">${esc(x.sub)}<br>${RAENGE[x.rang].kurz} · ${x.ans} Ansehen · ${x.ha} ha · ${eur(x.verm)}<br>${bisZiel(x.rang)}</span></div></div>`).join(''),{
+    buch:'gegner',hin:[S.sieger&&`🏆 Gewonnen hat: ${esc(S.sieger)}`],
+    i:'Hier stehst du mit deinen Gegnern. Vorn steht der höchste Rang, bei gleichem Rang entscheidet das Ansehen. Was die anderen treiben, steht im Winzerboten.'});
 }
 // Version 4.4: Steht etwas an, das nicht warten kann? Ruhige Hinweise (verkaufsreif, Pflanzzeit mit freiem Platz, Steuer-Tipps, Fest, leeres Regal) zählen nicht.
 function stehtAn(){return aufgaben().some(a=>!a.ruhig)}
@@ -1977,10 +1981,6 @@ function stehtAn(){return aufgaben().some(a=>!a.ruhig)}
 // oder einer Warnung beim Weiterblättern. SPRUNG trägt die Schlagzeilen der übersprungenen Monate in die letzte Zeitung ("Kurz gemeldet").
 let SPRUNG=[];
 const SPRUNG_MAX=12, SPRUNG_WICHTIG=55;
-function aufgabenHtml(){
-  const A=aufgaben();
-  return A.length?A.map(a=>`<button class="task ${a.rot?'rot':''}" data-a="${a.akt||'tab'}" data-id="${a.tab||''}" data-sub="${a.sub||''}">${a.rot?'⚠️ ':''}${esc(a.t)}</button>`).join(''):'<div class="card mut">Diesen Monat steht nichts an. Du kannst weiterblättern.</div>';
-}
 /* ---- Infoseite: erscheint nach jedem Monatswechsel als Vollbild, die Zeitung "Der Winzerbote" vor dem Bild der Jahreszeit. Kopfleiste und Reiter fehlen, "Weiter" blendet aus und führt zu Aktuelles ---- */
 const PHASE=['Winterruhe','Winterruhe','Austrieb','Austrieb','Blüte','Fruchtansatz'];
 function lohnAngebot(k){const n=S.angebot[k], lage=lohnLage(n);return `<span class="${lage==='günstig'?'gruen':lage==='teuer'?'rot':''}">${eur(n)}, ${lage}</span>`}
@@ -2112,14 +2112,16 @@ function steckbrief(id,o={}){
   // Seit 7.0: dazu, ab wann die Sorte kommt (sortenFolge, SORTE_RANG).
   const so=sortenFolge(id).map((s,i)=>{const e=eignung(s,id); return `${dot(s)}${SORTEN[s].name} ${sterne(e>=1?3:e>=.85?2:1)} <span class="mut">${i?`ab ${RAENGE[SORTE_RANG[i]].name}`:'zum Start'}</span>`}).join('<br>');
   const kv=(a,x)=>`<div class="kv"><span>${a}</span><span>${x}</span></div>`;
-  return `<div class="card sb"><h3>${sym} ${r.name}<small>${art}, ${bonus}</small></h3><div class="schild ${G.stufe}">${ssym} ${stufe} · ${G.stil}</div><div class="sbz">${so}</div>
+  // o.fen (seit 7.4): ohne eigene Karte, für das zugeklappte Fenster "Dein Gebiet" im Weinberg. Kopf und Rumpf kommen einzeln zurück.
+  const rumpf=`<div class="schild ${G.stufe}">${ssym} ${stufe} · ${G.stil}</div><div class="sbz">${so}</div>
     ${kv('💶 Geld',sterne(r.preisF?3:2))}${kv('🎖️ Ansehen',sterne(r.wettPlus?3:2))}${kv('🍾 Sekt-Potenzial',sekt)}
     <div class="mut" style="font-size:13px">${stars.length?`Sekt-Stars hier: ${stars.join(' und ')}, sie bringen als Sekt ${Math.round((SEKT_STAR-1)*100)} % mehr.`:'Hier wächst keine Sekt-Star-Sorte.'} Sekt gibt es ab ${RAENGE[R_SEKT].name}.</div>
     <div class="sbz">💪 ${stark}<br>⚠️ ${schwach}</div>
     <div class="sbz">📏 Hürden: Spätlese ${mi.spat}°, Auslese ${mi.aus}°, Beerenauslese ${mi.ba}°</div>
     ${kv('❄️ Frost im Dezember',`${pz(r.frost)} der Jahre`)}${kv('🌨️ Kälteeinbruch im November',`jedes ${Math.round(1/KAELTE)}. Jahr`)}${kv('🌸 Spätfrost zur Blüte',`rund jedes ${SPAET_JAHR}. Jahr`)}
     <div class="lohnt">🎯 Lohnt sich hier: ${lohnt}</div>
-    <div class="sbz"><b>So gehst du vor</b><ol class="strat">${G.strat.map(x=>`<li>${x}</li>`).join('')}</ol></div>${o.buch?mib('gebiete'):''}</div>`;
+    <div class="sbz"><b>So gehst du vor</b><ol class="strat">${G.strat.map(x=>`<li>${x}</li>`).join('')}</ol></div>`;
+  return o.fen?{name:`${sym} ${r.name}`,art:`${art}, ${bonus}`,rumpf}:`<div class="card sb"><h3>${sym} ${r.name}<small>${art}, ${bonus}</small></h3>${rumpf}${o.buch?mib('gebiete'):''}</div>`;
 }
 // Version 4.1: Buch mit der Spielanleitung, Texte in anleitung.js. BUCH: null = zu, '' = Inhaltsverzeichnis, sonst die Kennung des Kapitels.
 // "📖 Mehr im Buch" in der Info-Karte schlägt das Kapitel des Ortes auf (BUCH_ORT), Fenster haben eigene Links (Kasse, Lese, Anmelden, Weinlexikon).
@@ -2147,22 +2149,23 @@ function buchZeig(){
     <div class="bfuss"><button class="sec klein" data-a="buch" data-id="${zur?zur.id:''}" ${i<0?'disabled':''}>◀ ${zur?'Zurück':'Inhalt'}</button><button class="klein" data-a="buch" data-id="${i<0?K[0].id:vor?vor.id:''}">${i<0||vor?'Weiter ▶':'Zum Inhalt'}</button></div>`;
   b.className='an'; $('.binnen',b).scrollTop=0;
 }
+// Betrieb (seit 7.4 auf dem Fenster-Baustein): Dein Betrieb, Deine Manager, das Fest. Von Juni bis August steht das Fest oben, solange es nicht gefeiert ist.
+// Was der Rang noch sperrt, steht zugeklappt mit Schloss unten. Der Gebiets-Steckbrief steht seit 7.4 im Weinberg.
 function vBetrieb(){
-  return `<div class="card"><h3>Dein Betrieb</h3>
-    <div class="kv"><span>Anbaugebiet</span><span>${R().name}</span></div>
-    <div class="kv"><span>Fläche</span><span>${S.ha}\u00a0Hektar, ${Math.round(rebenGesamt()/(S.ha*HA_REBEN)*100)}\u00a0% bepflanzt</span></div>
+  const F=hoffestHtml(), M=mgrHtml();
+  return (F.jetzt?F.h:'')+fenster('betrieb','Dein Betrieb',`<div class="kv"><span>Anbaugebiet</span><span>${R().name}</span></div>
+    <div class="kv"><span>Fläche</span><span>${S.ha} Hektar, ${Math.round(rebenGesamt()/(S.ha*HA_REBEN)*100)} % bepflanzt</span></div>
     <div class="kv"><span>Bepflanzt</span><span>${num(rebenGesamt())} von ${num(S.ha*HA_REBEN)} Reben</span></div>
-    ${S.spitze?`<div class="kv"><span>Spitzenlage</span><span>${SPITZE_HA}\u00a0Hektar, +${SPITZE_OE}° im Juli</span></div>`:''}
-    <div class="kv"><span>Fassraum belegt</span><span>${num(fassBelegt())} von ${num(S.fassraum)}\u00a0l</span></div>
+    ${S.spitze?`<div class="kv"><span>Spitzenlage</span><span>${SPITZE_HA} Hektar, +${SPITZE_OE}° im Juli</span></div>`:''}
+    <div class="kv"><span>Fassraum belegt</span><span>${num(fassBelegt())} von ${num(S.fassraum)} l</span></div>
     <div class="kv"><span>Leere Flaschen</span><span>${num(S.flaschen)}</span></div>
     <div class="kv"><span>Erntehelfer / Lagerarbeiter</span><span>${S.helfer} / ${S.lagerarb}</span></div>
     <div class="kv"><span>Erntemaschinen</span><span>${S.maschinen.length}</span></div>
     <div class="kv"><span>Löhne im Monat</span><span>${eur(kosten().loehne)}</span></div>
     <div class="kv"><span>Feste Kosten im Monat</span><span>${(k=>eur(k.basis+k.loehne+k.tilgung+k.zins))(kosten())}</span></div>
-    ${S.kredit?`<div class="kv"><span>Kredit, Restschuld</span><span>${eur(S.kredit.rest)}</span></div>`:''}
-  </div>
-  ${mgrHtml()}${hoffestHtml()}
-  <h3>🗺️ Dein Gebiet</h3>${steckbrief(S.region,{buch:1})}`;
+    ${S.kredit?`<div class="kv"><span>Kredit, Restschuld</span><span>${eur(S.kredit.rest)}</span></div>`:''}`,{
+    i:'Hier siehst du dein Weingut auf einen Blick: Fläche, Fassraum, Leute, Kosten und Kredit. Feste Kosten sind Betriebskosten, Löhne und die Kreditrate, sie gehen jeden Monat von selbst ab. Den Steckbrief deines Gebiets findest du im Weinberg.'})
+    +(M.h||'')+(F.jetzt?'':F.h||'')+(M.zu||'')+(F.zu||'');
 }
 // Daueraufträge für den Verkauf (seit 4.4, seit 7.0 beim Handels-Manager: Weinhandlungen ab Stufe 1, Großhandel ab Stufe 2).
 // Sie laufen beim Weiterblättern vor dem Monatswechsel: erst die Weinhandlungen (sie zahlen mehr), dann der Großhandel bis zum Budget, nie unter dem vollen Preis.
@@ -2212,10 +2215,14 @@ function mgrInfo(){
     :m.zuletzt?(m.zm!=null?mgrWann(m.zm)+': ':'')+m.zuletzt:'Legt beim nächsten Weiterblättern los.';
   return `<button class="wahl mgrinfo${st?'':' leer'}" data-a="mgr" data-id="${b}"><span class="mbild"${M.bild?` style="background-image:url(bilder/${M.bild})"`:''}>${M.bild?'':M.sym}${st?`<i>${st}</i>`:''}</span><span class="mtext"><b>${M.name}${st?` · Stufe ${st}`:''}</b><span>${esc(t)}</span></span><span class="pfeil">›</span></button>`;
 }
+// Fenster "Deine Manager" im Betrieb. Hinter dem i steht auch, was jeder zuletzt erledigt hat (Maik 17.11.2026, statt der Manager-Zeile oben).
 function mgrHtml(){
-  if(S.rang<Math.min(...MANAGER.map(e=>e.rang))) return '';
-  return `<div class="card"><h3>🧑‍💼 Deine Manager</h3><div class="mut" style="margin-bottom:8px">Sie erledigen beim Weiterblättern, was du einschaltest, und berichten im Winzerboten. Einkäufe zahlen sie aus deiner Kasse. Eingestellt und befördert wird im Arbeitsamt.</div>
-  ${Object.keys(MGR_BEREICHE).map(b=>`<button class="wahl" data-a="mgr" data-id="${b}">${mgrZeile(b)}</button>`).join('')}</div>`;
+  const ab=Math.min(...MANAGER.map(e=>e.rang)), B=Object.keys(MGR_BEREICHE);
+  const mgI='Manager erledigen beim Weiterblättern, was du einschaltest, und berichten im Winzerboten. Einkäufe zahlen sie aus deiner Kasse. Eingestellt und befördert wird im Arbeitsamt.';
+  if(S.rang<ab) return {zu:fenster('manager','Deine Manager','',{zu:`ab dem Rang ${RAENGE[ab].name}`,buch:'manager',i:mgI})};
+  const log=B.filter(mgrSt).map(b=>{const m=S.manager[b]||{}; return `<div>${MGR_BEREICHE[b].sym} ${MGR_BEREICHE[b].name}: ${m.zuletzt?esc((m.zm!=null?mgrWann(m.zm)+': ':'')+m.zuletzt):'noch nichts'}</div>`}).join('');
+  return {h:fenster('manager','Deine Manager',B.map(b=>`<button class="wahl" data-a="mgr" data-id="${b}">${mgrZeile(b)}</button>`).join(''),{buch:'manager',
+    i:`${mgI} Ein Tipp auf einen Manager öffnet seine Aufgaben.${log?`<div style="margin-top:6px"><b>Zuletzt erledigt</b></div>${log}`:''}`})};
 }
 // Was eine Stufe ohne Schalter bringt: der Kellermeister auf Stufe 3 lässt Wein schneller reifen, aber erst, wenn Schritt H einen Wert setzt.
 function mgrExtra(e){return e.bereich==='keller'&&e.stufe===3&&(MGR_REIFE||MGR_REIFE_MIN)?['Wein reift schneller']:[]}
@@ -2253,13 +2260,17 @@ function mgrFenster(b){
 }
 // Hoffest ab Verbandsvorstand: Juni bis August, einmal im Jahr.
 // Weinfest ab Winzermeister, ab Verbandsvorstand wird daraus das Hoffest. Beide teilen sich Bild, Monate und S.festJahr.
+// Seit 7.4 als Fenster: {h, jetzt} oder vor dem Rang {zu}. jetzt heißt: Es ist Festzeit und noch nicht gefeiert, dann steht das Fenster im Betrieb oben.
 function hoffestHtml(){
-  const art=festArt(); if(!art) return '';
-  const F=FESTE[art], m=S.monat, zeit=m>=5&&m<=7, schon=S.festJahr===S.jahr;
-  return `<div class="card"><div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/hoffest.jpg)"><b>🎉 ${F.name}</b><span>Juni bis August, einmal im Jahr</span></div>
-  <div class="mut">${schon?(S.fest?'Das Fest steigt diesen Monat, der Bericht kommt im nächsten Winzerboten.':`Das ${F.name} ${S.jahr} ist gefeiert. Nächstes Jahr wieder.`):`${F.text} kostet ${eur(F.preis)} und bringt rund ${F.ans} Ansehen. Das Wetter im Festmonat entscheidet mit: Sonne bringt mehr, Regen weniger.${art==='weinfest'?` Ab dem Rang ${RAENGE[R_HOFFEST].name} wird daraus das große Hoffest.`:''}`}</div>
-  ${!schon&&aufgabeAktiv('fest')?`<div class="hilfe" style="margin-bottom:8px">🤝 ${mgrG('handel').Dein} ${MGR_BEREICHE.handel.name} richtet das Fest aus, bei Sonne oder spätestens im August.</div>`:''}
-  ${kz('',pk('hoffest','Feiern',eur(F.preis),{aus:!(zeit&&!schon),arm:S.geld<F.preis}))}</div>`;
+  const art=festArt(), F=FESTE[art||'weinfest'], m=S.monat, zeit=m>=5&&m<=7, schon=S.festJahr===S.jahr;
+  const fI=`${F.text} bringt Ansehen. Gefeiert wird von Juni bis August, einmal im Jahr. Das Wetter im Festmonat entscheidet mit: Sonne bringt mehr, Regen weniger.${art!=='hoffest'?` Ab dem Rang ${RAENGE[R_HOFFEST].name} wird daraus das große Hoffest.`:''}`;
+  if(!art) return {zu:fenster('fest',F.name,'',{zu:`ab dem Rang ${RAENGE[R_WEINFEST].name}`,i:fI})};
+  const mf=!schon&&aufgabeAktiv('fest');
+  return {jetzt:zeit&&!schon,h:fenster('fest',F.name,`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/hoffest.jpg)"><b>🎉 ${F.name}</b><span>Juni bis August, einmal im Jahr</span></div>
+    <div class="kv"><span>Kosten</span><span>${eur(F.preis)}</span></div><div class="kv"><span>Bringt</span><span>rund ${F.ans} Ansehen</span></div>`,{
+    hin:[mf&&`${MGR_BEREICHE.handel.sym} ${mgrG('handel').Dein} ${MGR_BEREICHE.handel.name} richtet das Fest aus, bei Sonne oder spätestens im August.`],
+    links:schon?(S.fest?'Das Fest steigt diesen Monat, der Bericht kommt im nächsten Winzerboten.':`Das ${F.name} ${S.jahr} ist gefeiert. Nächstes Jahr wieder.`):zeit?'':'Gefeiert wird von Juni bis August.',
+    kn:pk('hoffest','Feiern',eur(F.preis),{aus:!(zeit&&!schon),arm:S.geld<F.preis}),i:fI})};
 }
 // Was früher der Gutsverwalter tat, seit 7.0 (Schritt D) aufgeteilt: Weingut-Manager (Reben, Düngen, Erntehelfer) und Kellermeister (Abfüllen, Lagerarbeiter).
 // Läuft beim Weiterblättern vor der Leute-Sperre, in derselben Reihenfolge wie beim Verwalter. Berichte stehen in S.mgrLog für die nächste Zeitung.
@@ -2371,6 +2382,7 @@ function kz(links,...kn){return `<div class="kz${links?'':' reihe'}"><div>${link
 // o.hin: Hinweise an der Aufgabe, immer sichtbar ("Dein Kellermeister keltert beim Weiterblättern"). o.stand: graue Zeile zum Zustand.
 // o.leer: graue Zeile, wenn die Liste leer ist. o.kn: Knopf oder Knöpfe unten rechts, o.links: kurzer grauer Text links daneben.
 // o.zu: Das Fenster ist gesperrt, der Text nennt den Rang. Es steht zugeklappt mit Schloss ganz unten am Ort.
+// o.kl: zusätzliche Klasse am Fenster (golden im Monat des Aufstiegs).
 // o.iWort und o.iAkt: ein graues Wort statt des i mit eigener Aktion (Kellerbuch: "Weinlexikon").
 const FI_AUF=new Set();
 function fenster(id,titel,inhalt,o={}){
@@ -2380,100 +2392,122 @@ function fenster(id,titel,inhalt,o={}){
   const info=o.i&&!o.iWort?`<div class="finfo"${auf?'':' hidden'}>${o.i}${buch?mib(buch):''}</div>`:'';
   if(o.zu) return `<section class="card fen zu"><header class="fkopf"><h3>🔒 ${titel}<small>${o.zu}</small></h3>${i}</header>${info}</section>`;
   const kern=Array.isArray(inhalt)?(inhalt.length?`<div class="fzl">${inhalt.join('')}</div>`:`<div class="fleer">${o.leer||'Gerade gibt es hier nichts zu tun.'}</div>`):(inhalt||'');
-  return `<section class="card fen"><header class="fkopf"><h3>${titel}</h3>${i}</header>${info}<div class="fin">${(o.hin||[]).filter(Boolean).map(t=>`<div class="hilfe">${t}</div>`).join('')}${o.stand?`<div class="fstand">${o.stand}</div>`:''}${kern}${o.kn?kz(o.links||'',...[].concat(o.kn)):''}</div></section>`;
+  return `<section class="card fen${o.kl?' '+o.kl:''}"><header class="fkopf"><h3>${titel}</h3>${i}</header>${info}<div class="fin">${(o.hin||[]).filter(Boolean).map(t=>`<div class="hilfe">${t}</div>`).join('')}${o.stand?`<div class="fstand">${o.stand}</div>`:''}${kern}${o.links||[].concat(o.kn||[]).length?kz(o.links||'',...[].concat(o.kn||[])):''}</div></section>`;
 }
 // Zeile im Fenster für einen Wein oder Posten: Name, graue Angaben, darunter links Zustand oder Warnung, rechts der Knopf.
 function fz(name,angaben,zustand,...kn){return `<div class="fz"><b>${name}</b>${angaben?`<div class="mut">${angaben}</div>`:''}${zustand||kn.length?kz(zustand||'',...kn):''}</div>`}
+// Aktuelles (seit 7.4 auf dem Fenster-Baustein): "Das steht an" ganz oben (Maik, Version 4.4), der Rang darunter.
 function vAktuell(){
-  // Version 4.4 (Maik): "Das steht an" ganz oben, der Rang darunter.
-  return `<h3>Das steht an</h3>${aufgabenHtml()}
-  ${stehtAn()?'':`<div class="btns" style="margin:4px 0 6px"><button data-a="weiterBis">⏩ Weiter bis etwas ansteht</button></div>`}
-  <div class="btns" style="margin:4px 0 12px"><button class="sec klein" data-a="tab" data-id="monat">📅 Monatsbericht ansehen</button></div>${vRang()}`;
+  const A=aufgaben(), an=stehtAn();
+  return fenster('ansteht','Das steht an',A.length?A.map(a=>`<button class="task ${a.rot?'rot':''}" data-a="${a.akt||'tab'}" data-id="${a.tab||''}" data-sub="${a.sub||''}">${a.rot?'⚠️ ':''}${esc(a.t)}</button>`).join(''):[],{
+    leer:'Diesen Monat steht nichts an. Du kannst weiterblättern.',
+    kn:[!an&&`<button class="klein" data-a="weiterBis">⏩ Weiter bis etwas ansteht</button>`,`<button class="sec klein" data-a="tab" data-id="monat">📅 Monatsbericht</button>`].filter(Boolean),
+    i:'Hier steht, was diesen Monat zu tun ist. Ein Tipp führt dich direkt an den Ort. Rot heißt: Das kann nicht warten. Steht nichts Dringendes an, blättert „Weiter bis etwas ansteht“ die ruhigen Monate am Stück durch, höchstens zwölf. Der Monatsbericht zeigt den letzten Winzerboten noch einmal.'})+vRang();
 }
+// Maschinen (seit 7.4 auf dem Fenster-Baustein): "Deine Maschinen" mit einer Zeile je Maschine, darunter je Bauart ein Fenster zum Kaufen.
+// Was der Rang noch sperrt, steht zugeklappt mit Schloss unten: die kleine Maschine ab Winzermeister, der Vollernter ab Gutsherr.
 function vMaschinen(){
-  const saison=S.monat<=2;
-  let h=`<div class="mut" style="margin-bottom:8px">Kaufen und verkaufen von Januar bis März, warten das ganze Jahr. Jede Lesesaison kostet Zustand, und mit dem Zustand sinkt die Leistung.</div>`;
-  h+=S.maschinen.length?S.maschinen.map((ma,i)=>{const T=mTyp(ma); return `<div class="card"><h3>🚜 ${T.name} ${i+1}</h3>
-    <div class="kv"><span>Zustand</span><span>${ma.zustand}\u00a0%</span></div><div class="bar"><i style="width:${ma.zustand}%"></i></div>
+  const saison=S.monat<=2, zu=[];
+  const mI='Kaufen und verkaufen kannst du von Januar bis März, warten das ganze Jahr. Jede Lesesaison kostet Zustand, und mit dem Zustand sinkt die Leistung.';
+  let h=fenster('maschinen','Deine Maschinen',S.maschinen.map((ma,i)=>{const T=mTyp(ma); return `<div class="fz"><b>${T.name} ${i+1}</b>
+    <div class="kv"><span>Zustand</span><span>${ma.zustand} %</span></div><div class="bar"><i style="width:${ma.zustand}%"></i></div>
     <div class="kv"><span>Leistung</span><span>${num(T.leist*ma.zustand/100)} Reben</span></div>
-    ${kz(saison?'':'Verkaufen geht wieder ab Januar.',pk('maschWarten','Warten','',{id:i,aus:ma.zustand>=100,arm:S.geld<T.wart,klein:`${eur(T.wart)} je %`}),saison?pk('maschVerkauf','Verkaufen','+'+eur(T.preis*.5*ma.zustand/100),{id:i,sec:1}):'')}</div>`}).join(''):'<div class="card mut">Du hast noch keine Erntemaschine.</div>';
-  // Kaufkarten: die kleine Maschine ab Winzermeister, der Vollernter ab Gutsherr.
+    ${kz(saison?'':'Verkaufen geht wieder ab Januar.',pk('maschWarten','Warten','',{id:i,aus:ma.zustand>=100,arm:S.geld<T.wart,klein:`${eur(T.wart)} je %`}),saison?pk('maschVerkauf','Verkaufen','+'+eur(T.preis*.5*ma.zustand/100),{id:i,sec:1}):'')}</div>`}),{
+    leer:'Du hast noch keine Erntemaschine.',i:`${mI} Warten bringt den Zustand wieder hoch, verkaufen bringt die Hälfte vom Neupreis, je nach Zustand.`});
   for(const [id,T] of Object.entries(MASCH)){
-    const frei=S.rang>=T.rang;
-    h+=`<div class="card"><h3>🚜 Neue${id==='klein'?' ':'r '}${T.name}</h3><div class="mut">Schafft ${num(T.leist)} Reben bei der Lese und zählt wie ${T.helfer} Erntehelfer. Die Wartung kostet ${eur(T.wart)} je Prozentpunkt.</div>
-    ${kz(!frei?`Zu kaufen ab dem Rang ${RAENGE[T.rang].name}.`:saison?'':'Zu kaufen von Januar bis März.',pk('maschKauf','Kaufen',eur(T.preis),{id,aus:!saison||!frei,arm:S.geld<T.preis}))}</div>`;
+    const titel=`Neue${id==='klein'?' ':'r '}${T.name}`, was=`Schafft ${num(T.leist)} Reben bei der Lese und zählt wie ${T.helfer} Erntehelfer. Die Wartung kostet ${eur(T.wart)} je Prozentpunkt. ${mI}`;
+    if(S.rang<T.rang){zu.push(fenster('kauf_'+id,titel,'',{zu:`ab dem Rang ${RAENGE[T.rang].name}`,i:was})); continue}
+    h+=fenster('kauf_'+id,titel,`<div class="kv"><span>Leistung bei der Lese</span><span>${num(T.leist)} Reben</span></div>
+      <div class="kv"><span>Zählt wie</span><span>${T.helfer} Erntehelfer</span></div><div class="kv"><span>Wartung</span><span>${eur(T.wart)} je %</span></div>`,{
+      links:saison?'':'Zu kaufen von Januar bis März.',kn:pk('maschKauf','Kaufen',eur(T.preis),{id,aus:!saison,arm:S.geld<T.preis}),i:was});
   }
-  return h;
+  return h+zu.join('');
 }
-// Büro als Pokalraum. Version 4.4 neu geordnet (Maik): Anleitung, Rangliste, Ehrungen, Aufstiege, Bestenliste, Ton, Spielstand.
+// Büro als Pokalraum (seit 7.4 auf dem Fenster-Baustein). Reihenfolge seit 4.4 (Maik): Anleitung, Rangliste, Ehrungen, Aufstiege, Bestenliste, Ton, Spielstand.
 const MED_NAME={'🏆':'Bundessieg','🥇':'Gold','🥈':'Silber','🥉':'Bronze'};
 function ehrSumme(wein){
   const n={}; for(const e of wein) n[e.i]=(n[e.i]||0)+1;
   return Object.keys(n).sort((a,b)=>(Object.keys(MED_NAME).indexOf(a)+9)%9-(Object.keys(MED_NAME).indexOf(b)+9)%9).map(i=>`<span style="white-space:nowrap">${n[i]}× ${i} ${MED_NAME[i]||''}</span>`).join(' · ');
 }
 function vBuero(){
-  const E=(S.ehrungen||[]).slice().reverse(), wein=E.filter(e=>!e.a), auf=E.filter(e=>e.a);
+  const E=(S.ehrungen||[]).slice().reverse(), wein=E.filter(e=>!e.a), L=bestenZeilen();
   const zeile=e=>`<div class="rl"><span>${esc(e.i)}</span><div><b>${esc(e.t)}</b>${e.j?`<span class="mut">${MON[e.m]} ${e.j}</span>`:''}</div></div>`;
-  return `<h3>📜 Spielanleitung</h3><div class="card">${kz(`Alles zum Nachschlagen in ${buchKap().length} kurzen Kapiteln, vom Ziel bis zum Arbeitsamt.`,pk('buch','Aufschlagen',''))}</div>
-  <h3>🏆 Pokale und Ehrungen</h3>${vRangliste()}
-  <div class="card"><h3>🏅 Ehrungen für deine Weine</h3>${wein.length?`<div class="gold" style="font-size:17px;margin-bottom:6px">${ehrSumme(wein)}</div><div class="mut">Zuletzt:</div>`+wein.slice(0,3).map(zeile).join(''):'<div class="mut">Noch keine. Medaillen gibt es bei der Landesprämierung und beim Bundeswettbewerb.</div>'}</div>
-  ${S.rang>=R_LADEN?`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/weinbotschafter.jpg);height:150px"><b>🎗️ Weinbotschafter ${WO[S.region]}</b><span>Jeden Januar +${BOTSCHAFT_ANS} Ansehen für deine Reisen</span></div>`:''}
-  <div class="card"><h3>🎖️ Deine Urkunden</h3>${urkWand()}</div>
-  ${chronikHtml()}
-  ${bestenHtml()}
-  ${tonKnoepfe()}
-  <div class="card"><h3>💾 Dein Spiel</h3>
-    <div class="kv"><span>Speicherplatz</span><span>Spielstand ${SLOT+1}</span></div><div class="kv"><span>Schwierigkeit</span><span>${DIFF[S.schwer].name}</span></div>
-    ${kz('Gespeichert wird von selbst nach jedem Monat. Hier lädst du einen anderen Spielstand oder sicherst ihn als Datei.',pk('menue','Spielstände','',{sec:1}))}
-    ${kz('Löscht diesen Spielstand und fängt von vorn an.',pk('neuFrage','Neues Spiel','',{sec:1}))}</div>
-  <div class="fussnote">Bilder, Musik und Geräusche sind mit KI erstellt (Musik mit Treblo, Geräusche mit ElevenLabs, elevenlabs.io).</div>`;
+  return fenster('anleitung','Spielanleitung','',{links:`Alles zum Nachschlagen in ${buchKap().length} kurzen Kapiteln, vom Ziel bis zum Arbeitsamt.`,kn:pk('buch','Aufschlagen',''),
+      i:'Das Büro ist dein Pokalraum und deine Schaltzentrale. Von oben: Spielanleitung, Rangliste, Ehrungen, Urkunden, Chronik, Bestenliste, Ton und ganz unten deine Spielstände. Das kleine i erklärt jedes Fenster kurz, „Mehr im Buch“ schlägt das passende Kapitel auf.'})
+    +vRangliste()
+    +fenster('ehrungen','Ehrungen für deine Weine',wein.length?`<div class="gold" style="font-size:17px;margin-bottom:6px">${ehrSumme(wein)}</div><div class="mut">Zuletzt:</div>`+wein.slice(0,3).map(zeile).join(''):[],{
+      leer:'Noch keine Ehrungen.',buch:'wettbewerb',i:'Medaillen gibt es bei der Landesprämierung und beim Bundeswettbewerb. Sie bringen Ansehen und machen den Wein wertvoller.'})
+    +(S.rang>=R_LADEN?fenster('botschafter','Weinbotschafter',`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/weinbotschafter.jpg);height:150px"><b>🎗️ Weinbotschafter ${WO[S.region]}</b></div>
+      <div class="kv"><span>Jeden Januar</span><span>+${BOTSCHAFT_ANS} Ansehen</span></div>`,{buch:'ziel',i:`Seit dem Rang ${RAENGE[R_LADEN].name} bist du Weinbotschafter ${WO[S.region]}. Für deine Reisen bekommst du jeden Januar ${BOTSCHAFT_ANS} Ansehen.`}):'')
+    +fenster('urkunden','Deine Urkunden',urkWand(),{buch:'ziel',i:'Für jeden Aufstieg bekommst du eine Urkunde. Sie hängt hier an der Wand, die erste gibt es mit dem Aufstieg zum zweiten Rang.'})
+    +chronikHtml()
+    +fenster('besten','Bestenliste',L.length?L.map(x=>`<div class="rl ${x.du?'du':''}"><span>${x.platz}.</span><div><b>${esc(x.name)}</b><span class="mut">${esc(x.sub)} · ${x.rechts.replace(' J.',' Jahre').replace(' A.',' Ansehen')}</span></div></div>`).join(''):[],{
+      leer:'Noch leer.',buch:'ende',i:'Jede Partie kommt hier hinein, sobald jemand Präsident wird: Siege nach Dauer, Niederlagen nach Rang.'})
+    +fenster('ton','Ton','',{kn:[`<button class="sec klein" data-a="ton" data-id="fx">🔔 Geräusche: ${TON.fx?'an':'aus'}</button>`,`<button class="sec klein" data-a="ton" data-id="musik">🎵 Musik: ${TON.musik?'an':'aus'}</button>`]})
+    +fenster('spiel','Dein Spiel',`<div class="kv"><span>Speicherplatz</span><span>Spielstand ${SLOT+1}</span></div><div class="kv"><span>Schwierigkeit</span><span>${DIFF[S.schwer].name}</span></div>`,{
+      links:'„Neues Spiel“ löscht diesen Spielstand und fängt von vorn an.',kn:[pk('menue','Spielstände','',{sec:1}),pk('neuFrage','Neues Spiel','',{sec:1})],buch:'bedienung',
+      i:'Gespeichert wird von selbst nach jedem Monat. Unter „Spielstände“ lädst du einen anderen Spielstand oder sicherst ihn als Datei.'})
+    +`<div class="fussnote">Bilder, Musik und Geräusche sind mit KI erstellt (Musik mit Treblo, Geräusche mit ElevenLabs, elevenlabs.io).</div>`;
 }
+// Weinberg (seit 7.4 auf dem Fenster-Baustein): je Sorte ein Fenster (seit 4.4 oben), dann Düngung und Übersicht, darunter zugeklappt der Steckbrief des Gebiets.
+// Sorten, die der Rang noch sperrt, stehen zugeklappt mit Schloss ganz unten. Lese-Hinweise und rote Warnungen bleiben sichtbar, die Erklärungen stehen im i.
 function vBerg(){
   const m=S.monat, ges=S.ha*HA_REBEN, bep=rebenGesamt(), frei=ges-bep, ant=ges?bep/ges*100:0;
-  const phase=PHASE, vs=verlustSpanne(bodenSchnitt()), fp=frostPlus();
-  const o=`<div class="card"><h3>Übersicht</h3>
-    <div class="kv"><span>Bepflanzt</span><span>${num(bep)} von ${num(ges)} Reben</span></div><div class="bar"><i style="width:${ant}%"></i></div>
-    <div class="mut">${Math.round(ant)}\u00a0% deiner ${S.ha}\u00a0Hektar sind bepflanzt. Platz ist noch für ${num(frei)} Reben.</div>
+  const phase=PHASE, vs=verlustSpanne(bodenSchnitt()), fp=frostPlus(), WM=`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name}`, wm=`Dein ${MGR_BEREICHE.weingut.name}`;
+  const mr=aufgabeAktiv('reben'), md=aufgabeAktiv('duengen'), mh=aufgabeAktiv('helfer'), rot=t=>`<div class="rot" style="font-size:14px;margin-top:4px">${t}</div>`;
+  const feldI=`Gepflanzt und gerodet wird nur von Januar bis März, gelesen ab August. Je länger die Trauben hängen, desto mehr Öchsle und desto höher die Weinstufe. Aber Regen, Kälteeinbruch und fehlender Frost können alles kosten. Die Sterne zeigen, wie gut die Sorte in dein Gebiet passt.${mr?` ${wm} pflanzt von Januar bis März nach, was über den Winter eingegangen ist.`:''}`;
+  let h='', zu='';
+  for(const id of R().sorten){
+    const f=S.felder[id], so=SORTEN[id], titel=dot(id)+so.name;
+    if(!f.reben&&!sorteFrei(id)){zu+=fenster('feld_'+id,titel,'',{zu:`ab dem Rang ${RAENGE[sorteAb(id)].name}`,i:`${eigText(eignung(id))}. ${feldI}`}); continue}
+    let z=`<div class="kv"><span>Reben</span><span>${num(f.reben)}</span></div><div class="kv"><span>Eignung</span><span>${eigText(eignung(id))}</span></div>`;
+    if(!f.reben) z+=`<div class="kv"><span>Preis je Rebe</span><span>${eur2(rebenPreis(id))}</span></div><div class="kv"><span>Ertrag je Rebe</span><span>rund ${String(Math.round(so.ertrag*(R().ertragF||1)*10)/10).replace('.',',')} l</span></div><div class="fleer" style="margin-top:6px">Nicht angebaut.</div>`;
+    else if(f.gelesen) z+=`<div class="mut">✂️ Für dieses Jahr gelesen.</div>${S.lots.some(l=>l.status==='trauben'&&l.sorte===id)?rot('Die Trauben müssen diesen Monat im Keller ins Fass.'):''}`;
+    else if(f.teil&&f.menge<=0) z+=`<div class="mut">Ein Teil ist gelesen, der Rest ist verloren.</div>`;
+    else if(m<5) z+=`<div class="kv"><span>Stand</span><span>${phase[m]}${f.jung?`, ${num(f.jung)} junge Reben`:''}</span></div>`;
+    else if(m===5) z+=`<div class="kv"><span>Fruchtansatz</span><span>rund ${num(f.menge)} l erwartet</span></div>`;
+    else if(f.menge<=0) z+=`<div class="mut">Keine Trauben mehr am Stock.</div>`;
+    else{
+      z+=`<div class="kv"><span>Öchsle</span><span>${f.oe}°${f.plus>0?` (+${f.plus}° in diesem Monat)`:''}</span></div><div class="bar g"><i style="width:${f.oe/1.5}%"></i></div>
+      <div class="kv"><span>Menge am Stock</span><span>${num(f.menge)} l</span></div>
+      <div class="kv"><span>Reif</span><span>${f.reif} %</span></div><div class="bar"><i style="width:${f.reif}%"></i></div>
+      <div class="kv"><span>davon überreif</span><span>${f.ueber} %</span></div><div class="bar w"><i style="width:${f.ueber}%"></i></div>
+      <div class="kv"><span>Edelfäulnis</span><span>${f.edel?'ja':f.edelGeprueft?'bleibt dieses Jahr aus':R().edelAus?`nein, möglich ab ${R().min.aus}°`:`nein, ab Oktober möglich ab ${R().min.spat}°`}</span></div>
+      ${f.gefroren?'<div class="kv"><span>Zustand</span><span>❄️ gefroren</span></div>':''}
+      ${f.teil?'<div class="mut">Ein Teil ist schon gelesen, der Rest hängt noch.</div>':''}
+      ${m>=7?`<div class="hilfe">${leseHilfe(f)}${m===9?`<br><span class="rot">${S.kaelteWarn===S.jahr?'Die Vorhersage meldet einen Kälteeinbruch im November! Dann erfriert alles, was noch hängt.':'Achtung: In jedem vierten Jahr kommt im November ein Kälteeinbruch, dann erfriert alles, was noch hängt. Die Vorhersage warnt meist davor.'}</span>`:''}${m===10?`<br><span class="rot">Achtung: Ohne Frost im Dezember verfault alles, was noch hängt.</span><br>${frostText()}.`:''}</div>`:''}`;
+    }
+    const kannLesen=m>=7&&f.menge>0&&!f.gelesen&&(m<11||f.gefroren), pflanz=m<=2&&sorteFrei(id), haengt=f.reben&&f.menge>0&&!f.gelesen&&m>5&&m<7;
+    h+=fenster('feld_'+id,titel,z,{buch:m>=7?'lese':'berg',
+      hin:[mr&&m<=2&&S.verlust&&S.verlust[id]>0&&`${WM} pflanzt beim Weiterblättern nach.`],
+      links:pflanz&&frei<10?'Auf deinem Land ist kein Platz mehr frei.':haengt?'Lese ab August.':'',
+      kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,pflanz&&`<button class="klein" data-a="pflanzen" data-id="${id}" ${frei<10?'disabled':''}>Pflanzen</button>`,pflanz&&f.reben&&`<button class="klein sec" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
+  }
+  h+=fenster('duengung','Düngung',`<div class="kv"><span>Boden</span><span>${S.boden} %</span></div><div class="bar"><i style="width:${S.boden}%"></i></div>
+    <div class="mut ${S.boden<80?'rot':''}">Für die Weinqualität: ${bodenText(S.boden)}</div>
+    ${S.nass!=null?rot(`🌧️ Der Regen im ${MON[S.nass]} hat den Boden ausgewaschen.`):''}
+    <div class="kv"><span>Bodenschnitt dieses Jahr</span><span>${bodenSchnitt()} %</span></div>
+    <div class="mut">Zum Jahreswechsel gehen voraussichtlich ${vs[1]+fp} bis ${vs[2]+fp} % der Reben ein${fp?' (mit Frost)':''}.</div>`,{
+    hin:[md&&`${WM} düngt beim Weiterblättern, wenn der Boden mager wird.`],
+    links:`Gedüngt: ${S.duengungen} von 3 Mal`,kn:pk('duengen','Düngen',eur(DUENGER_HA*S.ha),{aus:S.duengungen>=3||S.boden>=100,arm:S.geld<DUENGER_HA*S.ha}),
+    i:`Der Boden verliert jeden Monat ${BODEN_MONAT} Punkte, in einem Regenmonat ${BODEN_REGEN}, und mit jeder Lese 4. Einmal Düngen bringt 30, höchstens dreimal im Jahr. Ein guter Boden bringt mehr Trauben, bessere Weine und weniger tote Reben: Je besser der Bodenschnitt des Jahres, desto weniger Reben gehen zum Jahreswechsel ein.${md?` ${wm} düngt, sobald der Boden auf 70 % fällt, im August schon unter 90 %.`:''}`});
+  h+=fenster('uebersicht','Übersicht',`<div class="kv"><span>Bepflanzt</span><span>${num(bep)} von ${num(ges)} Reben</span></div><div class="bar"><i style="width:${ant}%"></i></div>
+    <div class="kv"><span>Fläche</span><span>${S.ha} Hektar, ${Math.round(ant)} % bepflanzt</span></div>
+    <div class="kv"><span>Platz für</span><span>${num(frei)} Reben</span></div>
     ${m<=2?`<div class="mut">🌱 Rebenmarkt: ${rebenMarktText()}.</div>`:''}
     ${R().sorten.filter(id=>S.felder[id].reben).map(id=>`<div class="kv"><span>${dot(id)}${SORTEN[id].name}</span><span>${num(S.felder[id].reben)} Reben</span></div>`).join('')}
     <div class="kv"><span>Wetter jetzt</span><span>${wetterText()}</span></div>
     <div class="kv"><span>Vorhersage ${MON[(m+1)%12]}</span><span>${progText()}</span></div>
-    <div class="mut ${leuteFehlen().helfer?'rot':''}">Erntehelfer: reichen für ${num(helferKraft()*REBEN_JE_HELFER)} Reben, gepflanzt sind ${num(bep)}</div>
-    <div class="mut ${leseFaktor()<1?'rot':''}">Ernteleistung: ${num(leistung())} Reben, gebraucht werden ${num(bep)}${leseFaktor()<1?`. Bei der Lese bleiben ${100-Math.round(leseFaktor()*100)}\u00a0% hängen.`:''}</div></div>
-  <div class="card"><h3>Düngung</h3>
-    <div class="kv"><span>Boden</span><span>${S.boden}\u00a0%</span></div><div class="bar"><i style="width:${S.boden}%"></i></div>
-    <div class="mut ${S.boden<80?'rot':''}">Für die Weinqualität: ${bodenText(S.boden)}</div>
-    ${kz(`Gedüngt: ${S.duengungen} von 3 Mal`,pk('duengen','Düngen',eur(DUENGER_HA*S.ha),{aus:S.duengungen>=3||S.boden>=100,arm:S.geld<DUENGER_HA*S.ha}))}
-    <div class="mut" style="margin-top:6px">Der Boden verliert jeden Monat ${BODEN_MONAT} Punkte, in einem Regenmonat ${BODEN_REGEN}, und mit jeder Lese 4. Einmal Düngen bringt 30.</div>
-    ${S.nass!=null?`<div class="mut rot">🌧️ Der Regen im ${MON[S.nass]} hat den Boden ausgewaschen.</div>`:''}
-    <div class="mut" style="margin-top:6px">Reben: Bodenschnitt dieses Jahr ${bodenSchnitt()}\u00a0%, voraussichtlich ${vs[1]+fp} bis ${vs[2]+fp}\u00a0% Verlust zum Jahreswechsel${fp?' (mit Frost)':''}.</div></div>`;
-  // Version 4.4: die Felder stehen oben, Übersicht und Düngung darunter.
-  let h='';
-  for(const id of R().sorten){
-    const f=S.felder[id], so=SORTEN[id];
-    h+=`<div class="card"${!f.reben&&!sorteFrei(id)?' style="opacity:.55"':''}><div class="row"><h3>${dot(id)}${so.name}</h3><span class="mut">${num(f.reben)} Reben</span></div><div class="mut">${eigText(eignung(id))}</div>`;
-    if(!f.reben&&!sorteFrei(id)) h+=`<div class="mut">🔒 Kommt mit dem Rang ${RAENGE[sorteAb(id)].name}.</div>`;
-    else if(!f.reben) h+=`<div class="mut">Nicht angebaut. ${eur2(rebenPreis(id))} je Rebe, rund ${String(Math.round(so.ertrag*(R().ertragF||1)*10)/10).replace('.',',')}\u00a0l je Rebe.</div>`;
-    else if(f.gelesen) h+=`<div class="mut">✂️ Für dieses Jahr gelesen.</div>${S.lots.some(l=>l.status==='trauben'&&l.sorte===id)?`<div class="btns"><button class="klein sec" data-a="tab" data-id="keller">Zum Keltern</button></div>`:''}`;
-    else if(f.teil&&f.menge<=0) h+=`<div class="mut">Ein Teil ist gelesen, der Rest ist verloren.</div>`;
-    else if(m<5) h+=`<div class="mut">${phase[m]}${f.jung?` · ${num(f.jung)} junge Reben`:''}</div>`;
-    else if(m===5) h+=`<div class="mut">Fruchtansatz. Erwartete Menge: rund ${num(f.menge)}\u00a0l</div>`;
-    else if(f.menge<=0) h+=`<div class="mut">Keine Trauben mehr am Stock.</div>`;
-    else{
-      h+=`<div class="kv"><span>Öchsle</span><span>${f.oe}°${f.plus>0?` (+${f.plus}° in diesem Monat)`:''}</span></div><div class="bar g"><i style="width:${f.oe/1.5}%"></i></div>
-      <div class="kv"><span>Menge am Stock</span><span>${num(f.menge)}\u00a0l</span></div>
-      <div class="kv"><span>Reif</span><span>${f.reif}\u00a0%</span></div><div class="bar"><i style="width:${f.reif}%"></i></div>
-      <div class="kv"><span>davon überreif</span><span>${f.ueber}\u00a0%</span></div><div class="bar w"><i style="width:${f.ueber}%"></i></div>
-      <div class="kv"><span>Edelfäulnis</span><span>${f.edel?'ja':f.edelGeprueft?'bleibt dieses Jahr aus':R().edelAus?`nein, möglich ab ${R().min.aus}°`:`nein, ab Oktober möglich ab ${R().min.spat}°`}</span></div>
-      ${f.gefroren?'<div class="kv"><span>Zustand</span><span>❄️ gefroren</span></div>':''}
-      ${f.teil?'<div class="mut">Ein Teil ist schon gelesen, der Rest hängt noch.</div>':''}
-      ${m>=7?`<div class="hilfe">${leseHilfe(f)}${m===9?`<br><span class="rot">${S.kaelteWarn===S.jahr?'Die Vorhersage meldet einen Kälteeinbruch im November! Dann erfriert alles, was noch hängt.':'Achtung: In jedem vierten Jahr kommt im November ein Kälteeinbruch, dann erfriert alles, was noch hängt. Die Vorhersage warnt meist davor.'}</span>`:''}${m===10?`<br><span class="rot">Achtung: Ohne Frost im Dezember verfault alles, was noch hängt.</span><br>${frostText()}.`:''}</div>`:'<div class="mut">Lese ab August.</div>'}`;
-    }
-    const kannLesen=m>=7&&f.menge>0&&!f.gelesen&&(m<11||f.gefroren);
-    h+=`<div class="btns">${m<=2&&sorteFrei(id)?`<button class="klein" data-a="pflanzen" data-id="${id}" ${frei<10?'disabled':''}>Pflanzen</button>${f.reben?`<button class="klein sec" data-a="roden" data-id="${id}">Roden</button>`:''}`:''}
-      ${kannLesen?`<button data-a="lesen" data-id="${id}">Lesen</button>`:''}</div></div>`;
-  }
-  return h+o;
+    <div class="kv"><span>Erntehelfer reichen für</span><span class="${leuteFehlen().helfer?'rot':''}">${num(helferKraft()*REBEN_JE_HELFER)} Reben</span></div>
+    <div class="kv"><span>Ernteleistung</span><span class="${leseFaktor()<1?'rot':''}">${num(leistung())} Reben</span></div>
+    ${leseFaktor()<1?rot(`Bei der Lese bleiben ${100-Math.round(leseFaktor()*100)} % hängen.`):''}`,{
+    hin:[mh&&`${WM} stellt fehlende Erntehelfer beim Weiterblättern ein.`],
+    i:`Für den Aufstieg zählt nur die bepflanzte Fläche. Je ${num(REBEN_JE_HELFER)} Reben brauchst du einen Erntehelfer, fehlt einer, geht es nicht in den nächsten Monat. Die Ernteleistung zählt bei der Lese: Reicht sie nicht für alle Reben, bleibt ein Teil der Trauben hängen. Leute stellst du im Arbeitsamt ein, Maschinen kaufst du unter „Maschinen“.`});
+  const G=steckbrief(S.region,{fen:1}), auf=FI_AUF.has('gebiet+');
+  h+=fenster('gebiet','Dein Gebiet',`<div class="kv"><span>${G.name}</span><span>${G.art}</span></div><div class="sb fklapp"${auf?'':' hidden'}>${G.rumpf}</div>`,{buch:'gebiete',
+    kn:`<button class="klein sec" data-a="klapp" data-id="gebiet" data-auf="Zuklappen" data-zu="Steckbrief zeigen">${auf?'Zuklappen':'Steckbrief zeigen'}</button>`,
+    i:'Jedes Gebiet hat eine eigene Stärke. In warmen Gebieten gibt es öfter edelsüße Weine, in kühlen öfter Eiswein, in der Mitte mehr Medaillen oder mehr Geld. Der Steckbrief zeigt, welche Sorten hier passen, was sich lohnt und wie du am besten vorgehst.'});
+  return h+zu;
 }
 function vKeller(){
   const T={start:'Weinkeller',buch:'Kellerbuch',sabotage:'Hintertür',lager:'Lager'};
@@ -2678,7 +2712,7 @@ function vStadt(){
       <div class="kv"><span>Gebraucht für ${num(bed)} Reben</span><span class="${fe.helfer?'rot':''}">${helferBedarf()}</span></div>
       <div class="kv"><span>Deine Leute reichen für</span><span>${num(helferKraft()*REBEN_JE_HELFER)} Reben</span></div>
       ${ohneGeld('helfer')}
-      <div class="kv"><span>Ernteleistung bei der Lese</span><span class="${lei<bed?'rot':''}">${num(lei)} von ${num(bed)} Reben</span></div>
+      <div class="kv"><span>Ernteleistung</span><span class="${lei<bed?'rot':''}">${num(lei)} von ${num(bed)} Reben</span></div>
       <div class="bar"><i style="width:${bed?Math.min(100,lei/bed*100):100}%"></i></div>`,{
       hin:[aufgabeAktiv('helfer')&&`${MGR_BEREICHE.weingut.sym} Dein ${WM} stellt fehlende Erntehelfer beim Weiterblättern ein.`],
       kn:lohnKnoepfe('helfer'),
@@ -2805,6 +2839,8 @@ const AKT={
     ${mib('geld')}<div class="btns"><button class="sec" data-a="zurBank">🏦 Zur Bank</button><button data-a="close">Okay</button></div>`)},
   zurBank(){closeSheet();geh('stadt','bank');render();window.scrollTo(0,0)},
   fi(d,e){const f=e.target.closest('.fen'), b=f.querySelector('.fi'), x=f.querySelector('.finfo'), auf=x.hidden; x.hidden=!auf; b.classList.toggle('an',auf); b.setAttribute('aria-expanded',auf); if(auf) FI_AUF.add(d.id); else FI_AUF.delete(d.id)},
+  // Zugeklappter Teil eines Fensters (Steckbrief im Weinberg): auf und zu ohne neues Zeichnen, offen bleibt er bis zum Ortswechsel.
+  klapp(d,e){const b=e.target.closest('button'), x=b.closest('.fen').querySelector('.fklapp'), auf=x.hidden; x.hidden=!auf; b.textContent=auf?d.auf:d.zu; if(auf) FI_AUF.add(d.id+'+'); else FI_AUF.delete(d.id+'+')},
   infoAuf(d,e){const el=e.target.closest('.info'), k=TAB+'/'+SUB; el.classList.toggle('zu'); if(el.classList.contains('zu')) INFO_AUF.delete(k); else INFO_AUF.add(k)},
   region(d){NEU.name=$('#nm').value;NEU.region=d.id;render()},
   neuOpt(d){NEU.name=$('#nm').value;NEU[d.k]=d.k==='gegner'?+d.v:d.v;const y=window.scrollY;render();window.scrollTo(0,y)},
