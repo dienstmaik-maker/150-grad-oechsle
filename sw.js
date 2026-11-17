@@ -1,7 +1,7 @@
 // Helfer für die App: legt alle Dateien des Spiels aufs Gerät, damit es ohne Netz läuft.
 // Die Spielseite (index.html), das Buch (anleitung.js) und seit 8.1 die Sprechblasen (fuehrer.js) kommen immer zuerst frisch aus dem Netz, so kommen neue Fassungen von selbst an. Ohne Netz gilt die gespeicherte.
 // Bilder und Töne kommen aus dem Speicher. Ändert sich eines davon, die Nummer in LAGER erhöhen, dann lädt das Gerät alles neu.
-const LAGER = 'oechsle-29';
+const LAGER = 'oechsle-30';
 const DATEIEN = [
   './', 'index.html', 'manifest.webmanifest', 'anleitung.js', 'fuehrer.js',
   'bilder/amt.jpg',
@@ -35,6 +35,7 @@ const DATEIEN = [
   'bilder/helferweg.jpg',
   'bilder/herbst.jpg',
   'bilder/hoffest.jpg',
+  'bilder/holzbogen.jpg',
   'bilder/keller.jpg',
   'bilder/kellerbuch.jpg',
   'bilder/knitter.webp',
@@ -57,6 +58,7 @@ const DATEIEN = [
   'bilder/sieg.jpg',
   'bilder/siegel-rot.webp',
   'bilder/siegel.webp',
+  'bilder/sitzbank.jpg',
   'bilder/sommer.jpg',
   'bilder/spitzenlage.jpg',
   'bilder/stadt.jpg',

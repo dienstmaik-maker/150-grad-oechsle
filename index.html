@@ -271,6 +271,8 @@ img.fass{height:1.1em;vertical-align:-.18em}
 /* Die Karte steht oben, weil die Hauptmotive der Bilder unten in der Mitte liegen (oben meist Himmel, Gewölbe oder Girlanden). */
 #feier.buehne .fkarte{top:calc(12px + env(safe-area-inset-top));bottom:auto;max-height:calc(100% - 120px - env(safe-area-inset-bottom) - env(safe-area-inset-top));overflow-y:auto;animation-name:ein}
 #feier.buehne .fverl{background:linear-gradient(rgba(0,0,0,.5),transparent 40%,transparent 78%,rgba(0,0,0,.6))}
+/* 8.2 Ehrenbürger: Die Karte steht unten, damit der Spruch oben auf dem Holzbogen frei bleibt. */
+#feier.buehne.unten .fkarte{top:auto;bottom:calc(96px + env(safe-area-inset-bottom))}
 #feier.buehne .fkarte p{display:none;margin:6px 0 0}
 #feier.buehne .fkarte p.da,#feier.alle .fkarte p{display:block;animation:ein 1.4s ease both}
 #feier.alle .fkarte p{animation:none}
@@ -532,7 +534,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='8.1';
+const VERSION='8.2';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -1120,8 +1122,9 @@ const SPENDEN=[null,
 ];
 // Raten in Zwanzigsteln des Betrags. Belohnungen: Frostfeuer retten SP_FROST, Lohn mal SP_LOHN, Segen +SP_SEGEN Öchsle, Großhandel mal SP_MARKT, Weinhandlung mal SP_LADEN, Hoffest-Ansehen mal SP_HOFFEST.
 const SP_TEIL=20, SP_DECKEL=.2, SP_FROST=.25, SP_LOHN=.95, SP_SEGEN=4, SP_MARKT=1.05, SP_LADEN=1.25, SP_HOFFEST=1.25, SP_ERBE=.85;
-// Maiks Bilder (Bank an der Spitzenlage, Holzbogen) kommen nach. Bis dahin stehen hier leere Namen, und das Spiel zeigt das normale Spitzenlage-Bild und die Stadt.
-const SP_BILD={bank:'',bogen:''};
+// Maiks Bilder seit 17.11.2026: Holzbogen (Spruch steht im Bild) und die Bank als eigene Nahansicht am Wanderweg (sitzbank, nicht bank.jpg, das ist die Bank in der Stadt).
+// Das Spitzenlage-Bild bei den Auktionen bleibt, wie es ist.
+const SP_BILD={bank:'sitzbank',bogen:'holzbogen'};
 const SP_SPRUCH='Was die Eltern pflanzten, ernten die Kinder';
 const SP_DANK=[null,
   ['„Ohne deinen Wein wäre das Dorffest ein Kaffeekränzchen geblieben“, sagt der Bürgermeister.','„Die Dorfjugend will sich bei der nächsten Lese revanchieren.“'],
@@ -1137,9 +1140,9 @@ const spFertig=s=>(S.spenden||[]).some(x=>x.s===s);
 function spOffen(){const r=S.rang; return r>=1&&r<SPENDEN.length&&!spFertig(r)?r:0}
 function spBezahlt(){return S.sp&&S.sp.r===S.rang?S.sp.bez:0}
 function spAbzug(gew){return gew>0?Math.min(S.spJahr||0,Math.round(gew*SP_DECKEL)):0}
-const spitzBild=()=>spFertig(7)&&SP_BILD.bank||'spitzenlage';
+const bankBild=()=>SP_BILD.bank||'spitzenlage';
 const bogenBild=()=>SP_BILD.bogen||'stadt';
-const spFoto=s=>{const b=SPENDEN[s].bild; return b==='bank'?SP_BILD.bank||'spitzenlage':b==='bogen'?bogenBild():b};
+const spFoto=s=>{const b=SPENDEN[s].bild; return b==='bank'?bankBild():b==='bogen'?bogenBild():b};
 // Ehrenbürger der Generation n? Dann bleiben bei ihrer Übergabe SP_ERBE vom Ansehen.
 const spBuerger=n=>(S.spenden||[]).some(x=>x.s===8&&x.g===n);
 function erbAnsehen(){return spBuerger(genNr())?SP_ERBE:ERB_ANSEHEN}
@@ -2539,8 +2542,10 @@ function konfetti(n){
 // Version 8.2: Stufe 8 der Spenden auf der Bild-Bühne mit Holzbogen und Namenstafel, ohne Fanfare. Erst die Bühne mit dem Kapitel, dann der Ehrenbrief.
 const spKapitel=()=>['Der ganze Gemeinderat steht auf dem Dorfplatz, die Blaskapelle spielt diesmal fast gerade.',`Der Bürgermeister zieht das Tuch vom neuen Holzbogen: „${SP_SPRUCH}.“`,'Darunter stehen die Namen deiner Familie, Generation für Generation.',`„Ab heute bist du ${anr('Ehrenbürger','Ehrenbürgerin')} unseres Dorfs“, sagt er, „und das bleibt so, auch wenn die Nächsten übernehmen.“`];
 function vSpFeier(){
-  const bild=k=>`<div class="fbild ${k}" style="background-image:url(bilder/${bogenBild()}.jpg);--p0:45% 50%;--p1:55% 50%;--o:50% 45%;--s:1.15"></div>`;
-  if(FSTUFE===0) return `<div id="feier" class="buehne" data-a="feierAlle">${bild('bewegt')}<div class="fglanz"></div>${konfetti(12)}<div class="fverl"></div>
+  // Mit Maiks Holzbogen schwenkt die Bühne am Handy langsam von links nach rechts über den Balken mit dem Spruch, die Karte steht unten.
+  const B=SP_BILD.bogen, pos=B?'--p0:20% 50%;--p1:75% 50%;--o:50% 22%;--s:1.06':'--p0:45% 50%;--p1:55% 50%;--o:50% 45%;--s:1.15';
+  const bild=k=>`<div class="fbild ${k}" style="background-image:url(bilder/${bogenBild()}.jpg);${pos}"></div>`;
+  if(FSTUFE===0) return `<div id="feier" class="buehne${B?' unten':''}" data-a="feierAlle">${bild('bewegt')}<div class="fglanz"></div>${konfetti(12)}<div class="fverl"></div>
     <div class="fkarte"><small>🤝 Auf dem Dorfplatz</small><h2>Das Dorf sagt Danke!</h2>${spKapitel().map(s=>`<p>${esc(s)}</p>`).join('')}</div>
     <div class="ifuss"><button data-a="feierWeiter">Zum Ehrenbrief ▶</button></div><div class="ischw"></div></div>`;
   const P=[['⭐',`${SPENDEN[8].ans} Ansehen`],['🪵','Der Holzbogen auf dem Dorfplatz, im Rathaus jederzeit anzusehen'],['👪',`Bei der nächsten Übergabe bleiben ${pz(SP_ERBE)} statt ${pz(ERB_ANSEHEN)} vom Ansehen`]];
@@ -3464,7 +3469,9 @@ Object.assign(FU_WANN,{
   'w6':()=>S.lots.some(fuLange),
   'w7':()=>S.geld<0,
   'w8':()=>S.monat===5&&monatNr()>=12&&R().sorten.reduce((a,id)=>a+(S.felder[id].reben?S.felder[id].menge||0:0),0)>S.fassraum-fassBelegt(),
-  'w9':()=>S.monat===9&&S.kaelteWarn===S.jahr&&feldHaengt().length>0
+  'w9':()=>S.monat===9&&S.kaelteWarn===S.jahr&&feldHaengt().length>0,
+  // Version 8.2: r3-4 kommt nicht nach Monaten, sondern sobald der gelbe Punkt der Spende im Rathaus zum ersten Mal leuchtet (November oder Dezember).
+  'r3-4':()=>S.monat>=10&&spOffen()>0
 });
 // Kniffe (Paket B): ab dem dritten Jahr frühestens fünf Monate nach dem letzten, der erste freie in der Reihenfolge des Entwurfs.
 // Kniffe eines Managers, der sich noch nicht vorgestellt hat, sagt der alte Winzer mit dem Ersatz-Text (Maik 17.11.2026, Plan B). Ohne Ersatz-Text warten sie weiter. k01 steht oben im zweiten Jahr.
@@ -3518,6 +3525,7 @@ const FU_ZEIG={
   'r3-1':{tab:'stadt',sub:'amt',sel:[fiSel('auktionen'),fiSel('makler')]},
   'r3-2':{tab:'gut',sub:'berg',sel:['[data-a="fi"][data-id^="feld_"]']},
   'r3-3':{tab:'keller',sub:'lager',sel:[fiSel('ausbau')]},
+  'r3-4':{tab:'stadt',sub:'amt',sel:[fiSel('spenden')]},
   'r4-1':{tab:'stadt',sub:'arbeit',sel:[fiSel('mgr_amt')]},
   'r4-2':{tab:'stadt',sub:'handel',sel:[fiSel('markt')]},
   'r4-3':{tab:'keller',sub:'start',sel:[fiSel('sekt')]},
@@ -3777,12 +3785,12 @@ const AKT={
   auktion(){
     const a=S.auktion; if(!a) return;
     // Angekündigt: nur der Hinweis, geboten wird erst nächsten Monat.
-    if(a.phase===0) return openSheet(`${sbild(a.spitze?spitzBild():'auktion')}<h3>🔨 Auktion im ${MON[(S.monat+1)%12]}</h3><p>${a.ha}\u00a0Hektar Weinberg ${WO[S.region]} kommen nächsten Monat unter den Hammer. Startgebot ${eur(a.start)}, geboten wird in Schritten von ${eur(a.schritt)}.</p>
+    if(a.phase===0) return openSheet(`${sbild(a.spitze?'spitzenlage':'auktion')}<h3>🔨 Auktion im ${MON[(S.monat+1)%12]}</h3><p>${a.ha}\u00a0Hektar Weinberg ${WO[S.region]} kommen nächsten Monat unter den Hammer. Startgebot ${eur(a.start)}, geboten wird in Schritten von ${eur(a.schritt)}.</p>
       <p class="mut">${S.rang>=R_AUKTION?`Mitgehen kannst du bis Konto plus freier Kreditrahmen, gerade sind das ${eur(Math.max(0,aukLimit()))}.`:`Mitbieten darfst du ab dem Rang ${RAENGE[R_AUKTION].name}.`}</p><div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`);
     if(S.rang<R_AUKTION) return;
-    if(a.ende) return openSheet(`${sbild(a.spitze?spitzBild():'auktion')}<h3>🔨 Auktion beendet</h3><p>${esc(a.text)}</p><div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`);
+    if(a.ende) return openSheet(`${sbild(a.spitze?'spitzenlage':'auktion')}<h3>🔨 Auktion beendet</h3><p>${esc(a.text)}</p><div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`);
     const x=aukNaechstes(), lim=aukLimit();
-    openSheet(`${sbild(a.spitze?spitzBild():'auktion')}<h3>🔨 Auktion: ${a.ha}\u00a0Hektar ${WO[S.region]}</h3>
+    openSheet(`${sbild(a.spitze?'spitzenlage':'auktion')}<h3>🔨 Auktion: ${a.ha}\u00a0Hektar ${WO[S.region]}</h3>
       <p class="mut">Im Saal sitzen außer dir ${a.bieter.length} Bieter. Wie weit sie gehen, verrät keiner.</p>
       <div class="gebot"><span class="mut">${a.fuehrer?'Höchstgebot':'Startgebot'}</span><b>${eur(a.gebot)}</b><span>${a.fuehrer?'von '+esc(a.fuehrer):'noch kein Gebot'}</span></div>
       ${a.text?`<p>${esc(a.text)}</p>`:''}
@@ -3865,9 +3873,9 @@ const AKT={
   },
   spEhre(d){
     const s=+d.n, e=(S.spenden||[]).find(x=>x.s===s); if(!e) return; const D=SPENDEN[s];
-    openSheet(`<h2>🤝 ${esc(spKurz(s,e))}</h2>${spEhrHtml(s,'gross',e)}<p class="mut" style="margin:10px 0">Gespendet für ${esc(D.z)} im ${MON[e.m]} ${e.j}. ${esc(D.lohn)}.</p>${s===8?spBogenHtml():s===7?`<div class="spbogen" style="background-image:url(bilder/${spitzBild()}.jpg)"></div>${spBankTafel()}`:''}<div class="btns"><button data-a="close">Schließen</button></div>`);
+    openSheet(`<h2>🤝 ${esc(spKurz(s,e))}</h2>${spEhrHtml(s,'gross',e)}<p class="mut" style="margin:10px 0">Gespendet für ${esc(D.z)} im ${MON[e.m]} ${e.j}. ${esc(D.lohn)}.</p>${s===8?spBogenHtml():s===7?`<div class="spbogen" style="background-image:url(bilder/${bankBild()}.jpg)"></div>${spBankTafel()}`:''}<div class="btns"><button data-a="close">Schließen</button></div>`);
   },
-  spBank(){openSheet(`<h3>🪑 Die Bank am Wanderweg</h3><div class="spbogen" style="background-image:url(bilder/${spitzBild()}.jpg)"></div>${spBankTafel()}<p class="mut">Über der Spitzenlage, mit Blick über den Fluss ins Tal.</p><div class="btns"><button data-a="close">Schließen</button></div>`)},
+  spBank(){openSheet(`<h3>🪑 Die Bank am Wanderweg</h3><div class="spbogen" style="background-image:url(bilder/${bankBild()}.jpg)"></div>${spBankTafel()}<p class="mut">Über der Spitzenlage, mit Blick über den Fluss ins Tal.</p><div class="btns"><button data-a="close">Schließen</button></div>`)},
   spBogen(){openSheet(`<h3>🪵 Der Holzbogen</h3>${spBogenHtml()}<div class="btns"><button data-a="close">Schließen</button></div>`)},
   sub(d){SUB=d.id;render();window.scrollTo(0,0)},
   arbeitsamt(){closeSheet();geh('stadt','arbeit');render();window.scrollTo(0,0)},
