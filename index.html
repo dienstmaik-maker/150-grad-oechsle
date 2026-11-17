@@ -291,13 +291,13 @@ img.fass{height:1.1em;vertical-align:-.18em}
 .urk small{font-size:clamp(9.5px,2.6vw,12.5px);opacity:.75;margin-top:2px}
 .urk .usiegel{position:absolute;left:50.3%;top:87.3%;width:13.5%;aspect-ratio:1;translate:-50% -50%;background:url(bilder/siegel-rot.webp) center/contain no-repeat;filter:drop-shadow(0 2px 2px rgba(0,0,0,.45))}
 /* Version 7.3: gemaltes Wachssiegel statt Kreis mit Trauben-Emoji. */
-.urk.neu .usiegel{animation:siegel .35s cubic-bezier(.3,1.4,.5,1) .9s both}
+.urk.neu .usiegel{animation:siegel .45s cubic-bezier(.3,1.4,.5,1) 1.6s both}
 @keyframes siegel{from{transform:scale(2.6);opacity:0}to{transform:none;opacity:1}}
 .urk.gross{margin:6px 0 2px}
 #feier .fgruss{margin:14px 2px 0;font:italic 400 16px/1.45 var(--schrift);color:#eadfca;text-align:center;animation:ein .6s ease-out 1.2s both}
 #feier .fliste{margin-top:14px;background:rgba(16,12,8,.7);border:1.5px solid #c9a227;border-radius:10px;padding:10px 14px 8px}
 #feier .fliste h3{margin:0 0 6px;font:700 14px/1.3 var(--knopf);letter-spacing:.8px;text-transform:uppercase;color:#f0c75a}
-#feier .fliste>div{display:flex;gap:10px;align-items:baseline;padding:5px 0;border-top:1px solid rgba(240,199,90,.2);font:400 16px/1.35 var(--schrift);animation:ein .45s ease-out both}
+#feier .fliste>div{display:flex;gap:10px;align-items:baseline;padding:5px 0;border-top:1px solid rgba(240,199,90,.2);font:400 16px/1.35 var(--schrift);animation:ein .6s ease-out both}
 #feier .fliste>div:first-of-type{border-top:0}
 #feier .fliste span{font-size:20px;width:26px;text-align:center;flex:none}
 #feier .ifuss{position:fixed;left:0;right:0;bottom:0;z-index:3;padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(0,0,0,.85) 40%)}
@@ -2043,10 +2043,10 @@ function vFeier(){
   return `<div id="feier" class="urkseite"><div class="fbild still" style="background-image:url(bilder/${bild}.jpg)"></div><div class="fdunkel"></div>${konfetti(24)}
     <div class="fin"><div class="fkopf">Herzlichen Glückwunsch!</div>${urkHtml(i,S.monat,S.jahr,'neu')}
     ${i<FEIER_HOF&&FEIER_GRUSS[i]?`<p class="fgruss">${esc(FEIER_GRUSS[i])}</p>`:''}
-    <div class="fliste"><h3>Das bringt dir dein neuer Rang</h3>${P.map((p,k)=>`<div style="animation-delay:${(1.7+k*.45).toFixed(2)}s"><span>${p[0]}</span>${esc(p[1])}</div>`).join('')}</div></div>
+    <div class="fliste"><h3>Das bringt dir dein neuer Rang</h3>${P.map((p,k)=>`<div style="animation-delay:${(2.8+k*.8).toFixed(2)}s"><span>${p[0]}</span>${esc(p[1])}</div>`).join('')}</div></div>
     <div class="ifuss"><button data-a="feierEnde">Anstoßen 🥂</button></div><div class="ischw"></div></div>`;
 }
-// Töne passend zu den Bewegungen: das Siegel fällt nach 0,9 s (Stempel bei 1,25 s), dann je Punkt ein leiser Klick.
+// Töne passend zu den Bewegungen: das Siegel fällt nach 1,6 s (Stempel bei 2 s), dann ab 2,8 s alle 0,8 s ein Punkt mit leisem Klick (7.3 ruhiger, vorher 0,9 s und 0,45 s).
 // Version 7.3: Die Fanfare hängt an den Geräuschen und spielt nur bei ausgeschalteter Musik (sonst läuft die Aufstiegsmusik).
 // Mit Feier-Bild (ab Weingutsbesitzer) kommt sie beim Bild, bei den kleinen Rängen bei der Urkunde.
 function feierStart(){
@@ -2055,8 +2055,8 @@ function feierStart(){
   if(fanfare) FT.push(setTimeout(()=>fx('fanfare'),250));
   if(FSTUFE!==1) return;
   const n=feierPunkte(F.von,F.zu).length;
-  FT.push(setTimeout(()=>fx('stempel'),1250));
-  for(let k=0;k<n;k++) FT.push(setTimeout(()=>fx('klick'),1750+k*450));
+  FT.push(setTimeout(()=>fx('stempel'),2000));
+  for(let k=0;k<n;k++) FT.push(setTimeout(()=>fx('klick'),2800+k*800));
 }
 // Urkundenwand im Büro: jede Aufstiegs-Ehrung als kleine Urkunde. Alte Ehrungen ohne r finden ihren Rang über den Namen.
 function urkRang(e){if(e.r!=null) return e.r; const m=/jetzt (.+)\.$/.exec(e.t||''); return m?RAENGE.findIndex(x=>x.name===m[1]):-1}
