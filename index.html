@@ -55,7 +55,7 @@ button.sec{--schild:url(bilder/schild-zweit.webp);--kschrift:#4a1526;--kschatten
 button.wag{--schild:url(bilder/schild-wag.webp);--kschrift:#f4e4d4;--kschatten:0 1px 2px #000}
 button.klein{min-height:40px;padding:8px 16px;font-size:15px}
 button:disabled{opacity:.45;filter:grayscale(.7)}
-/* Alles, was kein Schild ist: Auswahlkarten, Aufgaben, Sortier-Knöpfe, Reiter, Zettel, Zeilen im Kellerbuch. */
+/* Alles, was kein Schild ist: Auswahlkarten, Aufgaben, Auswahl-Knöpfe, Reiter, Zettel, Zeilen im Kellerbuch. */
 .wahl,.task,.chip,.zettel,.bzeile,#tabs button,#titel .weg{border-image:none;filter:none;font:500 16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-caps:normal;letter-spacing:0;text-shadow:none;border-radius:12px;padding:12px 14px}
 /* Version 4.0: Alle Karten sind Pergament, an jedem Ort gleich. Die Ortsfarbe bleibt nur im Hintergrund. */
 .card,.task,.wahl,.bzeile{--ink:#2b2118;--mut:#6b5a45;--line:#d3bf93;--wein:#7b1e3a;--rot:#b3261e;--gruen:#4c7030;--blau:#4a4f8f;--gold:#946b06;--card:#f8f0dc;background:linear-gradient(#fbf5e6,#f3e7cc);color:var(--ink);border:1px solid #cdb68a;box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 2px 4px rgba(43,24,12,.2)}
@@ -339,7 +339,7 @@ main>h3{border-left-color:#e8c98a}
 .task{border-top:2px solid #9a6a35;border-right:2px solid #9a6a35;border-bottom:2px solid #9a6a35;border-radius:10px}
 .card .card,.card .wahl,.card .bzeile{box-shadow:none}
 .wahl.an{border-color:#7b1e3a;box-shadow:0 0 0 2px #7b1e3a inset}
-/* Was sonst direkt auf dem Holz liegt, wird auch Papier: Hinweise, Ehrungen und die Sortier-Knöpfe */
+/* Was sonst direkt auf dem Holz liegt, wird auch Papier: Hinweise, Ehrungen und die Auswahl-Knöpfe */
 main>.hilfe,main>.ehrung{--ink:#2b2118;--mut:#4e3d2a;--gold:#946b06;color:#2b2118;background:#f3e7ca url(bilder/papier.jpg) center/cover;border:2px solid #9a6a35;border-radius:10px;box-shadow:0 3px 8px rgba(20,10,4,.45)}
 main>.ehrung{border-color:#a87908}
 .chip{background:#f8f0dc;color:#2b2118;border:1px solid #9a6a35}.chip.an{background:#7b1e3a;color:#fff;border-color:#591015}
@@ -1411,7 +1411,7 @@ function neuesSpiel(){
   neuePrognose();
   TOP=[]; FUSS=[];
   schlag(100,'Willkommen auf deinem Weingut',`${S.name} ${WO[S.region]} startet mit 3 Hektar kahlem Weinberg, leeren Fässern und ${eur(START_GELD)}. Bis März ist Pflanzzeit, im Weinberg pflanzt du deinen ${SORTEN[sortenFolge()[0]].name}. Die zweite und dritte Rebsorte bringt der Aufstieg. Im ersten Jahr tragen junge Reben nur die Hälfte.`,'weingut');
-  schlag(50,'So kommst du herum','Unten wählst du Weingut, Kellerei oder Stadt, die Leiste darüber bringt dich zu den Orten. Wischen übers Bild geht auch. Ein Punkt am Reiter zeigt Neues oder Dringendes, ein Tipp aufs Geld öffnet die Kasse. Die ℹ️-Karte unter dem Bild erklärt jeden Ort, Spielstände, Ton und das Buch liegen im Büro.');
+  schlag(50,'So kommst du herum','Unten wählst du Weingut, Kellerei oder Stadt, die Leiste darüber bringt dich zu den Orten. Wischen übers Bild geht auch. Ein Punkt am Reiter zeigt Neues oder Dringendes, ein Tipp aufs Geld öffnet die Kasse. Das kleine i oben rechts in jedem Fenster erklärt, was du dort tust. Spielstände, Ton und das Buch liegen im Büro.');
   schlag(40,'Leute für Weinberg und Keller','Je 1.000 Reben brauchst du das ganze Jahr einen Erntehelfer. Du hast einen, für mehr Reben stellst du vor dem Pflanzen beim Arbeitsamt in der Stadt ein. Der Lohn dort schwankt jeden Monat, wer eingestellt ist, behält seinen. Dein Lagerarbeiter betreut 10.000 l Fassraum und 20.000 leere Flaschen. Fehlen dir Leute, geht es nicht in den nächsten Monat.','arbeit');
   schlag(30,'Die Konkurrenz schläft nicht','Deine Gegner: '+S.gegner.map(g=>`${g.name}, ${GEGNER_TYP[g.typ].art}, ${WO[g.region]}`).join('; ')+`. Wer zuerst Präsident des Weinbauverbands wird, gewinnt. Alle ${GEN_JAHRE} Jahre übernimmt bei allen die nächste Generation.`);
   S.bericht=zeitung([],[],[]);
@@ -2108,7 +2108,7 @@ function steckbrief(id,o={}){
   return o.fen?{name:`${sym} ${r.name}`,art:`${art}, ${bonus}`,rumpf}:`<div class="card sb"><h3>${sym} ${r.name}<small>${art}, ${bonus}</small></h3>${rumpf}${o.buch?mib('gebiete'):''}</div>`;
 }
 // Version 4.1: Buch mit der Spielanleitung, Texte in anleitung.js. BUCH: null = zu, '' = Inhaltsverzeichnis, sonst die Kennung des Kapitels.
-// "📖 Mehr im Buch" in der Info-Karte schlägt das Kapitel des Ortes auf (BUCH_ORT), Fenster haben eigene Links (Kasse, Lese, Anmelden, Weinlexikon).
+// "📖 Mehr im Buch" hinter dem i eines Fensters schlägt das Kapitel des Ortes auf (BUCH_ORT), Fenster von unten haben eigene Links (Kasse, Lese, Anmelden, Weinlexikon).
 let BUCH=null;
 const BUCH_ORT={berg:'berg',betrieb:'betrieb',aktuell:'aktuell',maschinen:'maschinen',buero:'buero',buch:'buch',sabotage:'hintertuer',start:'keller',lager:'lager',amt:'rathaus',handel:'handel',laeden:'weinhandel',bank:'bank',arbeit:'arbeit'};
 const mib=id=>`<span class="mib" data-a="buch" data-id="${id}">📖 Mehr im Buch</span>`;
