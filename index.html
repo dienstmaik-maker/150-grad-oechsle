@@ -2222,14 +2222,16 @@ function mgrExtra(e){return e.bereich==='keller'&&e.stufe===3&&(MGR_REIFE||MGR_R
 function mgrStufenText(e,st){const t=[...e.aufgaben.map(k=>MGR_AUFGABEN[k].kurz),...mgrExtra(e)]; return `${e.stufe<=st?'✅':S.rang>=e.rang?'⬜':'🔒'} Stufe ${e.stufe} ab ${RAENGE[e.rang].name}${t.length?': '+t.join(', '):''}`}
 function pufferChips(b){const p=mgrPuffer(b); return `<div class="chips" style="flex-wrap:wrap">${MGR_PUFFER.map(n=>`<button class="chip ${p===n?'an':''}" data-a="mgrPuffer" data-b="${b}" data-id="${n}">${n?eur(n):'nichts'}</button>`).join('')}</div>`}
 function mgrKnopf(b){const n=mgrNaechste(b); if(!n) return ''; return pk('mgrStufe',n.stufe===1?'Einstellen':`Auf Stufe ${n.stufe} befördern`,n.kosten?eur(n.kosten):'',{id:b,aus:S.rang<n.rang,arm:S.geld<n.kosten,klein:S.rang<n.rang?`ab ${RAENGE[n.rang].name}`:n.lohn?`${eur(n.lohn)} Lohn im Monat`:''})}
-// Karte im Arbeitsamt nach der Vorlage von Erntehelfern und Lagerarbeitern.
+// Fenster im Arbeitsamt je Manager (seit 7.4 auf dem Fenster-Baustein). Vor dem Rang der ersten Stufe steht es zugeklappt mit Schloss unten.
 function mgrKarte(b){
-  const M=MGR_BEREICHE[b], st=mgrSt(b), E=MANAGER.filter(e=>e.bereich===b);
-  return `<div class="card"><h3>${M.sym} ${M.name}</h3>
-  <div class="kv"><span>Stufe</span><span>${st?`${st} von ${E.length}`:'nicht eingestellt'}</span></div>
-  ${st?`<div class="kv"><span>Lohn im Monat</span><span>${eur(mgrEintrag(b,st).lohn)}</span></div>`:''}
-  <div class="mut">${E.map(e=>mgrStufenText(e,st)).join('<br>')}</div>
-  ${kz('',mgrKnopf(b),st?pk('mgr','Aufgaben','',{id:b,sec:1}):'')}</div>`;
+  const M=MGR_BEREICHE[b], st=mgrSt(b), E=MANAGER.filter(e=>e.bereich===b), G=mgrG(b);
+  const mgI='Manager nehmen dir Arbeit ab. Jeder kommt mit einem Rang dazu, und mit späteren Rängen kannst du ihn befördern. Jede Stufe bringt neue Aufgaben, die du einzeln einschaltest.';
+  const stufen=`<div class="fstand" style="margin:6px 0 0">${E.map(e=>mgrStufenText(e,st)).join('<br>')}</div>`;
+  if(S.rang<E[0].rang) return fenster('mgr_'+b,M.name,'',{zu:`ab dem Rang ${RAENGE[E[0].rang].name}`,buch:'manager',i:mgI+stufen});
+  return fenster('mgr_'+b,M.name,`<div class="kv"><span>Stufe</span><span>${st?`${st} von ${E.length}`:'nicht eingestellt'}</span></div>
+  ${st?`<div class="kv"><span>Lohn im Monat</span><span>${eur(mgrEintrag(b,st).lohn)}</span></div>`:''}${stufen}`,{
+    kn:[mgrKnopf(b),st?pk('mgr','Aufgaben','',{id:b,sec:1}):''].filter(Boolean),buch:'manager',
+    i:`${mgI} ${st?`${G.Er} erledigt beim Weiterblättern, was du unter „Aufgaben“ einschaltest, und berichtet im Winzerboten. Einkäufe zahlt ${G.er} aus deiner Kasse.`:`Nach dem Einstellen schaltest du unter „Aufgaben“ ein, was ${G.er} übernimmt.`}`});
 }
 // Fenster von unten: ein Schalter je Aufgabe der erreichten Stufen, Lohn, Knopf zum Befördern.
 let MGR_OFFEN=null;
@@ -2562,19 +2564,33 @@ function vSabotage(){
 }
 function vStadt(){
   let h=kopf({amt:'Rathaus',handel:'Großhandel',laeden:S.rang>=R_LADEN?'Deine Weinhandlung':'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'}[SUB]);
+  // Rathaus (seit 7.4 auf dem Fenster-Baustein): festes Fenster "Wein anmelden" mit der Anzahl, darunter Makler und Kontrolle anregen.
+  // Was der Rang noch sperrt, steht zugeklappt mit Schloss unten. Am Ziel (Präsident) gibt es keinen Makler mehr.
   if(SUB==='amt'){
-    const fa=S.lots.filter(l=>l.status==='fass'&&!l.stufe);
-    h+=`<h3>Wein anmelden</h3>`+(fa.length?fa.map(l=>`<div class="card"><b>${dot(l.sorte)}${lotName(l)}</b><div class="mut">${num(l.liter)}\u00a0l · ${l.oe}° Öchsle · ${LESE[l.leseart]} · Edelfäulnis ${l.edel?'ja':'nein'}${mani(l)?' · 🤫 '+maniText(l):''}</div><div class="btns"><button data-a="anmelden" data-id="${l.id}">Anmelden</button></div></div>`).join(''):'<div class="card mut">Kein Fasswein wartet auf die Anmeldung.</div>');
-    if(S.rang>=R_AUKTION&&S.rang<R_MAX){
-      const g=maklerGrund();
-      h+=`<h3>Makler</h3><div class="card"><div class="mut">Der Makler kennt Winzer, die ihr Land lieber still verkaufen. Ein Hektar kostet bei ihm ${eur(MAKLER_PREIS)}, bei einer Auktion meist viel weniger. Er verkauft dir höchstens einen Hektar im Jahr und nur, wenn dir für den nächsten Rang allein noch Land fehlt.</div>
-      ${kz(g,pk('makler','Kaufen',eur(MAKLER_PREIS),{klein:'1 Hektar',aus:!!g,arm:S.geld<MAKLER_PREIS}))}</div>`;
+    const fa=S.lots.filter(l=>l.status==='fass'&&!l.stufe).sort(BSORT_F.dringend), zu=[], mon=n=>n===1?'Monat':'Monaten';
+    h+=fenster('anmelden','Wein anmelden',`<div class="kv"><span>Fassweine ohne Anmeldung</span><span>${fa.length}</span></div>`
+      +(fa.length?`<div class="fzl ab">${fa.map(l=>{const rest=8-l.fassMonate; return fz(dot(l.sorte)+lotName(l),
+        `${num(l.liter)} l · ${l.oe}° Öchsle · ${LESE[l.leseart]} · Edelfäulnis ${l.edel?'ja':'nein'}${mani(l)?' · 🤫 '+maniText(l):''}`,
+        `<span class="${l.fassMonate>=5?'rot':''}">Verdirbt in ${rest} ${mon(rest)}.</span>`,
+        `<button class="klein" data-a="anmelden" data-id="${l.id}">Anmelden</button>`)}).join('')}</div>`
+      :`<div class="fleer" style="margin-top:6px">Kein Fasswein wartet auf die Anmeldung.</div>`),{
+      i:'Im Rathaus meldest du deinen Fasswein an. Erst dann bekommt er seine Stufe und darf in die Flasche. Welche Stufen für einen Wein möglich sind, siehst du nach dem Tipp auf „Anmelden“. Was zuerst verdirbt, steht oben.'});
+    const mkI=`Der Makler kennt Winzer, die ihr Land lieber still verkaufen. Ein Hektar kostet bei ihm ${eur(MAKLER_PREIS)}, bei einer Auktion meist viel weniger. Er verkauft dir höchstens einen Hektar im Jahr und nur, wenn dir für den nächsten Rang allein noch Land fehlt.`;
+    if(S.rang<R_AUKTION) zu.push(fenster('makler','Makler','',{zu:`ab dem Rang ${RAENGE[R_AUKTION].name}`,i:mkI}));
+    else if(S.rang<R_MAX){
+      const g=maklerGrund(), n=RAENGE[S.rang+1];
+      h+=fenster('makler','Makler',`<div class="kv"><span>Deine Fläche</span><span>${S.ha} Hektar</span></div><div class="kv"><span>Für den Rang ${n.name}</span><span>${n.ha} Hektar bepflanzt</span></div>`,{
+        links:g,kn:pk('makler','Kaufen',eur(MAKLER_PREIS),{klein:'1 Hektar',aus:!!g,arm:S.geld<MAKLER_PREIS}),i:mkI});
     }
-    if(S.rang>=R_HOFFEST){
+    const anI=`Einmal im Jahr kannst du dem Prüfer einen Hinweis geben. Findet er bei einem Gegner gepanschten Wein, kostet ihn das ${ANREG_ANS} Ansehen und Strafe. Findet er nichts, kostet dich die falsche Verdächtigung ${ANREG_FEHL} Ansehen. Gerüchte im Winzerboten helfen beim Raten.`;
+    if(S.rang<R_HOFFEST) zu.push(fenster('anreg','Kontrolle anregen','',{zu:`ab dem Rang ${RAENGE[R_HOFFEST].name}`,i:anI}));
+    else{
       const schon=S.anregJahr===S.jahr;
-      h+=`<h3>Kontrolle anregen</h3><div class="card"><div class="mut" style="margin-bottom:8px">Einmal im Jahr kannst du dem Prüfer einen Hinweis geben. Findet er bei einem Gegner gepanschten Wein, kostet ihn das ${ANREG_ANS} Ansehen und Strafe. Findet er nichts, kostet dich die falsche Verdächtigung ${ANREG_FEHL} Ansehen. Gerüchte im Winzerboten helfen beim Raten.${schon?' Für dieses Jahr hast du deinen Hinweis schon gegeben.':''}</div>
-      ${S.gegner.map(g=>`<button class="wahl" data-a="anreg" data-id="${g.id}" ${schon?'disabled':''}><b>${esc(g.name)}${g.geruecht?' 🗣️':''}</b><br><span class="mut">${GEGNER_TYP[g.typ].art}, ${WO[g.region]}${g.geruecht?', es gibt Gerüchte':''}</span></button>`).join('')}</div>`;
+      h+=fenster('anreg','Kontrolle anregen',S.gegner.map(g=>fz(esc(g.name)+(g.geruecht?' 🗣️':''),`${GEGNER_TYP[g.typ].art}, ${WO[g.region]}`,g.geruecht?'Es gibt Gerüchte.':'',
+        `<button class="klein sec" data-a="anreg" data-id="${g.id}" ${schon?'disabled':''}>Hinweis geben</button>`)),{
+        stand:schon?'Für dieses Jahr hast du deinen Hinweis schon gegeben.':'Dein Hinweis für dieses Jahr ist noch frei.',i:anI});
     }
+    h+=zu.join('');
   }
   // Großhandel (seit 7.4 auf dem Fenster-Baustein): "Markt diesen Monat" mit Marktlage und Budget, darunter "Deine Weine" als Liste zum Antippen.
   // Die Liste steht fest nach Dringlichkeit. Budget und Exporthandel stehen im i, vom Dauerauftrag bleibt eine Zeile (dauerInfo).
@@ -2625,55 +2641,58 @@ function vStadt(){
         i:`${regalI} Antippen zeigt alle Angaben, dort nimmst du einen Wein auch wieder aus dem Regal.`});
     } else h+=fenster('regal','Eigene Weinhandlung','',{zu:`ab dem Rang ${RAENGE[R_LADEN].name}`,i:`Ab dem Rang ${RAENGE[R_LADEN].name} hast du eine eigene Weinhandlung. ${regalI}`});
   }
+  // Bank (seit 7.4 auf dem Fenster-Baustein): "Dein Konto" mit dem, was zuletzt abgebucht wurde, darunter der Kredit.
   if(SUB==='bank'){
     const k=S.kredit, K=kosten(), ab=S.bericht&&S.bericht.k, kv=(a,x)=>x?`<div class="kv"><span>${a}</span><span>${eur(x)}</span></div>`:'';
-    h+=`<div class="card"><h3>Dein Konto</h3>
-      <div class="kv"><span>Kontostand</span><span class="${S.geld<0?'rot':''}">${eur(S.geld)}</span></div>
+    h+=fenster('konto','Dein Konto',`<div class="kv"><span>Kontostand</span><span class="${S.geld<0?'rot':''}">${eur(S.geld)}</span></div>
       <div class="kv"><span>Kreditrahmen</span><span>${eur(rahmen())}</span></div>
-      <div class="kv"><span>Schulden gesamt</span><span>${eur(schulden())}</span></div>
-      ${ab?`<div class="mut" style="margin-top:6px">Zum letzten Monatswechsel abgebucht:</div>
+      <div class="kv"><span>Schulden gesamt</span><span class="${schulden()>rahmen()?'rot':''}">${eur(schulden())}</span></div>
+      ${S.mahnung?`<div class="rot" style="font-size:14px;margin-top:4px">⚠️ ${S.mahnung}. Mahnung in Folge. Nach der dritten kommt der Gerichtsvollzieher.</div>`:''}
+      ${ab?`<div class="fzl ab"><div class="fstand" style="margin-bottom:2px">Zum letzten Monatswechsel abgebucht</div>
       ${kv('Betriebskosten',ab.basis)}${kv('Löhne',ab.loehne)}${kv('Kreditrate',ab.rate)}${kv('Überziehungszinsen',ab.ueberz)}${kv('Steuer auf den Jahresgewinn',ab.steuer)}
-      <div class="kv"><span><b>Zusammen</b></span><span>${eur(ab.basis+ab.loehne+ab.rate+ab.ueberz+ab.steuer)}</span></div>`:''}
-      <div class="mut">Der Kreditrahmen wächst mit deinem Rang. Liegen deine Schulden über dem Kreditrahmen, mahnt die Bank. Nach der dritten Mahnung in Folge kommt der Gerichtsvollzieher.</div></div>`;
-    h+=k?`<div class="card"><h3>Dein Kredit</h3>
-      <div class="kv"><span>Restschuld</span><span>${eur(k.rest)}</span></div>
+      <div class="kv"><span><b>Zusammen</b></span><span>${eur(ab.basis+ab.loehne+ab.rate+ab.ueberz+ab.steuer)}</span></div></div>`:''}`,{
+      i:'Hier siehst du Kontostand, Kreditrahmen und was zuletzt abgebucht wurde. Der Kreditrahmen wächst mit deinem Rang. Liegen deine Schulden über dem Kreditrahmen, mahnt die Bank. Nach der dritten Mahnung in Folge kommt der Gerichtsvollzieher.'});
+    const krI='Einen Kredit gibt es ab 5.000 €, Laufzeit 12 bis 48 Monate, 6 % Zinsen im Jahr auf die Restschuld. Die Rate wird jeden Monat von selbst abgebucht. Vorzeitig ablösen geht jederzeit, ohne Gebühr.';
+    h+=k?fenster('kredit','Dein Kredit',`<div class="kv"><span>Restschuld</span><span>${eur(k.rest)}</span></div>
       <div class="kv"><span>Rate diesen Monat</span><span>${eur(K.tilgung+K.zins)}</span></div>
-      <div class="kv"><span>Restlaufzeit</span><span>${Math.ceil(k.rest/k.tilgung)} Monate</span></div>
-      <div class="mut">Die Rate wird jeden Monat von selbst abgebucht.</div>
-      ${kz('Sofort ablösen geht jederzeit, ohne Gebühr.',pk('tilgen','Ablösen',eur(k.rest),{arm:S.geld<k.rest}))}</div>`
-     :`<div class="card"><h3>Kredit</h3><div class="mut">Ab 5.000 €, Laufzeit 12 bis 48 Monate, 6 % Zinsen im Jahr auf die Restschuld. Die Rate wird von selbst abgebucht, vorzeitig ablösen geht jederzeit.</div>${kz('',pk('kredit','Aufnehmen','',{klein:`bis ${eur(rahmen())}`}))}</div>`;
+      <div class="kv"><span>Restlaufzeit</span><span>${Math.ceil(k.rest/k.tilgung)} Monate</span></div>`,{
+      links:S.geld<k.rest?'Zum Ablösen reicht dein Geld gerade nicht.':'',kn:pk('tilgen','Ablösen',eur(k.rest),{arm:S.geld<k.rest}),i:krI})
+     :fenster('kredit','Kredit',`<div class="kv"><span>Möglich</span><span>5.000 € bis ${eur(rahmen())}</span></div>
+      <div class="kv"><span>Zinsen im Jahr</span><span>6 %</span></div>
+      <div class="kv"><span>Laufzeit</span><span>12 bis 48 Monate</span></div>`,{kn:pk('kredit','Aufnehmen',''),i:krI});
   }
+  // Arbeitsamt (seit 7.4 auf dem Fenster-Baustein): Erntehelfer, Lagerarbeiter, darunter je Manager ein Fenster. Die Erklärtexte stehen im i,
+  // sichtbar bleiben Zustand, rote Warnungen und der Hinweis, wenn ein Manager das Einstellen übernimmt.
   if(SUB==='arbeit'){
-    const bed=rebenGesamt(), lei=leistung(), fe=leuteFehlen(), ms=S.maschinen.length;
-    const ohneGeld=k=>fe[k]?`<div class="mut rot">${fe[k]===1?'Es fehlt einer':'Es fehlen '+fe[k]}, vorher geht es nicht in den nächsten Monat. Einstellen geht jetzt auch ohne Geld, dein Konto rutscht dann ins Minus.</div>`:'';
+    const bed=rebenGesamt(), lei=leistung(), fe=leuteFehlen(), ms=S.maschinen.length, KM=MGR_BEREICHE.keller.name, WM=MGR_BEREICHE.weingut.name;
+    const ohneGeld=k=>fe[k]?`<div class="rot" style="font-size:14px;margin:4px 0">${fe[k]===1?'Es fehlt einer':'Es fehlen '+fe[k]}, vorher geht es nicht in den nächsten Monat. Einstellen geht jetzt auch ohne Geld, dein Konto rutscht dann ins Minus.</div>`:'';
     const lohnTeil=k=>{const a=S.loehne[k];
       return `<div class="kv"><span>Angestellt</span><span>${S[k]}</span></div>
       ${a.length?`<div class="kv"><span>Ihre Löhne</span><span>${lohnListe(k)}</span></div><div class="kv"><span>Lohnkosten im Monat</span><span>${eur(lohnSumme(k))}</span></div>`:''}
       <div class="kv"><span>Angebot diesen Monat</span>${lohnAngebot(k)}</div>`};
     const lohnKnoepfe=k=>{const a=S.loehne[k];
-      return kz('',pk('helfer','Einstellen',eur(VERMITTLUNG),{id:k,n:1,arm:S.geld<VERMITTLUNG&&!leuteFehlen()[k],klein:`+${eur(S.angebot[k])} Lohn`}),pk('helfer','Entlassen','',{id:k,n:-1,sec:1,aus:S[k]<1,klein:a.length?`−${eur(a[a.length-1])} Lohn`:''}))};
-    h+=`<div class="mut" style="margin-bottom:8px">Der Lohn beim Arbeitsamt schwankt jeden Monat zwischen ${eur(LOHN_MIN)} und ${eur(LOHN_MAX)}. Wer eingestellt ist, behält seinen Lohn. Die Vermittlung kostet einmalig ${eur(VERMITTLUNG)}. Entlassen wird immer der teuerste. Deine Leute brauchst du das ganze Jahr: Fehlt jemand, geht es nicht in den nächsten Monat.</div>
-    <div class="card"><h3>Erntehelfer</h3>
-      ${lohnTeil('helfer')}
+      return [pk('helfer','Einstellen',eur(VERMITTLUNG),{id:k,n:1,arm:S.geld<VERMITTLUNG&&!leuteFehlen()[k],klein:`+${eur(S.angebot[k])} Lohn`}),pk('helfer','Entlassen','',{id:k,n:-1,sec:1,aus:S[k]<1,klein:a.length?`−${eur(a[a.length-1])} Lohn`:''})]};
+    const amtI=`Der Lohn beim Arbeitsamt schwankt jeden Monat zwischen ${eur(LOHN_MIN)} und ${eur(LOHN_MAX)}. Wer eingestellt ist, behält seinen Lohn. Die Vermittlung kostet einmalig ${eur(VERMITTLUNG)}. Entlassen wird immer der teuerste. Deine Leute brauchst du das ganze Jahr: Fehlt jemand, geht es nicht in den nächsten Monat.`;
+    h+=fenster('helfer','Erntehelfer',`${lohnTeil('helfer')}
       ${ms?`<div class="kv"><span>Erntemaschinen</span><span>${ms}, ${ms===1?'zählt':'zählen'} wie ${maschHelfer()} Helfer</span></div>`:''}
       <div class="kv"><span>Gebraucht für ${num(bed)} Reben</span><span class="${fe.helfer?'rot':''}">${helferBedarf()}</span></div>
       <div class="kv"><span>Deine Leute reichen für</span><span>${num(helferKraft()*REBEN_JE_HELFER)} Reben</span></div>
       ${ohneGeld('helfer')}
       <div class="kv"><span>Ernteleistung bei der Lese</span><span class="${lei<bed?'rot':''}">${num(lei)} von ${num(bed)} Reben</span></div>
-      <div class="bar"><i style="width:${bed?Math.min(100,lei/bed*100):100}%"></i></div>
-      <div class="mut">Je ${num(REBEN_JE_HELFER)} angebaute Reben brauchst du einen Erntehelfer, eine Erntemaschine zählt wie ${MASCH_HELFER}, ein Vollernter wie ${VOLL_HELFER}. Pflanzen kannst du nur so viel, wie deine Leute schaffen. Bei der Lese leistet eine abgenutzte Maschine weniger.</div>
-      ${lohnKnoepfe('helfer')}</div>
-    <div class="card"><h3>Lagerarbeiter</h3>
-      ${lohnTeil('lagerarb')}
+      <div class="bar"><i style="width:${bed?Math.min(100,lei/bed*100):100}%"></i></div>`,{
+      hin:[aufgabeAktiv('helfer')&&`${MGR_BEREICHE.weingut.sym} Dein ${WM} stellt fehlende Erntehelfer beim Weiterblättern ein.`],
+      kn:lohnKnoepfe('helfer'),
+      i:`Je ${num(REBEN_JE_HELFER)} angebaute Reben brauchst du einen Erntehelfer, eine Erntemaschine zählt wie ${MASCH_HELFER}, ein Vollernter wie ${VOLL_HELFER}. Pflanzen kannst du nur so viel, wie deine Leute schaffen. Bei der Lese leistet eine abgenutzte Maschine weniger. ${amtI}${aufgabeAktiv('helfer')?` Dein ${WM} stellt zum Angebot des Monats ein, entlassen musst du selbst.`:''}`});
+    h+=fenster('lagerarb','Lagerarbeiter',`${lohnTeil('lagerarb')}
       <div class="kv"><span>Gebraucht</span><span class="${fe.lagerarb?'rot':''}">${lagerBedarf()}</span></div>
-      <div class="kv"><span>Fassraum</span><span>${num(S.fassraum)}\u00a0l, betreut bis ${num(S.lagerarb*FASS_JE_LAGERARB)}\u00a0l</span></div>
+      <div class="kv"><span>Fassraum</span><span>${num(S.fassraum)} l, betreut bis ${num(S.lagerarb*FASS_JE_LAGERARB)} l</span></div>
       <div class="kv"><span>Leere Flaschen</span><span>${num(S.flaschen)}, betreut bis ${num(S.lagerarb*FLASCHEN_JE_LAGERARB)}</span></div>
-      ${ohneGeld('lagerarb')}
-      <div class="mut">Ein Lagerarbeiter betreut ${num(FASS_JE_LAGERARB)}\u00a0l Fassraum und ${num(FLASCHEN_JE_LAGERARB)} leere Flaschen. Mehr Fassraum oder Flaschen kaufen kannst du erst mit mehr Leuten.</div>
-      ${lohnKnoepfe('lagerarb')}</div>
-    <h3>\ud83e\uddd1\u200d\ud83d\udcbc Manager</h3>
-    <div class="mut" style="margin-bottom:8px">Manager nehmen dir Arbeit ab. Jeder kommt mit einem Rang dazu, und mit sp\u00e4teren R\u00e4ngen kannst du ihn bef\u00f6rdern. Jede Stufe bringt neue Aufgaben, die du einzeln einschaltest.</div>
-    ${Object.keys(MGR_BEREICHE).map(mgrKarte).join('')}`;
+      ${ohneGeld('lagerarb')}`,{
+      hin:[aufgabeAktiv('lager')&&`${MGR_BEREICHE.keller.sym} Dein ${KM} stellt fehlende Lagerarbeiter beim Weiterblättern ein.`],
+      kn:lohnKnoepfe('lagerarb'),
+      i:`Ein Lagerarbeiter betreut ${num(FASS_JE_LAGERARB)} l Fassraum und ${num(FLASCHEN_JE_LAGERARB)} leere Flaschen. Mehr Fassraum oder Flaschen kaufen kannst du erst mit mehr Leuten. ${amtI}${aufgabeAktiv('lager')?` Dein ${KM} stellt zum Angebot des Monats ein, entlassen musst du selbst.`:''}`});
+    const B=Object.keys(MGR_BEREICHE), da=b=>S.rang>=mgrEintrag(b,1).rang;
+    h+=B.filter(da).map(mgrKarte).join('')+B.filter(b=>!da(b)).map(mgrKarte).join('');
   }
   return h;
 }
