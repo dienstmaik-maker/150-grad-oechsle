@@ -665,7 +665,7 @@ const eur2=n=>n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionD
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const misch=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rint(0,i);[a[i],a[j]]=[a[j],a[i]]}return a};
 const neuStart=()=>({name:'',region:'mosel',gegner:2,schwer:'mittel'});
-let S=null, TAB='gut', SUB='betrieb', NEU=neuStart(), SLOT=0, START=null, BSORT='wert', ZIEL=0;
+let S=null, TAB='gut', SUB='betrieb', NEU=neuStart(), SLOT=0, START=null, ZIEL=0;
 // Menü (seit 4.0): drei Hauptreiter unten (Weingut, Kellerei, Stadt), direkt darüber die Leiste mit ihren Orten. Wischen über das Bild wechselt auch den Ort.
 // Die Reihenfolge der Orte folgt den Motiven im Panoramabild von links nach rechts. Je Ort: Kennung und Symbol für den Titel im Bild.
 const FASS='<img class="fass" src="bilder/fass.png" alt="">';
@@ -2187,18 +2187,16 @@ function dauerAuftrag(){
   handelMelde(L);
 }
 function reserveChips(){const d=S.dauer||{}; return `<div class="chips" style="flex-wrap:wrap">${DAUER_RESERVE.map(n=>`<button class="chip ${(+d.reserve||0)===n?'an':''}" data-a="dauerRes" data-id="${n}">${n?num(n):'keine'}</button>`).join('')}</div>`}
-// Im Großhandel (k='handel') und im Weinhandel (k='laeden'): der Schalter des Dauerauftrags, oder wer ihn ab wann übernimmt.
-function dauerHtml(k){
-  const e=mgrAufgabe(k), M=MGR_BEREICHE[e.bereich], G=mgrG(e.bereich), st=mgrSt(e.bereich), was=k==='laeden'?'für die Weinhandlungen':'für den Großhandel';
-  if(!aufgabeDa(k)){
-    const wie=S.rang<e.rang?`ab dem Rang ${RAENGE[e.rang].name} ${G.dein} ${M.name}${e.stufe>1?` auf Stufe ${e.stufe}`:''}. Bis dahin verkaufst du selbst.`
-      :`${G.dein} ${M.name}, sobald du ${G.ihn} im Arbeitsamt ${st?`auf Stufe ${e.stufe} beförderst`:e.stufe>1?`einstellst und auf Stufe ${e.stufe} beförderst`:'einstellst'}.`;
-    return `<div class="card"><div class="mut">📋 Den Dauerauftrag ${was} übernimmt ${wie}</div>${S.rang>=e.rang?kz('',pk('arbeitsamt','Zum Arbeitsamt','')):''}</div>`;
-  }
-  const an=aufgabeAktiv(k);
-  return `<div class="card"><button class="wahl ${an?'an':''}" data-a="mgrAn" data-id="${k}" style="margin:0">${an?'✅':'⬜'} 📋 Dauerauftrag: ${MGR_AUFGABEN[k].text}</button>
-  ${an?`<div class="mut" style="margin:8px 0 6px">${G.Dein} ${M.name} erledigt das bei jedem Weiterblättern, was am ehesten verdirbt, geht zuerst. Je Wein bleiben im Keller, außer kurz vorm Verderben:</div>
-  ${reserveChips()}`:''}</div>`;
+// Dauerauftrag im Großhandel (k='handel') und im Weinhandel (k='laeden'). Seit 7.4 ohne eigene Karte: Schalter und Reserve stehen im Fenster der Handels-Managerin.
+// Am Ort bleibt eine Zeile: hin, solange der Auftrag läuft, stand, wenn er aus ist. text hängt am i des Fensters.
+function dauerInfo(k){
+  const e=mgrAufgabe(k), M=MGR_BEREICHE[e.bereich], G=mgrG(e.bereich), st=mgrSt(e.bereich), wer=`${G.Dein} ${M.name}`, lae=k==='laeden';
+  if(!aufgabeDa(k)) return {text:` Den Dauerauftrag ${lae?'für die Weinhandlungen':'für den Großhandel'} übernimmt `+(S.rang<e.rang?`ab dem Rang ${RAENGE[e.rang].name} ${G.dein} ${M.name}${e.stufe>1?` auf Stufe ${e.stufe}`:''}. Bis dahin verkaufst du selbst.`
+    :`${G.dein} ${M.name}, sobald du ${G.ihn} im Arbeitsamt ${st?`auf Stufe ${e.stufe} beförderst`:e.stufe>1?`einstellst und auf Stufe ${e.stufe} beförderst`:'einstellst'}.`)};
+  if(!aufgabeAktiv(k)) return {stand:'📋 Der Dauerauftrag ist aus. Einschalten kannst du ihn im Betrieb bei deinen Managern.',
+    text:` ${wer} kann den Verkauf ${lae?'an die Weinhandlungen':'an den Großhandel'} als Dauerauftrag übernehmen.`};
+  return {hin:`${M.sym} ${wer} ${lae?'beliefert die Weinhandlungen':'verkauft'} beim Weiterblättern.`,
+    text:` ${wer} ${lae?'beliefert die Weinhandlungen bei jedem Weiterblättern mit passenden Weinen':'verkauft bei jedem Weiterblättern, so viel der Großhandel zum vollen Preis nimmt'}. Was am ehesten verdirbt, geht zuerst. Wie viel je Wein im Keller bleibt, stellst du im Betrieb bei deinen Managern ein. Von Hand verkaufen kannst du trotzdem jederzeit.`};
 }
 // Version 7.0 (Schritt D): Manager im Betrieb (statt Gutsverwalter), im Arbeitsamt und als Fenster von unten.
 // Seit Schritt F steht oben in Weingut, Keller und Stadt die Zeile des Managers (mgrInfo), die dasselbe Fenster öffnet (AKT.mgr).
@@ -2578,25 +2576,27 @@ function vStadt(){
       ${S.gegner.map(g=>`<button class="wahl" data-a="anreg" data-id="${g.id}" ${schon?'disabled':''}><b>${esc(g.name)}${g.geruecht?' 🗣️':''}</b><br><span class="mut">${GEGNER_TYP[g.typ].art}, ${WO[g.region]}${g.geruecht?', es gibt Gerüchte':''}</span></button>`).join('')}</div>`;
     }
   }
+  // Großhandel (seit 7.4 auf dem Fenster-Baustein): "Markt diesen Monat" mit Marktlage und Budget, darunter "Deine Weine" als Liste zum Antippen.
+  // Die Liste steht fest nach Dringlichkeit. Budget und Exporthandel stehen im i, vom Dauerauftrag bleibt eine Zeile (dauerInfo).
   if(SUB==='handel'){
-    const fl=S.lots.filter(l=>l.status==='flasche'&&!l.regal);
-    h+=`<div class="mut" style="margin-bottom:8px">Marktlage: ${S.markt>1.04?'gut 📈':S.markt<.96?'schwach 📉':'normal'}${S.lage?S.lage.typ==='mode'?` · ${SORTEN[S.lage.sorte].name} gefragt, ${proz(S.lage.f)}`:` · Weinskandal, ${proz(S.lage.f)}`:''}</div>`;
-    // Version 4.4: kurz oben das Restbudget, Regeln und Exporthandel (seit 7.0, vorher vier Länder) zum Aufklappen.
-    const exSt=exportStufen(), pzx=f=>`+${Math.round((f-1)*100)} %`;
-    h+=`<div class="card"><div class="kv"><span>Budget zum vollen Preis</span><b>${eur(marktRest())} von ${eur(marktFrei())}</b></div>
-      <div class="mut">Antippen verkauft. Der Preis je Flasche gilt für den besten Absatzweg, Zoll ist abgezogen. 📉 heißt: Der Markt ist diesen Monat satt.</div>
-      <details class="stz"><summary>Budget und Exporthandel</summary><div class="mut">Was über das Budget geht, drückt den Preis, und was du an Weinhandlungen verkaufst, zählt mit. Jeder Rang hebt das Budget um ${eur(MARKT_RANG)}, jeder bepflanzte Hektar über ${HA_FREI} um ${eur(MARKT_HA)}.</div>
-      ${exSt?`<div class="mut" style="margin-top:6px">🌍 Der Exporthandel nimmt dir mit jedem Rang mehr ab, gerade hebt er das Budget um ${eur(MARKT_EXPORT*exSt)}${exSt<EXPORT_STUFEN?`, ab dem Rang ${RAENGE[S.rang+1].name} um ${eur(MARKT_EXPORT*(exSt+1))}`:''}. Er zahlt mehr als das Inland:</div>
-      ${EXPORT_ZEILEN.map(([k,t])=>`<div class="kv"><span>${t}</span><span class="mut">${pzx(EXPORT_F[k])}</span></div>`).join('')}`
-      :`<div class="mut" style="margin-top:6px">🌍 Den Exporthandel gibt es ab dem Rang ${RAENGE[R_EXPORT].name}. Er zahlt mehr als das Inland und nimmt dir mit jedem Rang mehr ab.</div>`}</details></div>`;
-    h+=dauerHtml('handel');
-    // Version 4.4: kurze Zeilen wie im Kellerbuch. Der Preis ist der beste Absatzweg mit der Marktlage nach den Verkäufen dieses Monats.
-    const mf=marktF(0);
-    // Version 5.0: Ist noch nichts verkaufsreif, steht oben, wann der erste Wein so weit ist.
-    if(fl.length&&!fl.some(l=>preis(l))){const b=fl.map(l=>({l,n:lager(l).min-l.flMonate})).sort((a,b)=>a.n-b.n)[0]; h+=`<div class="hilfe" style="margin-bottom:8px">⏳ Noch nichts verkaufsreif. Als Erstes reif: ${esc(lotName(b.l))} im ${inMonaten(b.n)}.</div>`}
-    h+=fl.length?bsortChips()+fl.slice().sort(BSORT_F[BSORT]).map(l=>{const W=wege(l),L=lager(l),H=haltText(l),kopf=`<b>${dot(l.sorte)}${esc(lotName(l))}${l.med&&l.med.length?' 🏅':''}</b>`,z2=`<div class="bz2">${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte</div>`,z3=`<div class="bz3 ${H.r<=2?'rot':''}">${H.t}</div>`;
-      if(!W.length){const n=L.min-l.flMonate; return `<button class="bzeile" data-a="buchDetail" data-id="${l.id}"><div class="bz1">${kopf}<span>reif in ${n} ${n===1?'Monat':'Monaten'}</span></div>${z2}${z3}</button>`}
-      const w=W[0]; return `<button class="bzeile" data-a="verkaufen" data-id="${l.id}"><div class="bz1">${kopf}<span>${w.name==='Inland'?'':w.flag+' '}${eur2(w.p*(federHandel(l)?1:mf))}${mf<.995&&!federHandel(l)?' 📉':''}</span></div>${z2}${z3}</button>`}).join(''):'<div class="card mut">Kein Flaschenwein im Lager. Wein aus dem Fass meldest du im Rathaus an und füllst ihn danach im Keller ab. Tafel- und Qualitätswein sind zwei Monate danach verkaufsreif.</div>';
+    const fl=S.lots.filter(l=>l.status==='flasche'&&!l.regal).sort(BSORT_F.dringend), mf=marktF(0), exSt=exportStufen(), pzx=f=>`+${Math.round((f-1)*100)} %`, D=dauerInfo('handel');
+    h+=fenster('markt','Markt diesen Monat',`<div class="kv"><span>Marktlage</span><span>${S.markt>1.04?'gut 📈':S.markt<.96?'schwach 📉':'normal'}</span></div>
+      ${S.lage?`<div class="kv"><span>${S.lage.typ==='mode'?SORTEN[S.lage.sorte].name+' gefragt':'Weinskandal'}</span><span>${proz(S.lage.f)}</span></div>`:''}
+      <div class="kv"><span>Budget übrig</span><span>${eur(marktRest())} von ${eur(marktFrei())}</span></div>`,{
+      i:`Der Großhandel zahlt jeden Monat nur bis zu seinem Budget den vollen Preis. Was über das Budget geht, drückt den Preis, und was du an Weinhandlungen verkaufst, zählt mit. Jeder Rang hebt das Budget um ${eur(MARKT_RANG)}, jeder bepflanzte Hektar über ${HA_FREI} um ${eur(MARKT_HA)}.
+      ${exSt?`<div style="margin-top:6px">🌍 Der Exporthandel nimmt dir mit jedem Rang mehr ab, gerade hebt er das Budget um ${eur(MARKT_EXPORT*exSt)}${exSt<EXPORT_STUFEN?`, ab dem Rang ${RAENGE[S.rang+1].name} um ${eur(MARKT_EXPORT*(exSt+1))}`:''}. Er zahlt mehr als das Inland:</div>
+      ${EXPORT_ZEILEN.map(([k,t])=>`<div class="kv"><span>${t}</span><span>${pzx(EXPORT_F[k])}</span></div>`).join('')}`
+      :`<div style="margin-top:6px">🌍 Den Exporthandel gibt es ab dem Rang ${RAENGE[R_EXPORT].name}. Er zahlt mehr als das Inland und nimmt dir mit jedem Rang mehr ab.</div>`}`});
+    // Ist noch nichts verkaufsreif, steht oben, wann der erste Wein so weit ist (seit 5.0).
+    const erst=fl.length&&!fl.some(l=>preis(l))?fl.map(l=>({l,n:lager(l).min-l.flMonate})).sort((a,b)=>a.n-b.n)[0]:null;
+    // Kurze Zeilen wie im Kellerbuch. Der Preis ist der beste Absatzweg mit der Marktlage nach den Verkäufen dieses Monats.
+    h+=fenster('weine','Deine Weine',fl.map(l=>{const W=wege(l),L=lager(l),H=haltText(l),nm=`<b>${dot(l.sorte)}${esc(lotName(l))}${l.med&&l.med.length?' 🏅':''}</b>`,z2=`<div class="bz2">${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte</div>`,z3=`<div class="bz3 ${H.r<=2?'rot':''}">${H.t}</div>`;
+      if(!W.length){const n=L.min-l.flMonate; return `<button class="bzeile" data-a="buchDetail" data-id="${l.id}"><div class="bz1">${nm}<span>reif in ${n} ${n===1?'Monat':'Monaten'}</span></div>${z2}${z3}</button>`}
+      const w=W[0]; return `<button class="bzeile" data-a="verkaufen" data-id="${l.id}"><div class="bz1">${nm}<span>${w.name==='Inland'?'':w.flag+' '}${eur2(w.p*(federHandel(l)?1:mf))}${mf<.995&&!federHandel(l)?' 📉':''}</span></div>${z2}${z3}</button>`}),{
+      leer:'Kein Flaschenwein im Lager.',
+      hin:[D.hin,erst&&`⏳ Noch nichts verkaufsreif. Als Erstes reif: ${esc(lotName(erst.l))} im ${inMonaten(erst.n)}.`],
+      stand:D.stand,
+      i:`Antippen verkauft. Der Preis je Flasche gilt für den besten Absatzweg, Zoll ist abgezogen. 📉 heißt: Der Markt ist diesen Monat satt. Was zuerst verdirbt, steht oben.${S.rang>=R_LADEN?' Weine im Regal deiner Weinhandlung fehlen hier.':''} Wein aus dem Fass meldest du im Rathaus an und füllst ihn danach im Keller ab. Tafel- und Qualitätswein sind zwei Monate danach verkaufsreif.${D.text}`});
   }
   if(SUB==='laeden'){
     const n=S.lots.filter(ladenOk).length;
@@ -2612,7 +2612,7 @@ function vStadt(){
     // Version 5.0: Ohne passenden Wein sagt ein Hinweis, was fehlt und ab wann es geht.
     if(!n){const bald=S.lots.filter(l=>l.status==='flasche'&&!l.regal&&!preis(l)&&(l.sekt||STUFEN[l.stufe].rang>=3)).map(l=>({l,n:lager(l).min-l.flMonate})).sort((a,b)=>a.n-b.n)[0];
       h+=`<div class="hilfe" style="margin-bottom:8px">🍷 <b>Noch kein passender Wein.</b> ${bald?`Als Erstes reif: ${esc(lotName(bald.l))} im ${inMonaten(bald.n)}.`:`Weinhandlungen nehmen nur Prädikatswein ab Kabinett oder Sekt. Für Kabinett liest du reife Trauben ab ${R().min.kab}° ohne Edelfäulnis, anmelden darfst du ab Januar, danach reift er je nach Sorte noch einige Monate in der Flasche (📖 Weinlexikon im Kellerbuch).`} Bis dahin verkaufst du im Großhandel.</div>`}
-    h+=dauerHtml('laeden');
+    {const D=dauerInfo('laeden'), t=D.hin||D.stand; if(t) h+=`<div class="hilfe" style="margin-bottom:8px">${t}</div>`}
     h+=Object.entries(S.laeden).map(([r,d])=>`<div class="card"><h3>Weinhandlung ${WO[r]}</h3>
       <div class="kv"><span>Sucht diesen Monat nur</span><span>${WUNSCH[d.wunsch]}</span></div>
       <div class="kv"><span>Nimmt noch</span><span>${num(d.rest)} Flaschen</span></div>
@@ -2670,12 +2670,9 @@ function vStadt(){
   }
   return h;
 }
-// Sortieren im Kellerbuch und im Großhandel (Version 4.4 gemeinsam).
+// Feste Reihenfolge im Kellerbuch und im Großhandel (seit 7.4 ohne Sortier-Knöpfe): Was zuerst verdirbt, steht oben. Danach verkaufen auch die Manager.
 const lotRest=l=>l.status==='fass'?8-l.fassMonate:lager(l).max-l.flMonate;
-const BSORT_F={wert:(a,b)=>preis(b)*b.liter-preis(a)*a.liter||lotWert(b)-lotWert(a)||b.jahrgang-a.jahrgang,
-  alter:(a,b)=>a.jahrgang-b.jahrgang||(b.fassMonate+b.flMonate)-(a.fassMonate+a.flMonate),
-  dringend:(a,b)=>lotRest(a)-lotRest(b)||a.jahrgang-b.jahrgang};
-const bsortChips=()=>`<div class="chips">${[['wert','Nach Wert'],['alter','Nach Alter'],['dringend','Nach Dringlichkeit']].map(s=>`<button class="chip ${BSORT===s[0]?'an':''}" data-a="bsort" data-id="${s[0]}">${s[1]}</button>`).join('')}</div>`;
+const BSORT_F={dringend:(a,b)=>lotRest(a)-lotRest(b)||a.jahrgang-b.jahrgang};
 // Haltbarkeit als kurzer Text, wie im Kellerbuch.
 function haltText(l){const fl=l.status==='flasche', r=fl?(lager(l).max===Infinity?Infinity:lager(l).max-l.flMonate):8-l.fassMonate; return {r,t:r===Infinity?'unbegrenzt haltbar':`noch ${r} ${r===1?'Monat':'Monate'} haltbar${fl?'':' im Fass'}`}}
 // Kellerbuch (seit 7.4 auf dem Fenster-Baustein): ein Fenster "Deine Weine" mit Zahl und geschätztem Wert, darunter je Wein eine kurze Zeile.
@@ -2864,7 +2861,6 @@ const AKT={
   },
   sub(d){BILD_KLEIN=false;SUB=d.id;render();window.scrollTo(0,0)},
   arbeitsamt(){closeSheet();geh('stadt','arbeit');render();window.scrollTo(0,0)},
-  bsort(d){BSORT=d.id;render()},
   weinQual(){openSheet(weinQualHtml())},
   // Ein Wein aus dem Kellerbuch mit allen Angaben und den Knöpfen, die gerade passen.
   buchDetail(d){
