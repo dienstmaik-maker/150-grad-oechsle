@@ -1,7 +1,7 @@
 // Helfer für die App: legt alle Dateien des Spiels aufs Gerät, damit es ohne Netz läuft.
 // Die Spielseite (index.html), das Buch (anleitung.js) und seit 8.1 die Sprechblasen (fuehrer.js) kommen immer zuerst frisch aus dem Netz, so kommen neue Fassungen von selbst an. Ohne Netz gilt die gespeicherte.
 // Bilder und Töne kommen aus dem Speicher. Ändert sich eines davon, die Nummer in LAGER erhöhen, dann lädt das Gerät alles neu.
-const LAGER = 'oechsle-28';
+const LAGER = 'oechsle-29';
 const DATEIEN = [
   './', 'index.html', 'manifest.webmanifest', 'anleitung.js', 'fuehrer.js',
   'bilder/amt.jpg',
@@ -75,9 +75,9 @@ const DATEIEN = [
   'bilder/weinkritiker.jpg',
   'bilder/weinskandal.jpg',
   'bilder/winter.jpg',
+  'bilder/winzer-kopf-dick.webp',
   'bilder/zeitung-fuss.webp',
   'bilder/zeitung-kopf.webp',
-  'bilder/winzer-kopf-dick.webp',
   'bilder/zeitung-mitte.webp',
   'schrift/alegreya-kursiv.woff2',
   'schrift/alegreya-sc-fett.woff2',

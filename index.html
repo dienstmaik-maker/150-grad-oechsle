@@ -143,7 +143,6 @@ details.stz{margin-top:8px}details.stz summary{cursor:pointer;font-weight:700;op
 #sheet>div{position:relative;background:#f3e7ca url(bilder/papier.jpg) center/cover;color:#2b2118;--card:#fbf4e1;--bg:#fffaf0;--ink:#2b2118;--mut:#6b5a45;--line:#d3bf93;--wein:#7b1e3a;--rot:#b3261e;--gruen:#4c7030;--blau:#4a4f8f;--gold:#946b06;width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:18px 18px 0 0;border-top:1px solid #b9995a;box-shadow:0 -6px 26px rgba(0,0,0,.5);padding:24px 16px calc(18px + env(safe-area-inset-bottom));animation:hoch .32s cubic-bezier(.2,.8,.3,1)}
 #sheet>div::before{content:'❦';position:absolute;top:4px;left:18px;right:18px;text-align:center;font:14px/16px Georgia,serif;color:#a8843a;background:linear-gradient(#b9995a,#b9995a) left 50%/calc(50% - 16px) 1px no-repeat,linear-gradient(#b9995a,#b9995a) right 50%/calc(50% - 16px) 1px no-repeat}
 #sheet h3{font-size:21px;margin-bottom:8px}
-#sheet>div.zpapier{background:#efe3c4 url(bilder/zeitung-mitte.webp) 0 0/100% 100%}#sheet .zpapier .zrattext{font-size:17px;line-height:1.5;margin:4px 0 6px}#sheet .zpapier .zvon{text-align:right;font-style:italic;color:var(--mut);margin:0 0 4px}
 /* 7.6: Winzerbote und Weiter in einer Reihe, gleich hoch. */
 .zweikn{display:flex;gap:8px;width:100%}.zweikn button{margin:0;flex:1 1 0;min-height:52px}.zweikn button.sec{flex:0 0 38%}.kz.reihe .kzk:has(.zweikn){flex:1 1 auto}
 @keyframes hoch{from{transform:translateY(56px);opacity:0}to{transform:none;opacity:1}}
@@ -328,10 +327,16 @@ img.fass{height:1.1em;vertical-align:-.18em}
 @media (prefers-reduced-motion:reduce){#info .ibild,#info .ischw,.schnitt{animation:none}#info .ischw,.schnitt{opacity:0}#info.aus .ischw{opacity:1}}
 @keyframes ein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes puls{50%{opacity:.45}}
-/* Version 7.6 (Weg 6d): An der Pinnwand hängt nur noch der alte Winzer als Strichzeichnung, direkt auf dem Kork (Weiß fällt per multiply weg). Bei Aktuelles öffnet ein Tipp seinen Rat. */
-.wand{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px;box-sizing:border-box;pointer-events:none}.wand.gleit{transition:left .7s ease,top .7s ease,width .7s ease,height .7s ease}
-.wand button{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;-webkit-tap-highlight-color:transparent}.pano.s-aktuell .wand button{pointer-events:auto}
-.wand button{width:100%}.wand .wkopf{width:100%;height:100%;background:url(bilder/winzer-kopf-dick.webp) center/contain no-repeat;mix-blend-mode:multiply;filter:contrast(1.1)}
+/* Version 8.1: Die Pinnwand ist Deko. Auf dem Kork hängt eine Urkunde mit Weingut, Spieler, ausgedachter Adresse und Weinbaugebiet (Entwurf 2 aus _entwurf_wand.html, Maik 17.11.2026).
+   .pb ist der Rahmen des Blatts in Prozent der Korkfläche. .pt ist das Blatt in fester Grundgröße (WAND_B), wandStell legt es per scale und matrix3d auf das Trapez aus Pinnwand 3.0. */
+.wand{position:absolute;box-sizing:border-box;pointer-events:none}.wand.gleit{transition:left .7s ease,top .7s ease,width .7s ease,height .7s ease}.wand.gleit .pt{transition:transform .7s ease}
+.wand .pb{position:absolute;left:-4.63%;top:-5.03%;width:108.73%;height:111.03%;filter:drop-shadow(0 .8px 1.2px rgba(40,15,0,.55))}
+.wand .pt{position:absolute;left:0;top:0;transform-origin:0 0;padding:8% 4% 4%;box-sizing:border-box;background:linear-gradient(rgba(255,250,232,.55),rgba(255,250,232,.55)),#f3e7ca url(bilder/papier.jpg) center/cover;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#111;line-height:1.05;text-align:center}
+.wand .pt::before{content:'';position:absolute;inset:7% 5.5%;border:1.4px double #111}
+.wand .pt b,.wand .pt em,.wand .pt s,.wand .pt u{display:block;font-weight:400;font-style:normal;text-decoration:none;white-space:nowrap;color:#111;margin:0}
+.wand .pt b{font-family:"Winzerbote Fraktur",serif}.wand .pt em{font-family:"Urkunde Schreibschrift",cursive;margin-top:1.5px}.wand .pt s{font-family:Alegreya,serif;font-style:italic;margin-top:1.5px}.wand .pt u{font-family:Alegreya,serif;letter-spacing:.03em}
+.wand .pt hr{width:40%;border:0;border-top:.5px solid #111;margin:2px 0 1.5px;position:relative;overflow:visible}
+.wand .pt hr::after{content:'❦';position:absolute;left:50%;top:-3.6px;transform:translateX(-50%);font-size:6px;line-height:1;color:#111;background:#f7eedb;padding:0 1px}
 @media (prefers-color-scheme:dark){.pano,.mbild,.sbild{filter:brightness(.85)}}
 @media (prefers-reduced-motion:reduce){.pano *,.ehrung,#titel .tipp{animation:none;transition:none}}
 /* ===== Version 7.1 "Optik": Papier auf Holztisch (Maiks Wahl 16.11.2026) =====
@@ -976,18 +981,40 @@ function monatBild(){
   if(S.monat===10&&S.kaelte===S.jahr) return 'frost';
   const m=S.monat; return m===11||m<=1?'winter':m<=4?'fruehling':m<=7?'sommer':'herbst';
 }
-// Pinnwand im Weingut-Bild (Version 7.6, Weg 6d): der alte Winzer als Strichzeichnung füllt den Kork. Bei Aktuelles öffnet ein Tipp seinen Rat (Maik: ohne Zoom, ohne Schrift).
+// Pinnwand im Weingut-Bild, seit 8.1 reine Deko: eine Urkunde mit Weingut, Spieler, ausgedachter Adresse und Weinbaugebiet (Maik 17.11.2026). Den Monatsrat gibt es nur noch als Sprechblase.
 // WAND nennt die Korkfläche im Streifen als Anteile (links, rechts, oben, unten). Bei einem neuen Bild neu ausmessen.
 const WAND=[.491,.533,.385,.61];
+// Ausgedachte Adresse je Gebiet (Annahme Claude). Die Hausnummer hängt fest am Namen des Weinguts.
+const WAND_STR={mosel:'Moselweinstraße',rheingau:'Am Rheinufer',rheinhessen:'Rebenweg',pfalz:'Weinstraße',franken:'Am Steinberg',wuerttemberg:'Neckarhalde'};
+const wandNr=t=>[...t].reduce((a,c)=>(a*31+c.charCodeAt(0))%997,7)%28+1;
+// Grundgröße des Blatts in Pixeln (so groß ist es am Handy unter Aktuelles), die Ecken des Trapezes aus Pinnwand 3.0 als Anteile davon und die passenden Schriftgrößen je Inhalt.
+const WAND_B=[94.6,84.4], WAND_ECK=[[0,0],[1,.1196],[1,.9847],[0,1]], WAND_FIT={};
 function wandHtml(){
-  if(!ratJetzt()) return '<div class="wand"></div>';
-  return `<div class="wand"><button data-a="rat" aria-label="Rat vom alten Winzer für ${MON[S.monat]}"><div class="wkopf"></div></button></div>`;
+  // Alte Spielstände ohne eigenen Namen zeigen nur das Weingut. Nach einer Übergabe steht hier der Erbe.
+  const ich=S.ich||(S.erbe&&S.erbe.name)||'', adr=`${WAND_STR[S.region]||'Weinstraße'} ${wandNr(S.name||'')}`;
+  return `<div class="wand" aria-hidden="true"><div class="pb"><div class="pt" style="width:${WAND_B[0]}px;height:${WAND_B[1]}px" data-k="${esc(S.name+'|'+ich+'|'+S.region)}"><b data-w="80" data-f="15">${esc(S.name)}</b>${ich?`<em data-w="70" data-f="11.5">${esc(ich)}</em>`:''}<s data-w="56" data-f="6.6">${esc(adr)}</s><hr><u data-w="56" data-f="6.2">Weinbaugebiet ${esc(R().name)}</u></div></div></div>`;
+}
+// Perspektive, die das Blatt in Grundgröße auf die vier Ecken legt (Quadrat auf Viereck nach Heckbert).
+function wandMatrix(){
+  const [W,H]=WAND_B, [[x0,y0],[x1,y1],[x2,y2],[x3,y3]]=WAND_ECK.map(([x,y])=>[x*W,y*H]);
+  const dx1=x1-x2,dx2=x3-x2,dy1=y1-y2,dy2=y3-y2,sx=x0-x1+x2-x3,sy=y0-y1+y2-y3,den=dx1*dy2-dx2*dy1;
+  const g=(sx*dy2-dx2*sy)/den,h=(dx1*sy-sx*dy1)/den, a=x1-x0+g*x1,b=x3-x0+h*x3,d=y1-y0+g*y1,e=y3-y0+h*y3;
+  return `matrix3d(${a/W},${d/W},0,${g/W},${b/H},${e/H},0,${h/H},0,0,1,0,${x0},${y0},0,1)`;
+}
+// Jede Zeile startet bei ihrer Höchstgröße und wird kleiner, bis sie in ihre Breite passt. Gemerkt wird erst, wenn die Schriften geladen sind.
+function wandFit(){
+  const t=$('.wand .pt'); if(!t) return; const z=[...t.querySelectorAll('[data-w]')], k=t.dataset.k, fit=WAND_FIT[k];
+  if(fit) return z.forEach((e,i)=>e.style.fontSize=fit[i]+'px');
+  const r=z.map(e=>{let f=+e.dataset.f; e.style.fontSize=f+'px'; while(e.offsetWidth>+e.dataset.w&&f>4){f-=.25; e.style.fontSize=f+'px'} return f});
+  if(document.fonts&&document.fonts.status!=='loaded') document.fonts.ready.then(()=>{if(!WAND_FIT[k]) wandFit()}); else WAND_FIT[k]=r;
 }
 // Legt die Pinnwand genau auf die Korkwand, passend zu Verschiebung x (Prozent) und Zoom z des Streifens.
 function wandStell(el,r,x,z){
-  const w=$('.wand',el); if(!w) return;
+  const w=$('.wand'); if(!w) return;
   const H=el.clientHeight, B=el.clientWidth, sw=H*r*z, ox=x/100*(sw-B), oy=(H*z-H)/2, wh=(WAND[3]-WAND[2])*H*z, ww=(WAND[1]-WAND[0])*sw;
   w.style.left=(WAND[0]*sw-ox)+'px'; w.style.top=(WAND[2]*H*z-oy)+'px'; w.style.width=ww+'px'; w.style.height=wh+'px';
+  const t=$('.wand .pt'); if(!t) return; if(!t.dataset.ok){t.dataset.ok=1; wandFit()}
+  t.style.transform=`scale(${ww*1.0873/WAND_B[0]},${wh*1.1103/WAND_B[1]}) ${wandMatrix()}`;
 }
 // Schiebt den Streifen so, dass das Motiv des Unterreiters in der Mitte steht. Im selben Hauptreiter gleitet er vom alten Platz dorthin.
 function panoStell(){
@@ -1636,14 +1663,6 @@ function ratHtml(b,k){
   const u=!k.sonder&&!k.ende&&b.rub&&typeof b.rub==='object'?b.rub:null;
   return u?`<div class="zrat"><h4>${esc(u.h)}</h4>${esc(u.text)}${u.von?`<br><i>${esc(u.von)}</i>`:''}</div>`:'';
 }
-// Version 7.6: Rat für die Pinnwand. Aus der aktuellen Ausgabe (wie ratHtml), ohne den Bedienhinweis ab 👆. Hat sie keinen, gilt der letzte (S.ratLetzt).
-function ratAus(b){
-  if(!b||!b.kopf) return null; const k=b.kopf;
-  if(k.sonder||k.ende) return null;
-  const u=b.rub&&typeof b.rub==='object'?b.rub:null;
-  return u?{h:u.h,text:u.text,von:u.von||''}:null;
-}
-function ratJetzt(){const r=ratAus(S.bericht); if(r) S.ratLetzt=r; return r||S.ratLetzt||null}
 // Seit 7.9: o.du=1 heißt, die Schlagzeile betrifft dich selbst. Nur dann hält "Weiter bis etwas ansteht" an.
 function schlag(p,t,text,bild,o){TOP.push({p,t,text:text||'',bild:bild||'',...(o||{})})}
 // Ohne Thema: Titel und Satz je Monat, ohne Foto.
@@ -2777,7 +2796,7 @@ function vAktuell(){
   return fenster('ansteht','Das steht an',A.length?A.map(a=>`<button class="task ${a.rot?'rot':a.ruhig?'hin':'gelb'}" data-a="${a.akt||'tab'}" data-id="${a.tab||''}" data-sub="${a.sub||''}">${a.rot?'⚠️ ':''}${esc(a.t)}</button>`).join(''):[],{
     leer:'Diesen Monat steht nichts an. Du kannst weiterblättern.',
     kn:an?`<button class="sec klein" data-a="tab" data-id="monat">📰 Winzerbote</button>`:`<div class="zweikn"><button class="sec klein" data-a="tab" data-id="monat">📰 Winzerbote</button><button class="klein" data-a="weiterBis">⏩ Weiter bis etwas ansteht</button></div>`,
-    i:'Hier steht, was diesen Monat zu tun ist. Ein Tipp führt dich direkt an den Ort. <b>Rot</b> kann nicht warten, <b>Gelb</b> hat Zeit, <b>Grau</b> ist nur ein Hinweis. Die Punkte an den Reitern zeigen dasselbe, Hinweise bekommen keinen Punkt.<br><br>⏩ „Weiter bis etwas ansteht“ blättert am Stück, höchstens zwölf Monate. Es hält nur bei Rot und bei Schlagzeilen, die dich selbst betreffen. Bei Gelb und bei Hinweisen blättert es weiter. Ausnahme ist die Lese: Von September bis November hält es einmal im Monat, solange Trauben hängen, im Dezember nur bei gefrorenen Trauben.<br><br>Geboten und eingereicht wird im Rathaus, der Tipp hier führt dich hin. „Winzerbote“ zeigt die letzte Ausgabe noch einmal. Den Rat vom alten Winzer findest du an der Pinnwand im Bild.'+(fuSperre()?'<br><br>Mit dem Spielführer gibt es ⏩ erst ab dem Januar des zweiten Jahres, im ersten Jahr kommt fast jeden Monat ein Tipp.':'')})+vRang();
+    i:'Hier steht, was diesen Monat zu tun ist. Ein Tipp führt dich direkt an den Ort. <b>Rot</b> kann nicht warten, <b>Gelb</b> hat Zeit, <b>Grau</b> ist nur ein Hinweis. Die Punkte an den Reitern zeigen dasselbe, Hinweise bekommen keinen Punkt.<br><br>⏩ „Weiter bis etwas ansteht“ blättert am Stück, höchstens zwölf Monate. Es hält nur bei Rot und bei Schlagzeilen, die dich selbst betreffen. Bei Gelb und bei Hinweisen blättert es weiter. Ausnahme ist die Lese: Von September bis November hält es einmal im Monat, solange Trauben hängen, im Dezember nur bei gefrorenen Trauben.<br><br>Geboten und eingereicht wird im Rathaus, der Tipp hier führt dich hin. „Winzerbote“ zeigt die letzte Ausgabe noch einmal. Tipps gibt dir der Spielführer in der Sprechblase.'+(fuSperre()?'<br><br>Mit dem Spielführer gibt es ⏩ erst ab dem Januar des zweiten Jahres, im ersten Jahr kommt fast jeden Monat ein Tipp.':'')})+vRang();
 }
 // Maschinen (seit 7.4 auf dem Fenster-Baustein): "Deine Maschinen" mit einer Zeile je Maschine, darunter je Bauart ein Fenster zum Kaufen.
 // Was der Rang noch sperrt, steht zugeklappt mit Schloss unten: die kleine Maschine ab Winzermeister, der Vollernter ab Gutsherr.
@@ -3258,7 +3277,7 @@ Object.assign(FU_WANN,{
   'w9':()=>S.monat===9&&S.kaelteWarn===S.jahr&&feldHaengt().length>0
 });
 // Kniffe (Paket B): ab dem dritten Jahr frühestens fünf Monate nach dem letzten, der erste freie in der Reihenfolge des Entwurfs.
-// Kniffe eines Managers warten, bis er sich vorgestellt hat (Annahme Claude). k01 steht oben im zweiten Jahr.
+// Kniffe eines Managers, der sich noch nicht vorgestellt hat, sagt der alte Winzer mit dem Ersatz-Text (Maik 17.11.2026, Plan B). Ohne Ersatz-Text warten sie weiter. k01 steht oben im zweiten Jahr.
 const FU_KNIFF_ABSTAND=5, FU_KNIFF_AB=24;
 const fuGenAnk=()=>S.jahr-START_JAHR>=GEN_JAHRE*genNr()-GEN_VORAUS;
 const FU_KNIFF={
@@ -3402,7 +3421,7 @@ function fuehrerPruef(){
   // Kniffe: immer nur einer in der Warteschlange. Die Ankündigung des Generationswechsels holt k11 sofort.
   const m=monatNr(), K=Object.keys(FU_KNIFF);
   if(!S.fu.nur&&m>=FU_KNIFF_AB&&!S.fu.q.some(id=>FU_KNIFF[id])){
-    const frei=id=>FUEHRER[id]&&!S.fu.ges.includes(id)&&(!FU_VOR[FUEHRER[id].s]||fuGes(FU_VOR[FUEHRER[id].s]));
+    const frei=id=>FUEHRER[id]&&!S.fu.ges.includes(id)&&(!FU_VOR[FUEHRER[id].s]||fuGes(FU_VOR[FUEHRER[id].s])||!!FUEHRER[id].e);
     let id=frei('k11')&&fuGenAnk()?'k11':null;
     if(!id&&m-(S.fu.km??-99)>=FU_KNIFF_ABSTAND) id=K.find(k=>{if(!frei(k)) return false; try{return !!FU_KNIFF[k]()}catch(e){return false}})||null;
     if(id){S.fu.q.push(id); neu=1}
@@ -3482,7 +3501,7 @@ function render(){
   if(!S){fuehrerWeg(); FU_PAUSE=false; ortFarbe('gut'); ORT_ALT=null; musikOrt(musikWahl()); $('#app').innerHTML=START==='neu'||![0,1,2].some(i=>roh(i))?vStart():vSlots(); return}
   fuehrerPruef(); if(!SUBS[TAB]) fuehrerWeg();
   if(SUBS[TAB]&&!SUBS[TAB].some(s=>s[0]===SUB)) SUB=START_SUB[TAB];
-  // Kellerbuch und Pinnwand öffnen sich mit einem eigenen Geräusch.
+  // Kellerbuch und Aktuelles öffnen sich mit einem eigenen Geräusch.
   ortFarbe(SUBS[TAB]?TAB:'gut');
   const ort=SUBS[TAB]?TAB+'/'+SUB:TAB; if(ort!==ORT_ALT){FI_AUF.clear(); if(ORT_ALT&&(ort==='keller/buch'||ort==='gut/aktuell')) fx('menue'); ORT_ALT=ort}
   musikOrt(musikWahl());
@@ -3552,11 +3571,9 @@ const AKT={
     openSheet(`<h3>📋 Dein Stand</h3><h4 class="gs">💶 Kasse</h4>${kv('🏦 Kontostand',eur(S.geld),S.geld<0?'rot':'')}<h4 class="gk">Dieses Jahr bisher</h4>${kv('📈 Einnahmen',eur(S.jahrEin),'gruen')}${kv('📉 Ausgaben',eur(S.jahrAus),'rot')}${kv('⚖️ Ergebnis',eur(S.jahrEin-S.jahrAus),S.jahrEin>=S.jahrAus?'gruen':'rot')}
     <h4 class="gk">Jeden Monat fällig</h4>${kv('Löhne',eur(K.loehne))}${kv('Feste Kosten',eur(K.basis))}${k?kv('Zinsen',eur(K.zins))+kv('Tilgung',eur(K.tilgung))+kv('Kredit offen',eur(k.rest)):''}${kv('Zusammen',eur(K.basis+K.loehne+K.zins+K.tilgung))}${ziel}${rangLeiter()}
     ${mib('geld')}<div class="btns"><button class="sec" data-a="zurBank">🏦 Zur Bank</button><button data-a="close">Okay</button></div>`)},
-  // Version 7.6: Wetter oben links und Rat an der Pinnwand als Blatt.
+  // Version 7.6: Wetter oben links als Blatt.
   wetterInfo(){fx('menue'); const kv=(a,x)=>`<div class="kv"><span>${a}</span><span>${x}</span></div>`;
     openSheet(`<h3>🌤️ Wetter</h3>${kv('Heute, '+MON[S.monat],wetterText())}${kv('Vorhersage '+MON[(S.monat+1)%12],progText())}<p class="mut" style="margin:10px 0 0">Die Vorhersage stimmt meistens, aber nicht immer.</p><div class="btns"><button data-a="close">Okay</button></div>`)},
-  rat(){const r=ratJetzt(); if(!r) return; fx('menue');
-    openSheet(`<h3>${esc(r.h)}</h3><p class="zrattext">„${esc(r.text.replace(/^„|“$/g,''))}“</p>${r.von?`<p class="zvon">${esc(r.von)}</p>`:''}<div class="btns"><button data-a="close">Okay</button></div>`); $('#sheet>div').classList.add('zpapier')},
   zurBank(){closeSheet();geh('stadt','bank');render();window.scrollTo(0,0)},
   fi(d,e){const f=e.target.closest('.fen'), b=f.querySelector('.fi'), x=f.querySelector('.finfo'), auf=x.hidden; x.hidden=!auf; b.classList.toggle('an',auf); b.setAttribute('aria-expanded',auf); if(auf) FI_AUF.add(d.id); else FI_AUF.delete(d.id)},
   // Zugeklappter Teil eines Fensters (Steckbrief im Weinberg): auf und zu ohne neues Zeichnen, offen bleibt er bis zum Ortswechsel.
