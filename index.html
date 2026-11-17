@@ -146,6 +146,8 @@ input[type=text]{width:100%;font:inherit;padding:12px;border-radius:12px;border:
 .wahl{display:block;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1.5px solid var(--line);margin:0 0 8px;font-weight:500}
 .wahl.an{border-color:var(--wein);box-shadow:0 0 0 2px var(--wein) inset}
 .mgrportraet{width:96px;height:96px;margin:0 auto 10px;border-radius:50%;background:#f8f0dc center/cover no-repeat;border:3px solid var(--wein);box-shadow:0 3px 8px rgba(0,0,0,.3)}
+.fen .wahl.schalter{padding:8px 11px;font-size:15px;margin:0 0 6px}.fen .wahl.an{box-shadow:0 0 0 1px #7b1e3a inset}
+.pkopf{display:flex;gap:12px;align-items:center;margin:0 0 10px}.pkopf>div:last-child{flex:1}.mgrbild{width:52px;height:52px;flex:none;border-radius:50%;background:#f8f0dc center/cover no-repeat;border:2px solid var(--wein);box-shadow:0 2px 5px rgba(0,0,0,.25)}
 .chips{display:flex;gap:6px;overflow-x:auto;margin:0 -16px 12px;padding:0 16px 4px}
 .chip{flex:none;min-height:40px;padding:6px 12px;font-size:14px;background:var(--card);color:var(--ink);border:1px solid var(--line)}
 .wq{padding:7px 0;border-bottom:1px solid var(--line)}.wq b{display:block}.wq span{font-size:14px}
@@ -2133,23 +2135,36 @@ function buchZeig(){
     <div class="bfuss"><button class="sec klein" data-a="buch" data-id="${zur?zur.id:''}" ${i<0?'disabled':''}>◀ ${zur?'Zurück':'Inhalt'}</button><button class="klein" data-a="buch" data-id="${i<0?K[0].id:vor?vor.id:''}">${i<0||vor?'Weiter ▶':'Zum Inhalt'}</button></div>`;
   b.className='an'; $('.binnen',b).scrollTop=0;
 }
-// Betrieb (seit 7.4 auf dem Fenster-Baustein): Dein Betrieb, Deine Manager, das Fest. Von Juni bis August steht das Fest oben, solange es nicht gefeiert ist.
-// Was der Rang noch sperrt, steht zugeklappt mit Schloss unten. Der Gebiets-Steckbrief steht seit 7.4 im Weinberg.
+// Betrieb (seit 7.4 auf dem Fenster-Baustein, seit 7.5 mit dem Personal): Dein Betrieb, die drei Manager untereinander, Deine Leute, das Fest.
+// Von Juni bis August steht das Fest oben, solange es nicht gefeiert ist. Was der Rang noch sperrt, steht zugeklappt mit Schloss unten.
+// Der Gebiets-Steckbrief steht seit 7.4 im Weinberg.
 function vBetrieb(){
   const F=hoffestHtml(), M=mgrHtml();
   return (F.jetzt?F.h:'')+fenster('betrieb','Dein Betrieb',`<div class="kv"><span>Anbaugebiet</span><span>${R().name}</span></div>
-    <div class="kv"><span>Fläche</span><span>${S.ha} Hektar, ${Math.round(rebenGesamt()/(S.ha*HA_REBEN)*100)} % bepflanzt</span></div>
+    <div class="kv"><span>Fläche</span><span>${S.ha} Hektar, ${Math.round(rebenGesamt()/(S.ha*HA_REBEN)*100)} % bepflanzt</span></div>
     <div class="kv"><span>Bepflanzt</span><span>${num(rebenGesamt())} von ${num(S.ha*HA_REBEN)} Reben</span></div>
-    ${S.spitze?`<div class="kv"><span>Spitzenlage</span><span>${SPITZE_HA} Hektar, +${SPITZE_OE}° im Juli</span></div>`:''}
-    <div class="kv"><span>Fassraum belegt</span><span>${num(fassBelegt())} von ${num(S.fassraum)} l</span></div>
+    ${S.spitze?`<div class="kv"><span>Spitzenlage</span><span>${SPITZE_HA} Hektar, +${SPITZE_OE}° im Juli</span></div>`:''}
+    <div class="kv"><span>Fassraum belegt</span><span>${num(fassBelegt())} von ${num(S.fassraum)} l</span></div>
     <div class="kv"><span>Leere Flaschen</span><span>${num(S.flaschen)}</span></div>
-    <div class="kv"><span>Erntehelfer / Lagerarbeiter</span><span>${S.helfer} / ${S.lagerarb}</span></div>
     <div class="kv"><span>Erntemaschinen</span><span>${S.maschinen.length}</span></div>
     <div class="kv"><span>Löhne im Monat</span><span>${eur(kosten().loehne)}</span></div>
     <div class="kv"><span>Feste Kosten im Monat</span><span>${(k=>eur(k.basis+k.loehne+k.tilgung+k.zins))(kosten())}</span></div>
     ${S.kredit?`<div class="kv"><span>Kredit, Restschuld</span><span>${eur(S.kredit.rest)}</span></div>`:''}`,{
-    i:'Hier siehst du dein Weingut auf einen Blick: Fläche, Fassraum, Leute, Kosten und Kredit. Feste Kosten sind Betriebskosten, Löhne und die Kreditrate, sie gehen jeden Monat von selbst ab. Den Steckbrief deines Gebiets findest du im Weinberg.'})
-    +(M.h||'')+(F.jetzt?'':F.h||'')+(M.zu||'')+(F.zu||'');
+    i:'Hier siehst du dein Weingut auf einen Blick: Fläche, Fassraum, Kosten und Kredit. Feste Kosten sind Betriebskosten, Löhne und die Kreditrate, sie gehen jeden Monat von selbst ab. Darunter stehen deine Manager und deine Leute. Den Steckbrief deines Gebiets findest du im Weinberg.'})
+    +M.h+leuteHtml()+(F.jetzt?'':F.h||'')+M.zu+(F.zu||'');
+}
+// Seit 7.5: Erntehelfer und Lagerarbeiter im Betrieb, je eine Zeile mit Anzahl, Aufgabe und Lohn. Eingestellt und entlassen wird im Arbeitsamt.
+function leuteHtml(){
+  const fe=leuteFehlen(), ms=maschHelfer();
+  const z=(k,name,aufg)=>`<div class="fz"><b>${name}</b><div class="mut">${aufg}</div><div class="kv"><span>Angestellt</span><span>${S[k]}</span></div>
+    ${S[k]?`<div class="kv"><span>Lohn im Monat</span><span>${eur(lohnSumme(k))}</span></div>`:''}${fe[k]?`<div class="rot" style="font-size:14px;margin-top:4px">${fe[k]===1?'Es fehlt einer':'Es fehlen '+fe[k]}, vorher geht es nicht in den nächsten Monat.</div>`:''}</div>`;
+  return fenster('leute','Deine Leute',[
+    z('helfer','Erntehelfer',`Pflegen die Reben und lesen die Trauben. Einer je ${num(REBEN_JE_HELFER)} Reben${ms?`, deine Maschinen zählen wie ${ms}`:''}.`),
+    z('lagerarb','Lagerarbeiter',`Betreuen Fassraum und leere Flaschen. Einer je ${num(FASS_JE_LAGERARB)} l Fassraum und ${num(FLASCHEN_JE_LAGERARB)} Flaschen.`)],{
+    hin:[aufgabeAktiv('helfer')&&`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name} stellt fehlende Erntehelfer beim Weiterblättern ein.`,
+      aufgabeAktiv('lager')&&`${MGR_BEREICHE.keller.sym} Dein ${MGR_BEREICHE.keller.name} stellt fehlende Lagerarbeiter beim Weiterblättern ein.`],
+    kn:pk('arbeitsamt','Zum Arbeitsamt','',{sec:1}),buch:'arbeit',
+    i:`Deine Leute brauchst du das ganze Jahr: Fehlt jemand, geht es nicht in den nächsten Monat. Einstellen und entlassen kannst du im Arbeitsamt. Dort schwankt der Lohn jeden Monat zwischen ${eur(LOHN_MIN)} und ${eur(LOHN_MAX)}, wer eingestellt ist, behält seinen Lohn.`});
 }
 // Daueraufträge für den Verkauf (seit 4.4, seit 7.0 beim Handels-Manager: Weinhandlungen ab Stufe 1, Großhandel ab Stufe 2).
 // Sie laufen beim Weiterblättern vor dem Monatswechsel: erst die Weinhandlungen (sie zahlen mehr), dann der Großhandel bis zum Budget, nie unter dem vollen Preis.
@@ -2186,50 +2201,75 @@ function dauerInfo(k){
     text:` ${wer} ${lae?'beliefert die Weinhandlungen bei jedem Weiterblättern mit passenden Weinen':'verkauft bei jedem Weiterblättern, so viel der Großhandel zum vollen Preis nimmt'}. Was am ehesten verdirbt, geht zuerst. Wie viel je Wein im Keller bleibt, stellst du im Betrieb bei deinen Managern ein. Von Hand verkaufen kannst du trotzdem jederzeit.`};
 }
 // Version 7.0 (Schritt D): Manager im Betrieb (statt Gutsverwalter), im Arbeitsamt und als Fenster von unten.
-// Die Zeile des Managers oben ist seit 7.4 weg. Sein Fenster öffnet sich aus "Deine Manager" im Betrieb (AKT.mgr).
-function mgrZeile(b){const M=MGR_BEREICHE[b], st=mgrSt(b), e=mgrEintrag(b,1); return `${M.sym} ${M.name}: ${st?`Stufe ${st}`:S.rang>=e.rang?'noch nicht eingestellt':`ab dem Rang ${RAENGE[e.rang].name}`}`}
-// Wann ein Manager zuletzt berichtet hat, als Monat (und Jahr, wenn es nicht das laufende ist).
+// Seit 7.5 hat jeder Manager im Betrieb ein eigenes Fenster mit Stufe, Lohn und den Schaltern seiner Aufgaben. Das Fenster von unten (AKT.mgr)
+// kommt nach dem Einstellen oder Befördern im Arbeitsamt und zeigt dieselben Schalter (mgrSchalter).
+// Wann ein Manager etwas erledigt hat, als Monat (und Jahr, wenn es nicht das laufende ist).
 function mgrWann(z){const j=Math.floor(z/12); return MON[z%12]+(j!==S.jahr?' '+j:'')}
-// Fenster "Deine Manager" im Betrieb. Hinter dem i steht auch, was jeder zuletzt erledigt hat (Maik 17.11.2026, statt der Manager-Zeile oben).
+// Seit 7.5: Logbuch je Manager in S.manager[b].log=[{z,t}], ein Eintrag je Monat (z=Jahr*12+Monat), die letzten MGR_LOG Monate mit Arbeit.
+// Alte Spielstände starten mit leerem Logbuch. Es steht im i des Manager-Fensters im Betrieb.
+const MGR_LOG=6;
+function mgrLogbuch(b,t){const m=S.manager[b], z=S.jahr*12+S.monat, L=m.log=m.log||[], e=L[L.length-1]; if(e&&e.z===z) e.t=t; else L.push({z,t}); if(L.length>MGR_LOG) L.splice(0,L.length-MGR_LOG)}
+function mgrLogHtml(b){
+  const L=((S.manager||{})[b]||{}).log||[];
+  return `<div style="margin-top:8px"><b>Zuletzt erledigt</b></div>`+(L.length?L.slice().reverse().map(e=>`<div style="margin-top:3px"><b>${mgrWann(e.z)}:</b> ${esc(e.t)}</div>`).join('')
+    :`<div>Noch nichts. Hier stehen später die letzten sechs Monate, in denen ${mgrG(b).er} etwas erledigt hat.</div>`);
+}
+// Manager im Betrieb: {h} für die, die der Rang schon erlaubt, {zu} für die gesperrten (zugeklappt mit Schloss unten).
 function mgrHtml(){
-  const ab=Math.min(...MANAGER.map(e=>e.rang)), B=Object.keys(MGR_BEREICHE);
-  const mgI='Manager erledigen beim Weiterblättern, was du einschaltest, und berichten im Winzerboten. Einkäufe zahlen sie aus deiner Kasse. Eingestellt und befördert wird im Arbeitsamt.';
-  if(S.rang<ab) return {zu:fenster('manager','Deine Manager','',{zu:`ab dem Rang ${RAENGE[ab].name}`,buch:'manager',i:mgI})};
-  const log=B.filter(mgrSt).map(b=>{const m=S.manager[b]||{}; return `<div>${MGR_BEREICHE[b].sym} ${MGR_BEREICHE[b].name}: ${m.zuletzt?esc((m.zm!=null?mgrWann(m.zm)+': ':'')+m.zuletzt):'noch nichts'}</div>`}).join('');
-  return {h:fenster('manager','Deine Manager',B.map(b=>`<button class="wahl" data-a="mgr" data-id="${b}">${mgrZeile(b)}</button>`).join(''),{buch:'manager',
-    i:`${mgI} Ein Tipp auf einen Manager öffnet seine Aufgaben.${log?`<div style="margin-top:6px"><b>Zuletzt erledigt</b></div>${log}`:''}`})};
+  const B=Object.keys(MGR_BEREICHE), da=b=>S.rang>=mgrEintrag(b,1).rang;
+  return {h:B.filter(da).map(mgrPersonal).join(''),zu:B.filter(b=>!da(b)).map(mgrPersonal).join('')};
+}
+function mgrPersonal(b){
+  const M=MGR_BEREICHE[b], st=mgrSt(b), E=MANAGER.filter(e=>e.bereich===b), G=mgrG(b), n=mgrNaechste(b), id='p_'+b;
+  const mI=`${G.Er} erledigt beim Weiterblättern, was du hier einschaltest, und berichtet im Winzerboten. Einkäufe zahlt ${G.er} aus deiner Kasse. Eingestellt und befördert wird im Arbeitsamt.`;
+  const stufen=`<div class="fstand" style="margin:6px 0 0">${E.map(e=>mgrStufenText(e,st)).join('<br>')}</div>`;
+  if(S.rang<E[0].rang) return fenster(id,M.name,'',{zu:`ab dem Rang ${RAENGE[E[0].rang].name}`,buch:'manager',i:mI+stufen});
+  if(!st) return fenster(id,M.name,`<div class="kv"><span>Stufe</span><span>nicht eingestellt</span></div>${stufen}`,{
+    links:`Einstellen kannst du ${G.ihn} im Arbeitsamt.`,kn:pk('arbeitsamt','Zum Arbeitsamt','',{sec:1}),buch:'manager',i:mI});
+  const frei=n&&S.rang>=n.rang;
+  return fenster(id,M.name,`<div class="pkopf">${M.bild?`<div class="mgrbild" style="background-image:url(bilder/${M.bild})"></div>`:''}<div>
+    <div class="kv"><span>Stufe</span><span>${st} von ${E.length}</span></div><div class="kv"><span>Lohn im Monat</span><span>${eur(mgrEintrag(b,st).lohn)}</span></div></div></div>
+    ${mgrSchalter(b)}`,{
+    links:frei?`Stufe ${n.stufe} gibt es jetzt im Arbeitsamt.`:'',kn:frei?pk('arbeitsamt','Zum Arbeitsamt','',{sec:1}):'',buch:'manager',i:mI+mgrLogHtml(b)});
 }
 // Was eine Stufe ohne Schalter bringt: der Kellermeister auf Stufe 3 lässt Wein schneller reifen, aber erst, wenn Schritt H einen Wert setzt.
 function mgrExtra(e){return e.bereich==='keller'&&e.stufe===3&&(MGR_REIFE||MGR_REIFE_MIN)?['Wein reift schneller']:[]}
 function mgrStufenText(e,st){const t=[...e.aufgaben.map(k=>MGR_AUFGABEN[k].kurz),...mgrExtra(e)]; return `${e.stufe<=st?'✅':S.rang>=e.rang?'⬜':'🔒'} Stufe ${e.stufe} ab ${RAENGE[e.rang].name}${t.length?': '+t.join(', '):''}`}
 function pufferChips(b){const p=mgrPuffer(b); return `<div class="chips" style="flex-wrap:wrap">${MGR_PUFFER.map(n=>`<button class="chip ${p===n?'an':''}" data-a="mgrPuffer" data-b="${b}" data-id="${n}">${n?eur(n):'nichts'}</button>`).join('')}</div>`}
 function mgrKnopf(b){const n=mgrNaechste(b); if(!n) return ''; return pk('mgrStufe',n.stufe===1?'Einstellen':`Auf Stufe ${n.stufe} befördern`,n.kosten?eur(n.kosten):'',{id:b,aus:S.rang<n.rang,arm:S.geld<n.kosten,klein:S.rang<n.rang?`ab ${RAENGE[n.rang].name}`:n.lohn?`${eur(n.lohn)} Lohn im Monat`:''})}
-// Fenster im Arbeitsamt je Manager (seit 7.4 auf dem Fenster-Baustein). Vor dem Rang der ersten Stufe steht es zugeklappt mit Schloss unten.
-function mgrKarte(b){
-  const M=MGR_BEREICHE[b], st=mgrSt(b), E=MANAGER.filter(e=>e.bereich===b), G=mgrG(b);
-  const mgI='Manager nehmen dir Arbeit ab. Jeder kommt mit einem Rang dazu, und mit späteren Rängen kannst du ihn befördern. Jede Stufe bringt neue Aufgaben, die du einzeln einschaltest.';
-  const stufen=`<div class="fstand" style="margin:6px 0 0">${E.map(e=>mgrStufenText(e,st)).join('<br>')}</div>`;
-  if(S.rang<E[0].rang) return fenster('mgr_'+b,M.name,'',{zu:`ab dem Rang ${RAENGE[E[0].rang].name}`,buch:'manager',i:mgI+stufen});
-  return fenster('mgr_'+b,M.name,`<div class="kv"><span>Stufe</span><span>${st?`${st} von ${E.length}`:'nicht eingestellt'}</span></div>
-  ${st?`<div class="kv"><span>Lohn im Monat</span><span>${eur(mgrEintrag(b,st).lohn)}</span></div>`:''}${stufen}`,{
-    kn:[mgrKnopf(b),st?pk('mgr','Aufgaben','',{id:b,sec:1}):''].filter(Boolean),buch:'manager',
-    i:`${mgI} ${st?`${G.Er} erledigt beim Weiterblättern, was du unter „Aufgaben“ einschaltest, und berichtet im Winzerboten. Einkäufe zahlt ${G.er} aus deiner Kasse.`:`Nach dem Einstellen schaltest du unter „Aufgaben“ ein, was ${G.er} übernimmt.`}`});
+// Seit 7.5 ein Fenster "Manager" im Arbeitsamt: je Manager eine Zeile mit Stufe, Lohn und dem Knopf zum Einstellen oder Befördern.
+// Die Schalter der Aufgaben stehen im Betrieb. Vor dem Rang des ersten Managers steht das Fenster zugeklappt mit Schloss unten.
+function mgrAmt(){
+  const B=Object.keys(MGR_BEREICHE), ab=Math.min(...MANAGER.map(e=>e.rang));
+  const mgI='Manager nehmen dir Arbeit ab. Jeder kommt mit einem Rang dazu, und mit späteren Rängen kannst du ihn befördern. Jede Stufe bringt neue Aufgaben, die du im Betrieb einzeln einschaltest.';
+  const stufen=B.map(b=>`<div style="margin-top:6px"><b>${MGR_BEREICHE[b].name}</b><br>${MANAGER.filter(e=>e.bereich===b).map(e=>mgrStufenText(e,mgrSt(b))).join('<br>')}</div>`).join('');
+  if(S.rang<ab) return fenster('mgr_amt','Manager','',{zu:`ab dem Rang ${RAENGE[ab].name}`,buch:'manager',i:mgI+stufen});
+  return fenster('mgr_amt','Manager',B.map(b=>{
+    const st=mgrSt(b), n=mgrNaechste(b), E=MANAGER.filter(e=>e.bereich===b), neu=n?[...n.aufgaben.map(k=>MGR_AUFGABEN[k].kurz),...mgrExtra(n)]:[];
+    return fz(MGR_BEREICHE[b].name,st?`Stufe ${st} von ${E.length}, ${eur(mgrEintrag(b,st).lohn)} Lohn im Monat`:S.rang>=E[0].rang?'Noch nicht eingestellt':`Ab dem Rang ${RAENGE[E[0].rang].name}`,
+      n?(neu.length?`Stufe ${n.stufe}: ${neu.join(', ')}`:''):'Höchste Stufe erreicht',...(n?[mgrKnopf(b)]:[]))}),{buch:'manager',i:mgI+stufen});
 }
-// Fenster von unten: ein Schalter je Aufgabe der erreichten Stufen, Lohn, Knopf zum Befördern.
+// Schalter je Aufgabe der erreichten Stufen, darunter die noch fehlenden Stufen und die Auswahl für Reserve und Geldgrenze.
+// Steht seit 7.5 im Fenster des Managers im Betrieb und im Fenster von unten, beide zeigen dasselbe.
+function mgrSchalter(b){
+  const st=mgrSt(b), E=MANAGER.filter(e=>e.bereich===b), G=mgrG(b);
+  const teil=e=>e.stufe>st?`<div class="mut" style="margin:0 0 8px">${mgrStufenText(e,st)}</div>`
+    :e.aufgaben.map(k=>{const an=aufgabeAktiv(k); return `<button class="wahl schalter ${an?'an':''}" data-a="mgrAn" data-id="${k}">${an?'✅':'⬜'} ${k==='laeden'||k==='handel'?'📋 ':''}${MGR_AUFGABEN[k].text}</button>`}).join('')
+      +mgrExtra(e).map(t=>`<div class="mut" style="margin:0 0 8px">✅ ${t}, ohne Schalter</div>`).join('');
+  return E.map(teil).join('')
+    +(b==='handel'&&(aufgabeAktiv('laeden')||aufgabeAktiv('handel')||aufgabeAktiv('regal'))?`<div class="mut" style="margin:8px 0 6px">Je Wein bleiben im Keller, außer kurz vorm Verderben:</div>${reserveChips()}`:'')
+    +(b==='keller'&&(aufgabeAktiv('sekt')||aufgabeAktiv('keltern'))||b==='handel'&&aufgabeAktiv('fest')?`<div class="mut" style="margin:8px 0 6px">${b==='keller'?'Für '+[aufgabeAktiv('sekt')&&'Sekt',aufgabeAktiv('keltern')&&'Fassraum'].filter(Boolean).join(' und '):'Für das Fest'} gibt ${G.er} nur so viel aus, dass mindestens das auf dem Konto bleibt:</div>${pufferChips(b)}`:'');
+}
+// Fenster von unten: Porträt, Lohn, zuletzt Erledigtes, die Schalter (mgrSchalter) und der Knopf zum Befördern. Öffnet sich nach Einstellen oder Befördern.
 let MGR_OFFEN=null;
 function mgrFenster(b){
   const M=MGR_BEREICHE[b], st=mgrSt(b), E=MANAGER.filter(e=>e.bereich===b), m=(S.manager||{})[b]||{};
-  const teil=e=>e.stufe>st?`<div class="mut" style="margin:0 0 8px">${mgrStufenText(e,st)}</div>`
-    :e.aufgaben.map(k=>{const an=aufgabeAktiv(k); return `<button class="wahl ${an?'an':''}" data-a="mgrAn" data-id="${k}">${an?'✅':'⬜'} ${k==='laeden'||k==='handel'?'📋 ':''}${MGR_AUFGABEN[k].text}</button>`}).join('')
-      +mgrExtra(e).map(t=>`<div class="mut" style="margin:0 0 8px">✅ ${t}, ohne Schalter</div>`).join('');
   const G=mgrG(b);
   return `${M.bild?`<div class="mgrportraet" style="background-image:url(bilder/${M.bild})"></div>`:''}<h3>${M.sym} ${st?G.Dein+' '+M.name:M.name}</h3>
   <div class="mut" style="margin-bottom:8px">${st?`Stufe ${st} von ${E.length}. ${G.Er} erledigt beim Weiterblättern, was du hier einschaltest, und berichtet im Winzerboten. Einkäufe zahlt ${G.er} aus deiner Kasse.`:`Noch nicht eingestellt. Ab dem Rang ${RAENGE[E[0].rang].name} gibt es ${G.ihn} im Arbeitsamt.`}</div>
   ${st?`<div class="kv"><span>Lohn im Monat</span><span>${eur(mgrEintrag(b,st).lohn)}</span></div>`:''}
   ${m.zuletzt?`<div class="kv"><span>Zuletzt</span><span>${esc(m.zuletzt)}</span></div>`:''}
-  ${E.map(teil).join('')}
-  ${b==='handel'&&(aufgabeAktiv('laeden')||aufgabeAktiv('handel')||aufgabeAktiv('regal'))?`<div class="mut" style="margin:8px 0 6px">Je Wein bleiben im Keller, außer kurz vorm Verderben:</div>${reserveChips()}`:''}
-  ${b==='keller'&&(aufgabeAktiv('sekt')||aufgabeAktiv('keltern'))||b==='handel'&&aufgabeAktiv('fest')?`<div class="mut" style="margin:8px 0 6px">${b==='keller'?'Für '+[aufgabeAktiv('sekt')&&'Sekt',aufgabeAktiv('keltern')&&'Fassraum'].filter(Boolean).join(' und '):'Für das Fest'} gibt ${G.er} nur so viel aus, dass mindestens das auf dem Konto bleibt:</div>${pufferChips(b)}`:''}
+  ${mgrSchalter(b)}
   ${mgrNaechste(b)?kz('',mgrKnopf(b)):''}${mib('manager')}
   <div class="btns"><button class="sec" data-a="close">Zurück</button></div>`;
 }
@@ -2303,8 +2343,8 @@ function mgrBetrieb(){
 }
 function mgrPuffer(b){const p=((S.manager||{})[b]||{}).puffer; return MGR_PUFFER.includes(p)?p:MGR_PUFFER_START}
 // Berichte des Handels-Managers stehen wie die Daueraufträge als Zeile im Winzerboten (S.dauerLog).
-// Seit Schritt F merkt sich jeder Manager mit zm (Jahr*12+Monat), wann er zuletzt berichtet hat, für "Zuletzt erledigt" im Fenster "Deine Manager".
-function handelMelde(L){if(!L.length) return; S.dauerLog=(S.dauerLog||[]).concat(L); S.manager.handel.zuletzt=S.dauerLog.join(', '); S.manager.handel.zm=S.jahr*12+S.monat}
+// Seit Schritt F merkt sich jeder Manager mit zm (Jahr*12+Monat), wann er zuletzt berichtet hat. Seit 7.5 kommt jede Meldung ins Logbuch (mgrLogbuch).
+function handelMelde(L){if(!L.length) return; S.dauerLog=(S.dauerLog||[]).concat(L); S.manager.handel.zuletzt=S.dauerLog.join(', '); S.manager.handel.zm=S.jahr*12+S.monat; mgrLogbuch('handel',S.manager.handel.zuletzt)}
 // Schritt E: Handels-Manager Stufe 3. Regal füllen (MGR_REGAL Monate Vorrat, nur Wein mit mindestens MGR_REGAL_HALT Monaten Haltbarkeit,
 // je Wein bleibt die Reserve der Daueraufträge, was kurz vorm Verderben im Regal steht, nimmt er für den Dauerauftrag heraus),
 // den besten zugelassenen Wein zum Wettbewerb einreichen (wie die Liste in AKT.wettbewerb sortiert), das Fest bei Sonne oder spätestens im August ausrichten.
@@ -2335,7 +2375,7 @@ function mgrHandel(){
   }
   handelMelde(L); if(L.length) save();
 }
-function mgrMelde(b,L){if(!L.length) return; S.mgrLog=S.mgrLog||{}; S.mgrLog[b]=(S.mgrLog[b]||[]).concat(L); S.manager[b].zuletzt=L.join(', '); S.manager[b].zm=S.jahr*12+S.monat}
+function mgrMelde(b,L){if(!L.length) return; S.mgrLog=S.mgrLog||{}; S.mgrLog[b]=(S.mgrLog[b]||[]).concat(L); S.manager[b].zuletzt=L.join(', '); S.manager[b].zm=S.jahr*12+S.monat; mgrLogbuch(b,S.mgrLog[b].join(', '))}
 // Alles, was die Manager beim Weiterblättern erledigen (früher verwalter() und dauerAuftrag()).
 function managerArbeit(){mgrBetrieb(); mgrHandel(); dauerAuftrag()}
 // Aktuelles: der Rang und darunter die anklickbaren Hinweise, die zur passenden Stelle führen.
@@ -2700,8 +2740,7 @@ function vStadt(){
       hin:[aufgabeAktiv('lager')&&`${MGR_BEREICHE.keller.sym} Dein ${KM} stellt fehlende Lagerarbeiter beim Weiterblättern ein.`],
       kn:lohnKnoepfe('lagerarb'),
       i:`Ein Lagerarbeiter betreut ${num(FASS_JE_LAGERARB)} l Fassraum und ${num(FLASCHEN_JE_LAGERARB)} leere Flaschen. Mehr Fassraum oder Flaschen kaufen kannst du erst mit mehr Leuten. ${amtI}${aufgabeAktiv('lager')?` Dein ${KM} stellt zum Angebot des Monats ein, entlassen musst du selbst.`:''}`});
-    const B=Object.keys(MGR_BEREICHE), da=b=>S.rang>=mgrEintrag(b,1).rang;
-    h+=B.filter(da).map(mgrKarte).join('')+B.filter(b=>!da(b)).map(mgrKarte).join('');
+    h+=mgrAmt();
   }
   return h;
 }
