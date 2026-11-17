@@ -2084,6 +2084,8 @@ function kapitel(k){
   if(k===0) return GESCHICHTE;
   if(k===9) return ['Der Stuhl gehört dir.','Von der besten Lage siehst du das ganze Tal, auch den Hang, der einmal kahl war.',
     ...(genNr()>1?['Dein Großvater hat einmal eine kleine Anzeige gelesen.','Heute sitzt die Familie ganz oben.']:['Alles fing mit einer kleinen Anzeige in der Zeitung an, und die halbe Welt hat dagegen gewettet.']),
+    // Flaschen-Satz nur, wenn die Flasche vom ersten Jahrgang in dieser Partie ins Fach kam (Maik 17.11.2026).
+    ...(S.gesch&&S.gesch.flasche?['Und die Flasche vom ersten Jahrgang ist endlich offen.']:[]),
     'Unten im Keller bekommt Frau Öchsle heute ein ganzes Stück Käse.'];
   return KAPITEL[k]||[];
 }
