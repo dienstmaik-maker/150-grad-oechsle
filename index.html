@@ -311,11 +311,10 @@ img.fass{height:1.1em;vertical-align:-.18em}
 @media (prefers-reduced-motion:reduce){#info .ibild,#info .ischw,.schnitt{animation:none}#info .ischw,.schnitt{opacity:0}#info.aus .ischw{opacity:1}}
 @keyframes ein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes puls{50%{opacity:.45}}
-/* Version 7.6 (Weg 6d): An der Pinnwand hängt nur noch der alte Winzer als Strichzeichnung, direkt auf dem Kork (Weiß fällt per multiply weg). Ein Tipp öffnet seinen Rat. */
-.wand{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6% 14% 3%;box-sizing:border-box;pointer-events:none}.wand.gleit{transition:left .7s ease,top .7s ease,width .7s ease,height .7s ease,font-size .7s ease}
+/* Version 7.6 (Weg 6d): An der Pinnwand hängt nur noch der alte Winzer als Strichzeichnung, direkt auf dem Kork (Weiß fällt per multiply weg). Bei Aktuelles öffnet ein Tipp seinen Rat. */
+.wand{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px;box-sizing:border-box;pointer-events:none}.wand.gleit{transition:left .7s ease,top .7s ease,width .7s ease,height .7s ease}
 .wand button{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;-webkit-tap-highlight-color:transparent}.pano.s-aktuell .wand button{pointer-events:auto}
-.wand .wkopf{width:6em;max-height:100%;aspect-ratio:422/480;background:url(bilder/winzer-kopf-dick.webp) center/contain no-repeat;mix-blend-mode:multiply;filter:contrast(1.1)}
-.wand .wab{margin-top:.35em;font:700 .6em/1.2 "Alegreya SC","Alegreya",serif;color:#2a1208;text-shadow:0 0 6px rgba(255,225,170,.7);white-space:nowrap;transition:opacity .4s}.pano:not(.s-aktuell) .wab{opacity:0}
+.wand button{width:100%}.wand .wkopf{width:100%;height:100%;background:url(bilder/winzer-kopf-dick.webp) center/contain no-repeat;mix-blend-mode:multiply;filter:contrast(1.1)}
 @media (prefers-color-scheme:dark){.pano,.mbild,.sbild{filter:brightness(.85)}}
 @media (prefers-reduced-motion:reduce){.pano *,.ehrung,#titel .tipp{animation:none;transition:none}#titel .gesch p,#titel.text .fuss{animation:none;opacity:1}}
 /* ===== Version 7.1 "Optik": Papier auf Holztisch (Maiks Wahl 16.11.2026) =====
@@ -824,10 +823,8 @@ function tonKnoepfe(){return `<div class="card"><h3>🔊 Ton</h3><div class="btn
 // Beim Wechsel des Ortes gleitet das Bild dorthin. Gewechselt wird durch Wischen über das Bild oder durch Tippen auf ein Motiv.
 const PANO_MITTE={gut:{berg:.10,betrieb:.35,aktuell:.51,maschinen:.70,buero:.92},keller:{buch:.125,sabotage:.345,start:.60,lager:.865},stadt:{amt:.125,handel:.32,laeden:.51,bank:.70,arbeit:.895}};
 // PANO_ZOOM vergrößert das Bild je Hauptreiter (std) oder je Ort, damit ein Motiv das Fenster füllt. 1 = ganze Höhe sichtbar.
-const PANO_ZOOM={gut:{std:1.2,aktuell:2.5},keller:{std:1},stadt:{std:1}};
-// Version 7.6: Bei Aktuelles rückt die Pinnwand senkrecht über die Ortsschrift (unten 40 Pixel frei), sonst steht das Bild mittig.
-const PANO_HOCH={gut:{aktuell:1}};
-let PANO_ALT={tab:null,x:0,z:1,y:0}, ORT_ALT=null;
+const PANO_ZOOM={gut:{std:1.2},keller:{std:1},stadt:{std:1}};
+let PANO_ALT={tab:null,x:0,z:1}, ORT_ALT=null;
 // Je Ort eine eigene Hintergrundfarbe (Klasse am html-Element). Die Leiste des Handys ganz oben bekommt die Farbe der Kopfleiste.
 function ortFarbe(tab){const h=document.documentElement; h.className='ort-'+tab; const m=$('meta[name="theme-color"]'); if(m) m.content=getComputedStyle(h).getPropertyValue('--kopf').trim()||'#7b1e3a'}
 // Bild oben in einem Fenster (Weinkontrolle, Auktion, Prämierung, Rathaus, Kellerbuch, Pleite).
@@ -842,31 +839,26 @@ function monatBild(){
   if(S.monat===10&&S.kaelte===S.jahr) return 'frost';
   const m=S.monat; return m===11||m<=1?'winter':m<=4?'fruehling':m<=7?'sommer':'herbst';
 }
-// Pinnwand im Weingut-Bild (Version 7.6, Weg 6d): der alte Winzer als Strichzeichnung, darunter "Mein Rat für <Monat> ›". Ein Tipp öffnet den Rat.
+// Pinnwand im Weingut-Bild (Version 7.6, Weg 6d): der alte Winzer als Strichzeichnung füllt den Kork. Bei Aktuelles öffnet ein Tipp seinen Rat (Maik: ohne Zoom, ohne Schrift).
 // WAND nennt die Korkfläche im Streifen als Anteile (links, rechts, oben, unten). Bei einem neuen Bild neu ausmessen.
 const WAND=[.491,.533,.385,.61];
 function wandHtml(){
   if(!ratJetzt()) return '<div class="wand"></div>';
-  return `<div class="wand"><button data-a="rat" aria-label="Rat vom alten Winzer"><div class="wkopf"></div><div class="wab">Mein Rat für ${MON[S.monat]} ›</div></button></div>`;
+  return `<div class="wand"><button data-a="rat" aria-label="Rat vom alten Winzer für ${MON[S.monat]}"><div class="wkopf"></div></button></div>`;
 }
-// Legt die Pinnwand genau auf die Korkwand, passend zu Verschiebung x (Prozent), Zoom z und Höhe oy (Pixel von oben) des Streifens.
-function wandStell(el,r,x,z,oy){
+// Legt die Pinnwand genau auf die Korkwand, passend zu Verschiebung x (Prozent) und Zoom z des Streifens.
+function wandStell(el,r,x,z){
   const w=$('.wand',el); if(!w) return;
-  const H=el.clientHeight, B=el.clientWidth, sw=H*r*z, ox=x/100*(sw-B), wh=(WAND[3]-WAND[2])*H*z, ww=(WAND[1]-WAND[0])*sw;
-  w.style.left=(WAND[0]*sw-ox)+'px'; w.style.top=(WAND[2]*H*z-oy)+'px'; w.style.width=ww+'px'; w.style.height=wh+'px'; w.style.fontSize=Math.min(wh/8.6,ww/7)+'px';
-}
-// Wie weit der Streifen nach oben geschoben ist (Pixel). Mittig, außer der Ort will die Pinnwand höher sehen.
-function panoY(H,z){
-  const m=(H*z-H)/2; if(!(PANO_HOCH[TAB]&&PANO_HOCH[TAB][SUB])) return m;
-  return Math.round(clamp((WAND[2]+WAND[3])/2*H*z-(H-40)/2,0,H*z-H));
+  const H=el.clientHeight, B=el.clientWidth, sw=H*r*z, ox=x/100*(sw-B), oy=(H*z-H)/2, wh=(WAND[3]-WAND[2])*H*z, ww=(WAND[1]-WAND[0])*sw;
+  w.style.left=(WAND[0]*sw-ox)+'px'; w.style.top=(WAND[2]*H*z-oy)+'px'; w.style.width=ww+'px'; w.style.height=wh+'px';
 }
 // Schiebt den Streifen so, dass das Motiv des Unterreiters in der Mitte steht. Im selben Hauptreiter gleitet er vom alten Platz dorthin.
 function panoStell(){
   const p=$('.pano>i'); if(!p) return;
   const el=p.parentNode, r=parseFloat(getComputedStyle(el).getPropertyValue('--r'))||6, z=PANO_ZOOM[TAB][SUB]||PANO_ZOOM[TAB].std, f=el.clientWidth/(el.clientHeight*r*z);
-  const x=f>=1?50:Math.round(clamp((PANO_MITTE[TAB][SUB]-f/2)/(1-f),0,1)*1000)/10, gr=z=>`auto ${Math.round(z*100)}%`, y=panoY(el.clientHeight,z);
-  if(PANO_ALT.tab===TAB&&(PANO_ALT.x!==x||PANO_ALT.z!==z||PANO_ALT.y!==y)){p.style.backgroundPositionX=PANO_ALT.x+'%'; p.style.backgroundPositionY=-PANO_ALT.y+'px'; p.style.backgroundSize=gr(PANO_ALT.z); wandStell(el,r,PANO_ALT.x,PANO_ALT.z,PANO_ALT.y); p.getBoundingClientRect(); p.classList.add('gleit'); const w=$('.wand',el); if(w) w.classList.add('gleit')}
-  p.style.backgroundPositionX=x+'%'; p.style.backgroundPositionY=-y+'px'; p.style.backgroundSize=gr(z); wandStell(el,r,x,z,y); PANO_ALT={tab:TAB,x,z,y};
+  const x=f>=1?50:Math.round(clamp((PANO_MITTE[TAB][SUB]-f/2)/(1-f),0,1)*1000)/10, gr=z=>`auto ${Math.round(z*100)}%`;
+  if(PANO_ALT.tab===TAB&&(PANO_ALT.x!==x||PANO_ALT.z!==z)){p.style.backgroundPositionX=PANO_ALT.x+'%'; p.style.backgroundSize=gr(PANO_ALT.z); wandStell(el,r,PANO_ALT.x,PANO_ALT.z); p.getBoundingClientRect(); p.classList.add('gleit'); const w=$('.wand',el); if(w) w.classList.add('gleit')}
+  p.style.backgroundPositionX=x+'%'; p.style.backgroundSize=gr(z); wandStell(el,r,x,z); PANO_ALT={tab:TAB,x,z};
 }
 // Tipp ins Bild: Welches Motiv liegt dem Tipp am nächsten? fr ist die Stelle im ganzen Streifen (0 bis 1).
 function panoTipp(e){
