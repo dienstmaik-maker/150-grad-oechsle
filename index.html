@@ -161,6 +161,11 @@ ul.kl{margin:4px 0 0;padding-left:18px;font-size:14px}
 .rl b{display:block;font-size:15px}.rl.du b{color:var(--wein)}.rl>span{font-weight:700;min-width:20px}
 .gebot{text-align:center;margin:12px 0}.gebot b{font-size:28px;display:block;font-variant-numeric:tabular-nums}
 .zwei{display:flex;gap:8px}.zwei .wahl{flex:1;text-align:center}
+/* 7.9: Startbildschirm im Fenster-Format, Namen-Felder, Gebietszeichen */
+.feld{display:block;font-weight:600;margin:0 0 8px}.feld input{margin-top:4px;font-weight:400}.fin .zwei .wahl{margin:0;padding:10px 6px}
+.fin .wahl.gwahl{display:flex;align-items:center;gap:12px;margin:0;padding:0;background:none;border:0;box-shadow:none;border-radius:0}.gwahl .gs{width:56px;height:56px;flex:none}.gwahl span{flex:1}.gwahl small{display:block;color:var(--mut);font-weight:400}
+.fen.gan{border-color:#7b1e3a;box-shadow:0 0 0 2px #7b1e3a inset,0 3px 8px rgba(20,10,4,.45)}.fen.gan .gwahl small{color:#7b1e3a;font-weight:700}
+.fen input[type=text]{background:#fffaf0}.gkopf{display:flex;align-items:center;gap:10px}.gkopf .gs{width:44px;height:44px;flex:none}.gkopf .kv{flex:1}
 .ehrung{background:color-mix(in srgb,var(--gold) 16%,var(--card));border:2px solid var(--gold);border-radius:14px;padding:14px;margin:0 0 12px;text-align:center;animation:ehr .6s ease-out}
 .ehrung span{font-size:40px;display:block}.ehrung b{font-size:17px;display:block}
 @keyframes ehr{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
@@ -496,15 +501,15 @@ const WO={mosel:'an der Mosel',rheingau:'im Rheingau',rheinhessen:'in Rheinhesse
 // Hürden seit 7.0 (Schritt H, 16.11.2026): abgestimmt auf rund 120 Spieljahre. Der Test-Spieler wird auf Mittel in der Mitte in Jahr 109 Präsident (h16_gesamt_warm10).
 const RAENGE=[
   {name:'Neuling',kurz:'Neuling',ans:0,ha:0,verm:0,rahmen:20000},
-  {name:'Jungwinzer',kurz:'Jungwinzer',ans:15,ha:3,verm:100000,rahmen:40000,neu:'du darfst bei Auktionen mitbieten, {sorte}, Kellerausbau'},
-  {name:'Winzer',kurz:'Winzer',ans:60,ha:4,verm:250000,rahmen:80000,neu:'Sekt, der Exporthandel'},
-  {name:'Winzermeister',kurz:'Winzermeister',ans:150,ha:5,verm:600000,rahmen:160000,neu:'Landesprämierung, Erntemaschinen'},
-  {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',ans:300,ha:6,verm:1500000,rahmen:300000,neu:'{sorte}'},
-  {name:'Gutsherr',kurz:'Gutsherr',ans:500,ha:8,verm:3500000,rahmen:300000,neu:'Bundeswettbewerb, der große Vollernter',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.'},
-  {name:'Weinbaurat',kurz:'Weinbaurat',ans:700,ha:10,verm:6000000,rahmen:300000,neu:'eine eigene Weinhandlung, das Amt des Weinbotschafters'},
-  {name:'Verbandsvorstand',kurz:'Vorstand',ans:1250,ha:13,verm:12000000,rahmen:300000,neu:'das Hoffest, du kannst Kontrollen anregen'},
-  {name:'Vizepräsident',kurz:'Vizepräsident',ans:2800,ha:16,verm:16000000,rahmen:300000,neu:'die Chance auf eine Spitzenlage'},
-  {name:'Präsident des Weinbauverbands',kurz:'Präsident',ans:4600,ha:20,verm:24500000,rahmen:300000,neu:'der Sieg'}
+  {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:15,ha:3,verm:100000,rahmen:40000,neu:'du darfst bei Auktionen mitbieten, {sorte}, Kellerausbau'},
+  {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:60,ha:4,verm:250000,rahmen:80000,neu:'Sekt, der Exporthandel'},
+  {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:150,ha:5,verm:600000,rahmen:160000,neu:'Landesprämierung, Erntemaschinen'},
+  {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:300,ha:6,verm:1500000,rahmen:300000,neu:'{sorte}'},
+  {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:500,ha:8,verm:3500000,rahmen:300000,neu:'Bundeswettbewerb, der große Vollernter',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.',wegW:'Sabotage ist für dich ab jetzt tabu, eine Dame macht so etwas nicht.'},
+  {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:700,ha:10,verm:6000000,rahmen:300000,neu:'eine eigene Weinhandlung, das Amt des Weinbotschafters'},
+  {name:'Verbandsvorstand',kurz:'Vorstand',w:'Verbandsvorständin',kw:'Vorständin',ans:1250,ha:13,verm:12000000,rahmen:300000,neu:'das Hoffest, du kannst Kontrollen anregen'},
+  {name:'Vizepräsident',kurz:'Vizepräsident',w:'Vizepräsidentin',kw:'Vizepräsidentin',ans:2800,ha:16,verm:16000000,rahmen:300000,neu:'die Chance auf eine Spitzenlage'},
+  {name:'Präsident des Weinbauverbands',kurz:'Präsident',w:'Präsidentin des Weinbauverbands',kw:'Präsidentin',ans:4600,ha:20,verm:24500000,rahmen:300000,neu:'der Sieg'}
 ];
 // Ab welcher Stufe (Index in RAENGE) etwas geht. RANG_ALT rechnet die sechs Ränge alter Spielstände um.
 const R_MAX=RAENGE.length-1, R_AUKTION=1, R_LAND=3, R_BUND=5, R_LADEN=6, R_HOFFEST=7, R_SPITZE=8, RANG_ALT=[0,1,3,5,7,9];
@@ -666,7 +671,7 @@ const num=n=>Math.round(n).toLocaleString('de-DE'), eur=n=>num(n)+'\u00a0€';
 const eur2=n=>n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+'\u00a0€';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const misch=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rint(0,i);[a[i],a[j]]=[a[j],a[i]]}return a};
-const neuStart=()=>({name:'',region:'mosel',gegner:2,schwer:'mittel'});
+const neuStart=()=>({name:'',ich:'',anrede:'m',region:'mosel',gegner:3,schwer:'mittel'});
 let S=null, TAB='gut', SUB='betrieb', NEU=neuStart(), SLOT=0, START=null, ZIEL=0;
 // Menü (seit 4.0): drei Hauptreiter unten (Weingut, Kellerei, Stadt), direkt darüber die Leiste mit ihren Orten. Wischen über das Bild wechselt auch den Ort.
 // Die Reihenfolge der Orte folgt den Motiven im Panoramabild von links nach rechts. Je Ort: Kennung und Symbol für den Titel im Bild.
@@ -689,7 +694,7 @@ function geh(tab,sub){TAB=tab; SUB=sub||START_SUB[tab]||SUB}
 // Ehrungen für das Büro: Medaillen und Aufstiege. a=1 kennzeichnet einen Aufstieg, x ist ein Zusatz für die Infoseite (was die Ehrung bringt).
 // S.ehrZeig zählt, wie viele Ehrungen die Infoseite schon gezeigt hat. Neue blendet sie beim nächsten Monatswechsel ein.
 // Seit 7.2 merkt sich ein Aufstieg seinen Rang in r, für die Urkundenwand im Büro.
-function ehre(i,t,a,x,r){(S.ehrungen=S.ehrungen||[]).push({i,t,a:a?1:0,j:S.jahr,m:S.monat,x:x||'',...(r!=null?{r}:{})})}
+function ehre(i,t,a,x,r){(S.ehrungen=S.ehrungen||[]).push({i,t,a:a?1:0,j:S.jahr,m:S.monat,x:x||'',...(r!=null?{r,n:S.ich||'',w:frau()?1:0}:{})})}
 
 // Drei Speicherplätze. Der frühere einzige Spielstand liegt auf Platz 1. SLOT ist der Platz, auf dem gerade gespielt wird.
 // START='neu' zeigt das Formular für ein neues Spiel, sonst kommt ohne laufendes Spiel die Liste der Spielstände.
@@ -927,6 +932,15 @@ function haUeber(){return Math.max(0,flaecheBep()-HA_FREI)}
 function marktRest(){return Math.max(0,marktFrei()-(S.absatz||0))}
 function marktF(n){n=Math.max(0,n);const Q=marktFrei(),a=S.absatz||0,f=x=>x<=Q?1:Math.max(MARKT_MIN,1-(1-MARKT_MIN)*(x-Q)/(Q*MARKT_BREIT)); if(n<=0) return f(a); let s=0; for(let i=0;i<40;i++) s+=f(a+n*(i+.5)/40); return s/40}
 function R(){return REGIONEN[S.region]}
+// Seit 7.9: zwei Namen und Anrede. S.name ist das Weingut, S.ich der eigene Name, S.anrede 'm' oder 'w'. Bei der Übergabe ersetzt der Erbe beides
+// (erbeBenennen). Alte Spielstände ohne S.ich behalten die alten Texte, bis die Namen im Büro nachgetragen sind.
+function frau(){return S.anrede?S.anrede==='w':!!(S.erbe&&S.erbe.name&&S.erbe.art==='t')}
+const anr=(m,w)=>frau()?w:m;
+const rangN=i=>frau()&&RAENGE[i].w||RAENGE[i].name, rangK=i=>frau()&&RAENGE[i].kw||RAENGE[i].kurz;
+function famName(){const i=(S.ich||'').trim(); return i.includes(' ')?i.split(/\s+/).pop():''}
+// Frau Öchsle ist eine Dynastie: S.ratte zählt die Generation im Korkenlager, hoch geht es bei jeder Übergabe nach der Taufe (Rang Winzer).
+const RATTE_ORD=['','','die Zweite','die Dritte','die Vierte','die Fünfte','die Sechste','die Siebte','die Achte','die Neunte','die Zehnte'];
+function ratte(){const n=S.ratte||1; return n<2?'Frau Öchsle':`Frau Öchsle ${RATTE_ORD[n]||'die '+n+'.'}`}
 function rebenGesamt(){return R().sorten.reduce((a,id)=>a+S.felder[id].reben,0)}
 // Bepflanzte Hektar mit einer Nachkommastelle. Zählt für deinen Aufstieg, gekaufte Fläche allein reicht nicht.
 function flaecheBep(){return Math.round(rebenGesamt()/HA_REBEN*10)/10}
@@ -1439,15 +1453,15 @@ function preis(l){
 /* ================= Spielstart ================= */
 function neuesSpiel(){
   const reg=REGIONEN[NEU.region];
-  S={v:1,v7:1,name:NEU.name.trim()||'Weingut Rebenreich',region:NEU.region,jahr:2027,monat:0,geld:START_GELD,ha:3,boden:80,duengungen:0,
+  S={v:1,v7:1,name:NEU.name.trim()||'Weingut Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:START_GELD,ha:3,boden:80,duengungen:0,
     felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',sonne:0,markt:1,ansehen:0,
     jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:1,lagerarb:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0}};
   for(const id of reg.sorten){S.felder[id]={reben:0,jung:0}; feldReset(S.felder[id])}
-  etappe3(NEU.gegner,NEU.schwer);
+  etappe3(3,NEU.schwer);
   lohnAbgleich();
   neuePrognose();
   TOP=[]; FUSS=[];
-  schlag(100,'Willkommen auf deinem Weingut',`${S.name} ${WO[S.region]} startet mit 3 Hektar kahlem Weinberg, leeren Fässern und ${eur(START_GELD)}. Bis März ist Pflanzzeit, im Weinberg pflanzt du deinen ${SORTEN[sortenFolge()[0]].name}. Die zweite und dritte Rebsorte bringt der Aufstieg. Im ersten Jahr tragen junge Reben nur die Hälfte.`,'weingut');
+  schlag(100,'Willkommen auf deinem Weingut',`${S.ich?`${S.ich} übernimmt ${S.name} ${WO[S.region]}: 3 Hektar kahler Weinberg, leere Fässer und ${eur(START_GELD)}.`:`${S.name} ${WO[S.region]} startet mit 3 Hektar kahlem Weinberg, leeren Fässern und ${eur(START_GELD)}.`} Bis März ist Pflanzzeit, im Weinberg pflanzt du deinen ${SORTEN[sortenFolge()[0]].name}. Die zweite und dritte Rebsorte bringt der Aufstieg. Im ersten Jahr tragen junge Reben nur die Hälfte.`,'weingut');
   schlag(50,'So kommst du herum','Unten wählst du Weingut, Kellerei oder Stadt, die Leiste darüber bringt dich zu den Orten. Wischen übers Bild geht auch. Ein Punkt am Reiter zeigt Neues oder Dringendes, ein Tipp aufs Geld öffnet die Kasse. Das kleine i oben rechts in jedem Fenster erklärt, was du dort tust. Spielstände, Ton und das Buch liegen im Büro.');
   schlag(40,'Leute für Weinberg und Keller','Je 1.000 Reben brauchst du das ganze Jahr einen Erntehelfer. Du hast einen, für mehr Reben stellst du vor dem Pflanzen beim Arbeitsamt in der Stadt ein. Der Lohn dort schwankt jeden Monat, wer eingestellt ist, behält seinen. Dein Lagerarbeiter betreut 10.000 l Fassraum und 20.000 leere Flaschen. Fehlen dir Leute, geht es nicht in den nächsten Monat.','arbeit');
   schlag(30,'Die Konkurrenz schläft nicht','Deine Gegner: '+S.gegner.map(g=>`${g.name}, ${GEGNER_TYP[g.typ].art}, ${WO[g.region]}`).join('; ')+`. Wer zuerst Präsident des Weinbauverbands wird, gewinnt. Alle ${GEN_JAHRE} Jahre übernimmt bei allen die nächste Generation.`);
@@ -1566,10 +1580,11 @@ function uebergabe(){
   S.geld-=bar;
   if(kr>0){const k=S.kredit||(S.kredit={rest:0,tilgung:0}); k.rest+=kr; k.tilgung+=Math.ceil(kr/ERB_LAUFZEIT); k.erb=(k.erb||0)+kr}
   S.ansehen=Math.round(S.ansehen*ERB_ANSEHEN);
-  (S.chronik=S.chronik||[]).push({n,name:alt.name||'',art:alt.art||'',von:genJahr(n-1),bis:S.jahr,rang:S.rang,ans:ansVor,verm:v,steuer,kredit:kr});
+  (S.chronik=S.chronik||[]).push({n,name:S.ich||alt.name||'',art:S.anrede?(S.anrede==='w'?'t':'s'):alt.art||'',von:genJahr(n-1),bis:S.jahr,rang:S.rang,ans:ansVor,verm:v,steuer,kredit:kr});
   S.gen=n+1;
   const wahl=a=>a[rint(0,a.length-1)];
-  S.erbe={k:S.flascheAuf?'offen':n===1?'g2':n===2?'g3':'weiter',offen:1,name:'',art:Math.random()<.5?'t':'s',vt:wahl(ERB_NAMEN.t),vs:wahl(ERB_NAMEN.s),steuer,kredit:kr,verm:v,ansVor,ans:S.ansehen};
+  const rat=S.rang>=2?(S.ratte=(S.ratte||1)+1):0;
+  S.erbe={ratte:rat,k:S.flascheAuf?'offen':n===1?'g2':n===2?'g3':'weiter',offen:1,name:'',art:Math.random()<.5?'t':'s',vt:wahl(ERB_NAMEN.t),vs:wahl(ERB_NAMEN.s),steuer,kredit:kr,verm:v,ansVor,ans:S.ansehen};
   schlag(97,`${S.name} in neuen Händen`,`Zum Jahreswechsel geht das Weingut ${WO[S.region]} an die ${n+1}. Generation. Erbschaftssteuer: ${eur(steuer)}${kr?`, davon ${eur(kr)} als Kredit bei der Bank`:''}. Vom Ansehen bleiben ${pz(ERB_ANSEHEN)}, jetzt ${S.ansehen}. Rang, Fläche, Keller, Wein und alle Leute bleiben.`,GEN_BILD.uebergabe,{gold:1,erbe:1});
   if(window.BOT) erbeBenennen(S.erbe.art==='t'?S.erbe.vt:S.erbe.vs);
 }
@@ -1578,16 +1593,18 @@ function erbeVorschlag(){const e=S.erbe; return e.art==='s'?e.vs:e.vt}
 // Das Schriftstück zur Übergabe: Geschichte, Zahlen, dann Tochter oder Sohn und der Vorname. Bis zum Übergeben geht nichts anderes.
 function zeigeErbe(){
   const e=S.erbe, T=GEN_TEXT[e.k]||GEN_TEXT.weiter, alt=$('#erbname'), name=alt?alt.value:e.name;
-  openSheet(`${sbild(GEN_BILD.uebergabe)}<h3>${esc(T.t)}</h3>${T.p().map(x=>`<p>${esc(x)}</p>`).join('')}
+  openSheet(`${sbild(GEN_BILD.uebergabe)}<h3>${esc(T.t)}</h3>${T.p().map(x=>`<p>${esc(x)}</p>`).join('')}${e.ratte?'<p>Im Korkenlager wuselt es. Die Kleine heißt natürlich auch Frau Öchsle.</p>':''}
     <p class="mut">Erbschaftssteuer: ${eur(e.steuer)}, ${pz(ERB_STEUER)} von ${eur(e.verm)} Vermögen.${e.kredit?` Davon leiht dir die Bank ${eur(e.kredit)} über ${ERB_LAUFZEIT} Monate, das zählt nicht gegen deinen Kreditrahmen.`:''} Ansehen: ${e.ansVor} vorher, ${e.ans} jetzt. Rang, Fläche, Keller, Wein, Leute und Manager bleiben.</p>
     <h3>Wer übernimmt?</h3><div class="chips">${[['t','Die Tochter'],['s','Der Sohn']].map(([k,t])=>`<button class="chip ${e.art===k?'an':''}" data-a="erbeArt" data-id="${k}">${t}</button>`).join('')}</div>
     <input type="text" id="erbname" maxlength="20" placeholder="${esc(erbeVorschlag())}" value="${esc(name)}">
     <div class="btns"><button data-a="erbeJa">Übergeben</button></div>`);
 }
 function erbeBenennen(name){
-  const e=S.erbe; e.name=name; e.offen=0;
+  const e=S.erbe, fam=famName(); e.name=name; e.offen=0;
+  // Seit 7.9: Der Erbe ersetzt den eigenen Namen (Vorname mit dem Familiennamen) und bestimmt die Anrede.
+  S.anrede=e.art==='t'?'w':'m'; if(S.ich) S.ich=(fam&&!name.includes(' ')?name+' '+fam:name).slice(0,40);
   const b=S.bericht||{}, wer=e.art==='s'?'der Sohn':'die Tochter';
-  for(const x of [...TOP,b.kopf,...(b.art||[])]) if(x&&x.erbe&&!x.benannt){x.benannt=1; x.t=`${name} übernimmt ${S.name}`; x.text=`${name}, ${wer}, hat den Kellerschlüssel bekommen. `+x.text}
+  for(const x of [...TOP,b.kopf,...(b.art||[])]) if(x&&x.erbe&&!x.benannt){x.benannt=1; x.t=`${S.ich||name} übernimmt ${S.name}`; x.text=`${name}, ${wer}, hat den Kellerschlüssel bekommen. `+x.text}
 }
 // Schriftstück ohne Eingabe (bisher nur der Anfang). S.erz merkt es bis zum nächsten Zeichnen, der Test-Spieler schließt es gleich wieder.
 function zeigeErz(){
@@ -1596,9 +1613,9 @@ function zeigeErz(){
 }
 // Generationen-Chronik im Büro.
 function chronikHtml(){
-  const C=S.chronik||[], n=genNr(), e=S.erbe, wer=(nr,name,art)=>nr===1?'die Gründung':name?`${esc(name)}, ${art==='s'?'der Sohn':'die Tochter'}`:'die nächste Generation';
-  return fenster('chronik','Generationen-Chronik',`${C.map(c=>`<div class="rl"><span>${c.n}.</span><div><b>${c.von} bis ${c.bis}: ${wer(c.n,c.name,c.art)}</b><span class="mut">übergeben als ${RAENGE[c.rang].kurz} mit ${c.ans} Ansehen, Erbschaftssteuer ${eur(c.steuer)}</span></div></div>`).join('')}
-    <div class="rl du"><span>${n}.</span><div><b>seit ${genJahr(n-1)}: ${wer(n,e&&e.name,e&&e.art)}</b><span class="mut">${S.flascheAuf?'Die Flasche vom ersten Jahrgang ist getrunken. ':S.gesch&&S.gesch.flasche?'Die Flasche vom ersten Jahrgang liegt noch im Fach. ':''}Nächste Übergabe im Januar ${genJahr(n)}</span></div></div>`,{
+  const C=S.chronik||[], n=genNr(), e=S.erbe, wer=(nr,name,art)=>nr===1?(name?`${esc(name)}, ${art==='t'?'die Gründerin':'der Gründer'}`:'die Gründung'):name?`${esc(name)}, ${art==='s'?'der Sohn':'die Tochter'}`:'die nächste Generation';
+  return fenster('chronik','Generationen-Chronik',`${C.map(c=>`<div class="rl"><span>${c.n}.</span><div><b>${c.von} bis ${c.bis}: ${wer(c.n,c.name,c.art)}</b><span class="mut">übergeben als ${c.art==='t'&&RAENGE[c.rang].kw||RAENGE[c.rang].kurz} mit ${c.ans} Ansehen, Erbschaftssteuer ${eur(c.steuer)}</span></div></div>`).join('')}
+    <div class="rl du"><span>${n}.</span><div><b>seit ${genJahr(n-1)}: ${wer(n,S.ich||(e&&e.name),S.anrede?(S.anrede==='w'?'t':'s'):e&&e.art)}</b><span class="mut">${S.flascheAuf?'Die Flasche vom ersten Jahrgang ist getrunken. ':S.gesch&&S.gesch.flasche?'Die Flasche vom ersten Jahrgang liegt noch im Fach. ':''}Nächste Übergabe im Januar ${genJahr(n)}</span></div></div>`,{
     buch:'generationen',i:`Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation. Vom Ansehen bleiben ${pz(ERB_ANSEHEN)}, ${pz(ERB_STEUER)} vom Vermögen gehen als Erbschaftssteuer weg, alles andere bleibt.`});
 }
 function geschichteMonat(){
@@ -1613,18 +1630,18 @@ function geschichteMonat(){
 const GEGNER_SPRUCH={
   vorsicht:{vorbei:n=>`„Langsam ist auch eine Geschwindigkeit“, sagt ${n}, als sie an dir vorbeizieht.`,du:n=>`${n} gratuliert dir mit einem Korb Äpfel. „Nicht übermütig werden“, steht auf dem Zettel.`,erfolg:n=>`${n} hat deine Medaille in der Zeitung ausgeschnitten. Wofür, sagt sie nicht.`},
   qualitaet:{vorbei:n=>`„Das war zu erwarten“, sagt ${n} über seinen Vorsprung. Er sagt das öfter.`,du:n=>`${n} lässt ausrichten, Glück sei keine Leistung. Gratuliert hat er trotzdem.`,erfolg:n=>`${n} will deinen Siegerwein jetzt selbst nachprüfen lassen. Die Jury hat abgelehnt.`},
-  zocker:{vorbei:n=>`„Tschüss, Nachbar!“, ruft ${n} und hupt beim Vorbeifahren am Weingut.`,du:n=>`${n} hat bei deinem Aufstieg so getan, als würde er telefonieren.`,erfolg:n=>`${n} behauptet, er hätte dieses Jahr gar nicht mitgemacht, sonst wäre es anders gelaufen.`}
+  zocker:{vorbei:n=>`„Tschüss, ${anr('Nachbar','Nachbarin')}!“, ruft ${n} und hupt beim Vorbeifahren am Weingut.`,du:n=>`${n} hat bei deinem Aufstieg so getan, als würde er telefonieren.`,erfolg:n=>`${n} behauptet, er hätte dieses Jahr gar nicht mitgemacht, sonst wäre es anders gelaufen.`}
 };
 // Leserbrief eines Gegners einen Monat nach deinem Aufstieg. r ist der neue Rang, n dein Weingut.
 const GEGNER_GLUECK={
-  vorsicht:[(r,n)=>`„Herzlichen Glückwunsch zum ${r}! Ich hoffe, ${n} hat jetzt auch genug Fässer. Man weiß ja nie.“`,(r,n)=>`„Glückwunsch an ${n}. Ich habe mir die Urkunde angesehen, das Papier ist wirklich gut.“`],
+  vorsicht:[(r,n)=>`„Herzlichen Glückwunsch ${anr('zum','zur')} ${r}! Ich hoffe, ${n} hat jetzt auch genug Fässer. Man weiß ja nie.“`,(r,n)=>`„Glückwunsch an ${n}. Ich habe mir die Urkunde angesehen, das Papier ist wirklich gut.“`],
   qualitaet:[(r,n)=>`„${r}, soso. Die Ernennung ist verdient, der Wein auf dem Fest war es nicht.“`,(r,n)=>`„Ich gratuliere ${n}. Bei meinem Aufstieg war die Blaskapelle allerdings besser gestimmt.“`],
   zocker:[(r,n)=>`„${r}? Hätte ich auch geschafft, wenn ich gewollt hätte. Glückwunsch trotzdem, ehrlich!“`,(r,n)=>`„Ich wette eine Kiste Sekt, dass ${n} beim nächsten Aufstieg langsamer ist als ich.“`]
 };
 function aufBrief(r){
   const G=S.gegner.filter(g=>GEGNER_GLUECK[g.typ]); if(!G.length||!RAENGE[r]) return;
   const g=G[rint(0,G.length-1)], T=GEGNER_GLUECK[g.typ];
-  schlag(40,'✉️ Leserbrief zu deinem Aufstieg',`${T[rint(0,T.length-1)](RAENGE[r].name,S.name)} Eingesandt von ${g.name}, ${GEGNER_TYP[g.typ].art}.`);
+  schlag(40,'✉️ Leserbrief zu deinem Aufstieg',`${T[rint(0,T.length-1)](rangN(r),S.name)} Eingesandt von ${g.name}, ${GEGNER_TYP[g.typ].art}.`);
 }
 const bisZiel=r=>{const n=R_MAX-r;return n<=0?'Am Ziel: Präsident':n===1?'Nur noch eine Stufe bis zum Präsidenten!':`Noch ${n} Stufen bis zum Präsidenten`};
 // Version 4.5: Ab dem dritten Jahr steht statt "Rat vom alten Winzer" eine Rubrik in der Ecke. S.rubSack ist ein gemischter Stapel aller Texte, erst wenn er leer ist, kommt alles wieder.
@@ -1759,7 +1776,7 @@ const bestenMon=e=>e.mon!=null?e.mon:(e.jahre||0)*12;
 function bestenEintrag(){
   if(window.BOT) return 0;
   const L=besten().filter(e=>e.d!==S.bestenD), d=S.bestenD||Date.now(); S.bestenD=d;
-  L.push({name:S.name,rang:S.rang,mon:(S.jahr-START_JAHR)*12+S.monat,region:S.region,schwer:S.schwer,gen:genNr(),d});
+  L.push({name:S.name,ich:S.ich||'',w:frau()?1:0,rang:S.rang,mon:(S.jahr-START_JAHR)*12+S.monat,region:S.region,schwer:S.schwer,gen:genNr(),d});
   L.sort((a,b)=>b.rang-a.rang||bestenMon(a)-bestenMon(b)||(STUFE_WERT[b.schwer]||0)-(STUFE_WERT[a.schwer]||0)||a.d-b.d);
   const K=L.slice(0,10);
   try{localStorage.setItem(BESTEN_KEY,JSON.stringify(K))}catch(e){return 0}
@@ -1772,8 +1789,8 @@ function bestenZeit(e){
   return j&&m?`${j} J. ${m} M.`:j?`${j} J.`:`${m} M.`;
 }
 function bestenZeilen(){
-  return besten().map((e,i)=>({platz:i+1,du:S&&e.d===S.bestenD,name:e.name,
-    sub:`${e.rang===R_MAX?'👑 ':''}${(RAENGE[e.rang]||RAENGE[0]).kurz} · ${(DIFF[e.schwer]||{}).name||''}${e.gen>1?` · ${e.gen}. Generation`:''}`,
+  return besten().map((e,i)=>({platz:i+1,du:S&&e.d===S.bestenD,name:e.ich||e.name,
+    sub:`${e.ich?e.name+' · ':''}${e.rang===R_MAX?'👑 ':''}${e.w&&(RAENGE[e.rang]||{}).kw||(RAENGE[e.rang]||RAENGE[0]).kurz} · ${(DIFF[e.schwer]||{}).name||''}${e.gen>1?` · ${e.gen}. Generation`:''}`,
     rechts:bestenZeit(e)}));
 }
 const bestenZeile=x=>`<div class="rl ${x.du?'du':''}"><span>${x.platz}.</span><div><b>${esc(x.name)}</b><span class="mut">${esc(x.sub)}</span></div><b class="rz">${x.rechts}</b></div>`;
@@ -1786,7 +1803,7 @@ function bestenHtml(){
 function endeHtml(k){
   const st=k.stand||{}, L=bestenZeilen();
   const z=(t,w)=>`<div><small>${t}</small><b${String(w).length>10?' class="lang"':''}>${w}</b></div>`;
-  return `<div class="zstand">${z('Gespielt',`${st.jahre} Jahre`)}${z('Rang',(RAENGE[st.rang]||RAENGE[0]).kurz)}${z('Platz',`${st.platz}. von ${S.gegner.length+1}`)}${z('Vermögen',eur(st.verm||0))}${z('Ansehen',st.ans)}</div>
+  return `<div class="zstand">${z('Gespielt',`${st.jahre} Jahre`)}${z('Rang',RAENGE[st.rang]?rangK(st.rang):RAENGE[0].kurz)}${z('Platz',`${st.platz}. von ${S.gegner.length+1}`)}${z('Vermögen',eur(st.verm||0))}${z('Ansehen',st.ans)}</div>
     ${L.length?`<div class="zart"><h3>Die Bestenliste</h3><div class="zliste">${L.map(x=>`<div class="${x.du?'du':''}"><span>${x.platz}.</span><b>${esc(x.name)}<small>${esc(x.sub)}</small></b><span>${x.rechts}</span></div>`).join('')}</div></div>`:''}
     <div class="zknopf"><button class="sec" data-a="titelNeu">Neues Spiel</button></div>`;
 }
@@ -1799,7 +1816,7 @@ function flascheSieg(){
 function siegSpieler(){
   S.sieger=S.name; const st=endStand(), fl=flascheSieg();
   // Seit 7.7 steht Frau Öchsle mit ihrem Käse im Sieg-Kapitel der Feier, die Bestenliste wird schon beim Aufstieg erneuert.
-  schlag(100,`Du bist Präsident!`,`Nach ${jahreTxt(st.jahre)} ${WO[S.region]} wählt der Weinbauverband dich an seine Spitze. Du hast die Partie gewonnen! Der Stuhl im Festsaal gehört jetzt dir.${fl} Unten steht deine Bilanz. Du kannst weiterspielen oder ein neues Spiel beginnen.`,fl?GEN_BILD.sieg:'sieg',{gold:1,sonder:1,ende:1,stand:st});
+  schlag(100,`Du bist ${anr('Präsident','Präsidentin')}!`,`Nach ${jahreTxt(st.jahre)} ${WO[S.region]} wählt der Weinbauverband dich${S.ich?', '+S.ich+',':''} an seine Spitze. Du hast die Partie gewonnen! Der Stuhl im Festsaal gehört jetzt dir.${fl} Unten steht deine Bilanz. Du kannst weiterspielen oder ein neues Spiel beginnen.`,fl?GEN_BILD.sieg:'sieg',{gold:1,sonder:1,ende:1,stand:st});
 }
 const SIEG_SPRUCH={vorsicht:'„Immer schön langsam, dann wird das schon“, sagt sie beim Anstoßen.',qualitaet:'„Qualität setzt sich eben durch“, sagt er und meint vor allem sich selbst.',zocker:'„Alles auf eine Karte, und die Karte hat gestochen“, grinst er in die Kameras.'};
 function gegnerSieg(g,wo){
@@ -1820,13 +1837,13 @@ function etappe3Monat(Z){
     // Überholst du mehrere Gegner auf einmal, kommt nur ein Spruch, sonst wird es am Anfang zu viel.
     {const U=S.gegner.filter(g=>g.rang>=alt&&g.rang<S.rang&&GEGNER_SPRUCH[g.typ]); if(U.length){const g=U[rint(0,U.length-1)]; Z.push(GEGNER_SPRUCH[g.typ].du(g.name))}}
     // Der Aufstieg steht als Ehrung im Büro und als Thema in der Zeitung. Seit 7.2 bekommt jeder Rang eine eigene Ehrung (eine Urkunde an der Wand).
-    for(let i=alt+1;i<=S.rang;i++){const ri=RAENGE[i]; ehre(i===R_MAX?'👑':'🎖️',`Aufstieg! Du bist jetzt ${ri.name}.`,1,`Das bringt dir: ${bringt(i)}.${rahmenSatz(i)}${ri.weg?' '+ri.weg:''}`,i)}
+    for(let i=alt+1;i<=S.rang;i++){const ri=RAENGE[i]; ehre(i===R_MAX?'👑':'🎖️',`Aufstieg! Du bist jetzt ${rangN(i)}.`,1,`Das bringt dir: ${bringt(i)}.${rahmenSatz(i)}${ri.weg?' '+anr(ri.weg,ri.wegW):''}`,i)}
     // Version 7.2: Feier nach der Zeitung, goldene Rang-Karte für diesen Monat. Seit 7.7 feiert auch der Präsident (Sieg-Szene), der Leserbrief bleibt bis Vizepräsident.
     S.rangNeu=S.jahr*12+S.monat;
     S.feier={von:alt,zu:S.rang,platz:bestenEintrag()}; if(S.rang<R_MAX) S.aufBrief=S.rang;
-    schlag(95,`Aufstieg: Du bist jetzt ${r.name}`,`Das bringt: ${bringt(S.rang)}.${rahmenSatz(S.rang)}${r.weg?' '+r.weg:''}`,'aufstieg',{sonder:1,gold:1});
+    schlag(95,`Aufstieg: Du bist jetzt ${rangN(S.rang)}`,`Das bringt: ${bringt(S.rang)}.${rahmenSatz(S.rang)}${r.weg?' '+anr(r.weg,r.wegW):''}`,'aufstieg',{sonder:1,gold:1});
     if(S.rang===R_MAX&&!S.sieger) siegSpieler();
-    else if(S.rang===R_MAX) schlag(99,`Du bist doch noch Präsident`,`${S.sieger} war schneller, aber jetzt hast du es auch an die Spitze des Weinbauverbands geschafft. Respekt!${S.gesch&&S.gesch.flasche&&!S.flascheAuf?(S.flascheAuf=S.jahr,' Die Flasche vom ersten Jahrgang wird heute Abend doch noch geöffnet.'):''}`,S.flascheAuf===S.jahr?GEN_BILD.sieg:'sieg',{gold:1});
+    else if(S.rang===R_MAX) schlag(99,`Du bist doch noch ${anr('Präsident','Präsidentin')}`,`${S.sieger} war schneller, aber jetzt hast du es auch an die Spitze des Weinbauverbands geschafft. Respekt!${S.gesch&&S.gesch.flasche&&!S.flascheAuf?(S.flascheAuf=S.jahr,' Die Flasche vom ersten Jahrgang wird heute Abend doch noch geöffnet.'):''}`,S.flascheAuf===S.jahr?GEN_BILD.sieg:'sieg',{gold:1});
   }
   kontrolleMonat(Z); sabotageGegenDich(Z);
   if(S.monat===0&&S.rang>=R_LADEN) Z.push(`Als Weinbotschafter ${WO[S.region]} warst du auf Messen in aller Welt unterwegs. +${ruhm(BOTSCHAFT_ANS)} Ansehen.`);
@@ -1905,7 +1922,7 @@ function mischung(a,b){
 /* ---- Sabotage ---- */
 const sabChance=n=>.3+.45*(n-SAB_MIN)/(SAB_MAX-SAB_MIN);
 function sabSperre(){
-  return S.rang>=SAB_RANG?`Als ${RAENGE[S.rang].kurz} machst du so etwas nicht mehr.`:S.monat<6?'Die Unterwelt ist nur von Juli bis Dezember zu sprechen.':S.sabJahr===S.jahr?'Für dieses Jahr hast du dein Glück schon versucht.'
+  return S.rang>=SAB_RANG?`Als ${rangK(S.rang)} machst du so etwas nicht mehr.`:S.monat<6?'Die Unterwelt ist nur von Juli bis Dezember zu sprechen.':S.sabJahr===S.jahr?'Für dieses Jahr hast du dein Glück schon versucht.'
     :S.geld<SAB_KONTAKT+SAB_MIN?`Du brauchst mindestens ${eur(SAB_KONTAKT+SAB_MIN)}: ${eur(SAB_KONTAKT)} für den Kontakt und ${eur(SAB_MIN)} Handgeld.`:'';
 }
 // Sabotage gegen den Spieler: nur vom Zocker, frühestens ab dem fünften Jahr, höchstens alle fünf Jahre. Schaden: ein Fass oder rund 15 % der Reben.
@@ -1965,19 +1982,24 @@ function aufgaben(){
 }
 
 /* ================= Ansichten ================= */
+// Seit 7.9 im Fenster-Format: Jedes Fenster hat Überschrift und i. Im Fenster steht nur die Auswahl, alles zum Nachlesen steht im i.
+function neuLies(){const a=$('#nm'), b=$('#nmI'); if(a) NEU.name=a.value; if(b) NEU.ich=b.value}
 function vStart(){
+  const namen=`<label class="feld">Dein Name<input type="text" id="nmI" maxlength="30" placeholder="Vorname Nachname" autocomplete="off" value="${esc(NEU.ich||'')}"></label>
+    <label class="feld">Name des Weinguts<input type="text" id="nm" maxlength="30" placeholder="Weingut Rebenreich" autocomplete="off" value="${esc(NEU.name)}"></label>
+    <div class="feld">Anrede</div><div class="zwei">${[['m','Herr'],['w','Frau']].map(([k,x])=>`<button class="wahl ${NEU.anrede===k?'an':''}" data-a="neuOpt" data-k="anrede" data-v="${k}"><b>${x}</b></button>`).join('')}</div>`;
+  const gebiete=Object.entries(REGIONEN).map(([id,r])=>{
+    const G=GEBIET_TEXT[id], [ssym,stufe]=GEBIET_STUFE[G.stufe], an=NEU.region===id, sb=steckbrief(id,{fen:1});
+    return fenster('g_'+id,r.name,`<button class="wahl gwahl" data-a="region" data-id="${id}" aria-pressed="${an}"><img class="gs" src="bilder/gebiet-${id}.webp" alt=""><span><b>${ssym} ${stufe} · ${G.stil}</b><small>${an?'✓ Gewählt':'Tippen zum Wählen'}</small></span></button>`,
+      {kl:an?'gan':'',buch:'',i:`<div class="sb"><b>${sb.name}</b> <span class="mut">${sb.art}</span>${sb.rumpf}</div>`})}).join('');
   return `<div id="top"><div><b>150 Grad Öchsle</b><small>Neues Spiel auf Spielstand ${SLOT+1}</small></div></div><main>
   ${[0,1,2].some(i=>roh(i))?'<div class="btns" style="margin:0 0 12px"><button class="sec klein" data-a="menue">◀ Zu den Spielständen</button></div>':''}
   ${liesAlt(SLOT)?`<div class="card mut">📜 ${ALT_SATZ}</div>`:''}
-  <div class="card"><h3>Wie heißt dein Weingut?</h3><input type="text" id="nm" maxlength="30" placeholder="Weingut Rebenreich" value="${esc(NEU.name)}"></div>
-  <h2>Wähle dein Anbaugebiet</h2>
-  <div class="gchips">${Object.entries(REGIONEN).map(([id,r])=>`<button class="wahl ${NEU.region===id?'an':''}" data-a="region" data-id="${id}"><img class="gs" src="bilder/gebiet-${id}.webp" alt="">${r.name}</button>`).join('')}</div>
-  ${steckbrief(NEU.region)}
-  <h2>Gegner</h2>
-  <div class="zwei">${[2,3].map(n=>`<button class="wahl ${NEU.gegner===n?'an':''}" data-a="neuOpt" data-k="gegner" data-v="${n}"><b>${n} Computer-Winzer</b></button>`).join('')}</div>
-  <h2>Schwierigkeit</h2>
-  ${Object.entries(DIFF).map(([id,d])=>`<button class="wahl ${NEU.schwer===id?'an':''}" data-a="neuOpt" data-k="schwer" data-v="${id}"><b>${d.name}</b><br><span class="mut">${d.text}</span></button>`).join('')}
-  <div class="mut" style="margin:12px 0 0">Eine Partie dauert rund 100 bis 120 Spieljahre. Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation, Präsident wird meist erst dein Enkel. Gespeichert wird nach jedem Monat, du kannst also jederzeit aufhören.</div>
+  ${fenster('neu_namen','Namen',namen,{buch:'',i:'Dein Name steht auf dem Kaufvertrag, auf jeder Urkunde, in der Bestenliste, in der Chronik und im Winzerboten. Der Name des Weinguts steht am Hof, in der Rangliste und in den Schlagzeilen. Die Anrede bestimmt, ob du Winzer oder Winzerin, Inhaber oder Inhaberin bist. Übernimmt später dein Kind, ersetzt sein Name deinen.'})}
+  ${gebiete}
+  ${fenster('neu_mit','Mitspieler',`<div class="kv"><span>🍇 Computer-Winzer</span><span>3</span></div><div class="fleer">🔒 Online mit Freunden, kommt später</div>`,{buch:'',i:'Du spielst gegen drei Computer-Winzer: die Vorsichtige, den Qualitätsfanatiker und den Zocker. Sie spielen nach denselben Regeln wie du und wollen auch Präsident werden. Später kannst du hier Freunde einladen.'})}
+  ${fenster('neu_schwer','Schwierigkeit',`<div class="zwei">${Object.entries(DIFF).map(([id,d])=>`<button class="wahl ${NEU.schwer===id?'an':''}" data-a="neuOpt" data-k="schwer" data-v="${id}"><b>${d.name}</b></button>`).join('')}</div>`,{buch:'',
+    i:Object.values(DIFF).map(d=>`<b>${d.name}:</b> ${d.text}`).join('<br>')+`<br><br>Eine Partie dauert rund 100 bis 120 Spieljahre. Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation, Präsident wird meist erst dein Enkel. Gespeichert wird nach jedem Monat, du kannst also jederzeit aufhören.`})}
   <div class="btns"><button data-a="start">Spiel starten</button></div></main>`;
 }
 // Liste der drei Speicherplätze: weiterspielen, neu anfangen, als Datei sichern, aus Datei laden, löschen.
@@ -2007,17 +2029,17 @@ function vRang(){
     <div class="kv"><span>Vermögen</span><span>${eur(v)} von ${eur(n.verm)}</span></div>${bar(v,n.verm)}
     <div class="mut">Der Aufstieg zum Rang ${n.name} bringt: ${bringt(r+1)}.${rahmenSatz(r+1)}</div>`
     :`<div class="kv"><span>Ansehen</span><span>${S.ansehen}</span></div><div class="kv"><span>Vermögen</span><span>${eur(v)}</span></div><div class="fleer" style="margin-top:6px">Höher geht es nicht.</div>`;
-  return fenster('rang',`${neu?'<span class="rneuB">Neu</span> ':''}Aktueller Rang: ${RAENGE[r].name}`,h,{kl:neu?'rneu':'',buch:'ziel',
+  return fenster('rang',`${neu?'<span class="rneuB">Neu</span> ':''}Aktueller Rang: ${rangN(r)}`,h,{kl:neu?'rneu':'',buch:'ziel',
     hin:[S.sieger&&`🏆 Gewonnen hat: ${esc(S.sieger)}`],
     stand:`Stufe ${r+1} von ${RAENGE.length} · ${genNr()}. Generation, die nächste übernimmt im Januar ${genJahr(genNr())}${n?`<br>Für den Aufstieg zum Rang ${n.name} brauchst du alles drei zugleich.`:''}`,
     i:'Wer zuerst Präsident des Weinbauverbands wird, gewinnt. Jeder Aufstieg braucht Ansehen, bepflanzte Fläche und Vermögen zugleich. Bei der Fläche zählt nur, was bepflanzt ist: Der helle Balken zeigt dein gekauftes Land, der dunkle das bepflanzte.'});
 }
 function vRangliste(){
   const v=vermoegen();
-  const L=[{name:S.name,du:1,sub:`du${S.erbe&&S.erbe.name?' ('+S.erbe.name+')':''}, ${R().name}`,rang:S.rang,ans:S.ansehen,ha:S.ha,verm:v},
+  const L=[{name:S.name,du:1,sub:`du${S.ich?' ('+S.ich+')':S.erbe&&S.erbe.name?' ('+S.erbe.name+')':''}, ${R().name}`,w:frau(),rang:S.rang,ans:S.ansehen,ha:S.ha,verm:v},
     ...S.gegner.map(g=>({name:g.name,sub:`${GEGNER_TYP[g.typ].art}, ${REGIONEN[g.region].name}`,rang:g.rang,ans:Math.round(g.ansehen),ha:g.ha,verm:gVerm(g)}))]
     .sort((a,b)=>b.rang-a.rang||b.ans-a.ans);
-  return fenster('rangliste','Rangliste',L.map((x,i)=>`<div class="rl ${x.du?'du':''}"><span>${i+1}.</span><div><b>${esc(x.name)}</b><span class="mut">${esc(x.sub)}<br>${RAENGE[x.rang].kurz} · ${x.ans} Ansehen · ${x.ha} ha · ${eur(x.verm)}<br>${bisZiel(x.rang)}</span></div></div>`).join(''),{
+  return fenster('rangliste','Rangliste',L.map((x,i)=>`<div class="rl ${x.du?'du':''}"><span>${i+1}.</span><div><b>${esc(x.name)}</b><span class="mut">${esc(x.sub)}<br>${x.w&&RAENGE[x.rang].kw||RAENGE[x.rang].kurz} · ${x.ans} Ansehen · ${x.ha} ha · ${eur(x.verm)}<br>${bisZiel(x.rang)}</span></div></div>`).join(''),{
     buch:'gegner',hin:[S.sieger&&`🏆 Gewonnen hat: ${esc(S.sieger)}`],
     i:'Hier stehst du mit deinen Gegnern. Vorn steht der höchste Rang, bei gleichem Rang entscheidet das Ansehen. Was die anderen treiben, steht im Winzerboten.'});
 }
@@ -2058,7 +2080,7 @@ function vMonat(){
   const haengt=S.monat>=7&&R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen);
   const rechts=`<h4>Dein Weingut</h4><div class="zz"><b>Konto</b><span class="${S.geld<0?'rot':''}">${eur(S.geld)}</span></div>
     <div class="zz"><b>Boden</b><span class="${S.boden<80?'rot':''}">${S.boden}\u00a0%${S.boden<80&&S.duengungen<3?', Düngen ist dran':''}</span></div>
-    <div class="zz"><b>Ansehen</b>${S.ansehen}</div><div class="zz"><b>Rang</b>${RAENGE[S.rang].kurz}</div>`;
+    <div class="zz"><b>Ansehen</b>${S.ansehen}</div><div class="zz"><b>Rang</b>${rangK(S.rang)}</div>`;
   return `<div id="info" class="${bild}"><div class="ibild" style="background-image:url(bilder/${bild}.jpg)"></div><div class="iverl"></div>
   <div class="zt"><div class="zkopf"></div><div class="zmitte">
     <div class="ztitel">Der Winzerbote</div>
@@ -2114,12 +2136,13 @@ const KAPITEL=[null,
 const VORFAHREN=['Deine Eltern','Deine Großeltern','Deine Urgroßeltern','Deine Vorfahren'];
 function kapitel(k){
   if(k===0) return GESCHICHTE;
-  if(k===9) return ['Der Stuhl gehört dir.','Von der besten Lage siehst du das ganze Tal, auch den Hang, der einmal kahl war.',
+  if(k===9) return [S.ich?`Der Stuhl gehört dir, ${S.ich}.`:'Der Stuhl gehört dir.','Von der besten Lage siehst du das ganze Tal, auch den Hang, der einmal kahl war.',
     ...(genNr()>1?[`${VORFAHREN[Math.min(genNr(),5)-2]} haben einmal eine kleine Anzeige gelesen.`,'Heute sitzt die Familie ganz oben.']:['Alles fing mit einer kleinen Anzeige in der Zeitung an, und die halbe Welt hat dagegen gewettet.']),
     // Flaschen-Satz nur, wenn die Flasche vom ersten Jahrgang in dieser Partie ins Fach kam (Maik 17.11.2026).
     ...(S.gesch&&S.gesch.flasche?['Und die Flasche vom ersten Jahrgang ist endlich offen.']:[]),
-    'Unten im Keller bekommt Frau Öchsle heute ein ganzes Stück Käse.'];
-  return KAPITEL[k]||[];
+    `Unten im Keller bekommt ${ratte()} heute ein ganzes Stück Käse.`];
+  // Seit 7.9: nach der Taufe (Kapitel 2) mit der richtigen Ratten-Generation, der Gutsherr je nach Anrede.
+  return (KAPITEL[k]||[]).map(x=>k>2?x.replace('Frau Öchsle',ratte()):x).map(x=>frau()?x.replace('Ein Gutsherr spielt','Eine Gutsherrin spielt'):x);
 }
 // Die Bild-Bühne: Standbild mit Schwenk und Zoom (still = ruhig und unscharf hinter der Urkunde), darüber später das stumme Video aus 8.1.
 // Das Video spielt einmal und bleibt auf dem letzten Bild stehen. Fehlt es (zum Beispiel ohne Internet), bleibt das bewegte Bild.
@@ -2140,17 +2163,20 @@ function feierPunkte(von,zu){
   const P=[];
   for(let i=von+1;i<=zu;i++) for(const t of bringtTeile(i)) P.push([(FREI_SYM.find(s=>s[0].test(t))||[0,'🔓'])[1],gross(t)]);
   if(RAENGE[zu].rahmen>RAENGE[von].rahmen) P.push(['🏦',`Kreditrahmen ${eur(RAENGE[zu].rahmen)}`]);
-  for(let i=von+1;i<=zu;i++) if(RAENGE[i].weg) P.push(['⚠️',RAENGE[i].weg]);
+  for(let i=von+1;i<=zu;i++) if(RAENGE[i].weg) P.push(['⚠️',anr(RAENGE[i].weg,RAENGE[i].wegW)]);
   return P;
 }
 // Die Urkunde selbst: Papier mit Rand, Text in der freien Mitte, Siegel im Kreis unten.
-function urkHtml(i,m,j,kl){
-  // Seit 7.7 ernennt die Urkunde die Person (den Inhaber), nicht das Weingut.
-  return `<div class="urk ${kl||''}"><div class="utext"><div class="utitel">Urkunde</div><p>Der Weinbauverband ernennt den Inhaber von</p><b class="uname">${esc(S.name)}</b><p>zum Rang</p><b class="urang${RAENGE[i].name.length>20?' lang':''}">${esc(RAENGE[i].name)}</b><small>${MON[m]} ${j} · ${esc(REGIONEN[S.region].name)}</small></div><div class="usiegel"></div></div>`;
+function urkHtml(i,m,j,kl,p){
+  // Seit 7.9 steht der eigene Name auf der Urkunde. p ist der Stand beim Stempeln (Name und Anrede), alte Urkunden ohne Namen bleiben beim alten Text.
+  p=p||{n:S.ich||'',w:frau()?1:0};
+  const rn=p.w&&RAENGE[i].w||RAENGE[i].name, wer=p.n?`<p>Der Weinbauverband ernennt</p><b class="uname">${esc(p.n)}</b><p>${p.w?'Inhaberin':'Inhaber'} von ${esc(S.name)}</p>`
+    :`<p>Der Weinbauverband ernennt ${p.w?'die Inhaberin':'den Inhaber'} von</p><b class="uname">${esc(S.name)}</b>`;
+  return `<div class="urk ${kl||''}"><div class="utext"><div class="utitel">Urkunde</div>${wer}<p>zum Rang</p><b class="urang${rn.length>20?' lang':''}">${esc(rn)}</b><small>${MON[m]} ${j} · ${esc(REGIONEN[S.region].name)}</small></div><div class="usiegel"></div></div>`;
 }
 // Version 7.7: Kaufvertrag beim Spielstart, im Stil der Urkunde.
 function vertragHtml(){
-  return `<div class="urk vertrag neu"><div class="utext"><div class="utitel">Kaufvertrag</div><p>Verkauft an</p><b class="uname">${esc(S.name)}</b><p>drei Hektar Weinberg, ein alter Gewölbekeller<br>und eine Untermieterin im Keller</p><small>${MON[S.monat]} ${S.jahr} · ${esc(REGIONEN[S.region].name)}</small></div><div class="usiegel"></div></div>`;
+  return `<div class="urk vertrag neu"><div class="utext"><div class="utitel">Kaufvertrag</div><p>Verkauft an</p><b class="uname">${esc(S.ich||S.name)}</b><p>${S.ich?esc(S.name)+':<br>':''}drei Hektar Weinberg, ein alter Gewölbekeller<br>und eine Untermieterin im Keller</p><small>${MON[S.monat]} ${S.jahr} · ${esc(REGIONEN[S.region].name)}</small></div><div class="usiegel"></div></div>`;
 }
 const startPunkte=()=>[['🌱','3 Hektar kahler Weinberg'],['💶',`Startgeld ${eur(START_GELD)}`],['🍇',`Deine erste Rebsorte: ${SORTEN[sortenFolge()[0]].name}`],['📅','Pflanzzeit bis März']];
 function konfetti(n){
@@ -2193,7 +2219,7 @@ function urkRang(e){if(e.r!=null) return e.r; const m=/jetzt (.+)\.$/.exec(e.t||
 function urkWand(){
   const U=(S.ehrungen||[]).map((e,n)=>[e,n]).filter(([e])=>e.a&&urkRang(e)>=0);
   if(!U.length) return `<div class="mut">Noch keine. Der erste Aufstieg führt zum ${RAENGE[1].name}, dann hängt hier deine erste Urkunde.</div>`;
-  return `<div class="uwand">${U.map(([e,n])=>`<button class="umini" data-a="urkunde" data-n="${n}"><b>${esc(RAENGE[urkRang(e)].kurz)}</b><small>${e.j?`${MON[e.m].slice(0,3)} ${e.j}`:''}</small></button>`).join('')}</div><div class="mut" style="margin-top:6px">Tipp auf eine Urkunde, dann siehst du sie groß.</div>`;
+  return `<div class="uwand">${U.map(([e,n])=>`<button class="umini" data-a="urkunde" data-n="${n}"><b>${esc(e.w&&RAENGE[urkRang(e)].kw||RAENGE[urkRang(e)].kurz)}</b><small>${e.j?`${MON[e.m].slice(0,3)} ${e.j}`:''}</small></button>`).join('')}</div><div class="mut" style="margin-top:6px">Tipp auf eine Urkunde, dann siehst du sie groß.</div>`;
 }
 // Kopf jeder Ansicht: das Bild des Ortes mit dem Titel darin.
 function kopf(titel){return ortBild(titel)}
@@ -2565,10 +2591,20 @@ function ehrSumme(wein){
   const n={}; for(const e of wein) n[e.i]=(n[e.i]||0)+1;
   return Object.keys(n).sort((a,b)=>(Object.keys(MED_NAME).indexOf(a)+9)%9-(Object.keys(MED_NAME).indexOf(b)+9)%9).map(i=>`<span style="white-space:nowrap">${n[i]}× ${i} ${MED_NAME[i]||''}</span>`).join(' · ');
 }
+// Seit 7.9: Fehlt der eigene Name (alter Spielstand oder leer gelassen), steht im Büro ganz oben ein Fenster zum Nachtragen.
+function namenFenster(){
+  if(S.ich) return '';
+  const w=frau(), e=S.erbe&&S.erbe.name||'';
+  return fenster('namen','Deine Namen',`<label class="feld">Dein Name<input type="text" id="bnI" maxlength="30" placeholder="Vorname Nachname" autocomplete="off" value="${esc(e)}"></label>
+    <label class="feld">Name des Weinguts<input type="text" id="bnG" maxlength="30" autocomplete="off" value="${esc(S.name)}"></label>
+    <div class="feld">Anrede</div><div class="zwei" id="bnA">${[['m','Herr'],['w','Frau']].map(([k,x])=>`<button class="wahl ${(k==='w')===w?'an':''}" data-a="bAnrede" data-v="${k}"><b>${x}</b></button>`).join('')}</div>`,{
+    buch:'',hin:['✍️ Seit Version 7.9 gibt es zwei Namen: deinen eigenen und den des Weinguts. Trag hier beide ein.'],kn:'<button class="klein" data-a="namenJa">Speichern</button>',
+    i:'Dein Name steht künftig auf Urkunden, in der Bestenliste, in der Chronik und im Winzerboten. Der Name des Weinguts steht am Hof und in den Schlagzeilen. Urkunden, die schon an der Wand hängen, bleiben, wie sie sind.'});
+}
 function vBuero(){
   const E=(S.ehrungen||[]).slice().reverse(), wein=E.filter(e=>!e.a), L=bestenZeilen();
   const zeile=e=>`<div class="rl"><span>${esc(e.i)}</span><div><b>${esc(e.t)}</b>${e.j?`<span class="mut">${MON[e.m]} ${e.j}</span>`:''}</div></div>`;
-  return fenster('anleitung','Spielanleitung','',{links:`Alles zum Nachschlagen in ${buchKap().length} kurzen Kapiteln, vom Ziel bis zum Arbeitsamt.`,kn:pk('buch','Aufschlagen',''),
+  return namenFenster()+fenster('anleitung','Spielanleitung','',{links:`Alles zum Nachschlagen in ${buchKap().length} kurzen Kapiteln, vom Ziel bis zum Arbeitsamt.`,kn:pk('buch','Aufschlagen',''),
       i:'Das Büro ist dein Pokalraum und deine Schaltzentrale. Von oben: Spielanleitung, Rangliste, Ehrungen, Urkunden, Chronik, Bestenliste, Ton und ganz unten deine Spielstände. Das kleine i erklärt jedes Fenster kurz, „Mehr im Buch“ schlägt das passende Kapitel auf.'})
     +vRangliste()
     +fenster('ehrungen','Ehrungen für deine Weine',wein.length?`<div class="gold" style="font-size:17px;margin-bottom:6px">${ehrSumme(wein)}</div><div class="mut">Zuletzt:</div>`+wein.slice(0,3).map(zeile).join(''):[],{
@@ -2640,7 +2676,7 @@ function vBerg(){
     hin:[mh&&`${WM} stellt fehlende Erntehelfer beim Weiterblättern ein.`],
     i:`Für den Aufstieg zählt nur die bepflanzte Fläche. Je ${num(REBEN_JE_HELFER)} Reben brauchst du einen Erntehelfer, fehlt einer, geht es nicht in den nächsten Monat. Die Ernteleistung zählt bei der Lese: Reicht sie nicht für alle Reben, bleibt ein Teil der Trauben hängen. Leute stellst du im Arbeitsamt ein, Maschinen kaufst du unter „Maschinen“.`});
   const G=steckbrief(S.region,{fen:1}), auf=FI_AUF.has('gebiet+');
-  h+=fenster('gebiet','Dein Gebiet',`<div class="kv"><span>${G.name}</span><span>${G.art}</span></div><div class="sb fklapp"${auf?'':' hidden'}>${G.rumpf}</div>`,{buch:'gebiete',
+  h+=fenster('gebiet','Dein Gebiet',`<div class="gkopf"><img class="gs" src="bilder/gebiet-${S.region}.webp" alt=""><div class="kv"><span>${G.name}</span><span>${G.art}</span></div></div><div class="sb fklapp"${auf?'':' hidden'}>${G.rumpf}</div>`,{buch:'gebiete',
     kn:`<button class="klein sec" data-a="klapp" data-id="gebiet" data-auf="Zuklappen" data-zu="Steckbrief zeigen">${auf?'Zuklappen':'Steckbrief zeigen'}</button>`,
     i:'Jedes Gebiet hat eine eigene Stärke. In warmen Gebieten gibt es öfter edelsüße Weine, in kühlen öfter Eiswein, in der Mitte mehr Medaillen oder mehr Geld. Der Steckbrief zeigt, welche Sorten hier passen, was sich lohnt und wie du am besten vorgehst.'});
   return h+zu;
@@ -2921,7 +2957,7 @@ function render(){
   if(TAB==='feier'){$('#app').innerHTML=v; feierStart(); return}
   const tabs=[['gut','🏡','Weingut'],['keller',FASS,'Kellerei'],['stadt','🏛️','Stadt']], B=badges();
   if(TAB==='monat'){$('#app').innerHTML=v; zWehen(); return}
-  $('#app').innerHTML=`<div id="top"><div class="wtr" data-a="wetterInfo"><b>${MON[S.monat]} ${S.jahr}</b><small>${wetterText()} · ${R().name}</small></div><div class="geld" data-a="geldInfo"><b>${geldKurz(S.geld)}</b><small>${RAENGE[S.rang].kurz} · ${S.ansehen} Ansehen</small></div></div>
+  $('#app').innerHTML=`<div id="top"><div class="wtr" data-a="wetterInfo"><b>${MON[S.monat]} ${S.jahr}</b><small>${wetterText()} · ${R().name}</small></div><div class="geld" data-a="geldInfo"><b>${geldKurz(S.geld)}</b><small>${rangK(S.rang)} · ${S.ansehen} Ansehen</small></div></div>
   <main>${v}</main>
   <nav id="dock">${SUBS[TAB]?`<div id="subs">${SUBS[TAB].map(s=>`<button class="${SUB===s[0]?'an':''}" data-a="sub" data-id="${s[0]}"><i>${s[1]}</i><b>${SUB_NAME[s[0]]}</b>${SUB===s[0]?'':badge(B[TAB+'/'+s[0]])}</button>`).join('')}</div>`:''}<div id="tabs">${tabs.map(t=>`<button class="${TAB===t[0]?'an':''}" data-a="tab" data-id="${t[0]}"><span>${t[1]}</span>${t[2]}${badge(B[t[0]])}</button>`).join('')}<button id="weiter" class="${fehlt?'zu':''}" data-a="weiter"><span>${fehlt?'🔒':'▶'}</span>${fehlt?'Leute fehlen':'Nächster Monat'}</button></div></nav>`;
   panoStell();
@@ -2975,9 +3011,12 @@ const AKT={
   fi(d,e){const f=e.target.closest('.fen'), b=f.querySelector('.fi'), x=f.querySelector('.finfo'), auf=x.hidden; x.hidden=!auf; b.classList.toggle('an',auf); b.setAttribute('aria-expanded',auf); if(auf) FI_AUF.add(d.id); else FI_AUF.delete(d.id)},
   // Zugeklappter Teil eines Fensters (Steckbrief im Weinberg): auf und zu ohne neues Zeichnen, offen bleibt er bis zum Ortswechsel.
   klapp(d,e){const b=e.target.closest('button'), x=b.closest('.fen').querySelector('.fklapp'), auf=x.hidden; x.hidden=!auf; b.textContent=auf?d.auf:d.zu; if(auf) FI_AUF.add(d.id+'+'); else FI_AUF.delete(d.id+'+')},
-  region(d){NEU.name=$('#nm').value;NEU.region=d.id;render()},
-  neuOpt(d){NEU.name=$('#nm').value;NEU[d.k]=d.k==='gegner'?+d.v:d.v;const y=window.scrollY;render();window.scrollTo(0,y)},
-  start(){NEU.name=$('#nm').value;neuesSpiel();window.scrollTo(0,0)},
+  region(d){neuLies();NEU.region=d.id;const y=window.scrollY;render();window.scrollTo(0,y)},
+  neuOpt(d){neuLies();NEU[d.k]=d.v;const y=window.scrollY;render();window.scrollTo(0,y)},
+  // Seit 7.9: Namen im Büro nachtragen (alte Spielstände oder leer gelassen).
+  bAnrede(d,e){for(const b of e.target.closest('.zwei').children) b.classList.toggle('an',b.dataset.v===d.v)},
+  namenJa(){const i=($('#bnI').value||'').trim().slice(0,30), g=($('#bnG').value||'').trim().slice(0,30), a=document.querySelector('#bnA .an'); if(!i) return meldung('Dein Name fehlt','Trag oben deinen Namen ein, dann speichere noch einmal.'); S.ich=i; if(g) S.name=g; S.anrede=a&&a.dataset.v==='w'?'w':'m'; save(); render()},
+  start(){neuLies();neuesSpiel();window.scrollTo(0,0)},
   auktion(){
     const a=S.auktion; if(!a) return;
     // Angekündigt: nur der Hinweis, geboten wird erst nächsten Monat.
@@ -3056,7 +3095,7 @@ const AKT={
   },
   urkunde(d){
     const e=(S.ehrungen||[])[+d.n]; if(!e) return; const i=urkRang(e);
-    openSheet(`<h2>🎖️ ${esc(RAENGE[i].name)}</h2>${urkHtml(i,e.m||0,e.j||S.jahr,'gross')}${e.x?`<div class="mut" style="margin:10px 0">${esc(e.x)}</div>`:''}<div class="btns"><button data-a="close">Schließen</button></div>`,'auf');
+    openSheet(`<h2>🎖️ ${esc(e.w&&RAENGE[i].w||RAENGE[i].name)}</h2>${urkHtml(i,e.m||0,e.j||S.jahr,'gross','n' in e?e:{n:'',w:0})}${e.x?`<div class="mut" style="margin:10px 0">${esc(e.x)}</div>`:''}<div class="btns"><button data-a="close">Schließen</button></div>`,'auf');
   },
   sub(d){SUB=d.id;render();window.scrollTo(0,0)},
   arbeitsamt(){closeSheet();geh('stadt','arbeit');render();window.scrollTo(0,0)},
