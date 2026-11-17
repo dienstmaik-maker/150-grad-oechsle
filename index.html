@@ -1717,6 +1717,8 @@ function monatWeiter(){
   if(S.pleite) zeigePleite(); else if(S.pruefer) zeigePruefer(); else if(erbeOffen()) zeigeErbe(); else if(S.erz) zeigeErz();
 }
 // ---- Spielende: Sonderausgabe und Bestenliste ----
+// 7.8: Einzahl bei genau einem Jahr ("nach 1 Jahr" statt "nach 1 Jahren").
+function jahreTxt(n){return n===1?'1 Jahr':n+' Jahren'}
 function spielJahre(){return Math.max(1,Math.round(S.jahr-START_JAHR+S.monat/12))}
 function platzDu(){return 1+S.gegner.filter(g=>g.rang>S.rang||g.rang===S.rang&&g.ansehen>S.ansehen).length}
 function endStand(){return {jahre:spielJahre(),rang:S.rang,platz:platzDu(),verm:vermoegen(),ans:S.ansehen}}
@@ -1769,12 +1771,12 @@ function flascheSieg(){
 function siegSpieler(){
   S.sieger=S.name; const st=endStand(), fl=flascheSieg();
   // Seit 7.7 steht Frau Öchsle mit ihrem Käse im Sieg-Kapitel der Feier, die Bestenliste wird schon beim Aufstieg erneuert.
-  schlag(100,`Du bist Präsident!`,`Nach ${st.jahre} Jahren ${WO[S.region]} wählt der Weinbauverband dich an seine Spitze. Du hast die Partie gewonnen! Der Stuhl im Festsaal gehört jetzt dir.${fl} Unten steht deine Bilanz. Du kannst weiterspielen oder ein neues Spiel beginnen.`,fl?GEN_BILD.sieg:'sieg',{gold:1,sonder:1,ende:1,stand:st});
+  schlag(100,`Du bist Präsident!`,`Nach ${jahreTxt(st.jahre)} ${WO[S.region]} wählt der Weinbauverband dich an seine Spitze. Du hast die Partie gewonnen! Der Stuhl im Festsaal gehört jetzt dir.${fl} Unten steht deine Bilanz. Du kannst weiterspielen oder ein neues Spiel beginnen.`,fl?GEN_BILD.sieg:'sieg',{gold:1,sonder:1,ende:1,stand:st});
 }
 const SIEG_SPRUCH={vorsicht:'„Immer schön langsam, dann wird das schon“, sagt sie beim Anstoßen.',qualitaet:'„Qualität setzt sich eben durch“, sagt er und meint vor allem sich selbst.',zocker:'„Alles auf eine Karte, und die Karte hat gestochen“, grinst er in die Kameras.'};
 function gegnerSieg(g,wo){
   S.sieger=g.name; const st=endStand();
-  schlag(100,`${g.name} ist Präsident!`,`${g.name} ${wo} wird nach ${st.jahre} Jahren Präsident des Weinbauverbands und gewinnt die Partie. ${SIEG_SPRUCH[g.typ]||''} Der Stuhl im Festsaal ist besetzt${S.gesch&&S.gesch.flasche&&!S.flascheAuf?', und deine Flasche vom ersten Jahrgang bleibt im Fach':''}. Aber Stühle werden auch wieder frei. Kopf hoch: Du kannst weiterspielen und deinen eigenen Aufstieg vollenden.`,'gegnerpraesident',{sonder:1,ende:1,stand:st});
+  schlag(100,`${g.name} ist Präsident!`,`${g.name} ${wo} wird nach ${jahreTxt(st.jahre)} Präsident des Weinbauverbands und gewinnt die Partie. ${SIEG_SPRUCH[g.typ]||''} Der Stuhl im Festsaal ist besetzt${S.gesch&&S.gesch.flasche&&!S.flascheAuf?', und deine Flasche vom ersten Jahrgang bleibt im Fach':''}. Aber Stühle werden auch wieder frei. Kopf hoch: Du kannst weiterspielen und deinen eigenen Aufstieg vollenden.`,'gegnerpraesident',{sonder:1,ende:1,stand:st});
 }
 // Alles, was Etappe 3 beim Monatswechsel tut: Aufstieg, Gegner, Wettbewerbe, Auktion, Märkte.
 function etappe3Monat(Z){
@@ -1906,7 +1908,7 @@ function aufgaben(){
   if(S.auktion&&S.auktion.phase!==0&&!S.auktion.ende&&S.rang>=R_AUKTION) A.push({t:`🔨 Auktion diesen Monat: ${S.auktion.ha}\u00a0Hektar, Gebot steht bei ${eur(S.auktion.gebot)}`,akt:'auktion'});
   if(S.wett&&!S.wett.fertig&&!S.wett.ein&&S.rang>=wettRang()&&!aufgabeAktiv('wett')) A.push({t:`🏅 ${WETTNAME[S.wett.typ]}: diesen Monat einen Wein einreichen`,akt:'wettbewerb'});
   if(fehlText()) A.push({t:`${fehlText()}, vorher geht es nicht in den nächsten Monat`,rot:1,tab:'stadt',sub:'arbeit'});
-  if(m>=5&&m<=10&&leseFaktor()<1&&R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)) A.push({t:`Ernteleistung reicht nur für ${Math.round(leseFaktor()*100)}\u00a0% der Reben`,rot:1,tab:'stadt',sub:'arbeit'});
+  if(m>=5&&m<=10&&leseFaktor()<.75&&R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)) A.push({t:`Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0% der Reben`,rot:1,tab:'stadt',sub:'arbeit'});
   for(const l of S.lots) if(l.status==='trauben') A.push(aufgabeAktiv('keltern')?{t:`${SORTEN[l.sorte].name}-Trauben: dein ${MGR_BEREICHE.keller.name} keltert beim Weiterblättern`,tab:'keller',ruhig:1}:{t:`${SORTEN[l.sorte].name}-Trauben müssen diesen Monat gekeltert werden`,rot:1,tab:'keller'});
   for(const l of S.lots) if(l.status==='fass'){
     if(l.stufe==='feder') A.push({t:`Federweißer ${SORTEN[l.sorte].name} muss diesen Monat abgefüllt werden`,rot:1,tab:'keller'});
@@ -2080,10 +2082,12 @@ const KAPITEL=[null,
   ['Dein erstes Hoffest, Lampions in den Bäumen, der ganze Verband an deiner Tafel.','Die Winzer von nebenan, die auf deinen ersten Fehler gewartet haben, warten jetzt auf eine Einladung.','Du hast allen eine geschickt.','Fast allen.'],
   ['Im Festsaal sitzt du jetzt direkt neben dem großen Stuhl, das rote Kissen darauf ist frisch aufgeschüttelt.','Der Präsident flüstert dir zu: „Mein Stuhl ist bequem. Lass dir ruhig noch etwas Zeit.“'],
   null];
+// 7.8: Wer die Anzeige gelesen hat, je Generation. Neutral, weil das Spiel das Geschlecht der ersten Generation nicht kennt.
+const VORFAHREN=['Deine Eltern','Deine Großeltern','Deine Urgroßeltern','Deine Vorfahren'];
 function kapitel(k){
   if(k===0) return GESCHICHTE;
   if(k===9) return ['Der Stuhl gehört dir.','Von der besten Lage siehst du das ganze Tal, auch den Hang, der einmal kahl war.',
-    ...(genNr()>1?['Dein Großvater hat einmal eine kleine Anzeige gelesen.','Heute sitzt die Familie ganz oben.']:['Alles fing mit einer kleinen Anzeige in der Zeitung an, und die halbe Welt hat dagegen gewettet.']),
+    ...(genNr()>1?[`${VORFAHREN[Math.min(genNr(),5)-2]} haben einmal eine kleine Anzeige gelesen.`,'Heute sitzt die Familie ganz oben.']:['Alles fing mit einer kleinen Anzeige in der Zeitung an, und die halbe Welt hat dagegen gewettet.']),
     // Flaschen-Satz nur, wenn die Flasche vom ersten Jahrgang in dieser Partie ins Fach kam (Maik 17.11.2026).
     ...(S.gesch&&S.gesch.flasche?['Und die Flasche vom ersten Jahrgang ist endlich offen.']:[]),
     'Unten im Keller bekommt Frau Öchsle heute ein ganzes Stück Käse.'];
@@ -3215,7 +3219,7 @@ const AKT={
     const f=S.felder[d.id], so=SORTEN[d.id];
     const opt=['reif','ueber','alles'].map(la=>{const b=besteStufe(feldQ(f,la)),l=feldLiter(f,la);
       return `<button class="wahl" data-a="leseFrage" data-id="${d.id}" data-la="${la}" ${l<=0?'disabled':''}><b>${LESE[la]}</b><br><span class="mut">${num(l)}\u00a0l mit ${feldQ(f,la).oe}° Öchsle · reicht für: ${b?stufeText(b,feldQ(f,la).oe):'nichts'}${b?`<br>💶 Wert rund ${eur(leseWert(d.id,la,b,l))}<br>${verkaufAb(d.id,b)}`:''}</span></button>`}).join('');
-    openSheet(`${sbild('lese')}<h3>${so.name} lesen</h3><p class="mut">Jedes Feld liest du nur einmal im Jahr. Was die Leseart nicht mitnimmt, ist danach verloren. Die Trauben müssen noch diesen Monat gekeltert werden.</p>${f.gefroren?`<p class="hilfe" style="margin:0 0 10px">${eisFehlt(f)?eisFehlt(f)+'. Es reicht nur für die Stufen oben.':'Eiswein gibt es nur aus reifen oder aus überreifen Trauben, nicht aus beiden zusammen.'}</p>`:S.monat===10?`<p class="hilfe" style="margin:0 0 10px">${frostText()}. Nur dann wird aus hängenden Trauben Eiswein, sonst verfaulen sie.</p>`:S.monat===9&&S.kaelteWarn===S.jahr?'<p class="rot">Die Vorhersage meldet einen Kälteeinbruch im November.</p>':''}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.round(leseFaktor()*100)}\u00a0%. Den Rest liest keiner, er ist verloren.</p>`:''}${opt}${mib('lese')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
+    openSheet(`${sbild('lese')}<h3>${so.name} lesen</h3><p class="mut">Jedes Feld liest du nur einmal im Jahr. Was die Leseart nicht mitnimmt, ist danach verloren. Die Trauben müssen noch diesen Monat gekeltert werden.</p>${f.gefroren?`<p class="hilfe" style="margin:0 0 10px">${eisFehlt(f)?eisFehlt(f)+'. Es reicht nur für die Stufen oben.':'Eiswein gibt es nur aus reifen oder aus überreifen Trauben, nicht aus beiden zusammen.'}</p>`:S.monat===10?`<p class="hilfe" style="margin:0 0 10px">${frostText()}. Nur dann wird aus hängenden Trauben Eiswein, sonst verfaulen sie.</p>`:S.monat===9&&S.kaelteWarn===S.jahr?'<p class="rot">Die Vorhersage meldet einen Kälteeinbruch im November.</p>':''}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0%. Den Rest liest keiner, er ist verloren.</p>`:''}${opt}${mib('lese')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
   },
   // Version 5.1 (Paket 10): Sicherheitsabfrage, bevor gelesen wird. "Zurück" führt wieder zur Wahl der Leseart.
   leseFrage(d){
