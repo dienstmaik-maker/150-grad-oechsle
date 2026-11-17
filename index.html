@@ -2505,27 +2505,35 @@ function vKellerStart(){
     i:sektI+(ms?` Dein ${KM} macht Sekt, bis die Sekt-Schwelle erreicht ist, mehr machst du von Hand.`:'')});
   return h+vorrat;
 }
-// Lager: hier werden Fässer und Flaschen gekauft.
+// Lager (seit 7.4 auf dem Fenster-Baustein): Fässer, Flaschen, Kellerausbau. Der Zustand steht als Zeilen im Fenster, die Erklärungen im i.
+// Was der Kellermeister von selbst kauft, steht als kurzer Hinweis im Fenster, ob er dafür Lagerarbeiter einstellt, im i.
 function vLager(){
-  const bel=fassBelegt();
-  return `<div class="card"><h3>Fässer</h3>
-    <div class="kv"><span>Fassraum belegt</span><span>${num(bel)} von ${num(S.fassraum)}\u00a0l</span></div><div class="bar w"><i style="width:${S.fassraum?bel/S.fassraum*100:0}%"></i></div>
-    <div class="mut">Deine Lagerarbeiter (${S.lagerarb}) betreuen bis zu ${num(S.lagerarb*FASS_JE_LAGERARB)}\u00a0l Fassraum.</div>
-    ${(k=>kz(`Möglich sind noch ${num(Math.max(0,k))}\u00a0l.`,pk('kaufFass','Kaufen',eur2(fassPreis()),{klein:'je Liter',arm:k<500||S.geld<500*fassPreis()})))(S.lagerarb*FASS_JE_LAGERARB-S.fassraum)}</div>
-  ${kellerAusHtml()}
-  <div class="card"><h3>Flaschen</h3>
-    <div class="kv"><span>Leere Flaschen (1 l)</span><span>${num(S.flaschen)}</span></div>
-    <div class="mut">Deine Lagerarbeiter betreuen bis zu ${num(S.lagerarb*FLASCHEN_JE_LAGERARB)} leere Flaschen.</div>
-    ${(k=>kz(`Möglich sind noch ${num(Math.max(0,k))} Flaschen.`,pk('kaufFlaschen','Kaufen',eur2(flaschePreis()),{klein:'je Flasche',arm:k<100||S.geld<100*flaschePreis()})))(S.lagerarb*FLASCHEN_JE_LAGERARB-S.flaschen)}</div>`;
+  const bel=fassBelegt(), KM=MGR_BEREICHE.keller.name, la=aufgabeAktiv('lager'), mk=aufgabeAktiv('keltern'), mf=aufgabeAktiv('flaschen');
+  const kf=S.lagerarb*FASS_JE_LAGERARB-S.fassraum, kl=S.lagerarb*FLASCHEN_JE_LAGERARB-S.flaschen;
+  const leute=la?' Fehlen dafür Lagerarbeiter, stellt er sie ein.':' Fehlen dafür Lagerarbeiter, kauft er nichts.';
+  return fenster('faesser','Fässer',`<div class="kv"><span>Fassraum belegt</span><span>${num(bel)} von ${num(S.fassraum)} l</span></div><div class="bar w"><i style="width:${S.fassraum?bel/S.fassraum*100:0}%"></i></div>
+    <div class="kv"><span>Lagerarbeiter (${S.lagerarb}) betreuen</span><span>bis ${num(S.lagerarb*FASS_JE_LAGERARB)} l</span></div>`,{
+    hin:[mk&&`🍷 Dein ${KM} kauft fehlenden Fassraum beim Keltern dazu.`],
+    links:kf<500?'Für mehr Fassraum brauchst du mehr Lagerarbeiter.':`Möglich sind noch ${num(kf)} l.`,
+    kn:pk('kaufFass','Kaufen',eur2(fassPreis()),{klein:'je Liter',arm:kf<500||S.geld<500*fassPreis()}),
+    i:`Fassraum brauchst du zum Keltern, kauf ihn am besten vor der Lese. Ein Lagerarbeiter betreut ${num(FASS_JE_LAGERARB)} l Fassraum. Der Preis schwankt jeden Monat.${mk?` Dein ${KM} kauft beim Keltern nur so viel, wie gerade fehlt.${leute}`:''}`})
+  +fenster('flaschen','Flaschen',`<div class="kv"><span>Leere Flaschen (1 l)</span><span>${num(S.flaschen)}</span></div>
+    <div class="kv"><span>Lagerarbeiter (${S.lagerarb}) betreuen</span><span>bis ${num(S.lagerarb*FLASCHEN_JE_LAGERARB)}</span></div>`,{
+    hin:[mf&&`🍷 Dein ${KM} kauft fehlende Flaschen beim Abfüllen dazu.`],
+    links:kl<100?'Für mehr Flaschen brauchst du mehr Lagerarbeiter.':`Möglich sind noch ${num(kl)} Flaschen.`,
+    kn:pk('kaufFlaschen','Kaufen',eur2(flaschePreis()),{klein:'je Flasche',arm:kl<100||S.geld<100*flaschePreis()}),
+    i:`Leere Flaschen brauchst du zum Abfüllen, ein Liter je Flasche. Kauf sie am besten vor dem Abfüllen. Ein Lagerarbeiter betreut ${num(FLASCHEN_JE_LAGERARB)} leere Flaschen. Der Preis schwankt jeden Monat.${mf?` Dein ${KM} kauft beim Abfüllen nur so viele, wie gerade fehlen.${leute}`:''}`})
+  +kellerAusHtml();
 }
-// Kellerausbau in drei Stufen ab Winzer.
+// Kellerausbau in drei Stufen ab Jungwinzer (R_KELLER). Vorher steht das Fenster zugeklappt mit Schloss unten im Lager.
 function kellerAusHtml(){
   const K=S.keller||0, pr=KELLER_PREISE[K], N=KELLER_PREISE.length;
   const was='Jede Stufe lässt Prädikatsweine und Eiswein einen Monat früher verkaufsreif werden, und jeder Wein gewinnt beim Reifen in der Flasche schneller an Wert.';
-  let h=`<div class="card"><h3>🏗️ Kellerausbau</h3><div class="kv"><span>Ausgebaut</span><span>Stufe ${K} von ${N}</span></div><div class="bar w"><i style="width:${K/N*100}%"></i></div>`;
-  if(pr==null) return h+`<div class="mut">Dein Keller ist fertig ausgebaut. Prädikatsweine und Eiswein sind ${N} Monate früher verkaufsreif.</div></div>`;
-  if(S.rang<R_KELLER) return h+`<div class="mut">${was} Ausbauen kannst du ab dem Rang ${RAENGE[R_KELLER].name}.</div></div>`;
-  return h+`<div class="mut">${was}</div>${kz('',pk('kellerAus','Ausbauen',eur(pr),{klein:`Stufe ${K+1}`,arm:S.geld<pr}))}</div>`;
+  if(pr!=null&&S.rang<R_KELLER) return fenster('ausbau','Kellerausbau','',{zu:`ab dem Rang ${RAENGE[R_KELLER].name}`,i:`${was} Ausbauen kannst du ab dem Rang ${RAENGE[R_KELLER].name}.`});
+  const stand=`<div class="kv"><span>Ausgebaut</span><span>Stufe ${K} von ${N}</span></div><div class="bar w"><i style="width:${K/N*100}%"></i></div>
+    ${K?`<div class="kv"><span>Prädikatswein und Eiswein</span><span>${K} ${K===1?'Monat':'Monate'} früher reif</span></div>`:''}`;
+  if(pr==null) return fenster('ausbau','Kellerausbau',stand+`<div class="fleer" style="margin-top:6px">Dein Keller ist fertig ausgebaut.</div>`,{i:was});
+  return fenster('ausbau','Kellerausbau',stand,{kn:pk('kellerAus','Ausbauen',eur(pr),{klein:`Stufe ${K+1}`,arm:S.geld<pr}),i:was});
 }
 // Hintertür im Keller: Panschen und Sabotage.
 function vSabotage(){
