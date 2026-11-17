@@ -743,12 +743,13 @@ function dateiLaden(text,i){
 // Musik: Beim Ortswechsel blendet das alte Stück aus und das neue ein. Jedes Stück merkt sich seine Stelle und spielt dort später weiter.
 // Kurz vor dem Ende blendet ein zweiter Abspieler vom Anfang her ein, so läuft das Stück im Kreis ohne Bruch.
 // Version 7.8: Musik hat drei Stellungen: 'an' (Dauermusik wie bisher), 'kurz' (Grundstellung) und 'aus'. Alte Einstellungen: an wird kurz, aus bleibt aus.
-// laut: Lautstärke der Musik in Prozent, einstellbar mit dem Regler (Version 7.8, vorher fest 50). Geräusche laufen weiter voll.
-const TON={musik:'kurz',fx:true,laut:50};
+// laut und fxLaut: Lautstärke von Musik und Geräuschen in Prozent, je ein Regler (Version 7.8, vorher fest 50 und 100).
+const TON={musik:'kurz',fx:true,laut:50,fxLaut:100};
 try{Object.assign(TON,JSON.parse(localStorage.getItem(TON_KEY)||'{}'))}catch(e){}
 if(TON.musik===true) TON.musik='kurz'; if(TON.musik===false) TON.musik='aus';
 if(!['an','kurz','aus'].includes(TON.musik)) TON.musik='kurz';
 if(!(TON.laut>=0&&TON.laut<=100)) TON.laut=50;
+if(!(TON.fxLaut>=0&&TON.fxLaut<=100)) TON.fxLaut=100;
 const MUSIK={gut:'weingut',keller:'kellerei',stadt:'stadt',wett:'wettbewerb',auf:'befoerderung',pfand:'pfaendung'};
 // Die Lautstärke der Musik steht seit 7.8 in TON.laut (Regler). BLENDE: Sekunden fürs Überblenden beim Ortswechsel, KREIS: am Ende eines Stücks. TAKT: Schritt des Mischers in ms.
 const BLENDE=1.5, KREIS=3, TAKT=50;
@@ -819,9 +820,12 @@ function musikStell(neu){
   }
   P.ende=performance.now()+KURZ*1000; a.z=1; a.dt=KURZ_BLENDE; spiel(a.el);
 }
-// Regler für die Musik-Lautstärke. Wirkt sofort auf alles, was gerade spielt, und wird gemerkt.
-function musikRegler(){return `<label class="mut" style="display:block;width:100%;margin-top:8px">🎚️ Musik-Lautstärke: <b class="mlz">${TON.laut}\u00a0%</b><input type="range" min="0" max="100" step="5" value="${TON.laut}" oninput="musikLaut(this.value)"></label>`}
-function musikLaut(v){TON.laut=+v; for(const n in MSP) for(const s of MSP[n].s) if(s) laut(s); document.querySelectorAll('.mlz').forEach(e=>e.textContent=TON.laut+'\u00a0%'); try{localStorage.setItem(TON_KEY,JSON.stringify(TON))}catch(e){}}
+// Version 7.8: Ton als zwei Zeilen untereinander, je Knopf und Regler daneben (Maik 17.11.2026). Die Knöpfe sind gleich breit, damit die Regler bündig stehen.
+function tonZeile(id,knopf,k){return `<div style="display:flex;align-items:center;gap:10px;margin:8px 0"><button class="sec klein" data-a="ton" data-id="${id}" style="flex:0 0 11.5em;margin:0">${knopf}</button>`
+  +`<input type="range" min="0" max="100" step="5" value="${TON[k]}" oninput="tonLaut('${k}',this.value)" style="flex:1;min-width:0" aria-label="Lautstärke"><b class="tlz-${k}" style="flex:0 0 3em;text-align:right">${TON[k]}\u00a0%</b></div>`}
+function tonZeilen(){return tonZeile('musik',`🎵 Musik: ${musikText()}`,'laut')+tonZeile('fx',`🔔 Geräusche: ${TON.fx?'an':'aus'}`,'fxLaut')}
+// Regler bewegt: wirkt sofort (Musik auch auf das, was gerade spielt) und wird gemerkt.
+function tonLaut(k,v){TON[k]=+v; if(k==='laut') for(const n in MSP) for(const s of MSP[n].s) if(s) laut(s); document.querySelectorAll('.tlz-'+k).forEach(e=>e.textContent=TON[k]+'\u00a0%'); try{localStorage.setItem(TON_KEY,JSON.stringify(TON))}catch(e){}}
 const musikText=()=>({an:'an',kurz:'kurz',aus:'aus'})[TON.musik];
 // Welches Stück gerade passt: Pfändung bei der Pleite, Wettbewerb im Wettbewerbs-Fenster und bei Medaillen, Beförderung beim Aufstieg, sonst das Stück des Ortes.
 function musikWahl(){
@@ -843,11 +847,11 @@ function fx(name,mal){
   if(!AN||!TON.fx) return;
   const t=performance.now(); if(name==='klick'&&t-FXT<80) return; FXT=t;
   for(let i=0;i<(mal||1);i++){
-    if(AC&&FXB[name]){const q=AC.createBufferSource(); q.buffer=FXB[name]; q.connect(AC.destination); q.start(AC.currentTime+i*.4)}
-    else setTimeout(()=>spiel(new Audio('ton/'+name+'.mp3')),i*400);
+    if(AC&&FXB[name]){const q=AC.createBufferSource(), g=AC.createGain(); g.gain.value=TON.fxLaut/100; q.buffer=FXB[name]; q.connect(g); g.connect(AC.destination); q.start(AC.currentTime+i*.4)}
+    else setTimeout(()=>{const el=new Audio('ton/'+name+'.mp3'); el.volume=TON.fxLaut/100; spiel(el)},i*400);
   }
 }
-function tonKnoepfe(){return `<div class="card"><h3>🔊 Ton</h3><div class="btns"><button class="sec klein" data-a="ton" data-id="musik">🎵 Musik: ${musikText()}</button><button class="sec klein" data-a="ton" data-id="fx">🔔 Geräusche: ${TON.fx?'an':'aus'}</button></div>${musikRegler()}</div>`}
+function tonKnoepfe(){return `<div class="card"><h3>🔊 Ton</h3>${tonZeilen()}</div>`}
 
 /* ================= Bilder ================= */
 // Alle Bilder liegen als Dateien im Ordner bilder (gebaut von _medien_bauen.py).
@@ -2575,7 +2579,7 @@ function vBuero(){
     +chronikHtml()
     +fenster('besten','Bestenliste',L.length?L.map(bestenZeile).join(''):[],{
       leer:'Noch leer.',buch:'ende',i:BESTEN_I})
-    +fenster('ton','Ton','',{kn:[`<button class="sec klein" data-a="ton" data-id="fx">🔔 Geräusche: ${TON.fx?'an':'aus'}</button>`,`<button class="sec klein" data-a="ton" data-id="musik">🎵 Musik: ${musikText()}</button>`,musikRegler()]})
+    +fenster('ton','Ton',tonZeilen())
     +fenster('spiel','Dein Spiel',`<div class="kv"><span>Speicherplatz</span><span>Spielstand ${SLOT+1}</span></div><div class="kv"><span>Schwierigkeit</span><span>${DIFF[S.schwer].name}</span></div>`,{
       links:'„Neues Spiel“ löscht diesen Spielstand und fängt von vorn an.',kn:[pk('menue','Spielstände','',{sec:1}),pk('neuFrage','Neues Spiel','',{sec:1})],buch:'bedienung',
       i:'Gespeichert wird von selbst nach jedem Monat. Unter „Spielstände“ lädst du einen anderen Spielstand oder sicherst ihn als Datei.'})
