@@ -475,7 +475,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='7.7.1';
+const VERSION='7.8';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -742,14 +742,20 @@ function dateiLaden(text,i){
 // Sechs Musikstücke und sieben Geräusche liegen als Dateien im Ordner ton (gebaut von _medien_bauen.py). Musik und Geräusche sind getrennt abschaltbar (TON).
 // Musik: Beim Ortswechsel blendet das alte Stück aus und das neue ein. Jedes Stück merkt sich seine Stelle und spielt dort später weiter.
 // Kurz vor dem Ende blendet ein zweiter Abspieler vom Anfang her ein, so läuft das Stück im Kreis ohne Bruch.
-const TON={musik:true,fx:true};
+// Version 7.8: Musik hat drei Stellungen: 'an' (Dauermusik wie bisher), 'kurz' (Grundstellung) und 'aus'. Alte Einstellungen: an wird kurz, aus bleibt aus.
+const TON={musik:'kurz',fx:true};
 try{Object.assign(TON,JSON.parse(localStorage.getItem(TON_KEY)||'{}'))}catch(e){}
+if(TON.musik===true) TON.musik='kurz'; if(TON.musik===false) TON.musik='aus';
+if(!['an','kurz','aus'].includes(TON.musik)) TON.musik='kurz';
 const MUSIK={gut:'weingut',keller:'kellerei',stadt:'stadt',wett:'wettbewerb',auf:'befoerderung',pfand:'pfaendung'};
 // MUSIK_LAUT: Lautstärke der Musik (Geräusche laufen voll). BLENDE: Sekunden fürs Überblenden beim Ortswechsel, KREIS: am Ende eines Stücks. TAKT: Schritt des Mischers in ms.
 const MUSIK_LAUT=.5, BLENDE=1.5, KREIS=3, TAKT=50;
+// Version 7.8, Stellung kurz: Beim Ortswechsel spielt das Stück KURZ Sekunden ab einer zufälligen Stelle, mit KURZ_BLENDE Sekunden Ein- und Ausblenden (Maik 17.11.2026).
+// Spielstart, Feier, Beförderung, Wettbewerb und Pfändung laufen auch bei kurz in voller Länge.
+const KURZ=8, KURZ_BLENDE=1;
 const TOENE=['klick','menue','kasse','korken','stempel','hammer','schere','fanfare'];
 // MORT ist das Stück, das gerade laufen soll. SMUSIK ist ein Stück, das ein offenes Fenster verlangt (Wettbewerb). MSP: Abspieler je Stück, FXB: geladene Geräusche.
-let AC=null, AN=false, MORT=null, SMUSIK=null, FXT=-1; const MSP={}, FXB={};
+let AC=null, AN=false, MORT=null, MKEY=null, SMUSIK=null, FXT=-1; const MSP={}, FXB={};
 // Als Datei geöffnet (file:) laufen die Töne ohne Web Audio, weil der Browser Nachbardateien dort nicht lesen lässt.
 const NETZ=location.protocol!=='file:';
 // Der Ton startet erst mit dem ersten Tipp, vorher lässt ihn kein Browser zu.
@@ -780,7 +786,8 @@ function mischer(){
       if(s.v===0&&s.z===0&&!s.el.paused) s.el.pause();
     }
     const a=P.s[P.akt], el=a.el;
-    if(n===MORT&&!P.fest&&a.z===1&&el.duration&&el.currentTime>el.duration-KREIS){
+    if(P.ende&&performance.now()>P.ende){P.ende=0; a.z=0; a.dt=KURZ_BLENDE}
+    if(n===MORT&&!P.fest&&!P.ende&&a.z===1&&el.duration&&el.currentTime>el.duration-KREIS){
       const b=P.s[1-P.akt]||(P.s[1-P.akt]=stimme(n));
       try{b.el.currentTime=0}catch(e){}
       a.z=0; b.z=1; a.dt=b.dt=KREIS; P.akt=1-P.akt;
@@ -789,16 +796,28 @@ function mischer(){
     }
   }
 }
-function musikOrt(name){if(name!==MORT){MORT=name; musikStell()}}
+// Version 7.8: Neu gestellt wird auch, wenn dasselbe Stück von voller Länge auf kurz wechselt (zum Beispiel vom Kaufvertrag ins Weingut).
+function musikOrt(name){const k=name+(musikVoll(name)?'!':''); if(k!==MKEY){MKEY=k; MORT=name; musikStell(true)}}
+// Stücke in voller Länge auch bei der Stellung kurz: Spielstart, Feier, Fenster mit eigenem Stück, Beförderung, Wettbewerb, Pfändung.
+function musikVoll(n=MORT){return !S||!!S.pleite||!!SMUSIK||TAB==='feier'||['auf','wett','pfand'].includes(n)}
 // Stellt die Ziele neu: Nur das Stück des Ortes spielt, alles andere blendet aus.
-function musikStell(){
+// neu: Der Ort hat gewechselt. Nur dann spielt bei der Stellung kurz ein kurzes Stück, sonst bleibt es still.
+function musikStell(neu){
   if(!AN) return;
-  const an=TON.musik&&MORT&&!document.hidden;
+  const an=TON.musik!=='aus'&&MORT&&!document.hidden;
   for(const n in MSP) if(!an||n!==MORT) for(const s of MSP[n].s) if(s){s.z=0; s.dt=BLENDE}
   if(!an) return;
   const P=MSP[MORT]||(MSP[MORT]={s:[stimme(MORT),null],akt:0}), a=P.s[P.akt];
-  a.z=1; a.dt=BLENDE; spiel(a.el);
+  if(TON.musik==='an'||musikVoll()){P.ende=0; a.z=1; a.dt=BLENDE; spiel(a.el); return}
+  if(!neu) return;
+  // Kurz: Läuft das Stück schon hörbar, spielt es von dort noch KURZ Sekunden weiter. Sonst startet es an einer zufälligen Stelle.
+  if(a.v===0||a.el.paused){
+    const el=a.el, setz=()=>{try{el.currentTime=Math.random()*Math.max(0,el.duration-KURZ-2*KURZ_BLENDE)}catch(e){}};
+    if(el.duration) setz(); else el.addEventListener('loadedmetadata',setz,{once:true});
+  }
+  P.ende=performance.now()+KURZ*1000; a.z=1; a.dt=KURZ_BLENDE; spiel(a.el);
 }
+const musikText=()=>({an:'an',kurz:'kurz',aus:'aus'})[TON.musik];
 // Welches Stück gerade passt: Pfändung bei der Pleite, Wettbewerb im Wettbewerbs-Fenster und bei Medaillen, Beförderung beim Aufstieg, sonst das Stück des Ortes.
 function musikWahl(){
   if(!S) return 'gut';
@@ -823,7 +842,7 @@ function fx(name,mal){
     else setTimeout(()=>spiel(new Audio('ton/'+name+'.mp3')),i*400);
   }
 }
-function tonKnoepfe(){return `<div class="card"><h3>🔊 Ton</h3><div class="btns"><button class="sec klein" data-a="ton" data-id="musik">🎵 Musik: ${TON.musik?'an':'aus'}</button><button class="sec klein" data-a="ton" data-id="fx">🔔 Geräusche: ${TON.fx?'an':'aus'}</button></div></div>`}
+function tonKnoepfe(){return `<div class="card"><h3>🔊 Ton</h3><div class="btns"><button class="sec klein" data-a="ton" data-id="musik">🎵 Musik: ${musikText()}</button><button class="sec klein" data-a="ton" data-id="fx">🔔 Geräusche: ${TON.fx?'an':'aus'}</button></div></div>`}
 
 /* ================= Bilder ================= */
 // Alle Bilder liegen als Dateien im Ordner bilder (gebaut von _medien_bauen.py).
@@ -2149,7 +2168,7 @@ function feierStart(){
   feierStopp();
   const F=S.feier||{von:S.rang-1,zu:S.rang};
   if(FSTUFE===0){
-    if(!TON.musik&&!F.start) FT.push(setTimeout(()=>fx('fanfare'),250));
+    if(TON.musik==='aus'&&!F.start) FT.push(setTimeout(()=>fx('fanfare'),250));
     // Das Kapitel kommt Satz für Satz im Takt der Geschichte, die Karte wächst dabei nach oben. Ohne Bewegung steht alles gleich da.
     const el=$('#feier'), karte=$('#feier .fkarte');
     if(matchMedia('(prefers-reduced-motion:reduce)').matches) return el.classList.add('alle');
@@ -2551,7 +2570,7 @@ function vBuero(){
     +chronikHtml()
     +fenster('besten','Bestenliste',L.length?L.map(bestenZeile).join(''):[],{
       leer:'Noch leer.',buch:'ende',i:BESTEN_I})
-    +fenster('ton','Ton','',{kn:[`<button class="sec klein" data-a="ton" data-id="fx">🔔 Geräusche: ${TON.fx?'an':'aus'}</button>`,`<button class="sec klein" data-a="ton" data-id="musik">🎵 Musik: ${TON.musik?'an':'aus'}</button>`]})
+    +fenster('ton','Ton','',{kn:[`<button class="sec klein" data-a="ton" data-id="fx">🔔 Geräusche: ${TON.fx?'an':'aus'}</button>`,`<button class="sec klein" data-a="ton" data-id="musik">🎵 Musik: ${musikText()}</button>`]})
     +fenster('spiel','Dein Spiel',`<div class="kv"><span>Speicherplatz</span><span>Spielstand ${SLOT+1}</span></div><div class="kv"><span>Schwierigkeit</span><span>${DIFF[S.schwer].name}</span></div>`,{
       links:'„Neues Spiel“ löscht diesen Spielstand und fängt von vorn an.',kn:[pk('menue','Spielstände','',{sec:1}),pk('neuFrage','Neues Spiel','',{sec:1})],buch:'bedienung',
       i:'Gespeichert wird von selbst nach jedem Monat. Unter „Spielstände“ lädst du einen anderen Spielstand oder sicherst ihn als Datei.'})
@@ -3055,7 +3074,8 @@ const AKT={
     ${p?`<div class="kv"><span>Gesamtwert</span><span>${eur(p*l.liter)}</span></div>`:''}
     ${kn.length?`<div class="btns">${kn.join('')}</div>`:''}<div class="btns"><button class="sec" data-a="close">Schließen</button></div>`);
   },
-  ton(d){TON[d.id]=!TON[d.id];try{localStorage.setItem(TON_KEY,JSON.stringify(TON))}catch(e){}tonAn();musikStell();const y=window.scrollY;render();window.scrollTo(0,y)},
+  // Version 7.8: Musik schaltet reihum an, kurz, aus. Beim Umschalten auf kurz kommt gleich eine Hörprobe.
+  ton(d){if(d.id==='musik') TON.musik={an:'kurz',kurz:'aus',aus:'an'}[TON.musik]||'kurz'; else TON[d.id]=!TON[d.id];try{localStorage.setItem(TON_KEY,JSON.stringify(TON))}catch(e){}tonAn();musikStell(d.id==='musik');const y=window.scrollY;render();window.scrollTo(0,y)},
   /* ---- Spielstände ---- */
   menue(){if(S)save();closeSheet();S=null;START=null;render();window.scrollTo(0,0)},
   slotLaden(d){const o=lies(+d.id);if(!o)return;SLOT=+d.id;nimm(o);geh('gut');save();render();window.scrollTo(0,0)},
