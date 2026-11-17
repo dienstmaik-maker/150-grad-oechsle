@@ -757,7 +757,7 @@ const num=n=>Math.round(n).toLocaleString('de-DE'), eur=n=>num(n)+'\u00a0€';
 const eur2=n=>n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+'\u00a0€';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const misch=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rint(0,i);[a[i],a[j]]=[a[j],a[i]]}return a};
-const neuStart=()=>({name:'',ich:'',anrede:'m',region:'mosel',gegner:3,schwer:'mittel'});
+const neuStart=()=>({name:'',ich:'',anrede:'m',region:'mosel',gegner:3,schwer:'mittel',fu:'1'});
 let S=null, TAB='gut', SUB='betrieb', NEU=neuStart(), SLOT=0, START=null, ZIEL=0;
 // Menü (seit 4.0): drei Hauptreiter unten (Weingut, Kellerei, Stadt), direkt darüber die Leiste mit ihren Orten. Wischen über das Bild wechselt auch den Ort.
 // Die Reihenfolge der Orte folgt den Motiven im Panoramabild von links nach rechts. Je Ort: Kennung und Symbol für den Titel im Bild.
@@ -810,7 +810,7 @@ function roh(i){try{const o=JSON.parse(localStorage.getItem(KEYS[i])||'null');re
 function lies(i){const o=roh(i);return o&&o.v7?o:null}
 function liesAlt(i){const o=roh(i);return o&&!o.v7?o:null}
 // Übernimmt einen gelesenen Spielstand und bringt alte Stände auf den heutigen Stand.
-function nimm(o){S=o;if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();if(!S.fu)S.fu=fuAlt()}
+function nimm(o){S=o;if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();if(!S.fu)S.fu=fuAlt(); else fuPaketB()}
 // Seit 8.0: Maschinen aus älteren Spielständen bekommen ihren Typ (vorher gross:1 oder nichts), sonst bleibt alles, wie es war.
 function altMasch(){for(const ma of S.maschinen||[]) if(!MASCH[ma.typ]){ma.typ=ma.gross?'gross':'klein'; delete ma.gross}}
 // Alte Spielstände mit sechs Rängen: Rang des Spielers und der Gegner auf die zehn Stufen umrechnen. S.v3 merkt sich, dass das passiert ist.
@@ -1599,6 +1599,7 @@ function neuesSpiel(){
   S={v:1,v7:1,name:NEU.name.trim()||'Weingut Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:START_GELD,ha:3,boden:80,duengungen:0,
     felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',sonne:0,markt:1,ansehen:0,
     jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:1,lagerarb:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu()};
+  if(NEU.fu==='0') S.fu.an=0;
   for(const id of reg.sorten){S.felder[id]={reben:0,jung:0}; feldReset(S.felder[id])}
   etappe3(3,NEU.schwer);
   lohnAbgleich();
@@ -1629,10 +1630,9 @@ function verfallListe(){
 // Der Winzerbote: Themen melden sich mit schlag() in TOP, das wichtigste wird Schlagzeile, der Rest Artikel. FUSS sammelt Kurzes für ganz unten.
 let TOP=[], FUSS=[];
 // p ist die Wichtigkeit, bild ein Foto aus bilder/, o weitere Angaben (archiv, sonder, gold, ende, liste, stand, wett).
-// Version 4.1: Rat vom alten Winzer, ein Tipp je Ausgabe in den ersten zwei Spieljahren (Texte in anleitung.js, Ausgabe 1 = erster Januar).
+// Version 4.1 bis 8.0: Rat vom alten Winzer, ein Tipp je Ausgabe in den ersten zwei Spieljahren. Seit 8.1 (Paket B, Maik 17.11.2026) gibt es den Rat
+// nur noch als Sprechblase des Spielführers, die Ecke im Winzerboten füllt von Anfang an die Rubrik (Annahme Claude).
 function ratHtml(b,k){
-  const r=typeof RAT!=='undefined'&&!k.sonder&&!k.ende&&RAT[(b.nr||1)-1];
-  if(r) return `<div class="zrat"><h4>🧓 Rat vom alten Winzer</h4>${esc(r)}</div>`;
   const u=!k.sonder&&!k.ende&&b.rub&&typeof b.rub==='object'?b.rub:null;
   return u?`<div class="zrat"><h4>${esc(u.h)}</h4>${esc(u.text)}${u.von?`<br><i>${esc(u.von)}</i>`:''}</div>`:'';
 }
@@ -1640,8 +1640,6 @@ function ratHtml(b,k){
 function ratAus(b){
   if(!b||!b.kopf) return null; const k=b.kopf;
   if(k.sonder||k.ende) return null;
-  const r=typeof RAT!=='undefined'&&RAT[(b.nr||1)-1];
-  if(r) return {h:'🧓 Rat vom alten Winzer',text:r.split(' 👆')[0].trim(),von:''};
   const u=b.rub&&typeof b.rub==='object'?b.rub:null;
   return u?{h:u.h,text:u.text,von:u.von||''}:null;
 }
@@ -1811,7 +1809,7 @@ const RUBRIK={
     '„Das Wetter macht den Jahrgang, der Winzer den Wein.“','„Reich wird man im Keller, nicht am Marktstand.“','„Die Rebe wächst langsam, der gute Ruf noch langsamer.“']}
 };
 function rubrikNeu(nr){
-  if(!S||(typeof RAT!=='undefined'&&RAT[nr-1])||nr<=24) return null;
+  if(!S) return null;
   if(!Array.isArray(S.rubSack)||!S.rubSack.length){
     const A=Object.keys(RUBRIK).flatMap(k=>RUBRIK[k].t.map((_,i)=>k+i));
     for(let i=A.length-1;i>0;i--){const j=rint(0,i); [A[i],A[j]]=[A[j],A[i]]}
@@ -1986,6 +1984,9 @@ function etappe3Monat(Z){
   if(S.rang>alt){
     const r=RAENGE[S.rang];
     S.nachlese=[]; for(let i=alt+1;i<=S.rang;i++) S.nachlese.push(i);
+    // Version 8.1 (Paket B): Monat der Feier je Rang für die Neuheiten des Spielführers. Ist er aus, kommen die Neuheiten dieses Rangs nicht nach.
+    if(S.fu&&S.fu.an){S.fu.rm=S.fu.rm||{}; for(let i=alt+1;i<=S.rang;i++) S.fu.rm[i]=monatNr()}
+    else if(S.fu) fuRangWeg(S.fu);
     // Überholst du mehrere Gegner auf einmal, kommt nur ein Spruch, sonst wird es am Anfang zu viel.
     {const U=S.gegner.filter(g=>g.rang>=alt&&g.rang<S.rang&&GEGNER_SPRUCH[g.typ]); if(U.length){const g=U[rint(0,U.length-1)]; Z.push(GEGNER_SPRUCH[g.typ].du(g.name))}}
     // Der Aufstieg steht als Ehrung im Büro und als Thema in der Zeitung. Seit 7.2 bekommt jeder Rang eine eigene Ehrung (eine Urkunde an der Wand).
@@ -2174,6 +2175,8 @@ function vStart(){
   ${fenster('neu_mit','Mitspieler',`<div class="kv"><span>🍇 Computer-Winzer</span><span>3</span></div><div class="fleer">🔒 Online mit Freunden, kommt später</div>`,{buch:'',i:'Du spielst gegen drei Computer-Winzer: die Vorsichtige, den Qualitätsfanatiker und den Zocker. Sie spielen nach denselben Regeln wie du und wollen auch Präsident werden. Später kannst du hier Freunde einladen.'})}
   ${fenster('neu_schwer','Schwierigkeit',`<div class="zwei">${Object.entries(DIFF).map(([id,d])=>`<button class="wahl ${NEU.schwer===id?'an':''}" data-a="neuOpt" data-k="schwer" data-v="${id}"><b>${d.name}</b></button>`).join('')}</div>`,{buch:'',
     i:Object.values(DIFF).map(d=>`<b>${d.name}:</b> ${d.text}`).join('<br>')+`<br><br>Eine Partie dauert rund 100 bis 120 Spieljahre. Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation, Präsident wird meist erst dein Enkel. Gespeichert wird nach jedem Monat, du kannst also jederzeit aufhören.`})}
+  ${fenster('neu_fuehrer','Mit Spielführer?',`<div class="zwei">${[['1','Mit Spielführer'],['0','Ohne']].map(([k,x])=>`<button class="wahl ${(NEU.fu||'1')===k?'an':''}" data-a="neuOpt" data-k="fu" data-v="${k}"><b>${x}</b></button>`).join('')}</div>`,{buch:'',
+    i:'Der alte Winzer nimmt dich an die Hand. Er führt dich durch dein erstes Jahr, von der Rebe bis zur verkauften Flasche, und später erklären er und deine Manager, was jeder Rang Neues bringt. Wer das Spiel schon kennt, spielt ohne. Im Büro lässt sich der Spielführer jederzeit umstellen.'})}
   <div class="btns"><button data-a="start">Spiel starten</button></div></main>`;
 }
 // Liste der drei Speicherplätze: weiterspielen, neu anfangen, als Datei sichern, aus Datei laden, löschen.
@@ -2822,7 +2825,7 @@ function vBuero(){
   const E=(S.ehrungen||[]).slice().reverse(), wein=E.filter(e=>!e.a), L=bestenZeilen();
   const zeile=e=>`<div class="rl"><span>${esc(e.i)}</span><div><b>${esc(e.t)}</b>${e.j?`<span class="mut">${MON[e.m]} ${e.j}</span>`:''}</div></div>`;
   return namenFenster()+fenster('anleitung','Spielanleitung','',{links:`Alles zum Nachschlagen in ${buchKap().length} kurzen Kapiteln, vom Ziel bis zum Arbeitsamt.`,kn:pk('buch','Aufschlagen',''),
-      i:'Das Büro ist dein Pokalraum und deine Schaltzentrale. Von oben: Spielanleitung, Rangliste, Ehrungen, Urkunden, Chronik, Bestenliste, Ton und ganz unten deine Spielstände. Das kleine i erklärt jedes Fenster kurz, „Mehr im Buch“ schlägt das passende Kapitel auf.'})
+      i:'Das Büro ist dein Pokalraum und deine Schaltzentrale. Von oben: Spielanleitung, Rangliste, Ehrungen, Urkunden, Chronik, Bestenliste, Spielführer, Ton und ganz unten deine Spielstände. Das kleine i erklärt jedes Fenster kurz, „Mehr im Buch“ schlägt das passende Kapitel auf.'})
     +vRangliste()
     +fenster('ehrungen','Ehrungen für deine Weine',wein.length?`<div class="gold" style="font-size:17px;margin-bottom:6px">${ehrSumme(wein)}</div><div class="mut">Zuletzt:</div>`+wein.slice(0,3).map(zeile).join(''):[],{
       leer:'Noch keine Ehrungen.',buch:'wettbewerb',i:'Medaillen gibt es bei der Landesprämierung und beim Bundeswettbewerb. Sie bringen Ansehen und machen den Wein wertvoller.'})
@@ -2832,6 +2835,7 @@ function vBuero(){
     +chronikHtml()
     +fenster('besten','Bestenliste',L.length?L.map(bestenZeile).join(''):[],{
       leer:'Noch leer.',buch:'ende',i:BESTEN_I})
+    +fuFenster()
     +fenster('ton','Ton',tonZeilen(),{i:'Musik „an“ spielt durchgehend, „kurz“ spielt beim Wechsel zwischen Weingut, Kellerei und Stadt ein paar Sekunden, „aus“ ist still. Feiern, Wettbewerbe und Pfändung laufen auch bei „kurz“ in voller Länge. Mit den Reglern stellst du Musik und Geräusche getrennt leiser oder lauter.'})
     +fenster('spiel','Dein Spiel',`<div class="kv"><span>Speicherplatz</span><span>Spielstand ${SLOT+1}</span></div><div class="kv"><span>Schwierigkeit</span><span>${DIFF[S.schwer].name}</span></div>`,{
       links:'„Neues Spiel“ löscht diesen Spielstand und fängt von vorn an.',kn:[pk('menue','Spielstände','',{sec:1}),pk('neuFrage','Neues Spiel','',{sec:1})],buch:'bedienung',
@@ -3195,13 +3199,14 @@ function zWehen(){
   const o=document.createElement('div'); o.className='zrolle oben'; o.addEventListener('click',()=>zGleite(el,0,900)); el.appendChild(o);
   z.addEventListener('click',e=>{if(e.target.closest('button'))return; if(z.getBoundingClientRect().bottom<innerHeight*.25) zGleite(el,0,900)});
 }
-/* ================= Spielführer (Version 8.1, Paket A) ================= */
+/* ================= Spielführer (Version 8.1, Paket A und B) ================= */
 // Sprechblase mit Gesicht nach Entwurf D (Maik 17.11.2026). Die Texte stehen in fuehrer.js, gebaut aus "_fuehrer entwurf.md".
-// Merker im Spielstand S.fu: an = Spielführer ein, ges = schon gezeigte Blasen (jede genau einmal je Spiel), q = Warteschlange,
-// mon = Monat der letzten gebremsten Blase, geld = "Dein Stand" schon angetippt.
+// Merker im Spielstand S.fu: an = Spielführer ein, nur = nur Neuheiten und Warnungen, ges = schon gezeigte Blasen (jede genau einmal je Spiel),
+// q = Warteschlange, mon = Monat der letzten gebremsten Blase, geld = "Dein Stand" schon angetippt,
+// rm = Spielmonat je erreichtem Rang (für die Neuheiten), km = Monat des letzten Kniffs, w3 = Monat, in dem der Markt satt wurde.
 // Ablauf: fuehrerPruef() legt jede Blase in die Warteschlange, sobald ihr Auslöser (FU_WANN) zutrifft, fuehrerZeig() zeigt die erste,
 // sobald ein Ort zu sehen ist (nie über Winzerbote, Feier, Dialog oder Buch). "Verstanden" und "Zeig mir, wo" haken sie ab.
-// Paket A: Einstieg, erstes und zweites Jahr, k01. Rang-Neuheiten, Warnungen, Kniffe und die Schalter kommen in Paket B.
+// Paket A: Einstieg, erstes und zweites Jahr, k01. Paket B: Rang-Neuheiten, Warnungen, Kniffe, Schalter im Büro und beim Start.
 const FU_SPRECHER={winzer:{name:'Der alte Winzer',rolle:'Dein Nachbar',bild:'fuehrer-winzer'},handel:{name:'Die Handels-Managerin',rolle:'Verkauf und Zahlen',bild:'manager-handel'},
   keller:{name:'Der Kellermeister',rolle:'Fass und Flasche',bild:'manager-keller'},weingut:{name:'Der Weingut-Manager',rolle:'Reben und Maschinen',bild:'manager-weingut'}};
 // Vorstellung je Manager. Vorher spricht der alte Winzer mit dem Ersatz-Text.
@@ -3227,6 +3232,48 @@ const FU_WANN={
   'k01':()=>monatNr()>=12&&monatNr()<24&&fuGes('z2-01')
 };
 for(const id in FU_MON) FU_WANN[id]=()=>monatNr()===FU_MON[id];
+// Rang-Neuheiten: r3 ist der Jungwinzer (Index 1 in RAENGE), r4 der Winzer und so weiter. Die n-te Blase eines Rangs frühestens
+// im n-ten Monat nach der Feier, die Bremse verteilt sie ohnehin auf je einen Monat. S.fu.rm merkt den Monat der Feier je Rang.
+const fuRang=id=>{const m=/^r(\d+)-(\d+)$/.exec(id); return m?{r:+m[1]-2,n:+m[2]}:null};
+if(typeof FUEHRER!=='undefined') for(const id in FUEHRER){const x=fuRang(id); if(x) FU_WANN[id]=()=>{const rm=(S.fu.rm||{})[x.r]; return rm!=null&&S.rang>=x.r&&monatNr()>=rm+x.n-1}}
+// Warnungen (Paket B): jede nur beim ersten Mal, danach reichen die Punkte. Gesperrte Manager lässt fuSprecher den alten Winzer vertreten.
+// w1: ein Fass, das ab Januar Kabinett wird, und du stehst im Rathaus. w2: Auktion läuft, und nach dem nächsten Gebot reicht das Geld nicht für die Reben.
+function fuKabFrueh(l){if(l.status!=='fass'||l.stufe||l.jahrgang!==S.jahr) return false; const g=pruefeAnmeldung(l,'kab'); return g.length>0&&g.every(x=>/Januar/.test(x))}
+function fuLandZuViel(){
+  const a=S.auktion; if(!a||a.phase===0||a.ende||S.rang<R_AUKTION) return false;
+  const p=Math.min(...R().sorten.filter(sorteFrei).map(rebenPreis));
+  return S.geld-aukNaechstes()<a.ha*HA_REBEN*p;
+}
+const fuReiht=l=>l.sorte==='riesling'&&l.stufe&&!l.sekt&&REIHE.indexOf(l.stufe)>=REIHE.indexOf('kab');
+const fuLange=l=>l.status==='fass'&&l.stufe!=='feder'&&l.fassMonate>=6;
+Object.assign(FU_WANN,{
+  'w1':()=>TAB==='stadt'&&SUB==='amt'&&S.lots.some(fuKabFrueh),
+  'w2':()=>TAB==='stadt'&&SUB==='amt'&&fuLandZuViel(),
+  'w3':()=>S.fu.w3===monatNr(),
+  'w4':()=>S.lots.some(fuReiht),
+  'w5':()=>S.monat===4&&monatNr()>=12&&S.boden<80,
+  'w6':()=>S.lots.some(fuLange),
+  'w7':()=>S.geld<0,
+  'w8':()=>S.monat===5&&monatNr()>=12&&R().sorten.reduce((a,id)=>a+(S.felder[id].reben?S.felder[id].menge||0:0),0)>S.fassraum-fassBelegt(),
+  'w9':()=>S.monat===9&&S.kaelteWarn===S.jahr&&feldHaengt().length>0
+});
+// Kniffe (Paket B): ab dem dritten Jahr frühestens fünf Monate nach dem letzten, der erste freie in der Reihenfolge des Entwurfs.
+// Kniffe eines Managers warten, bis er sich vorgestellt hat (Annahme Claude). k01 steht oben im zweiten Jahr.
+const FU_KNIFF_ABSTAND=5, FU_KNIFF_AB=24;
+const fuGenAnk=()=>S.jahr-START_JAHR>=GEN_JAHRE*genNr()-GEN_VORAUS;
+const FU_KNIFF={
+  'k02':()=>S.monat===11,
+  'k03':()=>true,
+  'k04':()=>S.monat>=7&&S.monat<=9&&R().sorten.filter(id=>S.felder[id].reben>0).length>=2,
+  'k05':()=>true,
+  'k06':()=>(S.monat===5||S.monat===6)&&S.maschinen.some(m=>MASCH[m.typ]&&MASCH[m.typ].ernte),
+  'k07':()=>mgrSt('handel')>=1,
+  'k08':()=>true,
+  'k09':()=>true,
+  'k10':()=>S.rang>=1,
+  'k11':()=>true,
+  'k12':()=>S.monat>=7&&S.monat<=10&&feldHaengt().length>0
+};
 // "Zeig mir, wo": Ort und was dort golden leuchtet. sel ist eine Liste, die erste Stelle, die es gibt, gilt.
 // Bei Fenster-Tipps leuchtet das i (Regel 3), bei den Kern-Blasen der Knopf selbst.
 const fiSel=id=>`[data-a="fi"][data-id="${id}"]`;
@@ -3257,14 +3304,70 @@ const FU_ZEIG={
   'z2-05':{tab:'stadt',sub:'laeden',sel:[fiSel('laeden'),'#subs [data-id="laeden"]']},
   'z2-06':{tab:'gut',sub:'aktuell',sel:[fiSel('rang')]},
   'z2-07':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
-  'z2-08':{tab:'keller',sub:'buch',sel:['.bzeile[data-a="buchDetail"]','[data-a="weinQual"]']}
+  'z2-08':{tab:'keller',sub:'buch',sel:['.bzeile[data-a="buchDetail"]','[data-a="weinQual"]']},
+  // Paket B: Rang-Neuheiten. Beim Befördern leuchtet der Knopf des Managers im Arbeitsamt.
+  'r3-1':{tab:'stadt',sub:'amt',sel:[fiSel('auktionen'),fiSel('makler')]},
+  'r3-2':{tab:'gut',sub:'berg',sel:['[data-a="fi"][data-id^="feld_"]']},
+  'r3-3':{tab:'keller',sub:'lager',sel:[fiSel('ausbau')]},
+  'r4-1':{tab:'stadt',sub:'arbeit',sel:[fiSel('mgr_amt')]},
+  'r4-2':{tab:'stadt',sub:'handel',sel:[fiSel('markt')]},
+  'r4-3':{tab:'keller',sub:'start',sel:[fiSel('sekt')]},
+  'r4-4':{tab:'gut',sub:'maschinen',sel:[fiSel('kauf_duenger')]},
+  'r5-1':{tab:'stadt',sub:'arbeit',sel:[fiSel('mgr_amt')]},
+  'r5-2':{tab:'stadt',sub:'amt',sel:[fiSel('wettb')]},
+  'r5-3':{tab:'gut',sub:'betrieb',sel:[fiSel('fest')]},
+  'r5-4':{tab:'gut',sub:'maschinen',sel:[fiSel('kauf_klein')]},
+  'r6-1':{tab:'stadt',sub:'arbeit',sel:[fiSel('mgr_amt')]},
+  'r6-2':{tab:'gut',sub:'berg',sel:['[data-a="fi"][data-id^="feld_"]']},
+  'r6-3':{tab:'gut',sub:'maschinen',sel:[fiSel('kauf_laub')]},
+  'r6-4':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="handel"]',fiSel('mgr_amt')]},
+  'r7-1':{tab:'stadt',sub:'amt',sel:[fiSel('wettb')]},
+  'r7-2':{tab:'gut',sub:'maschinen',sel:[fiSel('kauf_gross')]},
+  'r7-3':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="keller"]',fiSel('mgr_amt')]},
+  'r7-4':{tab:'keller',sub:'sabotage',sel:[fiSel('sabotage'),'#subs [data-id="sabotage"]']},
+  'r8-1':{tab:'stadt',sub:'laeden',sel:[fiSel('regalRein'),fiSel('regal')]},
+  'r8-2':{tab:'gut',sub:'maschinen',sel:[fiSel('kauf_abfuell')]},
+  'r8-3':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="weingut"]',fiSel('mgr_amt')]},
+  'r8-4':{tab:'gut',sub:'buero',sel:[fiSel('botschafter')]},
+  'r9-1':{tab:'gut',sub:'betrieb',sel:[fiSel('fest')]},
+  'r9-2':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="handel"]',fiSel('mgr_amt')]},
+  'r9-3':{tab:'stadt',sub:'amt',sel:[fiSel('anreg')]},
+  'r10-1':{tab:'stadt',sub:'amt',sel:[fiSel('auktionen')]},
+  'r10-2':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="weingut"]',fiSel('mgr_amt')]},
+  'r10-3':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="keller"]',fiSel('mgr_amt')]},
+  // Warnungen: sel darf eine Funktion sein, dann leuchtet genau das betroffene Fass.
+  'w1':{tab:'stadt',sub:'amt',sel:()=>{const l=S.lots.find(fuKabFrueh); return [l?`[data-a="anmelden"][data-id="${l.id}"]`:'',fiSel('anmelden')]}},
+  'w2':{tab:'stadt',sub:'amt',sel:[fiSel('auktionen')]},
+  'w3':{tab:'stadt',sub:'handel',sel:[fiSel('markt')]},
+  'w4':{tab:'keller',sub:'buch',sel:()=>{const l=S.lots.find(fuReiht); return [l?`.bzeile[data-a="buchDetail"][data-id="${l.id}"]`:'','[data-a="weinQual"]']}},
+  'w5':{tab:'gut',sub:'berg',sel:[fiSel('duengung')]},
+  'w6':{tab:'keller',sub:'buch',sel:()=>{const l=S.lots.find(fuLange); return [l?`.bzeile[data-a="buchDetail"][data-id="${l.id}"]`:'','[data-a="weinQual"]']}},
+  'w7':{tab:'stadt',sub:'bank',sel:[fiSel('kredit')]},
+  'w8':{tab:'keller',sub:'lager',sel:[fiSel('faesser')]},
+  'w9':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
+  // Kniffe
+  'k02':{tab:'keller',sub:'lager',sel:[fiSel('faesser')]},
+  'k03':{tab:'keller',sub:'buch',sel:['[data-a="weinQual"]']},
+  'k04':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
+  'k05':{tab:'gut',sub:'berg',sel:[fiSel('gebiet')]},
+  'k06':{tab:'gut',sub:'maschinen',sel:[fiSel('maschinen')]},
+  'k07':{tab:'gut',sub:'betrieb',sel:[fiSel('p_handel')]},
+  'k08':{tab:'keller',sub:'sabotage',sel:[fiSel('zuckern'),'#subs [data-id="sabotage"]']},
+  'k09':{tab:'gut',sub:'buero',sel:[fiSel('rangliste')]},
+  'k10':{tab:'gut',sub:'buero',sel:[fiSel('urkunden')]},
+  'k11':{tab:'gut',sub:'buero',sel:[fiSel('chronik')]},
+  'k12':{sel:['#top .wtr']}
 };
-function fuNeu(){return {an:1,ges:[],q:[],mon:-1}}
+function fuNeu(){return {an:1,nur:0,ges:[],q:[],mon:-1,rm:{},km:-99}}
+// Fahrplan der ersten zwei Jahre (Paket A), nur diese Blasen fallen bei alten Spielständen nach der Zeit weg.
+const FU_PLAN=['e1-01','e1-02','e1-03','e1-04','e1-06','e1-13','e1-14','e1-15','e1-16','k01',...Object.keys(FU_MON)];
 // Alte Spielstände (bis 8.0.1): Wer schon zwei Jahre oder länger spielt, bekommt den Einstieg nicht nachgeliefert.
-// Darunter fällt weg, was schon vorbei ist, der Rest des Fahrplans kommt noch.
+// Darunter fällt weg, was schon vorbei ist, der Rest des Fahrplans kommt noch. Neuheiten schon erreichter Ränge kommen nicht nach,
+// Warnungen und Kniffe kommen alle (Paket B).
 function fuAlt(){
-  const f=fuNeu(), m=monatNr(), L=S.lots||[], weg=id=>f.ges.push(id);
-  if(m>=24){Object.keys(FU_WANN).forEach(weg); return f}
+  const f=fuNeu(), m=monatNr(), L=S.lots||[], weg=id=>{if(!f.ges.includes(id)) f.ges.push(id)};
+  fuRangWeg(f);
+  if(m>=24){FU_PLAN.forEach(weg); return f}
   for(const id in FU_MON) if(FU_MON[id]<m) weg(id);
   if(m>0) ['e1-01','e1-02','e1-03','e1-04'].forEach(weg);
   if(m>1) weg('e1-06');
@@ -3275,28 +3378,45 @@ function fuAlt(){
   if(m>12) weg('k01');
   return f;
 }
-// Mit Spielführer gibt es "Weiter bis etwas ansteht" erst ab dem Januar des zweiten Jahres (k01 stellt den Knopf vor).
-function fuSperre(){return !!(S&&S.fu&&S.fu.an&&monatNr()<12)}
+function fuRangWeg(f){if(typeof FUEHRER==='undefined') return; for(const id in FUEHRER){const x=fuRang(id); if(x&&x.r<=S.rang&&!f.ges.includes(id)) f.ges.push(id)}}
+// Spielstände aus Paket A (S.fu ohne rm): Neuheiten der schon erreichten Ränge gelten als gezeigt.
+function fuPaketB(){const f=S.fu; if(f.rm) return; f.rm={}; f.km=-99; f.nur=f.nur||0; fuRangWeg(f)}
+// Mit Spielführer ("alle Tipps") gibt es "Weiter bis etwas ansteht" erst ab dem Januar des zweiten Jahres (k01 stellt den Knopf vor).
+function fuSperre(){return !!(S&&S.fu&&S.fu.an&&!S.fu.nur&&monatNr()<12)}
 // Bremse: Rang-Neuheiten und Kniffe höchstens eine je Monat. Kern-Blasen, Warnungen, Einstieg und der Fahrplan der ersten zwei Jahre sind ausgenommen (Annahme Claude),
 // k01 kommt fest gleich nach z2-01.
 const fuBremse=id=>{const b=FUEHRER[id]; return (b.a==='rang'||b.a==='kniff')&&!b.k&&id!=='k01'};
 function fuBereit(){return !!(S&&S.fu&&S.fu.an&&typeof FUEHRER!=='undefined')}
+// Schalter "nur Neuheiten und Warnungen": Einstieg, Erstes Mal und Kniffe bleiben aus.
+function fuErlaubt(id){const b=FUEHRER[id]; return !!b&&(!S.fu.nur||b.a==='rang'||b.a==='warnung')}
+// Hält die Blase das Vorspulen an? k11 hält nur mit der Ankündigung im Winzerboten (Text "nein, mit der Ankündigung ja").
+const fuH=id=>!!(FUEHRER[id].h||id==='k11'&&fuGenAnk());
 function fuehrerPruef(){
   if(!fuBereit()) return;
   let neu=0;
   for(const id in FU_WANN){
-    if(!FUEHRER[id]||S.fu.ges.includes(id)||S.fu.q.includes(id)) continue;
+    if(!FUEHRER[id]||!fuErlaubt(id)||S.fu.ges.includes(id)||S.fu.q.includes(id)) continue;
     let ja=false; try{ja=!!FU_WANN[id]()}catch(e){}
     if(ja){S.fu.q.push(id); neu=1}
+  }
+  // Kniffe: immer nur einer in der Warteschlange. Die Ankündigung des Generationswechsels holt k11 sofort.
+  const m=monatNr(), K=Object.keys(FU_KNIFF);
+  if(!S.fu.nur&&m>=FU_KNIFF_AB&&!S.fu.q.some(id=>FU_KNIFF[id])){
+    const frei=id=>FUEHRER[id]&&!S.fu.ges.includes(id)&&(!FU_VOR[FUEHRER[id].s]||fuGes(FU_VOR[FUEHRER[id].s]));
+    let id=frei('k11')&&fuGenAnk()?'k11':null;
+    if(!id&&m-(S.fu.km??-99)>=FU_KNIFF_ABSTAND) id=K.find(k=>{if(!frei(k)) return false; try{return !!FU_KNIFF[k]()}catch(e){return false}})||null;
+    if(id){S.fu.q.push(id); neu=1}
   }
   if(neu) save();
 }
 function fuNaechste(){
   const m=monatNr();
-  return S.fu.q.filter(id=>FUEHRER[id]&&!(fuBremse(id)&&S.fu.mon===m)).sort((a,b)=>FU_ART[FUEHRER[a].a]-FU_ART[FUEHRER[b].a])[0]||null;
+  // Bei gleicher Art bleibt die Reihenfolge der Warteschlange, Rang-Neuheiten nach einem Sprung über mehrere Ränge Rang für Rang.
+  const rw=id=>{const x=fuRang(id); return x?x.r*10+x.n:0};
+  return S.fu.q.filter(id=>FUEHRER[id]&&fuErlaubt(id)&&!(fuBremse(id)&&S.fu.mon===m)).sort((a,b)=>FU_ART[FUEHRER[a].a]-FU_ART[FUEHRER[b].a]||rw(a)-rw(b))[0]||null;
 }
 // Hält "Weiter bis etwas ansteht" an? Nur Blasen mit "Hält an: ja", die übrigen warten auf den nächsten Halt.
-function fuHalt(){fuehrerPruef(); return fuBereit()&&S.fu.q.some(id=>FUEHRER[id]&&FUEHRER[id].h)}
+function fuHalt(){fuehrerPruef(); return fuBereit()&&S.fu.q.some(id=>FUEHRER[id]&&fuErlaubt(id)&&fuH(id))}
 function fuSprecher(id){
   const b=FUEHRER[id], v=FU_VOR[b.s];
   return v&&v!==id&&!fuGes(v)&&b.e?{s:'winzer',t:b.e}:{s:b.s,t:b.t};
@@ -3340,10 +3460,19 @@ function fuFertig(){
   const id=FU_AKT; fuehrerWeg(); if(!id||!S||!S.fu) return;
   S.fu.q=S.fu.q.filter(x=>x!==id); if(!S.fu.ges.includes(id)) S.fu.ges.push(id);
   if(fuBremse(id)) S.fu.mon=monatNr();
+  if(FU_KNIFF[id]) S.fu.km=monatNr();
   save(); return id;
 }
+// Fenster "Spielführer" im Büro (Paket B): drei Stellungen und "Tipps von vorn".
+function fuFenster(){
+  const f=S.fu||fuNeu(), st=!f.an?'aus':f.nur?'neu':'alle';
+  const W=[['alle','💬 Alle Tipps'],['neu','🎓 Nur Neuheiten und Warnungen'],['aus','🔕 Aus']];
+  return fenster('fuehrer','Spielführer',W.map(([k,x])=>`<button class="wahl schalter ${st===k?'an':''}" data-a="fuStell" data-id="${k}">${st===k?'✅':'⬜'} ${x}</button>`).join(''),{
+    links:'Warnungen und Kniffe noch einmal',kn:pk('fuVorn','Tipps von vorn','',{sec:1,aus:!f.an}),buch:'fuehrer',
+    i:'Der alte Winzer und, sobald ihr Rang sie freischaltet, deine drei Manager melden sich in einer Sprechblase: wenn etwas zum ersten Mal ansteht, nach jedem Aufstieg, bei typischen Fehlern und ab dem dritten Jahr ab und zu mit einem Kniff. „Alle Tipps“ ist für Neulinge, „Nur Neuheiten und Warnungen“ für alle, die das Spiel kennen. Mit allen Tipps gibt es ⏩ „Weiter bis etwas ansteht“ erst ab dem zweiten Jahr. „Tipps von vorn“ holt Warnungen und Kniffe zurück, in den ersten zwei Jahren auch den Rest des Fahrplans.'});
+}
 function fuLeuchte(z){
-  const el=(z.sel||[]).map(s=>document.querySelector(s)).find(Boolean); if(!el) return;
+  const el=(typeof z.sel==='function'?z.sel():z.sel||[]).filter(Boolean).map(s=>document.querySelector(s)).find(Boolean); if(!el) return;
   if(!el.closest('#top,#dock')) el.scrollIntoView({block:'center',behavior:'smooth'});
   el.classList.remove('fleuchte'); void el.offsetWidth; el.classList.add('fleuchte');
   setTimeout(()=>el.classList.remove('fleuchte'),4200);
@@ -3410,6 +3539,9 @@ const AKT={
   buchZu(){BUCH=null; buchZeig(); fuehrerZeig()},
   // Version 8.1: Knöpfe der Sprechblase. "Zeig mir, wo" springt zum Ort und lässt dort golden leuchten, aufgeklappt wird nichts.
   fuOk(){fuFertig(); FU_RUHE=Date.now()+350; fuehrerZeig()},
+  fuStell(d){const f=S.fu; f.an=d.id==='aus'?0:1; f.nur=d.id==='neu'?1:0; if(!f.an){FU_PAUSE=false; fuehrerWeg()} else if(FU_AKT&&!fuErlaubt(FU_AKT)) fuehrerWeg(); save(); const y=window.scrollY; render(); window.scrollTo(0,y)},
+  fuVorn(){const f=S.fu; if(!f||!f.an) return; const n=fuAlt(); n.an=f.an; n.nur=f.nur; n.geld=f.geld; n.rm=f.rm||{}; S.fu=n; fuehrerWeg(); FU_PAUSE=false; save(); render();
+    meldung('Tipps von vorn','Warnungen und Kniffe kommen wieder, sobald sie passen. In den ersten zwei Jahren kommt auch der Rest des Fahrplans.')},
   fuWo(){const id=fuFertig(), z=FU_ZEIG[id]; if(!z) return; FU_PAUSE=true; if(z.tab){geh(z.tab,z.sub); render(); window.scrollTo(0,0)} setTimeout(()=>fuLeuchte(z),z.tab?120:0)},
   fuBuch(d){BUCH=d.id||''; buchZeig()},
   // Seit 8.0.1 "Dein Stand" statt "Deine Kasse": Kasse, Bis zum nächsten Rang (alle drei Bedingungen mit Balken wie in vRang) und die Rangleiter.
@@ -3894,7 +4026,7 @@ const AKT={
     const l=lot(d.id), w=wege(l)[0]; if(!w||l.regal) return; const p=w.p, fw=federHandel(l);
     mengeSheet({titel:`${lotName(l)} verkaufen`,text:`${w.flag} ${w.name}: ${eur2(p)} je Flasche. ${fw?'Federweißer kauft der Weinhändler in jeder Menge zum vollen Preis, am Budget des Großhandels vorbei. Schnelles Geld für den Notfall, aber reich wird damit keiner. Er hält nur 3 Monate.':marktRest()?`Zum vollen Preis kauft der Großhandel diesen Monat noch für ${eur(marktRest())}, danach sinkt er.`:'Der Markt ist diesen Monat satt, der Preis ist gedrückt. Nächsten Monat zahlt der Großhandel wieder voll.'}${fw?'':' Was du behältst, reift weiter.'}`,max:l.liter,rangeStep:1,step:l.liter>2000?100:l.liter>200?10:1,start:fw?l.liter:Math.min(l.liter,Math.floor(marktRest()/p)||l.liter),okText:'Verkaufen',
       info:n=>{const f=fw?1:marktF(n*p);return `<b>${num(n)} Flaschen</b>bringt dir ${eur(n*p*f)}${f<.995?`<br>📉 im Schnitt ${eur2(p*f)} je Flasche, der Markt ist satt`:''}`},
-      ok:n=>{kassiere(Math.round(n*p*(fw?1:marktF(n*p))));if(!fw)S.absatz=(S.absatz||0)+n*p;l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l)}});
+      ok:n=>{if(!fw&&S.fu&&marktF(n*p)<.995) S.fu.w3=monatNr(); kassiere(Math.round(n*p*(fw?1:marktF(n*p))));if(!fw)S.absatz=(S.absatz||0)+n*p;l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l)}});
   }
 };
 /* ================= Titelbild und Geschichte ================= */
