@@ -393,6 +393,30 @@ button.fi.wort{width:auto;padding:0 11px;font:600 13px/1 system-ui,-apple-system
 /* Block B: Aufgaben, Manager-Zeilen und Bilder im Fenster, der aufgeklappte Steckbrief. */
 .fin>.task:last-of-type,.fin>.wahl:last-of-type{margin-bottom:0}.fin .task,.fin .wahl{box-shadow:none}
 .fin>.kbild{margin:0 0 10px}.fklapp{margin-top:8px;padding-top:8px;border-top:1px solid rgba(154,106,53,.38)}
+/* Version 8.1: Spielführer, Sprechblase nach Entwurf D (Maik 17.11.2026). Maße und Farben aus _entwurf_blase.html.
+   Ebene 15: über Kopfleiste und Reitern, unter Dialogen (20), Titel (30) und Buch (40). Abgedunkelt wird nur bei langen Tipps. */
+#fdunkel{position:fixed;inset:0;z-index:14;background:rgba(15,9,4,.55)}
+#fuehrer{position:fixed;left:10px;right:10px;top:172px;z-index:15;max-width:540px;margin:0 auto;box-sizing:border-box;
+  border:2.5px solid #d2a94a;border-radius:18px;background:linear-gradient(rgba(255,251,236,.42),rgba(255,251,236,.42)),#f3e7ca url(bilder/papier.jpg) center/cover;
+  box-shadow:0 0 0 1.5px #5d3f18,inset 0 0 0 1px rgba(255,255,255,.55),0 10px 26px rgba(20,10,4,.75);color:#2b2118;padding:14px 16px 16px;
+  font:18px/1.38 var(--schrift);animation:fplopp .28s cubic-bezier(.3,1.5,.5,1)}
+@keyframes fplopp{from{transform:scale(.8) translateY(-12px);opacity:0}to{transform:none;opacity:1}}
+#fuehrer .fgesicht{position:absolute;left:8px;top:-104px;width:92px;height:92px;border-radius:50%;border:3px solid #d2a94a;background:#f8f0dc;overflow:hidden;box-shadow:0 0 0 1.5px #5d3f18,0 3px 7px rgba(0,0,0,.5)}
+#fuehrer .fgesicht i{display:block;width:100%;height:100%;background:center/cover no-repeat}
+#fuehrer .fkopf{position:absolute;left:110px;top:-78px;margin:0;padding:6px 12px 7px;border-radius:10px;border:2px solid #d2a94a;
+  background:linear-gradient(rgba(255,251,236,.42),rgba(255,251,236,.42)),#f3e7ca url(bilder/papier.jpg) center/cover;box-shadow:0 0 0 1.5px #5d3f18,0 3px 7px rgba(0,0,0,.5)}
+#fuehrer .fname{display:block;font:700 19px/1.1 "Alegreya SC",var(--schrift);color:#7b1e3a;letter-spacing:.02em}
+#fuehrer .frolle{display:block;font-size:14px;color:#857560;margin-top:2px}
+#fuehrer .fzipfel{position:absolute;left:40px;top:-13px;width:22px;height:22px;transform:rotate(45deg) skew(8deg,8deg);
+  background:#f8efd6;border-left:2.5px solid #d2a94a;border-top:2.5px solid #d2a94a;box-shadow:-1.5px -1.5px 0 0 #5d3f18;border-top-left-radius:4px}
+#fuehrer p{margin:0 0 8px}#fuehrer p:last-child{margin-bottom:0}
+#fuehrer .ftext{max-height:max(200px,calc(100vh - 300px));overflow-y:auto;padding-right:6px;-webkit-overflow-scrolling:touch}
+#fuehrer .fschatten{height:22px;margin-top:-22px;position:relative;pointer-events:none;background:linear-gradient(rgba(243,231,202,0),rgba(240,228,198,.96));text-align:center;font-size:12px;color:#7b1e3a;line-height:30px}
+#fuehrer .fknopf{display:flex;gap:8px;margin-top:10px}
+#fuehrer .fknopf button{flex:1 1 0;white-space:nowrap}
+#fuehrer .fbuch{display:block;margin-top:10px;font-size:15px;color:#7b1e3a;text-decoration:underline;text-align:center;cursor:pointer}
+.fleuchte{animation:fleucht 1s ease-in-out 4;border-radius:12px}
+@keyframes fleucht{0%,100%{box-shadow:0 0 0 0 rgba(240,199,90,0)}50%{box-shadow:0 0 0 6px rgba(240,199,90,.95),0 0 22px 8px rgba(240,199,90,.7)}}
 </style>
 </head>
 <body>
@@ -402,6 +426,7 @@ button.fi.wort{width:auto;padding:0 11px;font:600 13px/1 system-ui,-apple-system
 <div id="buch"></div>
 <input type="file" id="datei" accept=".json,application/json" hidden>
 <script src="anleitung.js"></script>
+<script src="fuehrer.js"></script>
 <script>
 'use strict';
 /* ================= Daten ================= */
@@ -484,7 +509,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='8.0.1';
+const VERSION='8.1';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -785,7 +810,7 @@ function roh(i){try{const o=JSON.parse(localStorage.getItem(KEYS[i])||'null');re
 function lies(i){const o=roh(i);return o&&o.v7?o:null}
 function liesAlt(i){const o=roh(i);return o&&!o.v7?o:null}
 // Übernimmt einen gelesenen Spielstand und bringt alte Stände auf den heutigen Stand.
-function nimm(o){S=o;if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch()}
+function nimm(o){S=o;if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();if(!S.fu)S.fu=fuAlt()}
 // Seit 8.0: Maschinen aus älteren Spielständen bekommen ihren Typ (vorher gross:1 oder nichts), sonst bleibt alles, wie es war.
 function altMasch(){for(const ma of S.maschinen||[]) if(!MASCH[ma.typ]){ma.typ=ma.gross?'gross':'klein'; delete ma.gross}}
 // Alte Spielstände mit sechs Rängen: Rang des Spielers und der Gegner auf die zehn Stufen umrechnen. S.v3 merkt sich, dass das passiert ist.
@@ -1573,7 +1598,7 @@ function neuesSpiel(){
   const reg=REGIONEN[NEU.region];
   S={v:1,v7:1,name:NEU.name.trim()||'Weingut Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:START_GELD,ha:3,boden:80,duengungen:0,
     felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',sonne:0,markt:1,ansehen:0,
-    jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:1,lagerarb:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0}};
+    jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:1,lagerarb:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu()};
   for(const id of reg.sorten){S.felder[id]={reben:0,jung:0}; feldReset(S.felder[id])}
   etappe3(3,NEU.schwer);
   lohnAbgleich();
@@ -2745,11 +2770,11 @@ function fenster(id,titel,inhalt,o={}){
 function fz(name,angaben,zustand,...kn){return `<div class="fz"><b>${name}</b>${angaben?`<div class="mut">${angaben}</div>`:''}${zustand||kn.length?kz(zustand||'',...kn):''}</div>`}
 // Aktuelles (seit 7.4 auf dem Fenster-Baustein): "Das steht an" ganz oben (Maik, Version 4.4), der Rang darunter.
 function vAktuell(){
-  const A=aufgaben(), an=stehtAn();
+  const A=aufgaben(), an=stehtAn()||fuSperre();
   return fenster('ansteht','Das steht an',A.length?A.map(a=>`<button class="task ${a.rot?'rot':a.ruhig?'hin':'gelb'}" data-a="${a.akt||'tab'}" data-id="${a.tab||''}" data-sub="${a.sub||''}">${a.rot?'⚠️ ':''}${esc(a.t)}</button>`).join(''):[],{
     leer:'Diesen Monat steht nichts an. Du kannst weiterblättern.',
     kn:an?`<button class="sec klein" data-a="tab" data-id="monat">📰 Winzerbote</button>`:`<div class="zweikn"><button class="sec klein" data-a="tab" data-id="monat">📰 Winzerbote</button><button class="klein" data-a="weiterBis">⏩ Weiter bis etwas ansteht</button></div>`,
-    i:'Hier steht, was diesen Monat zu tun ist. Ein Tipp führt dich direkt an den Ort. <b>Rot</b> kann nicht warten, <b>Gelb</b> hat Zeit, <b>Grau</b> ist nur ein Hinweis. Die Punkte an den Reitern zeigen dasselbe, Hinweise bekommen keinen Punkt.<br><br>⏩ „Weiter bis etwas ansteht“ blättert am Stück, höchstens zwölf Monate. Es hält nur bei Rot und bei Schlagzeilen, die dich selbst betreffen. Bei Gelb und bei Hinweisen blättert es weiter. Ausnahme ist die Lese: Von September bis November hält es einmal im Monat, solange Trauben hängen, im Dezember nur bei gefrorenen Trauben.<br><br>Geboten und eingereicht wird im Rathaus, der Tipp hier führt dich hin. „Winzerbote“ zeigt die letzte Ausgabe noch einmal. Den Rat vom alten Winzer findest du an der Pinnwand im Bild.'})+vRang();
+    i:'Hier steht, was diesen Monat zu tun ist. Ein Tipp führt dich direkt an den Ort. <b>Rot</b> kann nicht warten, <b>Gelb</b> hat Zeit, <b>Grau</b> ist nur ein Hinweis. Die Punkte an den Reitern zeigen dasselbe, Hinweise bekommen keinen Punkt.<br><br>⏩ „Weiter bis etwas ansteht“ blättert am Stück, höchstens zwölf Monate. Es hält nur bei Rot und bei Schlagzeilen, die dich selbst betreffen. Bei Gelb und bei Hinweisen blättert es weiter. Ausnahme ist die Lese: Von September bis November hält es einmal im Monat, solange Trauben hängen, im Dezember nur bei gefrorenen Trauben.<br><br>Geboten und eingereicht wird im Rathaus, der Tipp hier führt dich hin. „Winzerbote“ zeigt die letzte Ausgabe noch einmal. Den Rat vom alten Winzer findest du an der Pinnwand im Bild.'+(fuSperre()?'<br><br>Mit dem Spielführer gibt es ⏩ erst ab dem Januar des zweiten Jahres, im ersten Jahr kommt fast jeden Monat ein Tipp.':'')})+vRang();
 }
 // Maschinen (seit 7.4 auf dem Fenster-Baustein): "Deine Maschinen" mit einer Zeile je Maschine, darunter je Bauart ein Fenster zum Kaufen.
 // Was der Rang noch sperrt, steht zugeklappt mit Schloss unten: die kleine Maschine ab Winzermeister, der Vollernter ab Gutsherr.
@@ -3170,8 +3195,163 @@ function zWehen(){
   const o=document.createElement('div'); o.className='zrolle oben'; o.addEventListener('click',()=>zGleite(el,0,900)); el.appendChild(o);
   z.addEventListener('click',e=>{if(e.target.closest('button'))return; if(z.getBoundingClientRect().bottom<innerHeight*.25) zGleite(el,0,900)});
 }
+/* ================= Spielführer (Version 8.1, Paket A) ================= */
+// Sprechblase mit Gesicht nach Entwurf D (Maik 17.11.2026). Die Texte stehen in fuehrer.js, gebaut aus "_fuehrer entwurf.md".
+// Merker im Spielstand S.fu: an = Spielführer ein, ges = schon gezeigte Blasen (jede genau einmal je Spiel), q = Warteschlange,
+// mon = Monat der letzten gebremsten Blase, geld = "Dein Stand" schon angetippt.
+// Ablauf: fuehrerPruef() legt jede Blase in die Warteschlange, sobald ihr Auslöser (FU_WANN) zutrifft, fuehrerZeig() zeigt die erste,
+// sobald ein Ort zu sehen ist (nie über Winzerbote, Feier, Dialog oder Buch). "Verstanden" und "Zeig mir, wo" haken sie ab.
+// Paket A: Einstieg, erstes und zweites Jahr, k01. Rang-Neuheiten, Warnungen, Kniffe und die Schalter kommen in Paket B.
+const FU_SPRECHER={winzer:{name:'Der alte Winzer',rolle:'Dein Nachbar',bild:'fuehrer-winzer'},handel:{name:'Die Handels-Managerin',rolle:'Verkauf und Zahlen',bild:'manager-handel'},
+  keller:{name:'Der Kellermeister',rolle:'Fass und Flasche',bild:'manager-keller'},weingut:{name:'Der Weingut-Manager',rolle:'Reben und Maschinen',bild:'manager-weingut'}};
+// Vorstellung je Manager. Vorher spricht der alte Winzer mit dem Ersatz-Text.
+const FU_VOR={handel:'r4-1',keller:'r5-1',weingut:'r6-1'};
+// Reihenfolge, wenn mehrere warten: Warnung, dann Einstieg und Erstes Mal, dann Rang, dann Kniff.
+const FU_ART={warnung:0,einstieg:1,erstes:1,rang:2,kniff:3};
+// Ab so vielen Zeichen gilt ein Tipp als lang, dann wird das Spiel dahinter abgedunkelt.
+const FU_LANG=380;
+// Monats-Blasen: Spielmonat (0 = erster Januar) je Blase.
+const FU_MON={'e1-05':1,'e1-07':2,'e1-08':3,'e1-09':4,'e1-10':5,'e1-11':6,'e1-12':7,'e1-17':9,'e1-18':11,
+  'z2-01':12,'z2-02':13,'z2-03':14,'z2-04':15,'z2-05':16,'z2-06':18,'z2-07':21,'z2-08':23};
+const fuGes=id=>!!(S.fu&&S.fu.ges.includes(id));
+const FU_WANN={
+  'e1-01':()=>monatNr()===0,
+  'e1-02':()=>TAB==='stadt'&&SUB==='arbeit',
+  'e1-03':()=>TAB==='gut'&&SUB==='berg',
+  'e1-04':()=>monatNr()===0&&rebenGesamt()>0,
+  'e1-06':()=>monatNr()<12&&(!!S.fu.geld||monatNr()>=1&&fuGes('e1-05')),
+  'e1-13':()=>S.lots.some(l=>l.status==='trauben'),
+  'e1-14':()=>S.lots.some(l=>l.status==='fass'&&!l.stufe&&l.fassMonate>=1),
+  'e1-15':()=>S.lots.some(l=>l.status==='fass'&&l.stufe),
+  'e1-16':()=>S.lots.some(l=>l.status==='flasche'&&preis(l)>0),
+  'k01':()=>monatNr()>=12&&monatNr()<24&&fuGes('z2-01')
+};
+for(const id in FU_MON) FU_WANN[id]=()=>monatNr()===FU_MON[id];
+// "Zeig mir, wo": Ort und was dort golden leuchtet. sel ist eine Liste, die erste Stelle, die es gibt, gilt.
+// Bei Fenster-Tipps leuchtet das i (Regel 3), bei den Kern-Blasen der Knopf selbst.
+const fiSel=id=>`[data-a="fi"][data-id="${id}"]`;
+const FU_ZEIG={
+  'e1-01':{tab:'stadt',sub:'arbeit',sel:['#subs [data-id="arbeit"]']},
+  'e1-02':{tab:'stadt',sub:'arbeit',sel:[fiSel('helfer')]},
+  'e1-03':{tab:'gut',sub:'berg',sel:['[data-a="fi"][data-id^="feld_"]']},
+  'e1-04':{sel:['#weiter']},
+  'e1-05':{tab:'gut',sub:'aktuell',sel:[fiSel('ansteht')]},
+  'e1-06':{sel:['#top .geld']},
+  'e1-07':{tab:'gut',sub:'berg',sel:['[data-a="pflanzen"]','[data-a="fi"][data-id^="feld_"]']},
+  'e1-08':{sel:['#top .wtr']},
+  'e1-09':{tab:'gut',sub:'berg',sel:[fiSel('duengung')]},
+  'e1-10':{tab:'keller',sub:'lager',sel:[fiSel('faesser')]},
+  'e1-11':{tab:'keller',sub:'buch',sel:['[data-a="weinQual"]']},
+  'e1-12':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
+  'e1-13':{tab:'keller',sub:'start',sel:['[data-a="keltern"]']},
+  'e1-14':{tab:'stadt',sub:'amt',sel:['[data-a="anmelden"]',fiSel('anmelden')]},
+  'e1-15':{tab:'keller',sub:'start',sel:['[data-a="abfuellen"]','[data-a="anmelden"]']},
+  'e1-16':{tab:'stadt',sub:'handel',sel:['[data-a="verkaufen"]']},
+  'e1-17':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
+  'e1-18':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
+  'z2-01':{tab:'stadt',sub:'amt',sel:['[data-a="anmelden"]',fiSel('anmelden')]},
+  'k01':{tab:'gut',sub:'aktuell',sel:['[data-a="weiterBis"]']},
+  'z2-02':{tab:'gut',sub:'berg',sel:['[data-a="pflanzen"]','[data-a="fi"][data-id^="feld_"]']},
+  'z2-03':{tab:'keller',sub:'buch',sel:['.bzeile[data-a="buchDetail"]','[data-a="weinQual"]']},
+  'z2-04':{tab:'stadt',sub:'bank',sel:[fiSel('kredit')]},
+  'z2-05':{tab:'stadt',sub:'laeden',sel:[fiSel('laeden'),'#subs [data-id="laeden"]']},
+  'z2-06':{tab:'gut',sub:'aktuell',sel:[fiSel('rang')]},
+  'z2-07':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
+  'z2-08':{tab:'keller',sub:'buch',sel:['.bzeile[data-a="buchDetail"]','[data-a="weinQual"]']}
+};
+function fuNeu(){return {an:1,ges:[],q:[],mon:-1}}
+// Alte Spielstände (bis 8.0.1): Wer schon zwei Jahre oder länger spielt, bekommt den Einstieg nicht nachgeliefert.
+// Darunter fällt weg, was schon vorbei ist, der Rest des Fahrplans kommt noch.
+function fuAlt(){
+  const f=fuNeu(), m=monatNr(), L=S.lots||[], weg=id=>f.ges.push(id);
+  if(m>=24){Object.keys(FU_WANN).forEach(weg); return f}
+  for(const id in FU_MON) if(FU_MON[id]<m) weg(id);
+  if(m>0) ['e1-01','e1-02','e1-03','e1-04'].forEach(weg);
+  if(m>1) weg('e1-06');
+  if(m>=12||L.some(l=>l.status!=='trauben')) weg('e1-13');
+  if(m>=12||L.some(l=>l.stufe)) weg('e1-14');
+  if(m>=12||L.some(l=>l.status==='flasche')) weg('e1-15');
+  if(m>=12) weg('e1-16');
+  if(m>12) weg('k01');
+  return f;
+}
+// Mit Spielführer gibt es "Weiter bis etwas ansteht" erst ab dem Januar des zweiten Jahres (k01 stellt den Knopf vor).
+function fuSperre(){return !!(S&&S.fu&&S.fu.an&&monatNr()<12)}
+// Bremse: Rang-Neuheiten und Kniffe höchstens eine je Monat. Kern-Blasen, Warnungen, Einstieg und der Fahrplan der ersten zwei Jahre sind ausgenommen (Annahme Claude),
+// k01 kommt fest gleich nach z2-01.
+const fuBremse=id=>{const b=FUEHRER[id]; return (b.a==='rang'||b.a==='kniff')&&!b.k&&id!=='k01'};
+function fuBereit(){return !!(S&&S.fu&&S.fu.an&&typeof FUEHRER!=='undefined')}
+function fuehrerPruef(){
+  if(!fuBereit()) return;
+  let neu=0;
+  for(const id in FU_WANN){
+    if(!FUEHRER[id]||S.fu.ges.includes(id)||S.fu.q.includes(id)) continue;
+    let ja=false; try{ja=!!FU_WANN[id]()}catch(e){}
+    if(ja){S.fu.q.push(id); neu=1}
+  }
+  if(neu) save();
+}
+function fuNaechste(){
+  const m=monatNr();
+  return S.fu.q.filter(id=>FUEHRER[id]&&!(fuBremse(id)&&S.fu.mon===m)).sort((a,b)=>FU_ART[FUEHRER[a].a]-FU_ART[FUEHRER[b].a])[0]||null;
+}
+// Hält "Weiter bis etwas ansteht" an? Nur Blasen mit "Hält an: ja", die übrigen warten auf den nächsten Halt.
+function fuHalt(){fuehrerPruef(); return fuBereit()&&S.fu.q.some(id=>FUEHRER[id]&&FUEHRER[id].h)}
+function fuSprecher(id){
+  const b=FUEHRER[id], v=FU_VOR[b.s];
+  return v&&v!==id&&!fuGes(v)&&b.e?{s:'winzer',t:b.e}:{s:b.s,t:b.t};
+}
+const FU_HUERDE={'Qualitätswein':'qba','Kabinett':'kab','Spätlese':'spat','Auslese':'aus','Beerenauslese':'ba'};
+function fuText(t){
+  return t.replace(/\{(Mein Lieber|mein Lieber|Nachbar|Hürde ([^}]+))\}/g,(x,a,h)=>h?R().min[FU_HUERDE[h]]+'°':a==='Nachbar'?anr('Nachbar','Nachbarin'):a==='Mein Lieber'?anr('Mein Lieber','Meine Liebe'):anr('mein Lieber','meine Liebe'));
+}
+// Je zwei Sätze ein Absatz, damit lange Tipps am Handy lesbar bleiben.
+function fuAbsaetze(t){
+  const s=t.split(/(?<=[.!?])\s+(?=[A-ZÄÖÜ„"])/), P=[];
+  for(let i=0;i<s.length;i+=2) P.push(s.slice(i,i+2).join(' '));
+  return P.map(p=>`<p>${esc(p)}</p>`).join('');
+}
+// FU_PAUSE: Nach "Zeig mir, wo" wartet die nächste Blase, bis der Spieler selbst etwas antippt, damit sie den leuchtenden Knopf nicht verdeckt.
+let FU_AKT=null, FU_RUHE=0, FU_UHR=null, FU_PAUSE=false;
+function fuehrerWeg(){const a=$('#fuehrer'), d=$('#fdunkel'); if(a) a.remove(); if(d) d.remove(); FU_AKT=null}
+function fuehrerZeig(){
+  if(!fuBereit()) return fuehrerWeg();
+  if(!SUBS[TAB]) return fuehrerWeg();
+  if(FU_AKT||FU_PAUSE||$('#sheet').classList.contains('an')||$('#titel').classList.contains('an')||$('#buch').classList.contains('an')||S.pleite||S.pruefer||erbeOffen()) return;
+  fuehrerPruef();
+  const id=fuNaechste(); if(!id) return;
+  const w=FU_RUHE-Date.now(); if(w>0){clearTimeout(FU_UHR); FU_UHR=setTimeout(fuehrerZeig,w+20); return}
+  const b=FUEHRER[id], sp=fuSprecher(id), P=FU_SPRECHER[sp.s], text=fuText(sp.t), lang=text.length>=FU_LANG;
+  FU_AKT=id;
+  if(lang){const d=document.createElement('div'); d.id='fdunkel'; document.body.appendChild(d)}
+  const el=document.createElement('div'); el.id='fuehrer'; el.setAttribute('role','dialog'); el.setAttribute('aria-label',P.name);
+  el.innerHTML=`<i class="fzipfel"></i><div class="fgesicht"><i style="background-image:url(bilder/${P.bild}.jpg)"></i></div><div class="fkopf"><div><b class="fname">${P.name}</b><span class="frolle">${P.rolle}</span></div></div>
+    <div class="ftext">${fuAbsaetze(text)}</div><div class="fschatten">▼ weiter unten mehr</div>
+    <div class="fknopf">${FU_ZEIG[id]?`<button class="klein" data-a="fuWo">Zeig mir, wo</button>`:''}<button class="sec klein" data-a="fuOk">Verstanden</button></div>
+    ${b.b?`<span class="fbuch" data-a="fuBuch" data-id="${b.b}">📖 Mehr im Buch</span>`:''}`;
+  document.body.appendChild(el);
+  const t=el.querySelector('.ftext'), sch=el.querySelector('.fschatten');
+  const pruef=()=>{sch.style.display=t.scrollHeight>t.clientHeight+4?'':'none'; sch.style.opacity=t.scrollTop+t.clientHeight>=t.scrollHeight-4?0:1};
+  t.addEventListener('scroll',pruef,{passive:true}); pruef();
+  fx('menue');
+}
+// Abhaken: aus der Warteschlange in die Liste der gezeigten, danach kommt die nächste wartende.
+function fuFertig(){
+  const id=FU_AKT; fuehrerWeg(); if(!id||!S||!S.fu) return;
+  S.fu.q=S.fu.q.filter(x=>x!==id); if(!S.fu.ges.includes(id)) S.fu.ges.push(id);
+  if(fuBremse(id)) S.fu.mon=monatNr();
+  save(); return id;
+}
+function fuLeuchte(z){
+  const el=(z.sel||[]).map(s=>document.querySelector(s)).find(Boolean); if(!el) return;
+  if(!el.closest('#top,#dock')) el.scrollIntoView({block:'center',behavior:'smooth'});
+  el.classList.remove('fleuchte'); void el.offsetWidth; el.classList.add('fleuchte');
+  setTimeout(()=>el.classList.remove('fleuchte'),4200);
+}
+
 function render(){
-  if(!S){ortFarbe('gut'); ORT_ALT=null; musikOrt(musikWahl()); $('#app').innerHTML=START==='neu'||![0,1,2].some(i=>roh(i))?vStart():vSlots(); return}
+  if(!S){fuehrerWeg(); ortFarbe('gut'); ORT_ALT=null; musikOrt(musikWahl()); $('#app').innerHTML=START==='neu'||![0,1,2].some(i=>roh(i))?vStart():vSlots(); return}
+  fuehrerPruef(); if(!SUBS[TAB]) fuehrerWeg();
   if(SUBS[TAB]&&!SUBS[TAB].some(s=>s[0]===SUB)) SUB=START_SUB[TAB];
   // Kellerbuch und Pinnwand öffnen sich mit einem eigenen Geräusch.
   ortFarbe(SUBS[TAB]?TAB:'gut');
@@ -3186,12 +3366,13 @@ function render(){
   <main>${v}</main>
   <nav id="dock">${SUBS[TAB]?`<div id="subs">${SUBS[TAB].map(s=>`<button class="${SUB===s[0]?'an':''}" data-a="sub" data-id="${s[0]}"><i>${s[1]}</i><b>${SUB_NAME[s[0]]}</b>${SUB===s[0]?'':badge(B[TAB+'/'+s[0]])}</button>`).join('')}</div>`:''}<div id="tabs">${tabs.map(t=>`<button class="${TAB===t[0]?'an':''}" data-a="tab" data-id="${t[0]}"><span>${t[1]}</span>${t[2]}${badge(B[t[0]])}</button>`).join('')}<button id="weiter" class="${fehlt?'zu':''}" data-a="weiter"><span>${fehlt?'🔒':'▶'}</span>${fehlt?'Leute fehlen':'Nächster Monat'}</button></div></nav>`;
   panoStell();
+  fuehrerZeig();
 }
 
 /* ================= Dialoge ================= */
 // musik: Stück, das läuft, solange das Fenster offen ist. bild: Bild oben in der Meldung.
 function openSheet(h,musik){$('#sheet').innerHTML=`<div>${h}</div>`;$('#sheet').classList.add('an');SMUSIK=musik||null;musikOrt(musikWahl())}
-function closeSheet(){$('#sheet').classList.remove('an');$('#sheet').innerHTML='';SL=null;SMUSIK=null;musikOrt(musikWahl())}
+function closeSheet(){$('#sheet').classList.remove('an');$('#sheet').innerHTML='';SL=null;SMUSIK=null;musikOrt(musikWahl());setTimeout(fuehrerZeig,0)}
 function wettSheet(h){openSheet(h,'wett')}
 function meldung(t,text,bild){openSheet(`${bild?sbild(bild):''}<h3>${esc(t)}</h3><p>${esc(text)}</p><div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`)}
 let SL=null;
@@ -3226,9 +3407,13 @@ function lese(id,la,p){
 /* ================= Aktionen ================= */
 const AKT={
   buch(d){BUCH=d.id||''; buchZeig()},
-  buchZu(){BUCH=null; buchZeig()},
+  buchZu(){BUCH=null; buchZeig(); fuehrerZeig()},
+  // Version 8.1: Knöpfe der Sprechblase. "Zeig mir, wo" springt zum Ort und lässt dort golden leuchten, aufgeklappt wird nichts.
+  fuOk(){fuFertig(); FU_RUHE=Date.now()+350; fuehrerZeig()},
+  fuWo(){const id=fuFertig(), z=FU_ZEIG[id]; if(!z) return; FU_PAUSE=true; if(z.tab){geh(z.tab,z.sub); render(); window.scrollTo(0,0)} setTimeout(()=>fuLeuchte(z),z.tab?120:0)},
+  fuBuch(d){BUCH=d.id||''; buchZeig()},
   // Seit 8.0.1 "Dein Stand" statt "Deine Kasse": Kasse, Bis zum nächsten Rang (alle drei Bedingungen mit Balken wie in vRang) und die Rangleiter.
-  geldInfo(){const K=kosten(), k=S.kredit, kv=(a,x,c)=>`<div class="kv"><span>${a}</span><span class="${c||''}">${x}</span></div>`, n=RAENGE[S.rang+1];
+  geldInfo(){if(S.fu&&!S.fu.geld){S.fu.geld=1; save()} const K=kosten(), k=S.kredit, kv=(a,x,c)=>`<div class="kv"><span>${a}</span><span class="${c||''}">${x}</span></div>`, n=RAENGE[S.rang+1];
     let ziel='';
     if(n){const v=vermoegen(), bep=flaecheBep(), w=(ist,soll)=>clamp(ist/soll*100,0,100), bar=(ist,soll)=>`<div class="bar ${ist>=soll?'':'g'}"><i style="width:${w(ist,soll)}%"></i></div>`;
       ziel=`<h4 class="gs">🎯 Bis zum nächsten Rang</h4>${kv('⭐ Ansehen',`${num(S.ansehen)} von ${num(n.ans)}`)}${bar(S.ansehen,n.ans)}${kv('🌱 Bepflanzt',`${bep.toLocaleString('de-DE')} von ${n.ha} ha`)}<div class="bar fl ${bep>=n.ha?'':'g'}"><i class="hell" style="width:${w(S.ha,n.ha)}%"></i><i style="width:${w(bep,n.ha)}%"></i></div>${kv('💰 Vermögen',vonGeld(v,n.verm))}${bar(v,n.verm)}`}
@@ -3408,6 +3593,7 @@ const AKT={
   erbeArt(d){if(!erbeOffen()) return; S.erbe.art=d.id==='s'?'s':'t'; zeigeErbe()},
   erbeJa(){if(!erbeOffen()) return; const n=(($('#erbname')||{}).value||'').trim().slice(0,20)||erbeVorschlag(); erbeBenennen(n); closeSheet(); save(); render(); window.scrollTo(0,0)},
   async weiterBis(){
+    if(fuSperre()) return AKT.weiter();
     closeSheet(); const L=[];
     for(let n=0;n<SPRUNG_MAX;n++){
       if(S.pleite) return zeigePleite();
@@ -3416,7 +3602,7 @@ const AKT={
       SPRUNG=L.slice(); monatWeiter();
       if(S.pleite||S.pruefer||erbeOffen()||$('#sheet').classList.contains('an')) return;
       const top=TOP.slice().sort((a,b)=>b.p-a.p)[0];
-      if(sprungHalt().length) break;
+      if(sprungHalt().length||fuHalt()) break;
       L.push(`⏩ ${MON[S.monat]}: ${top?top.t:'ein ruhiger Monat'}`);
       await new Promise(r=>setTimeout(r,120));
     }
@@ -3739,7 +3925,7 @@ document.addEventListener('pointercancel',()=>{WISCH=null});
 document.addEventListener('pointerup',e=>{
   if(!WISCH) return; const dx=e.clientX-WISCH.x, dy=e.clientY-WISCH.y; WISCH=null;
   if(Math.abs(dx)<40||Math.abs(dx)<Math.abs(dy)*1.5) return;
-  WISCH_ZEIT=Date.now(); tonAn(); subNachbar(dx<0?1:-1);
+  WISCH_ZEIT=Date.now(); FU_PAUSE=false; tonAn(); subNachbar(dx<0?1:-1);
 });
 document.addEventListener('keydown',e=>{
   if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight') return;
@@ -3756,7 +3942,9 @@ document.addEventListener('click',e=>{
   if(!vorn&&S&&S.pruefer&&!['pruefJa','pruefBestechen','slMinus','slPlus','slOk','close','ton','menue','buch','buchZu'].includes(a)) return zeigePruefer();
   // Schritt G 7.0: Solange die Übergabe offen ist, geht nur das Übergeben.
   if(!vorn&&erbeOffen()&&!['erbeJa','erbeArt','ton','menue','buch','buchZu'].includes(a)) return zeigeErbe();
+  if(a!=='fuWo') FU_PAUSE=false;
   const f=AKT[a]; if(f){f(b.dataset,e); fx('klick')}
+  if(FU_AKT==null&&!FU_PAUSE) setTimeout(fuehrerZeig,0);
 });
 $('#datei').addEventListener('change',e=>{const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>dateiLaden(String(r.result),ZIEL); r.readAsText(f)});
 $('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet'&&!SL)closeSheet()});
