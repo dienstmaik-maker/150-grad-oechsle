@@ -360,12 +360,12 @@ main>.ehrung{border-color:#a87908}
 .pano{border-radius:0;box-shadow:0 4px 10px rgba(0,0,0,.45)}
 .pano::after{content:"";position:absolute;inset:0;pointer-events:none;border:13px solid transparent;border-image:url(bilder/rahmen.webp) 39/13px stretch}
 .pano .ptitel{padding-bottom:17px}
-/* ===== Version 7.4 "Übersicht": ein Baustein für alle Fenster (fenster, fz, fschmal im Code) =====
+/* ===== Version 7.4 "Übersicht": ein Baustein für alle Fenster (fenster und fz im Code) =====
    Kopf mit der Überschrift in Schrift und Farbe des Hauptreiters und dem kleinen grauen i oben rechts, darunter Hinweise, Zustand und Zeilen, die Knöpfe unten rechts. */
 :root{--ftitel:#7b1e3a;--fgrau:#857560}
 .fen{padding:0;overflow:hidden}
 .fkopf{display:flex;align-items:center;gap:6px;min-height:44px;padding:0 3px 0 14px;background:rgba(123,30,58,.08);border-bottom:1px solid rgba(154,106,53,.5)}
-.fkopf h3,.fen.schmal h3{flex:1;min-width:0;margin:0;padding:9px 0 8px;font:700 19px/1.15 var(--knopf);font-variant-caps:small-caps;letter-spacing:.04em;color:var(--ftitel)}
+.fkopf h3{flex:1;min-width:0;margin:0;padding:9px 0 8px;font:700 19px/1.15 var(--knopf);font-variant-caps:small-caps;letter-spacing:.04em;color:var(--ftitel)}
 .fkopf h3 small{display:block;margin-top:1px;font:400 13px/1.3 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-caps:normal;letter-spacing:0;color:var(--mut)}
 button.fi{flex:none;display:grid;place-items:center;width:44px;height:44px;min-height:0;padding:0;border:0;border-image:none;background:none;filter:none;text-shadow:none;letter-spacing:0;font-variant-caps:normal}
 button.fi>i{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--fgrau);color:var(--fgrau);font:italic 700 15px/21px Georgia,"Times New Roman",serif;text-align:center}
@@ -377,9 +377,6 @@ button.fi.wort{width:auto;padding:0 11px;font:600 13px/1 system-ui,-apple-system
 .fz{padding:9px 0;border-top:1px solid rgba(154,106,53,.38)}.fz:first-child{border-top:0;padding-top:0}.fz:last-child{padding-bottom:0}
 .fz .kz{margin-top:5px;min-height:40px}.fz .kz button{white-space:nowrap}
 .fen.zu{opacity:.88}.fen.zu .fkopf{background:none;border-bottom:0}.fen.zu h3{color:var(--mut)}.fen.zu .finfo{border-top:1px solid rgba(154,106,53,.5);border-bottom:0}
-button.fen.schmal{display:flex;align-items:center;gap:10px;width:100%;min-height:0;padding:5px 10px 5px 14px;border-image:none;filter:none;text-shadow:none;text-align:left;letter-spacing:0;font:400 14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-caps:normal;color:var(--mut);cursor:pointer}
-.fen.schmal h3{flex:none}.fen.schmal .fw{flex:1;min-width:0;display:grid;grid-template-columns:auto 1fr;gap:2px 6px;align-items:baseline}.fen.schmal .fw>span{font-size:14px;color:var(--mut);white-space:nowrap}
-.fen.schmal .fw>b{text-align:right;font-size:16px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}.fen.schmal .pfeil{font-size:22px;line-height:1}
 </style>
 </head>
 <body>
@@ -2382,9 +2379,6 @@ function fenster(id,titel,inhalt,o={}){
 }
 // Zeile im Fenster für einen Wein oder Posten: Name, graue Angaben, darunter links Zustand oder Warnung, rechts der Knopf.
 function fz(name,angaben,zustand,...kn){return `<div class="fz"><b>${name}</b>${angaben?`<div class="mut">${angaben}</div>`:''}${zustand||kn.length?kz(zustand||'',...kn):''}</div>`}
-// Schmale Zeile für reinen Zustand: links die Überschrift, daneben je Zeile eine Bezeichnung und rechts groß ihr Wert (werte: Liste aus [Bezeichnung, Wert]).
-// Ein Tipp führt an den Ort, an dem man etwas daran ändert.
-function fschmal(titel,werte,sub){return `<button class="card fen schmal" data-a="sub" data-id="${sub}"><h3>${titel}</h3><span class="fw">${werte.map(w=>`<span>${w[0]}</span><b>${w[1]}</b>`).join('')}</span><span class="pfeil">›</span></button>`}
 function vAktuell(){
   // Version 4.4 (Maik): "Das steht an" ganz oben, der Rang darunter.
   return `<h3>Das steht an</h3>${aufgabenHtml()}
@@ -2480,7 +2474,7 @@ function vKeller(){
   const T={start:'Weinkeller',buch:'Kellerbuch',sabotage:'Hintertür',lager:'Lager'};
   return kopf(T[SUB])+{start:vKellerStart,buch:vBuch,sabotage:vSabotage,lager:vLager}[SUB]();
 }
-// Startansicht des Kellers (seit 7.4 das Muster für den Fenster-Baustein): Keltern und Abfüllen oben, dann Sekt, der Vorrat als schmale Zeile.
+// Startansicht des Kellers (seit 7.4 das Muster für den Fenster-Baustein): Keltern und Abfüllen oben, dann Sekt, darunter der Vorrat als kleines Fenster (Maik 17.11.2026).
 // Solange Sekt gesperrt ist, steht sein Fenster zugeklappt ganz unten.
 function vKellerStart(){
   const tr=S.lots.filter(l=>l.status==='trauben'), fa=S.lots.filter(l=>l.status==='fass'), bel=fassBelegt(), frei=Math.max(0,S.fassraum-bel);
@@ -2500,7 +2494,8 @@ function vKellerStart(){
     hin:[mf&&`🍷 Dein ${KM} füllt beim Weiterblättern ab.`],
     i:`Der Wein bleibt mindestens einen Monat im Fass und höchstens sieben, danach verdirbt er. Abfüllen geht erst nach der Anmeldung im Rathaus. Abgefüllt wird immer das ganze Fass, ein Liter je Flasche.${mf?` Dein ${KM} füllt angemeldete Fässer von selbst ab und kauft die Flaschen dafür, anmelden musst du selbst.`:''}`});
   const sektI=`Sekt entsteht aus reifem Qualitätswein oder Kabinett in der Flasche, alles darüber ist zu wertvoll. Riesling und Spätburgunder bringen als Sekt ${Math.round((SEKT_STAR-1)*100)} % mehr.`;
-  const vorrat=fschmal('Vorrat',[['Fassraum',`${num(bel)} / ${num(S.fassraum)} l`],['Leere Flaschen',num(S.flaschen)]],'lager');
+  const vorrat=fenster('vorrat','Vorrat',`<div class="kv"><span>Fassraum</span><span>${num(bel)} von ${num(S.fassraum)} l</span></div><div class="kv"><span>Leere Flaschen (1 l)</span><span>${num(S.flaschen)}</span></div>`,
+    {buch:'lager',i:'Fassraum und leere Flaschen kaufst du im Lager, beides braucht Lagerarbeiter. Fassraum am besten vor der Lese kaufen, Flaschen vor dem Abfüllen.'});
   if(!sektFrei()) return h+vorrat+fenster('sekt','Sekt herstellen','',{zu:`ab dem Rang ${RAENGE[R_SEKT].name}`,i:`Sekt machen kannst du ab dem Rang ${RAENGE[R_SEKT].name}. ${sektI}`});
   h+=fenster('sekt','Sekt herstellen',S.lots.filter(sektFaehig).map(l=>fz(dot(l.sorte)+lotName(l),`${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte`,'',
       `<button class="klein sec" data-a="sekt" data-id="${l.id}">Zu Sekt machen</button>`)),{
