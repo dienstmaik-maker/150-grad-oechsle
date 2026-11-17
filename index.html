@@ -18,7 +18,10 @@
 @font-face{font-family:"Alegreya";font-style:italic;font-weight:400;font-display:swap;src:url(schrift/alegreya-kursiv.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 @font-face{font-family:"Alegreya SC";font-style:normal;font-weight:400;font-display:swap;src:url(schrift/alegreya-sc.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 /* Fraktur nur für den Zeitungskopf, die Datei enthält nur die Buchstaben von "Der Winzerbote". */
-@font-face{font-family:"Winzerbote Fraktur";font-style:normal;font-weight:400;font-display:swap;src:url(schrift/fraktur.woff2) format("woff2")}
+/* Version 7.3: volle Fraktur (UnifrakturMaguntia) für den Kopf des Winzerboten und die Urkunde, dazu Schreibschrift (Pinyon Script) für den Namen. Beide frei unter OFL, Lizenz in schrift/. */
+@font-face{font-family:"Winzerbote Fraktur";font-style:normal;font-weight:400;font-display:swap;src:url(schrift/fraktur-voll.woff2) format("woff2")}
+@font-face{font-family:"Urkunde Fraktur";font-style:normal;font-weight:400;font-display:swap;src:url(schrift/fraktur-voll.woff2) format("woff2")}
+@font-face{font-family:"Urkunde Schreibschrift";font-style:normal;font-weight:400;font-display:swap;src:url(schrift/pinyon.woff2) format("woff2")}
 @font-face{font-family:"Alegreya SC";font-style:normal;font-weight:700;font-display:swap;src:url(schrift/alegreya-sc-fett.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 /* Farben passend zu den Bildern: Weinlaub-Grün fürs Weingut, Pflaster-Ton für die Stadt, dunkles Holz für die Kellerei. --kopf ist die Leiste oben. */
 :root{--bg:#c3d99e;--card:#edf5dc;--ink:#232a1a;--mut:#53613d;--wein:#7b1e3a;--kopf:#7b1e3a;--gruen:#44692a;--blau:#4a4f8f;--line:#a4bf7e;--rot:#b3261e;--gold:#a87908;
@@ -281,10 +284,10 @@ img.fass{height:1.1em;vertical-align:-.18em}
 .urk.neu{animation:urkein .7s cubic-bezier(.2,.9,.3,1.1) .15s both}
 @keyframes urkein{from{transform:translateY(30px) scale(.9) rotate(-2deg);opacity:0}to{transform:none;opacity:1}}
 .urk .utext{position:absolute;inset:17% 15% 22%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:1px}
-.urk .utitel{font:700 clamp(17px,5.6vw,28px)/1 var(--knopf);letter-spacing:1.5px;color:#5a1426;margin-bottom:3px}
+.urk .utitel{font:400 clamp(24px,7.6vw,38px)/1 "Urkunde Fraktur",var(--knopf);color:#7b1e3a;margin-bottom:2px}
 .urk p{margin:0;font-size:clamp(10.5px,3vw,14px);line-height:1.2;font-style:italic}
-.urk .uname{font:700 clamp(14px,4.6vw,22px)/1.15 var(--schrift)}
-.urk .urang{font:800 clamp(16px,5.4vw,26px)/1.1 var(--schrift);color:#7b1e3a}
+.urk .uname{font:400 clamp(19px,6.2vw,30px)/1.15 "Urkunde Schreibschrift",var(--schrift);color:#3a2a1a}
+.urk .urang{font:400 clamp(19px,6.2vw,30px)/1.1 "Urkunde Fraktur",var(--schrift);color:#7b1e3a}
 .urk small{font-size:clamp(9.5px,2.6vw,12.5px);opacity:.75;margin-top:2px}
 .urk .usiegel{position:absolute;left:50.3%;top:87.3%;width:11.6%;aspect-ratio:1;translate:-50% -50%;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 34% 30%,#d8505b,#9a1828 58%,#5e0b17);box-shadow:0 2px 4px rgba(0,0,0,.45),inset 0 -2px 4px rgba(0,0,0,.35),inset 0 2px 3px rgba(255,190,190,.35)}
 .urk .usiegel span{font-size:clamp(12px,3.6vw,20px);filter:sepia(1) saturate(2.5) hue-rotate(-30deg) brightness(.75)}
@@ -722,7 +725,7 @@ try{Object.assign(TON,JSON.parse(localStorage.getItem(TON_KEY)||'{}'))}catch(e){
 const MUSIK={gut:'weingut',keller:'kellerei',stadt:'stadt',wett:'wettbewerb',auf:'befoerderung',pfand:'pfaendung'};
 // MUSIK_LAUT: Lautstärke der Musik (Geräusche laufen voll). BLENDE: Sekunden fürs Überblenden beim Ortswechsel, KREIS: am Ende eines Stücks. TAKT: Schritt des Mischers in ms.
 const MUSIK_LAUT=.5, BLENDE=1.5, KREIS=3, TAKT=50;
-const TOENE=['klick','menue','kasse','korken','stempel','hammer','schere'];
+const TOENE=['klick','menue','kasse','korken','stempel','hammer','schere','fanfare'];
 // MORT ist das Stück, das gerade laufen soll. SMUSIK ist ein Stück, das ein offenes Fenster verlangt (Wettbewerb). MSP: Abspieler je Stück, FXB: geladene Geräusche.
 let AC=null, AN=false, MORT=null, SMUSIK=null, FXT=-1; const MSP={}, FXB={};
 // Als Datei geöffnet (file:) laufen die Töne ohne Web Audio, weil der Browser Nachbardateien dort nicht lesen lässt.
@@ -1875,6 +1878,8 @@ function aufgaben(){
   for(const l of S.lots) if(l.status==='flasche'&&lager(l).max-l.flMonate<=2) A.push({t:`${lotName(l)}: nur noch ${lager(l).max-l.flMonate} Monate haltbar`,rot:1,tab:'stadt',sub:'handel'});
   if(m<=2&&S.verlust) for(const id of R().sorten) if(S.verlust[id]) A.push({t:`Über den Winter sind ${num(S.verlust[id])} ${SORTEN[id].name}-Reben eingegangen. Nachpflanzen`,tab:'gut',sub:'berg'});
   if(m<=2&&frei>0) A.push({t:`Pflanzzeit: Platz für ${num(frei)} Reben`,tab:'gut',sub:'berg',ruhig:1});
+  // Version 7.3: Düngen steht an, sobald der Boden auf 70 % oder weniger fällt. Düngt der Weingut-Manager, nur ein ruhiger Hinweis.
+  if(S.boden<=70&&S.duengungen<3) A.push(aufgabeAktiv('duengen')?{t:`Boden bei ${S.boden}\u00a0%: dein ${MGR_BEREICHE.weingut.name} düngt beim Weiterblättern`,tab:'gut',sub:'berg',ruhig:1}:{t:`🌱 Boden bei ${S.boden}\u00a0%: Düngen ist dran`,tab:'gut',sub:'berg'});
   if(m===11){const t=steuerSchau(); if(t.steuer>0){
     A.push({t:`💶 Im Januar rund ${eur(t.steuer)} Steuer auf ${eur(t.gew)} Gewinn. Fassraum oder Flaschen kaufen senkt sie`,tab:'keller',sub:'lager',ruhig:1});
     if(S.duengungen<3&&S.boden<100) A.push({t:`💶 Steuer senken: noch düngen (${S.duengungen} von 3 Mal)`,tab:'gut',sub:'berg',ruhig:1});
@@ -2042,9 +2047,14 @@ function vFeier(){
     <div class="ifuss"><button data-a="feierEnde">Anstoßen 🥂</button></div><div class="ischw"></div></div>`;
 }
 // Töne passend zu den Bewegungen: das Siegel fällt nach 0,9 s (Stempel bei 1,25 s), dann je Punkt ein leiser Klick.
+// Version 7.3: Die Fanfare hängt an den Geräuschen und spielt nur bei ausgeschalteter Musik (sonst läuft die Aufstiegsmusik).
+// Mit Feier-Bild (ab Weingutsbesitzer) kommt sie beim Bild, bei den kleinen Rängen bei der Urkunde.
 function feierStart(){
-  feierStopp(); if(FSTUFE!==1) return;
-  const n=feierPunkte((S.feier||{von:S.rang-1}).von,(S.feier||{zu:S.rang}).zu).length;
+  feierStopp();
+  const F=S.feier||{von:S.rang-1,zu:S.rang}, fanfare=!TON.musik&&(FSTUFE===0||F.zu<FEIER_HOF);
+  if(fanfare) FT.push(setTimeout(()=>fx('fanfare'),250));
+  if(FSTUFE!==1) return;
+  const n=feierPunkte(F.von,F.zu).length;
   FT.push(setTimeout(()=>fx('stempel'),1250));
   for(let k=0;k<n;k++) FT.push(setTimeout(()=>fx('klick'),1750+k*450));
 }
@@ -2150,8 +2160,8 @@ function dauerAuftrag(){
     kassiere(Math.round(n*w.p)); if(!fw) S.absatz=(S.absatz||0)+n*w.p; l.liter-=n; nH+=n; eH+=n*w.p;
   }
   S.lots=S.lots.filter(l=>l.liter>0);
-  if(nL) L.push(`${num(nL)} Flaschen an Weinhandlungen für ${eur(eL)}`);
-  if(nH) L.push(`${num(nH)} Flaschen an den Großhandel für ${eur(eH)}`);
+  if(nL) L.push(`${num(nL)} Flaschen an Weinhandlungen für ${eur(eL)} verkauft`);
+  if(nH) L.push(`${num(nH)} Flaschen an den Großhandel für ${eur(eH)} verkauft`);
   handelMelde(L);
 }
 function reserveChips(){const d=S.dauer||{}; return `<div class="chips" style="flex-wrap:wrap">${DAUER_RESERVE.map(n=>`<button class="chip ${(+d.reserve||0)===n?'an':''}" data-a="dauerRes" data-id="${n}">${n?num(n):'keine'}</button>`).join('')}</div>`}
