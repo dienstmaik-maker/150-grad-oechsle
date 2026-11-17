@@ -1,7 +1,7 @@
 // Helfer für die App: legt alle Dateien des Spiels aufs Gerät, damit es ohne Netz läuft.
 // Die Spielseite (index.html) und das Buch (anleitung.js) kommen immer zuerst frisch aus dem Netz, so kommen neue Fassungen von selbst an. Ohne Netz gilt die gespeicherte.
 // Bilder und Töne kommen aus dem Speicher. Ändert sich eines davon, die Nummer in LAGER erhöhen, dann lädt das Gerät alles neu.
-const LAGER = 'oechsle-20';
+const LAGER = 'oechsle-21';
 const DATEIEN = [
   './', 'index.html', 'manifest.webmanifest', 'anleitung.js',
   'bilder/amt.jpg',
@@ -59,6 +59,12 @@ const DATEIEN = [
   'bilder/sommer.jpg',
   'bilder/spitzenlage.jpg',
   'bilder/stadt.jpg',
+  'bilder/szene-1.jpg',
+  'bilder/szene-2.jpg',
+  'bilder/szene-3.jpg',
+  'bilder/szene-5.jpg',
+  'bilder/szene-7.jpg',
+  'bilder/szene-sieg.jpg',
   'bilder/supersommer.jpg',
   'bilder/titel.jpg',
   'bilder/urkunde.webp',
@@ -97,6 +103,9 @@ const DATEIEN = [
   'ton/schere.mp3',
   'ton/stempel.mp3',
 ];
+// Version 7.7: Platz für die Feier-Videos aus 8.1 (szene-start.mp4, szene-1.mp4 bis szene-8.mp4, szene-sieg.mp4).
+// Sie laden nach dem Einrichten im Hintergrund nach, fehlt eines, zeigt das Spiel das Standbild. Die Liste füllt erst 8.1.
+const VIDEOS = [];
 // Die Musik ist groß: Fehlt beim Einrichten ein Stück, klappt der Rest trotzdem, und es wird beim ersten Abspielen nachgeholt.
 const GROSS = f => f.startsWith('ton/musik-');
 
@@ -107,6 +116,8 @@ self.addEventListener('install', e => {
     await c.addAll(DATEIEN.filter(f => !GROSS(f)).map(frisch));
     await Promise.all(DATEIEN.filter(GROSS).map(f => c.add(frisch(f)).catch(() => {})));
   }).then(() => self.skipWaiting()));
+  // Videos warten nicht auf das Einrichten, sie kommen danach im Hintergrund.
+  caches.open(LAGER).then(c => Promise.all(VIDEOS.map(f => c.add(new Request(f, { cache: 'reload' })).catch(() => {}))));
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(K => Promise.all(K.filter(k => k !== LAGER).map(k => caches.delete(k)))).then(() => self.clients.claim()));
