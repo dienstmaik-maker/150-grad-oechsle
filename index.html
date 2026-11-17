@@ -93,6 +93,10 @@ main>h3{font-size:17px;margin:16px 0 8px;padding-left:10px;border-left:4px solid
 #buch .binh .bz span{color:#7b1e3a;min-width:24px;font-weight:700}
 .chip{background:#f8f0dc;color:#2b2118;border:1px solid #b9995a;font-weight:600}.chip.an{background:#7b1e3a;color:#fff;border-color:#591015}
 h4.gk{font:700 15px/1.2 var(--schrift);margin:12px 0 4px;color:#4a1526}
+/* 8.0.1 Dein Stand: Abschnitte und Rangleiter */
+h4.gs{font:700 17px/1.2 var(--schrift);margin:16px 0 6px;padding-top:10px;border-top:1px solid var(--line);color:#4a1526}h3+h4.gs{border:0;padding-top:0;margin-top:2px}
+.rleiter{margin:2px 0 10px}.rgl{display:flex;align-items:baseline;gap:8px;font-size:14px;line-height:1.35;padding:3px 6px;margin:0 -6px;white-space:nowrap;border-radius:8px}.rgl b{flex:none;width:20px;text-align:center;font-size:13px}.rgl span{flex:none}.rgl small{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.rgl.ok b{color:var(--gruen)}.rgl.jetzt{background:rgba(123,30,58,.12);font-weight:700;color:var(--wein)}.rgl.zu{color:var(--mut)}.rgl.zu b{opacity:.6;font-size:11px}
 .pano,.mbild,.kbild{box-shadow:0 0 0 3px #5c3a21,0 0 0 4px #2b180c,0 4px 8px rgba(0,0,0,.35)}.pano,.mbild{margin-top:4px}
 /* Okay als gezeichnetes Wachssiegel in Gold (Paket 7). */
 .mitte{text-align:center;margin-top:10px}
@@ -480,7 +484,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='8.0';
+const VERSION='8.0.1';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -1576,7 +1580,7 @@ function neuesSpiel(){
   neuePrognose();
   TOP=[]; FUSS=[];
   schlag(100,'Willkommen auf deinem Weingut',`${S.ich?`${S.ich} übernimmt ${S.name} ${WO[S.region]}: 3 Hektar kahler Weinberg, leere Fässer und ${eur(START_GELD)}.`:`${S.name} ${WO[S.region]} startet mit 3 Hektar kahlem Weinberg, leeren Fässern und ${eur(START_GELD)}.`} Bis März ist Pflanzzeit, im Weinberg pflanzt du deinen ${SORTEN[sortenFolge()[0]].name}. Die zweite und dritte Rebsorte bringt der Aufstieg. Im ersten Jahr tragen junge Reben nur die Hälfte.`,'weingut',{du:1});
-  schlag(50,'So kommst du herum','Unten wählst du Weingut, Kellerei oder Stadt, die Leiste darüber bringt dich zu den Orten. Wischen übers Bild geht auch. Ein Punkt am Reiter zeigt Neues oder Dringendes, ein Tipp aufs Geld öffnet die Kasse. Das kleine i oben rechts in jedem Fenster erklärt, was du dort tust. Spielstände, Ton und das Buch liegen im Büro.');
+  schlag(50,'So kommst du herum','Unten wählst du Weingut, Kellerei oder Stadt, die Leiste darüber bringt dich zu den Orten. Wischen übers Bild geht auch. Ein Punkt am Reiter zeigt Neues oder Dringendes, ein Tipp aufs Geld öffnet deinen Stand mit Kasse und Rängen. Das kleine i oben rechts in jedem Fenster erklärt, was du dort tust. Spielstände, Ton und das Buch liegen im Büro.');
   schlag(40,'Leute für Weinberg und Keller','Je 1.000 Reben brauchst du das ganze Jahr einen Erntehelfer. Du hast einen, für mehr Reben stellst du vor dem Pflanzen beim Arbeitsamt in der Stadt ein. Der Lohn dort schwankt jeden Monat, wer eingestellt ist, behält seinen. Dein Lagerarbeiter betreut 10.000 l Fassraum und 20.000 leere Flaschen. Fehlen dir Leute, geht es nicht in den nächsten Monat.','arbeit');
   schlag(30,'Die Konkurrenz schläft nicht','Deine Gegner: '+S.gegner.map(g=>`${g.name}, ${GEGNER_TYP[g.typ].art}, ${WO[g.region]}`).join('; ')+`. Wer zuerst Präsident des Weinbauverbands wird, gewinnt. Alle ${GEN_JAHRE} Jahre übernimmt bei allen die nächste Generation.`);
   dorf('n0');
@@ -2160,6 +2164,16 @@ function vSlots(){
   <div class="mut" style="margin:0 0 12px">Gespeichert wird von selbst nach jedem Monat. Mit „Als Datei sichern“ bekommst du eine Datei, die du aufheben oder auf ein anderes Gerät mitnehmen kannst.</div>
   ${tonKnoepfe()}<div class="mut" style="margin:0 0 12px">Bilder, Musik und Geräusche sind mit KI erstellt (Musik mit Treblo, Geräusche mit ElevenLabs, elevenlabs.io).</div></main>`;
 }
+// Version 8.0.1 "Dein Stand": Rangleiter mit Kurztexten (Maik 17.11.2026, ohne Manager-Stufen, die stehen im Arbeitsamt).
+// Steht im Fenster "Dein Stand" (Tipp aufs Geld) und im Rang-Fenster unter Aktuelles. Erreichte Ränge mit Haken, der aktuelle mit Pfeil,
+// die kommenden ausgegraut mit Schloss und rechts dem, was sie freischalten.
+const LEITER=['','Auktionen, 2. Sorte, Kellerausbau','Sekt, Export, Düngerstreuer','Landesprämierung, Erntemaschine','3. Sorte, Laubschneider','Bundeswettbewerb, Vollernter','Weinhandlung, Abfüllanlage','Hoffest, Kontrollen','Spitzenlage','der Sieg'];
+function rangLeiter(){const r=S.rang;
+  return `<h4 class="gs">🪜 Rang ${r+1} von ${RAENGE.length}</h4><div class="rleiter">${RAENGE.map((x,i)=>{const k=i<r?'ok':i===r?'jetzt':'zu';
+    return `<div class="rgl ${k}"><b>${k==='ok'?'✓':k==='jetzt'?'▸':'🔒'}</b><span>${rangK(i)}</span>${k==='zu'?`<small>${LEITER[i]}</small>`:''}</div>`}).join('')}</div>`}
+// Zahlen in Zeilen und Balken des Fensters "Dein Stand": "ha" und "Mio." wie in der Kopfzeile, kein "T" für Tausend (Maik 17.11.2026).
+const mioZahl=x=>x.toLocaleString('de-DE',{maximumFractionDigits:Math.abs(x)<1?2:1});
+const vonGeld=(ist,soll)=>soll>=1e6?`${mioZahl(ist/1e6)} von ${mioZahl(soll/1e6)} Mio. €`:`${Math.abs(ist)>=1e6?geldKurz(ist):num(ist)} von ${eur(soll)}`;
 // Fenster "Aktueller Rang" in Aktuelles (seit 7.4 auf dem Fenster-Baustein). Im Monat des Aufstiegs leuchtet es golden (seit 7.2).
 function vRang(){
   const r=S.rang, n=RAENGE[r+1], v=vermoegen(), bep=flaecheBep(), frei=Math.round((S.ha-bep)*10)/10;
@@ -2169,11 +2183,11 @@ function vRang(){
   const barF=soll=>`<div class="bar fl ${bep>=soll?'':'g'}"><i class="hell" style="width:${w(S.ha,soll)}%"></i><i style="width:${w(bep,soll)}%"></i></div>`;
   const nach=frei>0?`<div class="mut" style="margin:-4px 0 8px">Noch ${num(frei*HA_REBEN)} Reben frei zum Nachpflanzen (${frei.toLocaleString('de-DE')} ha).</div>`:'';
   const neu=S.rangNeu===S.jahr*12+S.monat;
-  const h=n?`<div class="kv"><span>Ansehen</span><span>${S.ansehen} von ${n.ans}</span></div>${bar(S.ansehen,n.ans)}
-    <div class="kv"><span>Bepflanzt</span><span>${bep.toLocaleString('de-DE')} von ${n.ha} Hektar</span></div>${barF(n.ha)}${nach}${S.ha<n.ha&&!maklerGrund()?`<div class="mut" style="margin:-4px 0 8px">Keine Auktion in Sicht? Der Makler im Rathaus verkauft dir einen Hektar für ${eur(MAKLER_PREIS)}.</div>`:''}
-    <div class="kv"><span>Vermögen</span><span>${eur(v)} von ${eur(n.verm)}</span></div>${bar(v,n.verm)}
+  const h=(n?`<div class="kv"><span>⭐ Ansehen</span><span>${S.ansehen} von ${n.ans}</span></div>${bar(S.ansehen,n.ans)}
+    <div class="kv"><span>🌱 Bepflanzt</span><span>${bep.toLocaleString('de-DE')} von ${n.ha} Hektar</span></div>${barF(n.ha)}${nach}${S.ha<n.ha&&!maklerGrund()?`<div class="mut" style="margin:-4px 0 8px">Keine Auktion in Sicht? Der Makler im Rathaus verkauft dir einen Hektar für ${eur(MAKLER_PREIS)}.</div>`:''}
+    <div class="kv"><span>💰 Vermögen</span><span>${eur(v)} von ${eur(n.verm)}</span></div>${bar(v,n.verm)}
     <div class="mut">Der Aufstieg zum Rang ${n.name} bringt: ${bringt(r+1)}.${rahmenSatz(r+1)}</div>`
-    :`<div class="kv"><span>Ansehen</span><span>${S.ansehen}</span></div><div class="kv"><span>Vermögen</span><span>${eur(v)}</span></div><div class="fleer" style="margin-top:6px">Höher geht es nicht.</div>`;
+    :`<div class="kv"><span>⭐ Ansehen</span><span>${S.ansehen}</span></div><div class="kv"><span>💰 Vermögen</span><span>${eur(v)}</span></div><div class="fleer" style="margin-top:6px">Höher geht es nicht.</div>`)+rangLeiter();
   return fenster('rang',`${neu?'<span class="rneuB">Neu</span> ':''}Aktueller Rang: ${rangN(r)}`,h,{kl:neu?'rneu':'',buch:'ziel',
     hin:[S.sieger&&`🏆 Gewonnen hat: ${esc(S.sieger)}`],
     stand:`Stufe ${r+1} von ${RAENGE.length} · ${genNr()}. Generation, die nächste übernimmt im Januar ${genJahr(genNr())}${n?`<br>Für den Aufstieg zum Rang ${n.name} brauchst du alles drei zugleich.`:''}`,
@@ -3213,9 +3227,13 @@ function lese(id,la,p){
 const AKT={
   buch(d){BUCH=d.id||''; buchZeig()},
   buchZu(){BUCH=null; buchZeig()},
-  geldInfo(){const K=kosten(), k=S.kredit, kv=(a,x,c)=>`<div class="kv"><span>${a}</span><span class="${c||''}">${x}</span></div>`;
-    openSheet(`<h3>💰 Deine Kasse</h3>${kv('Kontostand',eur(S.geld),S.geld<0?'rot':'')}<h4 class="gk">Dieses Jahr bisher</h4>${kv('Einnahmen',eur(S.jahrEin),'gruen')}${kv('Ausgaben',eur(S.jahrAus),'rot')}${kv('Ergebnis',eur(S.jahrEin-S.jahrAus),S.jahrEin>=S.jahrAus?'gruen':'rot')}
-    <h4 class="gk">Jeden Monat fällig</h4>${kv('Löhne',eur(K.loehne))}${kv('Feste Kosten',eur(K.basis))}${k?kv('Zinsen',eur(K.zins))+kv('Tilgung',eur(K.tilgung))+kv('Kredit offen',eur(k.rest)):''}${kv('Zusammen',eur(K.basis+K.loehne+K.zins+K.tilgung))}
+  // Seit 8.0.1 "Dein Stand" statt "Deine Kasse": Kasse, Bis zum nächsten Rang (alle drei Bedingungen mit Balken wie in vRang) und die Rangleiter.
+  geldInfo(){const K=kosten(), k=S.kredit, kv=(a,x,c)=>`<div class="kv"><span>${a}</span><span class="${c||''}">${x}</span></div>`, n=RAENGE[S.rang+1];
+    let ziel='';
+    if(n){const v=vermoegen(), bep=flaecheBep(), w=(ist,soll)=>clamp(ist/soll*100,0,100), bar=(ist,soll)=>`<div class="bar ${ist>=soll?'':'g'}"><i style="width:${w(ist,soll)}%"></i></div>`;
+      ziel=`<h4 class="gs">🎯 Bis zum nächsten Rang</h4>${kv('⭐ Ansehen',`${num(S.ansehen)} von ${num(n.ans)}`)}${bar(S.ansehen,n.ans)}${kv('🌱 Bepflanzt',`${bep.toLocaleString('de-DE')} von ${n.ha} ha`)}<div class="bar fl ${bep>=n.ha?'':'g'}"><i class="hell" style="width:${w(S.ha,n.ha)}%"></i><i style="width:${w(bep,n.ha)}%"></i></div>${kv('💰 Vermögen',vonGeld(v,n.verm))}${bar(v,n.verm)}`}
+    openSheet(`<h3>📋 Dein Stand</h3><h4 class="gs">💶 Kasse</h4>${kv('🏦 Kontostand',eur(S.geld),S.geld<0?'rot':'')}<h4 class="gk">Dieses Jahr bisher</h4>${kv('📈 Einnahmen',eur(S.jahrEin),'gruen')}${kv('📉 Ausgaben',eur(S.jahrAus),'rot')}${kv('⚖️ Ergebnis',eur(S.jahrEin-S.jahrAus),S.jahrEin>=S.jahrAus?'gruen':'rot')}
+    <h4 class="gk">Jeden Monat fällig</h4>${kv('Löhne',eur(K.loehne))}${kv('Feste Kosten',eur(K.basis))}${k?kv('Zinsen',eur(K.zins))+kv('Tilgung',eur(K.tilgung))+kv('Kredit offen',eur(k.rest)):''}${kv('Zusammen',eur(K.basis+K.loehne+K.zins+K.tilgung))}${ziel}${rangLeiter()}
     ${mib('geld')}<div class="btns"><button class="sec" data-a="zurBank">🏦 Zur Bank</button><button data-a="close">Okay</button></div>`)},
   // Version 7.6: Wetter oben links und Rat an der Pinnwand als Blatt.
   wetterInfo(){fx('menue'); const kv=(a,x)=>`<div class="kv"><span>${a}</span><span>${x}</span></div>`;
