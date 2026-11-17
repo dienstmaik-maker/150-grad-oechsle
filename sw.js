@@ -54,6 +54,7 @@ const DATEIEN = [
   'bilder/schild-wag.webp',
   'bilder/schild-zweit.webp',
   'bilder/sieg.jpg',
+  'bilder/siegel-rot.webp',
   'bilder/siegel.webp',
   'bilder/sommer.jpg',
   'bilder/spitzenlage.jpg',

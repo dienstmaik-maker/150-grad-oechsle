@@ -289,8 +289,8 @@ img.fass{height:1.1em;vertical-align:-.18em}
 .urk .uname{font:400 clamp(19px,6.2vw,30px)/1.15 "Urkunde Schreibschrift",var(--schrift);color:#3a2a1a}
 .urk .urang{font:400 clamp(19px,6.2vw,30px)/1.1 "Urkunde Fraktur",var(--schrift);color:#7b1e3a}
 .urk small{font-size:clamp(9.5px,2.6vw,12.5px);opacity:.75;margin-top:2px}
-.urk .usiegel{position:absolute;left:50.3%;top:87.3%;width:11.6%;aspect-ratio:1;translate:-50% -50%;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 34% 30%,#d8505b,#9a1828 58%,#5e0b17);box-shadow:0 2px 4px rgba(0,0,0,.45),inset 0 -2px 4px rgba(0,0,0,.35),inset 0 2px 3px rgba(255,190,190,.35)}
-.urk .usiegel span{font-size:clamp(12px,3.6vw,20px);filter:sepia(1) saturate(2.5) hue-rotate(-30deg) brightness(.75)}
+.urk .usiegel{position:absolute;left:50.3%;top:87.3%;width:13.5%;aspect-ratio:1;translate:-50% -50%;background:url(bilder/siegel-rot.webp) center/contain no-repeat;filter:drop-shadow(0 2px 2px rgba(0,0,0,.45))}
+/* Version 7.3: gemaltes Wachssiegel statt Kreis mit Trauben-Emoji. */
 .urk.neu .usiegel{animation:siegel .35s cubic-bezier(.3,1.4,.5,1) .9s both}
 @keyframes siegel{from{transform:scale(2.6);opacity:0}to{transform:none;opacity:1}}
 .urk.gross{margin:6px 0 2px}
@@ -2028,7 +2028,7 @@ function feierPunkte(von,zu){
 }
 // Die Urkunde selbst: Papier mit Rand, Text in der freien Mitte, Siegel im Kreis unten.
 function urkHtml(i,m,j,kl){
-  return `<div class="urk ${kl||''}"><div class="utext"><div class="utitel">Urkunde</div><p>Der Weinbauverband ernennt</p><b class="uname">${esc(S.name)}</b><p>zum Rang</p><b class="urang">${esc(RAENGE[i].name)}</b><small>${MON[m]} ${j} · ${esc(REGIONEN[S.region].name)}</small></div><div class="usiegel"><span>🍇</span></div></div>`;
+  return `<div class="urk ${kl||''}"><div class="utext"><div class="utitel">Urkunde</div><p>Der Weinbauverband ernennt</p><b class="uname">${esc(S.name)}</b><p>zum Rang</p><b class="urang">${esc(RAENGE[i].name)}</b><small>${MON[m]} ${j} · ${esc(REGIONEN[S.region].name)}</small></div><div class="usiegel"></div></div>`;
 }
 function konfetti(n){
   const F=['#f0c75a','#d9a520','#fbeede','#9b2a4a','#e8b84a'];
