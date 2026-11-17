@@ -102,7 +102,7 @@ button.siegel:active{transform:translateY(2px) scale(.96);filter:brightness(.92)
 /* Version 4.0: Kauf- und Verkaufsknöpfe mit dem Preis drauf, rechts in der Karte. Links steht eine kurze Erklärung.
    Fehlt das Geld, wird der Knopf grau (.arm), bleibt aber antippbar und sagt, was fehlt. */
 .kz{display:flex;align-items:center;gap:10px;margin-top:10px}.kz>div:first-child{flex:1;min-width:0;font-size:14px;color:var(--mut)}
-.kzk{display:flex;flex-direction:column;align-items:stretch;gap:7px;flex:none}.kz.reihe .kzk{flex-direction:row-reverse;gap:8px}
+.kzk{display:flex;flex-direction:column;align-items:stretch;gap:7px;flex:none}.kz.reihe .kzk{flex-direction:row-reverse;flex-wrap:wrap;flex:0 1 auto;gap:8px}
 button.pk{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;min-width:122px;min-height:62px;padding:16px 23px 18px;border-image-width:50% 15px;font-size:15px}
 button.pk>b{font:800 16px/1.05 var(--knopf);font-variant-caps:normal;font-variant-numeric:tabular-nums;letter-spacing:0;white-space:nowrap}
 button.pk>small{font:600 10.5px/1.1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-caps:normal;letter-spacing:0;white-space:nowrap;opacity:.85}
@@ -368,7 +368,7 @@ button.fi.wort{width:auto;padding:0 11px;font:600 13px/1 system-ui,-apple-system
 .fzl.ab{margin-top:8px;padding-top:9px;border-top:1px solid rgba(154,106,53,.38)}
 .fzl>.bzeile{background:none;border:0;border-top:1px solid rgba(154,106,53,.38);border-radius:0;box-shadow:none;margin:0;padding:9px 0}
 .fzl>.bzeile:first-child{border-top:0;padding-top:0}.fzl>.bzeile:last-child{padding-bottom:0}
-.finfo .kv{font-size:14px;padding:2px 0}
+.finfo .kv{font-size:14px;padding:2px 0}.kv.lang span:first-child{flex:none}
 /* Block B: Aufgaben, Manager-Zeilen und Bilder im Fenster, der aufgeklappte Steckbrief. */
 .fin>.task:last-of-type,.fin>.wahl:last-of-type{margin-bottom:0}.fin .task,.fin .wahl{box-shadow:none}
 .fin>.kbild{margin:0 0 10px}.fklapp{margin-top:8px;padding-top:8px;border-top:1px solid rgba(154,106,53,.38)}
@@ -463,7 +463,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='7.3';
+const VERSION='7.4';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -2377,7 +2377,7 @@ function vAktuell(){
   return fenster('ansteht','Das steht an',A.length?A.map(a=>`<button class="task ${a.rot?'rot':''}" data-a="${a.akt||'tab'}" data-id="${a.tab||''}" data-sub="${a.sub||''}">${a.rot?'⚠️ ':''}${esc(a.t)}</button>`).join(''):[],{
     leer:'Diesen Monat steht nichts an. Du kannst weiterblättern.',
     kn:[!an&&`<button class="klein" data-a="weiterBis">⏩ Weiter bis etwas ansteht</button>`,`<button class="sec klein" data-a="tab" data-id="monat">📅 Monatsbericht</button>`].filter(Boolean),
-    i:'Hier steht, was diesen Monat zu tun ist. Ein Tipp führt dich direkt an den Ort. Rot heißt: Das kann nicht warten. Steht nichts Dringendes an, blättert „Weiter bis etwas ansteht“ die ruhigen Monate am Stück durch, höchstens zwölf. Der Monatsbericht zeigt den letzten Winzerboten noch einmal.'})+vRang();
+    i:'Hier steht, was diesen Monat zu tun ist. Ein Tipp führt dich direkt an den Ort. Rot heißt: Das kann nicht warten. Steht nichts Dringendes an, blättert „Weiter bis etwas ansteht“ die ruhigen Monate am Stück durch, höchstens zwölf. Auch Auktionen und Wettbewerbe stehen hier, sobald du bieten oder einreichen kannst. Der Monatsbericht zeigt den letzten Winzerboten noch einmal.'})+vRang();
 }
 // Maschinen (seit 7.4 auf dem Fenster-Baustein): "Deine Maschinen" mit einer Zeile je Maschine, darunter je Bauart ein Fenster zum Kaufen.
 // Was der Rang noch sperrt, steht zugeklappt mit Schloss unten: die kleine Maschine ab Winzermeister, der Vollernter ab Gutsherr.
@@ -2545,7 +2545,7 @@ function kellerAusHtml(){
   const was='Jede Stufe lässt Prädikatsweine und Eiswein einen Monat früher verkaufsreif werden, und jeder Wein gewinnt beim Reifen in der Flasche schneller an Wert.';
   if(pr!=null&&S.rang<R_KELLER) return fenster('ausbau','Kellerausbau','',{zu:`ab dem Rang ${RAENGE[R_KELLER].name}`,i:`${was} Ausbauen kannst du ab dem Rang ${RAENGE[R_KELLER].name}.`});
   const stand=`<div class="kv"><span>Ausgebaut</span><span>Stufe ${K} von ${N}</span></div><div class="bar w"><i style="width:${K/N*100}%"></i></div>
-    ${K?`<div class="kv"><span>Prädikatswein und Eiswein</span><span>${K} ${K===1?'Monat':'Monate'} früher reif</span></div>`:''}`;
+    ${K?`<div class="kv"><span>Prädikat und Eiswein</span><span>${K} ${K===1?'Monat':'Monate'} früher reif</span></div>`:''}`;
   if(pr==null) return fenster('ausbau','Kellerausbau',stand+`<div class="fleer" style="margin-top:6px">Dein Keller ist fertig ausgebaut.</div>`,{i:was});
   return fenster('ausbau','Kellerausbau',stand,{kn:pk('kellerAus','Ausbauen',eur(pr),{klein:`Stufe ${K+1}`,arm:S.geld<pr}),i:was});
 }
@@ -2588,7 +2588,7 @@ function vStadt(){
     if(S.rang<R_AUKTION) zu.push(fenster('makler','Makler','',{zu:`ab dem Rang ${RAENGE[R_AUKTION].name}`,i:mkI}));
     else if(S.rang<R_MAX){
       const g=maklerGrund(), n=RAENGE[S.rang+1];
-      h+=fenster('makler','Makler',`<div class="kv"><span>Deine Fläche</span><span>${S.ha} Hektar</span></div><div class="kv"><span>Für den Rang ${n.name}</span><span>${n.ha} Hektar bepflanzt</span></div>`,{
+      h+=fenster('makler','Makler',`<div class="kv"><span>Deine Fläche</span><span>${S.ha} Hektar</span></div><div class="kv"><span>Für den nächsten Rang</span><span>${n.ha} Hektar bepflanzt</span></div>`,{
         links:g,kn:pk('makler','Kaufen',eur(MAKLER_PREIS),{klein:'1 Hektar',aus:!!g,arm:S.geld<MAKLER_PREIS}),i:mkI});
     }
     const anI=`Einmal im Jahr kannst du dem Prüfer einen Hinweis geben. Findet er bei einem Gegner gepanschten Wein, kostet ihn das ${ANREG_ANS} Ansehen und Strafe. Findet er nichts, kostet dich die falsche Verdächtigung ${ANREG_FEHL} Ansehen. Gerüchte im Winzerboten helfen beim Raten.`;
@@ -2677,7 +2677,7 @@ function vStadt(){
     const ohneGeld=k=>fe[k]?`<div class="rot" style="font-size:14px;margin:4px 0">${fe[k]===1?'Es fehlt einer':'Es fehlen '+fe[k]}, vorher geht es nicht in den nächsten Monat. Einstellen geht jetzt auch ohne Geld, dein Konto rutscht dann ins Minus.</div>`:'';
     const lohnTeil=k=>{const a=S.loehne[k];
       return `<div class="kv"><span>Angestellt</span><span>${S[k]}</span></div>
-      ${a.length?`<div class="kv"><span>Ihre Löhne</span><span>${lohnListe(k)}</span></div><div class="kv"><span>Lohnkosten im Monat</span><span>${eur(lohnSumme(k))}</span></div>`:''}
+      ${a.length?`<div class="kv lang"><span>Ihre Löhne</span><span>${lohnListe(k)}</span></div><div class="kv"><span>Lohnkosten im Monat</span><span>${eur(lohnSumme(k))}</span></div>`:''}
       <div class="kv"><span>Angebot diesen Monat</span>${lohnAngebot(k)}</div>`};
     const lohnKnoepfe=k=>{const a=S.loehne[k];
       return [pk('helfer','Einstellen',eur(VERMITTLUNG),{id:k,n:1,arm:S.geld<VERMITTLUNG&&!leuteFehlen()[k],klein:`+${eur(S.angebot[k])} Lohn`}),pk('helfer','Entlassen','',{id:k,n:-1,sec:1,aus:S[k]<1,klein:a.length?`−${eur(a[a.length-1])} Lohn`:''})]};
