@@ -360,6 +360,25 @@ main>.ehrung{border-color:#a87908}
 .pano{border-radius:0;box-shadow:0 4px 10px rgba(0,0,0,.45)}
 .pano::after{content:"";position:absolute;inset:0;pointer-events:none;border:13px solid transparent;border-image:url(bilder/rahmen.webp) 39/13px stretch}
 .pano .ptitel{padding-bottom:17px}
+/* ===== Version 7.4 "Übersicht": ein Baustein für alle Fenster (fenster, fz, fschmal im Code) =====
+   Kopf mit der Überschrift in Schrift und Farbe des Hauptreiters und dem kleinen grauen i oben rechts, darunter Hinweise, Zustand und Zeilen, die Knöpfe unten rechts. */
+:root{--ftitel:#7b1e3a;--fgrau:#857560}
+.fen{padding:0;overflow:hidden}
+.fkopf{display:flex;align-items:center;gap:6px;min-height:44px;padding:0 3px 0 14px;background:rgba(123,30,58,.08);border-bottom:1px solid rgba(154,106,53,.5)}
+.fkopf h3,.fen.schmal h3{flex:1;min-width:0;margin:0;padding:9px 0 8px;font:700 19px/1.15 var(--knopf);font-variant-caps:small-caps;letter-spacing:.04em;color:var(--ftitel)}
+.fkopf h3 small{display:block;margin-top:1px;font:400 13px/1.3 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-caps:normal;letter-spacing:0;color:var(--mut)}
+button.fi{flex:none;display:grid;place-items:center;width:44px;height:44px;min-height:0;padding:0;border:0;border-image:none;background:none;filter:none;text-shadow:none;letter-spacing:0;font-variant-caps:normal}
+button.fi>i{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--fgrau);color:var(--fgrau);font:italic 700 15px/21px Georgia,"Times New Roman",serif;text-align:center}
+button.fi.an>i{background:var(--fgrau);color:#fbf5e6}
+button.fi.wort{width:auto;padding:0 11px;font:600 13px/1 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--fgrau);text-decoration:underline dotted;text-underline-offset:3px}
+.finfo{padding:9px 14px 10px;font-size:14px;color:var(--mut);background:rgba(255,255,255,.42);border-bottom:1px solid rgba(154,106,53,.5)}
+.fin{padding:10px 14px 12px}
+.fin>.hilfe{margin:0 0 9px}.fin>.fstand{margin:0 0 9px;font-size:14px;color:var(--mut)}.fleer{font-size:14px;color:var(--mut)}
+.fz{padding:9px 0;border-top:1px solid rgba(154,106,53,.38)}.fz:first-child{border-top:0;padding-top:0}.fz:last-child{padding-bottom:0}
+.fz .kz{margin-top:5px;min-height:40px}.fz .kz button{white-space:nowrap}
+.fen.zu{opacity:.88}.fen.zu .fkopf{background:none;border-bottom:0}.fen.zu h3{color:var(--mut)}.fen.zu .finfo{border-top:1px solid rgba(154,106,53,.5);border-bottom:0}
+button.fen.schmal{display:flex;align-items:center;gap:10px;width:100%;min-height:0;padding:3px 10px 3px 14px;border-image:none;filter:none;text-shadow:none;text-align:left;letter-spacing:0;font:400 14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-caps:normal;color:var(--mut);cursor:pointer}
+.fen.schmal h3{flex:none}.fen.schmal .fw{flex:1;text-align:right;font-variant-numeric:tabular-nums}.fen.schmal .fw b{color:var(--ink);font-weight:600}.fen.schmal .pfeil{font-size:22px;line-height:1}
 </style>
 </head>
 <body>
@@ -2067,7 +2086,7 @@ function urkWand(){
 }
 // Kopf jeder Ansicht: das Bild des Ortes mit dem Titel darin.
 // Seit 7.0 (Schritt F) steht in Weingut, Kellerei und Stadt darunter die Zeile des zuständigen Managers (mgrInfo).
-function kopf(titel){return ortBild(titel)+mgrInfo()}
+function kopf(titel){return ortBild(titel)}
 function vGut(){
   const T={berg:'Weinberg',betrieb:S.name,aktuell:'Aktuelles',maschinen:'Maschinen',buero:'Büro'};
   return kopf(T[SUB])+{berg:vBerg,betrieb:vBetrieb,aktuell:vAktuell,maschinen:vMaschinen,buero:vBuero}[SUB]();
@@ -2339,6 +2358,31 @@ function pk(a,t,p,o={}){
 }
 // Zeile unten in der Karte: links eine kurze Erklärung, rechts die Knöpfe untereinander.
 function kz(links,...kn){return `<div class="kz${links?'':' reihe'}"><div>${links||''}</div><div class="kzk">${kn.join('')}</div></div>`}
+/* ================= Fenster-Baustein (Version 7.4 "Übersicht") ================= */
+// Jedes Fenster an jedem Ort ist gleich gebaut: oben die Überschrift in Schrift und Farbe des Hauptreiters, rechts daneben das kleine graue i,
+// darunter Hinweise der Manager, Zustand und Zeilen, die Knöpfe immer unten rechts.
+// id: Kennung fürs i. titel: Überschrift. inhalt: fertiges HTML oder eine Liste von Zeilen aus fz(), die Liste bekommt Trennlinien.
+// o.i: Erklärtext hinter dem i. Er ist immer zugeklappt, egal bei welchem Rang, offen bleibt er nur bis zum Ortswechsel (FI_AUF).
+//      Warnungen und rote Zeilen gehören nie ins i, sie stehen im Fenster.
+// o.buch: Kapitel für "Mehr im Buch" (ohne Angabe das Kapitel des Ortes, false = kein Link).
+// o.hin: Hinweise an der Aufgabe, immer sichtbar ("Dein Kellermeister keltert beim Weiterblättern"). o.stand: graue Zeile zum Zustand.
+// o.leer: graue Zeile, wenn die Liste leer ist. o.kn: Knopf oder Knöpfe unten rechts, o.links: kurzer grauer Text links daneben.
+// o.zu: Das Fenster ist gesperrt, der Text nennt den Rang. Es steht zugeklappt mit Schloss ganz unten am Ort.
+// o.iWort und o.iAkt: ein graues Wort statt des i mit eigener Aktion (Kellerbuch: "Weinlexikon").
+const FI_AUF=new Set();
+function fenster(id,titel,inhalt,o={}){
+  const auf=FI_AUF.has(id), buch=o.buch===undefined?BUCH_ORT[SUB]:o.buch;
+  const i=o.iWort?`<button class="fi wort" data-a="${o.iAkt}">${o.iWort}</button>`
+    :o.i?`<button class="fi${auf?' an':''}" data-a="fi" data-id="${id}" aria-label="Erklärung zu ${esc(titel)}" aria-expanded="${auf}"><i>i</i></button>`:'';
+  const info=o.i&&!o.iWort?`<div class="finfo"${auf?'':' hidden'}>${o.i}${buch?mib(buch):''}</div>`:'';
+  if(o.zu) return `<section class="card fen zu"><header class="fkopf"><h3>🔒 ${titel}<small>${o.zu}</small></h3>${i}</header>${info}</section>`;
+  const kern=Array.isArray(inhalt)?(inhalt.length?`<div class="fzl">${inhalt.join('')}</div>`:`<div class="fleer">${o.leer||'Gerade gibt es hier nichts zu tun.'}</div>`):(inhalt||'');
+  return `<section class="card fen"><header class="fkopf"><h3>${titel}</h3>${i}</header>${info}<div class="fin">${(o.hin||[]).filter(Boolean).map(t=>`<div class="hilfe">${t}</div>`).join('')}${o.stand?`<div class="fstand">${o.stand}</div>`:''}${kern}${o.kn?kz(o.links||'',...[].concat(o.kn)):''}</div></section>`;
+}
+// Zeile im Fenster für einen Wein oder Posten: Name, graue Angaben, darunter links Zustand oder Warnung, rechts der Knopf.
+function fz(name,angaben,zustand,...kn){return `<div class="fz"><b>${name}</b>${angaben?`<div class="mut">${angaben}</div>`:''}${zustand||kn.length?kz(zustand||'',...kn):''}</div>`}
+// Schmale Zeile für reinen Zustand: links die Überschrift, rechts die Werte. Ein Tipp führt an den Ort, an dem man etwas daran ändert.
+function fschmal(titel,werte,sub){return `<button class="card fen schmal" data-a="sub" data-id="${sub}"><h3>${titel}</h3><span class="fw">${werte.join('<br>')}</span><span class="pfeil">›</span></button>`}
 function vAktuell(){
   // Version 4.4 (Maik): "Das steht an" ganz oben, der Rang darunter.
   return `<h3>Das steht an</h3>${aufgabenHtml()}
@@ -2434,22 +2478,35 @@ function vKeller(){
   const T={start:'Weinkeller',buch:'Kellerbuch',sabotage:'Hintertür',lager:'Lager'};
   return kopf(T[SUB])+{start:vKellerStart,buch:vBuch,sabotage:vSabotage,lager:vLager}[SUB]();
 }
-// Startansicht des Kellers: keltern, abfüllen, Sekt herstellen.
+// Startansicht des Kellers (seit 7.4 das Muster für den Fenster-Baustein): Keltern und Abfüllen oben, dann Sekt, der Vorrat als schmale Zeile.
+// Solange Sekt gesperrt ist, steht sein Fenster zugeklappt ganz unten.
 function vKellerStart(){
-  const tr=S.lots.filter(l=>l.status==='trauben'), fa=S.lots.filter(l=>l.status==='fass'), bel=fassBelegt();
-  let h=`<div class="card"><h3>Vorrat</h3>
-    <div class="kv"><span>Fassraum</span><span>${num(bel)} von ${num(S.fassraum)}\u00a0l</span></div><div class="bar w"><i style="width:${S.fassraum?bel/S.fassraum*100:0}%"></i></div>
-    <div class="kv"><span>Leere Flaschen (1 l)</span><span>${num(S.flaschen)}</span></div>
-    <div class="btns"><button class="klein sec" data-a="sub" data-id="lager">Zum Lager</button><button class="klein sec" data-a="sub" data-id="buch">Zum Kellerbuch</button></div></div>`;
-  h+=`<h3>Wein keltern</h3>`+(aufgabeAktiv('keltern')?`<div class="hilfe" style="margin-bottom:8px">🍷 Dein ${MGR_BEREICHE.keller.name} keltert beim Weiterblättern und kauft fehlenden Fassraum dazu.</div>`:'')+(tr.length?tr.map(l=>`<div class="card"><b>${dot(l.sorte)}${SORTEN[l.sorte].name}</b><div class="mut">${num(l.liter)}\u00a0l Trauben · ${l.oe}° Öchsle · ${LESE[l.leseart]}${mani(l)?' · 🤫 '+maniText(l):''}</div><div class="rot mut">Muss diesen Monat ins Fass, sonst verdirbt alles.</div><div class="btns"><button data-a="keltern" data-id="${l.id}">Keltern</button></div></div>`).join(''):'<div class="card mut">Keine Trauben im Kelterhaus.</div>');
-  h+=`<h3>Wein in Flaschen abfüllen</h3>`+(fa.length?fa.map(l=>`<div class="card"><b>${dot(l.sorte)}${lotName(l)}</b>
-    <div class="mut">${num(l.liter)}\u00a0l · ${l.oe}° Öchsle · seit ${l.fassMonate} ${l.fassMonate===1?'Monat':'Monaten'} im Fass</div>
-    <div class="mut ${l.fassMonate>=5?'rot':''}">Verdirbt in ${8-l.fassMonate} Monaten, wenn er nicht abgefüllt ist.</div>
-    ${l.stufe?`<div class="btns"><button data-a="abfuellen" data-id="${l.id}">Abfüllen (${num(l.liter)} Flaschen)</button></div>`:`<div class="mut">Noch nicht angemeldet. Abfüllen geht erst nach der Anmeldung im Rathaus.</div><div class="btns"><button class="klein sec" data-a="anmelden" data-id="${l.id}">Im Rathaus anmelden</button></div>`}</div>`).join(''):'<div class="card mut">Alle Fässer sind leer.</div>');
-  const sk=S.lots.filter(sektFaehig);
-  if(!sektFrei()) return h+`<h3>Sekt herstellen</h3><div class="card mut">Sekt machen kannst du ab dem Rang ${RAENGE[R_SEKT].name}, dann aus Qualitätswein und Kabinett.</div>`;
-  h+=`<h3>Sekt herstellen</h3><div class="mut" style="margin-bottom:8px">Sekt gibt es nur aus Qualitätswein und Kabinett, alles darüber ist zu wertvoll. Riesling und Spätburgunder bringen als Sekt ${Math.round((SEKT_STAR-1)*100)} % mehr.</div>${aufgabeAktiv('sekt')?`<div class="hilfe" style="margin-bottom:8px">🍷 Dein ${MGR_BEREICHE.keller.name} macht beim Weiterblättern Sekt, bis die Sekt-Schwelle erreicht ist. ${sektAnsText()}</div>`:''}`+(sk.length?sk.map(l=>`<div class="card"><b>${dot(l.sorte)}${lotName(l)}</b><div class="mut">${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte</div><div class="btns"><button class="klein sec" data-a="sekt" data-id="${l.id}">Zu Sekt machen</button></div></div>`).join(''):'<div class="card mut">Sekt entsteht aus reifem Qualitätswein oder Kabinett in der Flasche. Gerade ist keiner so weit.</div>');
-  return h;
+  const tr=S.lots.filter(l=>l.status==='trauben'), fa=S.lots.filter(l=>l.status==='fass'), bel=fassBelegt(), frei=Math.max(0,S.fassraum-bel);
+  const KM=MGR_BEREICHE.keller.name, mon=n=>n===1?'Monat':'Monaten', mk=aufgabeAktiv('keltern'), mf=aufgabeAktiv('flaschen'), ms=aufgabeAktiv('sekt');
+  let h=fenster('keltern','Wein keltern',tr.map(l=>fz(dot(l.sorte)+SORTEN[l.sorte].name,
+      `${num(l.liter)} l Trauben · ${l.oe}° Öchsle · ${LESE[l.leseart]}${mani(l)?' · 🤫 '+maniText(l):''}`,
+      `<span class="rot">Muss diesen Monat ins Fass, sonst verdirbt alles.${l.liter>frei?` Frei sind nur ${num(frei)} l Fassraum.`:''}</span>`,
+      `<button class="klein" data-a="keltern" data-id="${l.id}">Keltern</button>`)),{
+    leer:'Keine Trauben im Kelterhaus.',
+    hin:[mk&&`🍷 Dein ${KM} keltert beim Weiterblättern.`],
+    i:`Frisch gelesene Trauben müssen im Monat der Lese ins Fass. Sie brauchen freien Fassraum, was nicht hineinpasst, geht verloren.${mk?` Dein ${KM} keltert von selbst und kauft fehlenden Fassraum dazu, von Hand keltern kannst du trotzdem jederzeit.`:''}`});
+  h+=fenster('abfuellen','Wein abfüllen',fa.map(l=>{const rest=8-l.fassMonate; return fz(dot(l.sorte)+lotName(l),
+      `${num(l.liter)} l · ${l.oe}° Öchsle · seit ${l.fassMonate} ${mon(l.fassMonate)} im Fass`,
+      `${l.stufe?'':'Noch nicht angemeldet. '}<span class="${l.fassMonate>=5?'rot':''}">Verdirbt in ${rest} ${mon(rest)}.</span>${l.stufe&&S.flaschen<l.liter?` <span class="rot">Es fehlen ${num(l.liter-S.flaschen)} leere Flaschen.</span>`:''}`,
+      l.stufe?`<button class="klein" data-a="abfuellen" data-id="${l.id}">Abfüllen</button>`:`<button class="klein sec" data-a="anmelden" data-id="${l.id}">Anmelden</button>`)}),{
+    leer:'Alle Fässer sind leer.',
+    hin:[mf&&`🍷 Dein ${KM} füllt beim Weiterblättern ab.`],
+    i:`Der Wein bleibt mindestens einen Monat im Fass und höchstens sieben, danach verdirbt er. Abfüllen geht erst nach der Anmeldung im Rathaus. Abgefüllt wird immer das ganze Fass, ein Liter je Flasche.${mf?` Dein ${KM} füllt angemeldete Fässer von selbst ab und kauft die Flaschen dafür, anmelden musst du selbst.`:''}`});
+  const sektI=`Sekt entsteht aus reifem Qualitätswein oder Kabinett in der Flasche, alles darüber ist zu wertvoll. Riesling und Spätburgunder bringen als Sekt ${Math.round((SEKT_STAR-1)*100)} % mehr.`;
+  const vorrat=fschmal('Vorrat',[`Fassraum <b>${num(bel)} von ${num(S.fassraum)} l</b>`,`Leere Flaschen <b>${num(S.flaschen)}</b>`],'lager');
+  if(!sektFrei()) return h+vorrat+fenster('sekt','Sekt herstellen','',{zu:`ab dem Rang ${RAENGE[R_SEKT].name}`,i:`Sekt machen kannst du ab dem Rang ${RAENGE[R_SEKT].name}. ${sektI}`});
+  h+=fenster('sekt','Sekt herstellen',S.lots.filter(sektFaehig).map(l=>fz(dot(l.sorte)+lotName(l),`${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte`,'',
+      `<button class="klein sec" data-a="sekt" data-id="${l.id}">Zu Sekt machen</button>`)),{
+    leer:'Gerade ist kein Wein reif für Sekt.',
+    hin:[ms&&`🍷 Dein ${KM} macht beim Weiterblättern Sekt.`],
+    stand:sektAnsText(),
+    i:sektI+(ms?` Dein ${KM} macht Sekt, bis die Sekt-Schwelle erreicht ist, mehr machst du von Hand.`:'')});
+  return h+vorrat;
 }
 // Lager: hier werden Fässer und Flaschen gekauft.
 function vLager(){
@@ -2652,7 +2709,7 @@ function render(){
   if(SUBS[TAB]&&!SUBS[TAB].some(s=>s[0]===SUB)) SUB=START_SUB[TAB];
   // Kellerbuch und Pinnwand öffnen sich mit einem eigenen Geräusch.
   ortFarbe(SUBS[TAB]?TAB:'gut');
-  const ort=SUBS[TAB]?TAB+'/'+SUB:TAB; if(ort!==ORT_ALT){if(ORT_ALT&&(ort==='keller/buch'||ort==='gut/aktuell')) fx('menue'); ORT_ALT=ort}
+  const ort=SUBS[TAB]?TAB+'/'+SUB:TAB; if(ort!==ORT_ALT){FI_AUF.clear(); if(ORT_ALT&&(ort==='keller/buch'||ort==='gut/aktuell')) fx('menue'); ORT_ALT=ort}
   musikOrt(musikWahl());
   const fehlt=fehlText(), v={monat:vMonat,feier:vFeier,gut:vGut,keller:vKeller,stadt:vStadt}[TAB]();
   if(TAB==='feier'){$('#app').innerHTML=v; feierStart(); return}
@@ -2662,9 +2719,11 @@ function render(){
   <main>${v}</main>
   <nav id="dock">${SUBS[TAB]?`<div id="subs">${SUBS[TAB].map(s=>`<button class="${SUB===s[0]?'an':''}" data-a="sub" data-id="${s[0]}"><i>${s[1]}</i><b>${SUB_NAME[s[0]]}</b>${SUB===s[0]?'':badge(B[TAB+'/'+s[0]])}</button>`).join('')}</div>`:''}<div id="tabs">${tabs.map(t=>`<button class="${TAB===t[0]?'an':''}" data-a="tab" data-id="${t[0]}"><span>${t[1]}</span>${t[2]}${badge(B[t[0]])}</button>`).join('')}<button id="weiter" class="${fehlt?'zu':''}" data-a="weiter"><span>${fehlt?'🔒':'▶'}</span>${fehlt?'Leute fehlen':'Nächster Monat'}</button></div></nav>`;
   // Orte ohne eigenen Erklärtext bekommen das "Kurz gesagt" aus ihrem Buchkapitel, damit alle 14 gleich aussehen.
+  if(!$('main>.fen')){
   const kb=buchKap().find(k=>k.id===BUCH_ORT[SUB]); if(kb&&!$('main>.mut')&&$('main>.pano')) ($('main>.mgrinfo')||$('main>.pano')).insertAdjacentHTML('afterend',`<div class="mut">${kb.kurz}</div>`);
   [...document.querySelectorAll('main>.mut')].forEach((el,i)=>{const lang=el.textContent.length>110; el.classList.add('info'); el.dataset.a='infoAuf';
     el.innerHTML=`<span class="it">${el.innerHTML}</span>${i===0&&BUCH_ORT[SUB]?mib(BUCH_ORT[SUB]):''}`; if(lang&&!INFO_AUF.has(TAB+'/'+SUB)) el.classList.add('zu')});
+  }
   panoStell();
 }
 
@@ -2708,6 +2767,7 @@ const AKT={
     <h4 class="gk">Jeden Monat fällig</h4>${kv('Löhne',eur(K.loehne))}${kv('Feste Kosten',eur(K.basis))}${k?kv('Zinsen',eur(K.zins))+kv('Tilgung',eur(K.tilgung))+kv('Kredit offen',eur(k.rest)):''}${kv('Zusammen',eur(K.basis+K.loehne+K.zins+K.tilgung))}
     ${mib('geld')}<div class="btns"><button class="sec" data-a="zurBank">🏦 Zur Bank</button><button data-a="close">Okay</button></div>`)},
   zurBank(){closeSheet();geh('stadt','bank');render();window.scrollTo(0,0)},
+  fi(d,e){const f=e.target.closest('.fen'), b=f.querySelector('.fi'), x=f.querySelector('.finfo'), auf=x.hidden; x.hidden=!auf; b.classList.toggle('an',auf); b.setAttribute('aria-expanded',auf); if(auf) FI_AUF.add(d.id); else FI_AUF.delete(d.id)},
   infoAuf(d,e){const el=e.target.closest('.info'), k=TAB+'/'+SUB; el.classList.toggle('zu'); if(el.classList.contains('zu')) INFO_AUF.delete(k); else INFO_AUF.add(k)},
   region(d){NEU.name=$('#nm').value;NEU.region=d.id;render()},
   neuOpt(d){NEU.name=$('#nm').value;NEU[d.k]=d.k==='gegner'?+d.v:d.v;const y=window.scrollY;render();window.scrollTo(0,y)},
