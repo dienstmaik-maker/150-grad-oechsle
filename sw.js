@@ -1,7 +1,7 @@
 // Helfer für die App: legt alle Dateien des Spiels aufs Gerät, damit es ohne Netz läuft.
 // Die Spielseite (index.html) und das Buch (anleitung.js) kommen immer zuerst frisch aus dem Netz, so kommen neue Fassungen von selbst an. Ohne Netz gilt die gespeicherte.
 // Bilder und Töne kommen aus dem Speicher. Ändert sich eines davon, die Nummer in LAGER erhöhen, dann lädt das Gerät alles neu.
-const LAGER = 'oechsle-18';
+const LAGER = 'oechsle-19';
 const DATEIEN = [
   './', 'index.html', 'manifest.webmanifest', 'anleitung.js',
   'bilder/amt.jpg',
@@ -101,8 +101,10 @@ const GROSS = f => f.startsWith('ton/musik-');
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(LAGER).then(async c => {
-    await c.addAll(DATEIEN.filter(f => !GROSS(f)));
-    await Promise.all(DATEIEN.filter(GROSS).map(f => c.add(f).catch(() => {})));
+    // cache: 'reload' holt jede Datei frisch vom Server, am Browser-Zwischenspeicher vorbei (seit 7.5.1, sonst blieb das alte Weingut-Bild hängen).
+    const frisch = f => new Request(f, { cache: 'reload' });
+    await c.addAll(DATEIEN.filter(f => !GROSS(f)).map(frisch));
+    await Promise.all(DATEIEN.filter(GROSS).map(f => c.add(frisch(f)).catch(() => {})));
   }).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
