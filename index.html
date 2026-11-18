@@ -218,6 +218,30 @@ img.fass{height:1.1em;vertical-align:-.18em}
 #info{position:fixed;inset:0;z-index:8;overflow-y:auto;background:#000;color:#f3efe6;--card:rgba(16,12,8,.58);--ink:#f3efe6;--mut:#d3cab8;--line:rgba(255,255,255,.18);--rot:#ff8f84;--gruen:#acd682;--gold:#f0c75a;--wein:#9b2a4a}
 #info .ibild{position:fixed;inset:0;background:#000 center/cover no-repeat;animation:izoom 24s ease-out forwards}
 #info.winter .ibild,#info.fruehling .ibild,#info.sommer .ibild,#info.herbst .ibild{background-position:center 38%}
+/* Version 8.4: Das eigene Weingut hinter dem Winzerboten, mit dem Schwenk aus _schwenk.html (Torblick 40 s zwischen 32 und 68 %, Schrägblick 70 s über die ganze Breite).
+   Neue Jahreszeit: Die neue (.ineu) wischt mit weicher Kante von oben über die alte, dazu fallen Teilchen. */
+#info.wg .ibild{background-size:cover;animation:sw-ein 1.2s ease-out both,sw-tor 40s ease-in-out 1.2s infinite}
+#info.wg.gross .ibild{animation:sw-ein 1.2s ease-out both,sw-wander 70s ease-in-out 1.2s infinite}
+#info.wg .ineu{-webkit-mask:linear-gradient(#000 44%,transparent 56%) 0 100%/100% 250% no-repeat;mask:linear-gradient(#000 44%,transparent 56%) 0 100%/100% 250% no-repeat;
+  animation:sw-ein 1.2s ease-out both,sw-tor 40s ease-in-out 1.2s infinite,jzwisch var(--jzd,2.5s) ease-in-out .6s both}
+#info.wg.gross .ineu{animation:sw-ein 1.2s ease-out both,sw-wander 70s ease-in-out 1.2s infinite,jzwisch var(--jzd,2.5s) ease-in-out .6s both}
+@keyframes sw-ein{from{opacity:0;transform:scale(1.04)}to{opacity:1;transform:none}}
+@keyframes sw-tor{0%{background-position:50% 50%}25%{background-position:68% 50%}75%{background-position:32% 50%}100%{background-position:50% 50%}}
+@keyframes sw-wander{0%{background-position:55% 50%}28%{background-position:100% 50%}72%{background-position:0% 50%}100%{background-position:55% 50%}}
+@keyframes jzwisch{from{-webkit-mask-position:0 100%;mask-position:0 100%}to{-webkit-mask-position:0 0;mask-position:0 0}}
+#info .iteile{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+#info .iteile i{position:absolute;top:-4%;width:9px;height:9px;opacity:0;animation:tfall 3.6s ease-in both}
+#info .iteile.fruehling i{background:#fde7ee;border-radius:80% 0 80% 0;box-shadow:inset -2px -2px 0 #f0b2c4}
+#info .iteile.herbst i{width:12px;height:8px;background:#c8641e;border-radius:0 80% 0 80%}
+#info .iteile.herbst i:nth-child(3n){background:#e0a232}#info .iteile.herbst i:nth-child(3n+1){background:#9a3a16}
+#info .iteile.winter i{width:6px;height:6px;border-radius:50%;background:#fff;box-shadow:0 0 4px rgba(255,255,255,.8)}
+#info .iteile.sommer i{top:auto;bottom:12%;width:5px;height:5px;border-radius:50%;background:#ffe9a0;box-shadow:0 0 8px 3px rgba(255,220,120,.55);animation-name:tglimm}
+@keyframes tfall{0%{opacity:0;transform:translate(0,0) rotate(0)}12%{opacity:.95}85%{opacity:.9}100%{opacity:0;transform:translate(var(--d),104vh) rotate(320deg)}}
+@keyframes tglimm{0%{opacity:0;transform:none}35%{opacity:.9}100%{opacity:0;transform:translate(var(--d),-38vh)}}
+/* Luftbild in der Zeitung: dasselbe Bild klein und ganz, wie ein altes Foto aus dem Archiv. */
+#info .zluft{aspect-ratio:3/2;background:#8a7356 center/cover no-repeat;margin:3px 0 6px;border-radius:3px;filter:sepia(.55) saturate(.85) contrast(1.05);box-shadow:0 0 0 1px rgba(90,60,30,.55),0 1px 3px rgba(60,40,20,.35)}
+#info .zluft.gross{aspect-ratio:16/9}
+@media (prefers-reduced-motion:reduce){#info.wg .ibild,#info.wg.gross .ibild{animation:none}#info.wg .ineu{-webkit-mask:none;mask:none}#info .iteile{display:none}}
 #info .iverl{position:fixed;inset:0;background:linear-gradient(transparent 55%,rgba(0,0,0,.55))}
 #info .zt{position:relative;max-width:560px;margin:14px auto 0;padding:0 0 calc(100vh - 14px);transform-origin:50% 0;color:#3a2a1a;font-family:var(--schrift);--ink:#3a2a1a;--mut:#6e5638;--rot:#a3271d;--gruen:#4c6b2c;--gold:#8a6206;--line:rgba(90,60,30,.3);filter:drop-shadow(0 -4px 18px rgba(0,0,0,.55))}
 #info .zkopf{aspect-ratio:1200/713;background:url(bilder/zeitung-kopf.webp) center/100% 100% no-repeat}
@@ -287,6 +311,21 @@ img.fass{height:1.1em;vertical-align:-.18em}
 #feier.alle .fkarte p{animation:none}
 @media (prefers-reduced-motion:reduce){#feier .fbild.bewegt,#feier.buehne .fkarte p.da{animation:none}#feier .fglanz{display:none}}
 #feier .fbild.still{animation:none;filter:blur(2px);transform:scale(1.04);background-position:var(--p1)}
+/* Version 8.4: Aufstiegs-Szene "Dein Weingut wächst" vor der Feier. Sommerbild der alten Stufe, der Rangtitel wechselt, das Sommerbild der neuen Stufe blendet über (Sommer-Regel). */
+#feier .wbild{position:fixed;inset:0;background:#000 50% 50%/cover no-repeat}
+#feier .walt{animation:sw-ein 1.2s ease-out both,wzoom 9s ease-in-out both}
+#feier .wneu{opacity:0;transform:scale(1.1);transition:opacity 2.2s ease,transform 6s cubic-bezier(.2,.6,.3,1)}
+#feier.wachs.neu .wneu{opacity:1;transform:none;animation:sw-tor 40s ease-in-out 1s infinite}
+#feier.wachs.neu .wneu.gross{animation-name:sw-wander;animation-duration:70s}
+@keyframes wzoom{from{transform:scale(1)}to{transform:scale(1.08)}}
+#feier.wachs .fkarte{text-align:center}
+#feier.wachs .fkarte h2{display:grid;margin:4px 0 0}
+#feier.wachs .fkarte h2>span{grid-area:1/1;transition:opacity 1s ease,transform 1s ease}
+#feier.wachs .wzu,#feier.wachs.neu .wvon{opacity:0;transform:translateY(8px)}
+#feier.wachs.neu .wzu{opacity:1;transform:none;color:#f0c75a}
+#feier.wachs .fkarte p.wsatz{display:block;opacity:0;transition:opacity 1.2s ease .8s;margin:6px 0 0}
+#feier.wachs.neu .fkarte p.wsatz{opacity:1}
+@media (prefers-reduced-motion:reduce){#feier .walt,#feier.wachs.neu .wneu{animation:none}#feier .wneu,#feier.wachs .fkarte h2>span,#feier.wachs .wsatz{transition:none}}
 #feier .fverl{position:fixed;inset:0;background:linear-gradient(transparent 45%,rgba(0,0,0,.75))}
 #feier .fdunkel{position:fixed;inset:0;background:rgba(10,6,3,.62)}
 #feier .konf{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:1}
@@ -348,6 +387,19 @@ img.fass{height:1.1em;vertical-align:-.18em}
 .umini{all:unset;box-sizing:border-box;cursor:pointer;aspect-ratio:1000/670;background:url(bilder/urkunde.webp) center/100% 100% no-repeat;border:3px solid #6b4a24;border-radius:3px;box-shadow:0 2px 5px rgba(0,0,0,.35),inset 0 0 0 1px #c9a227;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#5a1426;text-align:center;padding:0 12%}
 .umini b{font:700 11.5px/1.1 var(--schrift)}
 .umini small{font:400 9.5px/1.2 var(--schrift);color:#6e5638}
+/* Version 8.4: Fenster "Mein Weingut" im Büro. Ein großes Bild je Stufe, seitlich wischen, Punkte zeigen die Position. Die nächste Stufe steht dunkel mit Schloss da. */
+.wgband{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;border-radius:12px;margin:0 0 8px;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.wgband::-webkit-scrollbar{display:none}
+.wgseite{flex:0 0 100%;scroll-snap-align:center;aspect-ratio:3/2;background:#2a2018 center/cover no-repeat;position:relative;display:flex;align-items:flex-end}
+.wgseite.zu{background-image:none!important;background:radial-gradient(#3a3026,#14100c);align-items:center;justify-content:center}
+.wgseite.zu::before{content:"";position:absolute;inset:0;background:var(--wgz) center/cover no-repeat;filter:brightness(.1) grayscale(1) blur(1px);opacity:.9}
+.wgseite .wgtxt{position:relative;width:100%;padding:18px 12px 8px;background:linear-gradient(transparent,rgba(0,0,0,.72));color:#fff;text-shadow:0 1px 3px #000;font-size:13px}
+.wgseite .wgtxt b{display:block;font:700 17px/1.2 var(--schrift)}
+.wgseite.zu .wgtxt{background:none;text-align:center;padding:0}
+.wgseite.zu .wgtxt i{display:block;font-style:normal;font-size:30px;margin-bottom:2px}
+.wgpunkte{display:flex;justify-content:center;gap:7px;margin:0 0 10px}
+.wgpunkte i{width:8px;height:8px;border-radius:50%;background:var(--line)}.wgpunkte i.an{background:var(--gold)}.wgpunkte i.zu{background:none;box-shadow:inset 0 0 0 1.5px var(--line)}
+.wgjz{display:flex;gap:6px}.wgjz button{flex:1;min-height:0;padding:7px 4px;font-size:13px}
 @media (prefers-reduced-motion:reduce){#feier .fbild,#feier .ischw,#feier .konf,.urk.neu,.urk.neu .usiegel,#feier .fliste>div,#feier .fkarte,#info .zsonder.stempeln{animation:none}#feier .ischw{opacity:0}#feier.aus .ischw{opacity:1}#feier .konf{display:none}}
 @keyframes iein{from{opacity:1}to{opacity:0}}
 @keyframes iaus{from{opacity:0}to{opacity:1}}
@@ -545,7 +597,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='8.3.2';
+const VERSION='8.4';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -1049,9 +1101,30 @@ function ortBild(titel){
   return `<div class="pano ${TAB} s-${SUB}" data-a="bild"><i></i>${TAB==='gut'?wandHtml():''}<div class="ptitel"><b>${L.find(s=>s[0]===SUB)[1]} ${esc(titel)}</b></div></div>`;
 }
 // Bild hinter der Zeitung: die Frostnacht beim Kälteeinbruch im November, sonst die Jahreszeit. Was es zu feiern gibt, zeigt das Foto in der Zeitung.
+// Version 8.4: Bildergalerie "Weingut wächst". Jede Stufe (Rang 0 bis 9 = Stufe 1 bis 10) hat ein Bild je Jahreszeit, das Spiel nimmt immer das der aktuellen Stufe (Rang-Regel).
+// Stufe 1 bis 4 zeigen den Torblick (3 zu 2), ab Stufe 5 den Schrägblick aufs ganze Gut (16 zu 9, "gross", langer Schwenk).
+const JZ=['winter','winter','fruehling','fruehling','fruehling','sommer','sommer','sommer','herbst','herbst','herbst','winter'];
+const JZ_NAME={fruehling:'Frühling',sommer:'Sommer',herbst:'Herbst',winter:'Winter'}, JZ_FOLGE=['fruehling','sommer','herbst','winter'];
+// Dauer des Jahreszeiten-Wechsels im Winzerboten (Vorschlag Claude 2,5 s, Maik entscheidet) und wann danach die Zeitung herunterrollt.
+let JZ_DAUER=2500, JZ_ROLLE=600+JZ_DAUER+300, JZ_TEILE=18;
+const wgBild=(st,jz)=>`weingut-${String(st).padStart(2,'0')}-${jz}`, wgGross=st=>st>=5;
+// Aufstieg in diesem Monat? Dann zeigt der Winzerbote noch die alte Stufe, das Wachsen kommt erst in der Feier (Annahme Claude).
+const wgAuf=F=>!!(F&&!F.start&&!F.spende&&F.von!=null&&F.zu>F.von);
+const wgStufe=()=>(wgAuf(S.feier)?S.feier.von:S.rang)+1;
 function monatBild(){
   if(S.monat===10&&S.kaelte===S.jahr) return 'frost';
-  const m=S.monat; return m===11||m<=1?'winter':m<=4?'fruehling':m<=7?'sommer':'herbst';
+  return wgBild(wgStufe(),JZ[S.monat]);
+}
+// Nur die Bilder der eigenen Stufe laden (alle vier Jahreszeiten) und das Sommerbild der nächsten für die Aufstiegs-Szene. sw.js legt sie beim Laden ab.
+const WG_DA=new Set();
+function wgVorladen(){
+  const st=S.rang+1, L=JZ_FOLGE.map(j=>wgBild(st,j)); if(st<10) L.push(wgBild(st+1,'sommer'));
+  L.forEach(n=>{if(WG_DA.has(n)) return; WG_DA.add(n); const i=new Image(); i.src=`bilder/${n}.jpg`});
+}
+// Teilchen beim Jahreszeiten-Wechsel: Blüten, Laub, Schnee, im Sommer ein paar aufsteigende Lichtpunkte.
+function teilchen(jz){
+  const n=jz==='sommer'?Math.round(JZ_TEILE*.55):JZ_TEILE;
+  return `<div class="iteile ${jz}">${Array.from({length:n},(_,k)=>`<i style="left:${(k*53+7)%100}%;animation-delay:${(.5+(k*.29)%2.2).toFixed(2)}s;animation-duration:${(3.2+(k%4)*.6).toFixed(1)}s;--d:${(k%2?1:-1)*(12+k*7%34)}px"></i>`).join('')}</div>`;
 }
 // Pinnwand im Weingut-Bild, seit 8.1 reine Deko: eine Urkunde mit Weingut, Spieler, ausgedachter Adresse und Weinbaugebiet (Maik 17.11.2026). Den Monatsrat gibt es nur noch als Sprechblase.
 // WAND nennt die Korkfläche im Streifen als Anteile (links, rechts, oben, unten). Bei einem neuen Bild neu ausmessen.
@@ -1816,7 +1889,7 @@ function neuesSpiel(){
   lohnAbgleich();
   neuePrognose();
   TOP=[]; FUSS=[];
-  schlag(100,'Willkommen auf deinem Weingut',`${S.ich?`${S.ich} übernimmt ${S.name} ${WO[S.region]}: 3 Hektar kahler Weinberg, leere Fässer und ${eur(START_GELD)}.`:`${S.name} ${WO[S.region]} startet mit 3 Hektar kahlem Weinberg, leeren Fässern und ${eur(START_GELD)}.`} Bis März ist Pflanzzeit, im Weinberg pflanzt du deinen ${SORTEN[sortenFolge()[0]].name}. Die zweite und dritte Rebsorte bringt der Aufstieg. Im ersten Jahr tragen junge Reben nur die Hälfte.`,'weingut',{du:1});
+  schlag(100,'Willkommen auf deinem Weingut',`${S.ich?`${S.ich} übernimmt ${S.name} ${WO[S.region]}: 3 Hektar kahler Weinberg, leere Fässer und ${eur(START_GELD)}.`:`${S.name} ${WO[S.region]} startet mit 3 Hektar kahlem Weinberg, leeren Fässern und ${eur(START_GELD)}.`} Bis März ist Pflanzzeit, im Weinberg pflanzt du deinen ${SORTEN[sortenFolge()[0]].name}. Die zweite und dritte Rebsorte bringt der Aufstieg. Im ersten Jahr tragen junge Reben nur die Hälfte.`,'weingut-01-sommer',{du:1});
   schlag(50,'So kommst du herum','Unten wählst du Weingut, Kellerei oder Stadt, die Leiste darüber bringt dich zu den Orten. Wischen übers Bild geht auch. Ein Punkt am Reiter zeigt Neues oder Dringendes, ein Tipp aufs Geld öffnet deinen Stand mit Kasse und Rängen. Das kleine i oben rechts in jedem Fenster erklärt, was du dort tust. Spielstände, Ton und das Buch liegen im Büro.');
   schlag(40,'Leute für Weinberg und Keller','Je 1.000 Reben brauchst du das ganze Jahr einen Erntehelfer. Du hast einen, für mehr Reben stellst du vor dem Pflanzen beim Arbeitsamt in der Stadt ein. Der Lohn dort schwankt jeden Monat, wer eingestellt ist, behält seinen. Dein Lagerarbeiter betreut 10.000 l Fassraum und 20.000 leere Flaschen. Fehlen dir Leute, geht es nicht in den nächsten Monat.','arbeit');
   schlag(30,'Die Konkurrenz schläft nicht','Deine Gegner: '+S.gegner.map(g=>`${g.name}, ${GEGNER_TYP[g.typ].art}, ${WO[g.region]}`).join('; ')+`. Wer zuerst Präsident des Weinbauverbands wird, gewinnt. Alle ${GEN_JAHRE} Jahre übernimmt bei allen die nächste Generation.`);
@@ -2477,16 +2550,20 @@ function vMonat(){
   // Alte Spielstände kennen nur Zeilen: Die erste wird zur Schlagzeile.
   if(!b.kopf){const z=b.zeilen||[]; b={...b,kopf:z.length?{t:z[0],text:''}:{t:FLAUTE[S.monat],text:FLAUTE_TEXT[S.monat]},art:[],zeilen:z.slice(1)}}
   const k=b.kopf, W=b.wetter||[], E=(b.ehr||[]).filter(e=>!e.a), bild=monatBild(), Z=b.zeilen||[], F=b.fuss||[];
+  // Version 8.4: Weingut der eigenen Stufe. Beginnt eine neue Jahreszeit, liegt erst die alte darunter (S.bildJz merkt sich die zuletzt gezeigte), außer im Monat eines Aufstiegs.
+  const wg=/^weingut-/.test(bild), st=wgStufe(), jz=JZ[S.monat], wech=wg&&S.bildJz&&S.bildJz!==jz&&!wgAuf(S.feier)?wgBild(st,S.bildJz):null;
+  const hinten=wech?`<div class="ibild" style="background-image:url(bilder/${wech}.jpg)"></div><div class="ibild ineu" style="background-image:url(bilder/${bild}.jpg);--jzd:${JZ_DAUER}ms"></div>${teilchen(jz)}`
+    :`<div class="ibild" style="background-image:url(bilder/${bild}.jpg)"></div>`;
   const foto=(x,kl)=>x.bild&&/^[\w-]+$/.test(x.bild)?`<div class="zfoto ${kl||''} ${x.archiv?'archiv':''} ${x.gold?'gold':''}" style="background-image:url(bilder/${x.bild}.jpg)"></div>`:'';
   const liste=x=>x.liste?`<div class="zliste">${x.liste.map(r=>`<div class="${r.du?'du':''}"><span>${esc(r.platz)}.</span><b>${r.m?esc(r.m)+' ':''}${esc(r.name)}</b><span>${esc(r.p)} P.</span></div>`).join('')}</div>`:'';
   // Artikel: höchstens ein kleines Foto, und nie dasselbe wie oben.
   let frei=1;
   const art=(b.art||[]).map(a=>{const f=frei&&a.bild&&a.bild!==k.bild?(frei=0,foto(a,'klein')):''; return `<div class="zart">${f}<h3>${esc(a.t)}</h3>${a.text?`<p>${esc(a.text)}</p>`:''}${liste(a)}</div>`}).join('');
   const haengt=S.monat>=7&&R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen);
-  const rechts=`<h4>Dein Weingut</h4><div class="zz"><b>Konto</b><span class="${S.geld<0?'rot':''}">${eur(S.geld)}</span></div>
+  const rechts=`<h4>Dein Weingut</h4>${wg?`<div class="zluft${wgGross(st)?' gross':''}" style="background-image:url(bilder/${bild}.jpg)"></div>`:''}<div class="zz"><b>Konto</b><span class="${S.geld<0?'rot':''}">${eur(S.geld)}</span></div>
     <div class="zz"><b>Boden</b><span class="${S.boden<80?'rot':''}">${S.boden}\u00a0%${S.boden<80&&S.duengungen<3?', Düngen ist dran':''}</span></div>
     <div class="zz"><b>Ansehen</b>${S.ansehen}</div><div class="zz"><b>Rang</b>${rangK(S.rang)}</div>`;
-  return `<div id="info" class="${bild}"><div class="ibild" style="background-image:url(bilder/${bild}.jpg)"></div><div class="iverl"></div>
+  return `<div id="info" class="${wg?'wg'+(wgGross(st)?' gross':''):bild}">${hinten}<div class="iverl"></div>
   <div class="zt"><div class="zkopf"></div><div class="zmitte">
     <div class="ztitel">Der Winzerbote</div>
     <div class="zleiste"><span>${R().name}</span><span>${esc(b.titel)}</span><span>Nr. ${b.nr||1}</span></div>
@@ -2617,9 +2694,21 @@ function spFeierStart(){
   FT.push(setTimeout(()=>fx('stempel'),2000));
   for(let k=0;k<3;k++) FT.push(setTimeout(()=>fx('klick'),2800+k*800));
 }
+// Version 8.4: Aufstiegs-Szene (FSTUFE -1) vor der Bild-Bühne. Erst das Sommerbild der alten Stufe mit dem alten Rang, dann wechselt der Titel
+// und das Sommerbild der neuen Stufe blendet über, egal welcher Monat ist (Sommer-Regel, Maik 18.11.2026). Ein Tipp zeigt gleich das Ende.
+const WACHS_WECHSEL=2600;
+function vWachs(F){
+  const a=F.von+1, b=F.zu+1, rn=i=>esc(frau()&&RAENGE[i].w||RAENGE[i].name);
+  const bild=(st,kl)=>`<div class="wbild ${kl}${wgGross(st)?' gross':''}" style="background-image:url(bilder/${wgBild(st,'sommer')}.jpg)"></div>`;
+  return `<div id="feier" class="buehne wachs" data-a="wachsAlle">${bild(a,'walt')}${bild(b,'wneu')}<div class="fverl"></div>
+    <div class="fkarte"><small>🏡 Dein Weingut wächst</small><h2><span class="wvon">${rn(F.von)}</span><span class="wzu">${rn(F.zu)}</span></h2>
+    <p class="wsatz">${b===5?'Dein Gut ist zu groß für das Tor geworden.':b===10?'Das ganze Gut hat sich herausgeputzt.':'Schau dich um, was alles neu ist.'}</p></div>
+    <div class="ifuss"><button data-a="feierBuehne">Zur Feier ▶</button></div><div class="ischw"></div></div>`;
+}
 function vFeier(){
   if(S.feier&&S.feier.spende) return vSpFeier();
   const F=S.feier||{von:Math.max(0,S.rang-1),zu:S.rang}, i=F.zu, k=feierSzene(F);
+  if(FSTUFE===-1) return vWachs(F);
   if(FSTUFE===0) return `<div id="feier" class="buehne" data-a="feierAlle">${szeneHtml(k)}<div class="fglanz"></div>${konfetti(konfN(k))}<div class="fverl"></div>
     <div class="fkarte"><small>${SZENEN[k].ort}</small><h2>${k?`Du bist jetzt ${esc(RAENGE[i].name)}!`:'Die Anzeige'}</h2>${kapitel(k).map(s=>`<p>${esc(s)}</p>`).join('')}</div>
     <div class="ifuss"><button data-a="feierWeiter">${k?'Zur Urkunde':'Zum Kaufvertrag'} ▶</button></div><div class="ischw"></div></div>`;
@@ -2637,6 +2726,7 @@ function feierStart(){
   feierStopp();
   if(S.feier&&S.feier.spende) return spFeierStart();
   const F=S.feier||{von:S.rang-1,zu:S.rang};
+  if(FSTUFE===-1){const el=$('#feier'); FT.push(setTimeout(()=>el.classList.add('neu'),matchMedia('(prefers-reduced-motion:reduce)').matches?300:WACHS_WECHSEL)); return}
   if(FSTUFE===0){
     if(TON.musik==='aus'&&!F.start) FT.push(setTimeout(()=>fx('fanfare'),250));
     // Das Kapitel kommt Satz für Satz im Takt der Geschichte, die Karte wächst dabei nach oben. Ohne Bewegung steht alles gleich da.
@@ -2655,6 +2745,31 @@ function urkWand(){
   const U=(S.ehrungen||[]).map((e,n)=>[e,n]).filter(([e])=>e.a&&urkRang(e)>=0);
   if(!U.length) return `<div class="mut">Noch keine. Der erste Aufstieg führt zum ${RAENGE[1].name}, dann hängt hier deine erste Urkunde.</div>`+spWand();
   return `<div class="uwand">${U.map(([e,n])=>`<button class="umini" data-a="urkunde" data-n="${n}"><b>${esc(e.w&&RAENGE[urkRang(e)].kw||RAENGE[urkRang(e)].kurz)}</b><small>${e.j?`${MON[e.m].slice(0,3)} ${e.j}`:''}</small></button>`).join('')}</div><div class="mut" style="margin-top:6px">Tipp auf eine Urkunde, dann siehst du sie groß.</div>`+spWand();
+}
+// Version 8.4: Fenster "Mein Weingut" im Büro neben den Urkunden. Ein großes Bild je erreichter Stufe, seitlich wischen, Punkte zeigen die Position, Start bei der aktuellen Stufe.
+// Die nächste Stufe steht als dunkler Schatten mit Schloss und Rangname da, alle weiteren gar nicht. Geladen werden nur die Bilder neben der gezeigten Stufe.
+// Jahreszeit: die des aktuellen Monats, vier Knöpfe schalten um (Annahme Claude, Maik fragen). WG_JZ hält die Wahl bis zum nächsten Monat.
+let WG_JZ=null;
+const wgJzJetzt=()=>WG_JZ&&WG_JZ.m===monatNr()?WG_JZ.jz:JZ[S.monat];
+function wgSeit(i){if(!i) return `Der Anfang, ${START_JAHR}`; const e=(S.ehrungen||[]).find(e=>e.a&&urkRang(e)===i); return e&&e.j?`Aufstieg ${MON[e.m]} ${e.j}`:'Aufstieg'}
+function wgFenster(){
+  const max=S.rang+1, n=Math.min(10,max+1), jz=wgJzJetzt(), rn=i=>esc(frau()&&RAENGE[i].w||RAENGE[i].name);
+  const seite=st=>st>max?`<div class="wgseite zu" style="--wgz:url(bilder/${wgBild(st,'sommer')}.jpg)"><div class="wgtxt"><i>🔒</i><b>${rn(st-1)}</b>Stufe ${st} von 10</div></div>`
+    :`<div class="wgseite" data-st="${st}"><div class="wgtxt"><b>${rn(st-1)}</b>Stufe ${st} · ${wgSeit(st-1)}</div></div>`;
+  return fenster('meingut','Mein Weingut',`<div class="wgband">${Array.from({length:n},(_,k)=>seite(k+1)).join('')}</div>
+    <div class="wgpunkte">${Array.from({length:n},(_,k)=>`<i class="${k+1>max?'zu':''}"></i>`).join('')}</div>
+    <div class="wgjz">${JZ_FOLGE.map(j=>`<button class="${j===jz?'':'sec '}klein" data-a="wgJz" data-jz="${j}">${JZ_NAME[j]}</button>`).join('')}</div>`,
+    {buch:'ziel',i:'Mit jedem Rang wächst dein Weingut. Wisch zur Seite, dann siehst du, wie es früher aussah. Die nächste Stufe bleibt im Dunkeln, bis du aufsteigst. Die vier Knöpfe schalten die Jahreszeit um.'});
+}
+// Nach dem Zeichnen: zur aktuellen Stufe springen, beim Wischen Punkte und Bilder nachziehen (gezeigte Stufe und ihre Nachbarn).
+function wgZeig(b){
+  const k=Math.round(b.scrollLeft/Math.max(1,b.clientWidth)), jz=wgJzJetzt(), P=b.parentNode.querySelectorAll('.wgpunkte i');
+  P.forEach((p,n)=>p.classList.toggle('an',n===k));
+  b.querySelectorAll('.wgseite[data-st]').forEach((s,n)=>{if((Math.abs(n-k)<=1||s.dataset.jz)&&s.dataset.jz!==jz){s.style.backgroundImage=`url(bilder/${wgBild(+s.dataset.st,jz)}.jpg)`; s.dataset.jz=jz}});
+}
+function wgStart(){
+  const b=document.querySelector('.wgband'); if(!b||b.dataset.ok) return; b.dataset.ok=1;
+  b.scrollLeft=S.rang*b.clientWidth; wgZeig(b); b.addEventListener('scroll',()=>wgZeig(b),{passive:true});
 }
 // Seit 8.2: unter den Urkunden die Ehrungen für die Spenden, Schilder rund, ab Stufe 5 als kleine Urkunde.
 function spWand(){
@@ -3076,13 +3191,14 @@ function vBuero(){
   const E=(S.ehrungen||[]).slice().reverse(), wein=E.filter(e=>!e.a), L=bestenZeilen();
   const zeile=e=>`<div class="rl"><span>${esc(e.i)}</span><div><b>${esc(e.t)}</b>${e.j?`<span class="mut">${MON[e.m]} ${e.j}</span>`:''}</div></div>`;
   return namenFenster()+fenster('anleitung','Spielanleitung','',{links:`Alles zum Nachschlagen in ${buchKap().length} kurzen Kapiteln, vom Ziel bis zum Arbeitsamt.`,kn:pk('buch','Aufschlagen',''),
-      i:'Das Büro ist dein Pokalraum und deine Schaltzentrale. Von oben: Spielanleitung, Rangliste, Ehrungen, Urkunden, Chronik, Bestenliste, Spielführer, Ton und ganz unten deine Spielstände. Das kleine i erklärt jedes Fenster kurz, „Mehr im Buch“ schlägt das passende Kapitel auf.'})
+      i:'Das Büro ist dein Pokalraum und deine Schaltzentrale. Von oben: Spielanleitung, Rangliste, Ehrungen, Urkunden, Mein Weingut, Chronik, Bestenliste, Spielführer, Ton und ganz unten deine Spielstände. Das kleine i erklärt jedes Fenster kurz, „Mehr im Buch“ schlägt das passende Kapitel auf.'})
     +vRangliste()
     +fenster('ehrungen','Ehrungen für deine Weine',wein.length?`<div class="gold" style="font-size:17px;margin-bottom:6px">${ehrSumme(wein)}</div><div class="mut">Zuletzt:</div>`+wein.slice(0,3).map(zeile).join(''):[],{
       leer:'Noch keine Ehrungen.',buch:'wettbewerb',i:'Medaillen gibt es bei der Landesprämierung und beim Bundeswettbewerb. Sie bringen Ansehen und machen den Wein wertvoller.'})
     +(S.rang>=R_LADEN?fenster('botschafter','Weinbotschafter',`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/weinbotschafter.jpg);height:150px"><b>🎗️ Weinbotschafter ${WO[S.region]}</b></div>
       <div class="kv"><span>Jeden Januar</span><span>+${BOTSCHAFT_ANS} Ansehen</span></div>`,{buch:'ziel',i:`Seit dem Rang ${RAENGE[R_LADEN].name} bist du Weinbotschafter ${WO[S.region]}. Für deine Reisen bekommst du jeden Januar ${BOTSCHAFT_ANS} Ansehen.`}):'')
     +fenster('urkunden','Deine Urkunden',urkWand(),{buch:'ziel',i:'Für jeden Aufstieg bekommst du eine Urkunde. Sie hängt hier an der Wand, die erste gibt es mit dem Aufstieg zum zweiten Rang. Darunter hängen die Schilder und Urkunden für deine Spenden im Rathaus.'})
+    +wgFenster()
     +chronikHtml()
     +fenster('besten','Bestenliste',L.length?L.map(bestenZeile).join(''):[],{
       leer:'Noch leer.',buch:'ende',i:BESTEN_I})
@@ -3462,7 +3578,9 @@ function zWehen(){
   const el=$('#info'); if(!el) return; const z=el.querySelector('.zt'), b=S.bericht||{}, key=`${b.titel}|${b.nr}`;
   const ziel=()=>0, ruhig=matchMedia('(prefers-reduced-motion:reduce)').matches;
   if(ZW&&ZW.key===key) el.scrollTop=ZW.top;
-  else{ZW={key,top:0}; if(ruhig) el.scrollTop=ziel(); else{z.classList.add('zu'); setTimeout(()=>zRolle(el,z,ziel()),900)}
+  // Version 8.4: Beim Jahreszeiten-Wechsel rollt die Zeitung erst herunter, wenn die neue Jahreszeit ganz da ist. Die gezeigte Jahreszeit merkt sich S.bildJz.
+  else{ZW={key,top:0}; const wech=!!el.querySelector('.ineu'); if(el.classList.contains('wg')) S.bildJz=JZ[S.monat]; wgVorladen();
+    if(ruhig) el.scrollTop=ziel(); else{z.classList.add('zu'); setTimeout(()=>zRolle(el,z,ziel()),wech?JZ_ROLLE:900)}
     // Version 7.2: Bei einer Sonderausgabe knallt der Stempel drauf, sobald die Zeitung ausgerollt ist.
     const so=z.querySelector('.zsonder'); if(so&&!(b.kopf&&b.kopf.ende)){so.classList.add('stempeln'); setTimeout(()=>{if(so.isConnected) fx('stempel')},ruhig?100:2350)}}
   el.addEventListener('scroll',()=>{ZW.top=el.scrollTop},{passive:true});
@@ -3767,7 +3885,7 @@ function render(){
   $('#app').innerHTML=`<div id="top"><div class="wtr" data-a="wetterInfo"><b>${MON[S.monat]} ${S.jahr}</b><small>${wetterText()} · ${R().name}</small></div><div class="geld" data-a="geldInfo"><b>${geldKurz(S.geld)}</b><small>${rangK(S.rang)} · ${S.ansehen} Ansehen</small></div></div>
   <main>${v}</main>
   <nav id="dock">${SUBS[TAB]?`<div id="subs">${SUBS[TAB].map(s=>`<button class="${SUB===s[0]?'an':''}" data-a="sub" data-id="${s[0]}"><i>${s[1]}</i><b>${SUB_NAME[s[0]]}</b>${SUB===s[0]?'':badge(B[TAB+'/'+s[0]])}</button>`).join('')}</div>`:''}<div id="tabs">${tabs.map(t=>`<button class="${TAB===t[0]?'an':''}" data-a="tab" data-id="${t[0]}"><span>${t[1]}</span>${t[2]}${badge(B[t[0]])}</button>`).join('')}<button id="weiter" class="${fehlt?'zu':''}" data-a="weiter"><span>${fehlt?'🔒':'▶'}</span>${fehlt?'Leute fehlen':'Nächster Monat'}</button></div></nav>`;
-  panoStell();
+  panoStell(); wgStart();
   fuehrerZeig();
 }
 
@@ -3903,10 +4021,16 @@ const AKT={
     el.classList.add('aus');
     // Seit 7.2 kommt nach einem Aufstieg erst die Feier, dann Aktuelles.
     // Seit 7.7 beginnt jede Feier mit der Bild-Bühne.
-    setTimeout(()=>{if(S.feier){TAB='feier'; FSTUFE=0} else geh('gut','aktuell'); render();window.scrollTo(0,0);schnitt()},matchMedia('(prefers-reduced-motion:reduce)').matches?0:450);
+    // Seit 8.4 kommt bei einem Aufstieg vorher die Szene "Dein Weingut wächst" (FSTUFE -1).
+    setTimeout(()=>{if(S.feier){TAB='feier'; FSTUFE=wgAuf(S.feier)?-1:0} else geh('gut','aktuell'); render();window.scrollTo(0,0);schnitt()},matchMedia('(prefers-reduced-motion:reduce)').matches?0:450);
   },
+  wachsAlle(){feierStopp(); const el=$('#feier'); if(el) el.classList.add('neu')},
+  feierBuehne(){feierStopp(); FSTUFE=0; render(); schnitt()},
   feierAlle(){const el=$('#feier'), k=$('#feier .fkarte'); if(!el||!k) return; el.classList.add('alle'); k.scrollTop=k.scrollHeight},
   feierWeiter(){feierStopp(); FSTUFE=1; render(); schnitt()},
+  // Version 8.4: Jahreszeit im Fenster "Mein Weingut" umschalten, ohne neu zu zeichnen (die Position beim Wischen bleibt).
+  wgJz(d){WG_JZ={jz:d.jz,m:monatNr()}; const b=document.querySelector('.wgband'); if(!b) return;
+    b.parentNode.querySelectorAll('.wgjz button').forEach(x=>x.classList.toggle('sec',x.dataset.jz!==d.jz)); wgZeig(b)},
   // Nach dem Anstoßen geht es zu Aktuelles, nach dem Kaufvertrag zur ersten Ausgabe vom Winzerboten.
   feierEnde(){
     const el=$('#feier'); if(!el||el.classList.contains('aus')) return;
@@ -4373,7 +4497,7 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]'); if(!b||b.disabled||Date.now()-WISCH_ZEIT<350) return;
   tonAn(); if(AC&&AC.state==='suspended') AC.resume();
   const a=b.dataset.a, vorn=/^titel/.test(a);
-  if(!vorn&&S&&S.pleite&&!['neuJa','tab','sub','close','weiter','menue','ton','infoWeiter','feierAlle','feierWeiter','feierEnde','buch','buchZu'].includes(a)) return;
+  if(!vorn&&S&&S.pleite&&!['neuJa','tab','sub','close','weiter','menue','ton','infoWeiter','feierAlle','feierWeiter','wachsAlle','feierBuehne','feierEnde','buch','buchZu'].includes(a)) return;
   // Solange der Weinprüfer wartet, geht nichts anderes.
   if(!vorn&&S&&S.pruefer&&!['pruefJa','pruefBestechen','slMinus','slPlus','slOk','close','ton','menue','buch','buchZu'].includes(a)) return zeigePruefer();
   // Schritt G 7.0: Solange die Übergabe offen ist, geht nur das Übergeben.

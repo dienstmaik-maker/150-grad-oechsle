@@ -106,6 +106,7 @@ const DATEIEN = [
   'ton/schere.mp3',
   'ton/stempel.mp3',
 ];
+// Version 8.4: Die 40 Bilder "Weingut wächst" (bilder/weingut-NN-<jahreszeit>.jpg) stehen bewusst nicht in DATEIEN. Das Spiel lädt nur die der eigenen Stufe, datei() legt sie ab.
 // Version 7.7: Platz für die Feier-Videos aus 8.1 (szene-start.mp4, szene-1.mp4 bis szene-8.mp4, szene-sieg.mp4).
 // Sie laden nach dem Einrichten im Hintergrund nach, fehlt eines, zeigt das Spiel das Standbild. Die Liste füllt erst 8.1.
 const VIDEOS = [];
