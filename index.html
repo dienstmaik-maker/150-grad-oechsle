@@ -778,8 +778,9 @@ const STIMM_PLUS=.16, STIMM_MONAT=1, STIMM_MINUS=1;
 // Version 8.5.2 (Spielende, Paket 2): Weltweinschau und die zwei Enden. Die ersten zwei Zahlen hat Maik am 18.11.2026 gewählt.
 // STIFT_FAKTOR: Preis der Stiftung im Verhältnis zur verpassten Spende. MARKE_ABWAHL: so weit sinkt die Marke nach einer Abwahl, nie unter MARKE_START.
 // AMT_MIN: Amtszeiten, bis die Familie übergibt (Mindestzeit). WELT_MONAT: Monat der Ausschreibung (0 = Januar, also August), gewertet wird beim nächsten Monatswechsel.
-// WELT_FELD: Punkte der neun Weingüter aus aller Welt, dazu DIFF.feld. Stellt das Prüfskript ein (beim Bundeswettbewerb sind es 20 bis 44).
-const STIFT_FAKTOR=2, MARKE_ABWAHL=10, AMT_MIN=2, WELT_MONAT=7, WELT_FELD=[30,50];
+// WELT_STARK und WELT_FELD: Punkte der neun Weingüter aus aller Welt, dazu DIFF.feld. Zwei starke mit breiter Spanne, sieben aus dem Feld
+// (Variante 3, Maik 19.11.2026). Derselbe Wein darf jedes Jahr wieder antreten. Stellt das Prüfskript ein (beim Bundeswettbewerb sind es 20 bis 44).
+const STIFT_FAKTOR=2, MARKE_ABWAHL=10, AMT_MIN=2, WELT_MONAT=7, WELT_STARK=[55,85], WELT_FELD=[25,45];
 const WELT_GUETER=['Château Belmont, Frankreich','Tenuta Montefiore, Italien','Bodega Sierra Alta, Spanien','Quinta do Vale Dourado, Portugal','Weingut Steinterrassen, Österreich','Domaine du Lac, Schweiz','Eagle Canyon Estate, Kalifornien','Southern Cross Vineyards, Australien','Kaapse Hoop, Südafrika','Viña Cóndor, Chile','Finca Los Andes, Argentinien','Kiwi Ridge Winery, Neuseeland'];
 const SAB={gift:['🧪 Wein vergiften','Sein bester Fasswein ist hin.'],buch:['📖 Kellerbuch fälschen','Seine Weine stehen als gepanscht im Buch. Bei seiner nächsten Kontrolle zahlt er Strafe und verliert Ansehen.'],berg:['🪓 Im Weinberg wüten','Ein Viertel seiner Reben und Flaschen ist weg.']};
 // ki: Tempo der Gegner, eingestellt mit dem Test-Spieler in Schritt H von 7.0 (16.11.2026). Der erste Gegner wird Präsident auf Schwer in Jahr 106 bis 112,
@@ -1526,13 +1527,13 @@ function reifeBonus(l){return Math.min(12,Math.round((reifeFaktor(l)-1)*8))}
 function wettFaehig(l){
   const w=S.wett; if(!w||!l||!l.stufe||l.pansch) return false;
   if(w.typ==='land') return !l.sekt&&STUFEN[l.stufe].rang>=3&&l.jahrgang===S.jahr-1&&l.status!=='trauben';
-  // Seit 8.5.2: Bei der Weltweinschau dürfen auch Weine mit Bundes-Medaille antreten, jeder Wein aber nur einmal (l.welt).
-  return l.status==='flasche'&&!(w.typ==='welt'?l.welt:l.bund)&&(l.sekt||STUFEN[l.stufe].rang>=3)&&l.flMonate>=lager(l).min;
+  // Seit 8.5.2: Bei der Weltweinschau dürfen auch Weine mit Bundes-Medaille antreten, derselbe Wein jedes Jahr wieder (Variante 3).
+  return l.status==='flasche'&&!(w.typ!=='welt'&&l.bund)&&(l.sekt||STUFEN[l.stufe].rang>=3)&&l.flMonate>=lager(l).min;
 }
 // Ausschreibung: Feld der anderen Weingüter. ein ist der eingereichte Wein, zufall die Tagesform der Jury (bleibt beim Tauschen gleich).
 function neuerWettbewerb(typ){
   // Seit 8.5.2: Bei der Weltweinschau treten neun Weingüter aus aller Welt an, die Gegner aus Deutschland nicht.
-  if(typ==='welt'){const d=DIFF[S.schwer].feld, namen=misch(WELT_GUETER); S.wett={typ,feld:namen.slice(0,9).map(name=>({name,p:rint(WELT_FELD[0],WELT_FELD[1])+d})),ein:null,zufall:rint(-4,4)}; return}
+  if(typ==='welt'){const d=DIFF[S.schwer].feld, namen=misch(WELT_GUETER); S.wett={typ,feld:namen.slice(0,9).map((name,i)=>{const b=i<2?WELT_STARK:WELT_FELD; return {name,p:rint(b[0],b[1])+d}}),ein:null,zufall:rint(-4,4)}; return}
   const d=DIFF[S.schwer].feld, bund=typ==='bund', F=[], namen=misch(GUETER);
   for(let i=0;i<(bund?8:9);i++) F.push({name:namen[i],p:(bund?rint(20,44):i<2?rint(20,34):rint(8,26))+d});
   for(const g of S.gegner) if(bund||g.region===S.region){const t=GEGNER_TYP[g.typ];F.push({name:g.name,ki:g.id,p:rint(t.ws[0],t.ws[1])+Math.round(g.rang*(bund?1.1:.85))+(bund?4:0)+d+(REGIONEN[g.region].wettPlus||0)})}
@@ -1542,10 +1543,12 @@ function neuerWettbewerb(typ){
 function wettPunkte(l){const w=S.wett;return l.qp+(w.typ!=='land'?reifeBonus(l):0)+w.zufall+(R().wettPlus||0)}
 // Wertung zu Beginn des Monatswechsels nach der Ausschreibung, das Ergebnis kommt als Thema in die Zeitung.
 // Medaille und Qualitätspunkte bekommt der Wein nur, wenn er noch im Keller ist. Ansehen und Preisgeld gibt es immer.
+// Weltweinschau: l.welt heißt "hat seine Medaille der Schau schon". Platz 2 und 3 bringen dann nur Ansehen und Preisgeld, der Sieg zählt immer.
 function wettAuswerten(){
   const w=S.wett, P=PREISE[w.typ], F=w.feld.map(x=>({...x})), e=w.ein, l=e&&lot(e.id), N=[], name=WETTNAME[w.typ];
   const welt=w.typ==='welt', wo=w.typ==='land'?'bei der Landesprämierung '+WO[S.region]:welt?'bei der Weltweinschau':'beim Bundeswettbewerb';
   if(e) F.push({name:S.name,du:1,p:e.p});
+  const schonWelt=!!(welt&&l&&l.welt);
   if(welt&&l) l.welt=true;
   F.sort((a,b)=>b.p-a.p||(b.du||0)-(a.du||0));
   const ich=F.findIndex(x=>x.du);
@@ -1554,13 +1557,13 @@ function wettAuswerten(){
   F.slice(0,3).forEach((x,i)=>{
     const pr=P[i];
     if(x.du){
-      const r=ruhm(pr.ans), was=`+${r} Ansehen${l?`, +${pr.qp} Qualitätspunkte`:''}${pr.geld?', '+eur(pr.geld)+' Preisgeld':''}`;
-      if(l){l.qp+=pr.qp; (l.med=l.med||[]).push(`${pr.m} ${name} ${S.jahr}`); if(w.typ==='bund') l.bund=true}
+      const mit=l&&!(schonWelt&&i>0), r=ruhm(pr.ans), was=`+${r} Ansehen${mit?`, +${pr.qp} Qualitätspunkte`:''}${pr.geld?', '+eur(pr.geld)+' Preisgeld':''}`;
+      if(mit){l.qp+=pr.qp; (l.med=l.med||[]).push(`${pr.m} ${name} ${S.jahr}`); if(w.typ==='bund') l.bund=true}
       ehre(pr.m,`${pr.t} ${wo}: ${e.name}`,0,was);
       if(pr.geld) kassiere(pr.geld);
       if(welt&&i===0){weltSieg(e,was,F); return}
       titel=`${pr.t} für ${S.name}!`;
-      text=`${e.name} holt ${pr.t} ${wo}. Das bringt ${was}.${l?'':' Der Wein ist schon verkauft, die Ehre bleibt trotzdem.'}`;
+      text=`${e.name} holt ${pr.t} ${wo}. Das bringt ${was}.${!l?' Der Wein ist schon verkauft, die Ehre bleibt trotzdem.':mit?'':' Seine Medaille der Schau hat der Wein schon von früher.'}`;
       if(i===0&&!welt&&S.gegner.length){const g=S.gegner[rint(0,S.gegner.length-1)]; if(GEGNER_SPRUCH[g.typ]) text+=' '+GEGNER_SPRUCH[g.typ].erfolg(g.name)}
     }else if(x.ki!=null){
       const g=S.gegner[x.ki]; g.ansehen+=pr.ans*DIFF[S.schwer].ki; g.geld+=pr.geld;
@@ -1577,7 +1580,7 @@ function wettAuswerten(){
     (S.amt.welt=S.amt.welt||[]).push({j:S.jahr,platz:ich+1,wein:e?e.name:'',p:e?e.p:0});
     if(ich===0) return;
     if(ich<0){titel=`Weltweinschau ${S.jahr}: ${F[0].name} gewinnt im Dorf`; text=`${F[0].name} holt Platz 1 bei der Weltweinschau auf dem Dorfplatz. ${S.name} hat diesmal keinen Wein eingereicht. Nächsten August ist die Schau wieder da.`}
-    else if(ich>2) text=`${e.name} landet bei der Weltweinschau auf Platz ${ich+1} von ${F.length}. Gewonnen hat ${F[0].name}. Nächsten August kommt die Welt wieder ins Dorf, dann mit einem anderen Wein von dir.`;
+    else if(ich>2) text=`${e.name} landet bei der Weltweinschau auf Platz ${ich+1} von ${F.length}. Gewonnen hat ${F[0].name}. Nächsten August kommt die Welt wieder ins Dorf, dann gern auch mit demselben Wein.`;
     else text+=` Gewonnen hat ${F[0].name}. Für den Titel braucht es Platz 1, nächsten August ist die nächste Gelegenheit.`;
     return schlag(ich<0?60:84,titel,text,'weltweinschau',{gold:ich>0&&ich<3?1:0,liste:L,wett:{typ:w.typ,platz:ich},du:1});
   }
@@ -2928,7 +2931,7 @@ function vVerband(){
     stand:kampf?(s>=A.marke?'Wahlkampf: Im Moment reicht die Stimmung. Bis zur Wahl bröckelt sie aber weiter.':'<span class="rot">Wahlkampf: Im Moment reicht die Stimmung nicht.</span>'):`Die Umfrage kommt im ${monJahr(A.wahl-WAHL_UMFRAGE)}, ein Jahr vor der Wahl.`,
     links:kampf?(frei<=0?`Mehr als ${KAUF_MAX} Käufe je Wahl gehen nicht.`:`Noch ${frei} von ${KAUF_MAX} Käufen. Jeder fliegt mit ${pz(KAUF_SKANDAL)} auf.`):'',
     kn,
-    buch:'wahl',i:`Als ${anr('Präsident','Präsidentin')} musst du dein Amt alle ${WAHL_JAHRE} Jahre verteidigen. Es zählt die Stimmung im Verband: Liegt sie am Wahltag auf oder über der Marke (der Strich im Balken), bleibst du im Amt. Gewürfelt wird nicht.<br><br><b>Was die Stimmung hebt:</b> alles, was Ansehen bringt, zum Beispiel Medaillen, ein Hoffest, Sekt oder eine saubere Weinkontrolle. Von jedem gewonnenen Ansehen gehen ${pz(STIMM_PLUS)} auf die Stimmung.<br><b>Was sie drückt:</b> Jeder Monat kostet ${String(STIMM_MONAT).replace('.',',')}, und jeder Abzug beim Ansehen schlägt voll durch.<br><br><b>Die Marke:</b> Dein Herausforderer ist der stärkste Gegner. Bei der ersten Wahl brauchst du ${MARKE_START}, nach jeder gewonnenen Wahl ${MARKE_PLUS} mehr, höchstens ${MARKE_MAX}. Nach jeder gewonnenen Wahl startet die Stimmung wieder bei ${STIMM_START}.<br><br><b>Wahlkampf:</b> Ein Jahr vor der Wahl bringt der Winzerbote die Umfrage. Ab dann kannst du hier Stimmen kaufen: ${eur(KAUF_PREIS)} vom Konto für ${KAUF_PLUS} Punkte, höchstens ${KAUF_MAX} Mal je Wahl. Jeder Kauf fliegt mit ${pz(KAUF_SKANDAL)} auf, dann ist das Geld weg und die Stimmung fällt um ${KAUF_STRAFE}. Auch der Herausforderer spielt im Wahlkampf nicht immer sauber.<br><br><b>Abgewählt:</b> Der Herausforderer übernimmt den Stuhl, du behältst alles andere. Die Stimmung startet dann bei ${STIMM_ALT}, die Marke sinkt um ${MARKE_ABWAHL} (nie unter ${MARKE_START}), und bei der nächsten Wahl kannst du dir den Stuhl zurückholen.<br><br><b>Weltweinschau:</b> Mit zwei Schlüsseln holst du sie ins Dorf. Dorf: alle ${SPENDEN.length-1} Spenden, verpasste holt die Stiftung fürs Dorf nach. Verband: eine gewonnene Wahl, auch eine Rückkehr zählt. Dann ist jeden August Schau, und du reichst im Fenster „Wettbewerbe“ einen verkaufsreifen Prädikatswein oder Sekt ein, jeden Wein nur einmal. Platz 1 macht dich ${anr('zum Ehrenpräsidenten','zur Ehrenpräsidentin')}.<br><br><b>Übergabe:</b> Als ${anr('Präsident','Präsidentin')} übergibst du nur noch einmal, danach endet die Partie mit der Chronik. Die Familie wartet damit, bis ${AMT_MIN} Amtszeiten um sind. Mit „Gut übergeben“ gehst du früher, wann du willst. Erbschaftssteuer fällt dabei nicht an.`});
+    buch:'wahl',i:`Als ${anr('Präsident','Präsidentin')} musst du dein Amt alle ${WAHL_JAHRE} Jahre verteidigen. Es zählt die Stimmung im Verband: Liegt sie am Wahltag auf oder über der Marke (der Strich im Balken), bleibst du im Amt. Gewürfelt wird nicht.<br><br><b>Was die Stimmung hebt:</b> alles, was Ansehen bringt, zum Beispiel Medaillen, ein Hoffest, Sekt oder eine saubere Weinkontrolle. Von jedem gewonnenen Ansehen gehen ${pz(STIMM_PLUS)} auf die Stimmung.<br><b>Was sie drückt:</b> Jeder Monat kostet ${String(STIMM_MONAT).replace('.',',')}, und jeder Abzug beim Ansehen schlägt voll durch.<br><br><b>Die Marke:</b> Dein Herausforderer ist der stärkste Gegner. Bei der ersten Wahl brauchst du ${MARKE_START}, nach jeder gewonnenen Wahl ${MARKE_PLUS} mehr, höchstens ${MARKE_MAX}. Nach jeder gewonnenen Wahl startet die Stimmung wieder bei ${STIMM_START}.<br><br><b>Wahlkampf:</b> Ein Jahr vor der Wahl bringt der Winzerbote die Umfrage. Ab dann kannst du hier Stimmen kaufen: ${eur(KAUF_PREIS)} vom Konto für ${KAUF_PLUS} Punkte, höchstens ${KAUF_MAX} Mal je Wahl. Jeder Kauf fliegt mit ${pz(KAUF_SKANDAL)} auf, dann ist das Geld weg und die Stimmung fällt um ${KAUF_STRAFE}. Auch der Herausforderer spielt im Wahlkampf nicht immer sauber.<br><br><b>Abgewählt:</b> Der Herausforderer übernimmt den Stuhl, du behältst alles andere. Die Stimmung startet dann bei ${STIMM_ALT}, die Marke sinkt um ${MARKE_ABWAHL} (nie unter ${MARKE_START}), und bei der nächsten Wahl kannst du dir den Stuhl zurückholen.<br><br><b>Weltweinschau:</b> Mit zwei Schlüsseln holst du sie ins Dorf. Dorf: alle ${SPENDEN.length-1} Spenden, verpasste holt die Stiftung fürs Dorf nach. Verband: eine gewonnene Wahl, auch eine Rückkehr zählt. Dann ist jeden August Schau, und du reichst im Fenster „Wettbewerbe“ einen verkaufsreifen Prädikatswein oder Sekt ein, gern auch jedes Jahr denselben. Platz 1 macht dich ${anr('zum Ehrenpräsidenten','zur Ehrenpräsidentin')}.<br><br><b>Übergabe:</b> Als ${anr('Präsident','Präsidentin')} übergibst du nur noch einmal, danach endet die Partie mit der Chronik. Die Familie wartet damit, bis ${AMT_MIN} Amtszeiten um sind. Mit „Gut übergeben“ gehst du früher, wann du willst. Erbschaftssteuer fällt dabei nicht an.`});
 }
 function vRangliste(){
   const v=vermoegen();
@@ -3794,7 +3797,7 @@ function vStadt(){
       :`<div class="fleer" style="margin-top:6px">Kein Fasswein wartet auf die Anmeldung.</div>`),{
       i:'Im Rathaus meldest du deinen Fasswein an. Erst dann bekommt er seine Stufe und darf in die Flasche. Welche Stufen für einen Wein möglich sind, siehst du nach dem Tipp auf „Anmelden“. Was zuerst verdirbt, steht oben.'});
     // Seit 7.9: feste Fenster "Wettbewerbe" und "Auktionen". Einreichen und Bieten gehen hier, die Tipps in "Das steht an" führen her.
-    const wI=`Bei der Landesprämierung im Februar treten die Winzer deines Gebiets mit Prädikatsweinen vom letzten Jahrgang an (ab dem Rang ${RAENGE[R_LAND].name}). Der Bundeswettbewerb ist alle drei Jahre im Juni, mit verkaufsreifen Prädikatsweinen und Sekten aus der Flasche (ab dem Rang ${RAENGE[R_BUND].name}). Eingereicht wird im Monat der Ausschreibung, das Ergebnis steht im nächsten Winzerboten. Ein Platz auf dem Treppchen bringt Ansehen und Qualitätspunkte für den Wein.${S.amt&&S.amt.brief?' Die Weltweinschau ist jeden August bei dir im Dorf: neun Weingüter aus aller Welt, zugelassen sind verkaufsreife Prädikatsweine und Sekte aus der Flasche, jeder Wein nur einmal.':''}`;
+    const wI=`Bei der Landesprämierung im Februar treten die Winzer deines Gebiets mit Prädikatsweinen vom letzten Jahrgang an (ab dem Rang ${RAENGE[R_LAND].name}). Der Bundeswettbewerb ist alle drei Jahre im Juni, mit verkaufsreifen Prädikatsweinen und Sekten aus der Flasche (ab dem Rang ${RAENGE[R_BUND].name}). Eingereicht wird im Monat der Ausschreibung, das Ergebnis steht im nächsten Winzerboten. Ein Platz auf dem Treppchen bringt Ansehen und Qualitätspunkte für den Wein.${S.amt&&S.amt.brief?' Die Weltweinschau ist jeden August bei dir im Dorf: neun Weingüter aus aller Welt, zugelassen sind verkaufsreife Prädikatsweine und Sekte aus der Flasche, derselbe Wein darf jedes Jahr wieder antreten.':''}`;
     if(S.rang<R_LAND) zu.push(fenster('wettb','Wettbewerbe','',{zu:`ab dem Rang ${RAENGE[R_LAND].name}`,i:wI}));
     else{
       const w=S.wett&&!S.wett.fertig?S.wett:null, mb=aufgabeAktiv('wett')?mgrAufgabe('wett').bereich:'';
@@ -4454,7 +4457,7 @@ const AKT={
     const welt=w.typ==='welt';
     wettSheet(`${sbild(welt?'weltweinschau':'praemierung')}<h3>${welt?'🌍':'🏅'} ${WETTNAME[w.typ]} ${S.jahr}</h3>
       ${e?`<p>Eingereicht: <b>${esc(e.name)}</b>. Das Ergebnis steht im nächsten Winzerboten. Bis zum Monatsende kannst du noch tauschen.</p>`:''}
-      <p class="mut">${land?`Zugelassen sind angemeldete Prädikatsweine vom Jahrgang ${S.jahr-1}. Du reichst einen Wein ein, er bleibt dir erhalten.`:welt?`Neun Weingüter aus aller Welt sind zu Gast auf dem Dorfplatz. Zugelassen sind verkaufsreife Prädikatsweine und Sekte aus der Flasche, auch gereifte und schon prämierte. Jeder Wein tritt bei der Schau nur einmal an. Platz 1 macht dich ${anr('zum Ehrenpräsidenten','zur Ehrenpräsidentin')}.`:'Alle Winzer treten gegeneinander an. Zugelassen sind verkaufsreife Prädikatsweine und Sekte aus der Flasche, auch gereifte und schon prämierte. Aufs Treppchen kommt jeder Wein hier nur einmal.'}</p>
+      <p class="mut">${land?`Zugelassen sind angemeldete Prädikatsweine vom Jahrgang ${S.jahr-1}. Du reichst einen Wein ein, er bleibt dir erhalten.`:welt?`Neun Weingüter aus aller Welt sind zu Gast auf dem Dorfplatz. Zugelassen sind verkaufsreife Prädikatsweine und Sekte aus der Flasche, auch gereifte und schon prämierte. Derselbe Wein darf jedes Jahr wieder antreten, Medaille und Qualitätspunkte bekommt er aber nur beim ersten Mal. Platz 1 macht dich ${anr('zum Ehrenpräsidenten','zur Ehrenpräsidentin')}.`:'Alle Winzer treten gegeneinander an. Zugelassen sind verkaufsreife Prädikatsweine und Sekte aus der Flasche, auch gereifte und schon prämierte. Aufs Treppchen kommt jeder Wein hier nur einmal.'}</p>
       ${S.rang<wettRang()?`<div class="card mut">Mitmachen darfst du ab dem Rang ${RAENGE[wettRang()].name}.</div>`:ls.length?ls.map(l=>`<button class="wahl ${e&&e.id===l.id?'an':''}" data-a="wettJa" data-id="${l.id}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${l.qp} Qualitätspunkte${!land&&reifeBonus(l)?` · Reife +${reifeBonus(l)}`:''}</span></button>`).join(''):`<div class="card mut">Du hast gerade keinen zugelassenen Wein.${land?' Meldest du diesen Monat noch einen Prädikatswein vom letzten Jahrgang an, kannst du teilnehmen.':''}</div>`}
       <div class="btns"><button class="sec" data-a="close">${e||!ls.length?'Schließen':'Später entscheiden'}</button></div>`);
   },
