@@ -545,7 +545,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='8.3.1';
+const VERSION='8.3.2';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -654,7 +654,9 @@ function mgrBringt(i){
 // Was ein Aufstieg bringt: die Freischaltungen des Rangs, höchstens drei. Seit 5.1 (Paket 10) steht der Kreditrahmen als eigener Satz dahinter (rahmenSatz), nur wenn er wächst.
 // Seit 7.0 steht {sorte} für die Rebsorte, die mit dem Rang kommt, mit ihrem Namen im Gebiet. Die Manager hängt mgrBringt an.
 // Seit 7.2 liefert bringtTeile die einzelnen Punkte für die Urkunde, bringt fügt sie für Zeitung und Rang-Karte zusammen.
-function bringtTeile(i){const n=SORTE_RANG.indexOf(i), id=n>0&&S?sortenFolge()[n]:null; return [...RAENGE[i].neu.replace('{sorte}',`die ${n===1?'zweite':'dritte'} Rebsorte${id?' '+SORTEN[id].name:''}`).split(', '),...mgrBringt(i)]}
+function bringtTeile(i){const n=SORTE_RANG.indexOf(i), id=n>0&&S?sortenFolge()[n]:null; return [...RAENGE[i].neu.replace('{sorte}',`die ${n===1?'zweite':'dritte'} Rebsorte${id?' '+SORTEN[id].name:''}`).split(', '),...kellerBringt(i),...mgrBringt(i)]}
+// Seit 8.3.2: die zweite und dritte Stufe Kellerausbau als eigener Punkt beim Aufstieg. "Ausbaustufe" klein, damit FREI_SYM das Fass zeigt und nicht den Manager.
+function kellerBringt(i){return KELLER_RANG.map((r,k)=>k&&r===i?`die ${k===1?'zweite':'dritte'} Ausbaustufe im Keller`:'').filter(Boolean)}
 function bringt(i){return bringtTeile(i).join(', ')}
 // Version 8.2: der ganze Satzteil nach "bringt", beim Präsidenten "bringt dir den Sieg" statt "bringt: der Sieg".
 function bringtSatz(i){return i===R_MAX?'bringt dir den Sieg':`bringt: ${bringt(i)}`}
@@ -721,8 +723,8 @@ const ANREG_ANS=30, ANREG_FEHL=3, PANSCH={zocker:.4,vorsicht:.08,qualitaet:.04},
 // Paket 4 (15.11.2026): Ziele fürs Geld und Land ohne Auktionsglück.
 // Makler: ab Jungwinzer höchstens ein Hektar im Jahr zum MAKLER_PREIS, nur wenn für den nächsten Rang allein noch Land fehlt. Auktionen bleiben deutlich billiger.
 // Weinfest: ab Winzermeister bis zum Hoffest, einmal im Jahr von Juni bis August, kostet WEINFEST_PREIS und bringt WEINFEST_ANS Ansehen mal Wetter-Faktor.
-// Kellerausbau: drei Stufen, seit 7.0 ab Jungwinzer (KELLER_PREISE). Jede Stufe kürzt die Reifezeit von Prädikatswein und Eiswein in der Flasche um einen Monat, und jeder Wein gewinnt beim Reifen KELLER_REIFE schneller an Wert.
-const MAKLER_PREIS=45000, WEINFEST_PREIS=30000, WEINFEST_ANS=12, KELLER_PREISE=[50000,120000,250000], KELLER_REIFE=.1, R_WEINFEST=R_LAND, R_KELLER=1;
+// Kellerausbau: drei Stufen (KELLER_PREISE), seit 8.3.2 gestaffelt nach KELLER_RANG: Jungwinzer, Winzermeister, Gutsherr (Maik 18.11.2026, vorher alle ab Jungwinzer). Jede Stufe kürzt die Reifezeit von Prädikatswein und Eiswein in der Flasche um einen Monat, und jeder Wein gewinnt beim Reifen KELLER_REIFE schneller an Wert.
+const MAKLER_PREIS=45000, WEINFEST_PREIS=30000, WEINFEST_ANS=12, KELLER_PREISE=[50000,120000,250000], KELLER_REIFE=.1, KELLER_RANG=[1,3,5], R_WEINFEST=R_LAND, R_KELLER=KELLER_RANG[0];
 const FESTE={weinfest:{name:'Weinfest',preis:WEINFEST_PREIS,ans:WEINFEST_ANS,text:'Ein Weinfest im Hof mit Zelt, Musik und deinem Wein',kurz:'Musik, Zwiebelkuchen und dein Wein für Nachbarn und Gäste'},hoffest:{name:'Hoffest',preis:HOFFEST_PREIS,ans:HOFFEST_ANS,text:'Ein großes Fest für das ganze Dorf',kurz:'Musik, Flammkuchen und dein Wein für das ganze Dorf'}};
 // Erntemaschinen (Paket 4, Variante C): die kleine ab Winzermeister, der große Vollernter ab Gutsherr. Maschinen ohne Typ (alte Spielstände) sind klein und bleiben, auch vor Winzermeister.
 const VOLL_PREIS=120000, VOLL_LEISTUNG=10000, VOLL_HELFER=10, VOLL_WARTUNG=300;
@@ -3207,14 +3209,17 @@ function vLager(){
     i:`Leere Flaschen brauchst du zum Abfüllen, ein Liter je Flasche. Kauf sie am besten vor dem Abfüllen. Ein Lagerarbeiter betreut ${num(FLASCHEN_JE_LAGERARB)} leere Flaschen, mit der Abfüllanlage im Einsatz ${num(ABF_FLASCHEN)}. Der Preis schwankt jeden Monat.${mf?` Dein ${KM} kauft beim Abfüllen nur so viele, wie gerade fehlen.${leute}`:''}`})
   +kellerAusHtml();
 }
-// Kellerausbau in drei Stufen ab Jungwinzer (R_KELLER). Vorher steht das Fenster zugeklappt mit Schloss unten im Lager.
+// Kellerausbau in drei Stufen, je Stufe ab dem Rang in KELLER_RANG. Vor Jungwinzer steht das Fenster zugeklappt mit Schloss unten im Lager,
+// danach steht unter dem Stand, ab welchem Rang die nächste Stufe geht (seit 8.3.2).
+function kellerRangText(){return ` Stufe 1 gibt es ab ${RAENGE[KELLER_RANG[0]].name}, Stufe 2 ab ${RAENGE[KELLER_RANG[1]].name}, Stufe 3 ab ${RAENGE[KELLER_RANG[2]].name}.`}
 function kellerAusHtml(){
   const K=S.keller||0, pr=KELLER_PREISE[K], N=KELLER_PREISE.length;
-  const was='Jede Stufe lässt Prädikatsweine und Eiswein einen Monat früher verkaufsreif werden, und jeder Wein gewinnt beim Reifen in der Flasche schneller an Wert.';
+  const was='Jede Stufe lässt Prädikatsweine und Eiswein einen Monat früher verkaufsreif werden, und jeder Wein gewinnt beim Reifen in der Flasche schneller an Wert.'+kellerRangText();
   if(pr!=null&&S.rang<R_KELLER) return fenster('ausbau','Kellerausbau','',{zu:`ab dem Rang ${RAENGE[R_KELLER].name}`,i:`${was} Ausbauen kannst du ab dem Rang ${RAENGE[R_KELLER].name}.`});
   const stand=`<div class="kv"><span>Ausgebaut</span><span>Stufe ${K} von ${N}</span></div><div class="bar w"><i style="width:${K/N*100}%"></i></div>
     ${K?`<div class="kv"><span>Prädikat und Eiswein</span><span>${K} ${K===1?'Monat':'Monate'} früher reif</span></div>`:''}`;
   if(pr==null) return fenster('ausbau','Kellerausbau',stand+`<div class="fleer" style="margin-top:6px">Dein Keller ist fertig ausgebaut.</div>`,{i:was});
+  if(S.rang<KELLER_RANG[K]) return fenster('ausbau','Kellerausbau',stand+`<div class="fleer" style="margin-top:6px">🔒 Stufe ${K+1} kannst du ab dem Rang ${RAENGE[KELLER_RANG[K]].name} ausbauen.</div>`,{i:was+kellerRangText()});
   return fenster('ausbau','Kellerausbau',stand,{kn:pk('kellerAus','Ausbauen',eur(pr),{klein:`Stufe ${K+1}`,arm:S.geld<pr}),i:was});
 }
 // Hintertür im Keller (seit 7.4 auf dem Fenster-Baustein): Zuckern und Wässern, Verschneiden, darunter der Weinprüfer als Zustand, Sabotage als Seltenes unten.
@@ -4057,13 +4062,13 @@ const AKT={
   },
   kellerAus(){
     const K=S.keller||0, pr=KELLER_PREISE[K];
-    if(S.rang<R_KELLER||pr==null) return;
+    if(pr==null||S.rang<KELLER_RANG[K]) return;
     if(S.geld<pr) return meldung('Zu wenig Geld',`Die nächste Stufe kostet ${eur(pr)}.`,'fassgang');
     openSheet(`${sbild('fassgang')}<h3>🏗️ Keller ausbauen?</h3><p>Stufe ${K+1} von ${KELLER_PREISE.length} kostet ${eur(pr)}.</p><p class="mut">Danach dürfen Prädikatsweine und Eiswein ${K+1} ${K?'Monate':'Monat'} früher aus dem Keller, und jeder Wein gewinnt beim Reifen schneller an Wert.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button data-a="kellerAusJa">Ausbauen</button></div>`);
   },
   kellerAusJa(){
     const K=S.keller||0, pr=KELLER_PREISE[K];
-    if(S.rang<R_KELLER||pr==null||S.geld<pr) return;
+    if(pr==null||S.rang<KELLER_RANG[K]||S.geld<pr) return;
     zahle(pr); S.keller=K+1; fx('stempel'); closeSheet(); save(); render();
     meldung('Der Keller ist ausgebaut',`Stufe ${S.keller} von ${KELLER_PREISE.length} ist fertig. Prädikatsweine und Eiswein sind jetzt ${S.keller} ${S.keller===1?'Monat':'Monate'} früher verkaufsreif.`,'fassgang');
   },
