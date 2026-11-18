@@ -624,7 +624,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='8.4';
+const VERSION='8.4.1';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -1610,8 +1610,8 @@ function gegnerMonat(){
       }
       if(m===11&&g.poker){
         g.poker=false;
-        if(Math.random()<REGIONEN[g.region].frost){g.ansehen+=8*st; g.geld+=g.ha*3000; neu(3,`Frost ${wo}: Der Eiswein-Poker von ${g.name} geht auf.`)}
-        else{g.geld-=g.ha*2500; neu(3,`Kein Frost ${wo}: ${g.name} verliert einen Teil der Ernte.`)}
+        if(Math.random()<REGIONEN[g.region].frost){g.ansehen+=8*st; g.geld+=g.ha*3000; g.eisJ=S.jahr; neu(3,`Frost ${wo}: Der Eiswein-Poker von ${g.name} geht auf.`)}
+        else{g.geld-=g.ha*2500; g.eisPl=S.jahr; neu(3,`Kein Frost ${wo}: ${g.name} verliert einen Teil der Ernte.`)}
       }
     }else if(m===8&&Math.random()<.3) neu(0,g.typ==='vorsicht'?`${g.name} liest früh und geht kein Risiko ein.`:`${g.name} lässt die Trauben für eine Auslese hängen.`);
     if(g.geld<0){g.kredit+=Math.round(-g.geld*1.15); g.geld=0}
@@ -2124,6 +2124,31 @@ function rubrikNeu(nr){
   return {h:R0.h,text,von:von||''};
 }
 // Baut die Ausgabe aus TOP, FUSS und den Zeilen für "Kurz gemeldet".
+// Version 8.4.1: Eiswein in der Zeitung, nur im Dezember (Maik 18.11.2026). Mit eigenem Eiswein (gefrorene Trauben am Stock) kommt immer die Meldung mit dem Bild eiswein,
+// der Steuer-Tipp steht dann ohne Foto daneben. Sonst würfelt eisGeschichte(): In einem Jahr nach einer Geschichte nie (S.eisZ), sonst mit EIS_Z.
+// Das ergibt rund jedes dritte Jahr. Davon ist mit EIS_PLEITE der geplatzte Poker eines Gegners (Bild frost, rund alle 6 bis 7 Jahre), sonst Eiswein bei einem Gegner,
+// zuerst bei einem, dessen Poker in gegnerMonat aufging (g.eisJ), dann bei einem in einem kühlen Gebiet, sonst ohne Namen aus einem kühlen Gebiet.
+const EIS_Z=.5, EIS_PLEITE=.45, EIS_KUEHL=.4;
+const eisEigen=()=>S.monat===11&&R().sorten.some(id=>S.felder[id].gefroren&&S.felder[id].menge>0);
+const EIS_TEXT={
+  eigen:[['Frost! Eiswein ist möglich','Die Trauben hängen gefroren am Stock. Wer jetzt liest, kann Eiswein keltern.']],
+  gegner:[['Eiswein-Glück für {n}','Bei klirrender Kälte hat {n} {wo} in der Nacht gefrorene Trauben gelesen. Der Eiswein dürfte ein kleines Vermögen bringen.']],
+  gebiet:[['Eiswein-Nacht {wo}','Bei klirrender Kälte waren die Winzer {wo} nachts im Weinberg. Wer seine Trauben hängen ließ, keltert jetzt Eiswein.']],
+  pleite:[['Eiswein-Poker geplatzt','{n} {wo} hat die Trauben für Eiswein hängen lassen, doch der Frost kam nicht. Jetzt faulen sie am Stock.']]
+};
+const eisT=(art,n,wo)=>{const L=EIS_TEXT[art], x=L[rint(0,L.length-1)], f=s=>s.replace(/\{n\}/g,n||'').replace(/\{wo\}/g,wo||''); return [f(x[0]),f(x[1])]};
+function eisGeschichte(){
+  if(S.monat!==11||eisEigen()||S.eisZ===S.jahr-1||Math.random()>=EIS_Z) return;
+  const G=S.gegner||[], los=L=>L[rint(0,L.length-1)], kuehl=Object.keys(REGIONEN).filter(r=>REGIONEN[r].frost>=EIS_KUEHL);
+  if(Math.random()<EIS_PLEITE&&G.length){
+    const A=G.filter(x=>x.eisJ!==S.jahr), Zo=A.filter(x=>x.typ==='zocker');
+    const g=G.find(x=>x.eisPl===S.jahr)||los(Zo.length?Zo:A.length?A:G);
+    const [t,text]=eisT('pleite',g.name,WO[g.region]); S.eisZ=S.jahr; return schlag(40,t,text,'frost');
+  }
+  const g=G.find(x=>x.eisJ===S.jahr)||(()=>{const K=G.filter(x=>x.eisPl!==S.jahr&&kuehl.includes(x.region)); return K.length?los(K):null})();
+  const [t,text]=g?eisT('gegner',g.name,WO[g.region]):eisT('gebiet','',WO[los(kuehl)]);
+  S.eisZ=S.jahr; schlag(40,t,text,'eiswein');
+}
 function zeitung(Z,W,ehr,k){
   const T=TOP.slice().sort((a,b)=>b.p-a.p), kopf=T.shift()||flauteKopf(), nr=(S.jahr-START_JAHR)*12+S.monat+1;
   return {titel:`${MON[S.monat]} ${S.jahr}`,nr,rub:kopf.sonder||kopf.ende?null:rubrikNeu(nr),kopf,art:T,zeilen:Z,wetter:W,fuss:FUSS.slice(),ehr,k};
@@ -2135,7 +2160,7 @@ function monatWeiter(){
   if(S.fest){
     const w=S.fest.w, f=HOFFEST_WETTER[w]||1, F=FESTE[S.fest.art||'hoffest'], n=F.name, a=ruhm(Math.round(festAns(F)*f));
     const T={sonnig:'Bei strahlender Sonne kamen Hunderte Gäste',mild:'Bei mildem Wetter kamen viele Gäste',regen:'Im Regen kamen nur wenige Gäste',kalt:'Bei kühlem Wetter blieben einige Gäste zu Hause',frost:'Bei klirrender Kälte blieben einige Gäste zu Hause'};
-    schlag(65,f>1?`Rauschendes ${n} bei ${S.name}`:f<.8?`${n} bei ${S.name} fällt ins Wasser`:`${n} bei ${S.name}`,`${T[w]||T.mild}, es gab Musik, ${S.fest.art==='weinfest'?'Zwiebelkuchen':'Flammkuchen'} und deinen Wein. Das ganze Dorf redet davon: +${a} Ansehen.`,'hoffest'); S.fest=null;
+    schlag(65,f>1?`Rauschendes ${n} bei ${S.name}`:f<.8?`${n} bei ${S.name} fällt ins Wasser`:`${n} bei ${S.name}`,`${T[w]||T.mild}, es gab Musik, ${S.fest.art==='weinfest'?'Zwiebelkuchen':'Flammkuchen'} und deinen Wein. Das ganze Dorf redet davon: +${a} Ansehen.`,f<.8?'hoffest-regen':'hoffest'); S.fest=null;
   }
   if(S.mgrLog){const T=['weingut','keller'].filter(b=>(S.mgrLog[b]||[]).length).map(b=>`Dein ${MGR_BEREICHE[b].name} meldet: ${S.mgrLog[b].join(', ')}.`); if(T.length) schlag(15,'Aus dem Gutsbüro',T.join(' '))}
   S.mgrLog=null;
@@ -2197,11 +2222,11 @@ function monatWeiter(){
   // Wetter als Thema für die Zeitung. Die Einzelheiten je Rebsorte stehen unter "Aus dem Weinberg".
   if(S.monat===10&&S.kaelte===S.jahr) schlag(70,'Kälteeinbruch im November',`Über Nacht ist es bitterkalt geworden. Wer noch Trauben hängen hatte, hat sie verloren.${W.some(z=>z.startsWith('Kälteeinbruch'))?' '+(spFertig(2)?'Bei dir haben die Frostfeuer der Feuerwehr ein Viertel gerettet.':'Bei dir ist erfroren, was noch am Stock hing.'):' Deine Trauben hat es nicht erwischt.'}`,'frost',{du:W.some(z=>z.startsWith('Kälteeinbruch'))?1:0});
   if(S.monat===9&&S.kaelteWarn===S.jahr) schlag(60,'Wetterdienst warnt vor Kälteeinbruch','Für November sagt der Wetterdienst bitterkalte Nächte voraus. Wer noch Trauben hängen hat, sollte jetzt lesen.','frost',{du:R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)?1:0});
-  if(S.monat===11&&R().sorten.some(id=>S.felder[id].gefroren&&S.felder[id].menge>0)) schlag(66,'Frost! Eiswein ist möglich','Die Trauben hängen gefroren am Stock. Wer jetzt liest, kann Eiswein keltern.','frost',{du:1});
-  if((S.monat===3||S.monat===4)&&S.wetter==='frost'&&rebenGesamt()) schlag(62,'Spätfrost zur Blüte','Eine Frostnacht hat die Blüte geschädigt. Die Ernte fällt dieses Jahr kleiner aus.','frost',{du:1});
+  if(eisEigen()) schlag(66,...eisT('eigen'),'eiswein',{du:1});
+  if((S.monat===3||S.monat===4)&&S.wetter==='frost'&&rebenGesamt()) schlag(62,'Spätfrost zur Blüte','Eine Frostnacht hat die Blüte geschädigt. Die Ernte fällt dieses Jahr kleiner aus.','spaetfrost',{du:1});
   if(S.monat===0) schlag(28,'Prädikatsweine anmelden','Die Weine vom letzten Jahrgang können jetzt im Rathaus als Prädikatswein angemeldet werden. Bis März ist außerdem Pflanzzeit.','kellerbuch',{archiv:1});
-  if(S.monat<=2) schlag(20,'Rebenmarkt geöffnet',rebenMarktText()+'. Gepflanzt wird bis Ende März.','weingut',{archiv:1});
-  if(S.monat===11){const t=steuerSchau(); if(t.steuer>0) schlag(35,'Steuer-Tipp zum Jahresende',`Bisher sind es rund ${eur(t.gew)} Gewinn in diesem Jahr. Darauf fallen im Januar rund ${eur(t.steuer)} Steuer an. Was du im Dezember noch kaufst, zum Beispiel Fassraum, Flaschen, Dünger oder eine Maschinenwartung, senkt den Gewinn.${spOffen()?` Eine Spende im Rathaus senkt ihn auch, um höchstens ${pz(SP_DECKEL)}.`:''} Kredit tilgen senkt ihn nicht.`,'amt',{archiv:1})}
+  if(S.monat<=2) schlag(20,'Rebenmarkt geöffnet',rebenMarktText()+'. Gepflanzt wird bis Ende März.','rebenmarkt',{archiv:1});
+  if(S.monat===11){const t=steuerSchau(); if(t.steuer>0) schlag(35,'Steuer-Tipp zum Jahresende',`Bisher sind es rund ${eur(t.gew)} Gewinn in diesem Jahr. Darauf fallen im Januar rund ${eur(t.steuer)} Steuer an. Was du im Dezember noch kaufst, zum Beispiel Fassraum, Flaschen, Dünger oder eine Maschinenwartung, senkt den Gewinn.${spOffen()?` Eine Spende im Rathaus senkt ihn auch, um höchstens ${pz(SP_DECKEL)}.`:''} Kredit tilgen senkt ihn nicht.`,eisEigen()?'':'amt',{archiv:1})}
   // Seit 8.2: Artikel zu den Spenden, die im letzten Monat voll geworden sind.
   if(S.spBote&&S.spBote.length){for(const s of S.spBote) spBote(s); S.spBote=[]}
   if(S.monat===7) schlag(30,'Die Lese beginnt','Ab jetzt kannst du lesen. Wer länger hängen lässt, bekommt mehr Öchsle, riskiert aber Regen, Fäulnis und Frost.','lese',{archiv:1});
@@ -2312,7 +2337,7 @@ function etappe3Monat(Z){
   }
   kontrolleMonat(Z); sabotageGegenDich(Z);
   if(S.monat===0&&S.rang>=R_LADEN) Z.push(`Als Weinbotschafter ${WO[S.region]} warst du auf Messen in aller Welt unterwegs. +${ruhm(BOTSCHAFT_ANS)} Ansehen.`);
-  Z.push(...gegnerMonat());
+  Z.push(...gegnerMonat()); eisGeschichte();
   // Wettbewerbe: Ausschreibung im Februar (Land) und alle drei Jahre im Juni (Bund). Eingereicht wird im selben Monat, gewertet beim nächsten Monatswechsel.
   if(S.monat===1){
     neuerWettbewerb('land');
@@ -4295,7 +4320,7 @@ const AKT={
     const f=S.felder[d.id], so=SORTEN[d.id];
     const opt=['reif','ueber','alles'].map(la=>{const b=besteStufe(feldQ(f,la)),l=feldLiter(f,la);
       return `<button class="wahl" data-a="leseFrage" data-id="${d.id}" data-la="${la}" ${l<=0?'disabled':''}><b>${LESE[la]}</b><br><span class="mut">${num(l)}\u00a0l mit ${feldQ(f,la).oe}° Öchsle · reicht für: ${b?stufeText(b,feldQ(f,la).oe):'nichts'}${b?`<br>💶 Wert rund ${eur(leseWert(d.id,la,b,l))}<br>${verkaufAb(d.id,b)}`:''}</span></button>`}).join('');
-    openSheet(`${sbild('lese')}<h3>${so.name} lesen</h3><p class="mut">Jedes Feld liest du nur einmal im Jahr. Was die Leseart nicht mitnimmt, ist danach verloren. Die Trauben müssen noch diesen Monat gekeltert werden.</p>${f.gefroren?`<p class="hilfe" style="margin:0 0 10px">${eisFehlt(f)?eisFehlt(f)+'. Es reicht nur für die Stufen oben.':'Eiswein gibt es nur aus reifen oder aus überreifen Trauben, nicht aus beiden zusammen.'}</p>`:S.monat===10?`<p class="hilfe" style="margin:0 0 10px">${frostText()}. Nur dann wird aus hängenden Trauben Eiswein, sonst verfaulen sie.</p>`:S.monat===9&&S.kaelteWarn===S.jahr?'<p class="rot">Die Vorhersage meldet einen Kälteeinbruch im November.</p>':''}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0%. Den Rest liest keiner, er ist verloren.</p>`:''}${handFeld(f)?`<p class="hilfe" style="margin:0 0 10px">${handText(f,'')}${handFehlt(f)?' Stell vorher beim Arbeitsamt ein, dann liest die Hand.':''}</p>`:''}${opt}${mib('lese')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
+    openSheet(`${sbild(f.gefroren?'eiswein':'lese')}<h3>${so.name} lesen</h3><p class="mut">Jedes Feld liest du nur einmal im Jahr. Was die Leseart nicht mitnimmt, ist danach verloren. Die Trauben müssen noch diesen Monat gekeltert werden.</p>${f.gefroren?`<p class="hilfe" style="margin:0 0 10px">${eisFehlt(f)?eisFehlt(f)+'. Es reicht nur für die Stufen oben.':'Eiswein gibt es nur aus reifen oder aus überreifen Trauben, nicht aus beiden zusammen.'}</p>`:S.monat===10?`<p class="hilfe" style="margin:0 0 10px">${frostText()}. Nur dann wird aus hängenden Trauben Eiswein, sonst verfaulen sie.</p>`:S.monat===9&&S.kaelteWarn===S.jahr?'<p class="rot">Die Vorhersage meldet einen Kälteeinbruch im November.</p>':''}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0%. Den Rest liest keiner, er ist verloren.</p>`:''}${handFeld(f)?`<p class="hilfe" style="margin:0 0 10px">${handText(f,'')}${handFehlt(f)?' Stell vorher beim Arbeitsamt ein, dann liest die Hand.':''}</p>`:''}${opt}${mib('lese')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
   },
   // Version 5.1 (Paket 10): Sicherheitsabfrage, bevor gelesen wird. "Zurück" führt wieder zur Wahl der Leseart.
   leseFrage(d){
