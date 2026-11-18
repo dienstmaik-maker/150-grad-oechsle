@@ -176,7 +176,17 @@ ul.kl{margin:4px 0 0;padding-left:18px;font-size:14px}
 .pano{position:relative;cursor:pointer;height:min(280px,40vh);border-radius:14px;overflow:hidden;margin:0 0 12px;background:var(--line);touch-action:pan-y;user-select:none;-webkit-user-select:none}
 .pano>i{position:absolute;inset:0;background-repeat:no-repeat;background-size:auto 100%;background-position:0 50%}
 .pano>i.gleit{transition:background-position .7s ease,background-size .7s ease}
-.pano.gut{--r:6.168}.pano.gut>i{background-image:url(bilder/gut.jpg)}
+/* Stationen statt Streifen (Weingut, 18.11.2026): je Unterreiter ein eigenes Bild als Ebene. Die Ebene steht links und rechts 14 % über, damit beim Gleiten kein Rand zu sehen ist.
+   --pk ist die weiche Kante, die beim Wechsel übers neue Bild wandert. .tafel ist der Schild-Text auf der Anschlagtafel, 1em ist ein Hundertstel der Tafelbreite. */
+@property --pk{syntax:'<percentage>';inherits:false;initial-value:130%}
+.pano.teile>i{left:-14%;right:-14%;background-size:cover;background-position:center;will-change:transform}
+.pano .tafel{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1.08;color:#2b1a0c;pointer-events:none}
+.pano .tafel>*{display:block;white-space:nowrap;font-weight:400;font-style:normal;text-decoration:none;margin:0}
+.pano .tafel b{font-family:"Winzerbote Fraktur",serif;font-size:15em}
+.pano .tafel em{font-family:"Urkunde Schreibschrift",cursive;font-size:11.5em;margin-top:.1em}
+.pano .tafel s{font-family:Alegreya,serif;font-style:italic;font-size:6.6em;margin-top:1.5em}
+.pano .tafel hr{width:40%;border:0;border-top:1px solid #2b1a0c;margin:3em 0 2.4em;opacity:.8}
+.pano .tafel u{font-family:Alegreya,serif;letter-spacing:.03em;font-size:6.2em}
 .pano.keller{--r:4.931}.pano.keller>i{background-image:url(bilder/keller.jpg)}
 .pano.stadt{--r:6.115}.pano.stadt>i{background-image:url(bilder/stadt.jpg)}
 .ptitel{position:absolute;left:0;right:0;bottom:0;padding:28px 12px 8px;background:linear-gradient(transparent,rgba(0,0,0,.66));color:#fff;text-align:center;pointer-events:none}
@@ -438,16 +448,7 @@ img.fass{height:1.1em;vertical-align:-.18em}
 @media (prefers-reduced-motion:reduce){#info .ibild,#info .ischw,.schnitt{animation:none}#info .ischw,.schnitt{opacity:0}#info.aus .ischw{opacity:1}}
 @keyframes ein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes puls{50%{opacity:.45}}
-/* Version 8.1: Die Pinnwand ist Deko. Auf dem Kork hängt eine Urkunde mit Weingut, Spieler, ausgedachter Adresse und Weinbaugebiet (Entwurf 2 aus _entwurf_wand.html, Maik 17.11.2026).
-   .pb ist der Rahmen des Blatts in Prozent der Korkfläche. .pt ist das Blatt in fester Grundgröße (WAND_B), wandStell legt es per scale und matrix3d auf das Trapez aus Pinnwand 3.0. */
-.wand{position:absolute;box-sizing:border-box;pointer-events:none}.wand.gleit{transition:left .7s ease,top .7s ease,width .7s ease,height .7s ease}.wand.gleit .pt{transition:transform .7s ease}
-.wand .pb{position:absolute;left:-4.63%;top:-5.03%;width:108.73%;height:111.03%;filter:drop-shadow(0 .8px 1.2px rgba(40,15,0,.55))}
-.wand .pt{position:absolute;left:0;top:0;transform-origin:0 0;padding:8% 4% 4%;box-sizing:border-box;background:linear-gradient(rgba(255,250,232,.55),rgba(255,250,232,.55)),#f3e7ca url(bilder/papier.jpg) center/cover;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#111;line-height:1.05;text-align:center}
-.wand .pt::before{content:'';position:absolute;inset:7% 5.5%;border:1.4px double #111}
-.wand .pt b,.wand .pt em,.wand .pt s,.wand .pt u{display:block;font-weight:400;font-style:normal;text-decoration:none;white-space:nowrap;color:#111;margin:0}
-.wand .pt b{font-family:"Winzerbote Fraktur",serif}.wand .pt em{font-family:"Urkunde Schreibschrift",cursive;margin-top:1.5px}.wand .pt s{font-family:Alegreya,serif;font-style:italic;margin-top:1.5px}.wand .pt u{font-family:Alegreya,serif;letter-spacing:.03em}
-.wand .pt hr{width:40%;border:0;border-top:.5px solid #111;margin:2px 0 1.5px;position:relative;overflow:visible}
-.wand .pt hr::after{content:'❦';position:absolute;left:50%;top:-3.6px;transform:translateX(-50%);font-size:6px;line-height:1;color:#111;background:#f7eedb;padding:0 1px}
+/* Die Urkunde auf der Korkwand aus 8.1 (.wand) gibt es nicht mehr: Seit den Stationen steht ihr Text direkt auf der Anschlagtafel (.tafel bei .pano). */
 @media (prefers-color-scheme:dark){.pano,.mbild,.sbild{filter:brightness(.85)}}
 @media (prefers-reduced-motion:reduce){.pano *,.ehrung,#titel .tipp{animation:none;transition:none}}
 /* ===== Version 7.1 "Optik": Papier auf Holztisch (Maiks Wahl 16.11.2026) =====
@@ -1126,10 +1127,18 @@ function tonKnoepfe(){return `<div class="card"><h3>🔊 Ton</h3>${tonZeilen()}<
 // Alle Bilder liegen als Dateien im Ordner bilder (gebaut von _medien_bauen.py).
 // Panorama: ein breiter, gemalter Streifen je Hauptreiter. PANO_MITTE nennt je Ort, wo sein Motiv im Streifen liegt (0 = linker Rand, 1 = rechter Rand).
 // Beim Wechsel des Ortes gleitet das Bild dorthin. Gewechselt wird durch Wischen über das Bild oder durch Tippen auf ein Motiv.
-const PANO_MITTE={gut:{berg:.10,betrieb:.35,aktuell:.51,maschinen:.70,buero:.92},keller:{buch:.125,sabotage:.345,start:.60,lager:.865},stadt:{amt:.125,handel:.32,laeden:.51,bank:.70,arbeit:.895}};
+const PANO_MITTE={keller:{buch:.125,sabotage:.345,start:.60,lager:.865},stadt:{amt:.125,handel:.32,laeden:.51,bank:.70,arbeit:.895}};
 // PANO_ZOOM vergrößert das Bild je Hauptreiter (std) oder je Ort, damit ein Motiv das Fenster füllt. 1 = ganze Höhe sichtbar.
-const PANO_ZOOM={gut:{std:1.2},keller:{std:1},stadt:{std:1}};
+const PANO_ZOOM={keller:{std:1},stadt:{std:1}};
 let PANO_ALT={tab:null,x:0,z:1}, ORT_ALT=null;
+// Stationen statt Streifen (18.11.2026): Steht ein Hauptreiter in PANO_TEILE, hat jeder Unterreiter sein eigenes Bild (PANO_BILD Pixel groß), und das Spiel gleitet von Bild zu Bild.
+// Die Teilbilder von Timo passen an den Nähten nicht zusammen, deshalb kein durchgehender Schwenk. Kellerei und Stadt folgen, bis dahin laufen sie mit dem Streifen (PANO_MITTE).
+const PANO_TEILE={gut:{berg:'panorama-weingut-sommer-teil-1',betrieb:'panorama-weingut-sommer-teil-2',aktuell:'panorama-weingut-sommer-teil-3',maschinen:'panorama-weingut-sommer-teil-4',buero:'panorama-weingut-sommer-teil-5'}};
+const PANO_BILD=[1536,1024];
+// PANO_TAFEL: die leere Fläche der Anschlagtafel in Bildpixeln (links, oben, rechts, unten). Darauf steht der Schild-Text, dorthin zoomt das Bild nach der Ankunft.
+const PANO_TAFEL={gut:{aktuell:[418,312,848,574]}};
+// Zeiten in Millisekunden (Maik 18.11.2026, Testseite _stationen.html): Gleiten, Ruhe vor dem Zoom, Zoom auf die Tafel, Zoom zurück vor dem Weggehen.
+const GLEIT_MS=700, TAFEL_RUHE=300, TAFEL_REIN=900, TAFEL_RAUS=350, TAFEL_ZOOM=1.75, PANO_KURVE='cubic-bezier(.45,.05,.3,1)';
 // Je Ort eine eigene Hintergrundfarbe (Klasse am html-Element). Die Leiste des Handys ganz oben bekommt die Farbe der Kopfleiste.
 function ortFarbe(tab){const h=document.documentElement; h.className='ort-'+tab; const m=$('meta[name="theme-color"]'); if(m) m.content=getComputedStyle(h).getPropertyValue('--kopf').trim()||'#7b1e3a'}
 // Bild oben in einem Fenster (Weinkontrolle, Auktion, Prämierung, Rathaus, Kellerbuch, Pleite).
@@ -1139,7 +1148,7 @@ const sbild=n=>`<div class="sbild" style="background-image:url(bilder/${n}.jpg)$
 // Das Bild des Ortes mit Holzrahmen. Unten im Bild steht, wo man ist. Gewechselt wird über die Leiste unten, durch Wischen übers Bild oder Tippen auf ein Motiv.
 function ortBild(titel){
   const L=SUBS[TAB];
-  return `<div class="pano ${TAB} s-${SUB}" data-a="bild"><i></i>${TAB==='gut'?wandHtml():''}<div class="ptitel"><b>${L.find(s=>s[0]===SUB)[1]} ${esc(titel)}</b></div></div>`;
+  return `<div class="pano ${TAB} s-${SUB}${PANO_TEILE[TAB]?' teile':''}" data-a="bild">${PANO_TEILE[TAB]?'':'<i></i>'}<div class="ptitel"><b>${L.find(s=>s[0]===SUB)[1]} ${esc(titel)}</b></div></div>`;
 }
 // Bild hinter der Zeitung: die Frostnacht beim Kälteeinbruch im November, sonst die Jahreszeit. Was es zu feiern gibt, zeigt das Foto in der Zeitung.
 // Version 8.4: Bildergalerie "Weingut wächst". Jede Stufe (Rang 0 bis 9 = Stufe 1 bis 10) hat ein Bild je Jahreszeit, das Spiel nimmt immer das der aktuellen Stufe (Rang-Regel).
@@ -1167,55 +1176,88 @@ function teilchen(jz){
   const n=jz==='sommer'?Math.round(JZ_TEILE*.55):JZ_TEILE;
   return `<div class="iteile ${jz}">${Array.from({length:n},(_,k)=>`<i style="left:${(k*53+7)%100}%;animation-delay:${(.5+(k*.29)%2.2).toFixed(2)}s;animation-duration:${(3.2+(k%4)*.6).toFixed(1)}s;--d:${(k%2?1:-1)*(12+k*7%34)}px"></i>`).join('')}</div>`;
 }
-// Pinnwand im Weingut-Bild, seit 8.1 reine Deko: eine Urkunde mit Weingut, Spieler, ausgedachter Adresse und Weinbaugebiet (Maik 17.11.2026). Den Monatsrat gibt es nur noch als Sprechblase.
-// WAND nennt die Korkfläche im Streifen als Anteile (links, rechts, oben, unten). Bei einem neuen Bild neu ausmessen.
-const WAND=[.491,.533,.385,.61];
+// Anschlagtafel im Weingut-Bild (Unterreiter Aktuelles), reine Deko: Weingut, Spieler, ausgedachte Adresse und Weinbaugebiet (Maik 17.11.2026). Den Monatsrat gibt es nur noch als Sprechblase.
+// Seit den Stationen (18.11.2026) steht der Text direkt auf der Tafel, ohne Blatt und Rahmen, Tinte dunkelbraun. Die Urkunde auf der Korkwand aus 8.1 ist damit weg.
 // Ausgedachte Adresse je Gebiet (Annahme Claude). Die Hausnummer hängt fest am Namen des Weinguts.
 const WAND_STR={mosel:'Moselweinstraße',rheingau:'Am Rheinufer',rheinhessen:'Rebenweg',pfalz:'Weinstraße',franken:'Am Steinberg',wuerttemberg:'Neckarhalde'};
 const wandNr=t=>[...t].reduce((a,c)=>(a*31+c.charCodeAt(0))%997,7)%28+1;
-// Grundgröße des Blatts in Pixeln (so groß ist es am Handy unter Aktuelles), die Ecken des Trapezes aus Pinnwand 3.0 als Anteile davon und die passenden Schriftgrößen je Inhalt.
-const WAND_B=[94.6,84.4], WAND_ECK=[[0,0],[1,.1196],[1,.9847],[0,1]], WAND_FIT={};
-function wandHtml(){
+// Wo die Tafel in der Ebene liegt. Das Bild füllt die Ebene wie background-size:cover, T sind die Bildpixel aus PANO_TAFEL.
+function tafelOrt(el,T){
+  const W=el.clientWidth, H=el.clientHeight, k=Math.max(W/PANO_BILD[0],H/PANO_BILD[1]), ox=(W-PANO_BILD[0]*k)/2, oy=(H-PANO_BILD[1]*k)/2;
+  return {x:ox+T[0]*k,y:oy+T[1]*k,w:(T[2]-T[0])*k,h:(T[3]-T[1])*k,W,H};
+}
+// Schreibt den Schild-Text auf die Tafel. Er hängt in der Ebene des Bilds und gleitet und zoomt deshalb mit. Lange Namen schrumpfen, bis sie passen (gemerkt je Text und Breite).
+const TAFEL_FIT={};
+function tafelText(el,T){
   // Alte Spielstände ohne eigenen Namen zeigen nur das Weingut. Nach einer Übergabe steht hier der Erbe.
-  const ich=S.ich||(S.erbe&&S.erbe.name)||'', adr=`${WAND_STR[S.region]||'Weinstraße'} ${wandNr(S.name||'')}`;
-  return `<div class="wand" aria-hidden="true"><div class="pb"><div class="pt" style="width:${WAND_B[0]}px;height:${WAND_B[1]}px" data-k="${esc(S.name+'|'+ich+'|'+S.region)}"><b data-w="80" data-f="15">${esc(S.name)}</b>${ich?`<em data-w="70" data-f="11.5">${esc(ich)}</em>`:''}<s data-w="56" data-f="6.6">${esc(adr)}</s><hr><u data-w="56" data-f="6.2">Weinbaugebiet ${esc(R().name)}</u></div></div></div>`;
+  const t=tafelOrt(el,T), ich=S.ich||(S.erbe&&S.erbe.name)||'', adr=`${WAND_STR[S.region]||'Weinstraße'} ${wandNr(S.name||'')}`, d=document.createElement('div');
+  d.className='tafel'; d.setAttribute('aria-hidden','true');
+  d.style.cssText=`left:${t.x}px;top:${t.y}px;width:${t.w}px;height:${t.h}px;font-size:${t.w/100}px`;
+  d.innerHTML=`<b>${esc(S.name)}</b>${ich?`<em>${esc(ich)}</em>`:''}<s>${esc(adr)}</s><hr><u>Weinbaugebiet ${esc(R().name)}</u>`;
+  el.append(d);
+  const lang=[...d.querySelectorAll('b,em')], k=[S.name,ich,Math.round(t.w)].join('|'), fit=TAFEL_FIT[k];
+  if(fit) return lang.forEach((e,i)=>{if(fit[i]) e.style.fontSize=fit[i]+'px'});
+  const pass=()=>lang.map(e=>{e.style.fontSize=''; let f=parseFloat(getComputedStyle(e).fontSize), g=0; while(e.offsetWidth>t.w*.9&&f>4){f-=.5; g=f; e.style.fontSize=f+'px'} return g});
+  const r=pass();
+  if(document.fonts&&document.fonts.status!=='loaded') document.fonts.ready.then(()=>{if(d.isConnected) pass()}); else TAFEL_FIT[k]=r;
 }
-// Perspektive, die das Blatt in Grundgröße auf die vier Ecken legt (Quadrat auf Viereck nach Heckbert).
-function wandMatrix(){
-  const [W,H]=WAND_B, [[x0,y0],[x1,y1],[x2,y2],[x3,y3]]=WAND_ECK.map(([x,y])=>[x*W,y*H]);
-  const dx1=x1-x2,dx2=x3-x2,dy1=y1-y2,dy2=y3-y2,sx=x0-x1+x2-x3,sy=y0-y1+y2-y3,den=dx1*dy2-dx2*dy1;
-  const g=(sx*dy2-dx2*sy)/den,h=(dx1*sy-sx*dy1)/den, a=x1-x0+g*x1,b=x3-x0+h*x3,d=y1-y0+g*y1,e=y3-y0+h*y3;
-  return `matrix3d(${a/W},${d/W},0,${g/W},${b/H},${e/H},0,${h/H},0,0,1,0,${x0},${y0},0,1)`;
+// Zoom, der die Tafel in die Mitte des Rahmens holt.
+function tafelZoom(el,T){
+  const t=tafelOrt(el,T), cx=t.x+t.w/2, cy=t.y+t.h/2;
+  return {mitte:`${cx}px ${cy}px`,zoom:`translate(${t.W/2-cx}px,${t.H/2-cy}px) scale(${TAFEL_ZOOM})`};
 }
-// Jede Zeile startet bei ihrer Höchstgröße und wird kleiner, bis sie in ihre Breite passt. Gemerkt wird erst, wenn die Schriften geladen sind.
-function wandFit(){
-  const t=$('.wand .pt'); if(!t) return; const z=[...t.querySelectorAll('[data-w]')], k=t.dataset.k, fit=WAND_FIT[k];
-  if(fit) return z.forEach((e,i)=>e.style.fontSize=fit[i]+'px');
-  const r=z.map(e=>{let f=+e.dataset.f; e.style.fontSize=f+'px'; while(e.offsetWidth>+e.dataset.w&&f>4){f-=.25; e.style.fontSize=f+'px'} return f});
-  if(document.fonts&&document.fonts.status!=='loaded') document.fonts.ready.then(()=>{if(!WAND_FIT[k]) wandFit()}); else WAND_FIT[k]=r;
+// Eine Ebene mit dem Bild eines Unterreiters, unter der Titelzeile. Hat das Bild eine Tafel, kommt der Schild-Text dazu.
+const TEILE_DA=new Set();
+function teilEbene(el,sub){
+  const i=document.createElement('i'); i.style.backgroundImage=`url(bilder/${PANO_TEILE[TAB][sub]}.jpg)`;
+  el.insertBefore(i,el.querySelector('.ptitel'));
+  const T=(PANO_TAFEL[TAB]||{})[sub]; if(T) tafelText(i,T);
+  return i;
 }
-// Legt die Pinnwand genau auf die Korkwand, passend zu Verschiebung x (Prozent) und Zoom z des Streifens.
-function wandStell(el,r,x,z){
-  const w=$('.wand'); if(!w) return;
-  const H=el.clientHeight, B=el.clientWidth, sw=H*r*z, ox=x/100*(sw-B), oy=(H*z-H)/2, wh=(WAND[3]-WAND[2])*H*z, ww=(WAND[1]-WAND[0])*sw;
-  w.style.left=(WAND[0]*sw-ox)+'px'; w.style.top=(WAND[2]*H*z-oy)+'px'; w.style.width=ww+'px'; w.style.height=wh+'px';
-  const t=$('.wand .pt'); if(!t) return; if(!t.dataset.ok){t.dataset.ok=1; wandFit()}
-  t.style.transform=`scale(${ww*1.0873/WAND_B[0]},${wh*1.1103/WAND_B[1]}) ${wandMatrix()}`;
+// Stationswechsel: Im selben Hauptreiter gleitet das neue Bild aus der Laufrichtung mit weicher Kante herein, das alte wandert leicht mit.
+// Hat das alte Bild eine Tafel, zoomt es erst zurück. Hat das neue eine, zoomt es nach kurzer Ruhe darauf. Sonst (anderer Hauptreiter, Knopf gedrückt, Handy gedreht) steht das Bild sofort ruhig da.
+// Das Spiel baut die Seite bei jeder Aktion neu auf. Läuft dabei noch ein Wechsel, setzt er an derselben Stelle fort (t0 und ende in PANO_ALT, die Abläufe starten mit negativer Verzögerung).
+function teileStell(){
+  const el=$('.pano.teile'); if(!el) return;
+  el.querySelectorAll(':scope>i').forEach(x=>x.remove());
+  Object.values(PANO_TEILE[TAB]).forEach(n=>{if(TEILE_DA.has(n)) return; TEILE_DA.add(n); const b=new Image(); b.src=`bilder/${n}.jpg`});
+  const jetzt=performance.now(), A=PANO_ALT, T=PANO_TAFEL[TAB]||{};
+  let von=null, t0=jetzt;
+  if(A.tab===TAB&&A.sub&&A.sub!==SUB) von=A.sub;
+  else if(A.tab===TAB&&A.sub===SUB&&A.von&&jetzt<A.ende){von=A.von; t0=A.t0}
+  if(!el.animate||matchMedia('(prefers-reduced-motion:reduce)').matches) von=null;
+  const alt=von?teilEbene(el,von):null, neu=teilEbene(el,SUB), zn=T[SUB]&&tafelZoom(neu,T[SUB]);
+  if(zn){neu.style.transformOrigin=zn.mitte; neu.style.transform=zn.zoom}
+  if(!alt){PANO_ALT={tab:TAB,sub:SUB}; return}
+  const L=SUBS[TAB].map(s=>s[0]), r=L.indexOf(SUB)>L.indexOf(von)?1:-1, za=T[von]&&tafelZoom(alt,T[von]), ab=za?TAFEL_RAUS:0;
+  const o=(dauer,start,fill,easing=PANO_KURVE)=>({duration:dauer,delay:start-(jetzt-t0),easing,fill});
+  if(za){alt.style.transformOrigin=za.mitte; alt.animate([{transform:za.zoom},{transform:'none'}],o(TAFEL_RAUS,0,'both','ease-in-out'))}
+  alt.animate([{transform:'translateX(0)'},{transform:`translateX(${-r*9}%)`}],o(GLEIT_MS,ab,'forwards'));
+  neu.style.maskImage=neu.style.webkitMaskImage=`linear-gradient(${r>0?'to left':'to right'},#000 calc(var(--pk) - 30%),transparent var(--pk))`;
+  neu.animate([{'--pk':'0%',transform:`translateX(${r*9}%)`},{'--pk':'130%',transform:'translateX(0)'}],o(GLEIT_MS,ab,'both'))
+    .finished.then(()=>{alt.remove(); neu.style.maskImage=neu.style.webkitMaskImage=''},()=>{});
+  let ende=ab+GLEIT_MS;
+  if(zn){neu.animate([{transform:'none'},{transform:zn.zoom}],o(TAFEL_REIN,ende+TAFEL_RUHE,'forwards')); ende+=TAFEL_RUHE+TAFEL_REIN}
+  PANO_ALT={tab:TAB,sub:SUB,von,t0,ende:t0+ende};
 }
-// Schiebt den Streifen so, dass das Motiv des Unterreiters in der Mitte steht. Im selben Hauptreiter gleitet er vom alten Platz dorthin.
+// Schiebt den Streifen so, dass das Motiv des Unterreiters in der Mitte steht. Im selben Hauptreiter gleitet er vom alten Platz dorthin. Hauptreiter mit Stationen gehen an teileStell.
 function panoStell(){
+  if(PANO_TEILE[TAB]) return teileStell();
   const p=$('.pano>i'); if(!p) return;
   const el=p.parentNode, r=parseFloat(getComputedStyle(el).getPropertyValue('--r'))||6, z=PANO_ZOOM[TAB][SUB]||PANO_ZOOM[TAB].std, f=el.clientWidth/(el.clientHeight*r*z);
   const x=f>=1?50:Math.round(clamp((PANO_MITTE[TAB][SUB]-f/2)/(1-f),0,1)*1000)/10, gr=z=>`auto ${Math.round(z*100)}%`;
-  if(PANO_ALT.tab===TAB&&(PANO_ALT.x!==x||PANO_ALT.z!==z)){p.style.backgroundPositionX=PANO_ALT.x+'%'; p.style.backgroundSize=gr(PANO_ALT.z); wandStell(el,r,PANO_ALT.x,PANO_ALT.z); p.getBoundingClientRect(); p.classList.add('gleit'); const w=$('.wand',el); if(w) w.classList.add('gleit')}
-  p.style.backgroundPositionX=x+'%'; p.style.backgroundSize=gr(z); wandStell(el,r,x,z); PANO_ALT={tab:TAB,x,z};
+  if(PANO_ALT.tab===TAB&&(PANO_ALT.x!==x||PANO_ALT.z!==z)){p.style.backgroundPositionX=PANO_ALT.x+'%'; p.style.backgroundSize=gr(PANO_ALT.z); p.getBoundingClientRect(); p.classList.add('gleit')}
+  p.style.backgroundPositionX=x+'%'; p.style.backgroundSize=gr(z); PANO_ALT={tab:TAB,x,z};
 }
 // Seit 8.1: Ändert sich die Fenstergröße (Handy drehen, Browser breiter), Streifen und Urkunde ohne Gleiten neu ausrichten. Sonst blieb die Urkunde am alten Platz stehen (Maik 17.11.2026).
 let PANO_RS=0;
-addEventListener('resize',()=>{cancelAnimationFrame(PANO_RS); PANO_RS=requestAnimationFrame(()=>{if(!S||!$('.pano>i')) return; PANO_ALT={tab:null,x:0,z:1}; const w=$('.wand'); if(w) w.classList.remove('gleit'); panoStell()})});
+addEventListener('resize',()=>{cancelAnimationFrame(PANO_RS); PANO_RS=requestAnimationFrame(()=>{if(!S||!$('.pano')) return; PANO_ALT={tab:null,x:0,z:1}; panoStell()})});
 // Tipp ins Bild: Welches Motiv liegt dem Tipp am nächsten? fr ist die Stelle im ganzen Streifen (0 bis 1).
 function panoTipp(e){
-  const el=e.target.closest('.pano'); if(!el||!PANO_MITTE[TAB]) return null;
+  const el=e.target.closest('.pano'); if(!el) return null;
+  // Stationen: Es ist nur ein Motiv zu sehen. Ein Tipp ins linke Drittel geht einen Ort zurück, ins rechte einen vor, die Mitte macht nichts (Annahme Claude 18.11.2026).
+  if(PANO_TEILE[TAB]){const b=el.getBoundingClientRect(), fr=(e.clientX-b.left)/b.width, L=SUBS[TAB].map(s=>s[0]); return L[L.indexOf(SUB)+(fr<1/3?-1:fr>2/3?1:0)]||null}
+  if(!PANO_MITTE[TAB]) return null;
   const b=el.getBoundingClientRect(), r=parseFloat(getComputedStyle(el).getPropertyValue('--r'))||6, W=b.height*r*(PANO_ALT.z||1);
   const fr=(e.clientX-b.left+PANO_ALT.x/100*(W-b.width))/W;
   return Object.entries(PANO_MITTE[TAB]).sort((a,c)=>Math.abs(a[1]-fr)-Math.abs(c[1]-fr))[0][0];
