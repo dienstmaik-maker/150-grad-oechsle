@@ -314,14 +314,16 @@ img.fass{height:1.1em;vertical-align:-.18em}
 @media (prefers-reduced-motion:reduce){#feier .fbild.bewegt,#feier.buehne .fkarte p.da{animation:none}#feier .fglanz{display:none}}
 #feier .fbild.still{animation:none;filter:blur(2px);transform:scale(1.04);background-position:var(--p1)}
 /* Version 8.4: Aufstiegs-Szene "Dein Weingut wächst" vor der Feier. Sommerbild der alten Stufe, der Rangtitel wechselt, das Sommerbild der neuen Stufe blendet über (Sommer-Regel). */
-#feier .wbild{position:fixed;inset:0;background:#000 50% 50%/cover no-repeat}
-/* Ab Stufe 5 (Schrägblick) rausgezoomt, damit mehr vom ganzen Gut zu sehen ist. Oben und unten bleibt dafür Schwarz (Maik 18.11.2026). --wz ist die Bildbreite im Verhältnis zur Bildschirmbreite. */
-#feier .wbild.gross{background-size:var(--wz,150%) auto}
-#feier .walt{animation:sw-ein 1.2s ease-out both,wzoom 9s ease-in-out both}
-#feier .wneu{opacity:0;transform:scale(1.1);transition:opacity 2.2s ease,transform 6s cubic-bezier(.2,.6,.3,1)}
-#feier.wachs.neu .wneu{opacity:1;transform:none;animation:sw-tor 40s ease-in-out 1s infinite both}
-#feier.wachs.neu .wneu.gross{animation-name:sw-wander;animation-duration:70s}
-@keyframes wzoom{from{transform:scale(1)}to{transform:scale(1.08)}}
+#feier .wbild{position:fixed;inset:0;background:#000 50% 50%/100% auto no-repeat}
+/* Kamerafahrt (Maik 18.11.2026): Beide Bilder erst weit weg und ganz zu sehen, oben und unten Schwarz. Das alte blendet ins neue über,
+   das neue wächst langsam zum Vollbild (Zoom zur rechten Seite) und schwenkt dann zügig ganz nach links ans Ende des Bilds. --wr ist das Seitenverhältnis. */
+#feier .walt{animation:sw-ein 1.2s ease-out both,wzoom 4s ease-out both}
+#feier .wneu{opacity:0;transition:opacity 1.8s ease}
+#feier.wachs.neu .wneu{opacity:1;animation:wfahrt var(--wfd,13s) 1.4s both}
+@keyframes wzoom{from{transform:scale(.96)}to{transform:none}}
+@keyframes wfahrt{0%{background-size:100% auto;background-position:50% 50%;animation-timing-function:cubic-bezier(.45,0,.35,1)}
+  34%{background-size:max(100vw,calc(100vh*var(--wr,1.78))) auto;background-position:100% 50%;animation-timing-function:cubic-bezier(.4,0,.3,1)}
+  100%{background-size:max(100vw,calc(100vh*var(--wr,1.78))) auto;background-position:0% 50%}}
 #feier.wachs .fkarte{text-align:center}
 #feier.wachs .fkarte h2{display:grid;margin:4px 0 0}
 #feier.wachs .fkarte h2>span{grid-area:1/1;transition:opacity 1s ease,transform 1s ease}
@@ -391,18 +393,16 @@ img.fass{height:1.1em;vertical-align:-.18em}
 .umini{all:unset;box-sizing:border-box;cursor:pointer;aspect-ratio:1000/670;background:url(bilder/urkunde.webp) center/100% 100% no-repeat;border:3px solid #6b4a24;border-radius:3px;box-shadow:0 2px 5px rgba(0,0,0,.35),inset 0 0 0 1px #c9a227;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#5a1426;text-align:center;padding:0 12%}
 .umini b{font:700 11.5px/1.1 var(--schrift)}
 .umini small{font:400 9.5px/1.2 var(--schrift);color:#6e5638}
-/* Version 8.4: Fenster "Mein Weingut" im Büro. Ein großes Bild, darunter der Regler "Jahreszeit" (wischt von rechts nach links) und die Knöpfe der Stufen. Die nächste Stufe steht dunkel mit Schloss da. */
-.wgbild{position:relative;aspect-ratio:3/2;border-radius:12px;overflow:hidden;background:#2a2018;margin:0 0 10px;box-shadow:0 2px 6px rgba(0,0,0,.3);touch-action:pan-y;cursor:ew-resize;user-select:none}
+/* Version 8.4: Fenster "Mein Weingut" im Büro. Ein großes Sommerbild, darunter die 10 Knöpfe der Stufen. Die nächste Stufe steht dunkel mit Schloss da. */
+.wgbild{position:relative;aspect-ratio:3/2;border-radius:12px;overflow:hidden;background:#2a2018;margin:0 0 10px;box-shadow:0 2px 6px rgba(0,0,0,.3)}
 .wgbild .wgl{position:absolute;inset:0;background:#2a2018 center/cover no-repeat}
 .wgbild .wgsch{position:absolute;inset:0;display:none;background:var(--wgz) center/cover no-repeat;filter:brightness(.1) grayscale(1) blur(1px);opacity:.9}
-.wgbild.zu{cursor:default;background:radial-gradient(#3a3026,#14100c)}.wgbild.zu .wgl{display:none}.wgbild.zu .wgsch{display:block}
+.wgbild.zu{background:radial-gradient(#3a3026,#14100c)}.wgbild.zu .wgl{display:none}.wgbild.zu .wgsch{display:block}
 .wgbild .wgtxt{position:absolute;left:0;right:0;bottom:0;padding:18px 12px 8px;background:linear-gradient(transparent,rgba(0,0,0,.72));color:#fff;text-shadow:0 1px 3px #000;font-size:13px;pointer-events:none}
 .wgbild .wgtxt b{display:block;font:700 17px/1.2 var(--schrift)}
 .wgbild.zu .wgtxt{top:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:none;text-align:center;padding:0}
 .wgbild.zu .wgtxt i{font-style:normal;font-size:30px;margin-bottom:2px}
 .wgregler{margin:0 0 8px}.wgregler b{display:block;font-size:13px;font-weight:700;color:var(--mut);margin-bottom:2px}
-.wgregler input{width:100%;margin:0;accent-color:var(--wein)}.wgregler input:disabled{opacity:.4}
-.wgregler div{display:flex;justify-content:space-between;font-size:12px;color:var(--mut)}
 .wgst{display:flex;gap:3px}.wgst button{flex:1 1 0;min-width:0;min-height:0;padding:8px 0;font-size:13px}.wgst button:disabled{opacity:.35}
 @media (prefers-reduced-motion:reduce){#feier .fbild,#feier .ischw,#feier .konf,.urk.neu,.urk.neu .usiegel,#feier .fliste>div,#feier .fkarte,#info .zsonder.stempeln{animation:none}#feier .ischw{opacity:0}#feier.aus .ischw{opacity:1}#feier .konf{display:none}}
 @keyframes iein{from{opacity:1}to{opacity:0}}
@@ -2703,7 +2703,7 @@ function spFeierStart(){
 const WACHS_WECHSEL=2600;
 function vWachs(F){
   const a=F.von+1, b=F.zu+1, rn=i=>esc(frau()&&RAENGE[i].w||RAENGE[i].name);
-  const bild=(st,kl)=>`<div class="wbild ${kl}${wgGross(st)?' gross':''}" style="background-image:url(bilder/${wgBild(st,'sommer')}.jpg)"></div>`;
+  const bild=(st,kl)=>`<div class="wbild ${kl}${wgGross(st)?' gross':''}" style="background-image:url(bilder/${wgBild(st,'sommer')}.jpg);--wr:${wgGross(st)?1.777:1.5}"></div>`;
   return `<div id="feier" class="buehne wachs" data-a="wachsAlle">${bild(a,'walt')}${bild(b,'wneu')}<div class="fverl"></div>
     <div class="fkarte"><small>🏡 Dein Weingut wächst</small><h2><span class="wvon">${rn(F.von)}</span><span class="wzu">${rn(F.zu)}</span></h2>
     <p class="wsatz">${b===5?'Dein Gut ist zu groß für das Tor geworden.':b===10?'Das ganze Gut hat sich herausgeputzt.':'Schau dich um, was alles neu ist.'}</p></div>
@@ -2750,43 +2750,27 @@ function urkWand(){
   if(!U.length) return `<div class="mut">Noch keine. Der erste Aufstieg führt zum ${RAENGE[1].name}, dann hängt hier deine erste Urkunde.</div>`+spWand();
   return `<div class="uwand">${U.map(([e,n])=>`<button class="umini" data-a="urkunde" data-n="${n}"><b>${esc(e.w&&RAENGE[urkRang(e)].kw||RAENGE[urkRang(e)].kurz)}</b><small>${e.j?`${MON[e.m].slice(0,3)} ${e.j}`:''}</small></button>`).join('')}</div><div class="mut" style="margin-top:6px">Tipp auf eine Urkunde, dann siehst du sie groß.</div>`+spWand();
 }
-// Version 8.4: Fenster "Mein Weingut" im Büro neben den Urkunden. Ein großes Bild, darunter der Regler "Jahreszeit" und die Knöpfe der Stufen (Maik 18.11.2026).
-// Start bei der aktuellen Stufe in der Jahreszeit des Monats. Die nächste Stufe steht als dunkler Schatten mit Schloss und Rangname da, alle weiteren gar nicht.
-// Jahreszeit: Die vier Bilder der Stufe liegen übereinander, die Kante läuft in dieselbe Richtung wie der Regler (Maik 18.11.2026). Das geht mit dem Regler oder mit dem Finger direkt auf dem Bild.
-// WG_SICHT hält Stufe und Reglerstand bis zum nächsten Monat. Geladen werden nur die vier Bilder der gezeigten Stufe.
+// Version 8.4: Fenster "Mein Weingut" im Büro neben den Urkunden. Ein großes Sommerbild, darunter 10 Knöpfe für die Stufen (Maik 18.11.2026, ohne Regler für die Jahreszeit).
+// Start bei der aktuellen Stufe. Die nächste Stufe (Schloss) steht als dunkler Schatten mit Rangname da, die übrigen Knöpfe sind grau und gehen nicht.
+// WG_SICHT hält die gewählte Stufe bis zum nächsten Monat. Geladen wird nur das Sommerbild der gezeigten Stufe.
 let WG_SICHT=null;
-function wgSicht(){if(!WG_SICHT||WG_SICHT.m!==monatNr()) WG_SICHT={m:monatNr(),st:S.rang+1,v:JZ_FOLGE.indexOf(JZ[S.monat])}; return WG_SICHT}
+function wgSicht(){if(!WG_SICHT||WG_SICHT.m!==monatNr()) WG_SICHT={m:monatNr(),st:S.rang+1}; return WG_SICHT}
 function wgSeit(i){if(!i) return `Der Anfang, ${START_JAHR}`; const e=(S.ehrungen||[]).find(e=>e.a&&urkRang(e)===i); return e&&e.j?`Aufstieg ${MON[e.m]} ${e.j}`:'Aufstieg'}
 function wgFenster(){
-  const max=S.rang+1, n=Math.min(10,max+1), W=wgSicht(), st=Math.min(W.st,n);
-  return fenster('meingut','Mein Weingut',`<div class="wgbild" data-st="${st}">${JZ_FOLGE.map(j=>`<div class="wgl"></div>`).join('')}<div class="wgsch"></div><div class="wgtxt"></div></div>
-    <div class="wgregler"><b>Jahreszeit</b><input type="range" min="0" max="3" step="0.01" value="${W.v}" aria-label="Jahreszeit"><div>${JZ_FOLGE.map(j=>`<span>${JZ_NAME[j]}</span>`).join('')}</div></div>
+  const max=S.rang+1, n=Math.min(10,max+1);
+  return fenster('meingut','Mein Weingut',`<div class="wgbild"><div class="wgl"></div><div class="wgsch"></div><div class="wgtxt"></div></div>
     <div class="wgregler"><b>Stufe</b></div><div class="wgst">${Array.from({length:10},(_,k)=>k+1>n?`<button class="sec klein" disabled>${k+1}</button>`:`<button class="sec klein" data-a="wgSt" data-st="${k+1}">${k+1>max?'🔒':k+1}</button>`).join('')}</div>`,
-    {buch:'ziel',i:'Mit jedem Rang wächst dein Weingut. Unten wählst du die Stufe und siehst, wie es früher aussah. Die nächste Stufe bleibt im Dunkeln, bis du aufsteigst. Mit dem Regler oder dem Finger auf dem Bild wischst du durch die Jahreszeiten.'});
+    {buch:'ziel',i:'Mit jedem Rang wächst dein Weingut. Unten wählst du die Stufe und siehst, wie es früher aussah. Die nächste Stufe bleibt im Dunkeln, bis du aufsteigst.'});
 }
-// Zeichnet Stufe, Jahreszeit und Knöpfe neu, ohne das Büro neu aufzubauen (die Seite springt nicht).
+// Zeichnet Bild, Text und Knöpfe der gewählten Stufe, ohne das Büro neu aufzubauen (die Seite springt nicht).
 function wgZeig(){
-  const b=document.querySelector('.wgbild'); if(!b) return; const W=wgSicht(), max=S.rang+1, st=W.st, zu=st>max, rn=esc(frau()&&RAENGE[st-1].w||RAENGE[st-1].name);
-  b.classList.toggle('zu',zu); b.style.setProperty('--wgz',`url(bilder/${wgBild(Math.min(st,10),'sommer')}.jpg)`);
-  b.querySelectorAll('.wgl').forEach((l,k)=>{
-    if(!zu&&l.dataset.st!==String(st)){l.style.backgroundImage=`url(bilder/${wgBild(st,JZ_FOLGE[k])}.jpg)`; l.dataset.st=st}
-    l.style.clipPath=k?`inset(0 ${((1-Math.min(1,Math.max(0,W.v-k+1)))*100).toFixed(1)}% 0 0)`:'';
-  });
-  const jz=JZ_FOLGE[Math.min(3,Math.round(W.v))];
-  b.querySelector('.wgtxt').innerHTML=zu?`<i>🔒</i><b>${rn}</b>Stufe ${st} von 10`:`<b>${rn}</b>Stufe ${st} · ${wgSeit(st-1)} · ${JZ_NAME[jz]}`;
-  const f=b.closest('.fen')||b.parentNode, r=f.querySelector('.wgregler input'); r.disabled=zu; if(+r.value!==W.v) r.value=W.v;
-  f.querySelectorAll('.wgst button[data-st]').forEach(x=>x.classList.toggle('sec',+x.dataset.st!==st));
+  const b=document.querySelector('.wgbild'); if(!b) return; const max=S.rang+1, st=Math.min(wgSicht().st,10), zu=st>max, rn=esc(frau()&&RAENGE[st-1].w||RAENGE[st-1].name);
+  b.classList.toggle('zu',zu); b.style.setProperty('--wgz',`url(bilder/${wgBild(st,'sommer')}.jpg)`);
+  if(!zu) b.querySelector('.wgl').style.backgroundImage=`url(bilder/${wgBild(st,'sommer')}.jpg)`;
+  b.querySelector('.wgtxt').innerHTML=zu?`<i>🔒</i><b>${rn}</b>Stufe ${st} von 10`:`<b>${rn}</b>Stufe ${st} · ${wgSeit(st-1)}`;
+  (b.closest('.fen')||b.parentNode).querySelectorAll('.wgst button[data-st]').forEach(x=>x.classList.toggle('sec',+x.dataset.st!==st));
 }
-function wgStart(){
-  const b=document.querySelector('.wgbild'); if(!b||b.dataset.ok) return; b.dataset.ok=1; wgZeig();
-  const f=b.closest('.fen')||b.parentNode, r=f.querySelector('.wgregler input');
-  r.addEventListener('input',()=>{wgSicht().v=+r.value; wgZeig()});
-  // Mit dem Finger auf dem Bild: nach rechts ziehen holt die nächste Jahreszeit, nach links die vorige, wie beim Regler.
-  let x0=null, v0=0;
-  b.addEventListener('pointerdown',e=>{if(b.classList.contains('zu')) return; x0=e.clientX; v0=wgSicht().v; b.setPointerCapture(e.pointerId)});
-  b.addEventListener('pointermove',e=>{if(x0==null) return; wgSicht().v=Math.min(3,Math.max(0,v0+(e.clientX-x0)/b.clientWidth)); wgZeig()});
-  const los=()=>{x0=null}; b.addEventListener('pointerup',los); b.addEventListener('pointercancel',los);
-}
+function wgStart(){const b=document.querySelector('.wgbild'); if(!b||b.dataset.ok) return; b.dataset.ok=1; wgZeig()}
 // Seit 8.2: unter den Urkunden die Ehrungen für die Spenden, Schilder rund, ab Stufe 5 als kleine Urkunde.
 function spWand(){
   const E=(S.spenden||[]).slice().sort((a,b)=>a.s-b.s); if(!E.length) return '';
