@@ -175,7 +175,6 @@ ul.kl{margin:4px 0 0;padding-left:18px;font-size:14px}
 @keyframes ehr{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
 .pano{position:relative;cursor:pointer;height:min(280px,40vh);border-radius:14px;overflow:hidden;margin:0 0 12px;background:var(--line);touch-action:pan-y;user-select:none;-webkit-user-select:none}
 .pano>i{position:absolute;inset:0;background-repeat:no-repeat;background-size:auto 100%;background-position:0 50%}
-.pano>i.gleit{transition:background-position .7s ease,background-size .7s ease}
 /* Stationen statt Streifen (Weingut, 18.11.2026): je Unterreiter ein eigenes Bild als Ebene. Die Ebene steht links und rechts 14 % über, damit beim Gleiten kein Rand zu sehen ist.
    --pk ist die weiche Kante, die beim Wechsel übers neue Bild wandert. .tafel ist der Schild-Text auf der Anschlagtafel, 1em ist ein Hundertstel der Tafelbreite. */
 @property --pk{syntax:'<percentage>';inherits:false;initial-value:130%}
@@ -187,8 +186,6 @@ ul.kl{margin:4px 0 0;padding-left:18px;font-size:14px}
 .pano .tafel s{font-family:Alegreya,serif;font-style:italic;font-size:6.6em;margin-top:1.5em}
 .pano .tafel hr{width:40%;border:0;border-top:1px solid #2b1a0c;margin:3em 0 2.4em;opacity:.8}
 .pano .tafel u{font-family:Alegreya,serif;letter-spacing:.03em;font-size:6.2em}
-.pano.keller{--r:4.931}.pano.keller>i{background-image:url(bilder/keller.jpg)}
-.pano.stadt{--r:6.115}.pano.stadt>i{background-image:url(bilder/stadt.jpg)}
 .ptitel{position:absolute;left:0;right:0;bottom:0;padding:28px 12px 8px;background:linear-gradient(transparent,rgba(0,0,0,.66));color:#fff;text-align:center;pointer-events:none}
 .ptitel b{display:block;font-size:18px;text-shadow:0 1px 3px rgba(0,0,0,.8)}
 .punkte{display:flex;gap:6px;justify-content:center;margin-top:5px;pointer-events:auto}
@@ -1155,15 +1152,12 @@ function tonKnoepfe(){return `<div class="card"><h3>🔊 Ton</h3>${tonZeilen()}<
 
 /* ================= Bilder ================= */
 // Alle Bilder liegen als Dateien im Ordner bilder (gebaut von _medien_bauen.py).
-// Panorama: ein breiter, gemalter Streifen je Hauptreiter. PANO_MITTE nennt je Ort, wo sein Motiv im Streifen liegt (0 = linker Rand, 1 = rechter Rand).
-// Beim Wechsel des Ortes gleitet das Bild dorthin. Gewechselt wird durch Wischen über das Bild oder durch Tippen auf ein Motiv.
-const PANO_MITTE={keller:{buch:.125,sabotage:.345,start:.60,lager:.865},stadt:{amt:.125,handel:.32,laeden:.51,bank:.70,arbeit:.895}};
-// PANO_ZOOM vergrößert das Bild je Hauptreiter (std) oder je Ort, damit ein Motiv das Fenster füllt. 1 = ganze Höhe sichtbar.
-const PANO_ZOOM={keller:{std:1},stadt:{std:1}};
-let PANO_ALT={tab:null,x:0,z:1}, ORT_ALT=null;
-// Stationen statt Streifen (18.11.2026): Steht ein Hauptreiter in PANO_TEILE, hat jeder Unterreiter sein eigenes Bild (PANO_BILD Pixel groß), und das Spiel gleitet von Bild zu Bild.
-// Die Teilbilder von Timo passen an den Nähten nicht zusammen, deshalb kein durchgehender Schwenk. Kellerei und Stadt folgen, bis dahin laufen sie mit dem Streifen (PANO_MITTE).
-const PANO_TEILE={gut:{berg:'panorama-weingut-sommer-teil-1',betrieb:'panorama-weingut-sommer-teil-2',aktuell:'panorama-weingut-sommer-teil-3',maschinen:'panorama-weingut-sommer-teil-4',buero:'panorama-weingut-sommer-teil-5'}};
+// Stationen statt Streifen (Weingut seit 8.5.1, Kellerei und Stadt seit 8.5.4): Jeder Unterreiter hat sein eigenes Bild von Timo (PANO_BILD Pixel groß), das Spiel gleitet von Bild zu Bild.
+// Die Teilbilder passen an den Nähten nicht zusammen, deshalb kein durchgehender Schwenk. Gewechselt wird über die Leiste unten, durch Wischen übers Bild oder Tippen an den Bildrand.
+let PANO_ALT={tab:null}, ORT_ALT=null;
+const PANO_TEILE={gut:{berg:'panorama-weingut-sommer-teil-1',betrieb:'panorama-weingut-sommer-teil-2',aktuell:'panorama-weingut-sommer-teil-3',maschinen:'panorama-weingut-sommer-teil-4',buero:'panorama-weingut-sommer-teil-5'},
+  keller:{buch:'panorama-keller-teil-1',sabotage:'panorama-keller-teil-2',start:'panorama-keller-teil-3',lager:'panorama-keller-teil-4'},
+  stadt:{amt:'panorama-stadt-teil-1',handel:'panorama-stadt-teil-2',laeden:'panorama-stadt-teil-3',bank:'panorama-stadt-teil-4',arbeit:'panorama-stadt-teil-5'}};
 const PANO_BILD=[1536,1024];
 // PANO_TAFEL: die leere Fläche der Anschlagtafel in Bildpixeln (links, oben, rechts, unten). Darauf steht der Schild-Text, dorthin zoomt das Bild nach der Ankunft.
 const PANO_TAFEL={gut:{aktuell:[418,312,848,574]}};
@@ -1178,7 +1172,7 @@ const sbild=n=>`<div class="sbild" style="background-image:url(bilder/${n}.jpg)$
 // Das Bild des Ortes mit Holzrahmen. Unten im Bild steht, wo man ist. Gewechselt wird über die Leiste unten, durch Wischen übers Bild oder Tippen auf ein Motiv.
 function ortBild(titel){
   const L=SUBS[TAB];
-  return `<div class="pano ${TAB} s-${SUB}${PANO_TEILE[TAB]?' teile':''}" data-a="bild">${PANO_TEILE[TAB]?'':'<i></i>'}<div class="ptitel"><b>${L.find(s=>s[0]===SUB)[1]} ${esc(titel)}</b></div></div>`;
+  return `<div class="pano ${TAB} s-${SUB} teile" data-a="bild"><div class="ptitel"><b>${L.find(s=>s[0]===SUB)[1]} ${esc(titel)}</b></div></div>`;
 }
 // Bild hinter der Zeitung: die Frostnacht beim Kälteeinbruch im November, sonst die Jahreszeit. Was es zu feiern gibt, zeigt das Foto in der Zeitung.
 // Version 8.4: Bildergalerie "Weingut wächst". Jede Stufe (Rang 0 bis 9 = Stufe 1 bis 10) hat ein Bild je Jahreszeit, das Spiel nimmt immer das der aktuellen Stufe (Rang-Regel).
@@ -1270,27 +1264,14 @@ function teileStell(){
   if(zn){neu.animate([{transform:'none'},{transform:zn.zoom}],o(TAFEL_REIN,ende+TAFEL_RUHE,'forwards')); ende+=TAFEL_RUHE+TAFEL_REIN}
   PANO_ALT={tab:TAB,sub:SUB,von,t0,ende:t0+ende};
 }
-// Schiebt den Streifen so, dass das Motiv des Unterreiters in der Mitte steht. Im selben Hauptreiter gleitet er vom alten Platz dorthin. Hauptreiter mit Stationen gehen an teileStell.
-function panoStell(){
-  if(PANO_TEILE[TAB]) return teileStell();
-  const p=$('.pano>i'); if(!p) return;
-  const el=p.parentNode, r=parseFloat(getComputedStyle(el).getPropertyValue('--r'))||6, z=PANO_ZOOM[TAB][SUB]||PANO_ZOOM[TAB].std, f=el.clientWidth/(el.clientHeight*r*z);
-  const x=f>=1?50:Math.round(clamp((PANO_MITTE[TAB][SUB]-f/2)/(1-f),0,1)*1000)/10, gr=z=>`auto ${Math.round(z*100)}%`;
-  if(PANO_ALT.tab===TAB&&(PANO_ALT.x!==x||PANO_ALT.z!==z)){p.style.backgroundPositionX=PANO_ALT.x+'%'; p.style.backgroundSize=gr(PANO_ALT.z); p.getBoundingClientRect(); p.classList.add('gleit')}
-  p.style.backgroundPositionX=x+'%'; p.style.backgroundSize=gr(z); PANO_ALT={tab:TAB,x,z};
-}
-// Seit 8.1: Ändert sich die Fenstergröße (Handy drehen, Browser breiter), Streifen und Urkunde ohne Gleiten neu ausrichten. Sonst blieb die Urkunde am alten Platz stehen (Maik 17.11.2026).
+const panoStell=teileStell;
+// Seit 8.1: Ändert sich die Fenstergröße (Handy drehen, Browser breiter), Bild und Tafel-Text ohne Gleiten neu ausrichten. Sonst blieb der Text am alten Platz stehen (Maik 17.11.2026).
 let PANO_RS=0;
-addEventListener('resize',()=>{cancelAnimationFrame(PANO_RS); PANO_RS=requestAnimationFrame(()=>{if(!S||!$('.pano')) return; PANO_ALT={tab:null,x:0,z:1}; panoStell()})});
-// Tipp ins Bild: Welches Motiv liegt dem Tipp am nächsten? fr ist die Stelle im ganzen Streifen (0 bis 1).
+addEventListener('resize',()=>{cancelAnimationFrame(PANO_RS); PANO_RS=requestAnimationFrame(()=>{if(!S||!$('.pano')) return; PANO_ALT={tab:null}; panoStell()})});
+// Tipp ins Bild: Es ist nur ein Motiv zu sehen. Ein Tipp ins linke Drittel geht einen Ort zurück, ins rechte einen vor, die Mitte macht nichts (Annahme Claude 18.11.2026).
 function panoTipp(e){
-  const el=e.target.closest('.pano'); if(!el) return null;
-  // Stationen: Es ist nur ein Motiv zu sehen. Ein Tipp ins linke Drittel geht einen Ort zurück, ins rechte einen vor, die Mitte macht nichts (Annahme Claude 18.11.2026).
-  if(PANO_TEILE[TAB]){const b=el.getBoundingClientRect(), fr=(e.clientX-b.left)/b.width, L=SUBS[TAB].map(s=>s[0]); return L[L.indexOf(SUB)+(fr<1/3?-1:fr>2/3?1:0)]||null}
-  if(!PANO_MITTE[TAB]) return null;
-  const b=el.getBoundingClientRect(), r=parseFloat(getComputedStyle(el).getPropertyValue('--r'))||6, W=b.height*r*(PANO_ALT.z||1);
-  const fr=(e.clientX-b.left+PANO_ALT.x/100*(W-b.width))/W;
-  return Object.entries(PANO_MITTE[TAB]).sort((a,c)=>Math.abs(a[1]-fr)-Math.abs(c[1]-fr))[0][0];
+  const el=e.target.closest('.pano'); if(!el||!PANO_TEILE[TAB]) return null;
+  const b=el.getBoundingClientRect(), fr=(e.clientX-b.left)/b.width, L=SUBS[TAB].map(s=>s[0]); return L[L.indexOf(SUB)+(fr<1/3?-1:fr>2/3?1:0)]||null;
 }
 // Alte Spielstände: Edelfäulnis unter dem Auslese-Wert gab es nur nach der früheren Regel. Sie fällt weg, damit Kabinett und Spätlese nicht verloren gehen.
 // Seit Version 3.3 darf sie schon ab dem Spätlese-Wert kommen, deshalb läuft das nur einmal bei Spielständen ohne S.edel33.
