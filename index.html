@@ -223,13 +223,15 @@ img.fass{height:1.1em;vertical-align:-.18em}
 #info.wg .ibild{background-size:cover;animation:sw-ein 1.2s ease-out both,sw-tor 40s ease-in-out 1.2s infinite both}
 #info.wg.gross .ibild{animation:sw-ein 1.2s ease-out both,sw-wander 70s ease-in-out 1.2s infinite both}
 #info.wg .ineu{-webkit-mask:linear-gradient(transparent 44%,#000 56%) 0 0/100% 250% no-repeat;mask:linear-gradient(transparent 44%,#000 56%) 0 0/100% 250% no-repeat;
-  animation:sw-ein 1.2s ease-out both,sw-rlt 28s ease-in-out infinite both,jzwisch var(--jzd,2.5s) ease-in-out .6s both}
-#info.wg.gross .ineu{animation:sw-ein 1.2s ease-out both,sw-rl 45s ease-in-out infinite both,jzwisch var(--jzd,2.5s) ease-in-out .6s both}
-#info.wg.jzw .ibild:not(.ineu){animation:sw-ein 1.2s ease-out both,sw-rlt 28s ease-in-out infinite both}
-#info.wg.gross.jzw .ibild:not(.ineu){animation:sw-ein 1.2s ease-out both,sw-rl 45s ease-in-out infinite both}
-@keyframes sw-rlt{0%{background-position:68% 50%}50%{background-position:32% 50%}100%{background-position:68% 50%}}
-@keyframes sw-rl{0%{background-position:100% 50%}50%{background-position:0% 50%}100%{background-position:100% 50%}}
-#info.wg .ineu,#info.wg.gross .ineu{animation-play-state:running,running,paused}#info.wg.los .ineu,#info.wg.gross.los .ineu{animation-play-state:running}
+  animation:sw-ein 1.2s ease-out both,sw-rlt1 12s ease-in-out both,sw-hint 28s ease-in-out 12s infinite,jzwisch var(--jzd,2.5s) ease-in-out .6s both}
+#info.wg.gross .ineu{animation:sw-ein 1.2s ease-out both,sw-rl1 20s ease-in-out both,sw-hin 45s ease-in-out 20s infinite,jzwisch var(--jzd,2.5s) ease-in-out .6s both}
+#info.wg.jzw .ibild:not(.ineu){animation:sw-ein 1.2s ease-out both,sw-rlt1 12s ease-in-out both,sw-hint 28s ease-in-out 12s infinite}
+#info.wg.gross.jzw .ibild:not(.ineu){animation:sw-ein 1.2s ease-out both,sw-rl1 20s ease-in-out both,sw-hin 45s ease-in-out 20s infinite}
+@keyframes sw-rlt1{0%{background-position:68% 50%}67%{background-position:32% 50%}100%{background-position:50% 50%}}
+@keyframes sw-hint{0%{background-position:50% 50%}25%{background-position:68% 50%}75%{background-position:32% 50%}100%{background-position:50% 50%}}
+@keyframes sw-rl1{0%{background-position:100% 50%}67%{background-position:0% 50%}100%{background-position:50% 50%}}
+@keyframes sw-hin{0%{background-position:50% 50%}25%{background-position:100% 50%}75%{background-position:0% 50%}100%{background-position:50% 50%}}
+#info.wg .ineu,#info.wg.gross .ineu{animation-play-state:running,running,running,paused}#info.wg.los .ineu,#info.wg.gross.los .ineu{animation-play-state:running}
 @keyframes sw-ein{from{opacity:0;transform:scale(1.04)}to{opacity:1;transform:none}}
 @keyframes sw-tor{0%{background-position:50% 50%}25%{background-position:68% 50%}75%{background-position:32% 50%}100%{background-position:50% 50%}}
 @keyframes sw-wander{0%{background-position:55% 50%}28%{background-position:100% 50%}72%{background-position:0% 50%}100%{background-position:55% 50%}}
@@ -329,6 +331,7 @@ img.fass{height:1.1em;vertical-align:-.18em}
    wtor   = Torblick zu Torblick (Stufe 2 bis 4): beide Bilder füllen den Schirm, Blick durch den Torbogen, kein Zoom und kein Schwenk, nur Überblenden.
    wwende = Torblick zu Schrägblick (Stufe 5): vom Torbogen langsam rauszoomen, überblenden, dann reinzoomen, nach rechts, nach links und zur Mitte schwenken.
    ohne   = Schrägblick zu Schrägblick (Stufe 6 bis 10): Kamerafahrt wie oben (wfahrt). */
+#feier.wlang .wneu{transition:opacity 3.6s ease}#feier.wachs.wlang.neu .wneu{animation-delay:2.6s}   /* Stufe 6 bis 10: längere Überblendung (Maik 18.11.2026) */
 #feier.wtor .wbild{background-size:cover}
 #feier.wtor .walt{animation:sw-ein 1.2s ease-out both}
 #feier.wachs.wtor.neu .wneu{animation:none}
@@ -2724,7 +2727,7 @@ const WACHS_WECHSEL=2600, WACHS_WENDE=3900;   // Bei der Wende erst nach dem Rau
 function vWachs(F){
   const a=F.von+1, b=F.zu+1, rn=i=>esc(frau()&&RAENGE[i].w||RAENGE[i].name);
   const bild=(st,kl)=>`<div class="wbild ${kl}${wgGross(st)?' gross':''}" style="background-image:url(bilder/${wgBild(st,'sommer')}.jpg);--wr:${wgGross(st)?1.777:1.5}"></div>`;
-  const art=b<=4?' wtor':a<=4?' wwende':'';
+  const art=b<=4?' wtor':a<=4?' wwende':' wlang';
   return `<div id="feier" class="buehne wachs${art}" data-a="wachsAlle">${bild(a,'walt')}${bild(b,'wneu')}<div class="fverl"></div>
     <div class="fkarte"><small>🏡 Dein Weingut wächst</small><h2><span class="wvon">${rn(F.von)}</span><span class="wzu">${rn(F.zu)}</span></h2>
     <p class="wsatz">${b===5?'Dein Gut ist zu groß für das Tor geworden.':b===10?'Das ganze Gut hat sich herausgeputzt.':'Schau dich um, was alles neu ist.'}</p></div>
@@ -3595,9 +3598,9 @@ function zRolle(el,z,ziel){
   z.animate([{clipPath:`inset(0 0 ${h}px 0)`},{clipPath:`inset(0 0 ${h-sicht}px 0)`}],{duration:ms,easing:e});
   r.animate([{transform:'translateY(-15px)'},{transform:`translateY(${sicht-15}px)`,opacity:1,offset:ms/(ms+250)},{transform:`translateY(${sicht+20}px)`,opacity:0}],{duration:ms+250,easing:e,fill:'forwards'}).onfinish=()=>r.remove();
 }
-// Version 8.4: Beim Jahreszeiten-Wechsel rollt der Winzerbote nur ein Drittel herunter (Z_TEIL), damit das neue Bild zu sehen bleibt.
+// Version 8.4: Beim Jahreszeiten-Wechsel rollt der Winzerbote nur einen schmalen Streifen herunter (Z_TEIL, Maik 18.11.2026), damit das neue Bild zu sehen bleibt.
 // Den Rest holt ein Tipp oder Wischen irgendwo auf der Seite (Maik 18.11.2026). Der Knopf "Weiter" geht trotzdem sofort.
-const Z_TEIL=1/3;
+const Z_TEIL=.12;
 function zRolleTeil(el,z,ziel){
   if(!el.isConnected) return; el.scrollTop=ziel; ZW.top=ziel; z.classList.remove('zu');
   const h=z.offsetHeight, sicht=Math.min(innerHeight,h), a=Math.round(sicht*Z_TEIL), e='cubic-bezier(.25,.6,.3,1)';
