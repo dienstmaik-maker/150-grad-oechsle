@@ -193,8 +193,15 @@ img.fass{height:1.1em;vertical-align:-.18em}
 #titel h1{font:700 44px/1.05 Georgia,"Times New Roman",serif;margin:1vh 0 6px;white-space:nowrap;text-shadow:0 2px 10px rgba(0,0,0,.85)}
 #titel .unter{font-size:15px;text-shadow:0 1px 4px #000}
 #titel .fuss{margin-top:auto}
-#titel .von{font-size:13px;margin-top:16px;opacity:.9;text-shadow:0 1px 4px #000}
-#titel .von span,#titel .version span{white-space:nowrap}
+/* Seit 8.3.1: Nennungen in zwei Blöcken, Rollen in kleinen Großbuchstaben, jede Zeile so breit wie der Name darunter (titelBuendig). */
+#titel .nenn{display:flex;justify-content:center;gap:22px;margin-top:14px;text-shadow:0 1px 4px #000}
+#titel .nenn .blk{display:flex;flex-direction:column;align-items:flex-start}
+#titel .nenn .rz{display:inline-block;white-space:nowrap;font-size:10.5px;text-transform:uppercase;opacity:.75;line-height:1.35}
+#titel .nenn .nz{display:inline-block;white-space:nowrap;font-size:15px;font-weight:700;margin-top:1px}
+#titel .tech{font-size:11px;line-height:1.45;opacity:.7;margin-top:8px;text-shadow:0 1px 3px #000}
+#titel .tech span{white-space:nowrap}
+#titel .tkn .tdatei{width:auto;align-self:center;background:none;border:0;border-image:none;box-shadow:none;color:#fff;font:400 13px/1.3 system-ui,sans-serif;text-decoration:underline;opacity:.85;padding:2px 0;text-shadow:0 1px 4px #000;cursor:pointer}
+#titel .version span{white-space:nowrap}
 #titel .version.alt{font-size:14px;margin:0 0 10px;opacity:.9}
 #titel .tipp{font-size:17px;font-weight:600;text-shadow:0 1px 4px #000;animation:puls 2.2s ease-in-out infinite}
 /* Startseite: drei Knöpfe über dem Bild, darunter klein die Version. */
@@ -538,7 +545,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='8.3';
+const VERSION='8.3.1';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -3079,9 +3086,10 @@ function vBuero(){
       leer:'Noch leer.',buch:'ende',i:BESTEN_I})
     +fuFenster()
     +fenster('ton','Ton',tonZeilen(),{i:'Musik „an“ spielt durchgehend, „kurz“ spielt beim Wechsel zwischen Weingut, Kellerei und Stadt ein paar Sekunden, „aus“ ist still. Feiern, Wettbewerbe und Pfändung laufen auch bei „kurz“ in voller Länge. Mit den Reglern stellst du Musik und Geräusche getrennt leiser oder lauter.'})
-    +fenster('spiel','Dein Spiel',`<div class="kv"><span>Speicherplatz</span><span>Spielstand ${SLOT+1}</span></div><div class="kv"><span>Schwierigkeit</span><span>${DIFF[S.schwer].name}</span></div>`,{
-      links:'„Neues Spiel“ löscht diesen Spielstand und fängt von vorn an.',kn:[pk('menue','Spielstände','',{sec:1}),pk('neuFrage','Neues Spiel','',{sec:1})],buch:'bedienung',
-      i:'Gespeichert wird von selbst nach jedem Monat. Unter „Spielstände“ lädst du einen anderen Spielstand oder sicherst ihn als Datei.'})
+    +fenster('spiel','Dein Spiel',`<div class="kv"><span>Speicherplatz</span><span>Spielstand ${SLOT+1}</span></div><div class="kv"><span>Schwierigkeit</span><span>${DIFF[S.schwer].name}</span></div>`
+      // Seit 8.3.1: Knopf "Spiel laden" statt "Spielstände", die Erklärung steht sichtbar beim passenden Knopf.
+      +`<div class="fzl">${fz('Spiel laden','Hier lädst du einen anderen oder älteren Spielstand oder sicherst ihn als Datei.','',pk('menue','Spiel laden','',{sec:1}))}${fz('Neues Spiel','Löscht diesen Spielstand und fängt von vorn an.','',pk('neuFrage','Neues Spiel','',{sec:1}))}</div>`,{buch:'bedienung',
+      i:'Gespeichert wird von selbst nach jedem Monat.'})
     +`<div class="fussnote">Bilder, Musik und Geräusche sind mit KI erstellt (Musik mit Treblo, Geräusche mit ElevenLabs, elevenlabs.io).</div>`;
 }
 // Weinberg (seit 7.4 auf dem Fenster-Baustein): je Sorte ein Fenster (seit 4.4 oben), dann Düngung und Übersicht, darunter zugeklappt der Steckbrief des Gebiets.
@@ -4309,15 +4317,29 @@ const AKT={
 const GESCHICHTE=['Neun Jahre lang hast du für andere geschuftet.','Dann stand in der Zeitung eine kleine Anzeige: drei Hektar Weinberg, ein alter Gewölbekeller, günstig abzugeben.','Du hast dein Erspartes zusammengekratzt und unterschrieben, bevor dir jemand die Sache ausreden konnte.','Jetzt stehst du vor kahlen Hängen, leeren Fässern und einer Ratte, die sich im Keller wie die Hausherrin benimmt.','Im Dorf wetten sie schon, dass du keine drei Winter durchhältst, und die Winzer von nebenan warten nur auf deinen ersten Fehler.','Zeig es ihnen: Oben im Festsaal des Weinbauverbands steht ein Stuhl, und der ist noch frei.','Ob du selbst einmal darauf sitzt oder erst deine Enkel, wird sich zeigen.'];
 const SATZ_TAKT=3.2;
 function zeigeTitel(){
-  // Drei Knöpfe: Weiterspielen (nur mit Spielstand), Neues Spiel, Spiel laden. Darunter klein die Version und die Nennung, die ElevenLabs im Gratis-Tarif verlangt.
+  // Seit 8.3.1 zwei Knöpfe: Weiterspielen (nur mit Spielstand) und Neues Spiel. Andere Spielstände lädt man im Büro. Ohne Spielstand steht klein "Aus Datei laden" darunter,
+  // damit eine gesicherte Datei auch auf einem neuen Gerät ankommt. Darunter die Namen in zwei Blöcken und klein die Technik mit der Nennung, die ElevenLabs im Gratis-Tarif verlangt.
   const t=$('#titel'), hat=[0,1,2].some(lies), alt=!hat&&[0,1,2].some(liesAlt); t.className='an'; delete t.dataset.a;
   // Seit 8.2.2 (Maik 18.11.2026): Titel mit Gradzeichen und höher, damit mehr vom Torbogen zu sehen ist. Keine Spielanleitung mehr hier (die liegt im Büro),
   // die Namen stehen unten über der Version, Timo als Chef-Tester.
   t.innerHTML=`<h1>150° Öchsle</h1><div class="unter">Vom kahlen Hang in den Festsaal des Weinbauverbands</div><div class="fuss">
     ${alt?'<div class="version alt">Dein Spielstand stammt aus einer älteren Version und läuft hier nicht weiter. Mit „Neues Spiel“ fängst du neu an.</div>':''}
-    <div class="tkn">${hat?'<button data-a="titelWeiter">Weiterspielen</button>':''}<button ${hat?'class="sec" ':''}data-a="titelNeu">Neues Spiel</button><button class="sec" data-a="titelLaden">Spiel laden</button></div>
-    <div class="von"><span>Ein Spiel von Maik Dienst</span> · <span>Chef-Tester Timo Dienst</span></div>
-    <div class="version"><span>Version ${VERSION}</span> · <span>Bilder, Musik und Geräusche mit KI erstellt</span><br>Geräusche von ElevenLabs (elevenlabs.io)</div></div>`;
+    <div class="tkn">${hat?'<button data-a="titelWeiter">Weiterspielen</button>':''}<button ${hat?'class="sec" ':''}data-a="titelNeu">Neues Spiel</button>${hat?'':'<button class="tdatei" data-a="titelLaden">Gesicherten Spielstand aus Datei laden</button>'}</div>
+    <div class="nenn">${TITEL_NAMEN.map(([r,v,n])=>`<div class="blk">${r.map(z=>`<span class="rz">${z}</span>`).join('')}<span class="nz">${v} ${n}</span></div>`).join('')}</div>
+    <div class="tech"><span>Programmiert mit Claude (Anthropic)</span> · <span>Musik: Treblo</span><br><span>Geräusche: ElevenLabs (elevenlabs.io)</span> · <span>Version ${VERSION}</span></div></div>`;
+  titelBuendig(t); if(document.fonts) document.fonts.ready.then(()=>titelBuendig(t));
+}
+const TITEL_NAMEN=[[['Spielidee &amp;','Entwicklung'],'Maik','Dienst'],[['Chef-Tester &amp;','Bildgestaltung'],'Timo','Dienst']];
+// Bringt in jedem Block die Rollenzeilen per Buchstabenabstand und den Namen per Wortabstand (nur zwischen Vor- und Nachname) auf dieselbe Breite.
+function titelBuendig(t){
+  const breit=e=>e.getBoundingClientRect().width;
+  for(const x of t.querySelectorAll('.nenn .blk')){
+    const rz=[...x.querySelectorAll('.rz')], nz=x.querySelector('.nz');
+    rz.forEach(z=>{z.style.letterSpacing='0px'; z.style.marginRight='0px'}); nz.style.wordSpacing='0px';
+    const W=Math.max(breit(nz),...rz.map(breit)); if(!W) continue;
+    for(const z of rz){const n=z.textContent.length; for(let i=0;i<4;i++){const ls=parseFloat(z.style.letterSpacing)||0, neu=ls+(W-(breit(z)-ls))/(n-1); z.style.letterSpacing=neu+'px'; z.style.marginRight=(-neu)+'px'}}
+    for(let i=0;i<3;i++){const ws=parseFloat(nz.style.wordSpacing)||0; nz.style.wordSpacing=(ws+(W-breit(nz)))+'px'}
+  }
 }
 function titelZu(){const t=$('#titel'); t.className=''; t.innerHTML=''; delete t.dataset.a}
 
