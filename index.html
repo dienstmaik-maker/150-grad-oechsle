@@ -2131,10 +2131,19 @@ function rubrikNeu(nr){
 const EIS_Z=.5, EIS_PLEITE=.45, EIS_KUEHL=.4;
 const eisEigen=()=>S.monat===11&&R().sorten.some(id=>S.felder[id].gefroren&&S.felder[id].menge>0);
 const EIS_TEXT={
-  eigen:[['Frost! Eiswein ist möglich','Die Trauben hängen gefroren am Stock. Wer jetzt liest, kann Eiswein keltern.']],
-  gegner:[['Eiswein-Glück für {n}','Bei klirrender Kälte hat {n} {wo} in der Nacht gefrorene Trauben gelesen. Der Eiswein dürfte ein kleines Vermögen bringen.']],
-  gebiet:[['Eiswein-Nacht {wo}','Bei klirrender Kälte waren die Winzer {wo} nachts im Weinberg. Wer seine Trauben hängen ließ, keltert jetzt Eiswein.']],
-  pleite:[['Eiswein-Poker geplatzt','{n} {wo} hat die Trauben für Eiswein hängen lassen, doch der Frost kam nicht. Jetzt faulen sie am Stock.']]
+  // Je Fall drei Fassungen im Wechsel (Maik 18.11.2026: "Alle als Abwechslung").
+  eigen:[['Frost! Eiswein ist möglich','Die Trauben hängen gefroren am Stock. Wer jetzt liest, kann Eiswein keltern.'],
+    ['Klirrende Nacht über deinem Weinberg','Deine Trauben sind am Stock gefroren. Wer jetzt liest, keltert das flüssige Gold des Winters.'],
+    ['Dein Eiswein-Poker geht auf','Die Kälte ist da und deine Trauben hängen gefroren am Stock. Jetzt schnell lesen, bevor es taut.']],
+  gegner:[['Eiswein-Glück für {n}','Bei klirrender Kälte hat {n} {wo} in der Nacht gefrorene Trauben gelesen. Der Eiswein dürfte ein kleines Vermögen bringen.'],
+    ['Nachtlese bei {n}','Mit Stirnlampen und klammen Fingern wurden bei {n} {wo} gefrorene Trauben gelesen. Wer den Mut hat, hängen zu lassen, wird belohnt.'],
+    ['{n} lacht über die Kälte','Während andere längst gelesen hatten, hingen bei {n} {wo} noch Trauben. Jetzt sind sie gefroren, und aus ihnen wird Eiswein.']],
+  gebiet:[['Eiswein-Nacht {wo}','Bei klirrender Kälte waren die Winzer {wo} nachts im Weinberg. Wer seine Trauben hängen ließ, keltert jetzt Eiswein.'],
+    ['Frost bringt Gold {wo}','Einige mutige Winzer {wo} haben auf Frost gesetzt und gewonnen. Ihr Eiswein ist schon vor der Lese verkauft.'],
+    ['Gefrorene Trauben {wo}','Über Nacht ist es {wo} bitterkalt geworden. Für ein paar Winzer wird daraus der Wein ihres Lebens.']],
+  pleite:[['Eiswein-Poker geplatzt','{n} {wo} hat die Trauben für Eiswein hängen lassen, doch der Frost kam nicht. Jetzt faulen sie am Stock.'],
+    ['Kein Frost für {n}','Wochenlang hat {n} {wo} auf eine klirrende Nacht gewartet. Statt Eiswein gibt es matschige Trauben und lange Gesichter.'],
+    ['Pech im Weinberg von {n}','Der Winter blieb {wo} zu mild. Was {n} für Eiswein hängen ließ, ist verdorben.']]
 };
 const eisT=(art,n,wo)=>{const L=EIS_TEXT[art], x=L[rint(0,L.length-1)], f=s=>s.replace(/\{n\}/g,n||'').replace(/\{wo\}/g,wo||''); return [f(x[0]),f(x[1])]};
 function eisGeschichte(){
