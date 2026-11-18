@@ -205,7 +205,7 @@ img.fass{height:1.1em;vertical-align:-.18em}
 @media (max-aspect-ratio:5/4){
 #titel{background:#1c120b}
 #titel::before{z-index:-1;background:linear-gradient(rgba(20,10,5,.6),rgba(20,10,5,.05) 34%,rgba(20,10,5,.08) 62%,rgba(20,10,5,.82)),url(bilder/panorama-weingut-sommer-teil-2.jpg) center/cover no-repeat;filter:blur(14px) brightness(.8);transform:scale(1.15)}
-#titel::after{content:'';position:absolute;z-index:-1;left:50%;top:46%;width:130vw;aspect-ratio:3/2;transform:translate(-50%,-50%);pointer-events:none;background:url(bilder/panorama-weingut-sommer-teil-2.jpg) center/cover no-repeat;-webkit-mask-image:linear-gradient(transparent,#000 4%,#000 86%,transparent);mask-image:linear-gradient(transparent,#000 4%,#000 86%,transparent)}
+#titel::after{content:'';position:absolute;z-index:-1;left:50%;top:calc(132px + env(safe-area-inset-top));width:130vw;aspect-ratio:3/2;transform:translateX(-50%);pointer-events:none;background:url(bilder/panorama-weingut-sommer-teil-2.jpg) center/cover no-repeat;-webkit-mask-image:linear-gradient(transparent,#000 4%,#000 86%,transparent);mask-image:linear-gradient(transparent,#000 4%,#000 86%,transparent)}
 }
 #titel h1{font:700 44px/1.05 Georgia,"Times New Roman",serif;margin:1vh 0 6px;white-space:nowrap;text-shadow:0 2px 10px rgba(0,0,0,.85)}
 #titel .unter{font-size:15px;text-shadow:0 1px 4px #000}
