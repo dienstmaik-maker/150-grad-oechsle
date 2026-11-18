@@ -325,6 +325,21 @@ img.fass{height:1.1em;vertical-align:-.18em}
 #feier .wneu{opacity:0;transition:opacity 1.8s ease}
 #feier.wachs.neu .wneu{opacity:1;animation:wfahrt var(--wfd,17s) 1.4s both}
 @keyframes wzoom{from{transform:scale(.96)}to{transform:none}}
+/* Getrennte Abläufe je Aufstieg (Maik 18.11.2026):
+   wtor   = Torblick zu Torblick (Stufe 2 bis 4): beide Bilder füllen den Schirm, Blick durch den Torbogen, kein Zoom und kein Schwenk, nur Überblenden.
+   wwende = Torblick zu Schrägblick (Stufe 5): vom Torbogen langsam rauszoomen, überblenden, dann reinzoomen, nach rechts, nach links und zur Mitte schwenken.
+   ohne   = Schrägblick zu Schrägblick (Stufe 6 bis 10): Kamerafahrt wie oben (wfahrt). */
+#feier.wtor .wbild{background-size:cover}
+#feier.wtor .walt{animation:sw-ein 1.2s ease-out both}
+#feier.wachs.wtor.neu .wneu{animation:none}
+#feier.wwende .walt{animation:sw-ein 1.2s ease-out both,wraus 3.2s ease-in-out .5s both}
+#feier.wachs.wwende.neu .wneu{animation:wwende var(--wfd,17s) 1.4s both}
+@keyframes wraus{from{background-size:max(100vw,calc(100vh*var(--wr,1.5))) auto}to{background-size:100% auto}}
+@keyframes wwende{0%{background-size:100% auto;background-position:50% 50%;animation-timing-function:cubic-bezier(.45,0,.35,1)}
+  24%{background-size:max(100vw,calc(100vh*var(--wr,1.78))) auto;background-position:50% 50%;animation-timing-function:ease-in-out}
+  46%{background-size:max(100vw,calc(100vh*var(--wr,1.78))) auto;background-position:100% 50%;animation-timing-function:ease-in-out}
+  80%{background-size:max(100vw,calc(100vh*var(--wr,1.78))) auto;background-position:0% 50%;animation-timing-function:ease-in-out}
+  100%{background-size:max(100vw,calc(100vh*var(--wr,1.78))) auto;background-position:50% 50%}}
 @keyframes wfahrt{0%{background-size:100% auto;background-position:50% 50%;animation-timing-function:cubic-bezier(.45,0,.35,1)}
   26%{background-size:max(100vw,calc(100vh*var(--wr,1.78))) auto;background-position:100% 50%;animation-timing-function:cubic-bezier(.4,0,.3,1)}
   77%{background-size:max(100vw,calc(100vh*var(--wr,1.78))) auto;background-position:0% 50%;animation-timing-function:cubic-bezier(.45,0,.3,1)}
@@ -2705,11 +2720,12 @@ function spFeierStart(){
 }
 // Version 8.4: Aufstiegs-Szene (FSTUFE -1) vor der Bild-Bühne. Erst das Sommerbild der alten Stufe mit dem alten Rang, dann wechselt der Titel
 // und das Sommerbild der neuen Stufe blendet über, egal welcher Monat ist (Sommer-Regel, Maik 18.11.2026). Ein Tipp zeigt gleich das Ende.
-const WACHS_WECHSEL=2600;
+const WACHS_WECHSEL=2600, WACHS_WENDE=3900;   // Bei der Wende erst nach dem Rauszoomen überblenden.
 function vWachs(F){
   const a=F.von+1, b=F.zu+1, rn=i=>esc(frau()&&RAENGE[i].w||RAENGE[i].name);
   const bild=(st,kl)=>`<div class="wbild ${kl}${wgGross(st)?' gross':''}" style="background-image:url(bilder/${wgBild(st,'sommer')}.jpg);--wr:${wgGross(st)?1.777:1.5}"></div>`;
-  return `<div id="feier" class="buehne wachs" data-a="wachsAlle">${bild(a,'walt')}${bild(b,'wneu')}<div class="fverl"></div>
+  const art=b<=4?' wtor':a<=4?' wwende':'';
+  return `<div id="feier" class="buehne wachs${art}" data-a="wachsAlle">${bild(a,'walt')}${bild(b,'wneu')}<div class="fverl"></div>
     <div class="fkarte"><small>🏡 Dein Weingut wächst</small><h2><span class="wvon">${rn(F.von)}</span><span class="wzu">${rn(F.zu)}</span></h2>
     <p class="wsatz">${b===5?'Dein Gut ist zu groß für das Tor geworden.':b===10?'Das ganze Gut hat sich herausgeputzt.':'Schau dich um, was alles neu ist.'}</p></div>
     <div class="ifuss"><button data-a="feierBuehne">Zur Feier ▶</button></div><div class="ischw"></div></div>`;
@@ -2735,7 +2751,7 @@ function feierStart(){
   feierStopp();
   if(S.feier&&S.feier.spende) return spFeierStart();
   const F=S.feier||{von:S.rang-1,zu:S.rang};
-  if(FSTUFE===-1){const el=$('#feier'); FT.push(setTimeout(()=>el.classList.add('neu'),matchMedia('(prefers-reduced-motion:reduce)').matches?300:WACHS_WECHSEL)); return}
+  if(FSTUFE===-1){const el=$('#feier'); FT.push(setTimeout(()=>el.classList.add('neu'),matchMedia('(prefers-reduced-motion:reduce)').matches?300:el.classList.contains('wwende')?WACHS_WENDE:WACHS_WECHSEL)); return}
   if(FSTUFE===0){
     if(TON.musik==='aus'&&!F.start) FT.push(setTimeout(()=>fx('fanfare'),250));
     // Das Kapitel kommt Satz für Satz im Takt der Geschichte, die Karte wächst dabei nach oben. Ohne Bewegung steht alles gleich da.
