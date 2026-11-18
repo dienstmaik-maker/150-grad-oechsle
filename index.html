@@ -113,6 +113,7 @@ button.pk>small{font:600 10.5px/1.1 system-ui,-apple-system,"Segoe UI",Roboto,sa
 button.pk.arm{filter:grayscale(1) opacity(.55)}
 .bar{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin:4px 0 8px}.bar i{display:block;height:100%;background:var(--gruen)}
 .bar.w i{background:var(--wein)}.bar.g i{background:var(--gold)}
+.bar.stb{position:relative;overflow:visible;height:10px;margin:6px 0 10px}.bar.stb i{border-radius:6px}.bar.stb u{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1.5px;border-radius:2px;background:var(--wein)}
 .bar.fl{position:relative}.bar.fl i{position:absolute;left:0;top:0}.bar.fl i.hell{opacity:.35}
 .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px}
 .weiss{background:var(--gruen)}.rotw{background:var(--blau)}
@@ -624,7 +625,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='8.4.1';
+const VERSION='8.5';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -744,6 +745,17 @@ function rahmenSatz(i){const r=RAENGE[i];return r.rahmen>RAENGE[i-1].rahmen?` De
 const KAELTE=.25, ZUCKER_MAX=20, ZUCKER_ERLAUBT=10, SCHMIER_ANTEIL=.1, SCHMIER_MIN=2000;
 const STRAFE_MIN=10000, STRAFE_ANS=15, STRAFE_ANS_WEITER=5, BESTECH_MIN=5000, BESTECH_MAX=50000, BESTECH_NEIN_ANS=10;
 const SAB_KONTAKT=20000, SAB_MIN=5000, SAB_MAX=50000, SAB_AUFFLIEGEN=.2, SAB_STRAFE=30000, SAB_STRAFE_ANS=20, SAB_RANG=R_BUND;
+// Version 8.5 (Spielende, Paket 1): Amtszeit und Wahl. Als Präsident ist alle WAHL_JAHRE Jahre Wahl, gerechnet in Monaten ab dem Amtsantritt.
+// WAHL_UMFRAGE Monate vorher kommt die Umfrage, ab da läuft der Wahlkampf. Die Stimmung im Verband (0 bis 100) startet bei STIMM_START,
+// nach einer Abwahl bei STIMM_ALT. Der Herausforderer ist die Marke auf dem Balken: MARKE_START, je gewonnener Wahl MARKE_PLUS mehr, höchstens MARKE_MAX.
+// Stimmenkauf: KAUF_PREIS für KAUF_PLUS Punkte, höchstens KAUF_MAX je Wahl, fliegt mit KAUF_SKANDAL auf und kostet dann KAUF_STRAFE Stimmung.
+// Sabotage vor der Wahl: einmal je Wahl mit WSAB_CHANCE, zur Hälfte Schaden wie sabotageGegenDich, zur Hälfte ein Gerücht (WSAB_GERUECHT Stimmung).
+// Die ersten beiden Zeilen hat Maik am 18.11.2026 gewählt. STIMM_PLUS (Anteil vom gewonnenen Ansehen) und STIMM_MONAT (Abzug je Monat) stellt das Prüfskript ein:
+// Startwert war .2 und 1. Gemessen am 18.11.2026 (54 Partien über 150 Jahre auf Mittel, volles Programm): mit .2 lag die Stimmung am Wahltag bei 85, mit .16 bei 68 (Ziel 65 bis 75).
+// STIMM_MINUS lässt Abzüge beim Ansehen voll durchschlagen.
+const WAHL_JAHRE=5, WAHL_UMFRAGE=12, STIMM_START=60, STIMM_ALT=40, MARKE_START=50, MARKE_PLUS=5, MARKE_MAX=70;
+const KAUF_PREIS=300000, KAUF_PLUS=5, KAUF_MAX=2, KAUF_SKANDAL=.2, KAUF_STRAFE=15, WSAB_CHANCE=.5, WSAB_GERUECHT=5;
+const STIMM_PLUS=.16, STIMM_MONAT=1, STIMM_MINUS=1;
 const SAB={gift:['🧪 Wein vergiften','Sein bester Fasswein ist hin.'],buch:['📖 Kellerbuch fälschen','Seine Weine stehen als gepanscht im Buch. Bei seiner nächsten Kontrolle zahlt er Strafe und verliert Ansehen.'],berg:['🪓 Im Weinberg wüten','Ein Viertel seiner Reben und Flaschen ist weg.']};
 // ki: Tempo der Gegner, eingestellt mit dem Test-Spieler in Schritt H von 7.0 (16.11.2026). Der erste Gegner wird Präsident auf Schwer in Jahr 106 bis 112,
 // auf Mittel um Jahr 139, auf Einfach in 170 Jahren nie. Auf Schwer gewinnt der Test-Spieler etwa jede vierte Partie.
@@ -930,7 +942,7 @@ function roh(i){try{const o=JSON.parse(localStorage.getItem(KEYS[i])||'null');re
 function lies(i){const o=roh(i);return o&&o.v7?o:null}
 function liesAlt(i){const o=roh(i);return o&&!o.v7?o:null}
 // Übernimmt einen gelesenen Spielstand und bringt alte Stände auf den heutigen Stand.
-function nimm(o){S=o;if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();altDoppelt();altSpende();altKeller();altZeit();if(!S.fu)S.fu=fuAlt(); else fuPaketB()}
+function nimm(o){S=o;if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();altDoppelt();altSpende();altKeller();altZeit();altAmt();if(!S.fu)S.fu=fuAlt(); else fuPaketB()}
 // Seit 8.2.1: Spielstände ohne Uhr fangen bei 0 an und merken sich, dass sie erst seit 8.2.1 zählen.
 // Seit 8.3: Kellermeister Stufe 1 keltert statt abzufüllen. Hatte ein alter Spielstand auf Stufe 1 das Abfüllen an, ist jetzt das Keltern an.
 function altKeller(){if(S.v83) return; const m=(S.manager||{}).keller; if(m&&m.stufe===1&&m.an&&m.an.flaschen) m.an.keltern=1; S.v83=1}
@@ -1121,7 +1133,9 @@ let PANO_ALT={tab:null,x:0,z:1}, ORT_ALT=null;
 // Je Ort eine eigene Hintergrundfarbe (Klasse am html-Element). Die Leiste des Handys ganz oben bekommt die Farbe der Kopfleiste.
 function ortFarbe(tab){const h=document.documentElement; h.className='ort-'+tab; const m=$('meta[name="theme-color"]'); if(m) m.content=getComputedStyle(h).getPropertyValue('--kopf').trim()||'#7b1e3a'}
 // Bild oben in einem Fenster (Weinkontrolle, Auktion, Prämierung, Rathaus, Kellerbuch, Pleite).
-const sbild=n=>`<div class="sbild" style="background-image:url(bilder/${n}.jpg)"></div>`;
+// Seit 8.5: Bei den neuen Bildern im Breitformat sitzt das Motiv unten (Flasche auf dem Tisch, Wahlurne). SBILD_POS schiebt den Ausschnitt dorthin.
+const SBILD_POS={'flasche-kueche':'center 80%','flasche-festsaal':'center 85%',wahl:'center 85%'};
+const sbild=n=>`<div class="sbild" style="background-image:url(bilder/${n}.jpg)${SBILD_POS[n]?';background-position:'+SBILD_POS[n]:''}"></div>`;
 // Das Bild des Ortes mit Holzrahmen. Unten im Bild steht, wo man ist. Gewechselt wird über die Leiste unten, durch Wischen übers Bild oder Tippen auf ein Motiv.
 function ortBild(titel){
   const L=SUBS[TAB];
@@ -1358,7 +1372,8 @@ function fassBelegt(){return S.lots.filter(l=>l.status==='fass').reduce((a,l)=>a
 function lotName(l){return `${l.jahrgang} ${SORTEN[l.sorte].name}${l.stufe?' '+STUFEN[l.stufe].name:''}${l.sekt?'-Sekt':''}`}
 function rahmen(){return RAENGE[S.rang].rahmen}
 // Ansehen gutschreiben. Die Schwierigkeit verschiebt nur Zuwächse, Abzüge bleiben gleich.
-function ruhm(n){if(n>0)n=Math.max(1,Math.round(n*DIFF[S.schwer].ans));S.ansehen=Math.max(0,S.ansehen+n);return n}
+// Seit 8.5: Wer ein Amt hat (S.amt), dessen Stimmung im Verband geht mit. Gewinne zählen mit STIMM_PLUS, Abzüge mit STIMM_MINUS.
+function ruhm(n){if(n>0)n=Math.max(1,Math.round(n*DIFF[S.schwer].ans));S.ansehen=Math.max(0,S.ansehen+n);if(S.amt&&n)stimmung(n>0?n*STIMM_PLUS:n*STIMM_MINUS);return n}
 function reifeFaktor(l){const L=lager(l);return l.status==='flasche'?Math.min(4,1+Math.max(0,l.flMonate-L.min)/12*L.rate):1}
 function lotWert(l){
   if(l.status==='trauben') return 0;
@@ -2025,7 +2040,7 @@ function uebergabe(){
   S.geld-=bar;
   if(kr>0){const k=S.kredit||(S.kredit={rest:0,tilgung:0}); k.rest+=kr; k.tilgung+=Math.ceil(kr/ERB_LAUFZEIT); k.erb=(k.erb||0)+kr}
   const ea=erbAnsehen(); S.ansehen=Math.round(S.ansehen*ea);
-  (S.chronik=S.chronik||[]).push({n,name:S.ich||alt.name||'',art:S.anrede?(S.anrede==='w'?'t':'s'):alt.art||'',von:genJahr(n-1),bis:S.jahr,rang:S.rang,ans:ansVor,verm:v,steuer,kredit:kr});
+  (S.chronik=S.chronik||[]).push({n,name:S.ich||alt.name||'',art:S.anrede?(S.anrede==='w'?'t':'s'):alt.art||'',von:genJahr(n-1),bis:S.jahr,rang:S.rang,ans:ansVor,verm:v,steuer,kredit:kr,...(amtAlt()?{alt:1}:{})});
   S.gen=n+1;
   const wahl=a=>a[rint(0,a.length-1)];
   const rat=S.rang>=2?(S.ratte=(S.ratte||1)+1):0;
@@ -2050,6 +2065,8 @@ function erbeBenennen(name){
   S.anrede=e.art==='t'?'w':'m'; if(S.ich) S.ich=(fam&&!name.includes(' ')?name+' '+fam:name).slice(0,40);
   const b=S.bericht||{}, wer=e.art==='s'?'der Sohn':'die Tochter';
   for(const x of [...TOP,b.kopf,...(b.art||[])]) if(x&&x.erbe&&!x.benannt){x.benannt=1; x.t=`${S.ich||name} übernimmt ${S.name}`; x.text=`${name}, ${wer}, hat den Kellerschlüssel bekommen. `+x.text}
+  // Seit 8.5: Texte zum Amt aus demselben Monat (Wahl, Umfrage) mit der Anrede des Erben neu schreiben.
+  for(const x of [...TOP,b.kopf,...(b.art||[])]) if(x&&x.amt){const n=amtTxt(x.amt.k,x.amt.par); x.t=n.t; x.text=n.text}
 }
 // Schriftstück ohne Eingabe (bisher nur der Anfang). S.erz merkt es bis zum nächsten Zeichnen, der Test-Spieler schließt es gleich wieder.
 function zeigeErz(){
@@ -2059,7 +2076,7 @@ function zeigeErz(){
 // Generationen-Chronik im Büro.
 function chronikHtml(){
   const C=S.chronik||[], n=genNr(), e=S.erbe, wer=(nr,name,art)=>nr===1?(name?`${esc(name)}, ${art==='t'?'die Gründerin':'der Gründer'}`:'die Gründung'):name?`${esc(name)}, ${art==='s'?'der Sohn':'die Tochter'}`:'die nächste Generation';
-  return fenster('chronik','Generationen-Chronik',`${C.map(c=>`<div class="rl"><span>${c.n}.</span><div><b>${c.von} bis ${c.bis}: ${wer(c.n,c.name,c.art)}</b><span class="mut">übergeben als ${c.art==='t'&&RAENGE[c.rang].kw||RAENGE[c.rang].kurz} mit ${c.ans} Ansehen, Erbschaftssteuer ${eur(c.steuer)}</span></div></div>`).join('')}
+  return fenster('chronik','Generationen-Chronik',`${C.map(c=>`<div class="rl"><span>${c.n}.</span><div><b>${c.von} bis ${c.bis}: ${wer(c.n,c.name,c.art)}</b><span class="mut">übergeben als ${c.alt?(c.art==='t'?'Altpräsidentin':'Altpräsident'):c.art==='t'&&RAENGE[c.rang].kw||RAENGE[c.rang].kurz} mit ${c.ans} Ansehen, Erbschaftssteuer ${eur(c.steuer)}</span></div></div>`).join('')}
     <div class="rl du"><span>${n}.</span><div><b>seit ${genJahr(n-1)}: ${wer(n,S.ich||(e&&e.name),S.anrede?(S.anrede==='w'?'t':'s'):e&&e.art)}</b><span class="mut">${S.flascheAuf?'Die Flasche vom ersten Jahrgang ist getrunken. ':S.gesch&&S.gesch.flasche?'Die Flasche vom ersten Jahrgang liegt noch im Fach. ':''}Nächste Übergabe im Januar ${genJahr(n)}</span></div></div>`,{
     buch:'generationen',i:`Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation. Vom Ansehen bleiben ${pz(ERB_ANSEHEN)}, als Ehrenbürger ${pz(SP_ERBE)}, ${pz(ERB_STEUER)} vom Vermögen gehen als Erbschaftssteuer weg, alles andere bleibt.`});
 }
@@ -2309,7 +2326,7 @@ function flascheSieg(){
 function siegSpieler(){
   S.sieger=S.name; const st=endStand(), fl=flascheSieg();
   // Seit 7.7 steht Frau Öchsle mit ihrem Käse im Sieg-Kapitel der Feier, die Bestenliste wird schon beim Aufstieg erneuert.
-  schlag(100,`Du bist ${anr('Präsident','Präsidentin')}!`,`Nach ${jahreTxt(st.jahre)} ${WO[S.region]} wählt der Weinbauverband dich${S.ich?', '+S.ich+',':''} an seine Spitze. Du hast die Partie gewonnen! Der Stuhl im Festsaal gehört jetzt dir.${fl} Unten steht deine Bilanz. Du kannst weiterspielen oder ein neues Spiel beginnen.`,fl?GEN_BILD.sieg:'sieg',{gold:1,sonder:1,ende:1,stand:st,du:1});
+  schlag(100,`Du bist ${anr('Präsident','Präsidentin')}!`,`Nach ${jahreTxt(st.jahre)} ${WO[S.region]} wählt der Weinbauverband dich${S.ich?', '+S.ich+',':''} an seine Spitze. Du hast die Partie gewonnen! Der Stuhl im Festsaal gehört jetzt dir.${fl} Unten steht deine Bilanz. Du kannst weiterspielen oder ein neues Spiel beginnen. Wer weiterspielt, muss den Stuhl verteidigen: In fünf Jahren wird im Verband gewählt.`,fl?GEN_BILD.sieg:'sieg',{gold:1,sonder:1,ende:1,stand:st,du:1});
 }
 const SIEG_SPRUCH={vorsicht:'„Immer schön langsam, dann wird das schon“, sagt sie beim Anstoßen.',qualitaet:'„Qualität setzt sich eben durch“, sagt er und meint vor allem sich selbst.',zocker:'„Alles auf eine Karte, und die Karte hat gestochen“, grinst er in die Kameras.'};
 function gegnerSieg(g,wo){
@@ -2342,7 +2359,9 @@ function etappe3Monat(Z){
     S.feier={von:alt,zu:S.rang,platz:bestenEintrag()}; if(S.rang<R_MAX) S.aufBrief=S.rang;
     schlag(95,`Aufstieg: Du bist jetzt ${rangN(S.rang)}`,`Das ${bringtSatz(S.rang)}.${rahmenSatz(S.rang)}${r.weg?' '+anr(r.weg,r.wegW):''}`,'aufstieg',{sonder:1,gold:1,du:1});
     if(S.rang===R_MAX&&!S.sieger) siegSpieler();
-    else if(S.rang===R_MAX) schlag(99,`Du bist doch noch ${anr('Präsident','Präsidentin')}`,`${S.sieger} war schneller, aber jetzt hast du es auch an die Spitze des Weinbauverbands geschafft. Respekt!${S.gesch&&S.gesch.flasche&&!S.flascheAuf?(S.flascheAuf=S.jahr,' Die Flasche vom ersten Jahrgang wird heute Abend doch noch geöffnet.'):''}`,S.flascheAuf===S.jahr?GEN_BILD.sieg:'sieg',{gold:1,du:1});
+    else if(S.rang===R_MAX) schlag(99,`Du bist doch noch ${anr('Präsident','Präsidentin')}`,`${S.sieger} war schneller, aber jetzt hast du es auch an die Spitze des Weinbauverbands geschafft. Respekt!${S.gesch&&S.gesch.flasche&&!S.flascheAuf?(S.flascheAuf=S.jahr,' Die Flasche vom ersten Jahrgang wird heute Abend doch noch geöffnet.'):''} In fünf Jahren wird im Verband gewählt.`,S.flascheAuf===S.jahr?GEN_BILD.sieg:'sieg',{gold:1,du:1});
+    // Seit 8.5: Das Amt beginnt in dem Monat, in dem der Spieler Präsident wird, auch wenn ein Gegner vorher schon Präsident war.
+    if(S.rang===R_MAX&&!S.amt) amtStart();
   }
   kontrolleMonat(Z); sabotageGegenDich(Z);
   if(S.monat===0&&S.rang>=R_LADEN) Z.push(`Als Weinbotschafter ${WO[S.region]} warst du auf Messen in aller Welt unterwegs. +${ruhm(BOTSCHAFT_ANS)} Ansehen.`);
@@ -2375,6 +2394,8 @@ function etappe3Monat(Z){
   ladenMonat(Z);
   neueLaeden(); S.absatz=0;
   S.exLage.ex=clamp(S.exLage.ex+rnd(-.05,.05),.9,1.12);
+  // Seit 8.5: Stimmung, Umfrage, Sabotage vor der Wahl und die Wahl selbst, nach allem, was in diesem Monat Ansehen gebracht oder gekostet hat.
+  amtMonat();
   ereignisMonat();
 }
 /* ---- Weinkontrolle: unangekündigt, im Schnitt alle drei Jahre, spätestens nach vier. Nach einem Fund fünf Jahre lang jedes Jahr ---- */
@@ -2422,23 +2443,110 @@ function mischung(a,b){
 /* ---- Sabotage ---- */
 const sabChance=n=>.3+.45*(n-SAB_MIN)/(SAB_MAX-SAB_MIN);
 function sabSperre(){
-  return S.rang>=SAB_RANG?`Als ${rangK(S.rang)} machst du so etwas nicht mehr.`:S.monat<6?'Die Unterwelt ist nur von Juli bis Dezember zu sprechen.':S.sabJahr===S.jahr?'Für dieses Jahr hast du dein Glück schon versucht.'
+  return S.rang>=SAB_RANG?`Als ${duK()} machst du so etwas nicht mehr.`:S.monat<6?'Die Unterwelt ist nur von Juli bis Dezember zu sprechen.':S.sabJahr===S.jahr?'Für dieses Jahr hast du dein Glück schon versucht.'
     :S.geld<SAB_KONTAKT+SAB_MIN?`Du brauchst mindestens ${eur(SAB_KONTAKT+SAB_MIN)}: ${eur(SAB_KONTAKT)} für den Kontakt und ${eur(SAB_MIN)} Handgeld.`:'';
 }
 // Sabotage gegen den Spieler: nur vom Zocker, frühestens ab dem fünften Jahr, höchstens alle fünf Jahre. Schaden: ein Fass oder rund 15 % der Reben.
-function sabotageGegenDich(Z){
-  const g=S.gegner.find(x=>x.typ==='zocker');
-  if(!g||S.monat<6||S.jahr-START_JAHR<4||S.jahr-(S.sabDich||0)<5||Math.random()>=.04) return;
+// Seit 8.5 steht der Schaden in sabSchaden, weil ihn auch der Herausforderer vor der Wahl anrichtet (wahl=1). Gibt false zurück, wenn es weder ein Fass noch genug Reben gibt.
+function sabSchaden(g,wahl){
   const F=S.lots.filter(l=>l.status==='fass').sort((a,b)=>lotWert(b)-lotWert(a)), B=R().sorten.filter(id=>S.felder[id].reben>=500);
-  if(!F.length&&!B.length) return;
-  S.sabDich=S.jahr;
+  if(!F.length&&!B.length) return false;
+  const wer=wahl?`So kurz vor der Wahl glaubt im Verband keiner an einen Zufall. Man munkelt, ${g.name} stecke dahinter.`:`Man munkelt, ${g.name} stecke dahinter.`;
   if(F.length&&(Math.random()<.5||!B.length)){
     const l=F[0]; S.lots=S.lots.filter(x=>x!==l);
-    schlag(85,'Sabotage im Keller!',`Nachts war jemand in deinem Keller: ${num(l.liter)}\u00a0l ${lotName(l)} sind vergiftet und mussten weg. Man munkelt, ${g.name} stecke dahinter.`,'sabotage',{du:1});
+    schlag(85,'Sabotage im Keller!',`Nachts war jemand in deinem Keller: ${num(l.liter)}\u00a0l ${lotName(l)} sind vergiftet und mussten weg. ${wer}`,'sabotage',{du:1});
   }else{
     let weg=0;
     for(const id of B){const f=S.felder[id], tot=Math.round(f.reben*.15/100)*100; f.reben-=tot; f.jung=Math.min(f.jung,f.reben); weg+=tot; if(f.menge>0&&!f.gelesen) f.menge=Math.round(f.menge*.85)}
-    schlag(85,'Sabotage im Weinberg!',`Nachts hat jemand in deinem Weinberg gewütet: ${num(weg)} Reben sind zerstört. Man munkelt, ${g.name} stecke dahinter.`,'sabotage',{du:1});
+    schlag(85,'Sabotage im Weinberg!',`Nachts hat jemand in deinem Weinberg gewütet: ${num(weg)} Reben sind zerstört. ${wer}`,'sabotage',{du:1});
+  }
+  return true;
+}
+function sabotageGegenDich(Z){
+  const g=S.gegner.find(x=>x.typ==='zocker');
+  if(!g||S.monat<6||S.jahr-START_JAHR<4||S.jahr-(S.sabDich||0)<5||Math.random()>=.04) return;
+  if(sabSchaden(g)) S.sabDich=S.jahr;
+}
+/* ---- Version 8.5: Amtszeit und Wahl (Spielende, Paket 1) ---- */
+// S.amt gibt es ab dem Monat, in dem der Spieler Präsident wird: seit (Monat des Amtsantritts als monatNr), stimm (Stimmung im Verband, Kommazahl 0 bis 100),
+// marke (so viel braucht es am Wahltag), wahl (Monat der nächsten Wahl), im (1 im Amt, 0 abgewählt), zeit (laufende Amtszeit), siege (gewonnene Wahlen),
+// vert (davon im Amt verteidigt), kauf (gekaufte Stimmen dieser Wahl), geg (Herausforderer ab der Umfrage, id des Gegners, sonst null),
+// sab (Monat der Sabotage vor der Wahl oder 0), stuhl (id des Gegners, der nach einer Abwahl auf dem Stuhl sitzt),
+// wahlen (alle Wahlen: j, m, s Stimmung, marke, ok, im, geg Name). Paket 2 braucht vert und wahlen für den Schlüssel "Verband", die Chronik und die Bestenliste.
+function amtStart(){S.amt={seit:monatNr(),stimm:STIMM_START,marke:MARKE_START,wahl:monatNr()+WAHL_JAHRE*12,im:1,zeit:1,siege:0,vert:0,kauf:0,geg:null,sab:0,stuhl:null,wahlen:[]}}
+// Alte Spielstände: Wer in 8.4.1 schon Präsident ist, bekommt das Amt beim Laden, die Meldung dazu steht im nächsten Winzerboten.
+function altAmt(){if(S.rang===R_MAX&&!S.amt){amtStart(); S.amt.alt=1}}
+function stimmung(d){const A=S.amt; A.stimm=clamp(A.stimm+d,0,100)}
+const amtAlt=()=>!!(S&&S.amt&&!S.amt.im), stimmZ=()=>Math.round(S.amt.stimm);
+// Wie der Spieler gerade heißt: sein Rang, nach einer Abwahl Altpräsident oder Altpräsidentin.
+const altP=()=>anr('Altpräsident','Altpräsidentin'), duN=()=>amtAlt()?altP():rangN(S.rang), duK=()=>amtAlt()?altP():rangK(S.rang);
+const monJahr=nr=>`${MON[nr%12]} ${START_JAHR+Math.floor(nr/12)}`;
+// Wahlkampf: von der Umfrage bis zur Wahl. Nur dann gibt es den Stimmenkauf und die Sabotage des Herausforderers.
+function amtKampf(){const A=S.amt; return !!(A&&A.geg!=null&&monatNr()<A.wahl)}
+const gFrau=g=>!!g&&g.typ==='vorsicht';
+function amtGegner(){const A=S.amt; return A&&A.geg!=null?S.gegner.find(g=>g.id===A.geg)||null:null}
+// Der Herausforderer ist der Gegner mit dem höchsten Rang, bei Gleichstand der mit mehr Ansehen. Wer abgewählt ist, tritt gegen den an, der auf dem Stuhl sitzt.
+function amtRivale(){const A=S.amt, st=!A.im&&S.gegner.find(g=>g.id===A.stuhl); return st||S.gegner.slice().sort((a,b)=>b.rang-a.rang||b.ansehen-a.ansehen)[0]||null}
+// Alle Texte zum Amt an einer Stelle. k ist der Fall, p sind die gemerkten Zahlen und Namen. Fällt eine Übergabe in denselben Monat,
+// schreibt erbeBenennen die Texte mit der neuen Anrede noch einmal (Merkmal amt an der Schlagzeile).
+function amtTxt(k,p){
+  const P=anr('Präsident','Präsidentin'), AP=altP(), kopf='Der Weinbauverband hat gewählt.';
+  const latte=p.neu>p.marke?` Dann liegt die Latte höher: Du brauchst ${p.neu}.`:` Die Latte bleibt bei ${p.neu}.`;
+  if(k==='umfrage'){
+    const vorn=p.s>=p.marke, klar=p.s>=p.marke+15, hilf=klar?'Das sieht gut aus. Aber die Stimmung bröckelt jeden Monat ein wenig, also bleib sichtbar.'
+      :vorn?'Das ist knapp, denn bis zur Wahl bröckelt die Stimmung jeden Monat. Medaillen, ein Hoffest und alles, was Ansehen bringt, halten dich vorn.'
+      :'Das reicht nicht. Jetzt helfen Medaillen, ein Hoffest und alles, was Ansehen bringt. Wer es eilig hat, findet im Rathaus auch andere Wege.';
+    return {t:klar?(p.im?'Umfrage zur Wahl: Du liegst vorn':'Umfrage zur Wahl: Der Stuhl wackelt'):vorn?'Umfrage zur Wahl: Es wird eng':'Umfrage zur Wahl: Es reicht noch nicht',
+      text:`In einem Jahr, im ${p.wann}, wählt der Weinbauverband. ${p.im?`${p.g} ${p.wo} fordert dich heraus.`:`Du trittst gegen ${p.g} an, ${p.gw?'die':'der'} seit deiner Abwahl auf dem Stuhl sitzt.`} In der Umfrage des Winzerboten steht die Stimmung für dich bei ${p.s} von 100, am Wahltag brauchst du ${p.marke}. ${hilf}`};
+  }
+  if(k==='gewonnen') return {t:`Wiedergewählt: Du bleibst ${P}`,text:`${kopf} Die Stimmung für dich lag bei ${p.s}, gebraucht hast du ${p.marke}. ${p.g} gratuliert mit zusammengebissenen Zähnen. Deine ${p.zeit}. Amtszeit beginnt, die nächste Wahl ist im ${p.wann}.${latte}`};
+  if(k==='zurueck') return {t:`Zurück auf dem Stuhl: Du bist wieder ${P}`,text:`${kopf} Die Stimmung für dich lag bei ${p.s}, gebraucht hast du ${p.marke}. ${p.g} räumt den Stuhl im Festsaal, das Kissen ist noch warm. Deine ${p.zeit}. Amtszeit beginnt, die nächste Wahl ist im ${p.wann}.${latte}`};
+  if(k==='verloren') return {t:`Abgewählt: ${p.g} übernimmt den Stuhl`,text:`${kopf} Die Stimmung für dich lag bei ${p.s}, gebraucht hättest du ${p.marke}. ${p.g} ${p.wo} sitzt jetzt auf dem Stuhl im Festsaal. Du bist ${AP} und behältst alles, was du aufgebaut hast: Rang, Fläche, Geld und Ansehen. Im ${p.wann} wird wieder gewählt. Dann kannst du dir den Stuhl zurückholen.`};
+  if(k==='wieder') return {t:`${p.g} bleibt auf dem Stuhl`,text:`${kopf} Die Stimmung für dich lag bei ${p.s}, gebraucht hättest du ${p.marke}. ${p.g} bleibt ${p.gw?'Präsidentin':'Präsident'}, du bleibst ${AP}. Im ${p.wann} wird wieder gewählt.`};
+  if(k==='skandal') return {t:'Stimmenkauf im Verband aufgeflogen',text:`Ein Umschlag ist am falschen Tisch gelandet. Jetzt weiß der ganze Verband, dass bei ${S.name} Stimmen gekauft werden sollten. Das Geld ist weg, und die Stimmung für dich ist um ${KAUF_STRAFE} gefallen.`};
+  if(k==='geruecht') return {t:'Ein Gerücht macht die Runde',text:`Im Verband wird getuschelt, bei ${S.name} sei bei der letzten Prämierung nachgeholfen worden. Belegt ist nichts, aber es bleibt etwas hängen: Die Stimmung für dich fällt um ${WSAB_GERUECHT}. Man munkelt, ${p.g} habe das Gerücht gestreut.`};
+  return {t:'Im Verband wird jetzt gewählt',text:`Der Weinbauverband hat seine Satzung geändert: Ab sofort wird alle ${WAHL_JAHRE} Jahre gewählt, und auch ${anr('der Präsident','die Präsidentin')} muss sich stellen. Die Stimmung für dich steht bei ${p.s} von 100, deine erste Wahl ist im ${p.wann}. Alles dazu steht im Rathaus im Fenster „Weinbauverband“.`};
+}
+// Schlagzeile zum Amt. Sie betrifft immer den Spieler selbst und hält deshalb das Weiterblättern an.
+function amtSchlag(p,k,par,bild,o){const x=amtTxt(k,par); schlag(p,x.t,x.text,bild,{du:1,amt:{k,par},...(o||{})})}
+const gPar=g=>({g:g?g.name:'Ein Herausforderer',wo:g?WO[g.region]:'',gw:gFrau(g)?1:0});
+// Einmal im Monat, nach allem, was Ansehen bringt oder kostet. Im Monat des Amtsantritts passiert noch nichts.
+function amtMonat(){
+  const A=S.amt, nr=monatNr(); if(!A||A.seit===nr) return;
+  if(A.alt){delete A.alt; amtSchlag(58,'altstand',{s:stimmZ(),wann:monJahr(A.wahl)},'wahl')}
+  stimmung(-STIMM_MONAT);
+  if(A.skandal){A.skandal=0; amtSchlag(86,'skandal',{},'wahl')}
+  if(nr>=A.wahl) return amtWahl();
+  if(A.geg==null&&nr>=A.wahl-WAHL_UMFRAGE) amtUmfrage();
+  else if(A.sab&&nr>=A.sab) amtSabotage();
+}
+// Die Umfrage legt den Herausforderer fest und würfelt, ob er vor der Wahl sabotiert: 2 bis 9 Monate später, also mindestens 3 Monate vor der Wahl.
+function amtUmfrage(){
+  const A=S.amt, g=amtRivale(); A.geg=g?g.id:-1; A.kauf=0;
+  A.sab=Math.random()<WSAB_CHANCE?monatNr()+rint(2,9):0;
+  amtSchlag(88,'umfrage',{im:A.im,s:stimmZ(),marke:A.marke,wann:monJahr(A.wahl),...gPar(g)},'wahl');
+}
+// Zur Hälfte Schaden wie bei der Sabotage des Zockers, zur Hälfte ein Gerücht. Ohne Fass und ohne genug Reben wird es immer ein Gerücht.
+// Die Fünf-Jahres-Sperre des Zockers läuft mit, damit nicht zwei Anschläge kurz hintereinander kommen.
+function amtSabotage(){
+  const A=S.amt, g=amtGegner(); A.sab=0; if(!g) return;
+  S.sabDich=S.jahr;
+  if(Math.random()<.5&&sabSchaden(g,1)) return;
+  stimmung(-WSAB_GERUECHT); amtSchlag(85,'geruecht',{g:g.name},'wahl');
+}
+// Die Wahl: Liegt die gerundete Stimmung auf oder über der Marke, gewinnt der Spieler. Kein Würfel.
+function amtWahl(){
+  const A=S.amt, g=amtGegner()||amtRivale(), s=stimmZ(), marke=A.marke, ok=s>=marke, war=A.im;
+  A.wahlen.push({j:S.jahr,m:S.monat,s,marke,ok:ok?1:0,im:war?1:0,geg:g?g.name:''});
+  A.wahl=monatNr()+WAHL_JAHRE*12; A.kauf=0; A.geg=null; A.sab=0;
+  const par={s,marke,wann:monJahr(A.wahl),...gPar(g)};
+  if(ok){
+    A.siege++; if(war) A.vert++; A.zeit++; A.marke=Math.min(MARKE_MAX,marke+MARKE_PLUS); A.stimm=STIMM_START; A.im=1; A.stuhl=null;
+    ehre('🗳️',war?`Wiedergewählt, ${A.zeit}. Amtszeit`:`Zurück im Amt, ${A.zeit}. Amtszeit`,0,`Stimmung ${s}, gebraucht ${marke}.`);
+    amtSchlag(96,war?'gewonnen':'zurueck',{...par,zeit:A.zeit,neu:A.marke},'wahl',{gold:1});
+  }else{
+    A.stimm=STIMM_ALT; if(war){A.im=0; A.stuhl=g?g.id:null}
+    amtSchlag(96,war?'verloren':'wieder',par,'gegnerpraesident');
   }
 }
 function zeigePleite(){
@@ -2458,6 +2566,8 @@ function aufgaben(){
   if(S.mahnung) A.push({t:`${S.mahnung}. Mahnung: `+(luft<0?`Schulden ${eur(-luft)} über dem Kreditrahmen`:`wieder im Kreditrahmen, noch ${eur(luft)} Luft`)+(S.mahnung>=2&&luft<0?'. Bei der dritten wird gepfändet':''),rot:1,tab:'stadt',sub:'bank'});
   else if(S.geld<0) A.push({t:`Konto im Minus (${eur(S.geld)}): `+(luft<0?`Schulden ${eur(-luft)} über dem Kreditrahmen, beim Monatswechsel kommt die Mahnung`:`noch ${eur(luft)} bis zur Mahnung, ab zur Bank`),rot:1,tab:'stadt',sub:'bank'});
   else if(S.geld<kontoKnapp()) A.push({t:`Konto gefährlich niedrig: ${eur(S.geld)} reichen keine zwei Monate`,tab:'stadt',sub:'bank'});
+  // Seit 8.5: im Wahlkampf Gelb am Rathaus, solange die Stimmung unter der Marke liegt. Reicht sie, bleibt ein Hinweis ohne Punkt.
+  if(amtKampf()){const s=stimmZ(), mk=S.amt.marke; A.push({t:`🗳️ Wahl im ${monJahr(S.amt.wahl)}: Stimmung ${s}, du brauchst ${mk}`+(s>=mk?'. Im Moment reicht das':''),tab:'stadt',sub:'amt',...(s>=mk?{ruhig:1}:{})})}
   if(aukInfo()) A.push({t:aukInfo(),tab:'stadt',sub:'amt',ruhig:1});
   // Auktionstag: Rot nur, wenn Konto plus freier Kreditrahmen fürs nächste Gebot reichen. Sonst bleibt es ein Hinweis.
   if(S.auktion&&S.auktion.phase!==0&&!S.auktion.ende&&S.rang>=R_AUKTION){const kann=aukNaechstes()<=aukLimit(); A.push({t:`🔨 Auktion diesen Monat: ${S.auktion.ha}\u00a0Hektar, Gebot steht bei ${eur(S.auktion.gebot)}`+(kann?'':'. Zum Mitbieten reicht dein Geld nicht'),tab:'stadt',sub:'amt',...(kann?{rot:1}:{ruhig:1})})}
@@ -2533,7 +2643,7 @@ function vSlots(){
   return `<div id="top"><div><b>150 Grad Öchsle</b><small>Spielstände</small></div></div><main>
   ${[0,1,2].map(i=>{const o=lies(i), alt=liesAlt(i);return `<div class="card"><h3>Spielstand ${i+1}</h3>${alt?`<b>${esc(alt.name)}</b><div class="mut">${ALT_SATZ}</div>
     <div class="btns"><button data-a="slotNeu" data-id="${i}">Neues Spiel</button><button class="wag klein" data-a="slotWegFrage" data-id="${i}">Löschen</button></div>`:o?`<b>${esc(o.name)}</b>
-    <div class="mut">${esc(MON[o.monat]||'')} ${esc(o.jahr)} · ${REGIONEN[o.region].name} · ${(RAENGE[o.rang]||RAENGE[0]).kurz} · ${eur(+o.geld||0)}</div>
+    <div class="mut">${esc(MON[o.monat]||'')} ${esc(o.jahr)} · ${REGIONEN[o.region].name} · ${o.amt&&!o.amt.im?'Altpräsident':(RAENGE[o.rang]||RAENGE[0]).kurz} · ${eur(+o.geld||0)}</div>
     <div class="btns"><button data-a="slotLaden" data-id="${i}">Weiterspielen</button></div>
     <div class="btns"><button class="sec klein" data-a="slotSichern" data-id="${i}">Als Datei sichern</button><button class="wag klein" data-a="slotWegFrage" data-id="${i}">Löschen</button></div>`
     :`<div class="mut">Leer</div><div class="btns"><button data-a="slotNeu" data-id="${i}">Neues Spiel</button><button class="sec" data-a="slotDatei" data-id="${i}">Aus Datei laden</button></div>`}</div>`}).join('')}
@@ -2547,7 +2657,7 @@ function vSlots(){
 const LEITER=['','Auktionen, 2. Sorte, Kellerausbau','Sekt, Export, Düngerstreuer','Landesprämierung, Erntemaschine','3. Sorte, Laubschneider','Bundeswettbewerb, Vollernter','Weinhandlung, Abfüllanlage','Hoffest, Kontrollen','Spitzenlage','der Sieg'];
 function rangLeiter(){const r=S.rang;
   return `<h4 class="gs">🪜 Rang ${r+1} von ${RAENGE.length}</h4><div class="rleiter">${RAENGE.map((x,i)=>{const k=i<r?'ok':i===r?'jetzt':'zu';
-    return `<div class="rgl ${k}"><b>${k==='ok'?'✓':k==='jetzt'?'▸':'🔒'}</b><span>${rangK(i)}</span>${k==='zu'?`<small>${LEITER[i]}</small>`:''}</div>`}).join('')}</div>`}
+    return `<div class="rgl ${k}"><b>${k==='ok'?'✓':k==='jetzt'?'▸':'🔒'}</b><span>${k==='jetzt'?duK():rangK(i)}</span>${k==='zu'?`<small>${LEITER[i]}</small>`:''}</div>`}).join('')}</div>`}
 // Zahlen in Zeilen und Balken des Fensters "Dein Stand": "ha" und "Mio." wie in der Kopfzeile, kein "T" für Tausend (Maik 17.11.2026).
 const mioZahl=x=>x.toLocaleString('de-DE',{maximumFractionDigits:Math.abs(x)<1?2:1});
 const vonGeld=(ist,soll)=>soll>=1e6?`${mioZahl(ist/1e6)} von ${mioZahl(soll/1e6)} Mio. €`:`${Math.abs(ist)>=1e6?geldKurz(ist):num(ist)} von ${eur(soll)}`;
@@ -2564,18 +2674,42 @@ function vRang(){
     <div class="kv"><span>🌱 Bepflanzt</span><span>${bep.toLocaleString('de-DE')} von ${n.ha} Hektar</span></div>${barF(n.ha)}${nach}${S.ha<n.ha&&!maklerGrund()?`<div class="mut" style="margin:-4px 0 8px">Keine Auktion in Sicht? Der Makler im Rathaus verkauft dir einen Hektar für ${eur(MAKLER_PREIS)}.</div>`:''}
     <div class="kv"><span>💰 Vermögen</span><span>${eur(v)} von ${eur(n.verm)}</span></div>${bar(v,n.verm)}
     <div class="mut">Der Aufstieg zum Rang ${n.name} ${bringtSatz(r+1)}.${rahmenSatz(r+1)}</div>`
-    :`<div class="kv"><span>⭐ Ansehen</span><span>${S.ansehen}</span></div><div class="kv"><span>💰 Vermögen</span><span>${eur(v)}</span></div><div class="fleer" style="margin-top:6px">Höher geht es nicht.</div>`)+rangLeiter();
-  return fenster('rang',`${neu?'<span class="rneuB">Neu</span> ':''}Aktueller Rang: ${rangN(r)}`,h,{kl:neu?'rneu':'',buch:'ziel',
+    :`<div class="kv"><span>⭐ Ansehen</span><span>${S.ansehen}</span></div><div class="kv"><span>💰 Vermögen</span><span>${eur(v)}</span></div>`
+      // Seit 8.5: Am Ziel stehen die Stimmung im Verband und die nächste Wahl.
+      +(S.amt?`<div class="kv"><span>🗳️ Stimmung im Verband</span><span>${stimmZ()} von 100</span></div>${amtBalken()}<div class="mut">${amtSatz()}</div>${kz('',`<button class="sec klein" data-a="tab" data-id="stadt" data-sub="amt">🗳️ Zum Weinbauverband</button>`)}`
+        :`<div class="fleer" style="margin-top:6px">Höher geht es nicht.</div>`))+rangLeiter();
+  return fenster('rang',`${neu?'<span class="rneuB">Neu</span> ':''}Aktueller Rang: ${duN()}`,h,{kl:neu?'rneu':'',buch:'ziel',
     hin:[S.sieger&&`🏆 Gewonnen hat: ${esc(S.sieger)}`],
     stand:`Stufe ${r+1} von ${RAENGE.length} · ${genNr()}. Generation, die nächste übernimmt im Januar ${genJahr(genNr())}${n?`<br>Für den Aufstieg zum Rang ${n.name} brauchst du alles drei zugleich.`:''}`,
-    i:'Wer zuerst Präsident des Weinbauverbands wird, gewinnt. Jeder Aufstieg braucht Ansehen, bepflanzte Fläche und Vermögen zugleich. Bei der Fläche zählt nur, was bepflanzt ist: Der helle Balken zeigt dein gekauftes Land, der dunkle das bepflanzte.'});
+    i:'Wer zuerst Präsident des Weinbauverbands wird, gewinnt. Jeder Aufstieg braucht Ansehen, bepflanzte Fläche und Vermögen zugleich. Bei der Fläche zählt nur, was bepflanzt ist: Der helle Balken zeigt dein gekauftes Land, der dunkle das bepflanzte.'+(S.amt?` Wer ${anr('Präsident','Präsidentin')} ist, muss das Amt alle ${WAHL_JAHRE} Jahre in einer Wahl verteidigen. Die Regeln stehen im Rathaus im Fenster „Weinbauverband“.`:'')});
+}
+// Version 8.5: Balken der Stimmung von 0 bis 100, der Strich ist die Marke des Herausforderers.
+function amtBalken(){const A=S.amt, s=stimmZ(); return `<div class="bar stb ${s>=A.marke?'':'g'}"><i style="width:${s}%"></i><u style="left:${A.marke}%"></u></div>`}
+function amtSatz(){
+  const A=S.amt, g=amtGegner(), wann=monJahr(A.wahl);
+  return A.im?`Am Wahltag brauchst du ${A.marke}. Die nächste Wahl ist im ${wann}.${amtKampf()&&g?` ${esc(g.name)} fordert dich heraus.`:''}`:`Du bist abgewählt. Mit ${A.marke} holst du dir den Stuhl im ${wann} zurück.`;
+}
+// Fenster "Weinbauverband" im Rathaus, nur mit Amt (im Amt oder abgewählt): Balken mit Marke, Amtszeiten, nächste Wahl, im Wahlkampf der Herausforderer
+// und der Knopf "Stimmen kaufen". Die Regeln stehen im i.
+function vVerband(){
+  const A=S.amt, s=stimmZ(), kampf=amtKampf(), g=amtGegner(), st=!A.im&&S.gegner.find(x=>x.id===A.stuhl), frei=KAUF_MAX-A.kauf;
+  const inhalt=`<div class="kv"><span>🗳️ Stimmung im Verband</span><span>${s} von 100</span></div>${amtBalken()}
+    <div class="kv"><span>${A.im?'Am Wahltag brauchst du':'Für die Rückkehr brauchst du'}</span><span>${A.marke}</span></div>
+    <div class="kv"><span>${A.im?'Deine Amtszeit':'Deine Amtszeiten bisher'}</span><span>${A.zeit}${A.im?'.':''}</span></div>
+    <div class="kv"><span>Nächste Wahl</span><span>${monJahr(A.wahl)}</span></div>
+    ${st?`<div class="kv"><span>Auf dem Stuhl</span><span>${esc(st.name)}</span></div>`:kampf&&g?`<div class="kv"><span>${gFrau(g)?'Herausforderin':'Herausforderer'}</span><span>${esc(g.name)}</span></div>`:''}`;
+  return fenster('verband','Weinbauverband',inhalt,{
+    stand:kampf?(s>=A.marke?'Wahlkampf: Im Moment reicht die Stimmung. Bis zur Wahl bröckelt sie aber weiter.':'<span class="rot">Wahlkampf: Im Moment reicht die Stimmung nicht.</span>'):`Die Umfrage kommt im ${monJahr(A.wahl-WAHL_UMFRAGE)}, ein Jahr vor der Wahl.`,
+    links:kampf?(frei<=0?`Mehr als ${KAUF_MAX} Käufe je Wahl gehen nicht.`:`Noch ${frei} von ${KAUF_MAX} Käufen. Jeder fliegt mit ${pz(KAUF_SKANDAL)} auf.`):'',
+    kn:kampf?pk('stimmKauf','Stimmen kaufen',eur(KAUF_PREIS),{klein:`+${KAUF_PLUS} Stimmung`,wag:1,aus:frei<=0,arm:S.geld<KAUF_PREIS}):[],
+    buch:'wahl',i:`Als ${anr('Präsident','Präsidentin')} musst du dein Amt alle ${WAHL_JAHRE} Jahre verteidigen. Es zählt die Stimmung im Verband: Liegt sie am Wahltag auf oder über der Marke (der Strich im Balken), bleibst du im Amt. Gewürfelt wird nicht.<br><br><b>Was die Stimmung hebt:</b> alles, was Ansehen bringt, zum Beispiel Medaillen, ein Hoffest, Sekt oder eine saubere Weinkontrolle. Von jedem gewonnenen Ansehen gehen ${pz(STIMM_PLUS)} auf die Stimmung.<br><b>Was sie drückt:</b> Jeder Monat kostet ${String(STIMM_MONAT).replace('.',',')}, und jeder Abzug beim Ansehen schlägt voll durch.<br><br><b>Die Marke:</b> Dein Herausforderer ist der stärkste Gegner. Bei der ersten Wahl brauchst du ${MARKE_START}, nach jeder gewonnenen Wahl ${MARKE_PLUS} mehr, höchstens ${MARKE_MAX}. Nach jeder gewonnenen Wahl startet die Stimmung wieder bei ${STIMM_START}.<br><br><b>Wahlkampf:</b> Ein Jahr vor der Wahl bringt der Winzerbote die Umfrage. Ab dann kannst du hier Stimmen kaufen: ${eur(KAUF_PREIS)} vom Konto für ${KAUF_PLUS} Punkte, höchstens ${KAUF_MAX} Mal je Wahl. Jeder Kauf fliegt mit ${pz(KAUF_SKANDAL)} auf, dann ist das Geld weg und die Stimmung fällt um ${KAUF_STRAFE}. Auch der Herausforderer spielt im Wahlkampf nicht immer sauber.<br><br><b>Abgewählt:</b> Der Herausforderer übernimmt den Stuhl, du behältst alles andere. Die Stimmung startet dann bei ${STIMM_ALT}, und bei der nächsten Wahl kannst du dir den Stuhl zurückholen.`});
 }
 function vRangliste(){
   const v=vermoegen();
   const L=[{name:S.name,du:1,sub:`du${S.ich?' ('+S.ich+')':S.erbe&&S.erbe.name?' ('+S.erbe.name+')':''}, ${R().name}`,w:frau(),rang:S.rang,ans:S.ansehen,ha:S.ha,verm:v},
-    ...S.gegner.map(g=>({name:g.name,sub:`${GEGNER_TYP[g.typ].art}, ${REGIONEN[g.region].name}`,rang:g.rang,ans:Math.round(g.ansehen),ha:g.ha,verm:gVerm(g)}))]
+    ...S.gegner.map(g=>({name:g.name,sub:`${GEGNER_TYP[g.typ].art}, ${REGIONEN[g.region].name}`,rang:g.rang,ans:Math.round(g.ansehen),ha:g.ha,verm:gVerm(g),stuhl:amtAlt()&&g.id===S.amt.stuhl}))]
     .sort((a,b)=>b.rang-a.rang||b.ans-a.ans);
-  return fenster('rangliste','Rangliste',L.map((x,i)=>`<div class="rl ${x.du?'du':''}"><span>${i+1}.</span><div><b>${esc(x.name)}</b><span class="mut">${esc(x.sub)}<br>${x.w&&RAENGE[x.rang].kw||RAENGE[x.rang].kurz} · ${x.ans} Ansehen · ${x.ha} ha · ${eur(x.verm)}<br>${bisZiel(x.rang)}</span></div></div>`).join(''),{
+  return fenster('rangliste','Rangliste',L.map((x,i)=>`<div class="rl ${x.du?'du':''}"><span>${i+1}.</span><div><b>${esc(x.name)}</b><span class="mut">${esc(x.sub)}<br>${x.du?duK():x.w&&RAENGE[x.rang].kw||RAENGE[x.rang].kurz} · ${x.ans} Ansehen · ${x.ha} ha · ${eur(x.verm)}<br>${x.du&&S.amt?`🗳️ Stimmung ${stimmZ()} · Wahl im ${monJahr(S.amt.wahl)}`:x.stuhl?'🪑 sitzt auf dem Stuhl im Festsaal':bisZiel(x.rang)}</span></div></div>`).join(''),{
     buch:'gegner',hin:[S.sieger&&`🏆 Gewonnen hat: ${esc(S.sieger)}`],
     i:'Hier stehst du mit deinen Gegnern. Vorn steht der höchste Rang, bei gleichem Rang entscheidet das Ansehen. Was die anderen treiben, steht im Winzerboten.'});
 }
@@ -2623,7 +2757,7 @@ function vMonat(){
   const haengt=S.monat>=7&&R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen);
   const rechts=`<h4>Dein Weingut</h4>${wg?`<div class="zluft${wgGross(st)?' gross':''}" style="background-image:url(bilder/${bild}.jpg)"></div>`:''}<div class="zz"><b>Konto</b><span class="${S.geld<0?'rot':''}">${eur(S.geld)}</span></div>
     <div class="zz"><b>Boden</b><span class="${S.boden<80?'rot':''}">${S.boden}\u00a0%${S.boden<80&&S.duengungen<3?', Düngen ist dran':''}</span></div>
-    <div class="zz"><b>Ansehen</b>${S.ansehen}</div><div class="zz"><b>Rang</b>${rangK(S.rang)}</div>`;
+    <div class="zz"><b>Ansehen</b>${S.ansehen}</div><div class="zz"><b>Rang</b>${duK()}</div>`;
   return `<div id="info" class="${wg?'wg'+(wgGross(st)?' gross':'')+(wech?' jzw':''):bild}">${hinten}<div class="iverl"></div>
   <div class="zt"><div class="zkopf"></div><div class="zmitte">
     <div class="ztitel">Der Winzerbote</div>
@@ -3167,7 +3301,7 @@ function managerArbeit(){mgrBetrieb(); mgrHandel(); dauerAuftrag()}
 // arm (Geld fehlt: grau, aber antippbar, die Aktion erklärt es), klein (kleine Zeile unter dem Preis, etwa der Preis je Stück).
 function pk(a,t,p,o={}){
   const at=['id','n'].filter(x=>o[x]!=null).map(x=>` data-${x}="${o[x]}"`).join('');
-  return `<button class="pk${o.sec?' sec':''}${o.arm?' arm':''}" data-a="${a}"${at}${o.aus?' disabled':''}><span>${t}</span>${p?`<b>${p}</b>`:''}${o.klein?`<small>${o.klein}</small>`:''}</button>`;
+  return `<button class="pk${o.sec?' sec':''}${o.wag?' wag':''}${o.arm?' arm':''}" data-a="${a}"${at}${o.aus?' disabled':''}><span>${t}</span>${p?`<b>${p}</b>`:''}${o.klein?`<small>${o.klein}</small>`:''}</button>`;
 }
 // Zeile unten in der Karte: links eine kurze Erklärung, rechts die Knöpfe untereinander.
 function kz(links,...kn){return `<div class="kz${links?'':' reihe'}"><div>${links||''}</div><div class="kzk">${kn.join('')}</div></div>`}
@@ -3424,6 +3558,8 @@ function vStadt(){
   // Was der Rang noch sperrt, steht zugeklappt mit Schloss unten. Am Ziel (Präsident) gibt es keinen Makler mehr.
   if(SUB==='amt'){
     const fa=S.lots.filter(l=>l.status==='fass'&&!l.stufe).sort(BSORT_F.dringend), zu=[], mon=n=>n===1?'Monat':'Monaten';
+    // Seit 8.5: Mit Amt steht der Weinbauverband ganz oben.
+    if(S.amt) h+=vVerband();
     h+=fenster('anmelden','Wein anmelden',`<div class="kv"><span>Fassweine ohne Anmeldung</span><span>${fa.length}</span></div>`
       +(fa.length?`<div class="fzl ab">${fa.map(l=>{const rest=8-l.fassMonate; return fz(dot(l.sorte)+lotName(l),
         `${num(l.liter)} l · ${l.oe}° Öchsle · ${LESE[l.leseart]} · Edelfäulnis ${l.edel?'ja':'nein'}${mani(l)?' · 🤫 '+maniText(l):''}`,
@@ -3963,7 +4099,7 @@ function render(){
   if(TAB==='feier'){$('#app').innerHTML=v; feierStart(); return}
   const tabs=[['gut','🏡','Weingut'],['keller',FASS,'Kellerei'],['stadt','🏛️','Stadt']], B=badges();
   if(TAB==='monat'){$('#app').innerHTML=v; zWehen(); return}
-  $('#app').innerHTML=`<div id="top"><div class="wtr" data-a="wetterInfo"><b>${MON[S.monat]} ${S.jahr}</b><small>${wetterText()} · ${R().name}</small></div><div class="geld" data-a="geldInfo"><b>${geldKurz(S.geld)}</b><small>${rangK(S.rang)} · ${S.ansehen} Ansehen</small></div></div>
+  $('#app').innerHTML=`<div id="top"><div class="wtr" data-a="wetterInfo"><b>${MON[S.monat]} ${S.jahr}</b><small>${wetterText()} · ${R().name}</small></div><div class="geld" data-a="geldInfo"><b>${geldKurz(S.geld)}</b><small>${duK()} · ${S.ansehen} Ansehen</small></div></div>
   <main>${v}</main>
   <nav id="dock">${SUBS[TAB]?`<div id="subs">${SUBS[TAB].map(s=>`<button class="${SUB===s[0]?'an':''}" data-a="sub" data-id="${s[0]}"><i>${s[1]}</i><b>${SUB_NAME[s[0]]}</b>${SUB===s[0]?'':badge(B[TAB+'/'+s[0]])}</button>`).join('')}</div>`:''}<div id="tabs">${tabs.map(t=>`<button class="${TAB===t[0]?'an':''}" data-a="tab" data-id="${t[0]}"><span>${t[1]}</span>${t[2]}${badge(B[t[0]])}</button>`).join('')}<button id="weiter" class="${fehlt?'zu':''}" data-a="weiter"><span>${fehlt?'🔒':'▶'}</span>${fehlt?'Leute fehlen':'Nächster Monat'}</button></div></nav>`;
   panoStell(); wgStart();
@@ -4021,6 +4157,8 @@ const AKT={
     let ziel='';
     if(n){const v=vermoegen(), bep=flaecheBep(), w=(ist,soll)=>clamp(ist/soll*100,0,100), bar=(ist,soll)=>`<div class="bar ${ist>=soll?'':'g'}"><i style="width:${w(ist,soll)}%"></i></div>`;
       ziel=`<h4 class="gs">🎯 Bis zum nächsten Rang</h4>${kv('⭐ Ansehen',`${num(S.ansehen)} von ${num(n.ans)}`)}${bar(S.ansehen,n.ans)}${kv('🌱 Bepflanzt',`${bep.toLocaleString('de-DE')} von ${n.ha} ha`)}<div class="bar fl ${bep>=n.ha?'':'g'}"><i class="hell" style="width:${w(S.ha,n.ha)}%"></i><i style="width:${w(bep,n.ha)}%"></i></div>${kv('💰 Vermögen',vonGeld(v,n.verm))}${bar(v,n.verm)}`}
+    // Seit 8.5: Am Ziel steht hier die Stimmung im Verband mit der nächsten Wahl.
+    else if(S.amt) ziel=`<h4 class="gs">🗳️ Weinbauverband</h4>${kv('Stimmung im Verband',`${stimmZ()} von 100`)}${amtBalken()}<div class="mut" style="margin-bottom:8px">${amtSatz()}</div>`;
     openSheet(`<h3>📋 Dein Stand</h3><h4 class="gs">💶 Kasse</h4>${kv('🏦 Kontostand',eur(S.geld),S.geld<0?'rot':'')}<h4 class="gk">Dieses Jahr bisher</h4>${kv('📈 Einnahmen',eur(S.jahrEin),'gruen')}${kv('📉 Ausgaben',eur(S.jahrAus),'rot')}${kv('⚖️ Ergebnis',eur(S.jahrEin-S.jahrAus),S.jahrEin>=S.jahrAus?'gruen':'rot')}
     <h4 class="gk">Jeden Monat fällig</h4>${kv('Löhne',eur(K.loehne))}${kv('Feste Kosten',eur(K.basis))}${k?kv('Zinsen',eur(K.zins))+kv('Tilgung',eur(K.tilgung))+kv('Kredit offen',eur(k.rest)):''}${kv('Zusammen',eur(K.basis+K.loehne+K.zins+K.tilgung))}${ziel}${rangLeiter()}${zeitStand()}
     ${mib('geld')}<div class="btns"><button class="sec" data-a="zurBank">🏦 Zur Bank</button><button data-a="close">Okay</button></div>`)},
@@ -4383,6 +4521,26 @@ const AKT={
         if(Math.random()<bestechChance(n)){zahle(n); kontrNeu(); S.pruefer=0; meldung('🔍 Glück gehabt','Der Prüfer steckt den Umschlag ein, blättert kurz durchs Kellerbuch und findet nichts.','kontrolle')}
         else{meldung('🔍 Erwischt','Der Prüfer schiebt den Umschlag zurück und schaut jetzt ganz genau hin. '+pruefEnde(BESTECH_NEIN_ANS),'kontrolle')}
       }});
+  },
+  /* ---- Version 8.5: Stimmen kaufen im Wahlkampf, höchstens KAUF_MAX je Wahl, nur mit Geld auf dem Konto. Auch ein aufgeflogener Kauf zählt mit ---- */
+  stimmKauf(){
+    const A=S.amt; if(!amtKampf()||A.kauf>=KAUF_MAX) return;
+    if(S.geld<KAUF_PREIS) return meldung('Zu wenig Geld',`Stimmen kosten ${eur(KAUF_PREIS)}. So viel liegt gerade nicht auf deinem Konto, und einen Kredit gibt es dafür nicht.`,'wahl');
+    const frei=KAUF_MAX-A.kauf;
+    openSheet(`${sbild('wahl')}<h3>🗳️ Stimmen kaufen</h3><p>Ein paar dicke Umschläge an den richtigen Tischen, und der Verband sieht dich gleich freundlicher. Das kostet ${eur(KAUF_PREIS)} und hebt die Stimmung um ${KAUF_PLUS}.</p>
+      <p class="mut">Mit ${pz(KAUF_SKANDAL)} fliegt es auf. Dann ist das Geld weg, die Stimmung fällt um ${KAUF_STRAFE} und der Winzerbote bringt den Skandal. ${frei===1?'Das ist dein letzter Kauf vor dieser Wahl.':`Vor dieser Wahl gehen noch ${frei} Käufe.`}</p>
+      <div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button class="wag" data-a="stimmKaufJa">Umschläge verteilen</button></div>`);
+  },
+  stimmKaufJa(){
+    const A=S.amt; if(!amtKampf()||A.kauf>=KAUF_MAX||S.geld<KAUF_PREIS) return;
+    closeSheet(); A.kauf++; zahle(KAUF_PREIS);
+    if(Math.random()<KAUF_SKANDAL){
+      stimmung(-KAUF_STRAFE); A.skandal=1; save();render();
+      meldung('🗳️ Aufgeflogen',`Ein Umschlag ist am falschen Tisch gelandet. Die ${eur(KAUF_PREIS)} sind weg, und die Stimmung fällt um ${KAUF_STRAFE} auf ${stimmZ()}. Im nächsten Winzerboten steht der Skandal.`,'wahl');
+    }else{
+      stimmung(KAUF_PLUS); save();render();
+      meldung('🗳️ Es hat geklappt',`Die Umschläge sind angekommen. An ein paar Tischen im Verband redet man plötzlich freundlicher über dich. Die Stimmung steigt um ${KAUF_PLUS} auf ${stimmZ()}.`,'wahl');
+    }
   },
   /* ---- Sabotage ---- */
   sabZiel(){
