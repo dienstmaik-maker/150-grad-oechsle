@@ -317,6 +317,18 @@ img.fass{height:1.1em;vertical-align:-.18em}
 /* Version 7.2: Aufstiegsfeier (Feier-Bild, Urkunde, Konfetti; ohne Fraktur, weil fraktur.woff2 nur die Buchstaben von "Der Winzerbote" enthält), Stempel auf der Sonderausgabe, goldene Rang-Karte, Urkundenwand */
 #info .zsonder.stempeln{animation:stempel .32s cubic-bezier(.3,1.5,.5,1) 2.25s both}
 @keyframes stempel{from{transform:scale(2.4) rotate(-7deg);opacity:0}to{transform:none;opacity:1}}
+/* Version 8.5.2: Ende-Ansicht (Reiter ende) mit Bild, Geschichte, Chronik und Bestenliste */
+#ende{position:fixed;inset:0;z-index:8;overflow-y:auto;background:var(--bg)}
+#ende .ehero{position:relative;height:min(62vw,360px);background:#000 center/cover no-repeat}
+#ende .ehero::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 45%,rgba(0,0,0,.78))}
+#ende .ehero div{position:absolute;left:16px;right:16px;bottom:12px;z-index:1;max-width:560px;margin:0 auto}
+#ende .ehero small{display:block;font:700 13px/1.3 var(--knopf);letter-spacing:1px;text-transform:uppercase;color:#f0c75a}
+#ende .ehero b{display:block;color:#fff;font:800 clamp(22px,6.4vw,30px)/1.15 var(--schrift);text-shadow:0 2px 8px rgba(0,0,0,.7)}
+#ende .ein{max-width:560px;margin:0 auto;padding:14px 16px calc(28px + env(safe-area-inset-bottom))}
+#ende .etext p{margin:0 0 8px;font:400 17px/1.45 var(--schrift)}
+#ende .ewg{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-top:6px}
+#ende .ewg div{position:relative;flex:none;width:156px;height:98px;border-radius:8px;background:var(--line) center/cover no-repeat}
+#ende .ewg span{position:absolute;left:6px;right:6px;bottom:4px;color:#fff;font:700 12px/1.2 var(--knopf);text-shadow:0 1px 4px #000}
 #feier{position:fixed;inset:0;z-index:8;overflow-y:auto;background:#000;color:#f3efe6}
 #feier .fbild{position:fixed;inset:0;background:#000 center/cover no-repeat}
 /* Version 7.7: Bild-Bühne. Schwenk und Zoom je Szene (Werte aus SZENEN), ein goldener Lichtschimmer zieht einmal durch, das Kapitel kommt Satz für Satz. */
@@ -632,7 +644,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='8.5.1';
+const VERSION='8.5.2';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -763,6 +775,12 @@ const SAB_KONTAKT=20000, SAB_MIN=5000, SAB_MAX=50000, SAB_AUFFLIEGEN=.2, SAB_STR
 const WAHL_JAHRE=5, WAHL_UMFRAGE=12, STIMM_START=60, STIMM_ALT=40, MARKE_START=50, MARKE_PLUS=5, MARKE_MAX=70;
 const KAUF_PREIS=300000, KAUF_PLUS=5, KAUF_MAX=2, KAUF_SKANDAL=.2, KAUF_STRAFE=15, WSAB_CHANCE=.5, WSAB_GERUECHT=5;
 const STIMM_PLUS=.16, STIMM_MONAT=1, STIMM_MINUS=1;
+// Version 8.5.2 (Spielende, Paket 2): Weltweinschau und die zwei Enden. Die ersten zwei Zahlen hat Maik am 18.11.2026 gewählt.
+// STIFT_FAKTOR: Preis der Stiftung im Verhältnis zur verpassten Spende. MARKE_ABWAHL: so weit sinkt die Marke nach einer Abwahl, nie unter MARKE_START.
+// AMT_MIN: Amtszeiten, bis die Familie übergibt (Mindestzeit). WELT_MONAT: Monat der Ausschreibung (0 = Januar, also August), gewertet wird beim nächsten Monatswechsel.
+// WELT_FELD: Punkte der neun Weingüter aus aller Welt, dazu DIFF.feld. Stellt das Prüfskript ein (beim Bundeswettbewerb sind es 20 bis 44).
+const STIFT_FAKTOR=2, MARKE_ABWAHL=10, AMT_MIN=2, WELT_MONAT=7, WELT_FELD=[30,50];
+const WELT_GUETER=['Château Belmont, Frankreich','Tenuta Montefiore, Italien','Bodega Sierra Alta, Spanien','Quinta do Vale Dourado, Portugal','Weingut Steinterrassen, Österreich','Domaine du Lac, Schweiz','Eagle Canyon Estate, Kalifornien','Southern Cross Vineyards, Australien','Kaapse Hoop, Südafrika','Viña Cóndor, Chile','Finca Los Andes, Argentinien','Kiwi Ridge Winery, Neuseeland'];
 const SAB={gift:['🧪 Wein vergiften','Sein bester Fasswein ist hin.'],buch:['📖 Kellerbuch fälschen','Seine Weine stehen als gepanscht im Buch. Bei seiner nächsten Kontrolle zahlt er Strafe und verliert Ansehen.'],berg:['🪓 Im Weinberg wüten','Ein Viertel seiner Reben und Flaschen ist weg.']};
 // ki: Tempo der Gegner, eingestellt mit dem Test-Spieler in Schritt H von 7.0 (16.11.2026). Der erste Gegner wird Präsident auf Schwer in Jahr 106 bis 112,
 // auf Mittel um Jahr 139, auf Einfach in 170 Jahren nie. Auf Schwer gewinnt der Test-Spieler etwa jede vierte Partie.
@@ -804,8 +822,9 @@ function exportStufen(){return clamp(S.rang-R_EXPORT+1,0,EXPORT_STUFEN)}
 const WUNSCH={weiss:'Weißwein',rot:'Rotwein',sekt:'Sekt',edel:'Auslese und höher'};
 const NACHBARN=['Familie Kessler','Winzer Albrecht','Gebrüder Thielen','Winzerin Maas','Familie Dörr','Winzer Paulus','Winzerin Ohlig','Familie Brandner'];
 const GUETER=['Weingut Dreistein','Weingut Zur Alten Kelter','Weingut Rosenhang','Winzerhof Falkenruh','Weingut Sommerau','Weingut Am Kirchpfad','Weingut Hohlweg','Weingut Sonnenlay','Winzerhof Mertensgrund','Weingut Abtsgarten','Weingut Lindenhof','Weingut Silberbach'];
-const WETTNAME={land:'Landesprämierung',bund:'Bundeswettbewerb'};
+const WETTNAME={land:'Landesprämierung',bund:'Bundeswettbewerb',welt:'Weltweinschau'};
 const PREISE={
+  welt:[{m:'🌍',t:'Platz 1',ans:50,qp:10,geld:10000},{m:'🥈',t:'Platz 2',ans:32,qp:7,geld:5000},{m:'🥉',t:'Platz 3',ans:20,qp:5,geld:2000}],
   land:[{m:'🥇',t:'Gold',ans:12,qp:6,geld:0},{m:'🥈',t:'Silber',ans:9,qp:4,geld:0},{m:'🥉',t:'Bronze',ans:6,qp:2,geld:0}],
   bund:[{m:'🏆',t:'Platz 1',ans:25,qp:10,geld:5000},{m:'🥈',t:'Platz 2',ans:16,qp:7,geld:2500},{m:'🥉',t:'Platz 3',ans:10,qp:5,geld:1000}]
 };
@@ -1078,6 +1097,7 @@ function musikWahl(){
   if(!S) return 'gut';
   if(S.pleite) return 'pfand';
   if(SMUSIK) return SMUSIK;
+  if(TAB==='ende') return 'auf';
   if(TAB==='feier') return S.feier&&S.feier.start?'gut':'auf';
   if(TAB==='monat'){const E=(S.bericht&&S.bericht.ehr)||[]; return E.some(e=>e.a)?'auf':E.length?'wett':'gut'}
   return MUSIK[TAB]?TAB:'gut';
@@ -1286,7 +1306,7 @@ function etappe3(n,schwer){
 function zahle(b){S.geld-=b;S.jahrAus+=b}
 function kassiere(b){S.geld+=b;S.jahrEin+=b;fx('kasse')}
 // Großhandel: Budget des Monats zum vollen Preis, was davon noch offen ist, und der Schnitt-Faktor auf den Preis für Wein im Listenwert von w Euro.
-function marktFrei(){return Math.round((MARKT_FREI+MARKT_RANG*S.rang+MARKT_EXPORT*exportStufen()+MARKT_HA*haUeber())*(spFertig(5)?SP_MARKT:1))}
+function marktFrei(){return Math.round((MARKT_FREI+MARKT_RANG*S.rang+MARKT_EXPORT*exportStufen()+MARKT_HA*haUeber())*(spLohn(5)?SP_MARKT:1))}
 // Bepflanzte Hektar über HA_FREI: daran hängen das Budget des Großhandels und die Menge der Weinhandlungen.
 function haUeber(){return Math.max(0,flaecheBep()-HA_FREI)}
 function marktRest(){return Math.max(0,marktFrei()-(S.absatz||0))}
@@ -1347,6 +1367,35 @@ const SP_DANK=[null,
   null];
 const spKurz=(s,e)=>s===8&&e&&e.w?'Ehrenbürgerin':SPENDEN[s].kurz;
 const spFertig=s=>(S.spenden||[]).some(x=>x.s===s);
+// Seit 8.5.2: Die Belohnung einer Stufe gibt es nur für die echte Spende. Was die Stiftung nachholt (Merkmal st), bringt Ansehen und Ehrung, bei Stufe 8 auch den Holzbogen.
+const spLohn=s=>(S.spenden||[]).some(x=>x.s===s&&!x.st);
+// Stiftung fürs Dorf (nur mit Amt): Sie holt verpasste Spenden der Reihe nach zum STIFT_FAKTOR-fachen Preis nach. S.stift = {s, bez} ist die angefangene Stufe.
+function stFehlt(){for(let s=1;s<SPENDEN.length;s++) if(!spFertig(s)) return s; return 0}
+const stPreis=s=>SPENDEN[s].b*STIFT_FAKTOR, stBezahlt=()=>S.stift&&S.stift.s===stFehlt()?S.stift.bez:0;
+const stOffen=()=>S.amt?stFehlt():0, stAnzahl=()=>SPENDEN.length-1-new Set((S.spenden||[]).map(x=>x.s)).size;
+function stZahle(n){
+  const s=stOffen(); if(!s) return; const D=SPENDEN[s], b=stPreis(s);
+  if(!S.stift||S.stift.s!==s) S.stift={s,bez:0};
+  n=Math.min(n,b-S.stift.bez,Math.max(0,S.geld)); if(n<=0) return;
+  S.geld-=n; S.stift.bez+=n; S.spJahr=(S.spJahr||0)+n;
+  if(S.stift.bez<b){fx('kasse'); return}
+  S.stift=null; ruhm(D.ans);
+  (S.spenden=S.spenden||[]).push({s,j:S.jahr,m:S.monat,n:S.ich||'',w:frau()?1:0,g:genNr(),st:1});
+  (S.stBote=S.stBote||[]).push(s);
+  if(s===8){S.feier={spende:8}; TAB='feier'; FSTUFE=0; return}
+  fx('korken'); openSheet(`${sbild(stFoto(s))}<h3>🤝 Die Stiftung holt nach</h3><p>„Besser spät als nie“, sagt der Bürgermeister. „${esc(D.z.charAt(0).toUpperCase()+D.z.slice(1))}: Das ist jetzt erledigt, und das Dorf vergisst es dir nicht.“</p>
+    <div class="spehre">${spEhrHtml(s,'neu')}</div><div class="spbringt"><div>⭐ ${D.ans} Ansehen</div></div>
+    <div class="btns"><button data-a="close">Danke schön 🥂</button></div>`);
+}
+// Die Bank am Wanderweg gehört zur Belohnung der echten Spende, die Stiftung zeigt bei Stufe 7 deshalb das Rathaus.
+const stFoto=s=>s===7?'amt':spFoto(s);
+// Artikel im Winzerboten nach den nachgeholten Stufen eines Monats (L), alle in einem. Stufe 8 bringt den Holzbogen und bekommt den Artikel der Spende.
+function stBote(L){
+  if(L.includes(8)) spBote(8);
+  L=L.filter(s=>s!==8); if(!L.length) return;
+  const sum=L.reduce((a,s)=>a+stPreis(s),0), was=L.map(s=>SPENDEN[s].z), liste=was.length>1?was.slice(0,-1).join(', ')+' und '+was[was.length-1]:was[0];
+  schlag(66,L.length>1?`Stiftung ${S.name} holt ${L.length} Spenden nach`:`Stiftung ${S.name} holt nach: ${SPENDEN[L[0]].kurz}`,`Die Stiftung von ${S.ich||S.name} hat ${eur(sum)} gegeben, für ${liste}. „Spät, aber von Herzen“, sagt der Bürgermeister. ${stFehlt()?'Im Rathaus heißt es, die Stiftung habe noch mehr vor.':'Damit hat das Dorf alles bekommen, was es sich je gewünscht hat.'}`,stFoto(L[L.length-1]),{du:1,archiv:1});
+}
 function spOffen(){const r=S.rang; return r>=1&&r<SPENDEN.length&&!spFertig(r)?r:0}
 function spBezahlt(){return S.sp&&S.sp.r===S.rang?S.sp.bez:0}
 function spAbzug(gew){return gew>0?Math.min(S.spJahr||0,Math.round(gew*SP_DECKEL)):0}
@@ -1355,9 +1404,9 @@ const bogenBild=()=>SP_BILD.bogen||'stadt';
 const spFoto=s=>{const b=SPENDEN[s].bild; return b==='bank'?bankBild():b==='bogen'?bogenBild():b};
 // Ehrenbürger der Generation n? Dann bleiben bei ihrer Übergabe SP_ERBE vom Ansehen.
 const spBuerger=n=>(S.spenden||[]).some(x=>x.s===8&&x.g===n);
-function erbAnsehen(){return spBuerger(genNr())?SP_ERBE:ERB_ANSEHEN}
-function ladenEigen(){return Math.round(LADEN_EIGEN*(spFertig(6)?SP_LADEN:1))}
-function festAns(F){return F.ans*(F===FESTE.hoffest&&spFertig(7)?SP_HOFFEST:1)}
+function erbAnsehen(){return spBuerger(genNr())&&spLohn(8)?SP_ERBE:ERB_ANSEHEN}
+function ladenEigen(){return Math.round(LADEN_EIGEN*(spLohn(6)?SP_LADEN:1))}
+function festAns(F){return F.ans*(F===FESTE.hoffest&&spLohn(7)?SP_HOFFEST:1)}
 // Stufe 1: In den Lese-Monaten August bis November des Jahres S.spDorf zahlt der teuerste Erntehelfer keinen Lohn.
 function spDorfLohn(){const a=S.loehne&&S.loehne.helfer; return S.spDorf===S.jahr&&S.monat>=7&&S.monat<=10&&a&&a.length?a[a.length-1]:0}
 function altSpende(){if(!S.spenden) S.spenden=[]; if(S.spJahr==null) S.spJahr=0}
@@ -1472,28 +1521,32 @@ function ladenPasst(l,r){const w=S.laeden[r].wunsch; return ladenOk(l)&&(w==='se
 function ladenPreis(l,r){return Math.round(preis(l)*LADEN_AUF*100)/100}
 
 /* ================= Wettbewerbe ================= */
-function wettRang(){return S.wett&&S.wett.typ==='bund'?R_BUND:R_LAND}
+function wettRang(){const t=S.wett&&S.wett.typ; return t==='welt'?R_MAX:t==='bund'?R_BUND:R_LAND}
 function reifeBonus(l){return Math.min(12,Math.round((reifeFaktor(l)-1)*8))}
 function wettFaehig(l){
   const w=S.wett; if(!w||!l||!l.stufe||l.pansch) return false;
   if(w.typ==='land') return !l.sekt&&STUFEN[l.stufe].rang>=3&&l.jahrgang===S.jahr-1&&l.status!=='trauben';
-  return l.status==='flasche'&&!l.bund&&(l.sekt||STUFEN[l.stufe].rang>=3)&&l.flMonate>=lager(l).min;
+  // Seit 8.5.2: Bei der Weltweinschau dürfen auch Weine mit Bundes-Medaille antreten, jeder Wein aber nur einmal (l.welt).
+  return l.status==='flasche'&&!(w.typ==='welt'?l.welt:l.bund)&&(l.sekt||STUFEN[l.stufe].rang>=3)&&l.flMonate>=lager(l).min;
 }
 // Ausschreibung: Feld der anderen Weingüter. ein ist der eingereichte Wein, zufall die Tagesform der Jury (bleibt beim Tauschen gleich).
 function neuerWettbewerb(typ){
+  // Seit 8.5.2: Bei der Weltweinschau treten neun Weingüter aus aller Welt an, die Gegner aus Deutschland nicht.
+  if(typ==='welt'){const d=DIFF[S.schwer].feld, namen=misch(WELT_GUETER); S.wett={typ,feld:namen.slice(0,9).map(name=>({name,p:rint(WELT_FELD[0],WELT_FELD[1])+d})),ein:null,zufall:rint(-4,4)}; return}
   const d=DIFF[S.schwer].feld, bund=typ==='bund', F=[], namen=misch(GUETER);
   for(let i=0;i<(bund?8:9);i++) F.push({name:namen[i],p:(bund?rint(20,44):i<2?rint(20,34):rint(8,26))+d});
   for(const g of S.gegner) if(bund||g.region===S.region){const t=GEGNER_TYP[g.typ];F.push({name:g.name,ki:g.id,p:rint(t.ws[0],t.ws[1])+Math.round(g.rang*(bund?1.1:.85))+(bund?4:0)+d+(REGIONEN[g.region].wettPlus||0)})}
   S.wett={typ,feld:F,ein:null,zufall:rint(-4,4)};
 }
 // Punkte eines Weins im laufenden Wettbewerb. Stehen beim Einreichen fest.
-function wettPunkte(l){const w=S.wett;return l.qp+(w.typ==='bund'?reifeBonus(l):0)+w.zufall+(R().wettPlus||0)}
+function wettPunkte(l){const w=S.wett;return l.qp+(w.typ!=='land'?reifeBonus(l):0)+w.zufall+(R().wettPlus||0)}
 // Wertung zu Beginn des Monatswechsels nach der Ausschreibung, das Ergebnis kommt als Thema in die Zeitung.
 // Medaille und Qualitätspunkte bekommt der Wein nur, wenn er noch im Keller ist. Ansehen und Preisgeld gibt es immer.
 function wettAuswerten(){
   const w=S.wett, P=PREISE[w.typ], F=w.feld.map(x=>({...x})), e=w.ein, l=e&&lot(e.id), N=[], name=WETTNAME[w.typ];
-  const wo=w.typ==='land'?'bei der Landesprämierung '+WO[S.region]:'beim Bundeswettbewerb';
+  const welt=w.typ==='welt', wo=w.typ==='land'?'bei der Landesprämierung '+WO[S.region]:welt?'bei der Weltweinschau':'beim Bundeswettbewerb';
   if(e) F.push({name:S.name,du:1,p:e.p});
+  if(welt&&l) l.welt=true;
   F.sort((a,b)=>b.p-a.p||(b.du||0)-(a.du||0));
   const ich=F.findIndex(x=>x.du);
   let titel='', text='';
@@ -1505,9 +1558,10 @@ function wettAuswerten(){
       if(l){l.qp+=pr.qp; (l.med=l.med||[]).push(`${pr.m} ${name} ${S.jahr}`); if(w.typ==='bund') l.bund=true}
       ehre(pr.m,`${pr.t} ${wo}: ${e.name}`,0,was);
       if(pr.geld) kassiere(pr.geld);
+      if(welt&&i===0){weltSieg(e,was,F); return}
       titel=`${pr.t} für ${S.name}!`;
       text=`${e.name} holt ${pr.t} ${wo}. Das bringt ${was}.${l?'':' Der Wein ist schon verkauft, die Ehre bleibt trotzdem.'}`;
-      if(i===0&&S.gegner.length){const g=S.gegner[rint(0,S.gegner.length-1)]; if(GEGNER_SPRUCH[g.typ]) text+=' '+GEGNER_SPRUCH[g.typ].erfolg(g.name)}
+      if(i===0&&!welt&&S.gegner.length){const g=S.gegner[rint(0,S.gegner.length-1)]; if(GEGNER_SPRUCH[g.typ]) text+=' '+GEGNER_SPRUCH[g.typ].erfolg(g.name)}
     }else if(x.ki!=null){
       const g=S.gegner[x.ki]; g.ansehen+=pr.ans*DIFF[S.schwer].ki; g.geld+=pr.geld;
       N.push(`${g.name} holt ${pr.t}.`);
@@ -1518,7 +1572,26 @@ function wettAuswerten(){
   else if(N.length) text+=' '+N.join(' ');
   // Rangliste in der Zeitung: das Treppchen, dazu du und die Gegner, wenn sie dahinter landen.
   const L=F.filter((x,i)=>i<3||x.du||x.ki!=null).map(x=>({platz:x.platz,name:x.name,p:x.p,m:x.m||'',du:x.du||0}));
+  // Seit 8.5.2: Jede Weltweinschau steht im Amt (S.amt.welt) für die Chronik: Jahr, Platz (0 = nicht angetreten), Wein und Punkte.
+  if(welt){
+    (S.amt.welt=S.amt.welt||[]).push({j:S.jahr,platz:ich+1,wein:e?e.name:'',p:e?e.p:0});
+    if(ich===0) return;
+    if(ich<0){titel=`Weltweinschau ${S.jahr}: ${F[0].name} gewinnt im Dorf`; text=`${F[0].name} holt Platz 1 bei der Weltweinschau auf dem Dorfplatz. ${S.name} hat diesmal keinen Wein eingereicht. Nächsten August ist die Schau wieder da.`}
+    else if(ich>2) text=`${e.name} landet bei der Weltweinschau auf Platz ${ich+1} von ${F.length}. Gewonnen hat ${F[0].name}. Nächsten August kommt die Welt wieder ins Dorf, dann mit einem anderen Wein von dir.`;
+    else text+=` Gewonnen hat ${F[0].name}. Für den Titel braucht es Platz 1, nächsten August ist die nächste Gelegenheit.`;
+    return schlag(ich<0?60:84,titel,text,'weltweinschau',{gold:ich>0&&ich<3?1:0,liste:L,wett:{typ:w.typ,platz:ich},du:1});
+  }
   schlag(ich<0?42:ich<3?78:72,titel,text,'praemierung',{archiv:1,gold:ich>=0&&ich<3?1:0,liste:L,wett:{typ:w.typ,platz:ich},du:ich>=0&&ich<3?1:0});
+}
+// Sieg bei der Weltweinschau: Ehrenpräsident, danach gibt es keine Schau mehr. Bild 4 und 5 der Geschichte stehen als Artikel mit Foto darunter.
+const ehrP=()=>anr('Ehrenpräsident','Ehrenpräsidentin');
+function weltSieg(e,was,F){
+  const A=S.amt; A.ehren={j:S.jahr,m:S.monat,wein:e.name};
+  ehre('🎗️',`${ehrP()} des Weinbauverbands`,0,`Sieg bei der Weltweinschau ${S.jahr} im eigenen Dorf mit ${e.name}.`);
+  const L=F.slice(0,3).map(x=>({platz:x.platz,name:x.name,p:x.p,m:x.m||'',du:x.du||0}));
+  schlag(100,`Weltweinschau: ${S.name} gewinnt im eigenen Dorf!`,`${e.name} holt Platz 1 bei der Weltweinschau, vor ${F.length-1} Weingütern aus aller Welt. Das bringt ${was}. Über dem Dorfplatz steigt das Feuerwerk auf, und der Weinbauverband ernennt dich${S.ich?', '+S.ich+',':''} ${anr('zum Ehrenpräsidenten','zur Ehrenpräsidentin')}. Den Titel nimmt dir keine Wahl mehr. Du kannst weiterspielen oder das Weingut im Rathaus übergeben, wann du willst.`,'weltweinschau-sieg',{gold:1,sonder:1,du:1,liste:L,wett:{typ:'welt',platz:0}});
+  schlag(99,'Der Ehrenplatz',`Zwischen den besten Weinen der Welt steht eine leere Flasche mit vergilbtem Etikett. Ein Prüfer aus Übersee fragt: „Was war da drin?“ „Unser erster. Besonders gut war er nicht.“ „Und warum steht er hier?“ „Weil ohne ihn keiner von den anderen da wäre.“`,'ehrenplatz',{foto:1,du:1});
+  schlag(98,'Eine zweite Flasche im Regal','Am Abend, als alle weg sind, kommt eine Flasche vom Siegerwein ins Regal im Gewölbekeller, direkt neben die leere. Auf dem Etikett steht: „Für den Tag, an dem einer von uns es besser macht.“','flasche-regal-zwei',{foto:1,du:1});
 }
 
 /* ================= Auktionen ================= */
@@ -1551,6 +1624,7 @@ function aukOhneDich(){
 function aukNaechst(){const m=AUK_MONATE.find(m=>m>S.monat); return m==null?`${MON[(AUK_MONATE[0]+1)%12]} ${S.jahr+1}`:`${MON[(m+1)%12]} ${S.jahr+(m===11?1:0)}`}
 function wettNaechst(typ){
   if(typ==='land') return `Februar ${S.monat<1?S.jahr:S.jahr+1}`;
+  if(typ==='welt') return `August ${S.monat<WELT_MONAT?S.jahr:S.jahr+1}`;
   let j=S.jahr+(S.monat>=5?1:0); while(j%3) j++; return `Juni ${j}`;
 }
 // Phase 0: angekündigt, nächsten Monat wird geboten. Text für "Das steht an", leer wenn nichts ansteht.
@@ -1718,7 +1792,7 @@ function fehlText(){
 // Löhne: Das Arbeitsamt bietet jeden Monat einen neuen Monatslohn zwischen LOHN_MIN und LOHN_MAX, getrennt für Erntehelfer und Lagerarbeiter.
 // Wer eingestellt ist, behält seinen Lohn. S.loehne merkt ihn je Kopf, aufsteigend sortiert. Entlassen wird immer der teuerste.
 const LOHN_ARTEN=['helfer','lagerarb'];
-function neuesLohnAngebot(){S.angebot={};for(const k of LOHN_ARTEN) S.angebot[k]=Math.round(rint(LOHN_MIN/10,LOHN_MAX/10)*(spFertig(3)?SP_LOHN:1))*10}
+function neuesLohnAngebot(){S.angebot={};for(const k of LOHN_ARTEN) S.angebot[k]=Math.round(rint(LOHN_MIN/10,LOHN_MAX/10)*(spLohn(3)?SP_LOHN:1))*10}
 function lohnSumme(k){return S.loehne[k].reduce((a,b)=>a+b,0)}
 function lohnListe(k){const z=new Map();for(const n of S.loehne[k]) z.set(n,(z.get(n)||0)+1);return [...z].map(([n,c])=>`${c} × ${eur(n)}`).join(', ')}
 const lohnLage=n=>n<=250?'günstig':n>=450?'teuer':'normal';
@@ -1819,7 +1893,7 @@ function wachse(m){
       f.ueber=clamp([0,5,20,45,70][m-7]+(w==='sonnig'?5:0),0,100);
       if(m===9&&w==='regen') f.menge=Math.round(f.menge*.9);
       if(m===10){
-        if(S.kaelte===S.jahr){if(spFertig(2)){f.menge=Math.round(f.menge*SP_FROST); L.push(`Kälteeinbruch! Die Frostfeuer der Feuerwehr retten ein Viertel vom ${so.name}, der Rest ist erfroren.`)} else{f.menge=0; L.push(`Kälteeinbruch! Die hängenden ${so.name}-Trauben sind erfroren.`)}}
+        if(S.kaelte===S.jahr){if(spLohn(2)){f.menge=Math.round(f.menge*SP_FROST); L.push(`Kälteeinbruch! Die Frostfeuer der Feuerwehr retten ein Viertel vom ${so.name}, der Rest ist erfroren.`)} else{f.menge=0; L.push(`Kälteeinbruch! Die hängenden ${so.name}-Trauben sind erfroren.`)}}
         else f.menge=Math.round(f.menge*(w==='regen'?.7:.85));
       }
       if(m===11){
@@ -2076,8 +2150,24 @@ const GEN_TEXT={
   offen:{t:'Der Schlüssel wechselt die Hand',p:()=>['Wieder liegt der alte Kellerschlüssel auf dem Küchentisch. Die Flasche vom ersten Jahrgang ist längst getrunken, ihr Etikett hängt gerahmt im Gutsbüro.','„Präsident waren wir schon“, sagst du zu deinem Kind. „Jetzt zeig, dass es kein Glück war.“']}
 };
 // Zum Januar: Ankündigung GEN_VORAUS Jahre vorher, Erinnerung ein Jahr vorher, dann die Übergabe.
+// Seit 8.5.2 (Spielende, Paket 2): Mit Amt (Präsident oder Altpräsident) ist die nächste Übergabe die letzte, danach endet das Spiel mit der Chronik (spielEnde).
+// Mindestzeit: Steht der Generationswechsel vor dem Ende der AMT_MIN-ten Amtszeit an, wartet die Familie bis zum ersten Januar nach dieser Wahl.
+// endeMonat() ist dieser letzte Januar als Monats-Nummer. Ankündigung und Hinweis ziehen mit. Erbschaftssteuer gibt es beim Ende nicht, danach kommt nichts mehr.
+function endeMonat(){
+  const gen=GEN_JAHRE*genNr()*12, w=S.amt.seit+AMT_MIN*WAHL_JAHRE*12;
+  return Math.max(gen,(Math.floor(w/12)+1)*12);
+}
+const endeJahr=()=>START_JAHR+endeMonat()/12;
+function generationAmt(Z){
+  const e=endeMonat(), nr=monatNr(), gen=GEN_JAHRE*genNr()*12, kind=' Im Rathaus kannst du auch früher übergeben.';
+  if(nr>=e) return spielEnde('gen');
+  if(nr===e-GEN_VORAUS*12) schlag(68,`In ${GEN_VORAUS} Jahren übergibst du ${S.name}`,`Die Jahre am Hang hinterlassen Spuren. Im Januar ${endeJahr()} übergibst du das Weingut an dein Kind. Für dich ist es die letzte Übergabe: Wer an der Spitze des Verbands stand, schreibt danach nur noch die Chronik. Erbschaftssteuer fällt dabei nicht an. Bis dahin bleibt Zeit für alles, was du noch vorhast.${weltOffen()?' Die Weltweinschau im August zum Beispiel.':''}`,GEN_BILD.uebergabe,{du:1});
+  else if(nr===e-12) Z.push(`👪 Nächsten Januar übergibst du ${S.name} an dein Kind. Damit endet die Partie mit der Chronik.${weltOffen()?' Im August ist noch einmal Weltweinschau.':''}`);
+  else if(nr===gen&&e>gen) schlag(64,'Die Familie wartet',`Eigentlich wäre jetzt die nächste Generation dran. Aber ${anr('einen Präsidenten','eine Präsidentin')} holt man nicht mitten in der Arbeit vom Hof: Die Familie wartet mit der Übergabe, bis deine ${AMT_MIN}. Amtszeit um ist. Übergeben wird im Januar ${endeJahr()}.${kind}`,GEN_BILD.uebergabe,{du:1});
+}
 function generationMonat(Z){
   if(S.monat!==0) return;
+  if(S.amt) return generationAmt(Z);
   const j=S.jahr-START_JAHR, n=genNr();
   if(j===GEN_JAHRE*n-GEN_VORAUS) schlag(68,`In ${GEN_VORAUS} Jahren übernimmt die nächste Generation`,`Die Jahre am Hang hinterlassen Spuren. Im Januar ${genJahr(n)} übergibst du ${S.name} an dein Kind. Bleiben wird alles, was du aufgebaut hast: Fläche, Reben, Keller, Wein, Maschinen, Leute, Manager und dein Rang. Vom Ansehen nimmt die nächste Generation ${pz(erbAnsehen())} mit, und das Finanzamt verlangt ${pz(ERB_STEUER)} vom Vermögen als Erbschaftssteuer, nach heutigem Stand rund ${eur(erbSchaetzung())}. Reicht das Geld nicht, leiht die Bank den Rest, auch über den Kreditrahmen hinaus.`,GEN_BILD.uebergabe,{du:1});
   else if(j===GEN_JAHRE*n-1) Z.push(`👪 Nächsten Januar übernimmt die nächste Generation. Erbschaftssteuer nach heutigem Stand rund ${eur(erbSchaetzung())}, vom Ansehen bleiben ${pz(erbAnsehen())}.`);
@@ -2095,6 +2185,57 @@ function uebergabe(){
   S.erbe={ratte:rat,k:S.flascheAuf?'offen':n===1?'g2':n===2?'g3':'weiter',offen:1,name:'',art:Math.random()<.5?'t':'s',vt:wahl(ERB_NAMEN.t),vs:wahl(ERB_NAMEN.s),steuer,kredit:kr,verm:v,ansVor,ans:S.ansehen};
   schlag(97,`${S.name} in neuen Händen`,`Zum Jahreswechsel geht das Weingut ${WO[S.region]} an die ${n+1}. Generation. Erbschaftssteuer: ${eur(steuer)}${kr?`, davon ${eur(kr)} als Kredit bei der Bank`:''}. Vom Ansehen bleiben ${pz(ea)}, jetzt ${S.ansehen}.${ea>ERB_ANSEHEN?` ${anr('Der Ehrenbürger','Die Ehrenbürgerin')} geht in den Ruhestand, das ganze Dorf zieht den Hut.`:''} Rang, Fläche, Keller, Wein und alle Leute bleiben.`,GEN_BILD.uebergabe,{gold:1,erbe:1,du:1});
   if(window.BOT) erbeBenennen(S.erbe.art==='t'?S.erbe.vt:S.erbe.vs);
+}
+// Das Ende der Partie. wie: 'gen' beim letzten Generationswechsel (im Monatswechsel, als Sonderausgabe), 'frei' bei der freiwilligen Übergabe im Rathaus.
+// art: 'best' nach dem Sieg bei der Weltweinschau (Ehrenpräsident), sonst 'gut'. Abgewählt ist kein drittes Ende, nur ein anderer Satz.
+// Danach ist der Spielstand abgeschlossen (S.ende): Er zeigt nur noch die Chronik (Reiter ende), weiterspielen geht nicht mehr.
+const ENDE_BILD={gut:'flasche-kueche-leer',best:'flasche-kueche-zwei'};
+function endeText(){
+  const best=S.ende.art==='best', fl=S.flascheAuf;
+  const P=best?[`Auf dem Küchentisch liegen der alte Kellerschlüssel${fl?', die leere Flasche vom ersten Jahrgang':''} und die volle vom Siegerwein der Weltweinschau.`,`„Den Schlüssel kannst du benutzen“, sagst du zu deinem Kind. „${fl?'Die leere bleibt, wo sie ist. Und die volle':'Und die Flasche'} ...“`,'„Ich weiß. Noch nicht.“']
+    :fl?['Auf dem Küchentisch liegen der alte Kellerschlüssel und die leere Flasche vom ersten Jahrgang.','„Die ist ja leer“, sagt dein Kind.','„Die war nie zum Trinken da.“']
+    :['Auf dem Küchentisch liegt der alte Kellerschlüssel.','„Den kannst du jetzt benutzen“, sagst du zu deinem Kind. „Den Rest findest du im Keller.“'];
+  if(S.ende.alt&&!best) P.push('Auf dem Stuhl im Festsaal sitzt inzwischen jemand anderes. Aber wer ihn erreicht hat, steht in jeder Chronik.');
+  return P;
+}
+function spielEnde(wie){
+  const n=genNr(), alt=S.erbe||{}, best=amtEhre(), ab=amtAlt();
+  (S.chronik=S.chronik||[]).push({n,name:S.ich||alt.name||'',art:S.anrede?(S.anrede==='w'?'t':'s'):alt.art||'',von:genJahr(n-1),bis:S.jahr,rang:S.rang,ans:S.ansehen,verm:vermoegen(),steuer:0,kredit:0,ende:1,...(ab?{alt:1}:{}),...(best?{ehr:1}:{})});
+  S.ende={art:best?'best':'gut',wie,j:S.jahr,m:S.monat,stand:endStand(),...(ab?{alt:1}:{})};
+  S.ende.platz=bestenEintrag();
+  S.wett=null; S.auktion=null; S.feier=null;
+  if(wie==='gen') schlag(100,best?`${S.name}: Die Übergabe am Küchentisch`:`${S.name} geht in neue Hände`,endeText().join(' ')+` Damit endet die Geschichte von ${S.ich||S.name} nach ${jahreTxt(S.ende.stand.jahre)} ${WO[S.region]}. Die Chronik steht auf der nächsten Seite.`,ENDE_BILD[S.ende.art],{gold:1,sonder:1,du:1,schluss:1});
+}
+// Reiter ende: Bild der Übergabe, die Geschichte, die Chronik als Abspann, die Bestenliste und der Knopf für ein neues Spiel.
+// Die Chronik: Generationen, der Weg durch die Ränge, die Wahlen, die Weltweinschauen, Spenden mit Stiftung, Medaillen und das Weingut in seinen Stufen.
+function vEnde(){
+  const E=S.ende, best=E.art==='best', A=S.amt||{}, st=E.stand||{}, C=S.chronik||[], L=bestenZeilen();
+  const kv=(a,x)=>`<div class="kv"><span>${a}</span><span>${x}</span></div>`, karte=(t,h)=>h?`<div class="card"><h3>${t}</h3>${h}</div>`:'';
+  const wer=(nr,name,art)=>nr===1?(name?`${esc(name)}, ${art==='t'?'die Gründerin':'der Gründer'}`:'die Gründung'):name?`${esc(name)}, ${art==='s'?'der Sohn':'die Tochter'}`:'die nächste Generation';
+  const titel=c=>c.ehr?(c.art==='t'?'Ehrenpräsidentin':'Ehrenpräsident'):c.alt?(c.art==='t'?'Altpräsidentin':'Altpräsident'):c.art==='t'&&RAENGE[c.rang].kw||RAENGE[c.rang].kurz;
+  const gen=C.map(c=>`<div class="rl"><span>${c.n}.</span><div><b>${c.von} bis ${c.bis}: ${wer(c.n,c.name,c.art)}</b><span class="mut">übergeben als ${titel(c)} mit ${c.ans} Ansehen</span></div></div>`).join('');
+  // Ränge: Monat und Jahr aus den Ehrungen (je Aufstieg eine), die Spielzeit aus S.zeitRang.
+  const R_=(S.ehrungen||[]).filter(e=>e.a&&e.r!=null).sort((a,b)=>a.r-b.r);
+  const raenge=R_.map(e=>{const z=(S.zeitRang||[]).find(x=>x.r===e.r); return kv(esc(e.w&&RAENGE[e.r].w||RAENGE[e.r].name),`${MON[e.m]} ${e.j}${z&&!S.zeitAlt?`<small class="bzs">${zeitTxt(z.s)}</small>`:''}`)}).join('');
+  const W=A.wahlen||[], wahlen=W.length?W.map(w=>kv(`${MON[w.m]} ${w.j}${w.geg?' gegen '+esc(w.geg):''}`,`${w.ok?(w.im?'gewonnen':'zurück im Amt'):(w.im?'abgewählt':'verloren')} · ${w.s} zu ${w.marke}`)).join('')
+    :`<div class="mut">Zu einer Wahl ist es nicht mehr gekommen.</div>`;
+  const WS=A.welt||[], welt=A.brief?(WS.length?WS.map(w=>kv(`${w.j}${w.wein?': '+esc(w.wein):''}`,w.platz===1?'🌍 Sieg':w.platz?`Platz ${w.platz}`:'nicht angetreten')).join(''):`<div class="mut">Der Brief kam ${monJahr(A.brief).replace(/^(\S+) /,'im $1 ')}, zu einer Schau ist es nicht mehr gekommen.</div>`)
+    :`<div class="mut">Die Weltweinschau kam nie ins Dorf. Dafür hätte es alle ${SPENDEN.length-1} Spenden und eine gewonnene Wahl gebraucht.</div>`;
+  const SP=(S.spenden||[]).slice().sort((a,b)=>a.s-b.s), spenden=SP.length?SP.map(x=>kv(esc(spKurz(x.s,x))+(x.st?' (Stiftung)':''),`${MON[x.m]} ${x.j}`)).join('')+(SP.length<SPENDEN.length-1?`<div class="mut">${SP.length} von ${SPENDEN.length-1} Stufen.</div>`:''):'';
+  const wein=(S.ehrungen||[]).filter(e=>!e.a&&MED_NAME[e.i]), med=wein.length?`<div class="gold" style="font-size:17px">${ehrSumme(wein)}</div>`:'';
+  const stufen=Array.from({length:Math.min(10,S.rang+1)},(_,k)=>`<div style="background-image:url(bilder/${wgBild(k+1,'sommer')}.jpg)"><span>${esc(rangK(k))}</span></div>`).join('');
+  const amtZ=A.zeit?`${A.zeit} ${A.zeit===1?'Amtszeit':'Amtszeiten'}`:'';
+  return `<div id="ende"><div class="ehero" style="background-image:url(bilder/${ENDE_BILD[E.art]}.jpg)"><div><small>${best?'Das beste Ende':'Ein gutes Ende'}</small><b>${best?'Die Übergabe am Küchentisch':`${esc(S.name)} geht in neue Hände`}</b></div></div>
+  <div class="ein">
+    <div class="card etext">${endeText().map(x=>`<p>${esc(x)}</p>`).join('')}<p class="mut">${MON[E.m]} ${E.j}: ${esc(S.ich||S.name)} übergibt als ${duN()}${E.wie==='frei'?', aus freien Stücken':''}. ${best?`Mehr geht nicht: ${anr('Präsident','Präsidentin')}, Weltweinschau, ${ehrP()}.`:'Das beste Ende gibt es mit einem Sieg bei der Weltweinschau im eigenen Dorf.'}</p></div>
+    <div class="card"><h3>📜 Chronik von ${esc(S.name)}</h3>${kv('Gespielt',`${st.jahre} Jahre, ${genNr()} ${genNr()===1?'Generation':'Generationen'}`)}${S.zeit!=null?kv('Spielzeit',zeitTxt(S.zeit)+(S.zeitAlt?' (seit 8.2.1)':'')):''}${kv('Vermögen',eur(st.verm||0))}${kv('Ansehen',st.ans)}${amtZ?kv('Im Amt',amtZ):''}${kv('Das Ende',ENDE_NAME[E.art])}${E.platz?kv('Bestenliste',`Platz ${E.platz}`):''}</div>
+    ${karte('👪 Die Generationen',gen)}${karte('🪜 Der Weg nach oben',raenge)}
+    ${stufen?`<div class="card"><h3>🏡 Das Weingut wächst</h3><div class="ewg">${stufen}</div></div>`:''}
+    ${karte('🗳️ Die Wahlen im Verband',wahlen)}${karte('🌍 Die Weltweinschau',welt)}${karte('🤝 Für das Dorf',spenden)}${karte('🏅 Medaillen',med)}
+    ${L.length?`<div class="card"><h3>🏆 Bestenliste</h3>${L.map(bestenZeile).join('')}</div>`:''}
+    <div class="mut" style="margin:0 0 10px">Dieser Spielstand ist abgeschlossen. Er bleibt mit seiner Chronik auf seinem Platz liegen, bis du ihn löschst.</div>
+    <div class="btns"><button data-a="titelNeu">Neues Spiel</button><button class="sec" data-a="menue">Spielstände</button></div>
+  </div></div>`;
 }
 function erbeOffen(){return !!(S&&S.erbe&&S.erbe.offen)}
 function erbeVorschlag(){const e=S.erbe; return e.art==='s'?e.vs:e.vt}
@@ -2124,9 +2265,9 @@ function zeigeErz(){
 // Generationen-Chronik im Büro.
 function chronikHtml(){
   const C=S.chronik||[], n=genNr(), e=S.erbe, wer=(nr,name,art)=>nr===1?(name?`${esc(name)}, ${art==='t'?'die Gründerin':'der Gründer'}`:'die Gründung'):name?`${esc(name)}, ${art==='s'?'der Sohn':'die Tochter'}`:'die nächste Generation';
-  return fenster('chronik','Generationen-Chronik',`${C.map(c=>`<div class="rl"><span>${c.n}.</span><div><b>${c.von} bis ${c.bis}: ${wer(c.n,c.name,c.art)}</b><span class="mut">übergeben als ${c.alt?(c.art==='t'?'Altpräsidentin':'Altpräsident'):c.art==='t'&&RAENGE[c.rang].kw||RAENGE[c.rang].kurz} mit ${c.ans} Ansehen, Erbschaftssteuer ${eur(c.steuer)}</span></div></div>`).join('')}
-    <div class="rl du"><span>${n}.</span><div><b>seit ${genJahr(n-1)}: ${wer(n,S.ich||(e&&e.name),S.anrede?(S.anrede==='w'?'t':'s'):e&&e.art)}</b><span class="mut">${S.flascheAuf?'Die Flasche vom ersten Jahrgang ist getrunken. ':S.gesch&&S.gesch.flasche?'Die Flasche vom ersten Jahrgang liegt noch im Fach. ':''}Nächste Übergabe im Januar ${genJahr(n)}</span></div></div>`,{
-    buch:'generationen',i:`Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation. Vom Ansehen bleiben ${pz(ERB_ANSEHEN)}, als Ehrenbürger ${pz(SP_ERBE)}, ${pz(ERB_STEUER)} vom Vermögen gehen als Erbschaftssteuer weg, alles andere bleibt.`});
+  return fenster('chronik','Generationen-Chronik',`${C.map(c=>`<div class="rl"><span>${c.n}.</span><div><b>${c.von} bis ${c.bis}: ${wer(c.n,c.name,c.art)}</b><span class="mut">übergeben als ${c.ehr?(c.art==='t'?'Ehrenpräsidentin':'Ehrenpräsident'):c.alt?(c.art==='t'?'Altpräsidentin':'Altpräsident'):c.art==='t'&&RAENGE[c.rang].kw||RAENGE[c.rang].kurz} mit ${c.ans} Ansehen${c.ende?'':`, Erbschaftssteuer ${eur(c.steuer)}`}</span></div></div>`).join('')}
+    ${S.ende?'':`<div class="rl du"><span>${n}.</span><div><b>seit ${genJahr(n-1)}: ${wer(n,S.ich||(e&&e.name),S.anrede?(S.anrede==='w'?'t':'s'):e&&e.art)}</b><span class="mut">${S.flascheAuf?'Die Flasche vom ersten Jahrgang ist getrunken. ':S.gesch&&S.gesch.flasche?'Die Flasche vom ersten Jahrgang liegt noch im Fach. ':''}${S.amt?`Letzte Übergabe im Januar ${endeJahr()}`:`Nächste Übergabe im Januar ${genJahr(n)}`}</span></div></div>`}`,{
+    buch:'generationen',i:`Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation. Vom Ansehen bleiben ${pz(ERB_ANSEHEN)}, als Ehrenbürger ${pz(SP_ERBE)}, ${pz(ERB_STEUER)} vom Vermögen gehen als Erbschaftssteuer weg, alles andere bleibt. Wer ${anr('Präsident','Präsidentin')} geworden ist, übergibt nur noch einmal: Danach endet die Partie mit der Chronik, ohne Erbschaftssteuer.`});
 }
 function geschichteMonat(){
   // Schritt G 7.0: Beim ersten abgefüllten Wein (ohne Sekt) kommt die Flasche ins Fach. S.gesch.flasche merkt das Jahr.
@@ -2228,6 +2369,7 @@ function zeitung(Z,W,ehr,k){
   return {titel:`${MON[S.monat]} ${S.jahr}`,nr,rub:kopf.sonder||kopf.ende?null:rubrikNeu(nr),kopf,art:T,zeilen:Z,wetter:W,fuss:FUSS.slice(),ehr,k};
 }
 function monatWeiter(){
+  if(S.ende) return;
   const Z=[], weg=verfallListe(); let uz=0, steuer=0;
   TOP=[]; FUSS=[];
   // Hoffest und Manager-Berichte aus dem alten Monat kommen in diese Ausgabe. Beim Hoffest zählt das Wetter des Festmonats.
@@ -2294,7 +2436,7 @@ function monatWeiter(){
   {const n=mgrHandlese(), t=`${n===1?'einen Erntehelfer':n+' Erntehelfer'} für die Handlese eingestellt`;
     if(n){Z.push(`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name} hat ${t}.`); const mw=S.manager.weingut; mw.zuletzt=t; mw.zm=S.jahr*12+S.monat; mgrLogbuch('weingut',t)}}
   // Wetter als Thema für die Zeitung. Die Einzelheiten je Rebsorte stehen unter "Aus dem Weinberg".
-  if(S.monat===10&&S.kaelte===S.jahr) schlag(70,'Kälteeinbruch im November',`Über Nacht ist es bitterkalt geworden. Wer noch Trauben hängen hatte, hat sie verloren.${W.some(z=>z.startsWith('Kälteeinbruch'))?' '+(spFertig(2)?'Bei dir haben die Frostfeuer der Feuerwehr ein Viertel gerettet.':'Bei dir ist erfroren, was noch am Stock hing.'):' Deine Trauben hat es nicht erwischt.'}`,'frost',{du:W.some(z=>z.startsWith('Kälteeinbruch'))?1:0});
+  if(S.monat===10&&S.kaelte===S.jahr) schlag(70,'Kälteeinbruch im November',`Über Nacht ist es bitterkalt geworden. Wer noch Trauben hängen hatte, hat sie verloren.${W.some(z=>z.startsWith('Kälteeinbruch'))?' '+(spLohn(2)?'Bei dir haben die Frostfeuer der Feuerwehr ein Viertel gerettet.':'Bei dir ist erfroren, was noch am Stock hing.'):' Deine Trauben hat es nicht erwischt.'}`,'frost',{du:W.some(z=>z.startsWith('Kälteeinbruch'))?1:0});
   if(S.monat===9&&S.kaelteWarn===S.jahr) schlag(60,'Wetterdienst warnt vor Kälteeinbruch','Für November sagt der Wetterdienst bitterkalte Nächte voraus. Wer noch Trauben hängen hat, sollte jetzt lesen.','frost',{du:R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)?1:0});
   if(eisEigen()) schlag(66,...eisT('eigen'),'eiswein',{du:1});
   if((S.monat===3||S.monat===4)&&S.wetter==='frost'&&rebenGesamt()) schlag(62,'Spätfrost zur Blüte','Eine Frostnacht hat die Blüte geschädigt. Die Ernte fällt dieses Jahr kleiner aus.','spaetfrost',{du:1});
@@ -2303,6 +2445,7 @@ function monatWeiter(){
   if(S.monat===11){const t=steuerSchau(); if(t.steuer>0) schlag(35,'Steuer-Tipp zum Jahresende',`Bisher sind es rund ${eur(t.gew)} Gewinn in diesem Jahr. Darauf fallen im Januar rund ${eur(t.steuer)} Steuer an. Was du im Dezember noch kaufst, zum Beispiel Fassraum, Flaschen, Dünger oder eine Maschinenwartung, senkt den Gewinn.${spOffen()?` Eine Spende im Rathaus senkt ihn auch, um höchstens ${pz(SP_DECKEL)}.`:''} Kredit tilgen senkt ihn nicht.`,eisEigen()?'':'amt',{archiv:1})}
   // Seit 8.2: Artikel zu den Spenden, die im letzten Monat voll geworden sind.
   if(S.spBote&&S.spBote.length){for(const s of S.spBote) spBote(s); S.spBote=[]}
+  if(S.stBote&&S.stBote.length){stBote(S.stBote); S.stBote=[]}
   if(S.monat===7) schlag(30,'Die Lese beginnt','Ab jetzt kannst du lesen. Wer länger hängen lässt, bekommt mehr Öchsle, riskiert aber Regen, Fäulnis und Frost.','lese',{archiv:1});
   // Schritt G 7.0: Der Kredit für die Erbschaftssteuer (erbRest) zählt nicht gegen den Kreditrahmen.
   if(schulden()-erbRest()>rahmen()){
@@ -2310,7 +2453,8 @@ function monatWeiter(){
     if(S.mahnung>=3){S.pleite=true; schlag(90,`Pfändung bei ${S.name}`,'Der Gerichtsvollzieher steht vor der Tür. Dein Weingut ist pleite.','pleite',{du:1})}
     else{ruhm(-3); schlag(58,`${S.mahnung}. Mahnung der Bank`,`Deine Schulden von ${eur(schulden()-erbRest())} liegen über dem Kreditrahmen von ${eur(rahmen())}. Das kostet 3 Ansehen. Nach der dritten Mahnung wird gepfändet.`,'bank',{du:1})}
   }else{S.mahnung=0; if(S.geld<0) Z.push('Dein Konto ist im Minus. Die Bank nimmt dafür 1 % Zinsen im Monat.')}
-  if(!S.pleite){generationMonat(Z); geschichteMonat(); etappe3Monat(Z)}
+  // Seit 8.5.2: Endet die Partie in diesem Januar (spielEnde in generationMonat), passiert danach nichts mehr.
+  if(!S.pleite){generationMonat(Z); if(!S.ende){geschichteMonat(); etappe3Monat(Z)}}
   // Die Zeitung zeigt den Bericht: kopf ist die Schlagzeile, art die Artikel, zeilen "Kurz gemeldet", wetter die Ereignisse im Weinberg, ehr die neuen Ehrungen.
   // k ist das, was zum Monatswechsel abgebucht wurde (steht bei der Bank).
   const ehr=(S.ehrungen||[]).slice(S.ehrZeig||0); S.ehrZeig=(S.ehrungen||[]).length;
@@ -2328,14 +2472,17 @@ function besten(){try{const L=JSON.parse(localStorage.getItem(BESTEN_KEY)||'[]')
 // Version 7.7: Je Partie ein Eintrag (S.bestenD), der bei jedem Aufstieg erneuert wird, höchstens 10. Sortiert nach Rang, dann Zeit vom Spielstart bis zum Aufstieg
 // (schneller vorn), dann Spielstufe (schwerer vorn), bei völligem Gleichstand der ältere Eintrag vorn. Kein Ansehen mehr. Alte Einträge ohne Monate zählen mit ihren Jahren.
 // Gibt deinen Platz zurück, 0 wenn du nicht unter den zehn bist.
-const STUFE_WERT={einfach:0,mittel:1,schwer:2};
+const STUFE_WERT={einfach:0,mittel:1,schwer:2}, ENDE_WERT={gut:1,best:2}, ENDE_NAME={gut:'🏁 gutes Ende',best:'🌍 bestes Ende'};
 const bestenMon=e=>e.mon!=null?e.mon:(e.jahre||0)*12;
 function bestenEintrag(){
   if(window.BOT) return 0;
-  const L=besten().filter(e=>e.d!==S.bestenD), d=S.bestenD||Date.now(); S.bestenD=d;
+  const alle=besten(), alt=alle.find(e=>e.d===S.bestenD), L=alle.filter(e=>e.d!==S.bestenD), d=S.bestenD||Date.now(); S.bestenD=d;
   // Seit 8.2.1 mit der Spielzeit bis zum Rang (zs, Sekunden), nur wenn die Partie von Anfang an gezählt wurde.
-  L.push({name:S.name,ich:S.ich||'',w:frau()?1:0,rang:S.rang,mon:(S.jahr-START_JAHR)*12+S.monat,region:S.region,schwer:S.schwer,gen:genNr(),d,...(S.zeit!=null&&!S.zeitAlt?{zs:Math.round(S.zeit)}:{})});
-  L.sort((a,b)=>b.rang-a.rang||bestenMon(a)-bestenMon(b)||(STUFE_WERT[b.schwer]||0)-(STUFE_WERT[a.schwer]||0)||a.d-b.d);
+  // Seit 8.5.2: Beim Ende kommen die Amtszeiten (amt) und das Ende (ende: gut oder best) dazu. Die Zeit bis zum Präsidenten bleibt dabei stehen.
+  const fest=S.ende&&alt&&alt.rang===S.rang, zr=(S.zeitRang||[]).find(x=>x.r===S.rang);
+  L.push({name:S.name,ich:S.ich||'',w:frau()?1:0,rang:S.rang,mon:fest?bestenMon(alt):(S.jahr-START_JAHR)*12+S.monat,region:S.region,schwer:S.schwer,gen:genNr(),d,
+    ...(fest?(alt.zs!=null?{zs:alt.zs}:{}):S.zeit!=null&&!S.zeitAlt?{zs:S.ende&&zr?zr.s:Math.round(S.zeit)}:{}),...(S.ende?{ende:S.ende.art,amt:S.amt?S.amt.zeit:0}:{})});
+  L.sort((a,b)=>b.rang-a.rang||(ENDE_WERT[b.ende]||0)-(ENDE_WERT[a.ende]||0)||bestenMon(a)-bestenMon(b)||(STUFE_WERT[b.schwer]||0)-(STUFE_WERT[a.schwer]||0)||a.d-b.d);
   const K=L.slice(0,10);
   try{localStorage.setItem(BESTEN_KEY,JSON.stringify(K))}catch(e){return 0}
   return K.findIndex(e=>e.d===d)+1;
@@ -2348,11 +2495,11 @@ function bestenZeit(e){
 }
 function bestenZeilen(){
   return besten().map((e,i)=>({platz:i+1,du:S&&e.d===S.bestenD,name:e.ich||e.name,
-    sub:`${e.ich?e.name+' · ':''}${e.rang===R_MAX?'👑 ':''}${e.w&&(RAENGE[e.rang]||{}).kw||(RAENGE[e.rang]||RAENGE[0]).kurz} · ${(DIFF[e.schwer]||{}).name||''}${e.gen>1?` · ${e.gen}. Generation`:''}`,
+    sub:`${e.ich?e.name+' · ':''}${e.rang===R_MAX?'👑 ':''}${e.w&&(RAENGE[e.rang]||{}).kw||(RAENGE[e.rang]||RAENGE[0]).kurz} · ${(DIFF[e.schwer]||{}).name||''}${e.gen>1?` · ${e.gen}. Generation`:''}${e.amt?` · ${e.amt} ${e.amt===1?'Amtszeit':'Amtszeiten'}`:''}${ENDE_NAME[e.ende]?' · '+ENDE_NAME[e.ende]:''}`,
     rechts:bestenZeit(e)+(e.zs!=null?`<small class="bzs">${zeitTxt(e.zs)}</small>`:'')}));
 }
 const bestenZeile=x=>`<div class="rl ${x.du?'du':''}"><span>${x.platz}.</span><div><b>${esc(x.name)}</b><span class="mut">${esc(x.sub)}</span></div><b class="rz">${x.rechts}</b></div>`;
-const BESTEN_I='Jede Partie kommt hier hinein, sobald du das erste Mal aufsteigst, und rückt bei jedem Aufstieg nach. Erst zählt der Rang, dann die Zeit bis dahin, dann die Spielstufe.';
+const BESTEN_I='Jede Partie kommt hier hinein, sobald du das erste Mal aufsteigst, und rückt bei jedem Aufstieg nach. Erst zählt der Rang, dann das Ende (das beste vor dem guten), dann die Zeit bis zum Rang, dann die Spielstufe.';
 function bestenHtml(){
   const L=bestenZeilen();
   return `<div class="card"><h3>🏆 Bestenliste</h3>${L.length?L.map(bestenZeile).join(''):`<div class="mut">Noch leer. ${BESTEN_I}</div>`}</div>`;
@@ -2424,6 +2571,11 @@ function etappe3Monat(Z){
   if(S.monat===5&&S.jahr%3===0){
     neuerWettbewerb('bund');
     schlag(60,`Bundeswettbewerb ${S.jahr} ausgeschrieben`,`Nur alle drei Jahre treten die besten Winzer des Landes gegeneinander an, mit verkaufsreifen Prädikatsweinen und Sekten aus der Flasche. Eingereicht wird diesen Monat, das Ergebnis steht im nächsten Winzerboten.${S.rang>=R_BUND?' Deinen Wein reichst du im Rathaus ein.':` Mitmachen darfst du ab dem Rang ${RAENGE[R_BUND].name}.`}`,'praemierung',{archiv:1});
+  }
+  // Seit 8.5.2: Nach dem Brief ist jeden August Weltweinschau im eigenen Dorf, bis zum Sieg.
+  if(S.monat===WELT_MONAT&&weltOffen()){
+    neuerWettbewerb('welt');
+    schlag(74,`Weltweinschau ${S.jahr}: Die Welt ist zu Gast`,`Am Holzbogen hängen Fahnen, ${spLohn(7)?'auf der Bank an der Spitzenlage sitzen Gäste aus zwanzig Ländern':'in den Gassen hört man zwanzig Sprachen'}, und beim Dorffest reicht der Wein zum ersten Mal nicht. Neun Weingüter aus aller Welt stellen sich der Jury. Du reichst diesen Monat im Rathaus einen verkaufsreifen Prädikatswein oder Sekt ein, das Ergebnis steht im nächsten Winzerboten.`,'weltweinschau');
   }
   // Auktion über drei Monate: angekündigt, dann wird geboten, danach steht das Ergebnis unten in der Zeitung.
   // Alte Spielstände ohne phase hatten ihren Bietmonat schon und bekommen jetzt das Ergebnis.
@@ -2527,7 +2679,9 @@ function altAmt(){if(S.rang===R_MAX&&!S.amt){amtStart(); S.amt.alt=1}}
 function stimmung(d){const A=S.amt; A.stimm=clamp(A.stimm+d,0,100)}
 const amtAlt=()=>!!(S&&S.amt&&!S.amt.im), stimmZ=()=>Math.round(S.amt.stimm);
 // Wie der Spieler gerade heißt: sein Rang, nach einer Abwahl Altpräsident oder Altpräsidentin.
-const altP=()=>anr('Altpräsident','Altpräsidentin'), duN=()=>amtAlt()?altP():rangN(S.rang), duK=()=>amtAlt()?altP():rangK(S.rang);
+// Seit 8.5.2: Nach dem Sieg bei der Weltweinschau heißt er überall Ehrenpräsident, auch nach einer späteren Abwahl.
+const amtEhre=()=>!!(S&&S.amt&&S.amt.ehren);
+const altP=()=>anr('Altpräsident','Altpräsidentin'), duN=()=>amtEhre()?ehrP():amtAlt()?altP():rangN(S.rang), duK=()=>amtEhre()?ehrP():amtAlt()?altP():rangK(S.rang);
 const monJahr=nr=>`${MON[nr%12]} ${START_JAHR+Math.floor(nr/12)}`;
 // Wahlkampf: von der Umfrage bis zur Wahl. Nur dann gibt es den Stimmenkauf und die Sabotage des Herausforderers.
 function amtKampf(){const A=S.amt; return !!(A&&A.geg!=null&&monatNr()<A.wahl)}
@@ -2549,7 +2703,7 @@ function amtTxt(k,p){
   }
   if(k==='gewonnen') return {t:`Wiedergewählt: Du bleibst ${P}`,text:`${kopf} Die Stimmung für dich lag bei ${p.s}, gebraucht hast du ${p.marke}. ${p.g} gratuliert mit zusammengebissenen Zähnen. Deine ${p.zeit}. Amtszeit beginnt, die nächste Wahl ist im ${p.wann}.${latte}`};
   if(k==='zurueck') return {t:`Zurück auf dem Stuhl: Du bist wieder ${P}`,text:`${kopf} Die Stimmung für dich lag bei ${p.s}, gebraucht hast du ${p.marke}. ${p.g} räumt den Stuhl im Festsaal, das Kissen ist noch warm. Deine ${p.zeit}. Amtszeit beginnt, die nächste Wahl ist im ${p.wann}.${latte}`};
-  if(k==='verloren') return {t:`Abgewählt: ${p.g} übernimmt den Stuhl`,text:`${kopf} Die Stimmung für dich lag bei ${p.s}, gebraucht hättest du ${p.marke}. ${p.g} ${p.wo} sitzt jetzt auf dem Stuhl im Festsaal. Du bist ${AP} und behältst alles, was du aufgebaut hast: Rang, Fläche, Geld und Ansehen. Im ${p.wann} wird wieder gewählt. Dann kannst du dir den Stuhl zurückholen.`};
+  if(k==='verloren') return {t:`Abgewählt: ${p.g} übernimmt den Stuhl`,text:`${kopf} Die Stimmung für dich lag bei ${p.s}, gebraucht hättest du ${p.marke}. ${p.g} ${p.wo} sitzt jetzt auf dem Stuhl im Festsaal. Du bist ${AP} und behältst alles, was du aufgebaut hast: Rang, Fläche, Geld und Ansehen. Im ${p.wann} wird wieder gewählt. Dann kannst du dir den Stuhl zurückholen${p.neu!=null?(p.neu<p.marke?`, und dafür reichen dann ${p.neu}`:`, dafür brauchst du wieder ${p.neu}`):''}.`};
   if(k==='wieder') return {t:`${p.g} bleibt auf dem Stuhl`,text:`${kopf} Die Stimmung für dich lag bei ${p.s}, gebraucht hättest du ${p.marke}. ${p.g} bleibt ${p.gw?'Präsidentin':'Präsident'}, du bleibst ${AP}. Im ${p.wann} wird wieder gewählt.`};
   if(k==='skandal') return {t:'Stimmenkauf im Verband aufgeflogen',text:`Ein Umschlag ist am falschen Tisch gelandet. Jetzt weiß der ganze Verband, dass bei ${S.name} Stimmen gekauft werden sollten. Das Geld ist weg, und die Stimmung für dich ist um ${KAUF_STRAFE} gefallen.`};
   if(k==='geruecht') return {t:'Ein Gerücht macht die Runde',text:`Im Verband wird getuschelt, bei ${S.name} sei bei der letzten Prämierung nachgeholfen worden. Belegt ist nichts, aber es bleibt etwas hängen: Die Stimmung für dich fällt um ${WSAB_GERUECHT}. Man munkelt, ${p.g} habe das Gerücht gestreut.`};
@@ -2564,9 +2718,19 @@ function amtMonat(){
   if(A.alt){delete A.alt; amtSchlag(58,'altstand',{s:stimmZ(),wann:monJahr(A.wahl)},'wahl')}
   stimmung(-STIMM_MONAT);
   if(A.skandal){A.skandal=0; amtSchlag(86,'skandal',{},'wahl')}
-  if(nr>=A.wahl) return amtWahl();
-  if(A.geg==null&&nr>=A.wahl-WAHL_UMFRAGE) amtUmfrage();
+  if(nr>=A.wahl) amtWahl();
+  else if(A.geg==null&&nr>=A.wahl-WAHL_UMFRAGE) amtUmfrage();
   else if(A.sab&&nr>=A.sab) amtSabotage();
+  amtBrief();
+}
+// Seit 8.5.2: die zwei Schlüssel zur Weltweinschau. Dorf: alle acht Spenden, als Spende oder über die Stiftung. Verband: mindestens eine gewonnene Wahl,
+// im Amt verteidigt oder als Rückkehr. Er bleibt, auch wenn man später abgewählt wird. Sind beide da, kommt im selben Monat der Brief (A.brief = Monat).
+const keyDorf=()=>!stFehlt(), keyVerband=()=>!!(S.amt&&S.amt.siege>=1);
+const weltOffen=()=>!!(S.amt&&S.amt.brief&&!S.amt.ehren);
+function amtBrief(){
+  const A=S.amt; if(A.brief||!keyDorf()||!keyVerband()) return;
+  A.brief=monatNr();
+  schlag(94,'Ein Brief für das ganze Dorf',`Der Bürgermeister steht mit einem Umschlag im Hof. „Die Weltweinschau sucht einen Gastgeber. Die wollen diesmal kein Schloss, die wollen ein Dorf. Und ich kenne nur eins, das sich das zutraut.“ Ab jetzt kommen jeden August die besten Weingüter der Welt auf den Dorfplatz, und du reichst im Rathaus einen Wein ein. Wer die Schau gewinnt, wird ${ehrP()}.`,'einladung',{gold:1,du:1});
 }
 // Die Umfrage legt den Herausforderer fest und würfelt, ob er vor der Wahl sabotiert: 2 bis 9 Monate später, also mindestens 3 Monate vor der Wahl.
 function amtUmfrage(){
@@ -2593,8 +2757,9 @@ function amtWahl(){
     ehre('🗳️',war?`Wiedergewählt, ${A.zeit}. Amtszeit`:`Zurück im Amt, ${A.zeit}. Amtszeit`,0,`Stimmung ${s}, gebraucht ${marke}.`);
     amtSchlag(96,war?'gewonnen':'zurueck',{...par,zeit:A.zeit,neu:A.marke},'wahl',{gold:1});
   }else{
-    A.stimm=STIMM_ALT; if(war){A.im=0; A.stuhl=g?g.id:null}
-    amtSchlag(96,war?'verloren':'wieder',par,'gegnerpraesident');
+    // Seit 8.5.2 (Maik 18.11.2026): Nach der Abwahl sinkt die Marke um MARKE_ABWAHL, nie unter MARKE_START. Verliert der Altpräsident noch einmal, bleibt sie.
+    A.stimm=STIMM_ALT; if(war){A.im=0; A.stuhl=g?g.id:null; A.marke=Math.max(MARKE_START,marke-MARKE_ABWAHL)}
+    amtSchlag(96,war?'verloren':'wieder',{...par,neu:A.marke},'gegnerpraesident');
   }
 }
 function zeigePleite(){
@@ -2691,8 +2856,8 @@ function vSlots(){
   return `<div id="top"><div><b>150 Grad Öchsle</b><small>Spielstände</small></div></div><main>
   ${[0,1,2].map(i=>{const o=lies(i), alt=liesAlt(i);return `<div class="card"><h3>Spielstand ${i+1}</h3>${alt?`<b>${esc(alt.name)}</b><div class="mut">${ALT_SATZ}</div>
     <div class="btns"><button data-a="slotNeu" data-id="${i}">Neues Spiel</button><button class="wag klein" data-a="slotWegFrage" data-id="${i}">Löschen</button></div>`:o?`<b>${esc(o.name)}</b>
-    <div class="mut">${esc(MON[o.monat]||'')} ${esc(o.jahr)} · ${REGIONEN[o.region].name} · ${o.amt&&!o.amt.im?'Altpräsident':(RAENGE[o.rang]||RAENGE[0]).kurz} · ${eur(+o.geld||0)}</div>
-    <div class="btns"><button data-a="slotLaden" data-id="${i}">Weiterspielen</button></div>
+    <div class="mut">${esc(MON[o.monat]||'')} ${esc(o.jahr)} · ${REGIONEN[o.region].name} · ${o.amt&&o.amt.ehren?(o.anrede==='w'?'Ehrenpräsidentin':'Ehrenpräsident'):o.amt&&!o.amt.im?(o.anrede==='w'?'Altpräsidentin':'Altpräsident'):(RAENGE[o.rang]||RAENGE[0]).kurz} · ${o.ende?(ENDE_NAME[o.ende.art]||'beendet'):eur(+o.geld||0)}</div>
+    <div class="btns"><button data-a="slotLaden" data-id="${i}">${o.ende?'Chronik ansehen':'Weiterspielen'}</button></div>
     <div class="btns"><button class="sec klein" data-a="slotSichern" data-id="${i}">Als Datei sichern</button><button class="wag klein" data-a="slotWegFrage" data-id="${i}">Löschen</button></div>`
     :`<div class="mut">Leer</div><div class="btns"><button data-a="slotNeu" data-id="${i}">Neues Spiel</button><button class="sec" data-a="slotDatei" data-id="${i}">Aus Datei laden</button></div>`}</div>`}).join('')}
   ${bestenHtml()}
@@ -2724,15 +2889,20 @@ function vRang(){
     <div class="mut">Der Aufstieg zum Rang ${n.name} ${bringtSatz(r+1)}.${rahmenSatz(r+1)}</div>`
     :`<div class="kv"><span>⭐ Ansehen</span><span>${S.ansehen}</span></div><div class="kv"><span>💰 Vermögen</span><span>${eur(v)}</span></div>`
       // Seit 8.5: Am Ziel stehen die Stimmung im Verband und die nächste Wahl.
-      +(S.amt?`<div class="kv"><span>🗳️ Stimmung im Verband</span><span>${stimmZ()} von 100</span></div>${amtBalken()}<div class="mut">${amtSatz()}</div>${kz('',`<button class="sec klein" data-a="tab" data-id="stadt" data-sub="amt">🗳️ Zum Weinbauverband</button>`)}`
+      +(S.amt?`<div class="kv"><span>🗳️ Stimmung im Verband</span><span>${stimmZ()} von 100</span></div>${amtBalken()}<div class="mut">${amtSatz()}</div>${weltZeile()}${kz('',`<button class="sec klein" data-a="tab" data-id="stadt" data-sub="amt">🗳️ Zum Weinbauverband</button>`)}`
         :`<div class="fleer" style="margin-top:6px">Höher geht es nicht.</div>`))+rangLeiter();
   return fenster('rang',`${neu?'<span class="rneuB">Neu</span> ':''}Aktueller Rang: ${duN()}`,h,{kl:neu?'rneu':'',buch:'ziel',
     hin:[S.sieger&&`🏆 Gewonnen hat: ${esc(S.sieger)}`],
-    stand:`Stufe ${r+1} von ${RAENGE.length} · ${genNr()}. Generation, die nächste übernimmt im Januar ${genJahr(genNr())}${n?`<br>Für den Aufstieg zum Rang ${n.name} brauchst du alles drei zugleich.`:''}`,
+    stand:`Stufe ${r+1} von ${RAENGE.length} · ${genNr()}. Generation, ${S.amt?`letzte Übergabe im Januar ${endeJahr()}`:`die nächste übernimmt im Januar ${genJahr(genNr())}`}${n?`<br>Für den Aufstieg zum Rang ${n.name} brauchst du alles drei zugleich.`:''}`,
     i:'Wer zuerst Präsident des Weinbauverbands wird, gewinnt. Jeder Aufstieg braucht Ansehen, bepflanzte Fläche und Vermögen zugleich. Bei der Fläche zählt nur, was bepflanzt ist: Der helle Balken zeigt dein gekauftes Land, der dunkle das bepflanzte.'+(S.amt?` Wer ${anr('Präsident','Präsidentin')} ist, muss das Amt alle ${WAHL_JAHRE} Jahre in einer Wahl verteidigen. Die Regeln stehen im Rathaus im Fenster „Weinbauverband“.`:'')});
 }
 // Version 8.5: Balken der Stimmung von 0 bis 100, der Strich ist die Marke des Herausforderers.
 function amtBalken(){const A=S.amt, s=stimmZ(); return `<div class="bar stb ${s>=A.marke?'':'g'}"><i style="width:${s}%"></i><u style="left:${A.marke}%"></u></div>`}
+// Seit 8.5.2: Zeile zur Weltweinschau in der Rang-Karte und im Fenster "Weinbauverband", erst nach dem Brief.
+function weltZeile(){
+  const A=S.amt; if(!A||!A.brief) return '';
+  return `<div class="kv"><span>🌍 Weltweinschau</span><span>${A.ehren?`gewonnen ${A.ehren.j}`:S.wett&&S.wett.typ==='welt'&&!S.wett.fertig?'diesen Monat':'im '+wettNaechst('welt')}</span></div>`;
+}
 function amtSatz(){
   const A=S.amt, g=amtGegner(), wann=monJahr(A.wahl);
   return A.im?`Am Wahltag brauchst du ${A.marke}. Die nächste Wahl ist im ${wann}.${amtKampf()&&g?` ${esc(g.name)} fordert dich heraus.`:''}`:`Du bist abgewählt. Mit ${A.marke} holst du dir den Stuhl im ${wann} zurück.`;
@@ -2745,12 +2915,20 @@ function vVerband(){
     <div class="kv"><span>${A.im?'Am Wahltag brauchst du':'Für die Rückkehr brauchst du'}</span><span>${A.marke}</span></div>
     <div class="kv"><span>${A.im?'Deine Amtszeit':'Deine Amtszeiten bisher'}</span><span>${A.zeit}${A.im?'.':''}</span></div>
     <div class="kv"><span>Nächste Wahl</span><span>${monJahr(A.wahl)}</span></div>
-    ${st?`<div class="kv"><span>Auf dem Stuhl</span><span>${esc(st.name)}</span></div>`:kampf&&g?`<div class="kv"><span>${gFrau(g)?'Herausforderin':'Herausforderer'}</span><span>${esc(g.name)}</span></div>`:''}`;
+    ${st?`<div class="kv"><span>Auf dem Stuhl</span><span>${esc(st.name)}</span></div>`:kampf&&g?`<div class="kv"><span>${gFrau(g)?'Herausforderin':'Herausforderer'}</span><span>${esc(g.name)}</span></div>`:''}
+    <h4 class="gk">Der Weg zur Weltweinschau</h4>
+    <div class="kv"><span>${keyDorf()?'✅':'🔑'} Dorf: alle ${SPENDEN.length-1} Spenden</span><span>${keyDorf()?'erledigt':`${SPENDEN.length-1-stAnzahl()} von ${SPENDEN.length-1}`}</span></div>
+    <div class="kv"><span>${keyVerband()?'✅':'🔑'} Verband: eine gewonnene Wahl</span><span>${keyVerband()?'erledigt':'offen'}</span></div>
+    ${A.brief?weltZeile():`<div class="mut">Mit beiden Schlüsseln kommt der Brief: Dann ist die Weltweinschau jedes Jahr im August bei dir im Dorf.${keyDorf()?'':' Verpasste Spenden holt unten die Stiftung nach.'}</div>`}
+    <h4 class="gk">Die Übergabe</h4>
+    <div class="kv"><span>Letzte Übergabe</span><span>Januar ${endeJahr()}</span></div>
+    <div class="mut">Mit ihr endet die Partie, es folgt die Chronik. ${A.ehren?'Als '+ehrP()+' bekommst du das beste Ende.':'Wer vorher die Weltweinschau gewinnt, bekommt das beste Ende.'}</div>`;
+  const kn=[...(kampf?[pk('stimmKauf','Stimmen kaufen',eur(KAUF_PREIS),{klein:`+${KAUF_PLUS} Stimmung`,wag:1,aus:frei<=0,arm:S.geld<KAUF_PREIS})]:[]),pk('endeFrage','Gut übergeben','',{sec:1})];
   return fenster('verband','Weinbauverband',inhalt,{
     stand:kampf?(s>=A.marke?'Wahlkampf: Im Moment reicht die Stimmung. Bis zur Wahl bröckelt sie aber weiter.':'<span class="rot">Wahlkampf: Im Moment reicht die Stimmung nicht.</span>'):`Die Umfrage kommt im ${monJahr(A.wahl-WAHL_UMFRAGE)}, ein Jahr vor der Wahl.`,
     links:kampf?(frei<=0?`Mehr als ${KAUF_MAX} Käufe je Wahl gehen nicht.`:`Noch ${frei} von ${KAUF_MAX} Käufen. Jeder fliegt mit ${pz(KAUF_SKANDAL)} auf.`):'',
-    kn:kampf?pk('stimmKauf','Stimmen kaufen',eur(KAUF_PREIS),{klein:`+${KAUF_PLUS} Stimmung`,wag:1,aus:frei<=0,arm:S.geld<KAUF_PREIS}):[],
-    buch:'wahl',i:`Als ${anr('Präsident','Präsidentin')} musst du dein Amt alle ${WAHL_JAHRE} Jahre verteidigen. Es zählt die Stimmung im Verband: Liegt sie am Wahltag auf oder über der Marke (der Strich im Balken), bleibst du im Amt. Gewürfelt wird nicht.<br><br><b>Was die Stimmung hebt:</b> alles, was Ansehen bringt, zum Beispiel Medaillen, ein Hoffest, Sekt oder eine saubere Weinkontrolle. Von jedem gewonnenen Ansehen gehen ${pz(STIMM_PLUS)} auf die Stimmung.<br><b>Was sie drückt:</b> Jeder Monat kostet ${String(STIMM_MONAT).replace('.',',')}, und jeder Abzug beim Ansehen schlägt voll durch.<br><br><b>Die Marke:</b> Dein Herausforderer ist der stärkste Gegner. Bei der ersten Wahl brauchst du ${MARKE_START}, nach jeder gewonnenen Wahl ${MARKE_PLUS} mehr, höchstens ${MARKE_MAX}. Nach jeder gewonnenen Wahl startet die Stimmung wieder bei ${STIMM_START}.<br><br><b>Wahlkampf:</b> Ein Jahr vor der Wahl bringt der Winzerbote die Umfrage. Ab dann kannst du hier Stimmen kaufen: ${eur(KAUF_PREIS)} vom Konto für ${KAUF_PLUS} Punkte, höchstens ${KAUF_MAX} Mal je Wahl. Jeder Kauf fliegt mit ${pz(KAUF_SKANDAL)} auf, dann ist das Geld weg und die Stimmung fällt um ${KAUF_STRAFE}. Auch der Herausforderer spielt im Wahlkampf nicht immer sauber.<br><br><b>Abgewählt:</b> Der Herausforderer übernimmt den Stuhl, du behältst alles andere. Die Stimmung startet dann bei ${STIMM_ALT}, und bei der nächsten Wahl kannst du dir den Stuhl zurückholen.`});
+    kn,
+    buch:'wahl',i:`Als ${anr('Präsident','Präsidentin')} musst du dein Amt alle ${WAHL_JAHRE} Jahre verteidigen. Es zählt die Stimmung im Verband: Liegt sie am Wahltag auf oder über der Marke (der Strich im Balken), bleibst du im Amt. Gewürfelt wird nicht.<br><br><b>Was die Stimmung hebt:</b> alles, was Ansehen bringt, zum Beispiel Medaillen, ein Hoffest, Sekt oder eine saubere Weinkontrolle. Von jedem gewonnenen Ansehen gehen ${pz(STIMM_PLUS)} auf die Stimmung.<br><b>Was sie drückt:</b> Jeder Monat kostet ${String(STIMM_MONAT).replace('.',',')}, und jeder Abzug beim Ansehen schlägt voll durch.<br><br><b>Die Marke:</b> Dein Herausforderer ist der stärkste Gegner. Bei der ersten Wahl brauchst du ${MARKE_START}, nach jeder gewonnenen Wahl ${MARKE_PLUS} mehr, höchstens ${MARKE_MAX}. Nach jeder gewonnenen Wahl startet die Stimmung wieder bei ${STIMM_START}.<br><br><b>Wahlkampf:</b> Ein Jahr vor der Wahl bringt der Winzerbote die Umfrage. Ab dann kannst du hier Stimmen kaufen: ${eur(KAUF_PREIS)} vom Konto für ${KAUF_PLUS} Punkte, höchstens ${KAUF_MAX} Mal je Wahl. Jeder Kauf fliegt mit ${pz(KAUF_SKANDAL)} auf, dann ist das Geld weg und die Stimmung fällt um ${KAUF_STRAFE}. Auch der Herausforderer spielt im Wahlkampf nicht immer sauber.<br><br><b>Abgewählt:</b> Der Herausforderer übernimmt den Stuhl, du behältst alles andere. Die Stimmung startet dann bei ${STIMM_ALT}, die Marke sinkt um ${MARKE_ABWAHL} (nie unter ${MARKE_START}), und bei der nächsten Wahl kannst du dir den Stuhl zurückholen.<br><br><b>Weltweinschau:</b> Mit zwei Schlüsseln holst du sie ins Dorf. Dorf: alle ${SPENDEN.length-1} Spenden, verpasste holt die Stiftung fürs Dorf nach. Verband: eine gewonnene Wahl, auch eine Rückkehr zählt. Dann ist jeden August Schau, und du reichst im Fenster „Wettbewerbe“ einen verkaufsreifen Prädikatswein oder Sekt ein, jeden Wein nur einmal. Platz 1 macht dich ${anr('zum Ehrenpräsidenten','zur Ehrenpräsidentin')}.<br><br><b>Übergabe:</b> Als ${anr('Präsident','Präsidentin')} übergibst du nur noch einmal, danach endet die Partie mit der Chronik. Die Familie wartet damit, bis ${AMT_MIN} Amtszeiten um sind. Mit „Gut übergeben“ gehst du früher, wann du willst. Erbschaftssteuer fällt dabei nicht an.`});
 }
 function vRangliste(){
   const v=vermoegen();
@@ -2801,7 +2979,7 @@ function vMonat(){
   const liste=x=>x.liste?`<div class="zliste">${x.liste.map(r=>`<div class="${r.du?'du':''}"><span>${esc(r.platz)}.</span><b>${r.m?esc(r.m)+' ':''}${esc(r.name)}</b><span>${esc(r.p)} P.</span></div>`).join('')}</div>`:'';
   // Artikel: höchstens ein kleines Foto, und nie dasselbe wie oben.
   let frei=1;
-  const art=(b.art||[]).map(a=>{const f=frei&&a.bild&&a.bild!==k.bild?(frei=0,foto(a,'klein')):''; return `<div class="zart">${f}<h3>${esc(a.t)}</h3>${a.text?`<p>${esc(a.text)}</p>`:''}${liste(a)}</div>`}).join('');
+  const art=(b.art||[]).map(a=>{const f=(frei||a.foto)&&a.bild&&a.bild!==k.bild?(a.foto||(frei=0),foto(a,'klein')):''; return `<div class="zart">${f}<h3>${esc(a.t)}</h3>${a.text?`<p>${esc(a.text)}</p>`:''}${liste(a)}</div>`}).join('');
   const haengt=S.monat>=7&&R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen);
   const rechts=`<h4>Dein Weingut</h4>${wg?`<div class="zluft${wgGross(st)?' gross':''}" style="background-image:url(bilder/${bild}.jpg)"></div>`:''}<div class="zz"><b>Konto</b><span class="${S.geld<0?'rot':''}">${eur(S.geld)}</span></div>
     <div class="zz"><b>Boden</b><span class="${S.boden<80?'rot':''}">${S.boden}\u00a0%${S.boden<80&&S.duengungen<3?', Düngen ist dran':''}</span></div>
@@ -2822,7 +3000,7 @@ function vMonat(){
     <div class="zzwei"><div>${haengt?oeBericht():marktBericht()}</div><div>${rechts}</div></div>
     ${F.length?`<div class="zfussz">${F.map(t=>`<p>${esc(t)}</p>`).join('')}</div>`:''}
   </div><div class="zende"></div></div>
-  <div class="ifuss"><button data-a="infoWeiter">${k.ende?'Weiterspielen':'Weiter'} ▶</button></div><div class="ischw"></div></div>`;
+  <div class="ifuss"><button data-a="infoWeiter">${k.schluss?'Zur Chronik':k.ende?'Weiterspielen':'Weiter'} ▶</button></div><div class="ischw"></div></div>`;
 }
 // ---- Version 7.2: Aufstiegsfeier nach dem Winzerboten, seit 7.7 mit Geschichte und auch beim Spielstart ----
 // FSTUFE 0 ist die Bild-Bühne mit dem Kapitel, 1 die Urkunde (beim Start der Kaufvertrag). FT hält die Zeitgeber für Siegel und Freischaltungen.
@@ -3333,7 +3511,7 @@ function mgrHandel(){
   const w=S.wett;
   if(aufgabeAktiv('wett')&&w&&!w.fertig&&!w.ein&&S.rang>=wettRang()){
     const land=w.typ==='land', l=S.lots.filter(wettFaehig).sort((a,b)=>b.qp+(land?0:reifeBonus(b))-a.qp-(land?0:reifeBonus(a)))[0];
-    if(l){w.ein={id:l.id,name:lotName(l),p:wettPunkte(l)}; L.push(`${lotName(l)} ${land?'zur Landesprämierung':'zum Bundeswettbewerb'} eingereicht`)}
+    if(l){w.ein={id:l.id,name:lotName(l),p:wettPunkte(l)}; L.push(`${lotName(l)} ${land?'zur Landesprämierung':w.typ==='welt'?'zur Weltweinschau':'zum Bundeswettbewerb'} eingereicht`)}
   }
   const art=festArt(), F=FESTE[art];
   if(aufgabeAktiv('fest')&&art&&S.festJahr!==S.jahr&&m>=5&&m<=7&&(S.wetter==='sonnig'||m===7)&&S.geld>=F.preis+mgrPuffer('handel')){
@@ -3412,7 +3590,7 @@ function vMaschinen(){
   return h+zu.join('');
 }
 // Büro als Pokalraum (seit 7.4 auf dem Fenster-Baustein). Reihenfolge seit 4.4 (Maik): Anleitung, Rangliste, Ehrungen, Aufstiege, Bestenliste, Ton, Spielstand.
-const MED_NAME={'🏆':'Bundessieg','🥇':'Gold','🥈':'Silber','🥉':'Bronze'};
+const MED_NAME={'🌍':'Weltweinschau','🏆':'Bundessieg','🥇':'Gold','🥈':'Silber','🥉':'Bronze'};
 function ehrSumme(wein){
   const n={}; for(const e of wein) n[e.i]=(n[e.i]||0)+1;
   return Object.keys(n).sort((a,b)=>(Object.keys(MED_NAME).indexOf(a)+9)%9-(Object.keys(MED_NAME).indexOf(b)+9)%9).map(i=>`<span style="white-space:nowrap">${n[i]}× ${i} ${MED_NAME[i]||''}</span>`).join(' · ');
@@ -3616,19 +3794,20 @@ function vStadt(){
       :`<div class="fleer" style="margin-top:6px">Kein Fasswein wartet auf die Anmeldung.</div>`),{
       i:'Im Rathaus meldest du deinen Fasswein an. Erst dann bekommt er seine Stufe und darf in die Flasche. Welche Stufen für einen Wein möglich sind, siehst du nach dem Tipp auf „Anmelden“. Was zuerst verdirbt, steht oben.'});
     // Seit 7.9: feste Fenster "Wettbewerbe" und "Auktionen". Einreichen und Bieten gehen hier, die Tipps in "Das steht an" führen her.
-    const wI=`Bei der Landesprämierung im Februar treten die Winzer deines Gebiets mit Prädikatsweinen vom letzten Jahrgang an (ab dem Rang ${RAENGE[R_LAND].name}). Der Bundeswettbewerb ist alle drei Jahre im Juni, mit verkaufsreifen Prädikatsweinen und Sekten aus der Flasche (ab dem Rang ${RAENGE[R_BUND].name}). Eingereicht wird im Monat der Ausschreibung, das Ergebnis steht im nächsten Winzerboten. Ein Platz auf dem Treppchen bringt Ansehen und Qualitätspunkte für den Wein.`;
+    const wI=`Bei der Landesprämierung im Februar treten die Winzer deines Gebiets mit Prädikatsweinen vom letzten Jahrgang an (ab dem Rang ${RAENGE[R_LAND].name}). Der Bundeswettbewerb ist alle drei Jahre im Juni, mit verkaufsreifen Prädikatsweinen und Sekten aus der Flasche (ab dem Rang ${RAENGE[R_BUND].name}). Eingereicht wird im Monat der Ausschreibung, das Ergebnis steht im nächsten Winzerboten. Ein Platz auf dem Treppchen bringt Ansehen und Qualitätspunkte für den Wein.${S.amt&&S.amt.brief?' Die Weltweinschau ist jeden August bei dir im Dorf: neun Weingüter aus aller Welt, zugelassen sind verkaufsreife Prädikatsweine und Sekte aus der Flasche, jeder Wein nur einmal.':''}`;
     if(S.rang<R_LAND) zu.push(fenster('wettb','Wettbewerbe','',{zu:`ab dem Rang ${RAENGE[R_LAND].name}`,i:wI}));
     else{
       const w=S.wett&&!S.wett.fertig?S.wett:null, mb=aufgabeAktiv('wett')?mgrAufgabe('wett').bereich:'';
       const wz=typ=>{
         const name=WETTNAME[typ], rg=typ==='bund'?R_BUND:R_LAND;
+        if(typ==='welt'&&amtEhre()) return fz('🌍 '+name,`Gewonnen ${S.amt.ehren.j} mit ${esc(S.amt.ehren.wein)}. Als ${ehrP()} trittst du nicht mehr an.`);
         if(S.rang<rg) return fz('🔒 '+name,`ab dem Rang ${RAENGE[rg].name}`);
         if(!w||w.typ!==typ) return fz(name,`Gerade nichts, als Nächstes im ${wettNaechst(typ)}.`);
         const n=S.lots.filter(wettFaehig).length;
         return fz(`${name} ${S.jahr}`,w.ein?`Eingereicht: ${esc(w.ein.name)}`:n?`${n} ${n===1?'Wein ist':'Weine sind'} zugelassen`:'Du hast gerade keinen zugelassenen Wein.',
           w.ein?'Tauschen geht bis zum Monatsende.':n&&!mb?'<span class="rot">Einreichen geht nur diesen Monat.</span>':'',
           `<button class="klein${w.ein||!n?' sec':''}" data-a="wettbewerb">${w.ein?'Tauschen':n?'Einreichen':'Ansehen'}</button>`)};
-      h+=fenster('wettb','Wettbewerbe',[wz('land'),wz('bund')],{hin:[mb&&`${MGR_BEREICHE[mb].sym} ${mgrG(mb).Dein} ${MGR_BEREICHE[mb].name} reicht beim Weiterblättern deinen besten Wein ein.`],i:wI});
+      h+=fenster('wettb','Wettbewerbe',[wz('land'),wz('bund'),...(S.amt&&S.amt.brief?[wz('welt')]:[])],{hin:[mb&&`${MGR_BEREICHE[mb].sym} ${mgrG(mb).Dein} ${MGR_BEREICHE[mb].name} reicht beim Weiterblättern deinen besten Wein ein.`],i:wI});
     }
     const aI=`Bei einer Auktion kommt Land unter den Hammer, meist viel billiger als beim Makler. Der Winzerbote kündigt sie einen Monat vorher an, im Monat danach bietest du hier mit. Mitgehen kannst du bis Konto plus freier Kreditrahmen. Auktionen gibt es nicht jedes Jahr, geboten wird wenn, dann im ${AUK_MONATE.map(m=>MON[(m+1)%12]).join(', ').replace(/, ([^,]*)$/,' oder $1')}.`;
     if(S.rang<R_AUKTION) zu.push(fenster('auktionen','Auktionen','',{zu:`ab dem Rang ${RAENGE[R_AUKTION].name}`,i:aI}));
@@ -3660,16 +3839,27 @@ function vStadt(){
     if(S.rang<1) zu.push(fenster('spenden','Spenden','',{zu:`ab dem Rang ${RAENGE[1].name}`,i:spI}));
     else{
       const s=spOffen(), D=s&&SPENDEN[s], bez=spBezahlt(), st=D?D.b/SP_TEIL:0, fertig=(S.spenden||[]).length;
-      const ansehen=[spFertig(7)&&pk('spBank','Bank ansehen','',{sec:1}),spFertig(8)&&pk('spBogen','Holzbogen ansehen','',{sec:1})].filter(Boolean);
+      const ansehen=[spLohn(7)&&pk('spBank','Bank ansehen','',{sec:1}),spFertig(8)&&pk('spBogen','Holzbogen ansehen','',{sec:1})].filter(Boolean);
       const inhalt=s?`<div class="kv"><span>Stufe ${s}: für ${esc(D.z)}</span><span>${eur(D.b)}</span></div>
         <div class="kv"><span>Gespendet</span><span>${vonGeld(bez,D.b)}</span></div><div class="bar ${bez>=D.b?'':'g'}"><i style="width:${Math.round(bez/D.b*100)}%"></i></div>
         <div class="mut">Dank des Dorfs: ${D.ans} Ansehen, ${s<=4?'ein Schild':s===8?'der Ehrenbrief':'eine Urkunde'} fürs Büro. ${esc(D.lohn)}.</div>`
-        :`<div class="fleer">${S.rang>=SPENDEN.length?`Als ${anr('Präsident','Präsidentin')} spendest du nicht mehr, das Dorf weiß, was es an dir hat.`:S.rang===SPENDEN.length-1?'Das war die letzte Spende. Das ganze Dorf kennt deinen Namen.':`Die Spende für ${esc(SPENDEN[S.rang].z)} ist erledigt. Die nächste kommt mit dem Rang ${RAENGE[S.rang+1].name}.`}</div>`;
+        :`<div class="fleer">${S.rang>=SPENDEN.length?(stFehlt()?`Als ${anr('Präsident','Präsidentin')} spendest du nicht mehr. Was du verpasst hast, holt die Stiftung fürs Dorf nach.`:`Als ${anr('Präsident','Präsidentin')} spendest du nicht mehr, das Dorf weiß, was es an dir hat.`):S.rang===SPENDEN.length-1?'Das war die letzte Spende. Das ganze Dorf kennt deinen Namen.':`Die Spende für ${esc(SPENDEN[S.rang].z)} ist erledigt. Die nächste kommt mit dem Rang ${RAENGE[S.rang+1].name}.`}</div>`;
       h+=fenster('spenden','Spenden',inhalt,{
         stand:`${fertig} von ${SPENDEN.length-1} Spenden erledigt${S.spJahr?` · dieses Jahr ${eur(S.spJahr)} gespendet`:''}`,
         links:s?`Raten ab ${eur(Math.min(st,D.b-bez))}. Jede senkt die Steuer dieses Jahres.`:'',
         kn:[...(s?[pk('spenden','Spenden','',{klein:`noch ${eur(D.b-bez)}`,arm:S.geld<Math.min(st,D.b-bez)})]:[]),...ansehen],i:spI});
     }
+    // Seit 8.5.2: Stiftung fürs Dorf, nur mit Amt und nur solange eine Spende fehlt. Die niedrigste verpasste Stufe zuerst, zum STIFT_FAKTOR-fachen Preis.
+    {const s=stOffen(); if(s){
+      const D=SPENDEN[s], b=stPreis(s), bez=stBezahlt(), st=b/SP_TEIL, n=stAnzahl();
+      h+=fenster('stiftung','Stiftung fürs Dorf',`<div class="kv"><span>Stufe ${s}: für ${esc(D.z)}</span><span>${eur(b)}</span></div>
+        <div class="kv"><span>Eingezahlt</span><span>${vonGeld(bez,b)}</span></div><div class="bar ${bez>=b?'':'g'}"><i style="width:${Math.round(bez/b*100)}%"></i></div>
+        <div class="mut">Dank des Dorfs: ${D.ans} Ansehen und ${s<=4?'das Schild':s===8?'der Ehrenbrief':'die Urkunde'} fürs Büro. ${s===8?'Der Holzbogen auf dem Dorfplatz kommt mit.':'Die Belohnung der Spende gibt es nicht mehr.'}</div>`,{
+        stand:`${n===1?'Eine Spende fehlt':n+' Spenden fehlen'} dem Dorf noch${S.spJahr?` · dieses Jahr ${eur(S.spJahr)} gegeben`:''}`,
+        links:`Raten ab ${eur(Math.min(st,b-bez))}. Jede senkt die Steuer dieses Jahres.`,
+        kn:pk('stiften','Einzahlen','',{klein:`noch ${eur(b-bez)}`,arm:S.geld<Math.min(st,b-bez)}),buch:'wahl',
+        i:`Die Stiftung holt nach, was du auf dem Weg nach oben nicht gespendet hast, eine Stufe nach der anderen und zum ${STIFT_FAKTOR===2?'doppelten':STIFT_FAKTOR+'-fachen'} Preis. Du zahlst in Raten wie bei den Spenden, mit demselben Steuervorteil (höchstens ${pz(SP_DECKEL)} des Gewinns).<br><br>Beim vollen Betrag gibt es das Ansehen und die Ehrung der Spende, aber nicht mehr ihre Belohnung. Nur der Holzbogen der letzten Stufe kommt mit. Sind alle ${SPENDEN.length-1} Stufen erledigt, hast du den Schlüssel „Dorf“ für die Weltweinschau.`});
+    }}
     h+=zu.join('');
   }
   // Großhandel (seit 7.4 auf dem Fenster-Baustein): "Markt diesen Monat" mit Marktlage und Budget, darunter "Deine Weine" als Liste zum Antippen.
@@ -4136,6 +4326,8 @@ function fuLeuchte(z){
 
 function render(){
   if(!S){fuehrerWeg(); FU_PAUSE=false; ortFarbe('gut'); ORT_ALT=null; musikOrt(musikWahl()); $('#app').innerHTML=START==='neu'||![0,1,2].some(i=>roh(i))?vStart():vSlots(); return}
+  // Seit 8.5.2: Ein abgeschlossener Spielstand zeigt nur noch die letzte Ausgabe vom Winzerboten und danach die Chronik.
+  if(S.ende&&TAB!=='monat') TAB='ende';
   fuehrerPruef(); if(!SUBS[TAB]) fuehrerWeg();
   if(SUBS[TAB]&&!SUBS[TAB].some(s=>s[0]===SUB)) SUB=START_SUB[TAB];
   // Kellerbuch und Aktuelles öffnen sich mit einem eigenen Geräusch.
@@ -4143,7 +4335,8 @@ function render(){
   const ort=SUBS[TAB]?TAB+'/'+SUB:TAB; if(ort!==ORT_ALT){FI_AUF.clear(); if(ORT_ALT&&(ort==='keller/buch'||ort==='gut/aktuell')) fx('menue'); ORT_ALT=ort}
   musikOrt(musikWahl());
   if(ort==='stadt/laeden') S.ladenSeh=S.jahr*12+S.monat;
-  const fehlt=fehlText(), v={monat:vMonat,feier:vFeier,gut:vGut,keller:vKeller,stadt:vStadt}[TAB]();
+  const fehlt=fehlText(), v={monat:vMonat,feier:vFeier,gut:vGut,keller:vKeller,stadt:vStadt,ende:vEnde}[TAB]();
+  if(TAB==='ende'){$('#app').innerHTML=v; return}
   if(TAB==='feier'){$('#app').innerHTML=v; feierStart(); return}
   const tabs=[['gut','🏡','Weingut'],['keller',FASS,'Kellerei'],['stadt','🏛️','Stadt']], B=badges();
   if(TAB==='monat'){$('#app').innerHTML=v; zWehen(); return}
@@ -4258,9 +4451,10 @@ const AKT={
   wettbewerb(){
     const w=S.wett; if(!w||w.fertig) return;
     const land=w.typ==='land', e=w.ein, ls=S.rang>=wettRang()?S.lots.filter(wettFaehig).sort((a,b)=>b.qp+(land?0:reifeBonus(b))-a.qp-(land?0:reifeBonus(a))):[];
-    wettSheet(`${sbild('praemierung')}<h3>🏅 ${WETTNAME[w.typ]} ${S.jahr}</h3>
+    const welt=w.typ==='welt';
+    wettSheet(`${sbild(welt?'weltweinschau':'praemierung')}<h3>${welt?'🌍':'🏅'} ${WETTNAME[w.typ]} ${S.jahr}</h3>
       ${e?`<p>Eingereicht: <b>${esc(e.name)}</b>. Das Ergebnis steht im nächsten Winzerboten. Bis zum Monatsende kannst du noch tauschen.</p>`:''}
-      <p class="mut">${land?`Zugelassen sind angemeldete Prädikatsweine vom Jahrgang ${S.jahr-1}. Du reichst einen Wein ein, er bleibt dir erhalten.`:'Alle Winzer treten gegeneinander an. Zugelassen sind verkaufsreife Prädikatsweine und Sekte aus der Flasche, auch gereifte und schon prämierte. Aufs Treppchen kommt jeder Wein hier nur einmal.'}</p>
+      <p class="mut">${land?`Zugelassen sind angemeldete Prädikatsweine vom Jahrgang ${S.jahr-1}. Du reichst einen Wein ein, er bleibt dir erhalten.`:welt?`Neun Weingüter aus aller Welt sind zu Gast auf dem Dorfplatz. Zugelassen sind verkaufsreife Prädikatsweine und Sekte aus der Flasche, auch gereifte und schon prämierte. Jeder Wein tritt bei der Schau nur einmal an. Platz 1 macht dich ${anr('zum Ehrenpräsidenten','zur Ehrenpräsidentin')}.`:'Alle Winzer treten gegeneinander an. Zugelassen sind verkaufsreife Prädikatsweine und Sekte aus der Flasche, auch gereifte und schon prämierte. Aufs Treppchen kommt jeder Wein hier nur einmal.'}</p>
       ${S.rang<wettRang()?`<div class="card mut">Mitmachen darfst du ab dem Rang ${RAENGE[wettRang()].name}.</div>`:ls.length?ls.map(l=>`<button class="wahl ${e&&e.id===l.id?'an':''}" data-a="wettJa" data-id="${l.id}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${l.qp} Qualitätspunkte${!land&&reifeBonus(l)?` · Reife +${reifeBonus(l)}`:''}</span></button>`).join(''):`<div class="card mut">Du hast gerade keinen zugelassenen Wein.${land?' Meldest du diesen Monat noch einen Prädikatswein vom letzten Jahrgang an, kannst du teilnehmen.':''}</div>`}
       <div class="btns"><button class="sec" data-a="close">${e||!ls.length?'Schließen':'Später entscheiden'}</button></div>`);
   },
@@ -4268,7 +4462,7 @@ const AKT={
   wettJa(d){
     const l=lot(d.id), w=S.wett; if(!w||w.fertig||S.rang<wettRang()||!wettFaehig(l)) return;
     fx('korken'); w.ein={id:l.id,name:lotName(l),p:wettPunkte(l)}; save(); render();
-    wettSheet(`${sbild('praemierung')}<h3>🏅 Eingereicht</h3><p>${esc(w.ein.name)} steht bei der Jury ${w.typ==='land'?'der Landesprämierung':'des Bundeswettbewerbs'}. Probiert wird diesen Monat, das Ergebnis steht im nächsten Winzerboten.</p><div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`);
+    wettSheet(`${sbild(w.typ==='welt'?'weltweinschau':'praemierung')}<h3>🏅 Eingereicht</h3><p>${esc(w.ein.name)} steht bei der Jury ${w.typ==='land'?'der Landesprämierung':w.typ==='welt'?'der Weltweinschau':'des Bundeswettbewerbs'}. Probiert wird diesen Monat, das Ergebnis steht im nächsten Winzerboten.</p><div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`);
   },
   ladenAngebot(d){
     const r=d.id, la=S.laeden[r], ls=S.lots.filter(l=>ladenPasst(l,r)).sort((a,b)=>ladenPreis(b,r)-ladenPreis(a,r));
@@ -4289,7 +4483,7 @@ const AKT={
     // Seit 7.2 kommt nach einem Aufstieg erst die Feier, dann Aktuelles.
     // Seit 7.7 beginnt jede Feier mit der Bild-Bühne.
     // Seit 8.4 kommt bei einem Aufstieg vorher die Szene "Dein Weingut wächst" (FSTUFE -1).
-    setTimeout(()=>{if(S.feier){TAB='feier'; FSTUFE=wgAuf(S.feier)?-1:0} else geh('gut','aktuell'); render();window.scrollTo(0,0);schnitt()},matchMedia('(prefers-reduced-motion:reduce)').matches?0:450);
+    setTimeout(()=>{if(S.ende) TAB='ende'; else if(S.feier){TAB='feier'; FSTUFE=wgAuf(S.feier)?-1:0} else geh('gut','aktuell'); render();window.scrollTo(0,0);schnitt()},matchMedia('(prefers-reduced-motion:reduce)').matches?0:450);
   },
   wachsAlle(){feierStopp(); const el=$('#feier'); if(el) el.classList.add('neu')},
   feierBuehne(){feierStopp(); FSTUFE=0; render(); schnitt()},
@@ -4317,9 +4511,25 @@ const AKT={
       info:n=>`<b>${eur(n)}</b>${n>=rest?'Damit ist die Spende voll.':`Danach sind noch ${eur(rest-n)} offen.`}<br><small>${t.gew<=0?'Dieses Jahr gibt es bisher keinen Gewinn, die Rate senkt keine Steuer.':spart(n)>0?`Spart dir rund ${eur(spart(n))} Steuer.`:'Der Steuervorteil für dieses Jahr ist ausgeschöpft.'}</small>`,
       ok:n=>spZahle(n)});
   },
+  // Version 8.5.2: Stiftung fürs Dorf (Raten wie bei den Spenden) und die freiwillige Übergabe im Fenster "Weinbauverband".
+  stiften(){
+    const s=stOffen(); if(!s) return; const D=SPENDEN[s], b=stPreis(s), st=b/SP_TEIL, rest=b-stBezahlt(), max=Math.min(rest,Math.floor(Math.max(0,S.geld)/st)*st);
+    if(max<=0) return meldung('Zu wenig Geld',`Die kleinste Rate sind ${eur(Math.min(st,rest))}. So viel ist gerade nicht auf deinem Konto.`,'amt');
+    const t=steuerSchau(), mit=n=>t.gew>0?Math.min((S.spJahr||0)+n,Math.round(t.gew*SP_DECKEL)):0, spart=n=>Math.round((mit(n)-t.abz)*STEUER);
+    mengeSheet({titel:`Stiftung: ${D.kurz}`,bild:'amt',text:`Die Stiftung holt die Spende für ${D.z} nach. Noch offen sind ${eur(rest)} von ${eur(b)}. Ansehen und Ehrung gibt es, sobald alles gezahlt ist.`,max,step:st,okText:'Einzahlen',
+      info:n=>`<b>${eur(n)}</b>${n>=rest?'Damit ist die Stufe voll.':`Danach sind noch ${eur(rest-n)} offen.`}<br><small>${t.gew<=0?'Dieses Jahr gibt es bisher keinen Gewinn, die Rate senkt keine Steuer.':spart(n)>0?`Spart dir rund ${eur(spart(n))} Steuer.`:'Der Steuervorteil für dieses Jahr ist ausgeschöpft.'}</small>`,
+      ok:n=>stZahle(n)});
+  },
+  endeFrage(){
+    if(!S.amt||S.ende) return; const A=S.amt;
+    openSheet(`${sbild(GEN_BILD.uebergabe)}<h3>👪 Das Weingut übergeben?</h3><p>Du legst den Kellerschlüssel auf den Küchentisch und übergibst ${esc(S.name)} an dein Kind. Damit endet die Partie: Es folgt die Chronik, weiterspielen geht danach nicht mehr.</p>
+      <p class="mut">${A.ehren?`Als ${ehrP()} bekommst du das beste Ende.`:A.brief?'Die Weltweinschau hast du noch nicht gewonnen. Ohne den Sieg ist es das gute Ende, nicht das beste.':'Die Weltweinschau war noch nicht im Dorf. Ohne sie ist es das gute Ende, nicht das beste.'} Erbschaftssteuer fällt nicht an. Von selbst übergibt die Familie im Januar ${endeJahr()}.</p>
+      <div class="btns"><button class="sec" data-a="close">Noch nicht</button><button class="wag" data-a="endeJa">Gut übergeben</button></div>`);
+  },
+  endeJa(){if(!S.amt||S.ende) return; closeSheet(); spielEnde('frei'); TAB='ende'; save(); render(); window.scrollTo(0,0); const el=$('#ende'); if(el) el.scrollTop=0},
   spEhre(d){
     const s=+d.n, e=(S.spenden||[]).find(x=>x.s===s); if(!e) return; const D=SPENDEN[s];
-    openSheet(`<h2>🤝 ${esc(spKurz(s,e))}</h2>${spEhrHtml(s,'gross',e)}<p class="mut" style="margin:10px 0">Gespendet für ${esc(D.z)} im ${MON[e.m]} ${e.j}. ${esc(D.lohn)}.</p>${s===8?spBogenHtml():s===7?`<div class="spbogen" style="background-image:url(bilder/${bankBild()}.jpg)"></div>${spBankTafel()}`:''}<div class="btns"><button data-a="close">Schließen</button></div>`);
+    openSheet(`<h2>🤝 ${esc(spKurz(s,e))}</h2>${spEhrHtml(s,'gross',e)}<p class="mut" style="margin:10px 0">${e.st?`Nachgeholt von der Stiftung im ${MON[e.m]} ${e.j}, für ${esc(D.z)}.${s===8?' Der Holzbogen kam mit.':''}`:`Gespendet für ${esc(D.z)} im ${MON[e.m]} ${e.j}. ${esc(D.lohn)}.`}</p>${s===8?spBogenHtml():s===7&&!e.st?`<div class="spbogen" style="background-image:url(bilder/${bankBild()}.jpg)"></div>${spBankTafel()}`:''}<div class="btns"><button data-a="close">Schließen</button></div>`);
   },
   spBank(){openSheet(`<h3>🪑 Die Bank am Wanderweg</h3><div class="spbogen" style="background-image:url(bilder/${bankBild()}.jpg)"></div>${spBankTafel()}<p class="mut">Über der Spitzenlage, mit Blick über den Fluss ins Tal.</p><div class="btns"><button data-a="close">Schließen</button></div>`)},
   spBogen(){openSheet(`<h3>🪵 Der Holzbogen</h3>${spBogenHtml()}<div class="btns"><button data-a="close">Schließen</button></div>`)},
@@ -4385,6 +4595,7 @@ const AKT={
   },
   titelLaden(){titelZu(); if(S)save(); S=null; START=null; render(); window.scrollTo(0,0)},
   weiter(){
+    if(S.ende) return;
     if(S.pleite) return zeigePleite();
     managerArbeit();
     // Leute-Regel: Ohne genug Erntehelfer und Lagerarbeiter geht es nicht in den nächsten Monat.
@@ -4405,11 +4616,12 @@ const AKT={
     if(fuSperre()) return AKT.weiter();
     closeSheet(); const L=[];
     for(let n=0;n<SPRUNG_MAX;n++){
+      if(S.ende) return;
       if(S.pleite) return zeigePleite();
       managerArbeit();
       if(fehlText()||verfallListe().length||(S.monat===11&&steuerSchau().steuer>0)){if(n) break; return AKT.weiter()}
       SPRUNG=L.slice(); monatWeiter();
-      if(S.pleite||S.pruefer||erbeOffen()||$('#sheet').classList.contains('an')) return;
+      if(S.pleite||S.ende||S.pruefer||erbeOffen()||$('#sheet').classList.contains('an')) return;
       const top=TOP.slice().sort((a,b)=>b.p-a.p)[0];
       if(sprungHalt().length||fuHalt()) break;
       L.push(`⏩ ${MON[S.monat]}: ${top?top.t:'ein ruhiger Monat'}`);
@@ -4784,6 +4996,8 @@ document.addEventListener('click',e=>{
   tonAn(); if(AC&&AC.state==='suspended') AC.resume();
   const a=b.dataset.a, vorn=/^titel/.test(a);
   if(!vorn&&S&&S.pleite&&!['neuJa','tab','sub','close','weiter','menue','ton','infoWeiter','feierAlle','feierWeiter','wachsAlle','feierBuehne','feierEnde','buch','buchZu'].includes(a)) return;
+  // Seit 8.5.2: Nach dem Ende gehen nur noch Chronik, neues Spiel, Spielstände, Ton und Buch.
+  if(!vorn&&S&&S.ende&&!['menue','close','ton','infoWeiter','buch','buchZu','neuFrage','neuJa'].includes(a)) return;
   // Solange der Weinprüfer wartet, geht nichts anderes.
   if(!vorn&&S&&S.pruefer&&!['pruefJa','pruefBestechen','slMinus','slPlus','slOk','close','ton','menue','buch','buchZu'].includes(a)) return zeigePruefer();
   // Schritt G 7.0: Solange die Übergabe offen ist, geht nur das Übergeben.

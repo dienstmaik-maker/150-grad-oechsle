@@ -1,7 +1,7 @@
 // Helfer für die App: legt alle Dateien des Spiels aufs Gerät, damit es ohne Netz läuft.
 // Die Spielseite (index.html), das Buch (anleitung.js) und seit 8.1 die Sprechblasen (fuehrer.js) kommen immer zuerst frisch aus dem Netz, so kommen neue Fassungen von selbst an. Ohne Netz gilt die gespeicherte.
 // Bilder und Töne kommen aus dem Speicher. Ändert sich eines davon, die Nummer in LAGER erhöhen, dann lädt das Gerät alles neu.
-const LAGER = 'oechsle-34';
+const LAGER = 'oechsle-35';
 const DATEIEN = [
   './', 'index.html', 'manifest.webmanifest', 'anleitung.js', 'fuehrer.js',
   'bilder/amt.jpg',
@@ -12,14 +12,19 @@ const DATEIEN = [
   'bilder/brett-dunkel.jpg',
   'bilder/brett-hell.jpg',
   'bilder/brett-honig.jpg',
+  'bilder/ehrenplatz.jpg',
   'bilder/ehrung-hof.jpg',
   'bilder/ehrung-saal.jpg',
+  'bilder/einladung.jpg',
   'bilder/eiswein.jpg',
   'bilder/erbschaft.jpg',
   'bilder/fass.png',
   'bilder/fassgang.jpg',
   'bilder/flasche-festsaal.jpg',
+  'bilder/flasche-kueche-leer.jpg',
+  'bilder/flasche-kueche-zwei.jpg',
   'bilder/flasche-kueche.jpg',
+  'bilder/flasche-regal-zwei.jpg',
   'bilder/flasche-regal.jpg',
   'bilder/frost.jpg',
   'bilder/fuehrer-winzer.jpg',
@@ -81,6 +86,8 @@ const DATEIEN = [
   'bilder/urkunde.webp',
   'bilder/wahl.jpg',
   'bilder/weinbotschafter.jpg',
+  'bilder/weltweinschau-sieg.jpg',
+  'bilder/weltweinschau.jpg',
   'bilder/weingut.jpg',
   'bilder/weinhandlung.jpg',
   'bilder/weinkritiker.jpg',
