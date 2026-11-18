@@ -223,8 +223,12 @@ img.fass{height:1.1em;vertical-align:-.18em}
 #info.wg .ibild{background-size:cover;animation:sw-ein 1.2s ease-out both,sw-tor 40s ease-in-out 1.2s infinite both}
 #info.wg.gross .ibild{animation:sw-ein 1.2s ease-out both,sw-wander 70s ease-in-out 1.2s infinite both}
 #info.wg .ineu{-webkit-mask:linear-gradient(transparent 44%,#000 56%) 0 0/100% 250% no-repeat;mask:linear-gradient(transparent 44%,#000 56%) 0 0/100% 250% no-repeat;
-  animation:sw-ein 1.2s ease-out both,sw-tor 40s ease-in-out 1.2s infinite both,jzwisch var(--jzd,2.5s) ease-in-out .6s both}
-#info.wg.gross .ineu{animation:sw-ein 1.2s ease-out both,sw-wander 70s ease-in-out 1.2s infinite both,jzwisch var(--jzd,2.5s) ease-in-out .6s both}
+  animation:sw-ein 1.2s ease-out both,sw-rlt 28s ease-in-out infinite both,jzwisch var(--jzd,2.5s) ease-in-out .6s both}
+#info.wg.gross .ineu{animation:sw-ein 1.2s ease-out both,sw-rl 45s ease-in-out infinite both,jzwisch var(--jzd,2.5s) ease-in-out .6s both}
+#info.wg.jzw .ibild:not(.ineu){animation:sw-ein 1.2s ease-out both,sw-rlt 28s ease-in-out infinite both}
+#info.wg.gross.jzw .ibild:not(.ineu){animation:sw-ein 1.2s ease-out both,sw-rl 45s ease-in-out infinite both}
+@keyframes sw-rlt{0%{background-position:68% 50%}50%{background-position:32% 50%}100%{background-position:68% 50%}}
+@keyframes sw-rl{0%{background-position:100% 50%}50%{background-position:0% 50%}100%{background-position:100% 50%}}
 #info.wg .ineu,#info.wg.gross .ineu{animation-play-state:running,running,paused}#info.wg.los .ineu,#info.wg.gross.los .ineu{animation-play-state:running}
 @keyframes sw-ein{from{opacity:0;transform:scale(1.04)}to{opacity:1;transform:none}}
 @keyframes sw-tor{0%{background-position:50% 50%}25%{background-position:68% 50%}75%{background-position:32% 50%}100%{background-position:50% 50%}}
@@ -316,14 +320,15 @@ img.fass{height:1.1em;vertical-align:-.18em}
 /* Version 8.4: Aufstiegs-Szene "Dein Weingut wächst" vor der Feier. Sommerbild der alten Stufe, der Rangtitel wechselt, das Sommerbild der neuen Stufe blendet über (Sommer-Regel). */
 #feier .wbild{position:fixed;inset:0;background:#000 50% 50%/100% auto no-repeat}
 /* Kamerafahrt (Maik 18.11.2026): Beide Bilder erst weit weg und ganz zu sehen, oben und unten Schwarz. Das alte blendet ins neue über,
-   das neue wächst langsam zum Vollbild (Zoom zur rechten Seite) und schwenkt dann zügig ganz nach links ans Ende des Bilds. --wr ist das Seitenverhältnis. */
+   das neue wächst langsam zum Vollbild (Zoom zur rechten Seite) schwenkt zügig ganz nach links ans Ende des Bilds und zurück zur Mitte, dort bleibt es bis zum Knopf Zur Feier. --wr ist das Seitenverhältnis. */
 #feier .walt{animation:sw-ein 1.2s ease-out both,wzoom 4s ease-out both}
 #feier .wneu{opacity:0;transition:opacity 1.8s ease}
-#feier.wachs.neu .wneu{opacity:1;animation:wfahrt var(--wfd,13s) 1.4s both}
+#feier.wachs.neu .wneu{opacity:1;animation:wfahrt var(--wfd,17s) 1.4s both}
 @keyframes wzoom{from{transform:scale(.96)}to{transform:none}}
 @keyframes wfahrt{0%{background-size:100% auto;background-position:50% 50%;animation-timing-function:cubic-bezier(.45,0,.35,1)}
-  34%{background-size:max(100vw,calc(100vh*var(--wr,1.78))) auto;background-position:100% 50%;animation-timing-function:cubic-bezier(.4,0,.3,1)}
-  100%{background-size:max(100vw,calc(100vh*var(--wr,1.78))) auto;background-position:0% 50%}}
+  26%{background-size:max(100vw,calc(100vh*var(--wr,1.78))) auto;background-position:100% 50%;animation-timing-function:cubic-bezier(.4,0,.3,1)}
+  77%{background-size:max(100vw,calc(100vh*var(--wr,1.78))) auto;background-position:0% 50%;animation-timing-function:cubic-bezier(.45,0,.3,1)}
+  100%{background-size:max(100vw,calc(100vh*var(--wr,1.78))) auto;background-position:50% 50%}}
 #feier.wachs .fkarte{text-align:center}
 #feier.wachs .fkarte h2{display:grid;margin:4px 0 0}
 #feier.wachs .fkarte h2>span{grid-area:1/1;transition:opacity 1s ease,transform 1s ease}
@@ -2567,7 +2572,7 @@ function vMonat(){
   const rechts=`<h4>Dein Weingut</h4>${wg?`<div class="zluft${wgGross(st)?' gross':''}" style="background-image:url(bilder/${bild}.jpg)"></div>`:''}<div class="zz"><b>Konto</b><span class="${S.geld<0?'rot':''}">${eur(S.geld)}</span></div>
     <div class="zz"><b>Boden</b><span class="${S.boden<80?'rot':''}">${S.boden}\u00a0%${S.boden<80&&S.duengungen<3?', Düngen ist dran':''}</span></div>
     <div class="zz"><b>Ansehen</b>${S.ansehen}</div><div class="zz"><b>Rang</b>${rangK(S.rang)}</div>`;
-  return `<div id="info" class="${wg?'wg'+(wgGross(st)?' gross':''):bild}">${hinten}<div class="iverl"></div>
+  return `<div id="info" class="${wg?'wg'+(wgGross(st)?' gross':'')+(wech?' jzw':''):bild}">${hinten}<div class="iverl"></div>
   <div class="zt"><div class="zkopf"></div><div class="zmitte">
     <div class="ztitel">Der Winzerbote</div>
     <div class="zleiste"><span>${R().name}</span><span>${esc(b.titel)}</span><span>Nr. ${b.nr||1}</span></div>
@@ -3574,6 +3579,25 @@ function zRolle(el,z,ziel){
   z.animate([{clipPath:`inset(0 0 ${h}px 0)`},{clipPath:`inset(0 0 ${h-sicht}px 0)`}],{duration:ms,easing:e});
   r.animate([{transform:'translateY(-15px)'},{transform:`translateY(${sicht-15}px)`,opacity:1,offset:ms/(ms+250)},{transform:`translateY(${sicht+20}px)`,opacity:0}],{duration:ms+250,easing:e,fill:'forwards'}).onfinish=()=>r.remove();
 }
+// Version 8.4: Beim Jahreszeiten-Wechsel rollt der Winzerbote nur ein Drittel herunter (Z_TEIL), damit das neue Bild zu sehen bleibt.
+// Den Rest holt ein Tipp oder Wischen irgendwo auf der Seite (Maik 18.11.2026). Der Knopf "Weiter" geht trotzdem sofort.
+const Z_TEIL=1/3;
+function zRolleTeil(el,z,ziel){
+  if(!el.isConnected) return; el.scrollTop=ziel; ZW.top=ziel; z.classList.remove('zu');
+  const h=z.offsetHeight, sicht=Math.min(innerHeight,h), a=Math.round(sicht*Z_TEIL), e='cubic-bezier(.25,.6,.3,1)';
+  const r=document.createElement('div'); r.className='zrolle'; el.appendChild(r);
+  const k1=z.animate([{clipPath:`inset(0 0 ${h}px 0)`},{clipPath:`inset(0 0 ${h-a}px 0)`}],{duration:1100,easing:e,fill:'forwards'});
+  r.animate([{transform:'translateY(-15px)'},{transform:`translateY(${a-15}px)`}],{duration:1100,easing:e,fill:'forwards'});
+  let fertig=0; const A=['click','touchstart','wheel'];
+  const rest=ev=>{
+    if(fertig||ev&&ev.target&&ev.target.closest&&ev.target.closest('button')) return; fertig=1; A.forEach(n=>el.removeEventListener(n,rest));
+    const k2=z.animate([{clipPath:`inset(0 0 ${h-a}px 0)`},{clipPath:`inset(0 0 ${h-sicht}px 0)`}],{duration:1000,easing:e,fill:'forwards'});
+    k2.onfinish=()=>{k1.cancel(); k2.cancel()};
+    r.getAnimations().forEach(x=>x.cancel());
+    r.animate([{transform:`translateY(${a-15}px)`},{transform:`translateY(${sicht-15}px)`,opacity:1,offset:.83},{transform:`translateY(${sicht+20}px)`,opacity:0}],{duration:1200,easing:e,fill:'forwards'}).onfinish=()=>r.remove();
+  };
+  A.forEach(n=>el.addEventListener(n,rest,{passive:true}));
+}
 function zWehen(){
   const el=$('#info'); if(!el) return; const z=el.querySelector('.zt'), b=S.bericht||{}, key=`${b.titel}|${b.nr}`;
   const ziel=()=>0, ruhig=matchMedia('(prefers-reduced-motion:reduce)').matches;
@@ -3583,7 +3607,7 @@ function zWehen(){
     if(ruhig) el.scrollTop=ziel(); else{z.classList.add('zu'); if(!wech) setTimeout(()=>zRolle(el,z,ziel()),900)}
     // Der Wechsel startet erst, wenn das neue Bild geladen ist (höchstens 1,5 s warten), sonst ruckelt es. Die Zeitung rollt danach.
     if(wech){const n=el.querySelector('.ineu'), u=(/url\("?([^")]+)/.exec(n.style.backgroundImage)||[])[1], im=new Image(); let da=0;
-      const los=()=>{if(da++||!el.isConnected) return; el.classList.add('los'); if(!ruhig) setTimeout(()=>zRolle(el,z,ziel()),JZ_ROLLE)};
+      const los=()=>{if(da++||!el.isConnected) return; el.classList.add('los'); if(!ruhig) setTimeout(()=>zRolleTeil(el,z,ziel()),JZ_ROLLE)};
       im.src=u||''; (im.decode?im.decode():Promise.resolve()).then(los,los); setTimeout(los,1500)}
     // Version 7.2: Bei einer Sonderausgabe knallt der Stempel drauf, sobald die Zeitung ausgerollt ist.
     const so=z.querySelector('.zsonder'); if(so&&!(b.kopf&&b.kopf.ende)){so.classList.add('stempeln'); setTimeout(()=>{if(so.isConnected) fx('stempel')},ruhig?100:2350)}}
