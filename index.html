@@ -538,7 +538,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='8.2.2';
+const VERSION='8.3';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -582,7 +582,7 @@ function sektFrei(){return S.rang>=R_SEKT}
 // MANAGER: je Stufe der Bereich, die Stufe, ab welchem Rang (Index in RAENGE) sie geht und welche Aufgaben (Schlüssel aus MGR_AUFGABEN) sie dazubringt.
 // kosten: Einstellen (Stufe 1) oder Befördern, aus MGR_KOSTEN. lohn: Monatslohn auf dieser Stufe, aus MGR_LOHN, läuft über die Löhne.
 // Kosten und Lohn stehen bis Schritt H auf 0 (neutral, wie der frühere Verwalter). Startwerte für Schritt H: 5.000 / 20.000 / 60.000 € und 500 / 1.000 / 2.000 € im Monat.
-// Schritt E: Handel 3 (Regal, Wettbewerb, Fest), Keller 2 (Sekt, seit Schritt F dazu Keltern mit Fassraum), Keller 3 (schnellere Reife, über MGR_REIFE und MGR_REIFE_MIN, kein Schalter).
+// Schritt E: Handel 3 (Regal, Wettbewerb, Fest), Keller 2 (Sekt, seit 8.3 dazu Abfüllen, Keltern ist seit 8.3 Stufe 1), Keller 3 (schnellere Reife, über MGR_REIFE und MGR_REIFE_MIN, kein Schalter).
 // Spielstand: S.manager={handel|keller|weingut:{stufe,an:{aufgabe:1},zuletzt,puffer}}, die Reserve der Daueraufträge wie bisher in S.dauer.reserve.
 const MGR_KOSTEN=[5000,20000,60000], MGR_LOHN=[500,1000,2000];
 // Schritt E: Geldgrenze für Sekt (Kellermeister) und Fest (Handels-Manager). So viel bleibt mindestens auf dem Konto, Auswahl im Manager-Fenster.
@@ -619,10 +619,11 @@ const MGR_AUFGABEN={
 // Reihenfolge je Rang wie im Freischalt-Plan, so stehen sie auch im Aufstiegstext.
 const MANAGER=[
   {bereich:'handel',stufe:1,rang:2,aufgaben:['laeden']},
-  {bereich:'keller',stufe:1,rang:3,aufgaben:['flaschen','lager']},
+  // Seit 8.3 (Maik 18.11.2026): Stufe 1 keltert, Stufe 2 füllt ab. Vorher war es umgekehrt, Keltern fühlt sich mehr nach Kellermeister an.
+  {bereich:'keller',stufe:1,rang:3,aufgaben:['keltern','lager']},
   {bereich:'weingut',stufe:1,rang:4,aufgaben:['reben','warten']},
   {bereich:'handel',stufe:2,rang:4,aufgaben:['handel']},
-  {bereich:'keller',stufe:2,rang:5,aufgaben:['sekt','keltern']},
+  {bereich:'keller',stufe:2,rang:5,aufgaben:['flaschen','sekt']},
   {bereich:'weingut',stufe:2,rang:6,aufgaben:['duengen']},
   {bereich:'handel',stufe:3,rang:7,aufgaben:['regal','wett','fest']},
   {bereich:'weingut',stufe:3,rang:8,aufgaben:['helfer']},
@@ -841,8 +842,10 @@ function roh(i){try{const o=JSON.parse(localStorage.getItem(KEYS[i])||'null');re
 function lies(i){const o=roh(i);return o&&o.v7?o:null}
 function liesAlt(i){const o=roh(i);return o&&!o.v7?o:null}
 // Übernimmt einen gelesenen Spielstand und bringt alte Stände auf den heutigen Stand.
-function nimm(o){S=o;if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();altDoppelt();altSpende();altZeit();if(!S.fu)S.fu=fuAlt(); else fuPaketB()}
+function nimm(o){S=o;if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();altDoppelt();altSpende();altKeller();altZeit();if(!S.fu)S.fu=fuAlt(); else fuPaketB()}
 // Seit 8.2.1: Spielstände ohne Uhr fangen bei 0 an und merken sich, dass sie erst seit 8.2.1 zählen.
+// Seit 8.3: Kellermeister Stufe 1 keltert statt abzufüllen. Hatte ein alter Spielstand auf Stufe 1 das Abfüllen an, ist jetzt das Keltern an.
+function altKeller(){if(S.v83) return; const m=(S.manager||{}).keller; if(m&&m.stufe===1&&m.an&&m.an.flaschen) m.an.keltern=1; S.v83=1}
 function altZeit(){if(S.zeit==null){S.zeit=0; S.zeitAb=monatNr(); S.zeitAlt=1; S.zeitRang=[]}}
 // Seit 8.2: doppelte Weine aus älteren Spielständen (geteilt fürs Regal, dann wieder rausgenommen) wieder zusammenlegen.
 function altDoppelt(){for(const l of S.lots.slice()) if(l.status==='flasche'&&S.lots.includes(l)) weinZusammen(l)}
@@ -2863,7 +2866,7 @@ function hoffestHtml(){
     links:schon?(S.fest?'Das Fest steigt diesen Monat, der Bericht kommt im nächsten Winzerboten.':`Das ${F.name} ${S.jahr} ist gefeiert. Nächstes Jahr wieder.`):zeit?'':'Gefeiert wird von Juni bis August.',
     kn:pk('hoffest','Feiern',eur(F.preis),{aus:!(zeit&&!schon),arm:S.geld<F.preis}),i:fI})};
 }
-// Was früher der Gutsverwalter tat, seit 7.0 (Schritt D) aufgeteilt: Weingut-Manager (Reben, Düngen, Erntehelfer) und Kellermeister (Abfüllen, Lagerarbeiter).
+// Was früher der Gutsverwalter tat, seit 7.0 (Schritt D) aufgeteilt: Weingut-Manager (Reben, Düngen, Erntehelfer) und Kellermeister (Keltern, Lagerarbeiter, ab Stufe 2 Abfüllen und Sekt).
 // Läuft beim Weiterblättern vor der Leute-Sperre, in derselben Reihenfolge wie beim Verwalter. Berichte stehen in S.mgrLog für die nächste Zeitung.
 function mgrBetrieb(){
   if(!S.manager) return;
@@ -2886,7 +2889,7 @@ function mgrBetrieb(){
     }
   }
   if(hf){const nh=mgrHandlese(); if(nh) LW.push(`${nh===1?'einen Erntehelfer':nh+' Erntehelfer'} für die Handlese eingestellt`)}
-  // Schritt F: Kellermeister ab Stufe 2 keltert die Lese beim Weiterblättern und kauft fehlenden Fassraum in Schritten von 500 l wie von Hand.
+  // Schritt F: Kellermeister (seit 8.3 ab Stufe 1, vorher Stufe 2) keltert die Lese beim Weiterblättern und kauft fehlenden Fassraum in Schritten von 500 l wie von Hand.
   // Für den Kauf lässt er mgrPuffer auf dem Konto, fehlende Lagerarbeiter stellt er nur mit der Aufgabe 'lager' ein. Reicht es nicht, bleiben die Trauben liegen
   // und die "Letzte Warnung" nennt den Grund (l.mgrNot). Mit Verlust keltern ("Trotzdem keltern") entscheidet nur der Spieler.
   if(aufgabeAktiv('keltern')){
