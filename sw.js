@@ -1,7 +1,7 @@
 // Helfer für die App: legt alle Dateien des Spiels aufs Gerät, damit es ohne Netz läuft.
 // Die Spielseite (index.html), das Buch (anleitung.js) und seit 8.1 die Sprechblasen (fuehrer.js) kommen immer zuerst frisch aus dem Netz, so kommen neue Fassungen von selbst an. Ohne Netz gilt die gespeicherte.
 // Bilder und Töne kommen aus dem Speicher. Ändert sich eines davon, die Nummer in LAGER erhöhen, dann lädt das Gerät alles neu.
-const LAGER = 'oechsle-38';
+const LAGER = 'oechsle-39';
 const DATEIEN = [
   './', 'index.html', 'manifest.webmanifest', 'anleitung.js', 'fuehrer.js',
   'bilder/amt.jpg',
@@ -129,7 +129,7 @@ const DATEIEN = [
   'ton/schere.mp3',
   'ton/stempel.mp3',
 ];
-// Version 8.4: Die 40 Bilder "Weingut wächst" (bilder/weingut-NN-<jahreszeit>.jpg) stehen bewusst nicht in DATEIEN. Das Spiel lädt nur die der eigenen Stufe, datei() legt sie ab.
+// Version 9.0: Die 40 Bilder "Weingut wächst" (bilder/weingut-NN-<jahreszeit>.jpg) stehen bewusst nicht in DATEIEN. Das Spiel lädt nur die der eigenen Stufe, datei() legt sie ab.
 // Version 7.7: Platz für die Feier-Videos aus 8.1 (szene-start.mp4, szene-1.mp4 bis szene-8.mp4, szene-sieg.mp4).
 // Sie laden nach dem Einrichten im Hintergrund nach, fehlt eines, zeigt das Spiel das Standbild. Die Liste füllt erst 8.1.
 const VIDEOS = [];
