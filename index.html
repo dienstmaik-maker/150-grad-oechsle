@@ -597,6 +597,7 @@ button.fi.wort{width:auto;padding:0 11px;font:600 13px/1 system-ui,-apple-system
 .kchips{flex-wrap:wrap;margin-top:10px}
 .bzeile.kzu{border-style:dashed;background:none}.bzeile.kzu .bz1 b{color:var(--mut)}.bzeile.ksch{cursor:default}
 .kalbum{margin-top:10px;text-align:center}
+.kspiel{margin:8px 0 10px}.bzeile .bz1 .kpf{font-weight:400;color:var(--mut)}
 .kbed{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--line)}
 .kbed .ksg{width:26px;height:26px;margin:2px 0 0}.kbed>div{flex:1}.kbed b{display:block}.kbed span{font-size:14px;color:var(--mut)}.kbed .bar{margin:6px 0 0}
 #ksiegel{position:fixed;left:50%;bottom:calc(138px + env(safe-area-inset-bottom));z-index:30;display:flex;align-items:center;gap:10px;width:max-content;max-width:min(92vw,520px);padding:9px 16px 9px 12px;border-radius:14px;border:1px solid #b9995a;background:#f3e7ca url(bilder/papier.jpg) center/cover;color:#2b2118;box-shadow:0 6px 20px rgba(0,0,0,.5);font-size:15px;line-height:1.3;cursor:pointer;opacity:0;pointer-events:none;transform:translate(-50%,24px);transition:opacity .3s,transform .3s}
@@ -726,7 +727,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='11.2';
+const VERSION='11.3';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -1084,8 +1085,11 @@ function dateiLaden(text,i){
   if(!gueltig(o)) return meldung('Das hat nicht geklappt','Die Datei ist kein Spielstand von 150 Grad Öchsle.');
   if(!o.v7) return meldung('Das geht leider nicht','Die Datei stammt aus einer älteren Version und läuft hier nicht weiter. Fang am besten ein neues Spiel an.');
   o=saeubern(o);
+  // Seit 11.3: Die Sicherung trägt das Album mit (Maik 19.11.2026). Es gehört nicht in den Spielstand und geht ins Album des Geräts.
+  const alb=o.album; delete o.album;
   try{localStorage.setItem(KEYS[i],JSON.stringify(o))}catch(e){return meldung('Das hat nicht geklappt','Der Speicher des Browsers ist voll.')}
-  render(); meldung('Geladen',`${o.name} liegt jetzt auf Spielstand ${i+1}.`);
+  const mit=kompAlbumNimm(alb);
+  render(); meldung('Geladen',`${o.name} liegt jetzt auf Spielstand ${i+1}.${mit?' Dein Album aus der Datei ist mit dabei.':''}`);
 }
 
 /* ================= Musik und Geräusche ================= */
@@ -1743,9 +1747,9 @@ const EREIGNIS={
     kritiker:{ok:()=>S.lots.some(kritikerWein),los(){const l=S.lots.filter(kritikerWein).sort((a,b)=>b.qp-a.qp)[0], q=rint(3,5); l.qp+=q; const a=ruhm(6); schlag(80,`Kritiker lobt deinen ${lotName(l)}`,`Ein bekannter Weinkritiker hat deinen ${lotName(l)} probiert und schwärmt in seiner Kolumne. Der Wein bekommt ${q} Qualitätspunkte mehr, dazu +${a} Ansehen.`,'weinkritiker',{du:1})}}
   },
   schlecht:{
-    hagel:{ok:()=>S.monat>=5&&S.monat<=8&&feldHaengt().length,los(){const p=rnd(.2,.4); for(const id of feldHaengt()){const f=S.felder[id]; f.menge=Math.round(f.menge*(1-p))} kompJahr('hagel'); schlag(80,`Hagel ${WO[S.region]}`,`Ein Unwetter mit Hagelkörnern so groß wie Murmeln ist über deine Weinberge gezogen. Rund ${Math.round(p*100)}\u00a0% der Trauben sind hin.`,'hagel',{du:1})}},
-    maschine:{ok:()=>S.maschinen.length,los(){const ma=S.maschinen[rint(0,S.maschinen.length-1)], n=rint(20,40); ma.zustand=Math.max(10,ma.zustand-n); komp('maschine',{n:1,gd:ma.zustand>=MASCH_ROT?1:0}); schlag(80,'Maschinenschaden',`Dein${mTyp(ma).f?'e':''} ${mTyp(ma).name} ${MASCH_SCHADEN[ma.typ]||MASCH_SCHADEN.klein}. Der Zustand sinkt um ${n} auf ${ma.zustand}\u00a0%. ${ma.zustand<MASCH_ROT?`Unter ${MASCH_ROT}\u00a0% f\u00e4llt ${maschEr(ma)} aus, bis ${maschEr(ma)} gewartet ist.`:`Eine Wartung bringt ${maschEr(ma)==='er'?'ihn':'sie'} wieder in Schuss.`}`,'maschine',{du:1})}},
-    skandal:{ok:()=>!S.lage&&monatNr()>=(S.skAb||0),los(){const f=1-rnd(.2,.35), n=rint(3,5), [t,x]=variante('skandal'); S.lage={typ:'skandal',f,rest:n}; S.skAb=monatNr()+SKANDAL_PAUSE; komp('skandal',{n:1}); kompE('skandal').x=0; schlag(80,t,`${x} ${n} Monate lang bringen alle Weine ${Math.round((1-f)*100)}\u00a0% weniger.`,'weinskandal',{du:1})}},
+    hagel:{ok:()=>S.monat>=5&&S.monat<=8&&feldHaengt().length,los(){const p=rnd(.2,.4); for(const id of feldHaengt()){const f=S.felder[id]; f.menge=Math.round(f.menge*(1-p))} schlag(80,`Hagel ${WO[S.region]}`,`Ein Unwetter mit Hagelkörnern so groß wie Murmeln ist über deine Weinberge gezogen. Rund ${Math.round(p*100)}\u00a0% der Trauben sind hin.`,'hagel',{du:1})}},
+    maschine:{ok:()=>S.maschinen.length,los(){const ma=S.maschinen[rint(0,S.maschinen.length-1)], n=rint(20,40); ma.zustand=Math.max(10,ma.zustand-n); schlag(80,'Maschinenschaden',`Dein${mTyp(ma).f?'e':''} ${mTyp(ma).name} ${MASCH_SCHADEN[ma.typ]||MASCH_SCHADEN.klein}. Der Zustand sinkt um ${n} auf ${ma.zustand}\u00a0%. ${ma.zustand<MASCH_ROT?`Unter ${MASCH_ROT}\u00a0% f\u00e4llt ${maschEr(ma)} aus, bis ${maschEr(ma)} gewartet ist.`:`Eine Wartung bringt ${maschEr(ma)==='er'?'ihn':'sie'} wieder in Schuss.`}`,'maschine',{du:1})}},
+    skandal:{ok:()=>!S.lage&&monatNr()>=(S.skAb||0),los(){const f=1-rnd(.2,.35), n=rint(3,5), [t,x]=variante('skandal'); S.lage={typ:'skandal',f,rest:n}; S.skAb=monatNr()+SKANDAL_PAUSE; schlag(80,t,`${x} ${n} Monate lang bringen alle Weine ${Math.round((1-f)*100)}\u00a0% weniger.`,'weinskandal',{du:1})}},
     helferweg:{ok:()=>S.helfer>0&&S.loehne.helfer[0]<=LOHN_BILLIG&&S.geld>4000,los(){const b=clamp(Math.round(S.geld*rnd(.05,.1)/100)*100,2000,30000); S.loehne.helfer.shift(); S.helfer--; S.geld-=b; schlag(80,'Erntehelfer über alle Berge',`Dein billigster Erntehelfer ist über Nacht verschwunden, und mit ihm ${eur(b)} aus der Kasse. Ersatz findest du beim Arbeitsamt.`,'helferweg',{du:1})}}
   }
 };
@@ -1854,7 +1858,7 @@ function lagerBedarf(){return Math.max(Math.ceil(S.fassraum/FASS_JE_LAGERARB),Ma
 // Abfüllen (von Hand und beim Kellermeister): mit der Abfüllanlage ABF_PLUS mehr Flaschen aus dem Fass, dafür so viele leere Flaschen.
 // Die Anlage nutzt sich je ABF_NORM Flaschen um ABF_ABN Prozentpunkte ab, mal Pflege-Faktor.
 function abfFl(l){return bonusMasch('abfuell')?Math.round(l.liter*(1+ABF_PLUS)):l.liter}
-function fuelleAb(l){const ma=bonusMasch('abfuell'), n=abfFl(l); S.flaschen-=n; l.liter=n; l.status='flasche'; l.flMonate=0; if(ma) abnutz(ma,ABF_ABN*n/ABF_NORM); return n}
+function fuelleAb(l){const ma=bonusMasch('abfuell'), n=abfFl(l); S.flaschen-=n; l.liter=n; l.status='flasche'; l.flMonate=0; komp('sorte_'+l.sorte); if(ma) abnutz(ma,ABF_ABN*n/ABF_NORM); return n}
 // Düngen (von Hand und beim Weingut-Manager): mit dem Düngerstreuer im Einsatz billiger und mehr Boden, er nutzt sich je Düngung um STREU_ABN ab.
 function duengKosten(){return Math.round(DUENGER_HA*S.ha*(bonusMasch('duenger')?1-STREU_RABATT:1))}
 function duengPlus(){return bonusMasch('duenger')?STREU_PLUS:DUENG_PLUS}
@@ -1983,7 +1987,6 @@ function wachse(m){
       const aus=f.oe>=reg.min.aus;
       if(f.menge>0&&!f.edel&&!f.edelGeprueft&&(aus||(!reg.edelAus&&m>=9&&f.oe>=reg.min.spat))){
         f.edel=Math.random()<Math.min(.95,(aus?EDEL_CHANCE.aus:(w==='regen'||w==='mild'?EDEL_CHANCE.feucht:EDEL_CHANCE.spat)*(reg.edelSpatF||1))*(reg.edelF||1)*eignung(id)**2);
-        if(f.edel) kompJahr('edel');
         if(f.edel) L.push(`Edelfäulnis beim ${so.name} bei ${f.oe}° Öchsle! Der Zucker steigt jetzt ${S.sonne>=3?'kräftig':'schneller'}, die Menge schrumpft. Kabinett und Spätlese gibt es von diesem Feld nicht mehr.${aus?'':` Bis zur Auslese fehlen noch ${reg.min.aus-f.oe}°, lass die Trauben am besten noch einen Monat hängen.`}`);
         else if(aus){f.edelGeprueft=true; L.push(`Der ${so.name} hat den Auslese-Wert von ${reg.min.aus}° erreicht, aber die Edelfäulnis bleibt dieses Jahr aus.`)}
       }
@@ -2108,99 +2111,143 @@ function preis(l){
   return Math.round(STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*alter*S.markt*lageF(l)*sektF(l)*sternF(l.sorte)*(R().preisF||1)*100)/100;
 }
 
-/* ================= Weinkompendium (seit 11.1) ================= */
-// Sammelbuch statt Weinlexikon: Je Eintrag gibt es drei Siegel. Bronze heißt erlebt, Silber oft genutzt oder überstanden, Gold ist ein Meisterstück.
-// Der Rang schaltet frei, was der Spieler darf, das Kompendium belohnt, was er nutzt. Es sperrt nichts, was man zum Spielen braucht: Was jede Stufe verlangt, steht immer da.
-// Im Spielstand: S.komp[id]={st,n,...}. st: 0 gesperrt, 1 Bronze, 2 Silber, 3 Gold. n zählt für Silber, g zählt für Gold (wo Gold eine Menge ist),
-// gd merkt ein gelungenes Meisterstück (Gold zählt erst ab Silber), l die gelesenen Liter einer Sorte, j, jg, x und aus sind Merker einzelner Einträge.
+/* ================= Weinkompendium (seit 11.1, Siegel-Regeln neu seit 11.3) ================= */
+// Sammelbuch und Nachschlagewerk. Seit 11.3 (Maik 19.11.2026) gibt es Siegel nur noch für die drei Rebsorten, den Sekt und die neun Stufen:
+// 13 Einträge und 39 Siegel je Partie. Bronze heißt erlebt, Silber oft gemacht, Gold ist ein Meisterstück.
+// Gebiet und Lagen, Keller und Technik, Gefahren und die Edelfäulnis sind Wissens-Seiten ohne Siegel (wissen:1), lesbar von Anfang an.
+// Der Rang schaltet frei, was der Spieler darf, das Kompendium belohnt, was er nutzt. Es sperrt nichts, was man zum Spielen braucht: Die Zeile "Im Spiel" steht immer da.
+// Im Spielstand: S.komp[id]={st,n,...}. st: 0 gesperrt, 1 Bronze, 2 Silber, 3 Gold. n zählt für Silber, g zählt die verkauften Flaschen einer Stufe für Gold,
+// gd merkt eine Goldmedaille (Gold zählt erst ab Silber), l die gelesenen Liter einer Sorte, jg die Jahrgänge einer Stufe.
+// S.kompV ist der Stand der Regeln (2 seit 11.3). Einträge für Gebiet, Technik und Gefahren aus 11.1 und 11.2 bleiben im Spielstand liegen, zählen und erscheinen aber nicht mehr.
 // S.kompNeu sammelt neue Siegel für den nächsten Winzerboten. Ohne Wirkung aufs Geld: Boni und Meilensteine kommen in 11.5.
 // Kennungen nie umbenennen, sie stehen in Spielständen und im Album (KOMP_ALBUM_KEY: bester Stand je Eintrag über alle Partien, nur zum Ansehen).
-// KOMP_W: alle Schwellen an einer Stelle. Es sind Annahmen von Claude (19.11.2026), gemessen wird in 11.5.
+// KOMP_W: alle Schwellen an einer Stelle, festgelegt von Maik am 19.11.2026, gemessen wird in 11.5.
+// mengeGold: Gold über verkaufte Flaschen einer Stufe. medGold: Gold über eine Goldmedaille. Kabinett und Spätlese stehen in beiden, dort zählt, was zuerst kommt.
 // Richtwert aus einer Probepartie des Test-Spielers (Mosel, 120 Jahre): Die erste Sorte hat nach 10 Jahren rund 50.000 Flaschen verkauft, Sekt nach 20 Jahren rund 14.000.
-const KOMP_W={sorteFl:50000,sektFl:10000,stufeJg:10,mengeGold:{feder:3000,tafel:15000,qba:30000},gebietHa:10,spitzeJahre:10,kellerJahre:[5,15],
-  maschJahre:5,maschOhne:10,zuckerN:[5,15],reife:[12,36,84],gefahrN:3,trotzRang:5};
+const KOMP_W={sorteFl:25000,sektFl:5000,stufeJg:10,mengeGold:{feder:30000,tafel:10000,qba:20000,kab:40000,spat:50000},medGold:['kab','spat','aus','ba','tba','eis']};
 const KOMP_ALBUM_KEY='oechsle-album';
 const KOMP_ST=['','Bronze','Silber','Gold'], KOMP_ST_WORT=['','entdeckt','gemeistert','Legende'];
+// Goldmedaille heißt im Spiel Platz 1: Gold bei der Landesprämierung, Platz 1 beim Bundeswettbewerb oder bei der Weltweinschau. Sekt tritt erst ab dem Bundeswettbewerb an.
+const KOMP_GOLDMED='eine Goldmedaille (Platz 1 bei einem Wettbewerb)';
 // Kapitel: Kennung, Zeichen, kurzer Name für den Knopf, voller Name.
 const KOMP_KAP=[['sorte','🍇','Sorten','Rebsorten und Sekt'],['stufe','🍷','Stufen','Stufen'],['gebiet','⛰️','Gebiet','Gebiet und Lagen'],['technik','⚙️','Technik','Keller und Technik'],['gefahr','⛈️','Gefahren','Gefahren']];
-// Je Eintrag: kap, titel, text (kurzer Text aus den Zahlen des Spiels, die ausführlichen Texte kommen in 11.3), immer (Text ist ohne Siegel lesbar),
-// b: Satz für Bronze, bAb: Bronze erst ab diesem Zählerstand. s: Schwelle für Silber, sW: Wort zum Zähler, sT: eigener Satz statt Zähler.
-// g: Satz für Gold (Meisterstück, gd). gAb mit gZ und gW: Gold ab diesem Stand des Zählers gZ ('g' oder 'n').
+// Die Geschichten (seit 11.3): Weinwissen in höchstens vier Sätzen, ohne Zahlen des Spiels. Die Zahlen stehen je Eintrag in der Zeile "Im Spiel" und kommen aus dem Code.
+// Quelle und Faktencheck: Vault-Notiz "Weinbau-Spiel Weinkompendium Texte". Die Texte für die neuen Sorten kommen mit 11.4.
+const KOMP_TEXT={
+  sorte_riesling:'Der König der deutschen Weißweine und der Spezialist für kühle Steillagen. Er reift spät und braucht Geduld im Keller. Dafür belohnt er dich mit feiner Säure und Weinen, die Jahrzehnte halten. Als Sekt ist er eine Klasse für sich.',
+  sorte_mueller:'1882 von Hermann Müller aus dem Thurgau gezüchtet, eine Kreuzung aus Riesling und Madeleine Royale. Die Rebe ist genügsam, reift früh und trägt viel. Ihre Weine sind mild, fruchtig und schnell trinkreif. Große Kunst wird selten daraus, ein verlässliches Einkommen schon.',
+  sorte_silvaner:'Seit 1659 in Franken zu Hause, zuerst gepflanzt in Castell. Auf Muschelkalk und Lehm wird er erdig und würzig, mit milder Säure. Er drängt sich nicht vor und passt deshalb zu fast jedem Essen, am liebsten zu Spargel.',
+  sorte_spaetb:'Die Diva unter den Rotweinen, anderswo heißt sie Pinot Noir. Sie will die besten Lagen, wenig Ertrag und einen Kellermeister mit ruhiger Hand. Gelingt alles, wird der Wein samtig und vielschichtig. Als Grundwein für Sekt ist sie ebenfalls erste Wahl.',
+  sorte_portug:'Eine alte Rotweinsorte, die früh reift und reichlich trägt. Mit Portugal hat sie trotz des Namens wohl nichts zu tun, sie kam über Österreich nach Deutschland. Ihr Wein ist hell, mild und unkompliziert, oft wird Weißherbst daraus. Getrunken wird er jung.',
+  sorte_troll:'Der Hauswein der Württemberger, eingewandert aus Südtirol, wo er Vernatsch heißt. Aus „Tirolinger“ wurde mit der Zeit Trollinger. Er ist hellrot, leicht und duftet nach Kirsche. Am besten schmeckt er jung, aus dem Viertele-Glas.',
+  sekt:'Beim Sekt gärt der fertige Wein ein zweites Mal, diesmal in der Flasche. Dabei entsteht die Kohlensäure, und die Hefe gibt ihm über Monate seine cremige Art. Danach wird jede Flasche Tag für Tag gerüttelt, bis die Hefe im Hals sitzt und herausgeschossen wird. Ein Winzersekt liegt mindestens neun Monate auf der Hefe.',
+  stufe_feder:'Traubenmost, der gerade erst zu gären begonnen hat, trüb, süß und prickelnd. Er gärt in der Flasche weiter, deshalb darf sie nie fest verschlossen sein. Nach wenigen Wochen ist der Zauber vorbei. Dazu gehört Zwiebelkuchen.',
+  stufe_tafel:'Die einfachste Stufe, heute steht dafür „Deutscher Wein“ auf dem Etikett. Die Trauben dürfen aus dem ganzen Land kommen, die Anforderungen sind niedrig. Kein Wein zum Angeben, aber einer, der auch in schwachen Jahren gelingt.',
+  stufe_qba:'Das Rückgrat jedes Weinguts. Die Trauben stammen aus einem einzigen der 13 deutschen Anbaugebiete. Jeder Qualitätswein wird amtlich geprüft und bekommt eine Prüfnummer aufs Etikett.',
+  stufe_kab:'Die erste Stufe der Prädikatsweine, leicht, fein und mit wenig Alkohol. Der Name kommt vom „Cabinet“, dem Keller, in dem Kloster Eberbach seine besten Fässer verwahrte. Zucker zusetzen ist ab hier verboten, der Wein muss aus eigener Kraft gelingen.',
+  stufe_spat:'1775 kam der Bote mit der Leseerlaubnis zu spät nach Schloss Johannisberg, die Trauben waren schon überreif. Der Wein daraus wurde der beste, den man dort je getrunken hatte. Seitdem lässt man Trauben mit Absicht länger hängen. Was am Ende zählt, ist das Mostgewicht, nicht der Kalender.',
+  stufe_aus:'Hier wird von Hand sortiert. Nur vollreife Trauben kommen in die Bütte, alles Unreife und Kranke bleibt draußen. Das kostet Menge und Zeit. Dafür wird der Wein dicht, lange haltbar und bei Sammlern begehrt.',
+  stufe_ba:'Für sie werden überreife, edelfaule Beeren einzeln aus den Trauben gepickt. Die Edelfäule hat ihnen Wasser entzogen, übrig bleiben Zucker und Aroma. Heraus kommt wenig, aber ein honigsüßer Wein, der Jahrzehnte reifen kann.',
+  stufe_tba:'Die Spitze der Leiter. Die Beeren sind am Stock fast zu Rosinen geschrumpft, ein Leser schafft an einem Tag oft nur ein paar Handvoll. Der Most ist so dick, dass die Hefe kaum dagegen ankommt. 150 Grad Öchsle braucht es dafür, die Zahl kennst du vom Titelbild.',
+  stufe_eis:'Die Trauben bleiben bis in den Winter hängen und werden bei mindestens sieben Grad unter null gefroren gelesen und sofort gepresst. Das Wasser bleibt als Eis in der Presse, heraus läuft nur süßer, dichter Saft. Im echten Weinbau reichen gesunde Trauben, die Edelfäulnis ist eine Regel des Spiels. Ein Pokerspiel bleibt es so oder so, oft kommt der Frost zu spät oder gar nicht.',
+  gebiet_mosel:'Deutschlands ältestes Weinbaugebiet, schon die Römer pflanzten hier Reben. An Mosel, Saar und Ruwer stehen die steilsten Weinberge Europas, gearbeitet wird fast nur von Hand. Der dunkle Schiefer speichert tagsüber Wärme und gibt sie nachts an die Reben ab. So entstehen leichte, mineralische Rieslinge, die man in der ganzen Welt kennt.',
+  gebiet_rheingau:'Bei Wiesbaden fließt der Rhein ein Stück nach Westen, und die Hänge schauen genau nach Süden. Im Norden hält der Taunus den kalten Wind ab. Hier stehen Kloster Eberbach und Schloss Johannisberg, wo die Spätlese erfunden wurde. Riesling und Spätburgunder aus dem Rheingau gelten seit Jahrhunderten als fein und teuer.',
+  gebiet_rheinhessen:'Das größte deutsche Anbaugebiet, das „Land der tausend Hügel“ zwischen Bingen, Mainz und Worms. Löss und Kalk, wenig Regen und milde Winter bringen verlässliche Ernten. Die sanften Hügel lassen sich gut mit Maschinen bearbeiten. Lange stand Rheinhessen für Masse, heute kommen von hier einige der spannendsten Weine im Land.',
+  gebiet_pfalz:'Im Schutz des Pfälzerwaldes ist es so warm, dass Feigen, Mandeln und Zitronen im Freien reifen. Rund 1.800 Sonnenstunden im Jahr machen die Weine voll und kräftig. Mitten hindurch führt die Deutsche Weinstraße, an der sich ein Weindorf ans andere reiht.',
+  gebiet_franken:'Entlang der Mainschleifen wächst der Wein auf Muschelkalk und Keuper. Das Klima ist rauer als am Rhein, mit heißen Sommern und kalten Wintern. Typisch sind trockene, erdige Weißweine, allen voran der Silvaner. Abgefüllt wird in den Bocksbeutel, die bauchige Flasche und das Markenzeichen der Franken.',
+  gebiet_wuerttemberg:'Am Neckar und seinen Nebenflüssen wächst mehr Rotwein als Weißwein, oft auf alten Terrassen mit Trockenmauern. Die Württemberger trinken ihren Wein am liebsten selbst, kaum etwas verlässt das Land. Ausgeschenkt wird in der Besenwirtschaft. Hängt ein Besen an der Tür, hat der Winzer geöffnet.',
+  spitze:'Jedes Gebiet hat diesen einen Hang, über den alle reden: steil, steinig und von morgens bis abends in der Sonne. Die Trauben werden dort reifer als irgendwo sonst. Solche Lagen bleiben über Generationen in einer Familie. Kommt eine unter den Hammer, bietet das halbe Tal mit.',
+  keller1:'Der erste Schritt in die Moderne sind Tanks aus Edelstahl mit Kühlung. Darin gärt der Most langsam und sauber bei der Temperatur, die du willst. Die frischen Fruchtaromen bleiben im Wein, statt mit der Wärme zu verfliegen.',
+  keller2:'Große Fässer aus Eiche, an der Mosel das Fuder mit 1.000 Litern, am Rhein das Stückfass mit 1.200. Sie geben kaum Holzgeschmack ab, lassen den Wein aber durch die Poren atmen. So wird er runder, ruhiger und haltbarer.',
+  keller3:'Ein Gewölbe voller kleiner Eichenfässer mit je 225 Litern, innen über dem Feuer geröstet. Sie geben dem Wein Noten von Vanille, Rauch und Schokolade mit. Nach drei Füllungen ist ein Barrique ausgelaugt und muss ersetzt werden. Teurer geht Ausbau kaum, feiner auch nicht.',
+  reife:'Mit dem Abfüllen ist ein Wein nicht fertig. In der Flasche runden sich Säure und Frucht, aus jungen, lauten Aromen werden reife. Am besten liegt er dunkel, kühl und ruhig. Einfache Sorten trinkt man trotzdem jung, ein großer Riesling hält Jahrzehnte.',
+  zuckern:'Zucker im Most macht den Wein nicht süßer, die Hefe vergärt ihn zu mehr Alkohol. Bei einfachen Weinen ist das in Grenzen erlaubt, bei Prädikatswein streng verboten. Wasser im Wein war und ist immer Betrug. Wer es trotzdem tut, sollte den Weinprüfer nicht vergessen.',
+  masch_duenger:'Reben holen jedes Jahr Nährstoffe aus dem Boden, die irgendwann fehlen. Der Streuer hängt hinten am Schlepper und verteilt den Dünger gleichmäßig zwischen den Zeilen. Von Hand mit dem Eimer landet immer zu viel auf einem Fleck und zu wenig auf dem nächsten.',
+  masch_klein:'Die kleine Maschine für den Anfang, gezogen vom Schlepper. Sie fährt über die Rebzeile und rüttelt die Beeren mit Schlagstäben vom Stock. Aussuchen kann sie nicht, sie nimmt mit, was hängt. Edelfaule Trauben bleiben deshalb Handarbeit.',
+  masch_laub:'Im Juni wachsen die Triebe über den Drahtrahmen hinaus. Der Laubschneider stutzt sie wie eine Hecke, oben und an den Seiten. Danach kommen Licht und Luft an die Trauben, sie reifen besser und faulen seltener.',
+  masch_gross:'Die große Maschine fährt aus eigener Kraft und steht wie ein Tor über der Rebzeile. Sie schüttelt die Beeren ab, trennt Blätter und Stiele und sammelt alles im eigenen Tank. Ein echter Vollernter schafft viel mehr als der im Spiel, hier bleibt er klein, damit deine Leute wichtig bleiben. In Steillagen kommt er ohnehin nicht weit.',
+  masch_abfuell:'Spülen, füllen, verkorken, etikettieren, alles an einem Band. Von Hand geht bei jeder Flasche ein Schluck daneben, die Anlage füllt auf den Millimeter genau. Und sie arbeitet sauber, kein Keim kommt mit in die Flasche.',
+  hagel:'Ein Sommergewitter reicht. In wenigen Minuten zerfetzt Hagel die Blätter und schlägt die Trauben vom Stock. Meist trifft es nur einen schmalen Streifen, der Nachbar bleibt verschont. Angeschlagene Beeren faulen schnell, was noch hängt, will gut beobachtet werden.',
+  spaetfrost:'Im Frühjahr treiben die Reben aus, und die jungen Triebe vertragen keinen Frost. Gefürchtet sind die Eisheiligen Mitte Mai. Eine einzige klare Nacht kann einen großen Teil der Ernte kosten, lange bevor eine Traube da ist. Manche Winzer stellen dann Frostkerzen zwischen die Zeilen.',
+  kaelte:'Wer auf hohe Öchsle pokert, lässt seine Trauben bis in den Spätherbst hängen. Kommt dann über Nacht strenger Frost, erfriert alles, was noch am Stock ist. Kluge Winzer schauen im Oktober genau auf die Vorhersage.',
+  edel:'Der Pilz Botrytis ist Fluch und Segen. Auf unreifen Trauben ist er schlicht Fäule und verdirbt die Ernte. Auf reifen Beeren macht er bei Morgennebel und Nachmittagssonne die Schale durchlässig, das Wasser verdunstet, Zucker und Aroma bleiben. Ohne ihn gäbe es keine Beerenauslese.',
+  skandal:'1985 flog auf, dass Weine mit Glykol gesüßt worden waren, einem Stoff, der sonst in Frostschutzmitteln steckt. Über Nacht kaufte kaum noch jemand Wein, auch nicht von den ehrlichen Winzern. Bis das Vertrauen zurück war, vergingen Jahre. Seitdem sind die Weingesetze deutlich strenger.',
+  kontrolle:'Weinkontrolleure haben eine feine Nase und das Recht, jeden Keller zu betreten. Sie kommen ohne Anmeldung, ziehen Proben und lesen das Kellerbuch. Wer sauber arbeitet, hat nach einer Stunde wieder seine Ruhe.',
+  maschine:'Im Weinberg liegen Steine, stehen Pfähle und spannen sich Drähte, irgendwann erwischt es jede Maschine. Ärgerlich wird es mitten in der Lese, wenn jeder Tag zählt. Wer regelmäßig wartet, steckt einen Schlag besser weg.',
+  helferweg:'Lese ist Knochenarbeit, und gute Leute sind im Herbst überall gefragt. Wer seine Helfer knapp hält, steht eines Morgens mit einem weniger da. Dass dann auch Geld aus der Kasse fehlt, macht es nicht besser. Ein fairer Lohn ist die billigste Versicherung.'
+};
+// Je Eintrag: kap, titel, text (die Zeile "Im Spiel", gebaut aus den Zahlen des Codes), immer (die Zeile steht schon in der Liste), wissen (Wissens-Seite ohne Siegel).
+// b: Satz für Bronze. s: Schwelle für Silber, sW: Wort zum Zähler. g: Satz für Gold über eine Goldmedaille (gd). gAb mit gW: Gold ab so vielen verkauften Flaschen (g).
+// Hat ein Eintrag g und gAb (Kabinett, Spätlese), reicht eines von beiden.
 const KOMP={};
 for(const id of Object.keys(SORTEN)) KOMP['sorte_'+id]={kap:'sorte',titel:SORTEN[id].name,
-  text:()=>{const so=SORTEN[id]; return `${so.farbe==='weiss'?'Weißwein':'Rotwein'}, im Gebiet ${R().name} ${eigText(eignung(id))}. Als Prädikatswein reift er mindestens ${Math.max(1,so.minL-(S.keller||0))} Monate in der Flasche und hält bis zu ${Math.round(so.maxL/12)} Jahre.${so.sektStar?` Als Sekt bringt er ${Math.round((SEKT_STAR-1)*100)} % mehr als andere Sorten.`:''}`},
-  b:'Pflanz die Sorte zum ersten Mal.',s:KOMP_W.sorteFl,sW:'Flaschen verkauft (ohne Sekt)',g:'Hol mit einem Wein dieser Sorte Platz 1 bei einem Wettbewerb.'};
+  text:()=>{const so=SORTEN[id]; return `${so.farbe==='weiss'?'Weißwein':'Rotwein'}, im Gebiet ${R().name} ${eigText(eignung(id))}. Als Prädikatswein reift er mindestens ${Math.max(1,so.minL-(S.keller||0))} Monate in der Flasche und hält bis zu ${Math.round(so.maxL/12)} Jahre.${so.sektStar?` Als Sekt bringt er ${Math.round((SEKT_STAR-1)*100)} % mehr als andere Sorten.`:''}`},
+  b:'Füll zum ersten Mal einen Wein dieser Sorte ab.',s:KOMP_W.sorteFl,sW:'Flaschen verkauft (ohne Sekt)',g:`Hol mit einem Wein dieser Sorte ${KOMP_GOLDMED}.`};
 KOMP.sekt={kap:'sorte',titel:'Sekt',
-  text:()=>`Sekt machst du ab dem Rang ${RAENGE[R_SEKT].name} aus Qualitätswein und Kabinett. Er kostet ${eur2(SEKT_KOSTEN)} je Flasche, ruht 9 Monate und bringt dann rund ${Math.round((SEKT_F-1)*100)} % mehr als der Grundwein.`,
-  b:'Mach zum ersten Mal Sekt.',s:KOMP_W.sektFl,sW:'Flaschen Sekt verkauft',g:'Hol mit einem Sekt eine Medaille bei einem Wettbewerb.'};
+  text:()=>`Sekt machst du ab dem Rang ${RAENGE[R_SEKT].name} aus Qualitätswein und Kabinett. Er kostet ${eur2(SEKT_KOSTEN)} je Flasche, ruht 9 Monate und bringt dann rund ${Math.round((SEKT_F-1)*100)} % mehr als der Grundwein.`,
+  b:'Mach zum ersten Mal Sekt.',s:KOMP_W.sektFl,sW:'Flaschen Sekt verkauft',g:`Hol mit einem Sekt ${KOMP_GOLDMED}.`};
 for(const st of Object.keys(STUFEN)){
-  const mg=KOMP_W.mengeGold[st];
+  const mg=KOMP_W.mengeGold[st], med=KOMP_W.medGold.includes(st);
   KOMP['stufe_'+st]={kap:'stufe',titel:STUFEN[st].name,immer:1,text:()=>kompStufeText(st),
     b:'Melde zum ersten Mal einen Wein in dieser Stufe an.',s:KOMP_W.stufeJg,sW:'Jahrgängen angemeldet',
-    ...(mg?{gAb:mg,gZ:'g',gW:'Flaschen verkauft (ohne Sekt)'}:{g:'Hol mit einem Wein dieser Stufe eine Medaille bei einem Wettbewerb.'})};
+    ...(med?{g:`Hol mit einem Wein dieser Stufe ${KOMP_GOLDMED}.`}:{}),...(mg?{gAb:mg,gW:'Flaschen verkauft (ohne Sekt)'}:{})};
 }
-for(const r of Object.keys(REGIONEN)) KOMP['gebiet_'+r]={kap:'gebiet',titel:REGIONEN[r].name,region:r,text:()=>REGIONEN[r].text,
-  b:'Gibt es zum Start einer Partie in diesem Gebiet.',s:KOMP_W.gebietHa,sW:'Hektar bepflanzt',g:'Ersteigere die Spitzenlage.'};
-KOMP.spitze={kap:'gebiet',titel:'Spitzenlage',
-  text:()=>`Die beste Lage weit und breit: ${SPITZE_HA} Hektar Steilhang in voller Südsonne. Wem sie gehört, dessen Trauben starten jeden Juli mit ${SPITZE_OE}° Öchsle mehr.`,
-  b:`Erlebe, dass die Spitzenlage unter den Hammer kommt. Das gibt es ab dem Rang ${RAENGE[R_SPITZE].name}.`,s:1,sT:'Ersteigere die Spitzenlage.',gAb:KOMP_W.spitzeJahre,gZ:'g',gW:'Jahren im Besitz'};
-for(let k=1;k<=KELLER_PREISE.length;k++) KOMP['keller'+k]={kap:'technik',titel:`Kellerausbau Stufe ${k}`,
-  text:()=>`Kostet ${eur(KELLER_PREISE[k-1])} und geht ab dem Rang ${RAENGE[KELLER_RANG[k-1]].name}. Prädikatsweine und Eiswein sind damit ${k} ${k===1?'Monat':'Monate'} früher verkaufsreif, und jeder Wein gewinnt beim Reifen schneller an Wert.`,
-  b:'Bau den Keller auf diese Stufe aus.',s:KOMP_W.kellerJahre[0],sW:'Jahren in Betrieb',gAb:KOMP_W.kellerJahre[1],gZ:'n',gW:'Jahren in Betrieb'};
-KOMP.reife={kap:'technik',titel:'Reife in der Flasche',
-  text:()=>'In der Flasche gewinnt ein Wein mit jedem Jahr an Wert, höchstens bis zum Vierfachen. Wie schnell das geht und wie lange er hält, hängt an der Rebsorte und am Kellerausbau.',
-  bAb:KOMP_W.reife[0],b:`Lass einen Wein ${KOMP_W.reife[0]} Monate in der Flasche liegen.`,s:KOMP_W.reife[1],sW:'Monaten in der Flasche (dein ältester Wein)',gAb:KOMP_W.reife[2],gZ:'n',gW:'Monaten in der Flasche (dein ältester Wein)'};
-KOMP.zuckern={kap:'technik',titel:'Zuckern und Wässern',
-  text:()=>`Zucker hebt die Öchsle im Most, Wasser streckt die Menge, beides um höchstens ${ZUCKER_MAX} %. Bis ${ZUCKER_ERLAUBT} % ist das beim Tafelwein erlaubt. Alles andere ist Panscherei und ein Fall für den Weinprüfer.`,
-  b:'Zuckere oder wässere zum ersten Mal einen Most.',s:KOMP_W.zuckerN[0],sW:'Mal gezuckert oder gewässert',gAb:KOMP_W.zuckerN[1],gZ:'n',gW:'Mal gezuckert oder gewässert'};
-for(const id of Object.keys(MASCH)) KOMP['masch_'+id]={kap:'technik',titel:MASCH[id].name,
-  text:()=>{const T=MASCH[id]; return `${T.bonus?MASCH_BONUS[id]():`Schafft ${num(T.leist)} Reben bei der Lese und zählt wie ${T.helfer} Erntehelfer`}. Zu kaufen ab dem Rang ${RAENGE[T.rang].name} für ${eur(T.preis)}.`},
-  b:'Kauf die Maschine.',s:KOMP_W.maschJahre,sW:'Jahren in Betrieb',gAb:KOMP_W.maschOhne,gZ:'g',gW:'Jahren am Stück ohne Ausfall'};
-const KOMP_TROTZ='Melde im selben Jahr trotzdem eine Auslese oder eine höhere Stufe an.';
-Object.assign(KOMP,{
-  hagel:{titel:'Hagel',text:()=>'Zwischen Juni und September kann ein Unwetter einen Teil der Trauben zerschlagen, die noch am Stock hängen.',g:KOMP_TROTZ},
-  spaetfrost:{titel:'Spätfrost',text:()=>'Friert es im April oder Mai noch einmal, leidet die Blüte, und die Ernte des Jahres fällt kleiner aus.',g:KOMP_TROTZ},
-  kaelte:{titel:'Kälteeinbruch',text:()=>`In rund ${Math.round(KAELTE*100)} % der Jahre wird es im November über Nacht bitterkalt. Dann erfriert alles, was noch hängt. Die Vorhersage im Oktober warnt meist davor.`,g:'Hab bei einem Kälteeinbruch schon alles gelesen, sodass dir nichts erfriert.'},
-  edel:{titel:'Edelfäulnis',text:()=>`${edelRegel()}. Mit ihr steigt der Zucker schneller, die Menge schrumpft. Kabinett und Spätlese gibt es von dem Feld dann nicht mehr, dafür Auslese und mehr.`,g:'Melde eine Beerenauslese oder Trockenbeerenauslese an.'},
-  skandal:{titel:'Weinskandal',text:()=>'Ein Skandal im Land drückt ein paar Monate lang alle Weinpreise. Danach ist erst einmal Ruhe.',g:'Verkauf während eines Skandals keine einzige Flasche.'},
-  kontrolle:{titel:'Weinkontrolle',text:()=>'Der Prüfer kommt unangemeldet, im Schnitt alle drei Jahre. Findet er gepanschten Wein, wird der vernichtet, es gibt Strafe, und fünf Jahre lang kommt er jedes Jahr wieder.',g:'Bestehe eine Kontrolle ohne Befund.'},
-  maschine:{titel:'Maschinenschaden',text:()=>`Ein Schaden kostet eine Maschine auf einen Schlag viel Zustand. Unter ${MASCH_ROT} % fällt sie aus, bis sie gewartet ist.`,g:'Überstehe einen Schaden, ohne dass die Maschine ausfällt.'}
-});
-for(const id of ['hagel','spaetfrost','kaelte','edel','skandal','kontrolle','maschine']) Object.assign(KOMP[id],{kap:'gefahr',b:'Erlebe es zum ersten Mal.',s:KOMP_W.gefahrN,sW:'Mal erlebt'});
+// Wissens-Seiten: Geschichte und die Zeile "Im Spiel", ohne Siegel. Die Kennungen aus 11.1 bleiben, neu ist helferweg.
+const kompWissen=(id,kap,titel,text)=>{KOMP[id]={kap,titel,wissen:1,text}};
+for(const r of Object.keys(REGIONEN)) kompWissen('gebiet_'+r,'gebiet',REGIONEN[r].name,()=>`${REGIONEN[r].text} ${r===S.region?'Hier steht dein Weingut.':`So spielt es sich in einer Partie ${WO[r]}.`}`);
+kompWissen('spitze','gebiet','Spitzenlage',()=>`Die beste Lage weit und breit: ${SPITZE_HA} Hektar Steilhang in voller Südsonne. Wem sie gehört, dessen Trauben starten jeden Juli mit ${SPITZE_OE}° Öchsle mehr. Unter den Hammer kommt sie ab dem Rang ${RAENGE[R_SPITZE].name}.`);
+for(let k=1;k<=KELLER_PREISE.length;k++) kompWissen('keller'+k,'technik',`Kellerausbau Stufe ${k}`,
+  ()=>`Kostet ${eur(KELLER_PREISE[k-1])} und geht ab dem Rang ${RAENGE[KELLER_RANG[k-1]].name}. Prädikatsweine und Eiswein sind damit ${k} ${k===1?'Monat':'Monate'} früher verkaufsreif, und jeder Wein gewinnt beim Reifen schneller an Wert.`);
+kompWissen('reife','technik','Reife in der Flasche',()=>'In der Flasche gewinnt ein Wein mit jedem Jahr an Wert, höchstens bis zum Vierfachen. Wie schnell das geht und wie lange er hält, hängt an der Rebsorte und am Kellerausbau.');
+kompWissen('zuckern','technik','Zuckern und Wässern',()=>`Zucker hebt die Öchsle im Most, Wasser streckt die Menge, beides um höchstens ${ZUCKER_MAX} %. Bis ${ZUCKER_ERLAUBT} % ist das beim Tafelwein erlaubt. Alles andere ist Panscherei und ein Fall für den Weinprüfer.`);
+for(const id of Object.keys(MASCH)) kompWissen('masch_'+id,'technik',MASCH[id].name,
+  ()=>{const T=MASCH[id]; return `${T.bonus?MASCH_BONUS[id]():`Schafft ${num(T.leist)} Reben bei der Lese und zählt wie ${T.helfer} Erntehelfer`}. Zu kaufen ab dem Rang ${RAENGE[T.rang].name} für ${eur(T.preis)}.`});
+kompWissen('hagel','gefahr','Hagel',()=>'Zwischen Juni und September kann ein Unwetter einen Teil der Trauben zerschlagen, die noch am Stock hängen.');
+kompWissen('spaetfrost','gefahr','Spätfrost',()=>'Friert es im April oder Mai noch einmal, leidet die Blüte, und die Ernte des Jahres fällt kleiner aus.');
+kompWissen('kaelte','gefahr','Kälteeinbruch',()=>`In rund ${Math.round(KAELTE*100)} % der Jahre wird es im November über Nacht bitterkalt. Dann erfriert alles, was noch hängt. Die Vorhersage im Oktober warnt meist davor.`);
+kompWissen('skandal','gefahr','Weinskandal',()=>'Ein Skandal im Land drückt ein paar Monate lang alle Weinpreise. Danach ist erst einmal Ruhe.');
+kompWissen('kontrolle','gefahr','Weinkontrolle',()=>'Der Prüfer kommt unangemeldet, im Schnitt alle drei Jahre. Findet er gepanschten Wein, wird der vernichtet, es gibt Strafe, und fünf Jahre lang kommt er jedes Jahr wieder.');
+kompWissen('maschine','gefahr','Maschinenschaden',()=>`Ein Schaden kostet eine Maschine auf einen Schlag viel Zustand. Unter ${MASCH_ROT} % fällt sie aus, bis sie gewartet ist.`);
+kompWissen('helferweg','gefahr','Erntehelfer über alle Berge',()=>`Trifft nur, wer einem Erntehelfer höchstens ${eur(LOHN_BILLIG)} im Monat zahlt. Dann verschwindet der billigste Helfer über Nacht und nimmt 5 bis 10 % aus der Kasse mit, mindestens ${eur(2000)} und höchstens ${eur(30000)}.`);
+// Die Edelfäulnis ist keine Gefahr, sie ist ein Gütezeichen (Maik 19.11.2026). Ihre Seite steht deshalb bei den Stufen.
+kompWissen('edel','stufe','Edelfäulnis',()=>`${edelRegel()}. Mit ihr steigt der Zucker schneller, die Menge schrumpft. Kabinett und Spätlese gibt es von dem Feld dann nicht mehr, dafür Auslese und mehr.`);
 // Was eine Stufe braucht, mit den Hürden des eigenen Gebiets (früher die Zeilen im Weinlexikon).
 function kompStufeText(st){
   const m=R().min, d=STUFEN[st];
-  if(st==='feder') return `Ab ${m.tafel}° Öchsle, jede Leseart. Nur im Monat nach der Lese anmelden und abfüllen, gleich verkaufbar, hält 3 Monate. Der Weinhändler nimmt ihn in jeder Menge zum vollen Preis, schnelles Geld für den Notfall. Reich wird damit keiner.`;
+  if(st==='feder') return `Ab ${m.tafel}° Öchsle, jede Leseart. Nur im Monat nach der Lese anmelden und abfüllen, gleich verkaufbar, hält 3 Monate. Der Weinhändler nimmt ihn in jeder Menge zum vollen Preis, schnelles Geld für den Notfall. Reich wird damit keiner.`;
   if(st==='eis') return `Ab ${m.tafel}° Öchsle, nur gefrorene Trauben der Dezember-Lese, mit Edelfäulnis, ${LESE.reif} oder ${LESE.ueber}, nicht gemischt. Nur im Januar anmelden. Die Öchsle bestimmen den Wert wie bei Auslese (ab ${m.aus}°), Beerenauslese (ab ${m.ba}°) oder Trockenbeerenauslese (ab ${m.tba}°).`;
   return `Ab ${mindest(st)}° Öchsle, ${d.lese?LESE[d.lese]:'jede Leseart'}${d.edel===true?', mit Edelfäulnis':d.edel===false?', ohne Edelfäulnis':''}.`;
 }
-// Die Einträge dieser Partie je Kapitel. Die fünf anderen Gebiete sind Schatten und zählen nicht mit.
+// Die Einträge mit Siegeln je Kapitel: drei Sorten, Sekt und neun Stufen. Nur sie zählen.
 function kompIds(kap){
   if(kap==='sorte') return [...sortenFolge().map(id=>'sorte_'+id),'sekt'];
   if(kap==='stufe') return Object.keys(STUFEN).map(st=>'stufe_'+st);
-  if(kap==='gebiet') return ['gebiet_'+S.region,'spitze'];
+  return [];
+}
+// Alles, was ein Kapitel zeigt: erst die Einträge mit Siegeln, dann die Wissens-Seiten. Bei den Gebieten steht das eigene oben.
+function kompSeiten(kap){
+  if(kap==='stufe') return [...kompIds(kap),'edel'];
+  if(kap==='gebiet') return ['gebiet_'+S.region,'spitze',...Object.keys(REGIONEN).filter(r=>r!==S.region).map(r=>'gebiet_'+r)];
   if(kap==='technik') return [...KELLER_PREISE.map((p,i)=>'keller'+(i+1)),'reife','zuckern',...Object.keys(MASCH).map(id=>'masch_'+id)];
-  return ['hagel','spaetfrost','kaelte','edel','skandal','kontrolle','maschine'];
+  if(kap==='gefahr') return ['hagel','spaetfrost','kaelte','skandal','kontrolle','maschine','helferweg'];
+  return kompIds(kap);
 }
 const kompSt=id=>((S.komp||{})[id]||{}).st||0;
 function kompZahlen(kap){const I=kap?kompIds(kap):KOMP_KAP.flatMap(k=>kompIds(k[0])); return {hab:I.reduce((a,id)=>a+kompSt(id),0),max:I.length*3}}
 function kompE(id){const K=S.komp||(S.komp={}); return K[id]||(K[id]={st:0,n:0})}
-// Trägt etwas ein. Jeder Aufruf heißt "erlebt" (Bronze, bei bAb erst ab dem Zählerstand). o.n zählt für Silber dazu, o.max hebt den Zähler auf einen Höchstwert,
-// o.g zählt für Gold dazu, o.gd merkt das Meisterstück. Steigt die Stufe, meldet kompNeu das Siegel.
+// Trägt etwas ein. Jeder Aufruf heißt "erlebt" und bringt Bronze, außer mit o.nb (nur zählen oder merken). o.n zählt für Silber dazu,
+// o.g zählt Flaschen für Gold dazu, o.gd merkt die Goldmedaille. Steigt die Stufe, meldet kompNeu das Siegel. Wissens-Seiten tragen nichts ein.
 function komp(id,o){
-  const D=KOMP[id]; if(!S||!D) return;
+  const D=KOMP[id]; if(!S||!D||D.wissen) return;
   const e=kompE(id), alt=e.st; o=o||{};
   if(o.n) e.n=(e.n||0)+o.n;
-  if(o.max!=null) e.n=Math.max(e.n||0,o.max);
   if(o.g) e.g=(e.g||0)+o.g;
   if(o.gd) e.gd=1;
-  if(e.st<1&&(!D.bAb||e.n>=D.bAb)) e.st=1;
+  if(e.st<1&&!o.nb) e.st=1;
   if(e.st===1&&e.n>=D.s) e.st=2;
-  if(e.st===2&&(D.gAb?(e[D.gZ]||0)>=D.gAb:e.gd)) e.st=3;
+  if(e.st===2&&((D.gAb&&(e.g||0)>=D.gAb)||(D.g&&e.gd))) e.st=3;
   if(e.st>alt) kompNeu(id,e.st);
 }
-// Zählt höchstens einmal im Jahr und merkt das Jahr (Edelfäulnis, Hagel, Spätfrost).
-function kompJahr(id){const e=kompE(id); if(e.j===S.jahr) return; e.j=S.jahr; komp(id,{n:1})}
 // Neues Siegel: Zeile für den nächsten Winzerboten, Album, und die Siegel-Meldung unten im Bild.
 // KOMP_LEISE: Beim Monatswechsel und bei der Arbeit der Manager kommt keine Meldung, dann reicht die Zeile im Winzerboten.
 let KOMP_LEISE=0, KOMP_Q=[], KOMP_T=0, KOMP_AUS=0, KOMP_AKT='stufe';
@@ -2218,129 +2265,136 @@ function kompMeldung(){
   el.classList.toggle('oben',$('#sheet').classList.contains('an')); el.classList.add('an'); fx('korken');
   clearTimeout(KOMP_AUS); KOMP_AUS=setTimeout(()=>el.classList.remove('an'),3600);
 }
-// Zeilen für "Kurz gemeldet". Alte Spielstände bekommen beim ersten Mal einen Satz zum neuen Buch.
+// Zeilen für "Kurz gemeldet". Alte Spielstände bekommen beim ersten Mal einen Satz zum neuen Buch (kompAlt) oder zu den neuen Regeln seit 11.3 (kompUm).
 function kompBote(Z){
-  const M=new Map(); for(const q of S.kompNeu||[]) if(KOMP[q[0]]) M.set(q[0],q[1]);
+  const M=new Map(); for(const q of S.kompNeu||[]) if(KOMP[q[0]]&&!KOMP[q[0]].wissen) M.set(q[0],q[1]);
   S.kompNeu=[];
-  if(S.kompAlt){Z.push(`📖 Neu im Kellerbuch und im Büro: das Weinkompendium. Was dein Weingut schon hat, ist eingetragen, das sind ${kompZahlen().hab} Siegel.`); delete S.kompAlt; return}
+  const z=kompZahlen();
+  if(S.kompAlt){Z.push(`📖 Neu im Kellerbuch und im Büro: das Weinkompendium. Was dein Weingut schon hat, ist eingetragen, das sind ${z.hab} von ${z.max} Siegeln.`); delete S.kompAlt; delete S.kompUm; return}
+  if(S.kompUm){Z.push(`📖 Das Weinkompendium ist neu geordnet: Siegel gibt es jetzt für deine Rebsorten, den Sekt und die Stufen, du hast ${z.hab} von ${z.max}. Gebiet, Technik und Gefahren sind Seiten zum Nachlesen, ihre Siegel zählen nicht mehr. Dafür steht jetzt bei jedem Eintrag eine kleine Geschichte.`); delete S.kompUm; return}
   const T=[...M].map(([id,st])=>`${KOMP[id].titel} (${KOMP_ST[st]})`);
   if(T.length<=3) for(const t of T) Z.push(`📖 Neues Siegel im Weinkompendium: ${t}.`);
   else Z.push(`📖 ${T.length} neue Siegel im Weinkompendium: ${T.join(', ')}.`);
 }
 // Album über alle Partien (Maik 19.11.2026): bester Stand je Eintrag, eigener Speicher-Schlüssel wie bei der Bestenliste. Der Test-Spieler schreibt nichts hinein.
+// Es liegt getrennt von den drei Spielständen, Löschen oder Überschreiben eines Spielstands rührt es nicht an. Alte Einträge für Gebiet, Technik und Gefahren bleiben darin liegen.
 function kompAlbumLies(){try{const o=JSON.parse(localStorage.getItem(KOMP_ALBUM_KEY)||'{}'); return o&&typeof o==='object'&&!Array.isArray(o)?o:{}}catch(e){return {}}}
 function kompAlbum(id,st){if(window.BOT) return; const A=kompAlbumLies(); if((A[id]||0)>=st) return; A[id]=st; try{localStorage.setItem(KOMP_ALBUM_KEY,JSON.stringify(A))}catch(e){}}
-function kompAlbumAbgleich(){if(window.BOT) return; const A=kompAlbumLies(); let neu=0; for(const id of Object.keys(S.komp||{})) if(KOMP[id]&&kompSt(id)>(A[id]||0)){A[id]=kompSt(id); neu=1} if(neu) try{localStorage.setItem(KOMP_ALBUM_KEY,JSON.stringify(A))}catch(e){}}
+function kompAlbumAbgleich(){if(window.BOT) return; const A=kompAlbumLies(); let neu=0; for(const id of Object.keys(S.komp||{})) if(KOMP[id]&&!KOMP[id].wissen&&kompSt(id)>(A[id]||0)){A[id]=kompSt(id); neu=1} if(neu) try{localStorage.setItem(KOMP_ALBUM_KEY,JSON.stringify(A))}catch(e){}}
+// Seit 11.3: Das Album geht in die Sicherung als Datei mit (slotSichern) und kommt beim Laden einer Datei zurück. Je Eintrag gilt der bessere Stand.
+// Die Datei ist fremder Inhalt: Es zählen nur bekannte Kennungen und die Werte 1 bis 3. Gibt zurück, ob die Datei ein Album hatte.
+function kompAlbumNimm(X){
+  if(!X||typeof X!=='object'||Array.isArray(X)) return false;
+  const A=kompAlbumLies(); let neu=0;
+  for(const id of Object.keys(KOMP)){const v=Object.prototype.hasOwnProperty.call(X,id)?Math.floor(+X[id]):0; if(v>=1&&v<=3&&v>(A[id]||0)){A[id]=v; neu=1}}
+  if(neu) try{localStorage.setItem(KOMP_ALBUM_KEY,JSON.stringify(A))}catch(e){}
+  return true;
+}
 /* ---- Haken im Spiel ---- */
+// Seit 11.3: Bronze für die Sorte gibt es beim ersten Abfüllen (fuelleAb), nicht mehr beim Pflanzen. Die Lese zählt nur die Liter mit.
 function kompLese(id,liter){if(KOMP['sorte_'+id]) kompE('sorte_'+id).l=(kompE('sorte_'+id).l||0)+liter}
-// Anmelden im Rathaus (nicht unter der Hand): Bronze der Stufe, je Jahrgang einmal für Silber. Dazu die Meisterstücke bei Hagel, Spätfrost und Edelfäulnis.
+// Anmelden im Rathaus (nicht unter der Hand): Bronze der Stufe, je Jahrgang einmal für Silber.
 function kompAnmelden(l,st){
   const id='stufe_'+st; if(!KOMP[id]) return;
   const e=kompE(id), J=e.jg||(e.jg=[]);
   if(J.includes(l.jahrgang)) komp(id); else{J.push(l.jahrgang); if(J.length>12) J.shift(); komp(id,{n:1})}
-  if(STUFEN[st].rang>=KOMP_W.trotzRang) for(const g of ['hagel','spaetfrost']) if(kompSt(g)&&kompE(g).j===l.jahrgang) komp(g,{gd:1});
-  if(st==='ba'||st==='tba') komp('edel',{gd:1});
 }
 // Verkauf auf jedem Weg (Großhandel, Weinhandlungen, eigenes Regal, Daueraufträge): Jede Flasche zählt einmal, Sekt beim Sekt, alles andere bei der Sorte
-// und bei Federweißer, Tafelwein und Qualitätswein zusätzlich bei der Stufe. Wer im Weinskandal verkauft, verliert dessen Meisterstück (x).
+// und bei den Stufen mit Gold über die Menge zusätzlich bei der Stufe. Gepanschter Wein zählt bei der Stufe nicht.
 function kompVerkauf(l,n){
   if(!l||!(n>0)) return;
-  if(l.sekt) komp('sekt',{n});
-  else{komp('sorte_'+l.sorte,{n}); const D=KOMP['stufe_'+l.stufe]; if(D&&D.gAb) komp('stufe_'+l.stufe,{g:n})}
-  if(S.lage&&S.lage.typ==='skandal') kompE('skandal').x=1;
+  if(l.sekt) return komp('sekt',{n});
+  komp('sorte_'+l.sorte,{n});
+  const D=KOMP['stufe_'+l.stufe]; if(D&&D.gAb&&!l.pansch) komp('stufe_'+l.stufe,{g:n,nb:1});
 }
-// Medaille bei einem Wettbewerb. w ist der Wein oder die Einreichung (sorte, stufe, sekt), platz 0 bis 2.
+// Wettbewerb. w ist der Wein oder die Einreichung (sorte, stufe, sekt), platz 0 bis 2. Seit 11.3 zählt nur die Goldmedaille, also Platz 1 (Maik 19.11.2026).
+// Eine Medaille bringt nie Bronze, sie wird nur gemerkt (nb).
 function kompMedaille(w,platz){
-  if(!w||!w.sorte) return;
-  if(w.sekt) return komp('sekt',{gd:1});
-  if(platz===0) komp('sorte_'+w.sorte,{gd:1});
-  komp('stufe_'+w.stufe,{gd:1});
+  if(!w||!w.sorte||platz!==0) return;
+  if(w.sekt) return komp('sekt',{gd:1,nb:1});
+  komp('sorte_'+w.sorte,{gd:1,nb:1}); komp('stufe_'+w.stufe,{gd:1,nb:1});
 }
-// Was sich am Stand des Weinguts ablesen lässt: Fläche, Spitzenlage, Kellerausbau, Maschinen, ältester Wein. Läuft jeden Monat, nach Käufen und für alte Spielstände.
-function kompStand(){
-  if(!S||!S.komp) return;
-  komp('gebiet_'+S.region,{max:Math.floor(flaecheBep()),gd:S.spitze?1:0});
-  if(S.spitze) komp('spitze',{max:1});
-  for(let k=1;k<=(S.keller||0);k++) komp('keller'+k);
-  for(const ma of S.maschinen||[]) if(KOMP['masch_'+ma.typ]){komp('masch_'+ma.typ); if(ma.zustand<MASCH_ROT) kompE('masch_'+ma.typ).aus=1}
-  const alt=S.lots.reduce((a,l)=>l.status==='flasche'&&l.stufe!=='feder'?Math.max(a,l.flMonate||0):a,0);
-  if(alt>0) komp('reife',{max:alt});
-}
-// Jahreswechsel: ein Jahr mehr für Kellerausbau, Maschinen und Spitzenlage. Bei den Maschinen zählt für Gold die Reihe der Jahre ohne Ausfall (aus).
-function kompJahreswechsel(){
-  for(let k=1;k<=(S.keller||0);k++) komp('keller'+k,{n:1});
-  for(const t of new Set((S.maschinen||[]).map(m=>m.typ))) if(KOMP['masch_'+t]){
-    const e=kompE('masch_'+t), ok=!e.aus&&!S.maschinen.some(m=>m.typ===t&&m.zustand<MASCH_ROT);
-    e.aus=0; if(!ok) e.g=0; komp('masch_'+t,{n:1,g:ok?1:0});
-  }
-  if(S.spitze) komp('spitze',{max:1,g:1});
-}
-// Alte Spielstände (vor 11.1): Was sich aus dem Stand ablesen lässt, wird still eingetragen. Zähler fangen bei null an.
+// Goldmedaillen der Weine, die noch im Keller liegen (für alte Spielstände).
+function kompMedLot(l){if(l&&(l.med||[]).some(m=>/^(🥇|🏆|🌍)/u.test(String(m)))) kompMedaille(l,0)}
+// Alte Spielstände. Vor 11.1: Was sich aus dem Stand ablesen lässt, wird still eingetragen, die Zähler fangen bei null an.
 function altKomp(){
-  if(S.komp){kompAlbumAbgleich(); return}
-  S.komp={}; KOMP_LEISE++;
+  if(S.komp){if(!S.kompV) kompUmbau(); kompAlbumAbgleich(); return}
+  S.komp={}; S.kompV=2; KOMP_LEISE++;
   try{
-    komp('gebiet_'+S.region);
-    for(const id of R().sorten) if((S.felder[id]&&S.felder[id].reben>0)||S.lots.some(l=>l.sorte===id)) komp('sorte_'+id);
+    for(const id of R().sorten) if(S.lots.some(l=>l.sorte===id&&l.status==='flasche')) komp('sorte_'+id);
     if(S.lots.some(l=>l.sekt)||S.sektMenge) komp('sekt');
     for(const k of S.ansGeb||[]) komp('stufe_'+String(k).split('|')[2]);
     for(const l of S.lots) if(l.stufe&&STUFEN[l.stufe]){
       if(!l.pansch) komp('stufe_'+l.stufe);
-      for(const m of l.med||[]) kompMedaille(l,/^(🥇|🏆|🌍)/u.test(String(m))?0:1);
+      kompMedLot(l);
     }
-    if(S.lots.some(l=>l.zucker||l.wasser)) komp('zuckern',{n:1});
-    kompStand();
   }finally{KOMP_LEISE--}
   S.kompNeu=[]; S.kompAlt=1;
+}
+// Spielstände aus 11.1 und 11.2 auf die Regeln von 11.3: Kein Siegel geht verloren, Bronze fürs Pflanzen bleibt.
+// Vorgemerkte Medaillen bei Sekt und Stufen galten für jede Medaille, sie werden neu aus den Goldmedaillen im Keller gelesen. Danach gelten die neuen Schwellen.
+function kompUmbau(){
+  S.kompV=2; S.kompUm=1; KOMP_LEISE++;
+  try{
+    for(const id of Object.keys(S.komp)){const D=KOMP[id], e=S.komp[id]; if(D&&!D.wissen&&e&&e.st<3&&!id.startsWith('sorte_')) delete e.gd}
+    for(const l of S.lots) kompMedLot(l);
+    for(const id of Object.keys(S.komp)) if(KOMP[id]&&kompSt(id)) komp(id,{nb:1});
+  }finally{KOMP_LEISE--}
 }
 /* ---- Anzeige: Fenster von unten, aus dem Kellerbuch und aus dem Büro ---- */
 const kompSiegel=st=>`<span class="ksg3">${[1,2,3].map(i=>`<i class="ksg s${i}${st>=i?' an':''}"></i>`).join('')}</span>`;
 const kompVon=(a,b,w)=>`${num(Math.min(a||0,b))} von ${num(b)} ${w}`;
-function kompSilber(D,e){return D.sT||kompVon(e.n,D.s,D.sW)}
-function kompGold(D,e){return D.gAb?kompVon(e[D.gZ],D.gAb,D.gW):D.g}
+function kompSilber(D,e){return kompVon(e.n,D.s,D.sW)}
+function kompGold(D,e){return D.gAb?(D.g?D.g+' Oder: ':'')+kompVon(e.g,D.gAb,D.gW)+(D.g?'.':''):D.g}
 // Der nächste Schritt als kurze Zeile für die Liste.
 function kompNaechst(id){
   const D=KOMP[id], e=(S.komp||{})[id]||{st:0,n:0};
   if(e.st>=3) return 'Alle drei Siegel geholt.';
   if(e.st<1) return 'Bronze: '+D.b;
   if(e.st===1) return 'Silber: '+kompSilber(D,e);
-  return 'Gold: '+kompGold(D,e)+(e.gd&&!D.gAb?' ✔':'');
+  return 'Gold: '+kompGold(D,e)+(e.gd&&D.g?' ✔':'');
 }
+// Der erste Satz der Geschichte als Anreißer für die Wissens-Seiten.
+const kompKurz=id=>(KOMP_TEXT[id]||'').split(/(?<=[.!?]) /)[0];
 function kompZeile(id){
   const D=KOMP[id], st=kompSt(id);
+  if(D.wissen) return `<button class="bzeile" data-a="kompEintrag" data-id="${id}"><div class="bz1"><b>${esc(D.titel)}${id==='gebiet_'+S.region?' (dein Gebiet)':''}</b><span class="kpf">›</span></div><div class="bz2">${esc(kompKurz(id))}</div></button>`;
   return `<button class="bzeile${st?'':' kzu'}" data-a="kompEintrag" data-id="${id}"><div class="bz1"><b>${esc(D.titel)}</b>${kompSiegel(st)}</div>${D.immer?`<div class="bz2">${D.text()}</div>`:''}<div class="${D.immer?'bz3':'bz2'}">${esc(kompNaechst(id))}</div></button>`;
 }
 function kompKapHtml(kap){
-  const K=KOMP_KAP.find(k=>k[0]===kap)||KOMP_KAP[0], z=kompZahlen(K[0]), so=R().sorten, A=kompAlbumLies();
-  const reife=f=>so.map(id=>`${SORTEN[id].name} ${f(SORTEN[id].minL)} Monate`).join(', ');
-  let h=`<h4 class="gk">${K[1]} ${K[3]} · ${z.hab} von ${z.max} Siegeln</h4>`;
-  if(K[0]==='stufe') h+=`<p class="mut">Was ein Wein für jede Stufe braucht, mit den Hürden in ${R().name}.</p>`;
-  h+=kompIds(K[0]).map(kompZeile).join('');
-  // Schatten: die fünf anderen Gebiete, in dieser Partie nicht zu holen.
-  if(K[0]==='gebiet') h+=Object.keys(REGIONEN).filter(r=>r!==S.region).map(r=>`<div class="bzeile kzu ksch"><div class="bz1"><b>${REGIONEN[r].name}</b>${A['gebiet_'+r]?kompSiegel(A['gebiet_'+r]):''}</div><div class="bz2">${A['gebiet_'+r]?`Im Album aus einer anderen Partie: ${KOMP_ST[A['gebiet_'+r]]}.`:`Nur in einer Partie ${WO[r]} zu holen.`}</div></div>`).join('');
-  if(K[0]==='stufe') h+=`<div class="hilfe"><b>⏳ Reifezeit in der Flasche bis zum Verkauf</b><br>Tafel- und Qualitätswein: 2 Monate.<br>Kabinett bis Trockenbeerenauslese: ${reife(x=>Math.max(1,x-(S.keller||0)))}.<br>Eiswein: ${reife(x=>Math.max(1,Math.round(x*1.5)-(S.keller||0)))}.${S.keller?`<br>Dein ausgebauter Keller kürzt das schon um ${S.keller} ${S.keller===1?'Monat':'Monate'}.`:''}</div>`
+  const K=KOMP_KAP.find(k=>k[0]===kap)||KOMP_KAP[0], z=kompZahlen(K[0]), so=R().sorten;
+  const reife=f=>so.map(id=>`${SORTEN[id].name} ${f(SORTEN[id].minL)} Monate`).join(', ');
+  let h=`<h4 class="gk">${K[1]} ${K[3]}${z.max?` · ${z.hab} von ${z.max} Siegeln`:''}</h4>`;
+  if(!z.max) h+=`<p class="mut">Zum Nachlesen, ohne Siegel. Tipp einen Eintrag an.</p>`;
+  if(K[0]==='stufe') h+=`<p class="mut">Was ein Wein für jede Stufe braucht, mit den Hürden ${WO[S.region]}.</p>`;
+  h+=kompSeiten(K[0]).map(kompZeile).join('');
+  if(K[0]==='stufe') h+=`<div class="hilfe"><b>⏳ Reifezeit in der Flasche bis zum Verkauf</b><br>Tafel- und Qualitätswein: 2 Monate.<br>Kabinett bis Trockenbeerenauslese: ${reife(x=>Math.max(1,x-(S.keller||0)))}.<br>Eiswein: ${reife(x=>Math.max(1,Math.round(x*1.5)-(S.keller||0)))}.${S.keller?`<br>Dein ausgebauter Keller kürzt das schon um ${S.keller} ${S.keller===1?'Monat':'Monate'}.`:''}</div>`
     +`<div class="hilfe"><b>📜 Gut zu wissen</b><br>Jeder Wein liegt mindestens einen Monat im Fass, höchstens sieben.<br>Ab Kabinett und beim Eiswein darfst du erst im Januar nach der Lese anmelden.<br>Überreife Trauben bringen 5° mehr Öchsle.<br>${edelRegel()}. Am häufigsten trifft sie die Sorte, die am besten ins Gebiet passt. Dann gibt es von dem Feld kein Kabinett und keine Spätlese mehr.<br>Kälteeinbruch im November: im Schnitt jedes vierte Jahr, die Vorhersage warnt meist davor.<br>${frostText()}, nur dann gibt es Eiswein.<br>Bei der Lese zeigt jede Leseart, ab wann der Wein verkaufsfertig ist.</div>${mib('stufen')}`;
   return h;
 }
+// Einträge mit Siegeln fürs Album: alle sechs Sorten, Sekt und neun Stufen.
+const kompAlbumIds=()=>Object.keys(KOMP).filter(id=>!KOMP[id].wissen);
 function kompHtml(){
-  const z=kompZahlen(), A=kompAlbumLies(), an=Object.keys(KOMP).filter(id=>A[id]).length;
+  const z=kompZahlen(), A=kompAlbumLies(), I=kompAlbumIds(), an=I.filter(id=>A[id]).length;
   return `${sbild('kellerbuch')}<h3>📖 Weinkompendium</h3><div class="kv"><span>Siegel in dieser Partie</span><span>${z.hab} von ${z.max}</span></div><div class="bar g"><i style="width:${z.hab/z.max*100}%"></i></div>
     <div class="chips kchips" id="kchips">${KOMP_KAP.map(k=>`<button class="chip ${k[0]===KOMP_AKT?'an':''}" data-a="kompKap" data-id="${k[0]}">${k[1]} ${k[2]}</button>`).join('')}</div>
     <div id="kinh">${kompKapHtml(KOMP_AKT)}</div>
-    <p class="mut kalbum">📚 Album über alle Partien: ${an} von ${Object.keys(KOMP).length} Einträgen entdeckt.</p>
+    <p class="mut kalbum">📚 Album über alle Partien: ${an} von ${I.length} Einträgen entdeckt.</p>
     <div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`;
 }
+// Eine Seite: Geschichte, die Zeile "Im Spiel" und bei Einträgen mit Siegeln die drei Bedingungen. Die Geschichte gibt es mit dem ersten Siegel, auf Wissens-Seiten sofort.
 function kompEintragHtml(id){
-  const D=KOMP[id], e=(S.komp||{})[id]||{st:0,n:0}, st=e.st||0, K=KOMP_KAP.find(k=>k[0]===D.kap), A=kompAlbumLies()[id]||0;
+  const D=KOMP[id], w=D.wissen, e=(S.komp||{})[id]||{st:0,n:0}, st=w?0:e.st||0, K=KOMP_KAP.find(k=>k[0]===D.kap), A=w?0:kompAlbumLies()[id]||0;
   const bal=(a,b)=>`<div class="bar g"><i style="width:${Math.min(100,(a||0)/b*100)}%"></i></div>`;
   const bed=(i,t,extra)=>`<div class="kbed"><i class="ksg s${i}${st>=i?' an':''}"></i><div><b>${KOMP_ST[i]}, ${KOMP_ST_WORT[i]}</b><span>${t}</span>${extra||''}</div></div>`;
-  return `<h3>${K[1]} ${esc(D.titel)}</h3><p class="mut" style="margin:-4px 0 8px">${K[3]} · ${st?`${KOMP_ST[st]}, ${KOMP_ST_WORT[st]}`:'noch kein Siegel'}</p>
-    <p>${st||D.immer?D.text():'<span class="mut">Den Text gibt es mit dem ersten Siegel.</span>'}</p>
-    ${bed(1,esc(D.b))}
-    ${bed(2,esc(kompSilber(D,e)),D.sT||st>=2?'':bal(e.n,D.s))}
-    ${bed(3,esc(kompGold(D,e))+(st<2?' Gold zählt erst, wenn du Silber hast.':'')+(e.gd&&!D.gAb&&st<3?' ✔ Das Meisterstück ist dir schon gelungen.':''),D.gAb&&st===2?bal(e[D.gZ],D.gAb):'')}
-    ${e.l?`<div class="kv" style="margin-top:8px"><span>Bisher gelesen</span><span>${num(e.l)} l</span></div>`:''}
-    ${A>st?`<p class="mut" style="margin-top:8px">📚 Im Album aus einer anderen Partie: ${KOMP_ST[A]}.</p>`:''}
+  return `<h3>${K[1]} ${esc(D.titel)}</h3><p class="mut" style="margin:-4px 0 8px">${K[3]} · ${w?'zum Nachlesen':st?`${KOMP_ST[st]}, ${KOMP_ST_WORT[st]}`:'noch kein Siegel'}</p>
+    <p>${st||w?KOMP_TEXT[id]||'':'<span class="mut">Die Geschichte dazu gibt es mit dem ersten Siegel.</span>'}</p>
+    <div class="hilfe kspiel"><b>📌 Im Spiel</b><br>${D.text()}</div>
+    ${w?'':`${bed(1,esc(D.b))}
+    ${bed(2,esc(kompSilber(D,e)),st>=2?'':bal(e.n,D.s))}
+    ${bed(3,esc(kompGold(D,e))+(st<2?' Gold zählt erst, wenn du Silber hast.':'')+(e.gd&&D.g&&st<3?' ✔ Die Goldmedaille hast du schon.':''),D.gAb&&st===2?bal(e.g,D.gAb):'')}
+    ${e.l?`<div class="kv" style="margin-top:8px"><span>Bisher gelesen</span><span>${num(e.l)} l</span></div>`:''}
+    ${A>st?`<p class="mut" style="margin-top:8px">📚 Im Album aus einer anderen Partie: ${KOMP_ST[A]}.</p>`:''}`}
     <div class="btns"><button class="sec" data-a="weinQual">Zurück</button></div>`;
 }
 function kompAuf(id){if(id&&KOMP[id]){KOMP_AKT=KOMP[id].kap; return openSheet(kompEintragHtml(id))} openSheet(kompHtml())}
@@ -2348,7 +2402,7 @@ function kompAuf(id){if(id&&KOMP[id]){KOMP_AKT=KOMP[id].kap; return openSheet(ko
 function kompFenster(){
   const z=kompZahlen();
   return fenster('komp','Weinkompendium',`<div class="kv"><span>Siegel in dieser Partie</span><span>${z.hab} von ${z.max}</span></div><div class="bar g"><i style="width:${z.hab/z.max*100}%"></i></div>`,{buch:'stufen',kn:pk('weinQual','Aufschlagen',''),
-    i:'Dein Sammelbuch: Für alles, was du im Spiel zum ersten Mal erlebst, gibt es ein Siegel in Bronze. Wer etwas oft nutzt oder übersteht, bekommt Silber, und für ein Meisterstück gibt es Gold. Die Siegel zählen je Partie, das Album merkt sich deine besten über alle Partien. Belohnungen dafür kommen in einer späteren Version. Im Kellerbuch öffnet „Weinkompendium“ oben rechts dasselbe Buch.'});
+    i:'Dein Sammelbuch und Nachschlagewerk. Für deine drei Rebsorten, den Sekt und die neun Stufen gibt es je drei Siegel: Bronze fürs erste Mal, Silber, wenn du es oft gemacht hast, und Gold für ein Meisterstück. Über Gebiet, Keller, Technik und Gefahren liest du dort nach, ohne Siegel. Die Siegel zählen je Partie, das Album merkt sich deine besten über alle Partien. Belohnungen dafür kommen in einer späteren Version. Im Kellerbuch öffnet „Weinkompendium“ oben rechts dasselbe Buch.'});
 }
 
 /* ================= Spielstart ================= */
@@ -2356,7 +2410,7 @@ function neuesSpiel(){
   const reg=REGIONEN[NEU.region];
   S={v:1,v7:1,name:NEU.name.trim()||'Weingut Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:START_GELD,ha:3,boden:80,duengungen:0,
     felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',sonne:0,markt:1,ansehen:0,
-    jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:1,lagerarb:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],komp:{}};
+    jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:1,lagerarb:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],komp:{},kompV:2};
   if(NEU.fu==='0') S.fu.an=0;
   for(const id of reg.sorten){S.felder[id]={reben:0,jung:0}; feldReset(S.felder[id])}
   etappe3(3,NEU.schwer);
@@ -2369,9 +2423,7 @@ function neuesSpiel(){
   if(!(S.fu&&S.fu.an)) schlag(40,'Leute für Weinberg und Keller','Je 1.000 Reben brauchst du das ganze Jahr einen Erntehelfer. Du hast einen, für mehr Reben stellst du vor dem Pflanzen beim Arbeitsamt in der Stadt ein. Der Lohn dort schwankt jeden Monat, wer eingestellt ist, behält seinen. Dein Lagerarbeiter betreut 10.000 l Fassraum und 20.000 leere Flaschen. Fehlen dir Leute, geht es nicht in den nächsten Monat.','arbeit');
   schlag(30,'Die Konkurrenz schläft nicht','Deine Gegner: '+S.gegner.map(g=>`${g.name}, ${GEGNER_TYP[g.typ].art}, ${WO[g.region]}`).join('; ')+`. Alle wollen auf den großen Stuhl im Weinbauverband, und es passt immer nur einer darauf. Alle ${GEN_JAHRE} Jahre übernimmt bei allen die nächste Generation.`);
   dorf('n0');
-  // Seit 11.1: Das eigene Gebiet ist der erste Eintrag im Weinkompendium, die Zeile dazu steht in der ersten Ausgabe.
-  KOMP_LEISE++; komp('gebiet_'+S.region); KOMP_LEISE--;
-  {const Z=[]; kompBote(Z); S.bericht=zeitung(Z,[],[])}
+  S.bericht=zeitung([],[],[]);
   // Version 7.7: Der Spielstart ist selbst eine Feier: Bühne mit der Geschichte, Kaufvertrag, dann die erste Ausgabe vom Winzerboten.
   S.feier={start:1,von:0,zu:0}; FSTUFE=0;
   START=null; TAB='feier'; save(); render();
@@ -2733,7 +2785,6 @@ function monatLauf(){
     }
     if(totAlle) Z.push(`Zum Jahreswechsel sind ${String(Math.round(totAlle/rebVor*1000)/10).replace('.',',')}\u00a0% deiner Reben eingegangen (${R().sorten.filter(id=>S.verlust[id]).map(id=>`${num(S.verlust[id])} ${SORTEN[id].name}`).join(', ')}). Der Boden lag im Jahresschnitt bei ${schnitt}\u00a0%${fp?', dazu kam der Frost':''}. Bis März kannst du nachpflanzen.`);
     S.bodenSum=0; S.bodenN=0; S.winterFrost=0; S.spaetFrost=false;
-    kompJahreswechsel();
   }
   S.wetter=S.wetterNext; S.temp=tempFuer(S.monat,S.wetter,true); neuePrognose();
   // Frost fürs Reben-Sterben mitzählen: Wintermonate und Spätfrost zur Blüte. Der Kälteeinbruch im November zählt nicht.
@@ -2743,7 +2794,7 @@ function monatLauf(){
   S.markt=clamp(S.markt+rnd(-.06,.06),.85,1.15);
   S.fassF=clamp((S.fassF||1)+rnd(-.08,.08),1-LAGER_SCHWANK,1+LAGER_SCHWANK); S.flaschF=clamp((S.flaschF||1)+rnd(-.08,.08),1-LAGER_SCHWANK,1+LAGER_SCHWANK);
   {const fr=R().sorten.filter(sorteFrei); S.rebenAng=S.monat<=2?fr[rint(0,fr.length-1)]:null}
-  if(S.lage&&--S.lage.rest<=0){if(S.lage.typ==='skandal'&&kompSt('skandal')&&!kompE('skandal').x) komp('skandal',{gd:1}); Z.push(S.lage.typ==='mode'?`Die Mode im Ausland ist vorbei, ${SORTEN[S.lage.sorte].name} kostet wieder so viel wie üblich.`:'Der Weinskandal ist vergessen, die Weinpreise erholen sich.'); S.lage=null}
+  if(S.lage&&--S.lage.rest<=0){Z.push(S.lage.typ==='mode'?`Die Mode im Ausland ist vorbei, ${SORTEN[S.lage.sorte].name} kostet wieder so viel wie üblich.`:'Der Weinskandal ist vergessen, die Weinpreise erholen sich.'); S.lage=null}
   neuesLohnAngebot();
   const W=wachse(S.monat);
   // Seit 8.0 (Paket B): Der Laubschneider macht im Juni den Sommerschnitt, wenn er im Einsatz ist. Gemeldet wird im Winzerboten vom Juli.
@@ -2756,9 +2807,6 @@ function monatLauf(){
   {const n=mgrHandlese(), t=`${n===1?'einen Erntehelfer':n+' Erntehelfer'} für die Handlese eingestellt`;
     if(n){Z.push(`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name} hat ${t}.`); const mw=S.manager.weingut; mw.zuletzt=t; mw.zm=S.jahr*12+S.monat; mgrLogbuch('weingut',t)}}
   // Wetter als Thema für die Zeitung. Die Einzelheiten je Rebsorte stehen unter "Aus dem Weinberg".
-  // Seit 11.1: Einträge im Weinkompendium. Beim Kälteeinbruch ist es ein Meisterstück, wenn schon gelesen war und nichts erfroren ist.
-  if(S.monat===10&&S.kaelte===S.jahr) komp('kaelte',{n:1,gd:!W.some(z=>z.startsWith('Kälteeinbruch'))&&R().sorten.some(id=>S.felder[id].gelesen)?1:0});
-  if((S.monat===3||S.monat===4)&&S.wetter==='frost'&&rebenGesamt()) kompJahr('spaetfrost');
   if(S.monat===10&&S.kaelte===S.jahr) schlag(70,'Kälteeinbruch im November',`Über Nacht ist es bitterkalt geworden. Wer noch Trauben hängen hatte, hat sie verloren.${W.some(z=>z.startsWith('Kälteeinbruch'))?' '+(spLohn(2)?'Bei dir haben die Frostfeuer der Feuerwehr ein Viertel gerettet.':'Bei dir ist erfroren, was noch am Stock hing.'):' Deine Trauben hat es nicht erwischt.'}`,'frost',{du:W.some(z=>z.startsWith('Kälteeinbruch'))?1:0});
   if(S.monat===9&&S.kaelteWarn===S.jahr) schlag(60,'Wetterdienst warnt vor Kälteeinbruch','Für November sagt der Wetterdienst bitterkalte Nächte voraus. Wer noch Trauben hängen hat, sollte jetzt lesen.','frost',{du:R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)?1:0});
   if(eisEigen()) schlag(66,...eisT('eigen'),'eiswein',{du:1});
@@ -2780,7 +2828,7 @@ function monatLauf(){
   if(!S.pleite){generationMonat(Z); if(!S.ende){geschichteMonat(); etappe3Monat(Z)}}
   // Die Zeitung zeigt den Bericht: kopf ist die Schlagzeile, art die Artikel, zeilen "Kurz gemeldet", wetter die Ereignisse im Weinberg, ehr die neuen Ehrungen.
   // k ist das, was zum Monatswechsel abgebucht wurde (steht bei der Bank).
-  kompStand(); kompBote(Z);
+  kompBote(Z);
   const ehr=(S.ehrungen||[]).slice(S.ehrZeig||0); S.ehrZeig=(S.ehrungen||[]).length;
   S.bericht=zeitung(Z,W,ehr,{basis:K.basis,loehne:K.loehne,rate:K.tilgung+K.zins,ueberz:uz,steuer});
   TAB='monat'; save(); render(); window.scrollTo(0,0);
@@ -2912,7 +2960,7 @@ function etappe3Monat(Z){
   else if(a){a.phase=1; schlag(56,a.spitze?`Heute wird geboten: die Spitzenlage ${wo}`:`Heute wird geboten: ${a.ha}\u00a0Hektar ${wo}`,`Im Saal sitzen ${a.bieter.length} Bieter, das Startgebot liegt bei ${eur(a.start)}.${ab?' Mitbieten kannst du diesen Monat im Rathaus.':nichtDu}`,a.spitze?'spitzenlage':'auktion',{archiv:a.spitze?0:1})}
   // Spitzenlage: ab Vizepräsident alle drei Jahre eine Chance, in einem Auktionsmonat zur Hälfte. Nur Nachbarn bieten mit.
   if(!S.auktion&&!S.spitze&&S.rang>=R_SPITZE&&AUK_MONATE.includes(S.monat)&&S.jahr-(S.spitzeVers||0)>=3&&Math.random()<.5){
-    neueAuktion(1); S.spitzeVers=S.jahr; komp('spitze');
+    neueAuktion(1); S.spitzeVers=S.jahr;
     schlag(57,`Die Spitzenlage ${wo} kommt unter den Hammer`,`Die beste Lage weit und breit: ${SPITZE_HA}\u00a0Hektar Steilhang in voller Südsonne. Nächsten Monat wird versteigert, das Startgebot liegt bei ${eur(SPITZE_START)}. Wer sie bekommt, erntet jedes Jahr süßere Trauben.`,'spitzenlage');
   }
   if(!S.auktion&&AUK_MONATE.includes(S.monat)&&(S.jahr-START_JAHR)*12+S.monat>=6&&Math.random()<AUK_CHANCE){
@@ -2933,9 +2981,9 @@ function strafeHoehe(){return Math.max(STRAFE_MIN,Math.round(2*panschListe().red
 function strafeAns(){return STRAFE_ANS+STRAFE_ANS_WEITER*(panschListe().length-1)}
 function kontrolleMonat(Z){
   const k=S.kontr; if(--k.in>0) return;
-  if(!panschListe().length){kontrNeu(); komp('kontrolle',{n:1,gd:1}); schlag(45,'Weinkontrolle ohne Befund',`Der Prüfer blättert durch dein Kellerbuch und findet nichts zu beanstanden. +${ruhm(2)} Ansehen.`,'kontrolle',{archiv:1}); return}
+  if(!panschListe().length){kontrNeu(); schlag(45,'Weinkontrolle ohne Befund',`Der Prüfer blättert durch dein Kellerbuch und findet nichts zu beanstanden. +${ruhm(2)} Ansehen.`,'kontrolle',{archiv:1}); return}
   // Gepanschter Wein im Keller: Der Spieler entscheidet im Dialog, ob er besticht. Bis dahin ist alles andere gesperrt.
-  S.pruefer=1; komp('kontrolle',{n:1}); schlag(85,'Weinkontrolle im Keller','Der Prüfer steht unangemeldet im Keller und will dein Kellerbuch sehen.','kontrolle',{archiv:1,du:1});
+  S.pruefer=1; schlag(85,'Weinkontrolle im Keller','Der Prüfer steht unangemeldet im Keller und will dein Kellerbuch sehen.','kontrolle',{archiv:1,du:1});
 }
 const bestechChance=n=>.5+.35*(n-BESTECH_MIN)/(BESTECH_MAX-BESTECH_MIN);
 function zeigePruefer(){
@@ -5047,7 +5095,7 @@ const AKT={
     }else{
       a.gebot=x; a.fuehrer='du'; a.ende='du'; S.geld-=x; S.ha+=a.ha; fx('hammer',3);
       a.text=`Zum Ersten, zum Zweiten, zum Dritten! Der Weinberg mit ${a.ha}\u00a0Hektar gehört dir für ${eur(x)}. +${ruhm(3+Math.min(a.ha,7))} Ansehen. Dein Weingut hat jetzt ${S.ha}\u00a0Hektar.`;
-      if(a.spitze){S.spitze=1; kompStand(); a.text+=` Die Spitzenlage gehört dir: +${ruhm(SPITZE_ANS)} Ansehen, und ab jetzt starten deine Trauben jeden Juli mit ${SPITZE_OE}° mehr.`}
+      if(a.spitze){S.spitze=1; a.text+=` Die Spitzenlage gehört dir: +${ruhm(SPITZE_ANS)} Ansehen, und ab jetzt starten deine Trauben jeden Juli mit ${SPITZE_OE}° mehr.`}
       if(S.geld<0) a.text+=` Dein Konto steht jetzt im Minus, das kostet 1 % Zinsen im Monat. Ein Kredit bei der Bank kostet nur ${Math.round(ZINS*100)} % im Jahr.`;
     }
     save();render();AKT.auktion();
@@ -5189,7 +5237,7 @@ const AKT={
   slotSichern(d){
     if(S&&+d.id===SLOT) save(); // seit 8.3, damit die Spielzeit bis jetzt mitgeht
     const o=lies(+d.id); if(!o) return;
-    const a=document.createElement('a'), url=URL.createObjectURL(new Blob([JSON.stringify(o)],{type:'application/json'}));
+    const a=document.createElement('a'), url=URL.createObjectURL(new Blob([JSON.stringify({...o,album:kompAlbumLies()})],{type:'application/json'}));
     a.href=url; a.download=`Öchsle ${String(o.name).replace(/[^\wäöüÄÖÜß -]/g,'').trim()||'Spielstand'} ${o.jahr}-${String(o.monat+1).padStart(2,'0')}.json`;
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000);
   },
@@ -5303,7 +5351,7 @@ const AKT={
   kellerAusJa(){
     const K=S.keller||0, pr=KELLER_PREISE[K];
     if(pr==null||S.rang<KELLER_RANG[K]||S.geld<pr) return;
-    zahle(pr); S.keller=K+1; kompStand(); fx('stempel'); closeSheet(); save(); render();
+    zahle(pr); S.keller=K+1; fx('stempel'); closeSheet(); save(); render();
     meldung('Der Keller ist ausgebaut',`Stufe ${S.keller} von ${KELLER_PREISE.length} ist fertig. Prädikatsweine und Eiswein sind jetzt ${S.keller} ${S.keller===1?'Monat':'Monate'} früher verkaufsreif.`,'fassgang');
   },
   hoffest(){
@@ -5347,7 +5395,7 @@ const AKT={
     if(max<10) return meldung('Geht gerade nicht','Dir fehlt das Geld oder der Platz für 10 Reben.');
     mengeSheet({titel:`${so.name} pflanzen`,text:`${eur2(pr)} je Rebe${pr!==so.preis?`, üblich sind ${eur2(so.preis)}`:''}. Junge Reben tragen im ersten Jahr die Hälfte. Deine Erntehelfer reichen noch für ${num(kap)} Reben${kap<frei?', für mehr musst du erst einstellen':''}.`,max,step:10,start:Math.min(max,1000),okText:'Pflanzen',
       info:n=>`<b>${num(n)} Reben</b>kostet ${eur(n*pr)}`,
-      ok:n=>{fx('stempel');komp('sorte_'+d.id);zahle(Math.round(n*pr*100)/100);const f=S.felder[d.id];f.reben+=n;f.jung+=n;if(S.verlust&&S.verlust[d.id])S.verlust[d.id]=Math.max(0,S.verlust[d.id]-n)}});
+      ok:n=>{fx('stempel');zahle(Math.round(n*pr*100)/100);const f=S.felder[d.id];f.reben+=n;f.jung+=n;if(S.verlust&&S.verlust[d.id])S.verlust[d.id]=Math.max(0,S.verlust[d.id]-n)}});
   },
   roden(d){
     const f=S.felder[d.id];
@@ -5376,7 +5424,7 @@ const AKT={
     const neu=n=>zu?{oe:Math.min(150,Math.round(l.oe*(1+n/100))),liter:l.liter}:{oe:Math.round(l.oe/(1+n/100)),liter:Math.round(l.liter*(1+n/100))};
     mengeSheet({titel:zu?'Most zuckern':'Most wässern',text:zu?'Zucker hebt die Öchsle um den gewählten Anteil.':'Wasser streckt die Menge um den gewählten Anteil, die Öchsle sinken entsprechend.',min:1,max:ZUCKER_MAX-hat,step:1,start:Math.min(5,ZUCKER_MAX-hat),okText:zu?'Zuckern':'Wässern',wag:1,
       info:n=>{const x=neu(n);return `<b>${n}\u00a0%</b>danach ${num(x.liter)}\u00a0l mit ${x.oe}° Öchsle<br><span class="${hat+n>ZUCKER_ERLAUBT?'rot':'mut'}">${hat+n>ZUCKER_ERLAUBT?'Über '+ZUCKER_ERLAUBT+' %: Das ist Panscherei.':'Als Tafelwein noch erlaubt.'}</span>`},
-      ok:n=>{const x=neu(n);l.oe=x.oe;l.liter=x.liter;l[k]=hat+n;komp('zuckern',{n:1})}});
+      ok:n=>{const x=neu(n);l.oe=x.oe;l.liter=x.liter;l[k]=hat+n}});
   },
   misch1(){
     const mi=S.lots.filter(mischbar), ls=mi.filter(a=>mi.some(b=>a!==b&&farbe(a)===farbe(b)));
@@ -5553,7 +5601,7 @@ const AKT={
     if(S.monat>2||S.rang<T.rang) return;
     if(T.bonus&&S.maschinen.some(x=>x.typ===id)) return meldung('Schon da',`${T.f?'Eine':'Einen'} ${T.name} hast du schon, ein zweiter Bonus kommt nicht dazu.`);
     if(S.geld<T.preis) return meldung('Zu wenig Geld',`${T.f?'Eine':'Ein'} ${T.name} kostet ${eur(T.preis)}.`);
-    zahle(T.preis);S.maschinen.push({typ:id,zustand:100});kompStand();fx('stempel');save();render();
+    zahle(T.preis);S.maschinen.push({typ:id,zustand:100});fx('stempel');save();render();
   },
   maschVerkauf(d){if(S.monat>2)return;const ma=S.maschinen[+d.id];if(!ma)return;kassiere(Math.round(mTyp(ma).preis*.5*ma.zustand/100));S.maschinen.splice(+d.id,1);save();render()},
   maschWarten(d){
@@ -5596,7 +5644,7 @@ function neuHinweis(hat){let alt=null; try{alt=localStorage.getItem(NEU_KEY); lo
 // Seit 11.0 "Was geplant ist" (Idee A, Maik 19.11.2026): der Ausblick steht über "Was ist neu" und im Büro bei "Deine Idee".
 // Je Zeile Titel und ein Satz, ohne Versionsnummer und Datum. Was gebaut ist, wandert von hier nach WAS_NEU.
 const AUSBLICK=[
-  ['📖 Mehr im Weinkompendium','Das Sammelbuch ist da. Es folgen eine kleine Geschichte zu jedem Eintrag, Belohnungen für gesammelte Siegel und ein Album über alle Partien.'],
+  ['📖 Mehr im Weinkompendium','Die Geschichten zu jedem Eintrag sind da. Es folgen Belohnungen für gesammelte Siegel und ein Album über alle Partien.'],
   ['🍇 Neue Rebsorten','Jedes Gebiet bekommt drei eigene Sorten: eine für die Menge, eine für den Sekt und eine für Spitzenweine.'],
   ['🎬 Kurze Filme','Die großen Momente bekommen bewegte Bilder.'],
   ['👥 Online mit Freunden','Eine gemeinsame Bestenliste, jeder spielt auf seinem Handy für sich.']];
@@ -5610,6 +5658,7 @@ function ideeText(){
 }
 function ideeFertig(){try{localStorage.removeItem(IDEE_KEY)}catch(e){} meldung('Danke für deine Idee!','Jede Idee wird gelesen. Was daraus wird, siehst du bei „Was geplant ist“ und später bei „Was ist neu“.')}
 const WAS_NEU=[
+  ['11.3','20.11.2026','Weinkompendium mit Geschichten: zu jedem Eintrag ein kurzer Text über Wein und Weinbau. Siegel gibt es jetzt für Rebsorten, Sekt und Stufen, alles andere liest du einfach nach.'],
   ['11.2','19.11.2026','Aufgeräumtes Büro: vier Bereiche statt einer langen Liste, die Rangliste steht als Zeile bei deinem Rang.'],
   ['11.1','19.11.2026','Das Weinkompendium ersetzt das Weinlexikon: ein Sammelbuch mit Siegeln in Bronze, Silber und Gold, im Kellerbuch und im Büro.'],
   ['11.0','19.11.2026','Deine Idee zählt: Im Büro gibst du Ideen per WhatsApp weiter und siehst, was geplant ist.'],
