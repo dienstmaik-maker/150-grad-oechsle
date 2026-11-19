@@ -459,7 +459,8 @@ img.fass{height:1.1em;vertical-align:-.18em}
 .wgbild.zu .wgtxt{top:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:none;text-align:center;padding:0}
 .wgbild.zu .wgtxt i{font-style:normal;font-size:30px;margin-bottom:2px}
 .wgregler{margin:0 0 8px}.wgregler b{display:block;font-size:13px;font-weight:700;color:var(--mut);margin-bottom:2px}
-.wgst{display:flex;gap:3px}.wgst button{flex:1 1 0;min-width:0;min-height:0;padding:8px 0;font-size:13px}.wgst button:disabled{opacity:.35}
+.wgst{display:flex;gap:3px;align-items:center}.wgst button{flex:0 0 calc((100% - 27px)/10);min-width:0;min-height:0;padding:8px 0;font-size:13px}.wgst button:disabled{opacity:.35}
+.wgrest{margin-left:6px;white-space:nowrap}.wgnx{margin-top:8px}
 @media (prefers-reduced-motion:reduce){#feier .fbild,#feier .ischw,#feier .konf,.urk.neu,.urk.neu .usiegel,#feier .fliste>div,#feier .fkarte,#info .zsonder.stempeln{animation:none}#feier .ischw{opacity:0}#feier.aus .ischw{opacity:1}#feier .konf{display:none}}
 @keyframes iein{from{opacity:1}to{opacity:0}}
 @keyframes iaus{from{opacity:0}to{opacity:1}}
@@ -656,7 +657,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='8.5.4';
+const VERSION='8.5.5';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -3261,18 +3262,20 @@ function urkWand(){
 let WG_SICHT=null;
 function wgSicht(){if(!WG_SICHT||WG_SICHT.m!==monatNr()) WG_SICHT={m:monatNr(),st:S.rang+1}; return WG_SICHT}
 function wgSeit(i){if(!i) return `Der Anfang, ${START_JAHR}`; const e=(S.ehrungen||[]).find(e=>e.a&&urkRang(e)===i); return e&&e.j?`Aufstieg ${MON[e.m]} ${e.j}`:'Aufstieg'}
+// Seit 8.5.5 "Dein Rang": nur die erreichten Ränge und der nächste mit Schloss, dahinter "+ x weitere" und darunter der Name des nächsten Rangs (Maik 19.11.2026).
 function wgFenster(){
-  const max=S.rang+1, n=Math.min(10,max+1);
+  const max=S.rang+1, n=Math.min(10,max+1), rest=10-n, nx=max<10?RAENGE[max]:null;
   return fenster('meingut','Mein Weingut',`<div class="wgbild"><div class="wgl"></div><div class="wgsch"></div><div class="wgtxt"></div></div>
-    <div class="wgregler"><b>Stufe</b></div><div class="wgst">${Array.from({length:10},(_,k)=>k+1>n?`<button class="sec klein" disabled>${k+1}</button>`:`<button class="sec klein" data-a="wgSt" data-st="${k+1}">${k+1>max?'🔒':k+1}</button>`).join('')}</div>`,
-    {buch:'ziel',i:'Mit jedem Rang wächst dein Weingut. Unten wählst du die Stufe und siehst, wie es früher aussah. Die nächste Stufe bleibt im Dunkeln, bis du aufsteigst.'});
+    <div class="wgregler"><b>Dein Rang</b></div><div class="wgst">${Array.from({length:n},(_,k)=>`<button class="sec klein" data-a="wgSt" data-st="${k+1}">${k+1>max?'🔒':k+1}</button>`).join('')}${rest>0?`<span class="mut wgrest">+ ${rest} weitere</span>`:''}</div>
+    ${nx?`<div class="mut wgnx">Nächster Rang: 🔒 <b>${esc(frau()&&nx.w||nx.name)}</b></div>`:''}`,
+    {buch:'ziel',i:'Mit jedem Rang wächst dein Weingut. Unten tippst du auf einen Rang und siehst, wie dein Weingut damals aussah. Der nächste Rang bleibt im Dunkeln, bis du aufsteigst.'});
 }
 // Zeichnet Bild, Text und Knöpfe der gewählten Stufe, ohne das Büro neu aufzubauen (die Seite springt nicht).
 function wgZeig(){
   const b=document.querySelector('.wgbild'); if(!b) return; const max=S.rang+1, st=Math.min(wgSicht().st,10), zu=st>max, rn=esc(frau()&&RAENGE[st-1].w||RAENGE[st-1].name);
   b.classList.toggle('zu',zu); b.style.setProperty('--wgz',`url(bilder/${wgBild(st,'sommer')}.jpg)`);
   if(!zu) b.querySelector('.wgl').style.backgroundImage=`url(bilder/${wgBild(st,'sommer')}.jpg)`;
-  b.querySelector('.wgtxt').innerHTML=zu?`<i>🔒</i><b>${rn}</b>Stufe ${st} von 10`:`<b>${rn}</b>Stufe ${st} · ${wgSeit(st-1)}`;
+  b.querySelector('.wgtxt').innerHTML=zu?`<i>🔒</i><b>${rn}</b>Nächster Rang`:`<b>${rn}</b>Stufe ${st} · ${wgSeit(st-1)}`;
   (b.closest('.fen')||b.parentNode).querySelectorAll('.wgst button[data-st]').forEach(x=>x.classList.toggle('sec',+x.dataset.st!==st));
 }
 function wgStart(){const b=document.querySelector('.wgbild'); if(!b||b.dataset.ok) return; b.dataset.ok=1; wgZeig()}
