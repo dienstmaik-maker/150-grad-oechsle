@@ -582,6 +582,21 @@ button.fi.wort{width:auto;padding:0 11px;font:600 13px/1 system-ui,-apple-system
 #fuehrer .fbuch{display:block;margin-top:10px;font-size:15px;color:#7b1e3a;text-decoration:underline;text-align:center;cursor:pointer}
 .fleuchte{animation:fleucht 1s ease-in-out 4;border-radius:12px}
 @keyframes fleucht{0%,100%{box-shadow:0 0 0 0 rgba(240,199,90,0)}50%{box-shadow:0 0 0 6px rgba(240,199,90,.95),0 0 22px 8px rgba(240,199,90,.7)}}
+/* Optik 2.0: nur Code, ohne neue Bilder */
+:root{--holz:url(bilder/holz-weingut.jpg);--dunkel:.12}
+html.ort-stadt{--holz:url(bilder/holz-stadt.jpg);--dunkel:.12}
+html.ort-keller{--holz:url(bilder/holz-keller.jpg);--dunkel:0}
+#top,#tabs{background:url(bilder/holz-keller.jpg) center/cover}
+#subs{background:url(bilder/holz-stadt.jpg) center/cover}
+#top>div{border:1.5px solid #c9973f;border-radius:12px;background:linear-gradient(rgba(62,32,14,.6),rgba(24,11,4,.72));box-shadow:inset 0 0 0 1px rgba(255,222,150,.16),inset 0 2px 6px rgba(0,0,0,.55),0 2px 5px rgba(0,0,0,.5)}
+#top b{font-size:18px}
+.ptitel{background:linear-gradient(transparent,rgba(20,8,2,.82))}
+.ptitel b{font:700 22px/1.15 "Alegreya SC","Alegreya",Georgia,serif;letter-spacing:.04em;color:#fbecc8;text-shadow:0 2px 4px #000,0 0 12px rgba(0,0,0,.6)}
+.fin>.kv{font-family:var(--schrift);font-size:16px;font-variant-numeric:lining-nums tabular-nums;padding:4px 0;border-bottom:1px solid rgba(120,80,40,.2)}
+.fin>.kv:last-of-type{border-bottom:0}
+.fin>.kv>span{font-variant-numeric:lining-nums tabular-nums}.fin>.kv>span:last-child{font-weight:600}
+button.fi>i{border:2px solid #7b1e3a;color:#7b1e3a;font-size:16px;line-height:20px}
+button.fi.an>i{background:#7b1e3a;color:#fbf5e6}
 </style>
 </head>
 <body>
