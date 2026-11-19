@@ -151,6 +151,9 @@ details.stz{margin-top:8px}details.stz summary{cursor:pointer;font-weight:700;op
 @keyframes hoch{from{transform:translateY(56px);opacity:0}to{transform:none;opacity:1}}
 input[type=range]{width:100%;height:40px;accent-color:var(--wein)}
 input[type=text]{width:100%;font:inherit;padding:12px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink)}
+textarea{display:block;width:100%;min-height:150px;resize:none;font:inherit;line-height:1.4;padding:12px;border-radius:12px;border:1.5px solid var(--line);background:#fffaf0;color:var(--ink)}
+.ausbl{margin:4px 0 6px}.ausbl div{padding:7px 0;border-bottom:1px solid rgba(110,75,40,.25);font-size:14px;line-height:1.35}.ausbl b{display:block;color:#7b1e3a}
+#titel .tchl h3{margin:12px 0 2px}#titel .tchl h3:first-child{margin-top:0}
 .slval{text-align:center;font-size:15px;margin:8px 0}.slval b{font-size:24px;display:block}
 .wahl{display:block;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1.5px solid var(--line);margin:0 0 8px;font-weight:500}
 .wahl.an{border-color:var(--wein);box-shadow:0 0 0 2px var(--wein) inset}
@@ -671,7 +674,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='10.4';
+const VERSION='11.0';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -3752,7 +3755,7 @@ function vBuero(){
   const E=(S.ehrungen||[]).slice().reverse(), wein=E.filter(e=>!e.a), L=bestenZeilen();
   const zeile=e=>`<div class="rl"><span>${esc(e.i)}</span><div><b>${esc(e.t)}</b>${e.j?`<span class="mut">${MON[e.m]} ${e.j}</span>`:''}</div></div>`;
   return namenFenster()+fenster('anleitung','Spielanleitung','',{links:`Alles zum Nachschlagen in ${buchKap().length} kurzen Kapiteln, von der Bedienung bis zum Spielführer.`,kn:pk('buch','Aufschlagen',''),
-      i:'Das Büro ist dein Pokalraum und deine Schaltzentrale. Von oben: Spielanleitung, Rangliste, Ehrungen, Urkunden, Mein Weingut, Chronik, Bestenliste, Spielführer, Ton und ganz unten deine Spielstände. Das kleine i erklärt jedes Fenster kurz, „Mehr im Buch“ schlägt das passende Kapitel auf.'})
+      i:'Das Büro ist dein Pokalraum und deine Schaltzentrale. Von oben: Spielanleitung, Rangliste, Ehrungen, Urkunden, Mein Weingut, Chronik, Bestenliste, Spielführer, Deine Idee, Ton und ganz unten deine Spielstände. Das kleine i erklärt jedes Fenster kurz, „Mehr im Buch“ schlägt das passende Kapitel auf.'})
     +vRangliste()
     +fenster('ehrungen','Ehrungen für deine Weine',wein.length?`<div class="gold" style="font-size:17px;margin-bottom:6px">${ehrSumme(wein)}</div><div class="mut">Zuletzt:</div>`+wein.slice(0,3).map(zeile).join(''):[],{
       leer:'Noch keine Ehrungen.',buch:'wettbewerb',i:'Medaillen gibt es bei der Landesprämierung, beim Bundeswettbewerb und als Präsident bei der Weltweinschau. Sie bringen Ansehen und machen den Wein wertvoller.'})
@@ -3764,6 +3767,10 @@ function vBuero(){
     +fenster('besten','Bestenliste',L.length?L.map(bestenZeile).join(''):[],{
       leer:'Noch leer.',buch:'ende',i:BESTEN_I})
     +fuFenster()
+    // Seit 11.0 (Idee A, Maik 19.11.2026): Ideen der Spieler gehen als Text über WhatsApp oder "Teilen" raus, ohne Nummer oder Adresse im Code.
+    +fenster('idee','💡 Deine Idee','<div class="mut">Dir fehlt etwas im Spiel, oder etwas stört dich? Sag es uns.</div>',{buch:'buero',
+      kn:[pk('idee','Ich gebe meine Idee weiter',''),pk('ausblick','Was geplant ist','',{sec:1})],
+      i:'Schreib oder sprich deine Idee ins Textfeld, das Mikrofon deiner Tastatur schreibt mit. Danach schickst du sie über WhatsApp oder „Teilen“ an Maik. Das Spiel selbst verschickt nichts und kennt keine Nummer, den Empfänger wählst du aus deinen Kontakten. „Was geplant ist“ zeigt, woran schon gearbeitet wird.'})
     +fenster('ton','Ton',tonZeilen(),{i:'Musik „an“ spielt durchgehend, „kurz“ spielt beim Wechsel zwischen Weingut, Kellerei und Stadt ein paar Sekunden, „aus“ ist still. Feiern, Wettbewerbe und Pfändung laufen auch bei „kurz“ in voller Länge. Mit den Reglern stellst du Musik und Geräusche getrennt leiser oder lauter.'})
     +fenster('spiel','Dein Spiel',`<div class="kv"><span>Speicherplatz</span><span>Spielstand ${SLOT+1}</span></div><div class="kv"><span>Schwierigkeit</span><span>${DIFF[S.schwer].name}</span></div>`
       // Seit 8.5.1: Knopf "Spiel laden" statt "Spielstände", die Erklärung steht sichtbar beim passenden Knopf.
@@ -4866,6 +4873,19 @@ const AKT={
     if(i==null){render();window.scrollTo(0,0);return meldung('Alle Plätze belegt','Alle drei Spielstände sind belegt. Lösch einen, am besten nachdem du ihn als Datei gesichert hast, dann ist Platz für ein neues Spiel.')}
     AKT.slotNeu({id:i});
   },
+  // Seit 11.0: Ideen-Knopf im Büro. Der Entwurf bleibt auf dem Gerät liegen, bis die Idee rausgegangen ist.
+  idee(){
+    let alt=''; try{alt=localStorage.getItem(IDEE_KEY)||''}catch(e){}
+    openSheet(`<h3>💡 Deine Idee</h3><p class="mut">Tipp ins Feld und schreib los. Mit dem Mikrofon 🎤 deiner Tastatur kannst du auch einfach sprechen.</p>
+      <textarea id="ideeT" maxlength="${IDEE_MAX}" placeholder="Was fehlt dir, was stört dich, was wäre schön?">${esc(alt)}</textarea>
+      <p class="mut" style="margin-top:8px">Danach wählst du Maik aus deinen Kontakten. Das Spiel selbst verschickt nichts.</p>
+      <div class="btns"><button data-a="ideeWa">WhatsApp</button>${navigator.share?'<button class="sec" data-a="ideeTeilen">Teilen</button>':''}</div>
+      <div class="btns"><button class="sec" data-a="close">Zurück</button></div>`);
+    $('#ideeT').addEventListener('input',e=>{try{localStorage.setItem(IDEE_KEY,e.target.value)}catch(x){}});
+  },
+  ideeWa(){const t=ideeText(); if(!t) return; ideeFertig(); window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank')},
+  ideeTeilen(){const t=ideeText(); if(!t) return; navigator.share({text:t}).then(ideeFertig).catch(()=>{})},
+  ausblick(){openSheet(`<h3>Was geplant ist</h3><p class="mut">Daran wird gearbeitet. Reihenfolge und Umfang können sich noch ändern.</p>${ausblickHtml()}<div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`)},
   titelChronik(){zeigeChronik()},
   titelChronikZu(){const c=document.querySelector('#titel .tchron'); if(c) c.remove()},
   titelLaden(){titelZu(); if(S)save(); S=null; START=null; render(); window.scrollTo(0,0)},
@@ -5236,7 +5256,25 @@ function zeigeTitel(){
 // Wer noch keinen Spielstand hat, bekommt kein Leuchten. Neue Versionen oben in WAS_NEU eintragen, die ausführliche Chronik steht im Vault.
 const NEU_KEY='oechsle-neu';
 function neuHinweis(hat){let alt=null; try{alt=localStorage.getItem(NEU_KEY); localStorage.setItem(NEU_KEY,VERSION)}catch(e){return false} return hat&&alt!==VERSION}
+// Seit 11.0 "Was geplant ist" (Idee A, Maik 19.11.2026): der Ausblick steht über "Was ist neu" und im Büro bei "Deine Idee".
+// Je Zeile Titel und ein Satz, ohne Versionsnummer und Datum. Was gebaut ist, wandert von hier nach WAS_NEU.
+const AUSBLICK=[
+  ['📖 Weinkompendium','Aus dem Weinlexikon wird ein Sammelbuch: Für alles, was du erlebst und meisterst, gibt es Siegel in Bronze, Silber und Gold.'],
+  ['🍇 Neue Rebsorten','Jedes Gebiet bekommt drei eigene Sorten: eine für die Menge, eine für den Sekt und eine für Spitzenweine.'],
+  ['🗂️ Aufgeräumtes Büro','Vier Bereiche statt einer langen Liste: Erfolge, Wissen, Familie und Einstellungen.'],
+  ['🎬 Kurze Filme','Die großen Momente bekommen bewegte Bilder.'],
+  ['👥 Online mit Freunden','Eine gemeinsame Bestenliste, jeder spielt auf seinem Handy für sich.']];
+function ausblickHtml(){return `<div class="ausbl">${AUSBLICK.map(([t,x])=>`<div><b>${t}</b>${esc(x)}</div>`).join('')}</div>`}
+// Ideen-Knopf: Der Text bekommt eine Kopfzeile mit der Version, damit Maik weiß, auf welchen Stand sich die Idee bezieht.
+const IDEE_KEY='oechsle-idee', IDEE_MAX=1000;
+function ideeText(){
+  const f=$('#ideeT'), t=f?f.value.trim().slice(0,IDEE_MAX):'';
+  if(!t){if(f){f.placeholder='Schreib oder sprich erst deine Idee hier hinein.'; f.focus()} return ''}
+  return `💡 Idee für 150° Öchsle (Version ${VERSION}):\n${t}`;
+}
+function ideeFertig(){try{localStorage.removeItem(IDEE_KEY)}catch(e){} meldung('Danke für deine Idee!','Jede Idee wird gelesen. Was daraus wird, siehst du bei „Was geplant ist“ und später bei „Was ist neu“.')}
 const WAS_NEU=[
+  ['11.0','19.11.2026','Deine Idee zählt: Im Büro gibst du Ideen per WhatsApp weiter und siehst, was geplant ist.'],
   ['10.4','19.11.2026','Neues Titelbild im Hochformat und elf Zeitungsbilder im Stil der Weingut-Reihe.'],
   ['10.3','19.11.2026','Das ganze Spiel geprüft: Nach dem alten Winzer sprechen deine Manager, gewonnen ist erst mit der Chronik, dazu viele Regeln und Texte im Buch.'],
   ['10.2.1','19.11.2026','Der alte Winzer stellt sich vor und klappt seine Blase zum Kopf zusammen, im Büro siehst du deinen nächsten Rang.'],
@@ -5271,8 +5309,8 @@ const WAS_NEU=[
   ['1.0','14.11.2026','Die erste Fassung als App fürs Handy.']];
 function zeigeChronik(){
   const t=$('#titel'); if(!t||t.querySelector('.tchron')) return;
-  t.insertAdjacentHTML('beforeend',`<div class="tchron"><div class="tchz" data-a="titelChronikZu"></div><div class="card tchk"><h3>Was ist neu</h3>
-    <div class="tchl">${WAS_NEU.map(([v,d,x])=>`<div class="tchz1"><b>${v}</b><small>${d}</small><span>${esc(x)}</span></div>`).join('')}</div>
+  t.insertAdjacentHTML('beforeend',`<div class="tchron"><div class="tchz" data-a="titelChronikZu"></div><div class="card tchk">
+    <div class="tchl"><h3>Was geplant ist</h3>${ausblickHtml()}<h3>Was ist neu</h3>${WAS_NEU.map(([v,d,x])=>`<div class="tchz1"><b>${v}</b><small>${d}</small><span>${esc(x)}</span></div>`).join('')}</div>
     <div class="mitte"><button class="siegel" data-a="titelChronikZu">Okay</button></div></div></div>`);
 }
 const TITEL_NAMEN=[[['Spielidee &amp;','Entwicklung'],'Maik','Dienst'],[['Chef-Tester &amp;','Visuelle Effekte'],'Timo','Dienst']];
@@ -5322,7 +5360,7 @@ document.addEventListener('click',e=>{
   const a=b.dataset.a, vorn=/^titel/.test(a);
   if(!vorn&&S&&S.pleite&&!['neuJa','tab','sub','close','weiter','menue','ton','infoWeiter','feierAlle','feierWeiter','wachsAlle','feierBuehne','feierEnde','buch','buchZu'].includes(a)) return;
   // Seit 10.1: Nach dem Ende gehen nur noch Chronik, neues Spiel, Spielstände, Ton und Buch, seit 10.2 auch die Feier am Küchentisch.
-  if(!vorn&&S&&S.ende&&!['menue','close','ton','infoWeiter','feierEnde','feierAlle','buch','buchZu','neuFrage','neuJa'].includes(a)) return;
+  if(!vorn&&S&&S.ende&&!['menue','close','ton','infoWeiter','feierEnde','feierAlle','buch','buchZu','neuFrage','neuJa','idee','ideeWa','ideeTeilen','ausblick'].includes(a)) return;
   // Solange der Weinprüfer wartet, geht nichts anderes.
   if(!vorn&&S&&S.pruefer&&!['pruefJa','pruefBestechen','slMinus','slPlus','slOk','close','ton','menue','buch','buchZu'].includes(a)) return zeigePruefer();
   // Schritt G 7.0: Solange die Übergabe offen ist, geht nur das Übergeben.
