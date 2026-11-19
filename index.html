@@ -601,6 +601,36 @@ button.fi.wort{width:auto;padding:0 11px;font:600 13px/1 system-ui,-apple-system
 #ksiegel.an{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
 #ksiegel.oben{bottom:auto;top:calc(14px + env(safe-area-inset-top))}
 #ksiegel .ksg{width:30px;height:30px;margin:0}#ksiegel b{display:block}#ksiegel small{display:block;font-size:13px;color:#6b5a45}
+/* Optik 2.0: nur Code, ohne neue Bilder */
+:root{--holz:url(bilder/holz-weingut.jpg);--dunkel:.12}
+html.ort-stadt{--holz:url(bilder/holz-stadt.jpg);--dunkel:.12}
+html.ort-keller{--holz:url(bilder/holz-keller.jpg);--dunkel:0}
+#top,#tabs{background:url(bilder/holz-keller.jpg) center/cover}
+#subs{background:url(bilder/holz-stadt.jpg) center/cover}
+.pano::after{border:24px solid transparent;border-image:url(bilder/rahmen-neu.webp) 77/24px stretch}
+/* Knopfbelegung (Maik 19.11.2026): hell = alles, was okay ist (Standard), rot = Stopp, überleg noch mal (.wag), dunkel = leiser Rückweg wie Abbrechen und Zurück (.sec) */
+:root{--schild:url(bilder/knopf-hell.webp);--kschrift:#4a1526;--kschatten:none}
+button.sec{--schild:url(bilder/knopf-dunkel.webp);--kschrift:#f4e4d4;--kschatten:0 1px 2px #000}
+button.wag{--schild:url(bilder/knopf-rot.webp);--kschrift:#f8e6bf;--kschatten:0 1px 2px #3a0a16}
+button,#tabs #weiter{border-image-slice:50% 42 fill;border-image-width:50% 18px}
+#tabs button.an{background:none;box-shadow:none;border:0 solid transparent;border-image:url(bilder/knopf-aktiv.webp) 48 fill/11px stretch;border-radius:0}
+.card,.wahl,.task,.bzeile{background:none;border:0 solid transparent;border-image:url(bilder/karte-neu.webp) 56 fill/20px stretch;border-radius:16px}
+.card{padding:16px 20px}
+.fkopf{background:none;border-bottom:1px solid rgba(120,70,30,.45)}
+#top>div{border:1.5px solid #c9973f;border-radius:12px;background:linear-gradient(rgba(62,32,14,.6),rgba(24,11,4,.72));box-shadow:inset 0 0 0 1px rgba(255,222,150,.16),inset 0 2px 6px rgba(0,0,0,.55),0 2px 5px rgba(0,0,0,.5)}
+#top b{font-size:18px}
+.ptitel{background:linear-gradient(transparent,rgba(20,8,2,.82))}
+.ptitel b{font:700 22px/1.15 "Alegreya SC","Alegreya",Georgia,serif;letter-spacing:.04em;color:#fbecc8;text-shadow:0 2px 4px #000,0 0 12px rgba(0,0,0,.6)}
+.fin>.kv{font-family:var(--schrift);font-size:16px;font-variant-numeric:lining-nums tabular-nums;padding:4px 0;border-bottom:1px solid rgba(120,80,40,.2)}
+.fin>.kv:last-of-type{border-bottom:0}
+.fin>.kv>span{font-variant-numeric:lining-nums tabular-nums}.fin>.kv>span:last-child{font-weight:600}
+button.fi>i{border:2px solid #7b1e3a;color:#7b1e3a;font-size:16px;line-height:20px}
+button.fi.an>i{background:#7b1e3a;color:#fbf5e6}
+/* Maik 19.11.2026: "Nächster Monat" sieht aus wie der aktive Hauptreiter und ist genauso hoch. Der aktive Unterreiter liegt auf Pergament ohne roten Rahmen, die Leiste bleibt Holz. */
+#tabs #weiter{flex:1.5;flex-direction:column;gap:2px;margin:2px 2px 4px;min-height:56px;padding:6px 2px;border-image:url(bilder/knopf-aktiv.webp) 48 fill/11px stretch;color:#7b1e3a;text-shadow:none;font:800 11.5px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-caps:normal;letter-spacing:0;white-space:nowrap;filter:none;transform:translateY(-3px)}
+#tabs #weiter span{font-size:21px;line-height:1.4}
+#tabs #weiter:active{transform:translateY(-1px)}
+#subs button.an{background:none;box-shadow:none;border:0 solid transparent;border-image:url(bilder/karte-neu.webp) 56 fill/9px stretch;border-radius:0}
 </style>
 </head>
 <body>
@@ -1139,7 +1169,7 @@ function musikStell(neu){
   P.ende=performance.now()+KURZ*1000; a.z=1; a.dt=KURZ_BLENDE; spiel(a.el);
 }
 // Version 7.8: Ton als zwei Zeilen untereinander, je Knopf und Regler daneben (Maik 17.11.2026). Die Knöpfe sind gleich breit, damit die Regler bündig stehen.
-function tonZeile(id,knopf,k){return `<div style="display:flex;align-items:center;gap:10px;margin:8px 0"><button class="sec klein" data-a="ton" data-id="${id}" style="flex:0 0 11.5em;margin:0">${knopf}</button>`
+function tonZeile(id,knopf,k){return `<div style="display:flex;align-items:center;gap:10px;margin:8px 0"><button class="klein" data-a="ton" data-id="${id}" style="flex:0 0 11.5em;margin:0">${knopf}</button>`
   +`<input type="range" min="0" max="100" step="5" value="${TON[k]}" oninput="tonLaut('${k}',this.value)" style="flex:1;min-width:0" aria-label="Lautstärke"><b class="tlz-${k}" style="flex:0 0 3em;text-align:right">${TON[k]}\u00a0%</b></div>`}
 function tonZeilen(){return tonZeile('musik',`🎵 Musik: ${musikText()}`,'laut')+tonZeile('fx',`🔔 Geräusche: ${TON.fx?'an':'aus'}`,'fxLaut')}
 // Regler bewegt: wirkt sofort (Musik auch auf das, was gerade spielt) und wird gemerkt.
@@ -2517,7 +2547,7 @@ function vEnde(){
     ${karte('🗳️ Die Wahlen im Verband',wahlen)}${karte('🌍 Die Weltweinschau',welt)}${karte('🤝 Für das Dorf',spenden)}${karte('🏅 Medaillen',med)}
     ${L.length?`<div class="card"><h3>🏆 Bestenliste</h3>${L.map(bestenZeile).join('')}</div>`:''}
     <div class="mut" style="margin:0 0 10px">Dieser Spielstand ist abgeschlossen. Er bleibt mit seiner Chronik auf seinem Platz liegen, bis du ihn löschst.</div>
-    <div class="btns"><button data-a="titelNeu">Neues Spiel</button><button class="sec" data-a="menue">Spielstände</button></div>
+    <div class="btns"><button data-a="titelNeu">Neues Spiel</button><button data-a="menue">Spielstände</button></div>
   </div></div>`;
 }
 function erbeOffen(){return !!(S&&S.erbe&&S.erbe.offen)}
@@ -2802,7 +2832,7 @@ function endeHtml(k){
   const z=(t,w)=>`<div><small>${t}</small><b${String(w).length>10?' class="lang"':''}>${w}</b></div>`;
   return `<div class="zstand">${z('Gespielt',`${st.jahre} Jahre`)}${z('Rang',RAENGE[st.rang]?rangK(st.rang):RAENGE[0].kurz)}${z('Platz',`${st.platz}. von ${S.gegner.length+1}`)}${z('Vermögen',eur(st.verm||0))}${z('Ansehen',st.ans)}</div>
     ${L.length?`<div class="zart"><h3>Die Bestenliste</h3><div class="zliste">${L.map(x=>`<div class="${x.du?'du':''}"><span>${x.platz}.</span><b>${esc(x.name)}<small>${esc(x.sub)}</small></b><span>${x.rechts}</span></div>`).join('')}</div></div>`:''}
-    <div class="zknopf"><button data-a="infoWeiter">Weiterspielen ▶</button> <button class="sec" data-a="titelNeu">Neues Spiel</button></div>`;
+    <div class="zknopf"><button data-a="infoWeiter">Weiterspielen ▶</button> <button data-a="titelNeu">Neues Spiel</button></div>`;
 }
 // Schritt G 7.0: Beim Sieg wird die Flasche vom ersten Jahrgang geöffnet. Wer es in der ersten Generation schafft, macht sie selbst auf.
 function flascheSieg(){
@@ -3158,8 +3188,8 @@ function vSlots(){
     <div class="btns"><button data-a="slotNeu" data-id="${i}">Neues Spiel</button><button class="wag klein" data-a="slotWegFrage" data-id="${i}">Löschen</button></div>`:o?`<b>${esc(o.name)}</b>
     <div class="mut">${esc(MON[o.monat]||'')} ${esc(o.jahr)} · ${REGIONEN[o.region].name} · ${o.amt&&o.amt.ehren?(o.anrede==='w'?'Ehrenpräsidentin':'Ehrenpräsident'):o.amt&&!o.amt.im?(o.anrede==='w'?'Altpräsidentin':'Altpräsident'):(RAENGE[o.rang]||RAENGE[0]).kurz} · ${o.ende?(ENDE_NAME[o.ende.art]||'beendet'):eur(+o.geld||0)}</div>
     <div class="btns"><button data-a="slotLaden" data-id="${i}">${o.ende?'Chronik ansehen':'Weiterspielen'}</button></div>
-    <div class="btns"><button class="sec klein" data-a="slotSichern" data-id="${i}">Als Datei sichern</button><button class="wag klein" data-a="slotWegFrage" data-id="${i}">Löschen</button></div>`
-    :`<div class="mut">Leer</div><div class="btns"><button data-a="slotNeu" data-id="${i}">Neues Spiel</button><button class="sec" data-a="slotDatei" data-id="${i}">Aus Datei laden</button></div>`}</div>`}).join('')}
+    <div class="btns"><button class="klein" data-a="slotSichern" data-id="${i}">Als Datei sichern</button><button class="wag klein" data-a="slotWegFrage" data-id="${i}">Löschen</button></div>`
+    :`<div class="mut">Leer</div><div class="btns"><button data-a="slotNeu" data-id="${i}">Neues Spiel</button><button data-a="slotDatei" data-id="${i}">Aus Datei laden</button></div>`}</div>`}).join('')}
   ${bestenHtml()}
   <div class="mut" style="margin:0 0 12px">Gespeichert wird von selbst nach jedem Monat. Mit „Als Datei sichern“ bekommst du eine Datei, die du aufheben oder auf ein anderes Gerät mitnehmen kannst.</div>
   ${tonKnoepfe()}<div class="mut" style="margin:0 0 12px">Bilder, Musik und Geräusche sind mit KI erstellt (Musik mit Treblo, Geräusche mit ElevenLabs, elevenlabs.io).</div></main>`;
@@ -3189,7 +3219,7 @@ function vRang(){
     <div class="mut">Der Aufstieg zum Rang ${n.name} ${bringtSatz(r+1)}.${rahmenSatz(r+1)}</div>`
     :`<div class="kv"><span>⭐ Ansehen</span><span>${S.ansehen}</span></div><div class="kv"><span>💰 Vermögen</span><span>${eur(v)}</span></div>`
       // Seit 10.0: Am Ziel stehen die Stimmung im Verband und die nächste Wahl.
-      +(S.amt?`<div class="kv"><span>🗳️ Stimmung im Verband</span><span>${stimmZ()} von 100</span></div>${amtBalken()}<div class="mut">${amtSatz()}</div>${weltZeile()}${kz('',`<button class="sec klein" data-a="tab" data-id="stadt" data-sub="amt">🗳️ Zum Weinbauverband</button>`)}`
+      +(S.amt?`<div class="kv"><span>🗳️ Stimmung im Verband</span><span>${stimmZ()} von 100</span></div>${amtBalken()}<div class="mut">${amtSatz()}</div>${weltZeile()}${kz('',`<button class="klein" data-a="tab" data-id="stadt" data-sub="amt">🗳️ Zum Weinbauverband</button>`)}`
         :`<div class="fleer" style="margin-top:6px">Höher geht es nicht.</div>`));   // Seit 10.2.1 ohne Rangleiter, der Rang steht in der Überschrift (Maik 19.11.2026).
   return fenster('rang',`${neu?'<span class="rneuB">Neu</span> ':''}Aktueller Rang: ${duN()}`,h,{kl:neu?'rneu':'',buch:'ziel',
     hin:[S.sieger&&!S.amt&&`🪑 Auf dem Stuhl im Festsaal: ${esc(S.sieger)}`],
@@ -3579,7 +3609,7 @@ function wgSeit(i){if(!i) return `Der Anfang, ${START_JAHR}`; const e=(S.ehrunge
 function wgFenster(){
   const max=S.rang+1, n=Math.min(10,max+1), rest=10-n, nx=max<10?RAENGE[max]:null;
   return fenster('meingut','Mein Weingut',`<div class="wgbild"><div class="wgl"></div><div class="wgsch"></div><div class="wgtxt"></div></div>
-    <div class="wgregler"><b>Dein Rang</b></div><div class="wgst">${Array.from({length:n},(_,k)=>`<button class="sec klein" data-a="wgSt" data-st="${k+1}">${k+1>max?'🔒':k+1}</button>`).join('')}${rest>0?`<span class="mut wgrest">+ ${rest} weitere</span>`:''}</div>
+    <div class="wgregler"><b>Dein Rang</b></div><div class="wgst">${Array.from({length:n},(_,k)=>`<button class="klein" data-a="wgSt" data-st="${k+1}">${k+1>max?'🔒':k+1}</button>`).join('')}${rest>0?`<span class="mut wgrest">+ ${rest} weitere</span>`:''}</div>
     ${nx?`<div class="mut wgnx">Nächster Rang: 🔒 <b>${esc(frau()&&nx.w||nx.name)}</b></div>`:''}`,
     {buch:'ziel',i:'Mit jedem Rang wächst dein Weingut. Unten tippst du auf einen Rang und siehst, wie dein Weingut damals aussah. Der nächste Rang bleibt im Dunkeln, bis du aufsteigst.'});
 }
@@ -3656,7 +3686,7 @@ function buchZeig(){
   const h=i<0?`<div class="binh"><h2>Inhalt</h2>${ANLEITUNG.map(t=>`<h3>${t.titel}</h3>${t.kap.map(k=>`<div class="bz" data-a="buch" data-id="${k.id}"><span>${k.nr}.</span>${k.titel}</div>`).join('')}`).join('')}</div>`
     :`<div class="bnr">Kapitel ${k.nr} von ${K.length}</div><h2>${k.titel}</h2><div class="kurz"><b>Kurz gesagt:</b> ${k.kurz}</div>${k.p}${k.id==='gebiete'?gebieteGenauer():k.g?`<details><summary>Genauer</summary>${k.g}</details>`:''}`;
   b.innerHTML=`<div class="bkopf"><b>Spielanleitung</b><button class="sec klein" data-a="buchZu" aria-label="Buch schließen">✕</button></div><div class="binnen">${h}</div>
-    <div class="bfuss"><button class="sec klein" data-a="buch" data-id="${zur?zur.id:''}" ${zur?'':'disabled'}>◀ Zurück</button>${i<0?'':`<button class="sec klein" data-a="buch" data-id="">☰ Inhalt</button>`}<button class="klein" data-a="buch" data-id="${i<0?K[0].id:vor?vor.id:''}" ${i<0||vor?'':'disabled'}>Weiter ▶</button></div>`;
+    <div class="bfuss"><button class="sec klein" data-a="buch" data-id="${zur?zur.id:''}" ${zur?'':'disabled'}>◀ Zurück</button>${i<0?'':`<button class="klein" data-a="buch" data-id="">☰ Inhalt</button>`}<button class="klein" data-a="buch" data-id="${i<0?K[0].id:vor?vor.id:''}" ${i<0||vor?'':'disabled'}>Weiter ▶</button></div>`;
   b.className='an'; $('.binnen',b).scrollTop=0;
 }
 // Betrieb (seit 7.4 auf dem Fenster-Baustein, seit 7.5 mit dem Personal): Dein Betrieb, die drei Manager untereinander, Deine Leute, das Fest.
@@ -3983,7 +4013,7 @@ function vAktuell(){
   const A=aufgaben(), an=stehtAn()||fuSperre();
   return fenster('ansteht','Das steht an',A.length?A.map(a=>`<button class="task ${a.rot?'rot':a.ruhig?'hin':'gelb'}" data-a="${a.akt||'tab'}" data-id="${a.tab||''}" data-sub="${a.sub||''}">${a.rot?'⚠️ ':''}${esc(a.t)}</button>`).join(''):[],{
     leer:'Diesen Monat steht nichts an. Du kannst weiterblättern.',
-    kn:an?`<button class="sec klein" data-a="tab" data-id="monat">📰 Winzerbote</button>`:`<div class="zweikn"><button class="sec klein" data-a="tab" data-id="monat">📰 Winzerbote</button><button class="klein" data-a="weiterBis">⏩ Weiter bis etwas ansteht</button></div>`,
+    kn:an?`<button class="klein" data-a="tab" data-id="monat">📰 Winzerbote</button>`:`<div class="zweikn"><button class="klein" data-a="tab" data-id="monat">📰 Winzerbote</button><button class="klein" data-a="weiterBis">⏩ Weiter bis etwas ansteht</button></div>`,
     i:'Hier steht, was diesen Monat zu tun ist. Ein Tipp führt dich direkt an den Ort. <b>Rot</b> kann nicht warten, <b>Gelb</b> hat Zeit, <b>Grau</b> ist nur ein Hinweis. Die Punkte an den Reitern zeigen dasselbe, Hinweise bekommen keinen Punkt.<br><br>⏩ „Weiter bis etwas ansteht“ blättert am Stück, höchstens zwölf Monate. Es hält nur bei Rot und bei Schlagzeilen, die dich selbst betreffen. Bei Gelb und bei Hinweisen blättert es weiter. Ausnahme ist die Lese: Von September bis November hält es einmal im Monat, solange Trauben hängen, im Dezember nur bei gefrorenen Trauben.<br><br>Geboten und eingereicht wird im Rathaus, der Tipp hier führt dich hin. „Winzerbote“ zeigt die letzte Ausgabe noch einmal. Tipps gibt dir der Spielführer in der Sprechblase.'+(fuSperre()?'<br><br>Mit dem Spielführer gibt es ⏩ erst ab dem Januar des zweiten Jahres, im ersten Jahr kommt fast jeden Monat ein Tipp.':'')})+vRang();
 }
 // Maschinen (seit 7.4 auf dem Fenster-Baustein): "Deine Maschinen" mit einer Zeile je Maschine, darunter je Bauart ein Fenster zum Kaufen.
@@ -4108,7 +4138,7 @@ function vBerg(){
     h+=fenster('feld_'+id,titel,z,{buch:m>=7?'lese':'berg',
       hin:[mr&&m<=2&&S.verlust&&S.verlust[id]>0&&`${WM} pflanzt beim Weiterblättern nach.`],
       links:pflanz&&frei<10?'Auf deinem Land ist kein Platz mehr frei.':haengt?'Lese ab August.':'',
-      kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,pflanz&&`<button class="klein" data-a="pflanzen" data-id="${id}" ${frei<10?'disabled':''}>Pflanzen</button>`,pflanz&&f.reben&&`<button class="klein sec" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
+      kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,pflanz&&`<button class="klein" data-a="pflanzen" data-id="${id}" ${frei<10?'disabled':''}>Pflanzen</button>`,pflanz&&f.reben&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
   }
   h+=fenster('duengung','Düngung',`<div class="kv"><span>Boden</span><span>${S.boden} %</span></div><div class="bar"><i style="width:${S.boden}%"></i></div>
     <div class="mut ${S.boden<80?'rot':''}">Für die Weinqualität: ${bodenText(S.boden)}</div>
@@ -4132,7 +4162,7 @@ function vBerg(){
     i:`Für den Aufstieg zählt nur die bepflanzte Fläche. Je ${num(REBEN_JE_HELFER)} Reben brauchst du einen Erntehelfer, fehlt einer, geht es nicht in den nächsten Monat. Die Ernteleistung zählt bei der Lese: Reicht sie nicht für alle Reben, bleibt ein Teil der Trauben hängen. Leute stellst du im Arbeitsamt ein, Maschinen kaufst du unter „Maschinen“.`});
   const G=steckbrief(S.region,{fen:1}), auf=FI_AUF.has('gebiet+');
   h+=fenster('gebiet','Dein Gebiet',`<div class="gkopf"><img class="gs" src="bilder/gebiet-${S.region}.webp" alt=""><div class="kv"><span>${G.name}</span><span>${G.art}</span></div></div><div class="sb fklapp"${auf?'':' hidden'}>${G.rumpf}</div>`,{buch:'gebiete',
-    kn:`<button class="klein sec" data-a="klapp" data-id="gebiet" data-auf="Zuklappen" data-zu="Steckbrief zeigen">${auf?'Zuklappen':'Steckbrief zeigen'}</button>`,
+    kn:`<button class="klein" data-a="klapp" data-id="gebiet" data-auf="Zuklappen" data-zu="Steckbrief zeigen">${auf?'Zuklappen':'Steckbrief zeigen'}</button>`,
     i:'Jedes Gebiet hat eine eigene Stärke. In warmen Gebieten gibt es öfter edelsüße Weine, in kühlen öfter Eiswein, in der Mitte mehr Medaillen oder mehr Geld. Der Steckbrief zeigt, welche Sorten hier passen, was sich lohnt und wie du am besten vorgehst.'});
   return h+zu;
 }
@@ -4155,7 +4185,7 @@ function vKellerStart(){
   h+=fenster('abfuellen','Wein abfüllen',fa.map(l=>{const rest=8-l.fassMonate; return fz(dot(l.sorte)+lotName(l),
       `${num(l.liter)} l · ${l.oe}° Öchsle · seit ${l.fassMonate} ${mon(l.fassMonate)} im Fass`,
       `${l.stufe?'':'Noch nicht angemeldet. '}<span class="${l.fassMonate>=5?'rot':''}">Verdirbt in ${rest} ${mon(rest)}.</span>${l.stufe&&abfFl(l)>l.liter?` Mit der Abfüllanlage ${num(abfFl(l))} Flaschen.`:''}${l.stufe&&S.flaschen<abfFl(l)?` <span class="rot">Es fehlen ${num(abfFl(l)-S.flaschen)} leere Flaschen.</span>`:''}`,
-      l.stufe?`<button class="klein" data-a="abfuellen" data-id="${l.id}">Abfüllen</button>`:`<button class="klein sec" data-a="anmelden" data-id="${l.id}">Anmelden</button>`)}),{
+      l.stufe?`<button class="klein" data-a="abfuellen" data-id="${l.id}">Abfüllen</button>`:`<button class="klein" data-a="anmelden" data-id="${l.id}">Anmelden</button>`)}),{
     leer:'Alle Fässer sind leer.',
     hin:[mf&&`🍷 Dein ${KM} füllt beim Weiterblättern ab.`,bonusMasch('abfuell')&&`🍾 Mit der Abfüllanlage kommen ${Math.round(ABF_PLUS*100)} % mehr Flaschen aus jedem Fass.`],
     i:`Der Wein bleibt mindestens einen Monat im Fass und höchstens sieben, danach verdirbt er. Abfüllen geht erst nach der Anmeldung im Rathaus. Abgefüllt wird immer das ganze Fass, ein Liter je Flasche. Mit der Abfüllanlage geht nichts daneben, dann kommen ${Math.round(ABF_PLUS*100)} % mehr Flaschen heraus, dafür brauchst du auch so viele leere.${mf?` Dein ${KM} füllt angemeldete Fässer von selbst ab und kauft die Flaschen dafür, anmelden musst du selbst.`:''}`});
@@ -4164,7 +4194,7 @@ function vKellerStart(){
     {buch:'lager',i:'Fassraum und leere Flaschen kaufst du im Lager, beides braucht Lagerarbeiter. Fassraum am besten vor der Lese kaufen, Flaschen vor dem Abfüllen.'});
   if(!sektFrei()) return h+vorrat+fenster('sekt','Sekt herstellen','',{zu:`ab dem Rang ${RAENGE[R_SEKT].name}`,i:`Sekt machen kannst du ab dem Rang ${RAENGE[R_SEKT].name}. ${sektI}`});
   h+=fenster('sekt','Sekt herstellen',S.lots.filter(sektFaehig).map(l=>fz(dot(l.sorte)+lotName(l),`${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte`,'',
-      `<button class="klein sec" data-a="sekt" data-id="${l.id}">Zu Sekt machen</button>`)),{
+      `<button class="klein" data-a="sekt" data-id="${l.id}">Zu Sekt machen</button>`)),{
     leer:'Gerade ist kein Wein reif für Sekt.',
     hin:[ms&&`🍷 Dein ${KM} macht beim Weiterblättern Sekt.`],
     stand:sektAnsText(),
@@ -4262,8 +4292,8 @@ function vStadt(){
     else{
       const a=S.auktion, was=a?`${a.spitze?'Spitzenlage':'Weinberg'} mit ${a.ha}\u00a0Hektar`:'', lim=Math.max(0,aukLimit());
       h+=fenster('auktionen','Auktionen',!a?[]
-        :a.phase===0?[fz(was,`Geboten wird im ${MON[(S.monat+1)%12]} · Startgebot ${eur(a.start)}`,lim>=a.start?`Du kannst bis ${eur(lim)} mitgehen.`:`<span class="rot">Fürs Startgebot fehlen dir ${eur(a.start-lim)}.</span>`,`<button class="klein sec" data-a="auktion">Ansehen</button>`)]
-        :a.ende?[fz(was,'Die Auktion ist beendet.','',`<button class="klein sec" data-a="auktion">Ansehen</button>`)]
+        :a.phase===0?[fz(was,`Geboten wird im ${MON[(S.monat+1)%12]} · Startgebot ${eur(a.start)}`,lim>=a.start?`Du kannst bis ${eur(lim)} mitgehen.`:`<span class="rot">Fürs Startgebot fehlen dir ${eur(a.start-lim)}.</span>`,`<button class="klein" data-a="auktion">Ansehen</button>`)]
+        :a.ende?[fz(was,'Die Auktion ist beendet.','',`<button class="klein" data-a="auktion">Ansehen</button>`)]
         :[fz(was,`${a.fuehrer?'Höchstgebot':'Startgebot'} ${eur(a.gebot)}${a.fuehrer?' von '+esc(a.fuehrer):''}`,aukNaechstes()<=lim?'<span class="rot">Geboten wird nur diesen Monat.</span>':'Zum Mitbieten reicht dein Geld nicht.',`<button class="klein" data-a="auktion">Bieten</button>`)],
         {leer:`Gerade nichts, als Nächstes frühestens im ${aukNaechst()}.`,i:aI});
     }
@@ -4279,7 +4309,7 @@ function vStadt(){
     else{
       const schon=S.anregJahr===S.jahr;
       h+=fenster('anreg','Kontrolle anregen',S.gegner.map(g=>fz(esc(g.name)+(g.geruecht?' 🗣️':''),`${GEGNER_TYP[g.typ].art}, ${WO[g.region]}`,g.geruecht?'Es gibt Gerüchte.':'',
-        `<button class="klein sec" data-a="anreg" data-id="${g.id}" ${schon?'disabled':''}>Hinweis geben</button>`)),{
+        `<button class="klein" data-a="anreg" data-id="${g.id}" ${schon?'disabled':''}>Hinweis geben</button>`)),{
         stand:schon?'Für dieses Jahr hast du deinen Hinweis schon gegeben.':'Dein Hinweis für dieses Jahr ist noch frei.',i:anI});
     }
     // Version 8.2: Spenden. Je Rang eine Stufe, Raten, Stand und der Dank des Dorfs. Nach der Bank und dem Holzbogen kann man beide hier wieder ansehen.
@@ -4849,7 +4879,7 @@ function fuehrerZeig(){
   const el=document.createElement('div'); el.id='fuehrer'; el.setAttribute('role','dialog'); el.setAttribute('aria-label',P.name);
   el.innerHTML=`<i class="fzipfel"></i>${P.bild?`<div class="fgesicht"><i style="background-image:url(bilder/${P.bild}.jpg)"></i></div>`:''}<div class="fkopf"><div><b class="fname">${P.name}</b><span class="frolle">${P.rolle}</span></div></div>
     <div class="ftext">${fuAbsaetze(text)}</div><div class="fschatten">▼ weiter unten mehr</div>
-    <div class="fknopf">${FU_ZEIG[id]?`<button class="klein" data-a="fuWo">Zeig mir, wo</button>`:''}<button class="sec klein" data-a="fuOk">${id==='e1-0a'?'Bleib ruhig da':'Verstanden'}</button></div>
+    <div class="fknopf">${FU_ZEIG[id]?`<button class="klein" data-a="fuWo">Zeig mir, wo</button>`:''}<button class="klein" data-a="fuOk">${id==='e1-0a'?'Bleib ruhig da':'Verstanden'}</button></div>
     ${b.b?`<span class="fbuch" data-a="fuBuch" data-id="${b.b}">📖 Mehr im Buch</span>`:''}`;
   document.body.appendChild(el);
   const t=el.querySelector('.ftext'), sch=el.querySelector('.fschatten');
@@ -4926,7 +4956,7 @@ function mengeSheet(o){
   SL=o; const st=o.step||1, rs=o.rangeStep||st, max=Math.floor(o.max/rs)*rs;
   openSheet(`${o.bild?sbild(o.bild):''}<h3>${esc(o.titel)}</h3>${o.text?`<p class="mut">${o.text}</p>`:''}<div class="slval" id="slv"></div>
   <input type="range" id="slr" min="${o.min||0}" max="${max}" step="${rs}" data-st="${st}" value="${Math.min(max,o.start==null?max:o.start)}">
-  <div class="btns"><button class="sec klein" data-a="slMinus">− ${num(st)}</button><button class="sec klein" data-a="slPlus">+ ${num(st)}</button></div>
+  <div class="btns"><button class="klein" data-a="slMinus">− ${num(st)}</button><button class="klein" data-a="slPlus">+ ${num(st)}</button></div>
   <div class="btns"><button class="sec" data-a="close">Abbrechen</button><button id="slok" ${o.wag?'class="wag" ':''}data-a="slOk">${esc(o.okText)}</button></div>`);
   $('#slr').addEventListener('input',slUpd); slUpd();
 }
@@ -4975,7 +5005,7 @@ const AKT={
     else if(S.amt) ziel=`<h4 class="gs">🗳️ Weinbauverband</h4>${kv('Stimmung im Verband',`${stimmZ()} von 100`)}${amtBalken()}<div class="mut" style="margin-bottom:8px">${amtSatz()}</div>`;
     openSheet(`<h3>📋 Dein Stand</h3><h4 class="gs">💶 Kasse</h4>${kv('🏦 Kontostand',eur(S.geld),S.geld<0?'rot':'')}<h4 class="gk">Dieses Jahr bisher</h4>${kv('📈 Einnahmen',eur(S.jahrEin),'gruen')}${kv('📉 Ausgaben',eur(S.jahrAus),'rot')}${kv('⚖️ Ergebnis',eur(S.jahrEin-S.jahrAus),S.jahrEin>=S.jahrAus?'gruen':'rot')}
     <h4 class="gk">Jeden Monat fällig</h4>${kv('Löhne',eur(K.loehne))}${kv('Feste Kosten',eur(K.basis))}${k?kv('Zinsen',eur(K.zins))+kv('Tilgung',eur(K.tilgung))+kv('Kredit offen',eur(k.rest)):''}${kv('Zusammen',eur(K.basis+K.loehne+K.zins+K.tilgung))}${ziel}${rangLeiter()}${zeitStand()}
-    ${mib('geld')}<div class="btns"><button class="sec" data-a="zurBank">🏦 Zur Bank</button><button data-a="close">Okay</button></div>`)},
+    ${mib('geld')}<div class="btns"><button data-a="zurBank">🏦 Zur Bank</button><button data-a="close">Okay</button></div>`)},
   // Version 7.6: Wetter oben links als Blatt.
   wetterInfo(){fx('menue'); const kv=(a,x)=>`<div class="kv"><span>${a}</span><span>${x}</span></div>`;
     openSheet(`<h3>🌤️ Wetter</h3>${kv('Heute, '+MON[S.monat],wetterText())}${kv('Vorhersage '+MON[(S.monat+1)%12],progText())}<p class="mut" style="margin:10px 0 0">Die Vorhersage stimmt meistens, aber nicht immer.</p><div class="btns"><button data-a="close">Okay</button></div>`)},
@@ -5125,10 +5155,10 @@ const AKT={
   buchDetail(d){
     const l=lot(d.id); if(!l||l.status==='trauben') return;
     const fl=l.status==='flasche', L=l.stufe?lager(l):null, p=preis(l), W=wege(l), kn=[];
-    if(!fl&&!l.stufe) kn.push(`<button class="sec" data-a="anmelden" data-id="${l.id}">Im Rathaus anmelden</button>`);
+    if(!fl&&!l.stufe) kn.push(`<button data-a="anmelden" data-id="${l.id}">Im Rathaus anmelden</button>`);
     if(!fl&&l.stufe) kn.push(`<button data-a="abfuellen" data-id="${l.id}">Abfüllen (${num(l.liter)} Flaschen)</button>`);
-    if(sektFaehig(l)) kn.push(`<button class="sec" data-a="sekt" data-id="${l.id}">Zu Sekt machen</button>`);
-    if(fl&&S.rang>=R_LADEN) kn.push(l.regal?`<button class="sec" data-a="regalRaus" data-id="${l.id}">Aus dem Regal nehmen</button>`:p?`<button class="sec" data-a="regal" data-id="${l.id}">Ins Regal stellen</button>`:'');
+    if(sektFaehig(l)) kn.push(`<button data-a="sekt" data-id="${l.id}">Zu Sekt machen</button>`);
+    if(fl&&S.rang>=R_LADEN) kn.push(l.regal?`<button data-a="regalRaus" data-id="${l.id}">Aus dem Regal nehmen</button>`:p?`<button data-a="regal" data-id="${l.id}">Ins Regal stellen</button>`:'');
     if(W.length&&!l.regal) kn.push(`<button data-a="verkaufen" data-id="${l.id}">Verkaufen ${W[0].flag} ${eur2(W[0].p)}</button>`);
     openSheet(`${sbild('kellerbuch')}<h3>${dot(l.sorte)}${esc(lotName(l))}</h3>${l.stufe?'':'<div class="mut">Noch nicht angemeldet</div>'}${l.pansch?'<div class="rot">🤫 gepanscht</div>':''}${l.regal?'<div class="mut">🏪 Steht im Regal deiner Weinhandlung</div>':''}${medHtml(l)}
     <div class="kv"><span>Menge</span><span>${num(l.liter)} ${fl?'Flaschen':'l'}</span></div>
@@ -5184,7 +5214,7 @@ const AKT={
     openSheet(`<h3>💡 Deine Idee</h3><p class="mut">Tipp ins Feld und schreib los. Mit dem Mikrofon 🎤 deiner Tastatur kannst du auch einfach sprechen.</p>
       <textarea id="ideeT" maxlength="${IDEE_MAX}" placeholder="Was fehlt dir, was stört dich, was wäre schön?">${esc(alt)}</textarea>
       <p class="mut" style="margin-top:8px">Danach wählst du Maik aus deinen Kontakten. Das Spiel selbst verschickt nichts.</p>
-      <div class="btns"><button data-a="ideeWa">WhatsApp</button>${navigator.share?'<button class="sec" data-a="ideeTeilen">Teilen</button>':''}</div>
+      <div class="btns"><button data-a="ideeWa">WhatsApp</button>${navigator.share?'<button data-a="ideeTeilen">Teilen</button>':''}</div>
       <div class="btns"><button class="sec" data-a="close">Zurück</button></div>`);
     $('#ideeT').addEventListener('input',e=>{try{localStorage.setItem(IDEE_KEY,e.target.value)}catch(x){}});
   },
@@ -5435,7 +5465,7 @@ const AKT={
   keltern(d){
     const l=lot(d.id), frei=S.fassraum-fassBelegt();
     if(frei<=0) return meldung('Kein Fassraum frei','Kauf erst Fassraum dazu, sonst kannst du nicht keltern.','fassgang');
-    if(l.liter>frei) return openSheet(`${sbild('fassgang')}<h3>Fassraum reicht nicht</h3><p>Frei sind ${num(frei)}\u00a0l, du hast ${num(l.liter)}\u00a0l Trauben. Wenn du jetzt kelterst, gehen ${num(l.liter-frei)}\u00a0l verloren.</p><div class="btns"><button class="sec" data-a="close">Erst Fassraum kaufen</button><button class="wag" data-a="kelternJa" data-id="${l.id}">Trotzdem keltern</button></div>`);
+    if(l.liter>frei) return openSheet(`${sbild('fassgang')}<h3>Fassraum reicht nicht</h3><p>Frei sind ${num(frei)}\u00a0l, du hast ${num(l.liter)}\u00a0l Trauben. Wenn du jetzt kelterst, gehen ${num(l.liter-frei)}\u00a0l verloren.</p><div class="btns"><button data-a="close">Erst Fassraum kaufen</button><button class="wag" data-a="kelternJa" data-id="${l.id}">Trotzdem keltern</button></div>`);
     AKT.kelternJa(d);
   },
   kelternJa(d){const l=lot(d.id);closeSheet();l.liter=Math.min(l.liter,S.fassraum-fassBelegt());l.status='fass';l.fassMonate=0;save();render()},
@@ -5581,6 +5611,7 @@ const WAS_NEU=[
   ['11.2','19.11.2026','Aufgeräumtes Büro: vier Bereiche statt einer langen Liste, die Rangliste steht als Zeile bei deinem Rang.'],
   ['11.1','19.11.2026','Das Weinkompendium ersetzt das Weinlexikon: ein Sammelbuch mit Siegeln in Bronze, Silber und Gold, im Kellerbuch und im Büro.'],
   ['11.0','19.11.2026','Deine Idee zählt: Im Büro gibst du Ideen per WhatsApp weiter und siehst, was geplant ist.'],
+  ['10.5','19.11.2026','Neue Optik: Holz, Rahmen, Pergament und Knöpfe neu gezeichnet. Helle Knöpfe sind dein Weg, rote heißen „Überleg noch mal“, dunkle führen zurück.'],
   ['10.4','19.11.2026','Neues Titelbild im Hochformat und elf Zeitungsbilder im Stil der Weingut-Reihe.'],
   ['10.3','19.11.2026','Das ganze Spiel geprüft: Nach dem alten Winzer sprechen deine Manager, gewonnen ist erst mit der Chronik, dazu viele Regeln und Texte im Buch.'],
   ['10.2.1','19.11.2026','Der alte Winzer stellt sich vor und klappt seine Blase zum Kopf zusammen, im Büro siehst du deinen nächsten Rang.'],
