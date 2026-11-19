@@ -76,6 +76,8 @@ main>h3{font-size:17px;margin:16px 0 8px;padding-left:10px;border-left:4px solid
 /* Version 11.2: vier Kacheln oben im Büro (Erfolge, Wissen, Familie, Einstellungen), die gewählte hat den weinroten Rand. */
 .bkach{display:flex;gap:6px;margin:0 0 12px}.bkach .wahl{flex:1 1 0;min-width:0;min-height:58px;margin:0;padding:7px 0 6px;text-align:center;font-weight:600;font-size:11px;line-height:1.15;white-space:nowrap}
 .bkach .wahl i{display:block;font-style:normal;font-size:20px;line-height:24px;margin-bottom:2px}.bkach .wahl.an{font-weight:700;color:#7b1e3a}
+/* Seit der Optik 2.0 (10.5): schmaler Pergament-Rahmen wie beim aktiven Unterreiter, die gewählte Kachel hell mit weinroter Linie, die anderen etwas dunkler. */
+.bkach .wahl{border-image:url(bilder/karte-neu.webp) 56 fill/9px stretch;filter:brightness(.86)}.bkach .wahl.an{filter:none;outline:2px solid #7b1e3a;outline-offset:-4px;border-radius:9px}
 /* Das Buch: Vollbild im Papier-Stil wie der Winzerbote */
 #buch{display:none;position:fixed;inset:0;z-index:40;flex-direction:column;background:#f3e7ca url(bilder/papier.jpg) center/cover;color:#2b2118;--ink:#2b2118;--mut:#6b5a45;--line:#d3bf93;--wein:#7b1e3a;--card:#fbf4e1}
 #buch.an{display:flex}
