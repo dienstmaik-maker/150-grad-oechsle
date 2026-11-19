@@ -740,13 +740,13 @@ const MGR_AUFGABEN={
   reben:{kurz:'Reben nachpflanzen',text:'Eingegangene Reben nachpflanzen'},
   duengen:{kurz:'düngen',text:'Düngen, wenn der Boden mager wird'},
   // Seit 8.0. Der Text liest MGR_WART_AB erst beim Zeichnen, die Zahl steht weiter unten bei den Maschinen.
-  warten:{kurz:'Maschinen warten',get text(){return `Nach der Lese jede Maschine unter ${MGR_WART_AB} % auf 100 % warten`}},
-  helfer:{kurz:'Erntehelfer einstellen',text:'Fehlende Erntehelfer einstellen, auch Fahrer für die Maschinen und vor der Lese die Helfer für die Handlese'},
+  warten:{kurz:'Maschinen warten',get text(){return `Nach der Lese jede Maschine unter ${MGR_WART_AB} % auf 100 % warten, ausgefallene Erntemaschinen sofort`}},
+  helfer:{kurz:'Erntehelfer einstellen',text:'Fehlende Erntehelfer einstellen, auch Fahrer für die Maschinen. Vor der Lese die Helfer für die Handlese, danach gehen sie wieder'},
   sekt:{kurz:'Sekt herstellen',text:'Sekt herstellen, bis die Sekt-Schwelle des Jahres erreicht ist, aus Qualitätswein und Kabinett'},
   keltern:{kurz:'keltern und Fassraum kaufen',text:'Die Lese keltern und fehlenden Fassraum kaufen'},
   regal:{kurz:'Regal füllen',text:'Das Regal deiner Weinhandlung füllen'},
-  wett:{kurz:'Wettbewerbe',text:'Den besten Wein zu Landesprämierung und Bundeswettbewerb einreichen'},
-  fest:{kurz:'Fest ausrichten',text:'Jedes Jahr das Weinfest oder Hoffest ausrichten, bei Sonne oder spätestens im August'}
+  wett:{kurz:'Wettbewerbe',text:'Den besten Wein zu Landesprämierung und Bundeswettbewerb einreichen. Den Wein für die Weltweinschau wählst du selbst'},
+  fest:{kurz:'Fest ausrichten',text:'Jedes Jahr das Hoffest ausrichten, bei Sonne oder spätestens im August'}
 };
 // Reihenfolge je Rang wie im Freischalt-Plan, so stehen sie auch im Aufstiegstext.
 const MANAGER=[
@@ -1786,7 +1786,9 @@ function helferKraft(h){h=h==null?S.helfer:h; return h+maschHelfer(h)}
 function helferBedarf(){return Math.ceil(rebenGesamt()/REBEN_JE_HELFER)}
 // Seit 8.0 (Paket B): Mit der Abfüllanlage im Einsatz betreut ein Lagerarbeiter ABF_FLASCHEN leere Flaschen, sonst FLASCHEN_JE_LAGERARB.
 function flJeLager(){return bonusMasch('abfuell')?ABF_FLASCHEN:FLASCHEN_JE_LAGERARB}
-function lagerBedarf(){return Math.max(Math.ceil(S.fassraum/FASS_JE_LAGERARB),Math.ceil(S.flaschen/flJeLager()))}
+// Seit 10.3 (B9): Für die Leute-Sperre zählt ABF_FLASCHEN auch, wenn die Anlage ausgefallen ist. Bei Rot fällt nur der Bonus beim Abfüllen weg.
+function flSperre(){return S.maschinen.some(m=>m.typ==='abfuell'&&m.zustand<MASCH_ROT)?ABF_FLASCHEN:flJeLager()}
+function lagerBedarf(){return Math.max(Math.ceil(S.fassraum/FASS_JE_LAGERARB),Math.ceil(S.flaschen/flSperre()))}
 // Abfüllen (von Hand und beim Kellermeister): mit der Abfüllanlage ABF_PLUS mehr Flaschen aus dem Fass, dafür so viele leere Flaschen.
 // Die Anlage nutzt sich je ABF_NORM Flaschen um ABF_ABN Prozentpunkte ab, mal Pflege-Faktor.
 function abfFl(l){return bonusMasch('abfuell')?Math.round(l.liter*(1+ABF_PLUS)):l.liter}
@@ -1963,10 +1965,11 @@ function eisStufe(oe){const m=R().min; return oe>=m.tba?2:oe>=m.ba?1:0}
 const eisF=l=>l.stufe==='eis'?EIS_WERT[l.eisW||0].f:1;
 // Name der Stufe für die Lese-Hilfe, beim Eiswein mit seiner Wertstufe.
 const stufeText=(st,oe)=>STUFEN[st].name+(st==='eis'?` (Öchsle einer ${EIS_WERT[eisStufe(oe)].name})`:'');
-// Seit 8.0 Handlese: Felder mit Edelfäulnis oder gefrorenen Trauben brauchen je HAND_REBEN Reben einen echten Erntehelfer (Köpfe, Fahrer zählen mit).
+// Seit 8.0 Handlese: Felder mit Edelfäulnis brauchen je HAND_REBEN Reben einen echten Erntehelfer (Köpfe, Fahrer zählen mit).
+// Seit 10.3 (B3) zählen gefrorene Trauben ohne Edelfäulnis nicht mehr, Eiswein gibt es ohne sie ohnehin nicht.
 // Fehlen sie und ist eine Maschine im Einsatz, liest die Maschine (masch), daraus wird höchstens Qualitätswein. Ohne Maschine lesen die Helfer, die da sind.
 const HAND_REBEN=1000;
-const handFeld=f=>!!(f.edel||f.gefroren);
+const handFeld=f=>!!f.edel;
 const handBedarf=f=>Math.ceil(f.reben/HAND_REBEN);
 const handFehlt=f=>handFeld(f)&&S.helfer<handBedarf(f)&&maschEinsatz().length>0;
 const handlese=f=>handFeld(f)&&!handFehlt(f);
@@ -2014,10 +2017,10 @@ function weinQualHtml(){
 function eisFehlt(f){const g=pruefeQualitaet('eis',feldQ(f,'reif')).filter(x=>!x.startsWith('Leseart')); return g.length?`<b>Kein Eiswein:</b> ${g.join(', ')}`:''}
 // Wie oft es im eigenen Gebiet im Dezember friert, für Lese und Weinqualität.
 const frostText=()=>`❄️ Frost im Dezember gibt es im Gebiet ${R().name} in rund ${Math.round(R().frost*100)}\u00a0% der Jahre`;
-// Seit 8.0: Satz zur Handlese für Felder mit Edelfäulnis oder gefrorenen Trauben, vor leer.
+// Seit 8.0: Satz zur Handlese für Felder mit Edelfäulnis, vor leer.
 function handText(f,vor){
   if(!handFeld(f)||!(f.menge>0)||f.gelesen) return '';
-  const n=handBedarf(f), w=f.gefroren?'Gefrorene Trauben':'Trauben mit Edelfäulnis';
+  const n=handBedarf(f), w=f.gefroren?'Gefrorene Trauben mit Edelfäulnis':'Trauben mit Edelfäulnis';
   if(handFehlt(f)) return `${vor}<b>✋ Handlese:</b> <span class="rot">${w} liest man von Hand, dafür brauchst du ${n} Erntehelfer, du hast ${S.helfer}. Liest du so, liest die Maschine, und es gibt höchstens Qualitätswein.</span>`;
   return `${vor}<b>✋ Handlese:</b> ${w} liest man von Hand. Dafür brauchst du ${n} Erntehelfer, ${S.helfer>=n?`deine ${S.helfer} reichen`:`du hast ${S.helfer}, mehr Trauben bleiben hängen`}.`;
 }
@@ -2451,7 +2454,7 @@ function monatWeiter(){
       if(an){S.laubJahr=S.jahr; abnutz(an,LAUB_ABN); const a=ruhm(LAUB_ANS); Z.push(`✂️ Dein Laubschneider hat im Juni den Sommerschnitt gemacht: Die Lese ${S.jahr} bekommt ${LAUB_QP} Qualitätspunkt mehr, dazu +${a} Ansehen. Zustand jetzt ${an.zustand} %.`)}
       else Z.push(`✂️ Dein Laubschneider ${lb.zustand<MASCH_ROT?'ist ausgefallen':'hatte keinen Fahrer'}, einen Sommerschnitt gab es dieses Jahr nicht.`)}}
   // Seit 8.0 nutzen sich Maschinen nur noch bei der Lese ab (maschAbnutzung), die feste Abnutzung je Herbstmonat ist weg.
-  // Der Weingut-Manager stellt nach dem Monatswechsel die Helfer für die Handlese ein, sobald Edelfäulnis oder Frost da ist.
+  // Der Weingut-Manager stellt nach dem Monatswechsel die Helfer für die Handlese ein, sobald Edelfäulnis da ist.
   {const n=mgrHandlese(), t=`${n===1?'einen Erntehelfer':n+' Erntehelfer'} für die Handlese eingestellt`;
     if(n){Z.push(`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name} hat ${t}.`); const mw=S.manager.weingut; mw.zuletzt=t; mw.zm=S.jahr*12+S.monat; mgrLogbuch('weingut',t)}}
   // Wetter als Thema für die Zeitung. Die Einzelheiten je Rebsorte stehen unter "Aus dem Weinberg".
@@ -2811,8 +2814,8 @@ function aufgaben(){
   if(aukInfo()) A.push({t:aukInfo(),tab:'stadt',sub:'amt',ruhig:1});
   // Auktionstag: Rot nur, wenn Konto plus freier Kreditrahmen fürs nächste Gebot reichen. Sonst bleibt es ein Hinweis.
   if(S.auktion&&S.auktion.phase!==0&&!S.auktion.ende&&S.rang>=R_AUKTION){const kann=aukNaechstes()<=aukLimit(); A.push({t:`🔨 Auktion diesen Monat: ${S.auktion.ha}\u00a0Hektar, Gebot steht bei ${eur(S.auktion.gebot)}`+(kann?'':'. Zum Mitbieten reicht dein Geld nicht'),tab:'stadt',sub:'amt',...(kann?{rot:1}:{ruhig:1})})}
-  // Wettbewerb: Rot nur mit einem zugelassenen Wein. Reicht der Manager ein, steht hier nichts.
-  if(S.wett&&!S.wett.fertig&&!S.wett.ein&&S.rang>=wettRang()&&!aufgabeAktiv('wett')){const pass=S.lots.some(wettFaehig); A.push({t:`🏅 ${WETTNAME[S.wett.typ]}: `+(pass?'diesen Monat einen Wein einreichen':'diesen Monat, du hast aber keinen zugelassenen Wein'),tab:'stadt',sub:'amt',...(pass?{rot:1}:{ruhig:1})})}
+  // Wettbewerb: Rot nur mit einem zugelassenen Wein. Reicht der Manager ein, steht hier nichts. Seit 10.3 bleibt die Zeile bei der Weltweinschau immer stehen.
+  if(S.wett&&!S.wett.fertig&&!S.wett.ein&&S.rang>=wettRang()&&(S.wett.typ==='welt'||!aufgabeAktiv('wett'))){const pass=S.lots.some(wettFaehig); A.push({t:`🏅 ${WETTNAME[S.wett.typ]}: `+(pass?'diesen Monat einen Wein einreichen':'diesen Monat, du hast aber keinen zugelassenen Wein'),tab:'stadt',sub:'amt',...(pass?{rot:1}:{ruhig:1})})}
   if(fehlText()) A.push({t:`${fehlText()}, vorher geht es nicht in den nächsten Monat`,rot:1,tab:'stadt',sub:'arbeit'});
   if(m>=5&&m<=10&&leseFaktor()<.75&&R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)) A.push({t:`Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0% der Reben`,rot:1,tab:'stadt',sub:'arbeit'});
   // Seit 8.0: Maschinen unter MASCH_ROT fallen aus (Rot), unter MASCH_GELB lohnt das Warten (Gelb). Wartet der Weingut-Manager nach der Lese, ist Gelb nur ein Hinweis.
@@ -3476,7 +3479,7 @@ function mgrKnopf(b){const n=mgrNaechste(b); if(!n) return ''; return pk('mgrStu
 // Die Schalter der Aufgaben stehen im Betrieb. Vor dem Rang des ersten Managers steht das Fenster zugeklappt mit Schloss unten.
 function mgrAmt(){
   const B=Object.keys(MGR_BEREICHE), ab=Math.min(...MANAGER.map(e=>e.rang));
-  const mgI='Manager nehmen dir Arbeit ab. Jeder kommt mit einem Rang dazu, und mit späteren Rängen kannst du ihn befördern. Jede Stufe bringt neue Aufgaben, die du im Betrieb einzeln einschaltest.';
+  const mgI='Manager nehmen dir Arbeit ab. Jeder kommt mit einem Rang dazu, und mit späteren Rängen kannst du ihn befördern. Jede Stufe bringt neue Aufgaben, die du im Betrieb einzeln einschaltest. Manager bleiben, entlassen kannst du sie nicht. Ihr Lohn läuft weiter, auch wenn du alle Schalter ausschaltest.';
   const stufen=B.map(b=>`<div style="margin-top:6px"><b>${MGR_BEREICHE[b].name}</b><br>${MANAGER.filter(e=>e.bereich===b).map(e=>mgrStufenText(e,mgrSt(b))).join('<br>')}</div>`).join('');
   if(S.rang<ab) return fenster('mgr_amt','Manager','',{zu:`ab dem Rang ${RAENGE[ab].name}`,buch:'manager',i:mgI+stufen});
   return fenster('mgr_amt','Manager',B.map(b=>{
@@ -3544,6 +3547,15 @@ function mgrBetrieb(){
       zahle(n*W); ma.zustand+=n; LW.push(`${maschName(ma)} auf ${ma.zustand} % gewartet`);
     }
   }
+  // Seit 10.3 (B1): Eine ausgefallene Erntemaschine wartet er sofort, auch mitten in der Lese, bevor er weiter unten Leute für die Lücke einstellt.
+  // Reicht das Geld über dem Puffer nicht bis MASCH_ROT, lässt er es und stellt wie bisher ein.
+  if(aufgabeAktiv('warten')){
+    const pu=mgrPuffer('weingut');
+    for(const ma of S.maschinen.filter(x=>mTyp(x).ernte&&x.zustand<MASCH_ROT)){
+      const W=mTyp(ma).wart, n=Math.min(100-ma.zustand,Math.floor((S.geld-pu)/W)); if(ma.zustand+n<MASCH_ROT) continue;
+      zahle(n*W); ma.zustand+=n; LW.push(`${maschName(ma)} nach dem Ausfall auf ${ma.zustand} % gewartet`);
+    }
+  }
   if(hf){const nh=mgrHandlese(); if(nh) LW.push(`${nh===1?'einen Erntehelfer':nh+' Erntehelfer'} für die Handlese eingestellt`)}
   // Schritt F: Kellermeister (seit 8.5 ab Stufe 1, vorher Stufe 2) keltert die Lese beim Weiterblättern und kauft fehlenden Fassraum in Schritten von 500 l wie von Hand.
   // Für den Kauf lässt er mgrPuffer auf dem Konto, fehlende Lagerarbeiter stellt er nur mit der Aufgabe 'lager' ein. Reicht es nicht, bleiben die Trauben liegen
@@ -3585,11 +3597,19 @@ function mgrBetrieb(){
   if(hf){const n=fahrerFehlen(); for(let i=0;i<n;i++) stell('helfer')}
   if(la&&S.maschinen.some(x=>mTyp(x).leute==='lagerarb'&&x.zustand>=MASCH_ROT)&&!S.lagerarb) stell('lagerarb')
   if(neu.helfer) LW.unshift(`${neu.helfer} Erntehelfer eingestellt`);
+  // Seit 10.3 (B2): Hängt kein Feld mehr, entlässt er wieder, wen er nur für die Handlese geholt hat (S.manager.weingut.handH), die teuersten zuerst.
+  // Nie unter den Bedarf für Reben und Fahrer. Wer dann noch gebraucht wird, bleibt als fester Helfer.
+  {const mw=S.manager.weingut;
+  if(hf&&mw&&mw.handH&&!R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)){
+    const fahrer=S.maschinen.filter(x=>x.zustand>=MASCH_ROT&&mTyp(x).leute==='helfer').reduce((a,x)=>a+mTyp(x).fahrer,0); let k=0;
+    while(k<mw.handH&&S.helfer>0&&S.helfer-1>=fahrer&&helferKraft(S.helfer-1)>=helferBedarf()){S.helfer--; S.loehne.helfer.pop(); k++}
+    mw.handH=0; if(k) LW.push(`${k===1?'einen Erntehelfer':k+' Erntehelfer'} nach der Handlese entlassen`);
+  }}
   if(neu.lagerarb) LK.unshift(`${neu.lagerarb} Lagerarbeiter eingestellt`);
   mgrMelde('weingut',LW); mgrMelde('keller',LK);
   if(LW.length||LK.length) save();
 }
-// Seit 8.0: Weingut-Manager Stufe 3 (Aufgabe helfer) stellt ab August für jedes hängende Feld mit Edelfäulnis oder gefrorenen Trauben
+// Seit 8.0: Weingut-Manager Stufe 3 (Aufgabe helfer) stellt ab August für jedes hängende Feld mit Edelfäulnis
 // so viele Erntehelfer ein, wie die Handlese braucht, solange 5.000 € plus Vermittlung auf dem Konto sind. Liefert die Zahl der Eingestellten.
 // Läuft beim Weiterblättern und gleich nach dem Monatswechsel, weil Edelfäulnis und Frost erst dort kommen.
 function mgrHandlese(){
@@ -3597,6 +3617,7 @@ function mgrHandlese(){
   let n=0;
   for(const id of R().sorten){const f=S.felder[id]; if(!(f.menge>0)||f.gelesen||!handFeld(f)) continue;
     while(S.helfer<handBedarf(f)&&S.geld>=5000+VERMITTLUNG&&n<40){zahle(VERMITTLUNG); S.helfer++; S.loehne.helfer.push(S.angebot.helfer); S.loehne.helfer.sort((x,y)=>x-y); n++}}
+  if(n){const mw=S.manager.weingut; mw.handH=(mw.handH||0)+n}
   return n;
 }
 function mgrPuffer(b){const p=((S.manager||{})[b]||{}).puffer; return MGR_PUFFER.includes(p)?p:MGR_PUFFER_START}
@@ -3623,9 +3644,10 @@ function mgrHandel(){
     if(raus) L.push(`${num(raus)} Flaschen kurz vorm Verderben aus dem Regal genommen`);
   }
   const w=S.wett;
-  if(aufgabeAktiv('wett')&&w&&!w.fertig&&!w.ein&&S.rang>=wettRang()){
+  // Seit 10.3 (Frage 17): Zur Weltweinschau reicht sie nicht ein, den Wein wählt der Spieler.
+  if(aufgabeAktiv('wett')&&w&&w.typ!=='welt'&&!w.fertig&&!w.ein&&S.rang>=wettRang()){
     const land=w.typ==='land', l=S.lots.filter(wettFaehig).sort((a,b)=>b.qp+(land?0:reifeBonus(b))-a.qp-(land?0:reifeBonus(a)))[0];
-    if(l){w.ein={id:l.id,name:lotName(l),p:wettPunkte(l)}; L.push(`${lotName(l)} ${land?'zur Landesprämierung':w.typ==='welt'?'zur Weltweinschau':'zum Bundeswettbewerb'} eingereicht`)}
+    if(l){w.ein={id:l.id,name:lotName(l),p:wettPunkte(l)}; L.push(`${lotName(l)} ${land?'zur Landesprämierung':'zum Bundeswettbewerb'} eingereicht`)}
   }
   const art=festArt(), F=FESTE[art];
   if(aufgabeAktiv('fest')&&art&&S.festJahr!==S.jahr&&m>=5&&m<=7&&(S.wetter==='sonnig'||m===7)&&S.geld>=F.preis+mgrPuffer('handel')){
@@ -3919,9 +3941,9 @@ function vStadt(){
         if(!w||w.typ!==typ) return fz(name,`Gerade nichts, als Nächstes im ${wettNaechst(typ)}.`);
         const n=S.lots.filter(wettFaehig).length;
         return fz(`${name} ${S.jahr}`,w.ein?`Eingereicht: ${esc(w.ein.name)}`:n?`${n} ${n===1?'Wein ist':'Weine sind'} zugelassen`:'Du hast gerade keinen zugelassenen Wein.',
-          w.ein?'Tauschen geht bis zum Monatsende.':n&&!mb?'<span class="rot">Einreichen geht nur diesen Monat.</span>':'',
+          w.ein?'Tauschen geht bis zum Monatsende.':n&&(!mb||typ==='welt')?'<span class="rot">Einreichen geht nur diesen Monat.</span>':'',
           `<button class="klein${w.ein||!n?' sec':''}" data-a="wettbewerb">${w.ein?'Tauschen':n?'Einreichen':'Ansehen'}</button>`)};
-      h+=fenster('wettb','Wettbewerbe',[wz('land'),wz('bund'),...(S.amt&&S.amt.brief?[wz('welt')]:[])],{hin:[mb&&`${MGR_BEREICHE[mb].sym} ${mgrG(mb).Dein} ${MGR_BEREICHE[mb].name} reicht beim Weiterblättern deinen besten Wein ein.`],i:wI});
+      h+=fenster('wettb','Wettbewerbe',[wz('land'),wz('bund'),...(S.amt&&S.amt.brief?[wz('welt')]:[])],{hin:[mb&&`${MGR_BEREICHE[mb].sym} ${mgrG(mb).Dein} ${MGR_BEREICHE[mb].name} reicht beim Weiterblättern deinen besten Wein ein.${S.amt&&S.amt.brief?' Den Wein für die Weltweinschau wählst du selbst.':''}`],i:wI});
     }
     const aI=`Bei einer Auktion kommt Land unter den Hammer, meist viel billiger als beim Makler. Der Winzerbote kündigt sie einen Monat vorher an, im Monat danach bietest du hier mit. Mitgehen kannst du bis Konto plus freier Kreditrahmen. Auktionen gibt es nicht jedes Jahr, geboten wird wenn, dann im ${AUK_MONATE.map(m=>MON[(m+1)%12]).join(', ').replace(/, ([^,]*)$/,' oder $1')}.`;
     if(S.rang<R_AUKTION) zu.push(fenster('auktionen','Auktionen','',{zu:`ab dem Rang ${RAENGE[R_AUKTION].name}`,i:aI}));
@@ -4073,7 +4095,7 @@ function vStadt(){
       <div class="bar"><i style="width:${bed?Math.min(100,lei/bed*100):100}%"></i></div>`,{
       hin:[aufgabeAktiv('helfer')&&`${MGR_BEREICHE.weingut.sym} Dein ${WM} stellt fehlende Erntehelfer beim Weiterblättern ein.`],
       kn:lohnKnoepfe('helfer'),
-      i:`Je ${num(REBEN_JE_HELFER)} angebaute Reben brauchst du einen Erntehelfer, eine Erntemaschine zählt wie ${MASCH_HELFER}, ein Vollernter wie ${VOLL_HELFER}. Das gilt nur mit Fahrern: Die Erntemaschine braucht ${MASCH.klein.fahrer}, der Vollernter ${MASCH.gross.fahrer}, gefahren wird von deinen Erntehelfern. Düngerstreuer und Laubschneider brauchen je ${MASCH.duenger.fahrer}, sie bekommen ihre Fahrer erst nach den Erntemaschinen. Trauben mit Edelfäulnis und gefrorene Trauben liest man von Hand, dafür brauchst du je ${num(HAND_REBEN)} Reben des Felds einen Erntehelfer, sonst liest die Maschine und es gibt höchstens Qualitätswein. Pflanzen kannst du nur so viel, wie deine Leute schaffen. Bei der Lese leistet eine abgenutzte Maschine weniger. ${amtI}${aufgabeAktiv('helfer')?` Dein ${WM} stellt zum Angebot des Monats ein, entlassen musst du selbst.`:''}`});
+      i:`Je ${num(REBEN_JE_HELFER)} angebaute Reben brauchst du einen Erntehelfer, eine Erntemaschine zählt wie ${MASCH_HELFER}, ein Vollernter wie ${VOLL_HELFER}. Das gilt nur mit Fahrern: Die Erntemaschine braucht ${MASCH.klein.fahrer}, der Vollernter ${MASCH.gross.fahrer}, gefahren wird von deinen Erntehelfern. Düngerstreuer und Laubschneider brauchen je ${MASCH.duenger.fahrer}, sie bekommen ihre Fahrer erst nach den Erntemaschinen. Trauben mit Edelfäulnis liest man von Hand, dafür brauchst du je ${num(HAND_REBEN)} Reben des Felds einen Erntehelfer, sonst liest die Maschine und es gibt höchstens Qualitätswein. Pflanzen kannst du nur so viel, wie deine Leute schaffen. Bei der Lese leistet eine abgenutzte Maschine weniger. ${amtI}${aufgabeAktiv('helfer')?` Dein ${WM} stellt zum Angebot des Monats ein, entlassen musst du selbst. Nur die Helfer für die Handlese schickt er nach der Lese wieder heim.`:''}`});
     h+=fenster('lagerarb','Lagerarbeiter',`${lohnTeil('lagerarb')}
       <div class="kv"><span>Gebraucht</span><span class="${fe.lagerarb?'rot':''}">${lagerBedarf()}</span></div>
       <div class="kv"><span>Fassraum</span><span>${num(S.fassraum)} l, betreut bis ${num(S.lagerarb*FASS_JE_LAGERARB)} l</span></div>
@@ -4848,7 +4870,7 @@ const AKT={
     const fl=fehlText(), fe=leuteFehlen();
     if(fl) return leuteSheet('⚠️ Zu wenig Leute',`<p>${fl}. Vorher geht es nicht in den nächsten Monat.</p>
       ${fe.helfer?`<p class="mut">Je ${num(REBEN_JE_HELFER)} Reben brauchst du einen Erntehelfer, du hast ${num(rebenGesamt())} Reben. ${S.monat<=2?'Statt einzustellen, kannst du bis März auch Reben roden oder eine Erntemaschine kaufen.':''}${maschOhneFahrer().length||S.maschinen.some(m=>m.zustand<MASCH_ROT)?` Eine Maschine zählt nur im Einsatz, also mit Fahrer und ab ${MASCH_ROT}\u00a0% Zustand.`:''}</p>`:''}
-      ${fe.lagerarb?`<p class="mut">Ein Lagerarbeiter betreut ${num(FASS_JE_LAGERARB)} l Fassraum und ${num(flJeLager())} leere Flaschen. Du hast ${num(S.fassraum)}\u00a0l Fassraum und ${num(S.flaschen)} leere Flaschen.</p>`:''}
+      ${fe.lagerarb?`<p class="mut">Ein Lagerarbeiter betreut ${num(FASS_JE_LAGERARB)} l Fassraum und ${num(flSperre())} leere Flaschen. Du hast ${num(S.fassraum)}\u00a0l Fassraum und ${num(S.flaschen)} leere Flaschen.</p>`:''}
       <p class="mut">Einstellen geht auch ohne Geld, dein Konto rutscht dann ins Minus.</p>`);
     const v=verfallListe(), t=S.monat===11?steuerSchau():null, st=!!(t&&t.steuer>0);
     if(v.length||st) openSheet(`<h3>⚠️ Letzte Warnung</h3>${v.length?`<p>Wenn du jetzt weiterblätterst, geht das verloren:</p><ul class="kl">${v.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}${st?`<p>💶 Zum Jahreswechsel zahlst du rund ${eur(t.steuer)} Steuer auf rund ${eur(t.gew)} Gewinn. Was du jetzt noch kaufst, senkt die Steuer.</p>`:''}<div class="btns"><button class="sec" data-a="close">Zurück</button><button ${v.length?'class="wag" ':''}data-a="weiterJa">${v.length?'Trotzdem weiter':'Weiter'}</button></div>`);
