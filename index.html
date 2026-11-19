@@ -201,13 +201,11 @@ img.fass{height:1.1em;vertical-align:-.18em}
 #titel::before{content:'';position:absolute;inset:0;background:linear-gradient(rgba(20,10,5,.6),rgba(20,10,5,.05) 34%,rgba(20,10,5,.08) 62%,rgba(20,10,5,.82))}
 #titel>*{position:relative}
 #titel .fuss{margin-top:auto}
-/* Hochkant (Handy, Tablet): Das Bild ist quer gemalt und füllt den Schirm nicht. Statt oben und unten anzuflicken (9.1), hängt es als gerahmtes Bild auf der Holzwand des Spiels,
-   Rahmen wie bei den Ortsbildern (.pano). Titel darüber, Knöpfe darunter, der freie Platz verteilt sich über und unter dem Bild. Auf kurzen Schirmen wird das Bild flacher. */
+/* Hochkant (Handy, Tablet): Seit 10.4 (Maik 19.11.2026) füllt Timos Titelbild im Hochformat (titel-hochkant, Himmel in Bordeaux wie der Knopf "Nächster Monat")
+   den ganzen Schirm, der gerahmte Torbogen auf der Holzwand (9.1) ist raus. Titel oben im Himmel, Knöpfe und Namen unten auf dem Pflaster, beides leicht abgedunkelt. */
 @media (max-aspect-ratio:5/4){
-#titel{background:#3d2719 url(bilder/brett-dunkel.jpg) 0 0/100% auto repeat}
-#titel::before{background:radial-gradient(ellipse at 50% 42%,rgba(20,10,5,0) 35%,rgba(20,10,5,.6))}
-#titel::after{content:'';position:relative;order:1;flex:0 1 auto;min-height:110px;aspect-ratio:8/7;margin:auto -14px;border:13px solid transparent;border-image:url(bilder/rahmen.webp) 39/13px stretch;background:url(bilder/panorama-weingut-sommer-teil-2.jpg) center/cover padding-box;box-shadow:0 6px 16px rgba(0,0,0,.55)}
-#titel .fuss{order:2;margin-top:0}
+#titel{background:#3a0f1c url(bilder/titel-hochkant.jpg) center 42%/cover no-repeat}
+#titel::before{background:linear-gradient(rgba(20,6,10,.5),rgba(20,6,10,0) 24%,rgba(20,6,10,0) 52%,rgba(20,10,5,.55) 72%,rgba(20,10,5,.85))}
 }
 #titel h1{font:700 44px/1.05 Georgia,"Times New Roman",serif;margin:1vh 0 6px;white-space:nowrap;text-shadow:0 2px 10px rgba(0,0,0,.85)}
 #titel .unter{font-size:15px;text-shadow:0 1px 4px #000}
@@ -5224,12 +5222,12 @@ function zeigeTitel(){
   // damit eine gesicherte Datei auch auf einem neuen Gerät ankommt. Darunter die Namen in zwei Blöcken und klein die Technik mit der Nennung, die ElevenLabs im Gratis-Tarif verlangt.
   const t=$('#titel'), hat=[0,1,2].some(lies), alt=!hat&&[0,1,2].some(liesAlt); t.className='an'; delete t.dataset.a;
   // Seit 8.4 (Maik 18.11.2026): Titel mit Gradzeichen und höher, damit mehr vom Torbogen zu sehen ist. Keine Spielanleitung mehr hier (die liegt im Büro),
-  // die Namen stehen unten über der Version, Timo als Chef-Tester.
+  // die Namen stehen unten über der Version, Timo als Chef-Tester. Seit 10.4 (Maik 19.11.2026) nennt die Technik auch die Bild-KI, Claude bleibt vorn.
   t.innerHTML=`<h1>150° Öchsle</h1><div class="unter">Vom kahlen Hang in den Festsaal des Weinbauverbands</div><div class="fuss">
     ${alt?'<div class="version alt">Dein Spielstand stammt aus einer älteren Version und läuft hier nicht weiter. Mit „Neues Spiel“ fängst du neu an.</div>':''}
     <div class="tkn">${hat?'<button data-a="titelWeiter">Weiterspielen</button>':''}<button ${hat?'class="sec" ':''}data-a="titelNeu">Neues Spiel</button>${hat?'':'<button class="tdatei" data-a="titelLaden">Gesicherten Spielstand aus Datei laden</button>'}</div>
     <div class="nenn">${TITEL_NAMEN.map(([r,v,n])=>`<div class="blk">${r.map(z=>`<span class="rz">${z}</span>`).join('')}<span class="nz">${v} ${n}</span></div>`).join('')}</div>
-    <div class="tech"><span>Programmiert mit Claude (Anthropic)</span> · <span>Musik: Treblo</span><br><span>Geräusche: ElevenLabs (elevenlabs.io)</span> · <button class="tver${neuHinweis(hat)?' neu':''}" data-a="titelChronik">Version ${VERSION}<i>✨ Neu</i></button></div></div>`;
+    <div class="tech"><span>Programmiert mit Claude (Anthropic)</span><br><span>Bilder: GPT Image (OpenAI)</span> · <span>Musik: Treblo</span><br><span>Geräusche: ElevenLabs (elevenlabs.io)</span> · <button class="tver${neuHinweis(hat)?' neu':''}" data-a="titelChronik">Version ${VERSION}<i>✨ Neu</i></button></div></div>`;
   titelBuendig(t); if(document.fonts) document.fonts.ready.then(()=>titelBuendig(t));
 }
 // Seit 10.2.1 "Was ist neu" (Maik 19.11.2026): Die Versionsnummer auf dem Titelbild lässt sich immer antippen und zeigt je Version eine Zeile.
@@ -5274,7 +5272,7 @@ function zeigeChronik(){
     <div class="tchl">${WAS_NEU.map(([v,d,x])=>`<div class="tchz1"><b>${v}</b><small>${d}</small><span>${esc(x)}</span></div>`).join('')}</div>
     <div class="mitte"><button class="siegel" data-a="titelChronikZu">Okay</button></div></div></div>`);
 }
-const TITEL_NAMEN=[[['Spielidee &amp;','Entwicklung'],'Maik','Dienst'],[['Chef-Tester &amp;','Bildgestaltung'],'Timo','Dienst']];
+const TITEL_NAMEN=[[['Spielidee &amp;','Entwicklung'],'Maik','Dienst'],[['Chef-Tester &amp;','Visuelle Effekte'],'Timo','Dienst']];
 // Bringt in jedem Block die Rollenzeilen per Buchstabenabstand und den Namen per Wortabstand (nur zwischen Vor- und Nachname) auf dieselbe Breite.
 function titelBuendig(t){
   const breit=e=>e.getBoundingClientRect().width;
