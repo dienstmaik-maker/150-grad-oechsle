@@ -73,6 +73,9 @@ main>h3{font-size:17px;margin:16px 0 8px;padding-left:10px;border-left:4px solid
 .sb .lohnt{margin-top:8px;padding:6px 10px;border-radius:8px;background:rgba(123,30,58,.09);font-weight:700;color:#4a1526;font-size:14px}
 .gchips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}.gchips .wahl{flex:1 1 30%;margin:0;padding:9px 4px;text-align:center;font-weight:600;font-size:14px}.gchips .gs{display:block;width:44px;height:44px;margin:0 auto 4px}
 .fussnote{font-size:12px;color:var(--mut);margin:2px 4px 14px;text-align:center}
+/* Version 11.2: vier Kacheln oben im Büro (Erfolge, Wissen, Familie, Einstellungen), die gewählte hat den weinroten Rand. */
+.bkach{display:flex;gap:6px;margin:0 0 12px}.bkach .wahl{flex:1 1 0;min-width:0;min-height:58px;margin:0;padding:7px 0 6px;text-align:center;font-weight:600;font-size:11px;line-height:1.15;white-space:nowrap}
+.bkach .wahl i{display:block;font-style:normal;font-size:20px;line-height:24px;margin-bottom:2px}.bkach .wahl.an{font-weight:700;color:#7b1e3a}
 /* Das Buch: Vollbild im Papier-Stil wie der Winzerbote */
 #buch{display:none;position:fixed;inset:0;z-index:40;flex-direction:column;background:#f3e7ca url(bilder/papier.jpg) center/cover;color:#2b2118;--ink:#2b2118;--mut:#6b5a45;--line:#d3bf93;--wein:#7b1e3a;--card:#fbf4e1}
 #buch.an{display:flex}
@@ -691,7 +694,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='11.1';
+const VERSION='11.2';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -3228,14 +3231,30 @@ function vVerband(){
     kn,
     buch:'wahl',i:`Als ${anr('Präsident','Präsidentin')} musst du dein Amt alle ${WAHL_JAHRE} Jahre verteidigen. Es zählt die Stimmung im Verband: Liegt sie am Wahltag auf oder über der Marke (der Strich im Balken), bleibst du im Amt. Gewürfelt wird nicht.<br><br><b>Was die Stimmung hebt:</b> alles, was Ansehen bringt, zum Beispiel Medaillen, ein Hoffest, Sekt oder eine saubere Weinkontrolle. Von jedem gewonnenen Ansehen gehen ${pz(STIMM_PLUS)} auf die Stimmung. Nur das Ansehen aus der Stiftung fürs Dorf zählt nicht.<br><b>Was sie drückt:</b> Jeder Monat kostet ${String(STIMM_MONAT).replace('.',',')}, und jeder Abzug beim Ansehen schlägt voll durch.<br><br><b>Die Marke:</b> Dein Herausforderer ist der stärkste Gegner. Bei der ersten Wahl brauchst du ${MARKE_START}, nach jeder gewonnenen Wahl ${MARKE_PLUS} mehr, höchstens ${MARKE_MAX}. Nach jeder gewonnenen Wahl startet die Stimmung wieder bei ${STIMM_START}. Als ${anr('Ehrenbürger','Ehrenbürgerin')} startest du immer ${SP_STIMM} Punkte höher.<br><br><b>Wahlkampf:</b> Ein Jahr vor der Wahl bringt der Winzerbote die Umfrage. Ab dann kannst du hier Stimmen kaufen: ${eur(KAUF_PREIS)} vom Konto für ${KAUF_PLUS} Punkte, höchstens ${KAUF_MAX} Mal je Wahl. Jeder Kauf fliegt mit ${pz(KAUF_SKANDAL)} auf, dann ist das Geld weg und die Stimmung fällt um ${KAUF_STRAFE}. Auch der Herausforderer spielt im Wahlkampf nicht immer sauber.<br><br><b>Abgewählt:</b> Der Herausforderer übernimmt den Stuhl, du behältst alles andere. Die Stimmung startet dann bei ${STIMM_ALT}, die Marke sinkt um ${MARKE_ABWAHL} (nie unter ${MARKE_START}), und bei der nächsten Wahl kannst du dir den Stuhl zurückholen.<br><br><b>Weltweinschau:</b> Mit zwei Schlüsseln holst du sie ins Dorf. Dorf: alle ${SPENDEN.length-1} Spenden, verpasste holt die Stiftung fürs Dorf nach. Verband: eine gewonnene Wahl, auch eine Rückkehr zählt. Dann ist jeden August Schau, und du reichst im Fenster „Wettbewerbe“ einen verkaufsreifen Prädikatswein oder Sekt ein, gern auch jedes Jahr denselben. Platz 1 macht dich ${anr('zum Ehrenpräsidenten','zur Ehrenpräsidentin')}.<br><br><b>Übergabe:</b> Als ${anr('Präsident','Präsidentin')} übergibst du nur noch einmal, danach endet die Partie mit der Chronik. Die Familie wartet damit bis zum Januar nach deiner zweiten Wahl. Mit „Weingut übergeben“ gehst du früher, wann du willst. Erbschaftssteuer fällt dabei nicht an.`});
 }
-function vRangliste(){
+// Seit 11.2: Die Rangliste steht im Büro nur noch als Zeile im Fenster "Dein Rang" (Platz x von y), die ganze Liste liegt einen Tipp dahinter (ranglisteHtml).
+function rangListe(){
   const v=vermoegen();
-  const L=[{name:S.name,du:1,sub:`du${S.ich?' ('+S.ich+')':S.erbe&&S.erbe.name?' ('+S.erbe.name+')':''}, ${R().name}`,w:frau(),rang:S.rang,ans:S.ansehen,ha:S.ha,verm:v},
+  return [{name:S.name,du:1,sub:`du${S.ich?' ('+S.ich+')':S.erbe&&S.erbe.name?' ('+S.erbe.name+')':''}, ${R().name}`,w:frau(),rang:S.rang,ans:S.ansehen,ha:S.ha,verm:v},
     ...S.gegner.map(g=>({name:g.name,sub:`${GEGNER_TYP[g.typ].art}, ${REGIONEN[g.region].name}`,w:gFrau(g),rang:g.rang,ans:Math.round(g.ansehen),ha:g.ha,verm:gVerm(g),stuhl:S.amt?amtAlt()&&g.id===S.amt.stuhl:S.sieger===g.name}))]
     .sort((a,b)=>b.rang-a.rang||b.ans-a.ans);
-  return fenster('rangliste','Rangliste',L.map((x,i)=>`<div class="rl ${x.du?'du':''}"><span>${i+1}.</span><div><b>${esc(x.name)}</b><span class="mut">${esc(x.sub)}<br>${x.du?duK():x.stuhl?(x.w?'Präsidentin':'Präsident'):x.rang===R_MAX?(x.w?'Herausforderin':'Herausforderer'):x.w&&RAENGE[x.rang].kw||RAENGE[x.rang].kurz} · ${x.ans} Ansehen · ${x.ha} ha · ${eur(x.verm)}<br>${x.du&&S.amt?`🗳️ Stimmung ${stimmZ()} · ${wahlAus()?'keine Wahl mehr':'Wahl im '+monJahr(S.amt.wahl)}`:x.stuhl?'🪑 sitzt auf dem Stuhl im Festsaal':bisZiel(x.rang)}</span></div></div>`).join(''),{
-    buch:'gegner',hin:[S.sieger&&!S.amt&&`🪑 Auf dem Stuhl im Festsaal: ${esc(S.sieger)}`],
-    i:'Hier stehst du mit deinen Gegnern. Vorn steht der höchste Rang, bei gleichem Rang entscheidet das Ansehen. Was die anderen treiben, steht im Winzerboten.'});
+}
+const RANGL_I='Vorn steht der höchste Rang, bei gleichem Rang entscheidet das Ansehen. Was die anderen treiben, steht im Winzerboten.';
+function ranglisteHtml(){
+  return rangListe().map((x,i)=>`<div class="rl ${x.du?'du':''}"><span>${i+1}.</span><div><b>${esc(x.name)}</b><span class="mut">${esc(x.sub)}<br>${x.du?duK():x.stuhl?(x.w?'Präsidentin':'Präsident'):x.rang===R_MAX?(x.w?'Herausforderin':'Herausforderer'):x.w&&RAENGE[x.rang].kw||RAENGE[x.rang].kurz} · ${x.ans} Ansehen · ${x.ha} ha · ${eur(x.verm)}<br>${x.du&&S.amt?`🗳️ Stimmung ${stimmZ()} · ${wahlAus()?'keine Wahl mehr':'Wahl im '+monJahr(S.amt.wahl)}`:x.stuhl?'🪑 sitzt auf dem Stuhl im Festsaal':bisZiel(x.rang)}</span></div></div>`).join('');
+}
+// Fenster "Dein Rang" im Büro bei den Erfolgen: der Rang, das nächste Ziel in drei Zeilen und der Platz in der Rangliste.
+// Die Kennung bleibt 'rangliste', damit der Spielführer (k09) weiter das i findet. Die Balken und alles Weitere stehen in Aktuelles (vRang).
+function bueroRang(){
+  const n=RAENGE[S.rang+1], v=vermoegen(), bep=flaecheBep(), L=rangListe(), platz=L.findIndex(x=>x.du)+1, vor=L[platz-2];
+  const z=(t,ist,soll,txt)=>`<div class="kv"><span>${ist>=soll?'✅':'▫️'} ${t}</span><span>${txt}</span></div>`;
+  const ziel=n?`<div class="mut" style="margin-bottom:2px">Nächstes Ziel: <b>${esc(frau()&&n.w||n.name)}</b></div>
+    ${z('Ansehen',S.ansehen,n.ans,`${S.ansehen} von ${n.ans}`)}${z('Bepflanzt',bep,n.ha,`${bep.toLocaleString('de-DE')} von ${n.ha} Hektar`)}${z('Vermögen',v,n.verm,vonGeld(v,n.verm))}`
+    :`<div class="kv"><span>⭐ Ansehen</span><span>${S.ansehen}</span></div><div class="kv"><span>💰 Vermögen</span><span>${eur(v)}</span></div>${S.amt?`<div class="kv"><span>🗳️ Stimmung im Verband</span><span>${stimmZ()} von 100</span></div>`:''}`;
+  return fenster('rangliste',`Dein Rang: ${duN()}`,ziel,{buch:'gegner',
+    hin:[S.sieger&&!S.amt&&`🪑 Auf dem Stuhl im Festsaal: ${esc(S.sieger)}`],
+    links:`📊 Platz ${platz} von ${L.length}${vor?`, vor dir ${esc(vor.name)}`:', du führst'}`,
+    kn:pk('rangliste','Rangliste','',{sec:1}),
+    i:`Für den Aufstieg brauchst du Ansehen, bepflanzte Fläche und Vermögen zugleich. Die Balken dazu und was der nächste Rang bringt, stehen unter „Aktuelles“.<br><br>„Rangliste“ zeigt dich und deine Gegner. ${RANGL_I}`});
 }
 // Seit 7.9: Steht etwas an, das nicht warten kann? Das ist alles in Rot, dazu die Lese (halt). Gelb und Hinweise zählen nicht.
 function stehtAn(){return aufgaben().some(a=>a.rot||a.halt)}
@@ -3993,7 +4012,7 @@ function vMaschinen(){
   }
   return h+zu.join('');
 }
-// Büro als Pokalraum (seit 7.4 auf dem Fenster-Baustein). Reihenfolge seit 4.4 (Maik): Anleitung, Rangliste, Ehrungen, Aufstiege, Bestenliste, Ton, Spielstand.
+// Büro als Pokalraum (seit 7.4 auf dem Fenster-Baustein), seit 11.2 in vier Bereichen (siehe vBuero).
 const MED_NAME={'🌍':'Weltweinschau','🏆':'Bundessieg','🥇':'Gold','🥈':'Silber','🥉':'Bronze'};
 function ehrSumme(wein){
   const n={}; for(const e of wein) n[e.i]=(n[e.i]||0)+1;
@@ -4009,32 +4028,52 @@ function namenFenster(){
     buch:'',hin:['✍️ Seit Version 7.9 gibt es zwei Namen: deinen eigenen und den des Weinguts. Trag hier beide ein.'],kn:'<button class="klein" data-a="namenJa">Speichern</button>',
     i:'Dein Name steht künftig auf Urkunden, in der Bestenliste, in der Chronik und im Winzerboten. Der Name des Weinguts steht am Hof und in den Schlagzeilen. Urkunden, die schon an der Wand hängen, bleiben, wie sie sind.'});
 }
+// Seit 11.2 (Maik 19.11.2026): vier Bereiche statt einer langen Liste. Oben im Büro stehen vier Kacheln, darunter nur die Fenster des gewählten Bereichs.
+// BUERO hält die Wahl, bis das Spiel neu geladen wird. BUERO_WO sagt je Fenster, in welchem Bereich es steht (für "Zeig mir, wo" im Spielführer).
+// Reihenfolge je Bereich: Erfolge (Rang mit Platz, Ehrungen mit Siegeln, Weinbotschafter, Urkunden mit Spenden), Wissen (Anleitung, Kompendium, Spielführer),
+// Familie (Mein Weingut, Chronik, Bestenliste), Einstellungen (Ton, Dein Spiel, Deine Idee). Das Fenster "Deine Namen" steht in jedem Bereich oben, bis es erledigt ist.
+const BUERO_B=[['erfolge','🏆','Erfolge'],['wissen','📖','Wissen'],['familie','👪','Familie'],['einst','⚙️','Einstellungen']];
+const BUERO_WO={rangliste:'erfolge',ehrungen:'erfolge',botschafter:'erfolge',urkunden:'erfolge',anleitung:'wissen',komp:'wissen',fuehrer:'wissen',meingut:'familie',chronik:'familie',besten:'familie',ton:'einst',spiel:'einst',idee:'einst'};
+let BUERO='erfolge';
+function bueroKacheln(){return `<div class="bkach" role="tablist" aria-label="Bereiche im Büro">${BUERO_B.map(([k,s,n])=>`<button class="wahl${BUERO===k?' an':''}" role="tab" aria-selected="${BUERO===k}" data-a="buero" data-id="${k}"><i>${s}</i>${n}</button>`).join('')}</div>`}
 function vBuero(){
-  const E=(S.ehrungen||[]).slice().reverse(), wein=E.filter(e=>!e.a), L=bestenZeilen();
+  if(!BUERO_B.some(b=>b[0]===BUERO)) BUERO='erfolge';
+  return bueroKacheln()+namenFenster()+{erfolge:bueroErfolge,wissen:bueroWissen,familie:bueroFamilie,einst:bueroEinst}[BUERO]();
+}
+function bueroErfolge(){
+  const E=(S.ehrungen||[]).slice().reverse(), wein=E.filter(e=>!e.a), sz=kompZahlen();
   const zeile=e=>`<div class="rl"><span>${esc(e.i)}</span><div><b>${esc(e.t)}</b>${e.j?`<span class="mut">${MON[e.m]} ${e.j}</span>`:''}</div></div>`;
-  return namenFenster()+fenster('anleitung','Spielanleitung','',{links:`Alles zum Nachschlagen in ${buchKap().length} kurzen Kapiteln, von der Bedienung bis zum Spielführer.`,kn:pk('buch','Aufschlagen',''),
-      i:'Das Büro ist dein Pokalraum und deine Schaltzentrale. Von oben: Spielanleitung, Weinkompendium, Rangliste, Ehrungen, Urkunden, Mein Weingut, Chronik, Bestenliste, Spielführer, Deine Idee, Ton und ganz unten deine Spielstände. Das kleine i erklärt jedes Fenster kurz, „Mehr im Buch“ schlägt das passende Kapitel auf.'})
-    +kompFenster()
-    +vRangliste()
+  return bueroRang()
     +fenster('ehrungen','Ehrungen für deine Weine',wein.length?`<div class="gold" style="font-size:17px;margin-bottom:6px">${ehrSumme(wein)}</div><div class="mut">Zuletzt:</div>`+wein.slice(0,3).map(zeile).join(''):[],{
-      leer:'Noch keine Ehrungen.',buch:'wettbewerb',i:'Medaillen gibt es bei der Landesprämierung, beim Bundeswettbewerb und als Präsident bei der Weltweinschau. Sie bringen Ansehen und machen den Wein wertvoller.'})
+      leer:'Noch keine Ehrungen.',buch:'wettbewerb',links:`📖 Weinkompendium: ${sz.hab} von ${sz.max} Siegeln`,kn:pk('weinQual','Aufschlagen','',{sec:1}),
+      i:'Medaillen gibt es bei der Landesprämierung, beim Bundeswettbewerb und als Präsident bei der Weltweinschau. Sie bringen Ansehen und machen den Wein wertvoller. Darunter steht, wie viele Siegel du im Weinkompendium gesammelt hast.'})
     +(S.rang>=R_LADEN?fenster('botschafter','Weinbotschafter',`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/weinbotschafter.jpg);height:150px"><b>🎗️ Weinbotschafter ${WO[S.region]}</b></div>
       <div class="kv"><span>Jeden Januar</span><span>+${BOTSCHAFT_ANS} Ansehen</span></div>`,{buch:'ziel',i:`Seit dem Rang ${RAENGE[R_LADEN].name} bist du Weinbotschafter ${WO[S.region]}. Für deine Reisen bekommst du jeden Januar ${BOTSCHAFT_ANS} Ansehen.`}):'')
-    +fenster('urkunden','Deine Urkunden',urkWand(),{buch:'ziel',i:'Für jeden Aufstieg bekommst du eine Urkunde. Sie hängt hier an der Wand, die erste gibt es mit dem Aufstieg zum zweiten Rang. Darunter hängen die Schilder und Urkunden für deine Spenden im Rathaus.'})
-    +wgFenster()
+    +fenster('urkunden','Deine Urkunden',urkWand(),{buch:'ziel',i:'Für jeden Aufstieg bekommst du eine Urkunde. Sie hängt hier an der Wand, die erste gibt es mit dem Aufstieg zum zweiten Rang. Darunter hängen die Schilder und Urkunden für deine Spenden im Rathaus.'});
+}
+function bueroWissen(){
+  return fenster('anleitung','Spielanleitung','',{links:`Alles zum Nachschlagen in ${buchKap().length} kurzen Kapiteln, von der Bedienung bis zum Spielführer.`,kn:pk('buch','Aufschlagen',''),
+      i:'Das Büro hat vier Bereiche, oben wählst du einen aus. <b>Erfolge:</b> dein Rang mit dem Platz in der Rangliste, Ehrungen und Urkunden. <b>Wissen:</b> Spielanleitung, Weinkompendium und Spielführer. <b>Familie:</b> Mein Weingut, Chronik und Bestenliste. <b>Einstellungen:</b> Ton, dein Spiel mit den Spielständen und deine Idee. Das kleine i erklärt jedes Fenster kurz, „Mehr im Buch“ schlägt das passende Kapitel auf.'})
+    +kompFenster()
+    +fuFenster();
+}
+function bueroFamilie(){
+  const L=bestenZeilen();
+  return wgFenster()
     +chronikHtml()
     +fenster('besten','Bestenliste',L.length?L.map(bestenZeile).join(''):[],{
-      leer:'Noch leer.',buch:'ende',i:BESTEN_I})
-    +fuFenster()
-    // Seit 11.0 (Idee A, Maik 19.11.2026): Ideen der Spieler gehen als Text über WhatsApp oder "Teilen" raus, ohne Nummer oder Adresse im Code.
-    +fenster('idee','💡 Deine Idee','<div class="mut">Dir fehlt etwas im Spiel, oder etwas stört dich? Sag es uns.</div>',{buch:'buero',
-      kn:[pk('idee','Ich gebe meine Idee weiter',''),pk('ausblick','Was geplant ist','',{sec:1})],
-      i:'Schreib oder sprich deine Idee ins Textfeld, das Mikrofon deiner Tastatur schreibt mit. Danach schickst du sie über WhatsApp oder „Teilen“ an Maik. Das Spiel selbst verschickt nichts und kennt keine Nummer, den Empfänger wählst du aus deinen Kontakten. „Was geplant ist“ zeigt, woran schon gearbeitet wird.'})
-    +fenster('ton','Ton',tonZeilen(),{i:'Musik „an“ spielt durchgehend, „kurz“ spielt beim Wechsel zwischen Weingut, Kellerei und Stadt ein paar Sekunden, „aus“ ist still. Feiern, Wettbewerbe und Pfändung laufen auch bei „kurz“ in voller Länge. Mit den Reglern stellst du Musik und Geräusche getrennt leiser oder lauter.'})
+      leer:'Noch leer.',buch:'ende',i:BESTEN_I});
+}
+function bueroEinst(){
+  return fenster('ton','Ton',tonZeilen(),{i:'Musik „an“ spielt durchgehend, „kurz“ spielt beim Wechsel zwischen Weingut, Kellerei und Stadt ein paar Sekunden, „aus“ ist still. Feiern, Wettbewerbe und Pfändung laufen auch bei „kurz“ in voller Länge. Mit den Reglern stellst du Musik und Geräusche getrennt leiser oder lauter.'})
     +fenster('spiel','Dein Spiel',`<div class="kv"><span>Speicherplatz</span><span>Spielstand ${SLOT+1}</span></div><div class="kv"><span>Schwierigkeit</span><span>${DIFF[S.schwer].name}</span></div>`
       // Seit 8.5.1: Knopf "Spiel laden" statt "Spielstände", die Erklärung steht sichtbar beim passenden Knopf.
       +`<div class="fzl">${fz('Spiel laden','Hier lädst du einen anderen oder älteren Spielstand oder sicherst ihn als Datei.','',pk('menue','Spiel laden','',{sec:1}))}${fz('Neues Spiel','Löscht diesen Spielstand und fängt von vorn an.','',pk('neuFrage','Neues Spiel','',{sec:1}))}</div>`,{buch:'bedienung',
       i:'Gespeichert wird von selbst nach jedem Monat.'})
+    // Seit 11.0 (Idee A, Maik 19.11.2026): Ideen der Spieler gehen als Text über WhatsApp oder "Teilen" raus, ohne Nummer oder Adresse im Code.
+    +fenster('idee','💡 Deine Idee','<div class="mut">Dir fehlt etwas im Spiel, oder etwas stört dich? Sag es uns.</div>',{buch:'buero',
+      kn:[pk('idee','Ich gebe meine Idee weiter',''),pk('ausblick','Was geplant ist','',{sec:1})],
+      i:'Schreib oder sprich deine Idee ins Textfeld, das Mikrofon deiner Tastatur schreibt mit. Danach schickst du sie über WhatsApp oder „Teilen“ an Maik. Das Spiel selbst verschickt nichts und kennt keine Nummer, den Empfänger wählst du aus deinen Kontakten. „Was geplant ist“ zeigt, woran schon gearbeitet wird.'})
     +`<div class="fussnote">Bilder, Musik und Geräusche sind mit KI erstellt (Musik mit Treblo, Geräusche mit ElevenLabs, elevenlabs.io).</div>`;
 }
 // Weinberg (seit 7.4 auf dem Fenster-Baustein): je Sorte ein Fenster (seit 4.4 oben), dann Düngung und Übersicht, darunter zugeklappt der Steckbrief des Gebiets.
@@ -4924,7 +4963,7 @@ const AKT={
   fuVorn(){const f=S.fu; if(!f||!f.an) return; const n=fuAlt(); n.an=f.an; n.nur=f.nur; n.geld=f.geld; n.rm=f.rm||{}; S.fu=n; fuehrerWeg(); FU_PAUSE=false; save(); render();
     meldung('Tipps von vorn','Warnungen und Kniffe kommen wieder, sobald sie passen. In den ersten zwei Jahren kommt auch der Rest des Fahrplans.')},
   // Seit 10.2.1: "Zeig mir, wo" klappt die Blase zum Kopf zusammen, statt sie abzuhaken. Weg ist sie erst mit "Verstanden" oder wenn die Aufgabe erledigt ist.
-  fuWo(){const id=FU_AKT, z=FU_ZEIG[id]; if(!z) return; fuKlein(true); FU_WO=true; FU_PAUSE=true; if(z.tab){geh(z.tab,z.sub); render(); window.scrollTo(0,0)} setTimeout(()=>fuLeuchte(z),z.tab?120:0)},
+  fuWo(){const id=FU_AKT, z=FU_ZEIG[id]; if(!z) return; fuKlein(true); FU_WO=true; FU_PAUSE=true; if(z.tab){geh(z.tab,z.sub); if(z.sub==='buero'){const m=/data-id="(\w+)"/.exec((z.sel||[])[0]||''); if(m&&BUERO_WO[m[1]]) BUERO=BUERO_WO[m[1]]} render(); window.scrollTo(0,0)} setTimeout(()=>fuLeuchte(z),z.tab?120:0)},
   fuAuf(){fuKlein(false)},
   fuBuch(d){BUCH=d.id||''; buchZeig()},
   // Seit 8.0.1 "Dein Stand" statt "Deine Kasse": Kasse, Bis zum nächsten Rang (alle drei Bedingungen mit Balken wie in vRang) und die Rangleiter.
@@ -5073,6 +5112,9 @@ const AKT={
   spBank(){openSheet(`<h3>🪑 Die Bank am Wanderweg</h3><div class="spbogen" style="background-image:url(bilder/${bankBild()}.jpg)"></div>${spBankTafel()}<p class="mut">Über der Spitzenlage, mit Blick über den Fluss ins Tal.</p><div class="btns"><button data-a="close">Schließen</button></div>`)},
   spBogen(){openSheet(`<h3>🪵 Der Holzbogen</h3>${spBogenHtml()}<div class="btns"><button data-a="close">Schließen</button></div>`)},
   sub(d){SUB=d.id;render();window.scrollTo(0,0)},
+  // Seit 11.2: Bereich im Büro wählen und die ganze Rangliste als Fenster von unten.
+  buero(d){if(BUERO===d.id) return; BUERO=d.id; FI_AUF.clear(); render()},
+  rangliste(){openSheet(`<h3>Rangliste</h3><p class="mut">${RANGL_I}</p>${ranglisteHtml()}<div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`)},
   arbeitsamt(){closeSheet();geh('stadt','arbeit');render();window.scrollTo(0,0)},
   // Seit 11.1 öffnet der Knopf im Kellerbuch das Weinkompendium. Der Name der Aktion bleibt, die Sprechblasen zeigen darauf.
   weinQual(){if(S) kompAuf()},
@@ -5524,7 +5566,6 @@ function neuHinweis(hat){let alt=null; try{alt=localStorage.getItem(NEU_KEY); lo
 const AUSBLICK=[
   ['📖 Mehr im Weinkompendium','Das Sammelbuch ist da. Es folgen eine kleine Geschichte zu jedem Eintrag, Belohnungen für gesammelte Siegel und ein Album über alle Partien.'],
   ['🍇 Neue Rebsorten','Jedes Gebiet bekommt drei eigene Sorten: eine für die Menge, eine für den Sekt und eine für Spitzenweine.'],
-  ['🗂️ Aufgeräumtes Büro','Vier Bereiche statt einer langen Liste: Erfolge, Wissen, Familie und Einstellungen.'],
   ['🎬 Kurze Filme','Die großen Momente bekommen bewegte Bilder.'],
   ['👥 Online mit Freunden','Eine gemeinsame Bestenliste, jeder spielt auf seinem Handy für sich.']];
 function ausblickHtml(){return `<div class="ausbl">${AUSBLICK.map(([t,x])=>`<div><b>${t}</b>${esc(x)}</div>`).join('')}</div>`}
@@ -5537,6 +5578,7 @@ function ideeText(){
 }
 function ideeFertig(){try{localStorage.removeItem(IDEE_KEY)}catch(e){} meldung('Danke für deine Idee!','Jede Idee wird gelesen. Was daraus wird, siehst du bei „Was geplant ist“ und später bei „Was ist neu“.')}
 const WAS_NEU=[
+  ['11.2','19.11.2026','Aufgeräumtes Büro: vier Bereiche statt einer langen Liste, die Rangliste steht als Zeile bei deinem Rang.'],
   ['11.1','19.11.2026','Das Weinkompendium ersetzt das Weinlexikon: ein Sammelbuch mit Siegeln in Bronze, Silber und Gold, im Kellerbuch und im Büro.'],
   ['11.0','19.11.2026','Deine Idee zählt: Im Büro gibst du Ideen per WhatsApp weiter und siehst, was geplant ist.'],
   ['10.4','19.11.2026','Neues Titelbild im Hochformat und elf Zeitungsbilder im Stil der Weingut-Reihe.'],
