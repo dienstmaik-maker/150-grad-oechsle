@@ -88,6 +88,8 @@ main>h3{font-size:17px;margin:16px 0 8px;padding-left:10px;border-left:4px solid
 #buch ul,#buch ol{margin:0 0 12px;padding-left:20px}#buch li{margin:0 0 6px}#buch li ul,#buch li ol{margin:6px 0 0}
 #buch details{border-top:1px solid #b9995a;padding-top:8px;margin-top:4px}
 #buch summary{font:700 17px Georgia,serif;color:#4a1526;cursor:pointer;margin-bottom:8px}
+#buch h4{font:700 16px Georgia,serif;color:#4a1526;margin:14px 0 6px}
+#buch .bv{color:#7b1e3a;font-weight:700;text-decoration:underline;cursor:pointer}
 #buch .binh h3{font:700 15px "Alegreya SC",Georgia,serif;color:#7b1e3a;margin:16px 0 2px;letter-spacing:.5px}
 #buch .binh .bz{display:flex;gap:8px;padding:9px 2px;border-bottom:1px dotted #b9995a;font:16px Georgia,serif;cursor:pointer}
 #buch .binh .bz span{color:#7b1e3a;min-width:24px;font-weight:700}
@@ -2010,7 +2012,7 @@ function weinQualHtml(){
     +['kab','spat','aus','ba','tba'].map(st=>z(STUFEN[st].name,pr(st)+'.')).join('')
     +z('Eiswein',`ab ${m.tafel}° Öchsle, nur gefrorene Trauben der Dezember-Lese, mit Edelfäulnis, ${LESE.reif} oder ${LESE.ueber}, nicht gemischt. Nur im Januar anmelden. Die Öchsle bestimmen den Wert wie bei Auslese (ab ${m.aus}°), Beerenauslese (ab ${m.ba}°) oder Trockenbeerenauslese (ab ${m.tba}°).`)
     +`<div class="hilfe"><b>⏳ Reifezeit in der Flasche bis zum Verkauf</b><br>Tafel- und Qualitätswein: 2\u00a0Monate.<br>Kabinett bis Trockenbeerenauslese: ${reife(x=>Math.max(1,x-(S.keller||0)))}.<br>Eiswein: ${reife(x=>Math.max(1,Math.round(x*1.5)-(S.keller||0)))}.${S.keller?`<br>Dein ausgebauter Keller kürzt das schon um ${S.keller} ${S.keller===1?'Monat':'Monate'}.`:''}</div>`
-    +`<div class="hilfe"><b>📜 Gut zu wissen</b><br>Jeder Wein liegt mindestens einen Monat im Fass, höchstens sieben.<br>Ab Kabinett und beim Eiswein darfst du erst im Januar nach der Lese anmelden.<br>Überreife Trauben bringen 5° mehr Öchsle.<br>${edelRegel()}. Am häufigsten trifft sie die Sorte, die am besten ins Gebiet passt. Dann gibt es von dem Feld kein Kabinett und keine Spätlese mehr.<br>Kälteeinbruch im November: in jedem vierten Jahr, die Vorhersage warnt meist davor.<br>${frostText()}, nur dann gibt es Eiswein.<br>Bei der Lese zeigt jede Leseart, ab wann der Wein verkaufsfertig ist.</div>${mib('stufen')}`
+    +`<div class="hilfe"><b>📜 Gut zu wissen</b><br>Jeder Wein liegt mindestens einen Monat im Fass, höchstens sieben.<br>Ab Kabinett und beim Eiswein darfst du erst im Januar nach der Lese anmelden.<br>Überreife Trauben bringen 5° mehr Öchsle.<br>${edelRegel()}. Am häufigsten trifft sie die Sorte, die am besten ins Gebiet passt. Dann gibt es von dem Feld kein Kabinett und keine Spätlese mehr.<br>Kälteeinbruch im November: im Schnitt jedes vierte Jahr, die Vorhersage warnt meist davor.<br>${frostText()}, nur dann gibt es Eiswein.<br>Bei der Lese zeigt jede Leseart, ab wann der Wein verkaufsfertig ist.</div>${mib('stufen')}`
     +`<div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`;
 }
 // Was gefrorenen Trauben für Eiswein fehlt (ohne die Leseart, die wählt man beim Lesen).
@@ -2473,7 +2475,7 @@ function monatWeiter(){
   if(schulden()-erbRest()>rahmen()){
     S.mahnung++;
     if(S.mahnung>=3){S.pleite=true; schlag(90,`Pfändung bei ${S.name}`,'Der Gerichtsvollzieher steht vor der Tür. Dein Weingut ist pleite.','pleite',{du:1})}
-    else{ruhm(-3); schlag(58,`${S.mahnung}. Mahnung der Bank`,`Deine Schulden von ${eur(schulden()-erbRest())} liegen über dem Kreditrahmen von ${eur(rahmen())}. Das kostet 3 Ansehen. Nach der dritten Mahnung wird gepfändet.`,'bank',{du:1})}
+    else{ruhm(-3); schlag(58,`${S.mahnung}. Mahnung der Bank`,`Deine Schulden von ${eur(schulden()-erbRest())} liegen über dem Kreditrahmen von ${eur(rahmen())}. Das kostet 3 Ansehen. Beim dritten Mal kommt der Gerichtsvollzieher.`,'bank',{du:1})}
   }else{S.mahnung=0; if(S.geld<0) Z.push('Dein Konto ist im Minus. Die Bank nimmt dafür 1 % Zinsen im Monat.')}
   // Seit 10.1: Endet die Partie in diesem Januar (spielEnde in generationMonat), passiert danach nichts mehr.
   if(!S.pleite){generationMonat(Z); if(!S.ende){geschichteMonat(); etappe3Monat(Z)}}
@@ -3342,7 +3344,7 @@ function steckbrief(id,o={}){
     <div class="mut" style="font-size:13px">${stars.length?`Sekt-Stars hier: ${stars.join(' und ')}, sie bringen als Sekt ${Math.round((SEKT_STAR-1)*100)} % mehr.`:'Hier wächst keine Sekt-Star-Sorte.'} Sekt gibt es ab ${RAENGE[R_SEKT].name}.</div>
     <div class="sbz">💪 ${stark}<br>⚠️ ${schwach}</div>
     <div class="sbz">📏 Hürden: Spätlese ${mi.spat}°, Auslese ${mi.aus}°, Beerenauslese ${mi.ba}°</div>
-    ${kv('❄️ Frost im Dezember',`${pz(r.frost)} der Jahre`)}${kv('🌨️ Kälteeinbruch im November',`jedes ${Math.round(1/KAELTE)}. Jahr`)}${kv('🌸 Spätfrost im Frühjahr',`rund jedes ${SPAET_JAHR}. Jahr`)}
+    ${kv('❄️ Frost im Dezember',`${pz(r.frost)} der Jahre`)}${kv('🌨️ Kälteeinbruch im November',`im Schnitt jedes ${Math.round(1/KAELTE)}. Jahr`)}${kv('🌸 Spätfrost im Frühjahr',`rund jedes ${SPAET_JAHR}. Jahr`)}
     <div class="lohnt">🎯 Lohnt sich hier: ${lohnt}</div>
     <div class="sbz"><b>So gehst du vor</b><ol class="strat">${G.strat.map(x=>`<li>${x}</li>`).join('')}</ol></div>`;
   return o.fen?{name:`${sym} ${r.name}`,art:`${art}, ${bonus}`,rumpf}:`<div class="card sb"><h3>${sym} ${r.name}<small>${art}, ${bonus}</small></h3>${rumpf}${o.buch?mib('gebiete'):''}</div>`;
@@ -3370,7 +3372,7 @@ function buchZeig(){
   const h=i<0?`<div class="binh"><h2>Inhalt</h2>${ANLEITUNG.map(t=>`<h3>${t.titel}</h3>${t.kap.map(k=>`<div class="bz" data-a="buch" data-id="${k.id}"><span>${k.nr}.</span>${k.titel}</div>`).join('')}`).join('')}</div>`
     :`<div class="bnr">Kapitel ${k.nr} von ${K.length}</div><h2>${k.titel}</h2><div class="kurz"><b>Kurz gesagt:</b> ${k.kurz}</div>${k.p}${k.id==='gebiete'?gebieteGenauer():k.g?`<details><summary>Genauer</summary>${k.g}</details>`:''}`;
   b.innerHTML=`<div class="bkopf"><b>Spielanleitung</b><button class="sec klein" data-a="buchZu" aria-label="Buch schließen">✕</button></div><div class="binnen">${h}</div>
-    <div class="bfuss"><button class="sec klein" data-a="buch" data-id="${zur?zur.id:''}" ${i<0?'disabled':''}>◀ ${zur?'Zurück':'Inhalt'}</button><button class="klein" data-a="buch" data-id="${i<0?K[0].id:vor?vor.id:''}">${i<0||vor?'Weiter ▶':'Zum Inhalt'}</button></div>`;
+    <div class="bfuss"><button class="sec klein" data-a="buch" data-id="${zur?zur.id:''}" ${zur?'':'disabled'}>◀ Zurück</button>${i<0?'':`<button class="sec klein" data-a="buch" data-id="">☰ Inhalt</button>`}<button class="klein" data-a="buch" data-id="${i<0?K[0].id:vor?vor.id:''}" ${i<0||vor?'':'disabled'}>Weiter ▶</button></div>`;
   b.className='an'; $('.binnen',b).scrollTop=0;
 }
 // Betrieb (seit 7.4 auf dem Fenster-Baustein, seit 7.5 mit dem Personal): Dein Betrieb, die drei Manager untereinander, Deine Leute, das Fest.
@@ -3744,11 +3746,11 @@ function namenFenster(){
 function vBuero(){
   const E=(S.ehrungen||[]).slice().reverse(), wein=E.filter(e=>!e.a), L=bestenZeilen();
   const zeile=e=>`<div class="rl"><span>${esc(e.i)}</span><div><b>${esc(e.t)}</b>${e.j?`<span class="mut">${MON[e.m]} ${e.j}</span>`:''}</div></div>`;
-  return namenFenster()+fenster('anleitung','Spielanleitung','',{links:`Alles zum Nachschlagen in ${buchKap().length} kurzen Kapiteln, vom Ziel bis zum Arbeitsamt.`,kn:pk('buch','Aufschlagen',''),
+  return namenFenster()+fenster('anleitung','Spielanleitung','',{links:`Alles zum Nachschlagen in ${buchKap().length} kurzen Kapiteln, von der Bedienung bis zum Spielführer.`,kn:pk('buch','Aufschlagen',''),
       i:'Das Büro ist dein Pokalraum und deine Schaltzentrale. Von oben: Spielanleitung, Rangliste, Ehrungen, Urkunden, Mein Weingut, Chronik, Bestenliste, Spielführer, Ton und ganz unten deine Spielstände. Das kleine i erklärt jedes Fenster kurz, „Mehr im Buch“ schlägt das passende Kapitel auf.'})
     +vRangliste()
     +fenster('ehrungen','Ehrungen für deine Weine',wein.length?`<div class="gold" style="font-size:17px;margin-bottom:6px">${ehrSumme(wein)}</div><div class="mut">Zuletzt:</div>`+wein.slice(0,3).map(zeile).join(''):[],{
-      leer:'Noch keine Ehrungen.',buch:'wettbewerb',i:'Medaillen gibt es bei der Landesprämierung und beim Bundeswettbewerb. Sie bringen Ansehen und machen den Wein wertvoller.'})
+      leer:'Noch keine Ehrungen.',buch:'wettbewerb',i:'Medaillen gibt es bei der Landesprämierung, beim Bundeswettbewerb und als Präsident bei der Weltweinschau. Sie bringen Ansehen und machen den Wein wertvoller.'})
     +(S.rang>=R_LADEN?fenster('botschafter','Weinbotschafter',`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/weinbotschafter.jpg);height:150px"><b>🎗️ Weinbotschafter ${WO[S.region]}</b></div>
       <div class="kv"><span>Jeden Januar</span><span>+${BOTSCHAFT_ANS} Ansehen</span></div>`,{buch:'ziel',i:`Seit dem Rang ${RAENGE[R_LADEN].name} bist du Weinbotschafter ${WO[S.region]}. Für deine Reisen bekommst du jeden Januar ${BOTSCHAFT_ANS} Ansehen.`}):'')
     +fenster('urkunden','Deine Urkunden',urkWand(),{buch:'ziel',i:'Für jeden Aufstieg bekommst du eine Urkunde. Sie hängt hier an der Wand, die erste gibt es mit dem Aufstieg zum zweiten Rang. Darunter hängen die Schilder und Urkunden für deine Spenden im Rathaus.'})
@@ -3790,7 +3792,7 @@ function vBerg(){
       <div class="kv"><span>Edelfäulnis</span><span>${f.edel?'ja':f.edelGeprueft?'bleibt dieses Jahr aus':R().edelAus?`nein, möglich ab ${R().min.aus}°`:`nein, ab Oktober möglich ab ${R().min.spat}°`}</span></div>
       ${f.gefroren?'<div class="kv"><span>Zustand</span><span>❄️ gefroren</span></div>':''}
       ${f.teil?'<div class="mut">Ein Teil ist schon gelesen, der Rest hängt noch.</div>':''}
-      ${m>=7?`<div class="hilfe">${leseHilfe(f)}${m===9?`<br><span class="rot">${S.kaelteWarn===S.jahr?'Die Vorhersage meldet einen Kälteeinbruch im November! Dann erfriert alles, was noch hängt.':'Achtung: In jedem vierten Jahr kommt im November ein Kälteeinbruch, dann erfriert alles, was noch hängt. Die Vorhersage warnt meist davor.'}</span>`:''}${m===10?`<br><span class="rot">Achtung: Ohne Frost im Dezember verfault alles, was noch hängt.</span><br>${frostText()}.`:''}</div>`:''}`;
+      ${m>=7?`<div class="hilfe">${leseHilfe(f)}${m===9?`<br><span class="rot">${S.kaelteWarn===S.jahr?'Die Vorhersage meldet einen Kälteeinbruch im November! Dann erfriert alles, was noch hängt.':'Achtung: Im Schnitt jedes vierte Jahr kommt im November ein Kälteeinbruch, dann erfriert alles, was noch hängt. Die Vorhersage warnt meist davor.'}</span>`:''}${m===10?`<br><span class="rot">Achtung: Ohne Frost im Dezember verfault alles, was noch hängt.</span><br>${frostText()}.`:''}</div>`:''}`;
     }
     const kannLesen=m>=7&&f.menge>0&&!f.gelesen&&(m<11||f.gefroren), pflanz=m<=2&&sorteFrei(id), haengt=f.reben&&f.menge>0&&!f.gelesen&&m>5&&m<7;
     h+=fenster('feld_'+id,titel,z,{buch:m>=7?'lese':'berg',
@@ -4005,7 +4007,7 @@ function vStadt(){
     h+=fenster('markt','Markt diesen Monat',`<div class="kv"><span>Marktlage</span><span>${S.markt>1.04?'gut 📈':S.markt<.96?'schwach 📉':'normal'}</span></div>
       ${S.lage?`<div class="kv"><span>${S.lage.typ==='mode'?SORTEN[S.lage.sorte].name+' gefragt':'Weinskandal'}</span><span>${proz(S.lage.f)}</span></div>`:''}
       <div class="kv"><span>Budget übrig</span><span>${eur(marktRest())} von ${eur(marktFrei())}</span></div>`,{
-      i:`Der Großhandel zahlt jeden Monat nur bis zu seinem Budget den vollen Preis. Was über das Budget geht, drückt den Preis, und was du an Weinhandlungen verkaufst, zählt mit. Jeder Rang hebt das Budget um ${eur(MARKT_RANG)}, jeder bepflanzte Hektar über ${HA_FREI} um ${eur(MARKT_HA)}.
+      i:`Der Großhandel zahlt jeden Monat nur bis zu seinem Budget den vollen Preis. Was über das Budget geht, drückt den Preis, und was du an Weinhandlungen verkaufst, zählt nicht mit. Jeder Rang hebt das Budget um ${eur(MARKT_RANG)}, jeder bepflanzte Hektar über ${HA_FREI} um ${eur(MARKT_HA)}.
       ${exSt?`<div style="margin-top:6px">🌍 Der Exporthandel nimmt dir mit jedem Rang mehr ab, gerade hebt er das Budget um ${eur(MARKT_EXPORT*exSt)}${exSt<EXPORT_STUFEN?`, ab dem Rang ${RAENGE[S.rang+1].name} um ${eur(MARKT_EXPORT*(exSt+1))}`:''}. Er zahlt mehr als das Inland:</div>
       ${EXPORT_ZEILEN.map(([k,t])=>`<div class="kv"><span>${t}</span><span>${pzx(EXPORT_F[k])}</span></div>`).join('')}`
       :`<div style="margin-top:6px">🌍 Den Exporthandel gibt es ab dem Rang ${RAENGE[R_EXPORT].name}. Er zahlt mehr als das Inland und nimmt dir mit jedem Rang mehr ab.</div>`}`});
@@ -4059,11 +4061,11 @@ function vStadt(){
       <div class="kv"><span>Kreditrahmen</span><span>${eur(rahmen())}</span></div>
       <div class="kv"><span>Schulden gesamt</span><span class="${schulden()>rahmen()?'rot':''}">${eur(schulden())}</span></div>
       ${(l=>l<0?`<div class="kv"><span>Über dem Kreditrahmen</span><span class="rot">${eur(-l)}</span></div>`:`<div class="kv"><span>Spielraum bis zur Mahnung</span><span>${eur(l)}</span></div>`)(rahmen()-(schulden()-erbRest()))}
-      ${S.mahnung?`<div class="rot" style="font-size:14px;margin-top:4px">⚠️ ${S.mahnung}. Mahnung in Folge. Nach der dritten kommt der Gerichtsvollzieher.</div>`:''}
+      ${S.mahnung?`<div class="rot" style="font-size:14px;margin-top:4px">⚠️ ${S.mahnung}. Mahnung in Folge. Beim dritten Mal kommt der Gerichtsvollzieher.</div>`:''}
       ${ab?`<div class="fzl ab"><div class="fstand" style="margin-bottom:2px">Zum letzten Monatswechsel abgebucht</div>
       ${kv('Betriebskosten',ab.basis)}${kv('Löhne',ab.loehne)}${kv('Kreditrate',ab.rate)}${kv('Überziehungszinsen',ab.ueberz)}${kv('Steuer auf den Jahresgewinn',ab.steuer)}
       <div class="kv"><span><b>Zusammen</b></span><span>${eur(ab.basis+ab.loehne+ab.rate+ab.ueberz+ab.steuer)}</span></div></div>`:''}`,{
-      i:'Hier siehst du Kontostand, Kreditrahmen und was zuletzt abgebucht wurde. Der Kreditrahmen wächst mit deinem Rang. Minus auf dem Konto und Kredit zählen zusammen als Schulden. Der Spielraum zeigt, wie viel bis zum Kreditrahmen noch frei ist. Liegst du beim Monatswechsel darüber, mahnt die Bank, das kostet 3 Ansehen. Nach der dritten Mahnung in Folge kommt der Gerichtsvollzieher.'});
+      i:'Hier siehst du Kontostand, Kreditrahmen und was zuletzt abgebucht wurde. Der Kreditrahmen wächst mit deinem Rang. Minus auf dem Konto und Kredit zählen zusammen als Schulden. Der Spielraum zeigt, wie viel bis zum Kreditrahmen noch frei ist. Liegst du beim Monatswechsel darüber, mahnt die Bank, das kostet 3 Ansehen. Beim dritten Mal in Folge kommt der Gerichtsvollzieher.'});
     const krI='Einen Kredit gibt es ab 5.000 €, Laufzeit 12 bis 48 Monate, 6 % Zinsen im Jahr auf die Restschuld. Die Rate wird jeden Monat von selbst abgebucht. Vorzeitig ablösen geht jederzeit, ohne Gebühr.';
     h+=k?fenster('kredit','Dein Kredit',`<div class="kv"><span>Restschuld</span><span>${eur(k.rest)}</span></div>
       <div class="kv"><span>Rate diesen Monat</span><span>${eur(K.tilgung+K.zins)}</span></div>
@@ -4569,7 +4571,7 @@ function fuFenster(){
   const W=[['alle','💬 Alle Tipps'],['neu','🎓 Nur Neuheiten und Warnungen'],['aus','🔕 Aus']];
   return fenster('fuehrer','Spielführer',W.map(([k,x])=>`<button class="wahl schalter ${st===k?'an':''}" data-a="fuStell" data-id="${k}">${st===k?'✅':'⬜'} ${x}</button>`).join(''),{
     links:'Warnungen und Kniffe noch einmal',kn:pk('fuVorn','Tipps von vorn','',{sec:1,aus:!f.an}),buch:'fuehrer',
-    i:'Der alte Winzer und, sobald ihr Rang sie freischaltet, deine drei Manager melden sich in einer Sprechblase: wenn etwas zum ersten Mal ansteht, nach jedem Aufstieg, bei typischen Fehlern und ab dem dritten Jahr ab und zu mit einem Kniff. „Alle Tipps“ ist für Neulinge, „Nur Neuheiten und Warnungen“ für alle, die das Spiel kennen. Mit allen Tipps gibt es ⏩ „Weiter bis etwas ansteht“ erst ab dem zweiten Jahr. „Tipps von vorn“ holt Warnungen und Kniffe zurück, in den ersten zwei Jahren auch den Rest des Fahrplans.'});
+    i:'Der alte Winzer und, sobald ihr Rang sie freischaltet, deine drei Manager melden sich in einer Sprechblase: wenn etwas zum ersten Mal ansteht, nach jedem Aufstieg, bei typischen Fehlern und ab dem dritten Jahr ab und zu mit einem Kniff. Der alte Winzer verabschiedet sich nach der ersten Übergabe an dein Kind, danach sprechen nur noch die Manager. Nach „Zeig mir, wo“ oder einem Tipp daneben klappt die Blase zum kleinen Kopf am Rand zusammen, ein Tipp auf den Kopf holt sie zurück. „Alle Tipps“ ist für Neulinge, „Nur Neuheiten und Warnungen“ für alle, die das Spiel kennen. Mit allen Tipps gibt es ⏩ „Weiter bis etwas ansteht“ erst ab dem zweiten Jahr. „Tipps von vorn“ holt Warnungen und Kniffe zurück, in den ersten zwei Jahren auch den Rest des Fahrplans.'});
 }
 function fuLeuchte(z){
   const el=(typeof z.sel==='function'?z.sel():z.sel||[]).filter(Boolean).map(s=>document.querySelector(s)).find(Boolean); if(!el) return;
