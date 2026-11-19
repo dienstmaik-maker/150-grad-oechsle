@@ -2068,8 +2068,9 @@ function neuesSpiel(){
   neuePrognose();
   TOP=[]; FUSS=[];
   schlag(100,'Willkommen auf deinem Weingut',`${S.ich?`${S.ich} übernimmt ${S.name} ${WO[S.region]}: 3 Hektar kahler Weinberg, leere Fässer und ${eur(START_GELD)}.`:`${S.name} ${WO[S.region]} startet mit 3 Hektar kahlem Weinberg, leeren Fässern und ${eur(START_GELD)}.`} Bis März ist Pflanzzeit, im Weinberg pflanzt du deinen ${SORTEN[sortenFolge()[0]].name}. Die zweite und dritte Rebsorte bringt der Aufstieg. Im ersten Jahr tragen junge Reben nur die Hälfte.`,'weingut-01-sommer',{du:1});
-  schlag(50,'So kommst du herum','Unten wählst du Weingut, Kellerei oder Stadt, die Leiste darüber bringt dich zu den Orten. Wischen übers Bild geht auch. Ein Punkt am Reiter zeigt Neues oder Dringendes, ein Tipp aufs Geld öffnet deinen Stand mit Kasse und Rängen. Das kleine i oben rechts in jedem Fenster erklärt, was du dort tust. Spielstände, Ton und das Buch liegen im Büro.');
-  schlag(40,'Leute für Weinberg und Keller','Je 1.000 Reben brauchst du das ganze Jahr einen Erntehelfer. Du hast einen, für mehr Reben stellst du vor dem Pflanzen beim Arbeitsamt in der Stadt ein. Der Lohn dort schwankt jeden Monat, wer eingestellt ist, behält seinen. Dein Lagerarbeiter betreut 10.000 l Fassraum und 20.000 leere Flaschen. Fehlen dir Leute, geht es nicht in den nächsten Monat.','arbeit');
+  // Seit 10.3 (Frage 11): Mit Spielführer fallen die zwei Artikel weg, die der alte Winzer im ersten Monat selbst sagt.
+  if(!(S.fu&&S.fu.an)) schlag(50,'So kommst du herum','Unten wählst du Weingut, Kellerei oder Stadt, die Leiste darüber bringt dich zu den Orten. Wischen übers Bild geht auch. Ein Punkt am Reiter zeigt Neues oder Dringendes, ein Tipp aufs Geld öffnet deinen Stand mit Kasse und Rängen. Das kleine i oben rechts in jedem Fenster erklärt, was du dort tust. Spielstände, Ton und das Buch liegen im Büro.');
+  if(!(S.fu&&S.fu.an)) schlag(40,'Leute für Weinberg und Keller','Je 1.000 Reben brauchst du das ganze Jahr einen Erntehelfer. Du hast einen, für mehr Reben stellst du vor dem Pflanzen beim Arbeitsamt in der Stadt ein. Der Lohn dort schwankt jeden Monat, wer eingestellt ist, behält seinen. Dein Lagerarbeiter betreut 10.000 l Fassraum und 20.000 leere Flaschen. Fehlen dir Leute, geht es nicht in den nächsten Monat.','arbeit');
   schlag(30,'Die Konkurrenz schläft nicht','Deine Gegner: '+S.gegner.map(g=>`${g.name}, ${GEGNER_TYP[g.typ].art}, ${WO[g.region]}`).join('; ')+`. Wer zuerst Präsident des Weinbauverbands wird, gewinnt. Alle ${GEN_JAHRE} Jahre übernimmt bei allen die nächste Generation.`);
   dorf('n0');
   S.bericht=zeitung([],[],[]);
@@ -2455,7 +2456,7 @@ function monatWeiter(){
   if(S.monat===10&&S.kaelte===S.jahr) schlag(70,'Kälteeinbruch im November',`Über Nacht ist es bitterkalt geworden. Wer noch Trauben hängen hatte, hat sie verloren.${W.some(z=>z.startsWith('Kälteeinbruch'))?' '+(spLohn(2)?'Bei dir haben die Frostfeuer der Feuerwehr ein Viertel gerettet.':'Bei dir ist erfroren, was noch am Stock hing.'):' Deine Trauben hat es nicht erwischt.'}`,'frost',{du:W.some(z=>z.startsWith('Kälteeinbruch'))?1:0});
   if(S.monat===9&&S.kaelteWarn===S.jahr) schlag(60,'Wetterdienst warnt vor Kälteeinbruch','Für November sagt der Wetterdienst bitterkalte Nächte voraus. Wer noch Trauben hängen hat, sollte jetzt lesen.','frost',{du:R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)?1:0});
   if(eisEigen()) schlag(66,...eisT('eigen'),'eiswein',{du:1});
-  if((S.monat===3||S.monat===4)&&S.wetter==='frost'&&rebenGesamt()) schlag(62,'Spätfrost zur Blüte','Eine Frostnacht hat die Blüte geschädigt. Die Ernte fällt dieses Jahr kleiner aus.','spaetfrost',{du:1});
+  if((S.monat===3||S.monat===4)&&S.wetter==='frost'&&rebenGesamt()) schlag(62,'Spätfrost im Frühjahr','Eine Frostnacht hat die jungen Triebe geschädigt. Die Ernte fällt dieses Jahr kleiner aus.','spaetfrost',{du:1});
   if(S.monat===0) schlag(28,'Prädikatsweine anmelden','Die Weine vom letzten Jahrgang können jetzt im Rathaus als Prädikatswein angemeldet werden. Bis März ist außerdem Pflanzzeit.','kellerbuch',{archiv:1});
   if(S.monat<=2) schlag(20,'Rebenmarkt geöffnet',rebenMarktText()+'. Gepflanzt wird bis Ende März.','rebenmarkt',{archiv:1});
   if(S.monat===11){const t=steuerSchau(); if(t.steuer>0) schlag(35,'Steuer-Tipp zum Jahresende',`Bisher sind es rund ${eur(t.gew)} Gewinn in diesem Jahr. Darauf fallen im Januar rund ${eur(t.steuer)} Steuer an. Was du im Dezember noch kaufst, zum Beispiel Fassraum, Flaschen, Dünger oder eine Maschinenwartung, senkt den Gewinn.${spOffen()?` Eine Spende im Rathaus senkt ihn auch, um höchstens ${pz(SP_DECKEL)}.`:''} Kredit tilgen senkt ihn nicht.`,eisEigen()?'':'amt',{archiv:1})}
@@ -3328,7 +3329,7 @@ function steckbrief(id,o={}){
     <div class="mut" style="font-size:13px">${stars.length?`Sekt-Stars hier: ${stars.join(' und ')}, sie bringen als Sekt ${Math.round((SEKT_STAR-1)*100)} % mehr.`:'Hier wächst keine Sekt-Star-Sorte.'} Sekt gibt es ab ${RAENGE[R_SEKT].name}.</div>
     <div class="sbz">💪 ${stark}<br>⚠️ ${schwach}</div>
     <div class="sbz">📏 Hürden: Spätlese ${mi.spat}°, Auslese ${mi.aus}°, Beerenauslese ${mi.ba}°</div>
-    ${kv('❄️ Frost im Dezember',`${pz(r.frost)} der Jahre`)}${kv('🌨️ Kälteeinbruch im November',`jedes ${Math.round(1/KAELTE)}. Jahr`)}${kv('🌸 Spätfrost zur Blüte',`rund jedes ${SPAET_JAHR}. Jahr`)}
+    ${kv('❄️ Frost im Dezember',`${pz(r.frost)} der Jahre`)}${kv('🌨️ Kälteeinbruch im November',`jedes ${Math.round(1/KAELTE)}. Jahr`)}${kv('🌸 Spätfrost im Frühjahr',`rund jedes ${SPAET_JAHR}. Jahr`)}
     <div class="lohnt">🎯 Lohnt sich hier: ${lohnt}</div>
     <div class="sbz"><b>So gehst du vor</b><ol class="strat">${G.strat.map(x=>`<li>${x}</li>`).join('')}</ol></div>`;
   return o.fen?{name:`${sym} ${r.name}`,art:`${art}, ${bonus}`,rumpf}:`<div class="card sb"><h3>${sym} ${r.name}<small>${art}, ${bonus}</small></h3>${rumpf}${o.buch?mib('gebiete'):''}</div>`;
@@ -3383,8 +3384,8 @@ function leuteHtml(){
   const z=(k,name,aufg)=>`<div class="fz"><b>${name}</b><div class="mut">${aufg}</div><div class="kv"><span>Angestellt</span><span>${S[k]}</span></div>
     ${S[k]?`<div class="kv"><span>Lohn im Monat</span><span>${eur(lohnSumme(k))}</span></div>`:''}${fe[k]?`<div class="rot" style="font-size:14px;margin-top:4px">${fe[k]===1?'Es fehlt einer':'Es fehlen '+fe[k]}, vorher geht es nicht in den nächsten Monat.</div>`:''}</div>`;
   return fenster('leute','Deine Leute',[
-    z('helfer','Erntehelfer',`Pflegen die Reben und lesen die Trauben. Einer je ${num(REBEN_JE_HELFER)} Reben${ms?`, deine Erntemaschinen im Einsatz zählen wie ${ms}`:''}. Sie fahren auch die Maschinen und lesen Edelfäulnis und Eiswein von Hand.`),
-    z('lagerarb','Lagerarbeiter',`Betreuen Fassraum und leere Flaschen. Einer je ${num(FASS_JE_LAGERARB)} l Fassraum und ${num(flJeLager())} Flaschen${bonusMasch('abfuell')?', mit der Abfüllanlage':''}. Einer bedient auch die Abfüllanlage.`)],{
+    z('helfer','Erntehelfer',`Pflegen die Reben und lesen die Trauben. Einer je ${num(REBEN_JE_HELFER)} Reben${ms?`, deine Erntemaschinen im Einsatz zählen wie ${ms}`:''}. ${S.rang>=R_STREU?'Sie fahren auch die Maschinen und lesen':'Sie lesen auch'} Edelfäulnis und Eiswein von Hand.`),
+    z('lagerarb','Lagerarbeiter',`Betreuen Fassraum und leere Flaschen. Einer je ${num(FASS_JE_LAGERARB)} l Fassraum und ${num(flJeLager())} Flaschen${bonusMasch('abfuell')?', mit der Abfüllanlage':''}.${S.rang>=MASCH.abfuell.rang?' Einer bedient auch die Abfüllanlage.':''}`)],{
     hin:[aufgabeAktiv('helfer')&&`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name} stellt fehlende Erntehelfer beim Weiterblättern ein.`,
       aufgabeAktiv('lager')&&`${MGR_BEREICHE.keller.sym} Dein ${MGR_BEREICHE.keller.name} stellt fehlende Lagerarbeiter beim Weiterblättern ein.`],
     kn:pk('arbeitsamt','Zum Arbeitsamt','',{sec:1}),buch:'arbeit',
@@ -4154,22 +4155,25 @@ function zWehen(){
 // sobald ein Ort zu sehen ist (nie über Winzerbote, Feier, Dialog oder Buch). "Verstanden" und "Zeig mir, wo" haken sie ab.
 // Paket A: Einstieg, erstes und zweites Jahr, k01. Paket B: Rang-Neuheiten, Warnungen, Kniffe, Schalter im Büro und beim Start.
 const FU_SPRECHER={winzer:{name:'Der alte Winzer',rolle:'Dein Nachbar',bild:'fuehrer-winzer'},handel:{name:'Die Handels-Managerin',rolle:'Verkauf und Zahlen',bild:'manager-handel'},
-  keller:{name:'Der Kellermeister',rolle:'Fass und Flasche',bild:'manager-keller'},weingut:{name:'Der Weingut-Manager',rolle:'Reben und Maschinen',bild:'manager-weingut'}};
+  keller:{name:'Der Kellermeister',rolle:'Fass und Flasche',bild:'manager-keller'},weingut:{name:'Der Weingut-Manager',rolle:'Reben und Maschinen',bild:'manager-weingut'},
+  // Seit 10.3: Tipp ohne Gesicht, falls nach der ersten Übergabe noch kein Manager da ist.
+  gut:{name:'Dein Weingut',rolle:'Notiz aus dem Büro',bild:''}};
 // Vorstellung je Manager. Vorher spricht der alte Winzer mit dem Ersatz-Text.
+// Seit 10.3 (Maik 19.11.2026): Nach der ersten Übergabe spricht der alte Winzer nicht mehr (fuSprecher), er verabschiedet sich mit g2-1.
 const FU_VOR={handel:'r4-1',keller:'r5-1',weingut:'r6-1'};
 // Reihenfolge, wenn mehrere warten: Warnung, dann Einstieg und Erstes Mal, dann Rang, dann Kniff.
 const FU_ART={warnung:0,einstieg:1,erstes:1,rang:2,kniff:3};
 // Ab so vielen Zeichen gilt ein Tipp als lang, dann wird das Spiel dahinter abgedunkelt.
 const FU_LANG=380;
 // Monats-Blasen: Spielmonat (0 = erster Januar) je Blase.
-const FU_MON={'e1-07':2,'e1-08':3,'e1-09':4,'e1-10':5,'e1-11':6,'e1-12':7,'e1-17':9,'e1-18':11,
-  'z2-01':12,'z2-02':13,'z2-03':14,'z2-04':15,'z2-05':16,'z2-06':18,'z2-07':21,'z2-08':23};
+const FU_MON={'e1-07':2,'e1-08':3,'e1-09':4,'e1-10':5,'e1-11':6,'e1-12':7,'e1-17':8,'e1-18':10,
+  'z2-01':12,'z2-02':13,'z2-03':14,'z2-04':15,'z2-06':18,'z2-07':21,'z2-08':23};
 const fuGes=id=>!!(S.fu&&S.fu.ges.includes(id));
 const FU_WANN={
   // Seit 10.2.1: Erst stellt sich der alte Winzer vor (e1-0a), dann erklärt er den Kopf (e1-0b), dann geht es los (Maik 19.11.2026).
   'e1-0a':()=>monatNr()===0,
-  'e1-0b':()=>monatNr()===0&&fuGes('e1-0a'),
-  'e1-01':()=>monatNr()===0&&fuGes('e1-0b'),
+  // Seit 10.3 (Frage 11): e1-0b steckt in e1-0a.
+  'e1-01':()=>monatNr()===0&&fuGes('e1-0a'),
   'e1-02':()=>TAB==='stadt'&&SUB==='arbeit',
   'e1-03':()=>TAB==='gut'&&SUB==='berg',
   'e1-04':()=>monatNr()===0&&rebenGesamt()>0,
@@ -4183,25 +4187,41 @@ const FU_WANN={
   'k01':()=>monatNr()>=12&&monatNr()<24&&fuGes('z2-01')
 };
 for(const id in FU_MON) FU_WANN[id]=()=>monatNr()===FU_MON[id];
+// Seit 10.3 (C15, C16): Pflanz-Blasen nur, wenn noch Boden frei ist. z2-05 kommt, sobald zum ersten Mal ein Wein zu einer Weinhandlung passt.
+FU_WANN['e1-07']=()=>monatNr()===2&&rebenGesamt()<S.ha*HA_REBEN;
+FU_WANN['z2-02']=()=>monatNr()===13&&rebenGesamt()<S.ha*HA_REBEN;
+FU_WANN['z2-05']=()=>monatNr()>=12&&Object.keys(S.laeden||{}).some(r=>S.laeden[r].rest>0&&S.lots.some(l=>ladenPasst(l,r)));
 // Rang-Neuheiten: r3 ist der Jungwinzer (Index 1 in RAENGE), r4 der Winzer und so weiter. Die n-te Blase eines Rangs frühestens
 // im n-ten Monat nach der Feier, die Bremse verteilt sie ohnehin auf je einen Monat. S.fu.rm merkt den Monat der Feier je Rang.
 const fuRang=id=>{const m=/^r(\d+)-(\d+)$/.exec(id); return m?{r:+m[1]-2,n:+m[2]}:null};
-if(typeof FUEHRER!=='undefined') for(const id in FUEHRER){const x=fuRang(id); if(x) FU_WANN[id]=()=>{const rm=(S.fu.rm||{})[x.r]; return rm!=null&&S.rang>=x.r&&monatNr()>=rm+x.n-1}}
+// Seit 10.3 (C31): Nach einer Feier von Oktober bis Februar rückt die Maschinen-Blase auf den zweiten Platz, damit sie ins Kauf-Fenster (Januar bis März) fällt.
+// Seit 10.3 (C32): Blasen zum Befördern warten, bis der Manager eingestellt ist.
+const FU_MASCH_VOR={'r4-4':1,'r5-4':1,'r6-3':1}, FU_BEFOERD={'r6-4':1,'r7-3':1,'r8-3':1,'r9-2':1,'r10-2':1,'r10-3':1};
+const fuFrueh=(id,rm)=>!!FU_MASCH_VOR[id]&&rm!=null&&[9,10,11,0,1].includes(rm%12);
+const fuPlatz=id=>{const x=fuRang(id); return fuFrueh(id,(S.fu.rm||{})[x.r])?1.5:x.n};
+if(typeof FUEHRER!=='undefined') for(const id in FUEHRER){const x=fuRang(id); if(x) FU_WANN[id]=()=>{const rm=(S.fu.rm||{})[x.r]; return rm!=null&&S.rang>=x.r&&monatNr()>=rm+Math.ceil(fuPlatz(id))-1&&(!FU_BEFOERD[id]||mgrSt(FUEHRER[id].s)>=1)}}
 // Warnungen (Paket B): jede nur beim ersten Mal, danach reichen die Punkte. Gesperrte Manager lässt fuSprecher den alten Winzer vertreten.
 // w1: ein Fass, das ab Januar Kabinett wird, und du stehst im Rathaus. w2: Auktion läuft, und nach dem nächsten Gebot reicht das Geld nicht für die Reben.
-function fuKabFrueh(l){if(l.status!=='fass'||l.stufe||l.jahrgang!==S.jahr) return false; const g=pruefeAnmeldung(l,'kab'); return g.length>0&&g.every(x=>/Januar/.test(x))}
+// Seit 10.3 (C35): nicht nur Kabinett, auch jede höhere Stufe, der nur noch der Januar fehlt.
+const FU_PRAED=['kab','spat','aus','ba','tba'];
+function fuKabFrueh(l){if(l.status!=='fass'||l.stufe||l.jahrgang!==S.jahr) return false; return FU_PRAED.some(st=>{const g=pruefeAnmeldung(l,st); return g.length>0&&g.every(x=>/Januar/.test(x))})}
 function fuLandZuViel(){
   const a=S.auktion; if(!a||a.phase===0||a.ende||S.rang<R_AUKTION) return false;
   const p=Math.min(...R().sorten.filter(sorteFrei).map(rebenPreis));
   return S.geld-aukNaechstes()<a.ha*HA_REBEN*p;
 }
-const fuReiht=l=>l.sorte==='riesling'&&l.stufe&&!l.sekt&&REIHE.indexOf(l.stufe)>=REIHE.indexOf('kab');
-const fuLange=l=>l.status==='fass'&&l.stufe!=='feder'&&l.fassMonate>=6;
+// Seit 10.3 (C24): w4 kommt im Rathaus, bevor der erste Riesling als Kabinett oder höher angemeldet wird. w6 schon im fünften Monat (C37).
+const fuReiht=l=>l.sorte==='riesling'&&l.status==='fass'&&!l.stufe&&FU_PRAED.some(st=>!pruefeAnmeldung(l,st).length);
+const fuLange=l=>l.status==='fass'&&l.stufe!=='feder'&&l.fassMonate>=5;
+// Seit 10.3 (C28): Anlässe. Erste Medaille und erster Bundessieg nur im Monat der Ehrung oder danach, die Blasen zur Übergabe in den ersten zwei Jahren der Generation.
+function fuEhrNeu(f){const e=(S.ehrungen||[]).find(e=>!e.a&&f(e)); return !!e&&e.j!=null&&(S.jahr*12+S.monat)-(e.j*12+e.m)<=1}
+const fuNach=()=>genNr()>=2;
+const fuGenFrisch=()=>S.jahr-START_JAHR<GEN_JAHRE*(genNr()-1)+2;
 Object.assign(FU_WANN,{
   'w1':()=>TAB==='stadt'&&SUB==='amt'&&S.lots.some(fuKabFrueh),
   'w2':()=>TAB==='stadt'&&SUB==='amt'&&fuLandZuViel(),
   'w3':()=>S.fu.w3===monatNr(),
-  'w4':()=>S.lots.some(fuReiht),
+  'w4':()=>TAB==='stadt'&&SUB==='amt'&&S.lots.some(fuReiht),
   'w5':()=>S.monat===4&&monatNr()>=12&&S.boden<80,
   'w6':()=>S.lots.some(fuLange),
   'w7':()=>S.geld<0,
@@ -4211,24 +4231,32 @@ Object.assign(FU_WANN,{
   'r3-4':()=>S.monat>=10&&spOffen()>0,
   // Seit 10.2: p1 im Monat nach dem Brief der Weltweinschau (solange sie nicht gewonnen ist), p2 im Monat nach dem Sieg.
   'p1':()=>!!(S.amt&&S.amt.brief&&!S.amt.ehren)&&monatNr()>S.amt.brief,
-  'p2':()=>!!(S.amt&&S.amt.ehren)&&monatNr()>(S.amt.ehren.j-START_JAHR)*12+S.amt.ehren.m
+  'p2':()=>!!(S.amt&&S.amt.ehren)&&monatNr()>(S.amt.ehren.j-START_JAHR)*12+S.amt.ehren.m,
+  // Seit 10.3: Amtsantritt (C23), Abschied des alten Winzers (A1), Anlässe (C28).
+  'a1':()=>!!(S.amt&&S.amt.im&&!S.amt.alt)&&monatNr()>S.amt.seit&&monatNr()<=S.amt.seit+12,
+  'g2-1':()=>genNr()===2&&fuGenFrisch(),
+  'm1':()=>fuEhrNeu(e=>!!MED_NAME[e.i]),
+  'm2':()=>S.fu.auk!=null&&monatNr()-S.fu.auk<=1,
+  'm3':()=>genNr()>=3&&fuGenFrisch(),
+  'm4':()=>fuEhrNeu(e=>e.i==='🏆')
 });
 // Kniffe (Paket B): ab dem dritten Jahr frühestens fünf Monate nach dem letzten, der erste freie in der Reihenfolge des Entwurfs.
 // Kniffe eines Managers, der sich noch nicht vorgestellt hat, sagt der alte Winzer mit dem Ersatz-Text (Maik 17.11.2026, Plan B). Ohne Ersatz-Text warten sie weiter. k01 steht oben im zweiten Jahr.
 const FU_KNIFF_ABSTAND=5, FU_KNIFF_AB=24;
 const fuGenAnk=()=>S.jahr-START_JAHR>=GEN_JAHRE*genNr()-GEN_VORAUS;
+// Seit 10.3 (C29): k12 steht vorn, k02 nur im ersten Dezember mit Steuer, k11 nur mit der Ankündigung. k07 braucht eine laufende Aufgabe, sonst fehlt die Reserve im Fenster (C26).
 const FU_KNIFF={
-  'k02':()=>S.monat===11,
+  'k12':()=>S.monat>=7&&S.monat<=10&&feldHaengt().length>0,
+  'k02':()=>S.monat===11&&steuerSchau().steuer>0,
   'k03':()=>true,
   'k04':()=>S.monat>=7&&S.monat<=9&&R().sorten.filter(id=>S.felder[id].reben>0).length>=2,
   'k05':()=>true,
   'k06':()=>(S.monat===5||S.monat===6)&&S.maschinen.some(m=>MASCH[m.typ]&&MASCH[m.typ].ernte),
-  'k07':()=>mgrSt('handel')>=1,
+  'k07':()=>mgrSt('handel')>=1&&(aufgabeAktiv('laeden')||aufgabeAktiv('handel')||aufgabeAktiv('regal')),
   'k08':()=>true,
   'k09':()=>true,
   'k10':()=>S.rang>=1,
-  'k11':()=>true,
-  'k12':()=>S.monat>=7&&S.monat<=10&&feldHaengt().length>0
+  'k11':()=>fuGenAnk()
 };
 // "Zeig mir, wo": Ort und was dort golden leuchtet. sel ist eine Liste, die erste Stelle, die es gibt, gilt.
 // Bei Fenster-Tipps leuchtet das i (Regel 3), bei den Kern-Blasen der Knopf selbst.
@@ -4292,6 +4320,11 @@ const FU_ZEIG={
   'r9-3':{tab:'stadt',sub:'amt',sel:[fiSel('anreg')]},
   'r10-1':{tab:'stadt',sub:'amt',sel:[fiSel('auktionen')]},
   'p1':{tab:'stadt',sub:'amt',sel:[fiSel('wettb')]},
+  'a1':{tab:'stadt',sub:'amt',sel:[fiSel('verband')]},
+  'm1':{tab:'gut',sub:'buero',sel:[fiSel('urkunden')]},
+  'm2':{tab:'stadt',sub:'amt',sel:[fiSel('makler'),fiSel('auktionen')]},
+  'm3':{tab:'keller',sub:'buch',sel:['.bzeile[data-a="buchDetail"]','[data-a="weinQual"]']},
+  'm4':{tab:'stadt',sub:'amt',sel:[fiSel('wettb')]},
   'p2':{tab:'stadt',sub:'amt',sel:[fiSel('verband')]},
   'r10-2':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="weingut"]',fiSel('mgr_amt')]},
   'r10-3':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="keller"]',fiSel('mgr_amt')]},
@@ -4299,7 +4332,7 @@ const FU_ZEIG={
   'w1':{tab:'stadt',sub:'amt',sel:()=>{const l=S.lots.find(fuKabFrueh); return [l?`[data-a="anmelden"][data-id="${l.id}"]`:'',fiSel('anmelden')]}},
   'w2':{tab:'stadt',sub:'amt',sel:[fiSel('auktionen')]},
   'w3':{tab:'stadt',sub:'handel',sel:[fiSel('markt')]},
-  'w4':{tab:'keller',sub:'buch',sel:()=>{const l=S.lots.find(fuReiht); return [l?`.bzeile[data-a="buchDetail"][data-id="${l.id}"]`:'','[data-a="weinQual"]']}},
+  'w4':{tab:'stadt',sub:'amt',sel:()=>{const l=S.lots.find(fuReiht); return [l?`[data-a="anmelden"][data-id="${l.id}"]`:'',fiSel('anmelden')]}},
   'w5':{tab:'gut',sub:'berg',sel:[fiSel('duengung')]},
   'w6':{tab:'keller',sub:'buch',sel:()=>{const l=S.lots.find(fuLange); return [l?`.bzeile[data-a="buchDetail"][data-id="${l.id}"]`:'','[data-a="weinQual"]']}},
   'w7':{tab:'stadt',sub:'bank',sel:[fiSel('kredit')]},
@@ -4320,7 +4353,7 @@ const FU_ZEIG={
 };
 function fuNeu(){return {an:1,nur:0,ges:[],q:[],mon:-1,rm:{},km:-99}}
 // Fahrplan der ersten zwei Jahre (Paket A), nur diese Blasen fallen bei alten Spielständen nach der Zeit weg.
-const FU_PLAN=['e1-0a','e1-0b','e1-01','e1-02','e1-03','e1-04','e1-05','e1-06','e1-13','e1-14','e1-15','e1-16','k01',...Object.keys(FU_MON)];
+const FU_PLAN=['e1-0a','e1-01','e1-02','e1-03','e1-04','e1-05','e1-06','e1-13','e1-14','e1-15','e1-16','k01',...Object.keys(FU_MON)];
 // Alte Spielstände (bis 8.0.1): Wer schon zwei Jahre oder länger spielt, bekommt den Einstieg nicht nachgeliefert.
 // Darunter fällt weg, was schon vorbei ist, der Rest des Fahrplans kommt noch. Neuheiten schon erreichter Ränge kommen nicht nach,
 // Warnungen und Kniffe kommen alle (Paket B).
@@ -4329,7 +4362,7 @@ function fuAlt(){
   fuRangWeg(f);
   if(m>=24){FU_PLAN.forEach(weg); return f}
   for(const id in FU_MON) if(FU_MON[id]<m) weg(id);
-  if(m>0) ['e1-0a','e1-0b','e1-01','e1-02','e1-03','e1-04'].forEach(weg);
+  if(m>0) ['e1-0a','e1-01','e1-02','e1-03','e1-04'].forEach(weg);
   if(m>1){weg('e1-05'); weg('e1-06')}
   if(m>=12||L.some(l=>l.status!=='trauben')) weg('e1-13');
   if(m>=12||L.some(l=>l.stufe)) weg('e1-14');
@@ -4345,10 +4378,13 @@ function fuPaketB(){const f=S.fu; if(f.rm) return; f.rm={}; f.km=-99; f.nur=f.nu
 function fuSperre(){return !!(S&&S.fu&&S.fu.an&&!S.fu.nur&&monatNr()<12)}
 // Bremse: Rang-Neuheiten und Kniffe höchstens eine je Monat. Kern-Blasen, Warnungen, Einstieg und der Fahrplan der ersten zwei Jahre sind ausgenommen (Annahme Claude),
 // k01 kommt fest gleich nach z2-01.
-const fuBremse=id=>{const b=FUEHRER[id]; return (b.a==='rang'||b.a==='kniff')&&!b.k&&id!=='k01'};
+// Seit 10.3 (C30): r3-4 hängt am November und ist von der Bremse ausgenommen.
+const fuBremse=id=>{const b=FUEHRER[id]; return (b.a==='rang'||b.a==='kniff')&&!b.k&&id!=='k01'&&id!=='r3-4'};
 function fuBereit(){return !!(S&&S.fu&&S.fu.an&&typeof FUEHRER!=='undefined')}
 // Schalter "nur Neuheiten und Warnungen": Einstieg, Erstes Mal und Kniffe bleiben aus.
-function fuErlaubt(id){const b=FUEHRER[id]; return !!b&&(!S.fu.nur||b.a==='rang'||b.a==='warnung')}
+// Seit 10.3 (C33): Amtsantritt, Weltweinschau, Spielende und der Abschied des alten Winzers kommen auch in der mittleren Stellung.
+const FU_IMMER=['a1','p1','p2','g2-1'];
+function fuErlaubt(id){const b=FUEHRER[id]; return !!b&&(!S.fu.nur||b.a==='rang'||b.a==='warnung'||FU_IMMER.includes(id))}
 // Hält die Blase das Vorspulen an? k11 hält nur mit der Ankündigung im Winzerboten (Text "nein, mit der Ankündigung ja").
 const fuH=id=>!!(FUEHRER[id].h||id==='k11'&&fuGenAnk());
 // Seit 10.3 (C4): Passt der Anlass einer wartenden Blase noch? Kern-Blasen mit festem Monat warten, bis sie gelesen sind (Maik 19.11.2026).
@@ -4385,18 +4421,39 @@ function fuehrerPruef(){
 function fuNaechste(){
   const m=monatNr();
   // Bei gleicher Art bleibt die Reihenfolge der Warteschlange, Rang-Neuheiten nach einem Sprung über mehrere Ränge Rang für Rang.
-  const rw=id=>{const x=fuRang(id); return x?x.r*10+x.n:0};
+  const rw=id=>{const x=fuRang(id); return x?x.r*10+fuPlatz(id):0};
   return S.fu.q.filter(id=>id!==FU_AKT&&FU_SPAET[id]!==m&&FUEHRER[id]&&fuErlaubt(id)&&!(fuBremse(id)&&S.fu.mon===m)).sort((a,b)=>FU_ART[FUEHRER[a].a]-FU_ART[FUEHRER[b].a]||rw(a)-rw(b))[0]||null;
 }
 // Hält "Weiter bis etwas ansteht" an? Nur Blasen mit "Hält an: ja", die übrigen warten auf den nächsten Halt.
 function fuHalt(){fuehrerPruef(); return fuBereit()&&S.fu.q.some(id=>FUEHRER[id]&&fuErlaubt(id)&&fuH(id))}
+// Seit 10.3 (A1, Maik 19.11.2026): Nach der ersten Übergabe spricht der alte Winzer nur noch seinen Abschied (g2-1). Seine Blasen sagt der Nachfolger (ss) mit dem
+// Text für später (sp), ohne diese Angaben ein Manager, der schon da ist, mit dem alten Text. chef: aus "mein Lieber" und "Nachbar" wird "Chef".
+// Gibt es noch keinen Manager, kommt der Tipp ohne Gesicht (FU_SPRECHER.gut).
+const fuDa=s=>!FU_VOR[s]||fuGes(FU_VOR[s]);
 function fuSprecher(id){
-  const b=FUEHRER[id], v=FU_VOR[b.s];
-  return v&&v!==id&&!fuGes(v)&&b.e?{s:'winzer',t:b.e}:{s:b.s,t:b.t};
+  const b=FUEHRER[id], v=FU_VOR[b.s], ersatz=!!(v&&v!==id&&!fuGes(v)&&b.e);
+  if(!fuNach()||id==='g2-1') return ersatz?{s:'winzer',t:b.e}:{s:b.s,t:b.t};
+  let s=b.s==='winzer'?b.ss||'handel':b.s, t=b.s==='winzer'?b.sp||b.t:ersatz?b.e:b.t;
+  if(!fuDa(s)&&FU_VOR[s]!==id) s=['handel','keller','weingut'].find(fuDa)||'gut';
+  return {s,t,chef:1};
 }
 const FU_HUERDE={'Qualitätswein':'qba','Kabinett':'kab','Spätlese':'spat','Auslese':'aus','Beerenauslese':'ba'};
-function fuText(t){
-  return t.replace(/\{(Mein Lieber|mein Lieber|Nachbar|Hürde ([^}]+))\}/g,(x,a,h)=>h?R().min[FU_HUERDE[h]]+'°':a==='Nachbar'?anr('Nachbar','Nachbarin'):a==='Mein Lieber'?anr('Mein Lieber','Meine Liebe'):anr('mein Lieber','meine Liebe'));
+// Seit 10.3 (C11, C38, C6): Platzhalter für die Startsorte des Gebiets, den Wertzuwachs aller Sorten und die Frost-Häufigkeit.
+const fuPz=s=>Math.round(s.reife*100)+'\u00a0%';
+function fuFrostJahre(){const f=R().frost; return f>=.4?'fast jedes zweite Jahr':f>=.2?'etwa jedes vierte Jahr':'nur etwa jedes zehnte Jahr'}
+function fuText(t,chef){
+  return t.replace(/\{(Mein Lieber|mein Lieber|Nachbar|Sorte|Reife|Zuwachs|Haltbar|Sortenzuwachs|Frostjahre|Hürde ([^}]+))\}/g,(x,a,h)=>{
+    if(h) return R().min[FU_HUERDE[h]]+'°';
+    const L=sortenFolge().map(id=>SORTEN[id]), s=L[0];
+    if(a==='Sorte') return s.name;
+    if(a==='Reife') return s.minL;
+    if(a==='Zuwachs') return fuPz(s);
+    if(a==='Haltbar') return Math.round(s.maxL/12);
+    if(a==='Sortenzuwachs') return `${s.name} legt jedes Jahr ${fuPz(s)} zu, ${L[1].name} ${fuPz(L[1])} und ${L[2].name} ${fuPz(L[2])}`;
+    if(a==='Frostjahre') return fuFrostJahre();
+    if(chef) return 'Chef';
+    return a==='Nachbar'?anr('Nachbar','Nachbarin'):a==='Mein Lieber'?anr('Mein Lieber','Meine Liebe'):anr('mein Lieber','meine Liebe');
+  });
 }
 // Je zwei Sätze ein Absatz, damit lange Tipps am Handy lesbar bleiben.
 function fuAbsaetze(t){
@@ -4415,7 +4472,7 @@ function fuKlein(an){
   const d=$('#fdunkel'); if(d) d.style.display=an?'none':'';
   let k=$('#fkopf');
   if(an&&!k){const P=FU_SPRECHER[fuSprecher(FU_AKT).s]; k=document.createElement('button'); k.id='fkopf'; k.dataset.a='fuAuf'; k.setAttribute('aria-label',P.name+': Tipp öffnen');
-    k.innerHTML=`<i style="background-image:url(bilder/${P.bild}.jpg)"></i><b>💬</b>`; document.body.appendChild(k)}
+    k.innerHTML=`<i${P.bild?` style="background-image:url(bilder/${P.bild}.jpg)"`:''}></i><b>💬</b>`; document.body.appendChild(k)}
   if(!an&&k) k.remove();
 }
 // Erledigt, sobald der Spieler getan hat, was in der Blase steht. Dann verschwindet auch der Kopf. Blasen ohne Eintrag gehen nur mit "Verstanden".
@@ -4442,13 +4499,13 @@ function fuehrerZeig(){
   const id=fuNaechste(); if(!id) return;
   const w=FU_RUHE-Date.now(); if(w>0){clearTimeout(FU_UHR); FU_UHR=setTimeout(fuehrerZeig,w+20); return}
   if(FU_AKT) fuAblegen();
-  const b=FUEHRER[id], sp=fuSprecher(id), P=FU_SPRECHER[sp.s], text=fuText(sp.t), lang=text.length>=FU_LANG;
+  const b=FUEHRER[id], sp=fuSprecher(id), P=FU_SPRECHER[sp.s], text=fuText(sp.t,sp.chef), lang=text.length>=FU_LANG;
   FU_AKT=id; FU_ZM=monatNr();
   if(lang){const d=document.createElement('div'); d.id='fdunkel'; document.body.appendChild(d)}
   const el=document.createElement('div'); el.id='fuehrer'; el.setAttribute('role','dialog'); el.setAttribute('aria-label',P.name);
-  el.innerHTML=`<i class="fzipfel"></i><div class="fgesicht"><i style="background-image:url(bilder/${P.bild}.jpg)"></i></div><div class="fkopf"><div><b class="fname">${P.name}</b><span class="frolle">${P.rolle}</span></div></div>
+  el.innerHTML=`<i class="fzipfel"></i>${P.bild?`<div class="fgesicht"><i style="background-image:url(bilder/${P.bild}.jpg)"></i></div>`:''}<div class="fkopf"><div><b class="fname">${P.name}</b><span class="frolle">${P.rolle}</span></div></div>
     <div class="ftext">${fuAbsaetze(text)}</div><div class="fschatten">▼ weiter unten mehr</div>
-    <div class="fknopf">${FU_ZEIG[id]?`<button class="klein" data-a="fuWo">Zeig mir, wo</button>`:''}<button class="sec klein" data-a="fuOk">${id==='e1-0a'?'Nein danke':'Verstanden'}</button></div>
+    <div class="fknopf">${FU_ZEIG[id]?`<button class="klein" data-a="fuWo">Zeig mir, wo</button>`:''}<button class="sec klein" data-a="fuOk">${id==='e1-0a'?'Bleib ruhig da':'Verstanden'}</button></div>
     ${b.b?`<span class="fbuch" data-a="fuBuch" data-id="${b.b}">📖 Mehr im Buch</span>`:''}`;
   document.body.appendChild(el);
   const t=el.querySelector('.ftext'), sch=el.querySelector('.fschatten');
@@ -4555,7 +4612,10 @@ const AKT={
   buchZu(){BUCH=null; buchZeig(); fuehrerZeig()},
   // Version 8.1: Knöpfe der Sprechblase. "Zeig mir, wo" springt zum Ort und lässt dort golden leuchten, aufgeklappt wird nichts.
   fuOk(){fuFertig(); FU_RUHE=Date.now()+350; fuehrerZeig()},
-  fuStell(d){const f=S.fu; f.an=d.id==='aus'?0:1; f.nur=d.id==='neu'?1:0; if(!f.an){FU_PAUSE=false; fuehrerWeg()} else if(FU_AKT&&!fuErlaubt(FU_AKT)) fuehrerWeg(); save(); const y=window.scrollY; render(); window.scrollTo(0,y)},
+  fuStell(d){const f=S.fu; f.an=d.id==='aus'?0:1; f.nur=d.id==='neu'?1:0;
+    // Seit 10.3 (C21): Wer ab dem dritten Jahr auf "Alle Tipps" stellt, bekommt den Fahrplan der ersten zwei Jahre nicht nachgeliefert.
+    if(d.id==='alle'&&monatNr()>=24){FU_PLAN.forEach(id=>{if(!f.ges.includes(id)) f.ges.push(id)}); f.q=f.q.filter(id=>!FU_PLAN.includes(id))}
+    if(!f.an){FU_PAUSE=false; fuehrerWeg()} else if(FU_AKT&&!fuErlaubt(FU_AKT)) fuehrerWeg(); save(); const y=window.scrollY; render(); window.scrollTo(0,y)},
   fuVorn(){const f=S.fu; if(!f||!f.an) return; const n=fuAlt(); n.an=f.an; n.nur=f.nur; n.geld=f.geld; n.rm=f.rm||{}; S.fu=n; fuehrerWeg(); FU_PAUSE=false; save(); render();
     meldung('Tipps von vorn','Warnungen und Kniffe kommen wieder, sobald sie passen. In den ersten zwei Jahren kommt auch der Rest des Fahrplans.')},
   // Seit 10.2.1: "Zeig mir, wo" klappt die Blase zum Kopf zusammen, statt sie abzuhaken. Weg ist sie erst mit "Verstanden" oder wenn die Aufgabe erledigt ist.
@@ -4616,7 +4676,7 @@ const AKT={
     }
     save();render();AKT.auktion();
   },
-  aukRaus(){const a=S.auktion; if(!a||a.ende||a.phase===0) return; aukOhneDich(); if(a.ende!=='niemand') fx('hammer',3); a.text='Du steigst aus. '+a.text; save();render();AKT.auktion()},
+  aukRaus(){const a=S.auktion; if(!a||a.ende||a.phase===0) return; aukOhneDich(); if(S.fu&&a.ende!=='niemand'&&S.fu.auk==null) S.fu.auk=monatNr(); if(a.ende!=='niemand') fx('hammer',3); a.text='Du steigst aus. '+a.text; save();render();AKT.auktion()},
   wettbewerb(){
     const w=S.wett; if(!w||w.fertig) return;
     const land=w.typ==='land', e=w.ein, ls=S.rang>=wettRang()?S.lots.filter(wettFaehig).sort((a,b)=>b.qp+(land?0:reifeBonus(b))-a.qp-(land?0:reifeBonus(a))):[];
@@ -4887,7 +4947,7 @@ const AKT={
   pflanzen(d){
     if(!sorteFrei(d.id)) return meldung('Noch nicht',`${SORTEN[d.id].name} kannst du ab dem Rang ${RAENGE[sorteAb(d.id)].name} pflanzen.`);
     const so=SORTEN[d.id], pr=rebenPreis(d.id), frei=S.ha*HA_REBEN-rebenGesamt(), kap=helferKraft()*REBEN_JE_HELFER-rebenGesamt(), max=Math.min(frei,kap,Math.floor(S.geld/pr/10)*10);
-    if(frei>=10&&kap<10) return leuteSheet('Zu wenige Erntehelfer',`<p>Je ${num(REBEN_JE_HELFER)} Reben brauchst du das ganze Jahr einen Erntehelfer. Deine Leute reichen für ${num(helferKraft()*REBEN_JE_HELFER)} Reben, gepflanzt sind ${num(rebenGesamt())}.</p><p class="mut">Stell erst beim Arbeitsamt ein oder kauf eine Erntemaschine, mit ${MASCH.klein.fahrer} Fahrer zählt sie wie ${MASCH_HELFER} Helfer.</p>`);
+    if(frei>=10&&kap<10) return leuteSheet('Zu wenige Erntehelfer',`<p>Je ${num(REBEN_JE_HELFER)} Reben brauchst du das ganze Jahr einen Erntehelfer. Deine Leute reichen für ${num(helferKraft()*REBEN_JE_HELFER)} Reben, gepflanzt sind ${num(rebenGesamt())}.</p><p class="mut">Stell erst beim Arbeitsamt ein${S.rang>=MASCH.klein.rang?` oder kauf eine Erntemaschine, mit ${MASCH.klein.fahrer} Fahrer zählt sie wie ${MASCH_HELFER} Helfer`:''}.</p>`);
     if(max<10) return meldung('Geht gerade nicht','Dir fehlt das Geld oder der Platz für 10 Reben.');
     mengeSheet({titel:`${so.name} pflanzen`,text:`${eur2(pr)} je Rebe${pr!==so.preis?`, üblich sind ${eur2(so.preis)}`:''}. Junge Reben tragen im ersten Jahr die Hälfte. Deine Erntehelfer reichen noch für ${num(kap)} Reben${kap<frei?', für mehr musst du erst einstellen':''}.`,max,step:10,start:Math.min(max,1000),okText:'Pflanzen',
       info:n=>`<b>${num(n)} Reben</b>kostet ${eur(n*pr)}`,
