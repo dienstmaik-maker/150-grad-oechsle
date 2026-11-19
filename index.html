@@ -1858,7 +1858,7 @@ function lagerBedarf(){return Math.max(Math.ceil(S.fassraum/FASS_JE_LAGERARB),Ma
 // Abfüllen (von Hand und beim Kellermeister): mit der Abfüllanlage ABF_PLUS mehr Flaschen aus dem Fass, dafür so viele leere Flaschen.
 // Die Anlage nutzt sich je ABF_NORM Flaschen um ABF_ABN Prozentpunkte ab, mal Pflege-Faktor.
 function abfFl(l){return bonusMasch('abfuell')?Math.round(l.liter*(1+ABF_PLUS)):l.liter}
-function fuelleAb(l){const ma=bonusMasch('abfuell'), n=abfFl(l); S.flaschen-=n; l.liter=n; l.status='flasche'; l.flMonate=0; komp('sorte_'+l.sorte); if(ma) abnutz(ma,ABF_ABN*n/ABF_NORM); return n}
+function fuelleAb(l){const ma=bonusMasch('abfuell'), n=abfFl(l); S.flaschen-=n; l.liter=n; l.status='flasche'; l.flMonate=0; if(ma) abnutz(ma,ABF_ABN*n/ABF_NORM); return n}
 // Düngen (von Hand und beim Weingut-Manager): mit dem Düngerstreuer im Einsatz billiger und mehr Boden, er nutzt sich je Düngung um STREU_ABN ab.
 function duengKosten(){return Math.round(DUENGER_HA*S.ha*(bonusMasch('duenger')?1-STREU_RABATT:1))}
 function duengPlus(){return bonusMasch('duenger')?STREU_PLUS:DUENG_PLUS}
@@ -2111,24 +2111,23 @@ function preis(l){
   return Math.round(STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*alter*S.markt*lageF(l)*sektF(l)*sternF(l.sorte)*(R().preisF||1)*100)/100;
 }
 
-/* ================= Weinkompendium (seit 11.1, Siegel-Regeln neu seit 11.3) ================= */
+/* ================= Weinkompendium (seit 11.1, Wissens-Seiten und Geschichten seit 11.3) ================= */
 // Sammelbuch und Nachschlagewerk. Seit 11.3 (Maik 19.11.2026) gibt es Siegel nur noch für die drei Rebsorten, den Sekt und die neun Stufen:
-// 13 Einträge und 39 Siegel je Partie. Bronze heißt erlebt, Silber oft gemacht, Gold ist ein Meisterstück.
+// 13 Einträge und 39 Siegel je Partie. Bronze heißt erlebt, Silber oft gemacht, Gold ist ein Meisterstück. Für diese 13 gelten in 11.3 weiter die Regeln aus 11.1.
+// Die Siegel nach Rollen (Menge, Sekt, Spitze) kommen mit den neuen Sorten in 11.4 (Maik 19.11.2026).
 // Gebiet und Lagen, Keller und Technik, Gefahren und die Edelfäulnis sind Wissens-Seiten ohne Siegel (wissen:1), lesbar von Anfang an.
 // Der Rang schaltet frei, was der Spieler darf, das Kompendium belohnt, was er nutzt. Es sperrt nichts, was man zum Spielen braucht: Die Zeile "Im Spiel" steht immer da.
 // Im Spielstand: S.komp[id]={st,n,...}. st: 0 gesperrt, 1 Bronze, 2 Silber, 3 Gold. n zählt für Silber, g zählt die verkauften Flaschen einer Stufe für Gold,
-// gd merkt eine Goldmedaille (Gold zählt erst ab Silber), l die gelesenen Liter einer Sorte, jg die Jahrgänge einer Stufe.
+// gd merkt ein gelungenes Meisterstück (Gold zählt erst ab Silber), l die gelesenen Liter einer Sorte, jg die Jahrgänge einer Stufe.
 // S.kompV ist der Stand der Regeln (2 seit 11.3). Einträge für Gebiet, Technik und Gefahren aus 11.1 und 11.2 bleiben im Spielstand liegen, zählen und erscheinen aber nicht mehr.
 // S.kompNeu sammelt neue Siegel für den nächsten Winzerboten. Ohne Wirkung aufs Geld: Boni und Meilensteine kommen in 11.5.
 // Kennungen nie umbenennen, sie stehen in Spielständen und im Album (KOMP_ALBUM_KEY: bester Stand je Eintrag über alle Partien, nur zum Ansehen).
-// KOMP_W: alle Schwellen an einer Stelle, festgelegt von Maik am 19.11.2026, gemessen wird in 11.5.
-// mengeGold: Gold über verkaufte Flaschen einer Stufe. medGold: Gold über eine Goldmedaille. Kabinett und Spätlese stehen in beiden, dort zählt, was zuerst kommt.
+// KOMP_W: alle Schwellen an einer Stelle. Es sind die Annahmen von Claude aus 11.1 (19.11.2026), neu festgelegt werden sie mit den Rollen in 11.4, gemessen wird in 11.5.
+// mengeGold: Stufen ohne Wettbewerb bekommen Gold über verkaufte Flaschen.
 // Richtwert aus einer Probepartie des Test-Spielers (Mosel, 120 Jahre): Die erste Sorte hat nach 10 Jahren rund 50.000 Flaschen verkauft, Sekt nach 20 Jahren rund 14.000.
-const KOMP_W={sorteFl:25000,sektFl:5000,stufeJg:10,mengeGold:{feder:30000,tafel:10000,qba:20000,kab:40000,spat:50000},medGold:['kab','spat','aus','ba','tba','eis']};
+const KOMP_W={sorteFl:50000,sektFl:10000,stufeJg:10,mengeGold:{feder:3000,tafel:15000,qba:30000}};
 const KOMP_ALBUM_KEY='oechsle-album';
 const KOMP_ST=['','Bronze','Silber','Gold'], KOMP_ST_WORT=['','entdeckt','gemeistert','Legende'];
-// Goldmedaille heißt im Spiel Platz 1: Gold bei der Landesprämierung, Platz 1 beim Bundeswettbewerb oder bei der Weltweinschau. Sekt tritt erst ab dem Bundeswettbewerb an.
-const KOMP_GOLDMED='eine Goldmedaille (Platz 1 bei einem Wettbewerb)';
 // Kapitel: Kennung, Zeichen, kurzer Name für den Knopf, voller Name.
 const KOMP_KAP=[['sorte','🍇','Sorten','Rebsorten und Sekt'],['stufe','🍷','Stufen','Stufen'],['gebiet','⛰️','Gebiet','Gebiet und Lagen'],['technik','⚙️','Technik','Keller und Technik'],['gefahr','⛈️','Gefahren','Gefahren']];
 // Die Geschichten (seit 11.3): Weinwissen in höchstens vier Sätzen, ohne Zahlen des Spiels. Die Zahlen stehen je Eintrag in der Zeile "Im Spiel" und kommen aus dem Code.
@@ -2177,20 +2176,19 @@ const KOMP_TEXT={
   helferweg:'Lese ist Knochenarbeit, und gute Leute sind im Herbst überall gefragt. Wer seine Helfer knapp hält, steht eines Morgens mit einem weniger da. Dass dann auch Geld aus der Kasse fehlt, macht es nicht besser. Ein fairer Lohn ist die billigste Versicherung.'
 };
 // Je Eintrag: kap, titel, text (die Zeile "Im Spiel", gebaut aus den Zahlen des Codes), immer (die Zeile steht schon in der Liste), wissen (Wissens-Seite ohne Siegel).
-// b: Satz für Bronze. s: Schwelle für Silber, sW: Wort zum Zähler. g: Satz für Gold über eine Goldmedaille (gd). gAb mit gW: Gold ab so vielen verkauften Flaschen (g).
-// Hat ein Eintrag g und gAb (Kabinett, Spätlese), reicht eines von beiden.
+// b: Satz für Bronze. s: Schwelle für Silber, sW: Wort zum Zähler. g: Satz für Gold (Meisterstück im Wettbewerb, gd). gAb mit gW: Gold ab so vielen verkauften Flaschen (g).
 const KOMP={};
 for(const id of Object.keys(SORTEN)) KOMP['sorte_'+id]={kap:'sorte',titel:SORTEN[id].name,
   text:()=>{const so=SORTEN[id]; return `${so.farbe==='weiss'?'Weißwein':'Rotwein'}, im Gebiet ${R().name} ${eigText(eignung(id))}. Als Prädikatswein reift er mindestens ${Math.max(1,so.minL-(S.keller||0))} Monate in der Flasche und hält bis zu ${Math.round(so.maxL/12)} Jahre.${so.sektStar?` Als Sekt bringt er ${Math.round((SEKT_STAR-1)*100)} % mehr als andere Sorten.`:''}`},
-  b:'Füll zum ersten Mal einen Wein dieser Sorte ab.',s:KOMP_W.sorteFl,sW:'Flaschen verkauft (ohne Sekt)',g:`Hol mit einem Wein dieser Sorte ${KOMP_GOLDMED}.`};
+  b:'Pflanz die Sorte zum ersten Mal.',s:KOMP_W.sorteFl,sW:'Flaschen verkauft (ohne Sekt)',g:'Hol mit einem Wein dieser Sorte Platz 1 bei einem Wettbewerb.'};
 KOMP.sekt={kap:'sorte',titel:'Sekt',
   text:()=>`Sekt machst du ab dem Rang ${RAENGE[R_SEKT].name} aus Qualitätswein und Kabinett. Er kostet ${eur2(SEKT_KOSTEN)} je Flasche, ruht 9 Monate und bringt dann rund ${Math.round((SEKT_F-1)*100)} % mehr als der Grundwein.`,
-  b:'Mach zum ersten Mal Sekt.',s:KOMP_W.sektFl,sW:'Flaschen Sekt verkauft',g:`Hol mit einem Sekt ${KOMP_GOLDMED}.`};
+  b:'Mach zum ersten Mal Sekt.',s:KOMP_W.sektFl,sW:'Flaschen Sekt verkauft',g:'Hol mit einem Sekt eine Medaille bei einem Wettbewerb.'};
 for(const st of Object.keys(STUFEN)){
-  const mg=KOMP_W.mengeGold[st], med=KOMP_W.medGold.includes(st);
+  const mg=KOMP_W.mengeGold[st];
   KOMP['stufe_'+st]={kap:'stufe',titel:STUFEN[st].name,immer:1,text:()=>kompStufeText(st),
     b:'Melde zum ersten Mal einen Wein in dieser Stufe an.',s:KOMP_W.stufeJg,sW:'Jahrgängen angemeldet',
-    ...(med?{g:`Hol mit einem Wein dieser Stufe ${KOMP_GOLDMED}.`}:{}),...(mg?{gAb:mg,gW:'Flaschen verkauft (ohne Sekt)'}:{})};
+    ...(mg?{gAb:mg,gW:'Flaschen verkauft (ohne Sekt)'}:{g:'Hol mit einem Wein dieser Stufe eine Medaille bei einem Wettbewerb.'})};
 }
 // Wissens-Seiten: Geschichte und die Zeile "Im Spiel", ohne Siegel. Die Kennungen aus 11.1 bleiben, neu ist helferweg.
 const kompWissen=(id,kap,titel,text)=>{KOMP[id]={kap,titel,wissen:1,text}};
@@ -2235,17 +2233,17 @@ function kompSeiten(kap){
 const kompSt=id=>((S.komp||{})[id]||{}).st||0;
 function kompZahlen(kap){const I=kap?kompIds(kap):KOMP_KAP.flatMap(k=>kompIds(k[0])); return {hab:I.reduce((a,id)=>a+kompSt(id),0),max:I.length*3}}
 function kompE(id){const K=S.komp||(S.komp={}); return K[id]||(K[id]={st:0,n:0})}
-// Trägt etwas ein. Jeder Aufruf heißt "erlebt" und bringt Bronze, außer mit o.nb (nur zählen oder merken). o.n zählt für Silber dazu,
-// o.g zählt Flaschen für Gold dazu, o.gd merkt die Goldmedaille. Steigt die Stufe, meldet kompNeu das Siegel. Wissens-Seiten tragen nichts ein.
+// Trägt etwas ein. Jeder Aufruf heißt "erlebt" und bringt Bronze. o.n zählt für Silber dazu,
+// o.g zählt Flaschen für Gold dazu, o.gd merkt das Meisterstück. Steigt die Stufe, meldet kompNeu das Siegel. Wissens-Seiten tragen nichts ein.
 function komp(id,o){
   const D=KOMP[id]; if(!S||!D||D.wissen) return;
   const e=kompE(id), alt=e.st; o=o||{};
   if(o.n) e.n=(e.n||0)+o.n;
   if(o.g) e.g=(e.g||0)+o.g;
   if(o.gd) e.gd=1;
-  if(e.st<1&&!o.nb) e.st=1;
+  if(e.st<1) e.st=1;
   if(e.st===1&&e.n>=D.s) e.st=2;
-  if(e.st===2&&((D.gAb&&(e.g||0)>=D.gAb)||(D.g&&e.gd))) e.st=3;
+  if(e.st===2&&(D.gAb?(e.g||0)>=D.gAb:e.gd)) e.st=3;
   if(e.st>alt) kompNeu(id,e.st);
 }
 // Neues Siegel: Zeile für den nächsten Winzerboten, Album, und die Siegel-Meldung unten im Bild.
@@ -2291,7 +2289,6 @@ function kompAlbumNimm(X){
   return true;
 }
 /* ---- Haken im Spiel ---- */
-// Seit 11.3: Bronze für die Sorte gibt es beim ersten Abfüllen (fuelleAb), nicht mehr beim Pflanzen. Die Lese zählt nur die Liter mit.
 function kompLese(id,liter){if(KOMP['sorte_'+id]) kompE('sorte_'+id).l=(kompE('sorte_'+id).l||0)+liter}
 // Anmelden im Rathaus (nicht unter der Hand): Bronze der Stufe, je Jahrgang einmal für Silber.
 function kompAnmelden(l,st){
@@ -2300,59 +2297,49 @@ function kompAnmelden(l,st){
   if(J.includes(l.jahrgang)) komp(id); else{J.push(l.jahrgang); if(J.length>12) J.shift(); komp(id,{n:1})}
 }
 // Verkauf auf jedem Weg (Großhandel, Weinhandlungen, eigenes Regal, Daueraufträge): Jede Flasche zählt einmal, Sekt beim Sekt, alles andere bei der Sorte
-// und bei den Stufen mit Gold über die Menge zusätzlich bei der Stufe. Gepanschter Wein zählt bei der Stufe nicht.
+// und bei Federweißer, Tafelwein und Qualitätswein zusätzlich bei der Stufe.
 function kompVerkauf(l,n){
   if(!l||!(n>0)) return;
-  if(l.sekt) return komp('sekt',{n});
-  komp('sorte_'+l.sorte,{n});
-  const D=KOMP['stufe_'+l.stufe]; if(D&&D.gAb&&!l.pansch) komp('stufe_'+l.stufe,{g:n,nb:1});
+  if(l.sekt) komp('sekt',{n});
+  else{komp('sorte_'+l.sorte,{n}); const D=KOMP['stufe_'+l.stufe]; if(D&&D.gAb) komp('stufe_'+l.stufe,{g:n})}
 }
-// Wettbewerb. w ist der Wein oder die Einreichung (sorte, stufe, sekt), platz 0 bis 2. Seit 11.3 zählt nur die Goldmedaille, also Platz 1 (Maik 19.11.2026).
-// Eine Medaille bringt nie Bronze, sie wird nur gemerkt (nb).
+// Medaille bei einem Wettbewerb. w ist der Wein oder die Einreichung (sorte, stufe, sekt), platz 0 bis 2.
 function kompMedaille(w,platz){
-  if(!w||!w.sorte||platz!==0) return;
-  if(w.sekt) return komp('sekt',{gd:1,nb:1});
-  komp('sorte_'+w.sorte,{gd:1,nb:1}); komp('stufe_'+w.stufe,{gd:1,nb:1});
+  if(!w||!w.sorte) return;
+  if(w.sekt) return komp('sekt',{gd:1});
+  if(platz===0) komp('sorte_'+w.sorte,{gd:1});
+  komp('stufe_'+w.stufe,{gd:1});
 }
-// Goldmedaillen der Weine, die noch im Keller liegen (für alte Spielstände).
-function kompMedLot(l){if(l&&(l.med||[]).some(m=>/^(🥇|🏆|🌍)/u.test(String(m)))) kompMedaille(l,0)}
 // Alte Spielstände. Vor 11.1: Was sich aus dem Stand ablesen lässt, wird still eingetragen, die Zähler fangen bei null an.
 function altKomp(){
   if(S.komp){if(!S.kompV) kompUmbau(); kompAlbumAbgleich(); return}
   S.komp={}; S.kompV=2; KOMP_LEISE++;
   try{
-    for(const id of R().sorten) if(S.lots.some(l=>l.sorte===id&&l.status==='flasche')) komp('sorte_'+id);
+    for(const id of R().sorten) if((S.felder[id]&&S.felder[id].reben>0)||S.lots.some(l=>l.sorte===id)) komp('sorte_'+id);
     if(S.lots.some(l=>l.sekt)||S.sektMenge) komp('sekt');
     for(const k of S.ansGeb||[]) komp('stufe_'+String(k).split('|')[2]);
     for(const l of S.lots) if(l.stufe&&STUFEN[l.stufe]){
       if(!l.pansch) komp('stufe_'+l.stufe);
-      kompMedLot(l);
+      for(const m of l.med||[]) kompMedaille(l,/^(🥇|🏆|🌍)/u.test(String(m))?0:1);
     }
   }finally{KOMP_LEISE--}
   S.kompNeu=[]; S.kompAlt=1;
 }
-// Spielstände aus 11.1 und 11.2 auf die Regeln von 11.3: Kein Siegel geht verloren, Bronze fürs Pflanzen bleibt.
-// Vorgemerkte Medaillen bei Sekt und Stufen galten für jede Medaille, sie werden neu aus den Goldmedaillen im Keller gelesen. Danach gelten die neuen Schwellen.
-function kompUmbau(){
-  S.kompV=2; S.kompUm=1; KOMP_LEISE++;
-  try{
-    for(const id of Object.keys(S.komp)){const D=KOMP[id], e=S.komp[id]; if(D&&!D.wissen&&e&&e.st<3&&!id.startsWith('sorte_')) delete e.gd}
-    for(const l of S.lots) kompMedLot(l);
-    for(const id of Object.keys(S.komp)) if(KOMP[id]&&kompSt(id)) komp(id,{nb:1});
-  }finally{KOMP_LEISE--}
-}
+// Spielstände aus 11.1 und 11.2: Für Sorten, Sekt und Stufen ändert sich nichts. Die Einträge für Gebiet, Technik und Gefahren bleiben liegen,
+// der nächste Winzerbote erklärt einmal, dass sie nicht mehr zählen (kompUm).
+function kompUmbau(){S.kompV=2; S.kompUm=1}
 /* ---- Anzeige: Fenster von unten, aus dem Kellerbuch und aus dem Büro ---- */
 const kompSiegel=st=>`<span class="ksg3">${[1,2,3].map(i=>`<i class="ksg s${i}${st>=i?' an':''}"></i>`).join('')}</span>`;
 const kompVon=(a,b,w)=>`${num(Math.min(a||0,b))} von ${num(b)} ${w}`;
 function kompSilber(D,e){return kompVon(e.n,D.s,D.sW)}
-function kompGold(D,e){return D.gAb?(D.g?D.g+' Oder: ':'')+kompVon(e.g,D.gAb,D.gW)+(D.g?'.':''):D.g}
+function kompGold(D,e){return D.gAb?kompVon(e.g,D.gAb,D.gW):D.g}
 // Der nächste Schritt als kurze Zeile für die Liste.
 function kompNaechst(id){
   const D=KOMP[id], e=(S.komp||{})[id]||{st:0,n:0};
   if(e.st>=3) return 'Alle drei Siegel geholt.';
   if(e.st<1) return 'Bronze: '+D.b;
   if(e.st===1) return 'Silber: '+kompSilber(D,e);
-  return 'Gold: '+kompGold(D,e)+(e.gd&&D.g?' ✔':'');
+  return 'Gold: '+kompGold(D,e)+(e.gd&&!D.gAb?' ✔':'');
 }
 // Der erste Satz der Geschichte als Anreißer für die Wissens-Seiten.
 const kompKurz=id=>(KOMP_TEXT[id]||'').split(/(?<=[.!?]) /)[0];
@@ -2392,7 +2379,7 @@ function kompEintragHtml(id){
     <div class="hilfe kspiel"><b>📌 Im Spiel</b><br>${D.text()}</div>
     ${w?'':`${bed(1,esc(D.b))}
     ${bed(2,esc(kompSilber(D,e)),st>=2?'':bal(e.n,D.s))}
-    ${bed(3,esc(kompGold(D,e))+(st<2?' Gold zählt erst, wenn du Silber hast.':'')+(e.gd&&D.g&&st<3?' ✔ Die Goldmedaille hast du schon.':''),D.gAb&&st===2?bal(e.g,D.gAb):'')}
+    ${bed(3,esc(kompGold(D,e))+(st<2?' Gold zählt erst, wenn du Silber hast.':'')+(e.gd&&!D.gAb&&st<3?' ✔ Das Meisterstück ist dir schon gelungen.':''),D.gAb&&st===2?bal(e.g,D.gAb):'')}
     ${e.l?`<div class="kv" style="margin-top:8px"><span>Bisher gelesen</span><span>${num(e.l)} l</span></div>`:''}
     ${A>st?`<p class="mut" style="margin-top:8px">📚 Im Album aus einer anderen Partie: ${KOMP_ST[A]}.</p>`:''}`}
     <div class="btns"><button class="sec" data-a="weinQual">Zurück</button></div>`;
@@ -5395,7 +5382,7 @@ const AKT={
     if(max<10) return meldung('Geht gerade nicht','Dir fehlt das Geld oder der Platz für 10 Reben.');
     mengeSheet({titel:`${so.name} pflanzen`,text:`${eur2(pr)} je Rebe${pr!==so.preis?`, üblich sind ${eur2(so.preis)}`:''}. Junge Reben tragen im ersten Jahr die Hälfte. Deine Erntehelfer reichen noch für ${num(kap)} Reben${kap<frei?', für mehr musst du erst einstellen':''}.`,max,step:10,start:Math.min(max,1000),okText:'Pflanzen',
       info:n=>`<b>${num(n)} Reben</b>kostet ${eur(n*pr)}`,
-      ok:n=>{fx('stempel');zahle(Math.round(n*pr*100)/100);const f=S.felder[d.id];f.reben+=n;f.jung+=n;if(S.verlust&&S.verlust[d.id])S.verlust[d.id]=Math.max(0,S.verlust[d.id]-n)}});
+      ok:n=>{fx('stempel');komp('sorte_'+d.id);zahle(Math.round(n*pr*100)/100);const f=S.felder[d.id];f.reben+=n;f.jung+=n;if(S.verlust&&S.verlust[d.id])S.verlust[d.id]=Math.max(0,S.verlust[d.id]-n)}});
   },
   roden(d){
     const f=S.felder[d.id];
