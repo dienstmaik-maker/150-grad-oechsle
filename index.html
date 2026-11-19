@@ -4351,9 +4351,22 @@ function fuBereit(){return !!(S&&S.fu&&S.fu.an&&typeof FUEHRER!=='undefined')}
 function fuErlaubt(id){const b=FUEHRER[id]; return !!b&&(!S.fu.nur||b.a==='rang'||b.a==='warnung')}
 // Hält die Blase das Vorspulen an? k11 hält nur mit der Ankündigung im Winzerboten (Text "nein, mit der Ankündigung ja").
 const fuH=id=>!!(FUEHRER[id].h||id==='k11'&&fuGenAnk());
+// Seit 10.3 (C4): Passt der Anlass einer wartenden Blase noch? Kern-Blasen mit festem Monat warten, bis sie gelesen sind (Maik 19.11.2026).
+function fuNochDran(id){
+  if(FU_MON[id]&&FUEHRER[id].k) return true;
+  const w=FU_WANN[id]||FU_KNIFF[id]; if(!w) return true;
+  try{return !!w()}catch(e){return true}
+}
 function fuehrerPruef(){
   if(!fuBereit()) return;
   let neu=0;
+  // Seit 10.3 (C4): Wartende Blasen, deren Anlass vorbei ist, fliegen raus, statt einen Monat zu spät zu kommen. Als gezeigt gelten sie nur,
+  // wenn der Spieler sie schon gesehen (FU_SPAET) oder die Sache selbst erledigt hat (FU_ERL), sonst kommen sie beim nächsten Anlass.
+  const alt=S.fu.q.filter(id=>id!==FU_AKT&&FUEHRER[id]&&!fuNochDran(id));
+  if(alt.length){
+    S.fu.q=S.fu.q.filter(id=>!alt.includes(id)); neu=1;
+    for(const id of alt){let erl=FU_SPAET[id]!=null; try{erl=erl||!!(FU_ERL[id]&&FU_ERL[id]())}catch(e){} if(erl&&!S.fu.ges.includes(id)) S.fu.ges.push(id)}
+  }
   for(const id in FU_WANN){
     if(!FUEHRER[id]||!fuErlaubt(id)||S.fu.ges.includes(id)||S.fu.q.includes(id)) continue;
     let ja=false; try{ja=!!FU_WANN[id]()}catch(e){}
@@ -4373,7 +4386,7 @@ function fuNaechste(){
   const m=monatNr();
   // Bei gleicher Art bleibt die Reihenfolge der Warteschlange, Rang-Neuheiten nach einem Sprung über mehrere Ränge Rang für Rang.
   const rw=id=>{const x=fuRang(id); return x?x.r*10+x.n:0};
-  return S.fu.q.filter(id=>FUEHRER[id]&&fuErlaubt(id)&&!(fuBremse(id)&&S.fu.mon===m)).sort((a,b)=>FU_ART[FUEHRER[a].a]-FU_ART[FUEHRER[b].a]||rw(a)-rw(b))[0]||null;
+  return S.fu.q.filter(id=>id!==FU_AKT&&FU_SPAET[id]!==m&&FUEHRER[id]&&fuErlaubt(id)&&!(fuBremse(id)&&S.fu.mon===m)).sort((a,b)=>FU_ART[FUEHRER[a].a]-FU_ART[FUEHRER[b].a]||rw(a)-rw(b))[0]||null;
 }
 // Hält "Weiter bis etwas ansteht" an? Nur Blasen mit "Hält an: ja", die übrigen warten auf den nächsten Halt.
 function fuHalt(){fuehrerPruef(); return fuBereit()&&S.fu.q.some(id=>FUEHRER[id]&&fuErlaubt(id)&&fuH(id))}
@@ -4392,8 +4405,10 @@ function fuAbsaetze(t){
   return P.map(p=>`<p>${esc(p)}</p>`).join('');
 }
 // FU_PAUSE: Nach "Zeig mir, wo" wartet die nächste Blase, bis der Spieler selbst etwas antippt, damit sie den leuchtenden Knopf nicht verdeckt.
-let FU_AKT=null, FU_RUHE=0, FU_UHR=null, FU_PAUSE=false, FU_KLEIN=false;
-function fuehrerWeg(){const a=$('#fuehrer'), d=$('#fdunkel'), k=$('#fkopf'); if(a) a.remove(); if(d) d.remove(); if(k) k.remove(); FU_AKT=null; FU_KLEIN=false}
+// Seit 10.3: FU_WO = bei der Blase wurde "Zeig mir, wo" getippt (gilt als gelesen), FU_ZM = Monat, in dem sie aufging,
+// FU_SPAET = abgelegte Kern-Blasen und Warnungen mit ihrem Monat, sie kommen erst im nächsten Monat wieder.
+let FU_AKT=null, FU_RUHE=0, FU_UHR=null, FU_PAUSE=false, FU_KLEIN=false, FU_WO=false, FU_ZM=-1, FU_SPAET={};
+function fuehrerWeg(){const a=$('#fuehrer'), d=$('#fdunkel'), k=$('#fkopf'); if(a) a.remove(); if(d) d.remove(); if(k) k.remove(); FU_AKT=null; FU_KLEIN=false; FU_WO=false}
 // Seit 10.2.1 (Maik 19.11.2026): Die Blase klappt zum Kopf am rechten Rand zusammen, ein Tipp auf den Kopf holt sie zurück.
 function fuKlein(an){
   const f=$('#fuehrer'); if(!f) return; FU_KLEIN=an; f.classList.toggle('zu',an);
@@ -4421,12 +4436,14 @@ function fuErlCheck(){const id=FU_AKT; if(!id||!FU_ERL[id]||!S||!S.fu) return; l
 function fuehrerZeig(){
   if(!fuBereit()) return fuehrerWeg();
   if(!SUBS[TAB]) return fuehrerWeg();
-  if(FU_AKT||FU_PAUSE||$('#sheet').classList.contains('an')||$('#titel').classList.contains('an')||$('#buch').classList.contains('an')||S.pleite||S.pruefer||erbeOffen()) return;
+  // Seit 10.3 (C1): Nur eine offene Blase hält die nächste auf. Ein geparkter Kopf macht Platz, sobald eine andere Blase dran ist.
+  if(FU_AKT&&!FU_KLEIN||FU_PAUSE||$('#sheet').classList.contains('an')||$('#titel').classList.contains('an')||$('#buch').classList.contains('an')||S.pleite||S.pruefer||erbeOffen()) return;
   fuehrerPruef();
   const id=fuNaechste(); if(!id) return;
   const w=FU_RUHE-Date.now(); if(w>0){clearTimeout(FU_UHR); FU_UHR=setTimeout(fuehrerZeig,w+20); return}
+  if(FU_AKT) fuAblegen();
   const b=FUEHRER[id], sp=fuSprecher(id), P=FU_SPRECHER[sp.s], text=fuText(sp.t), lang=text.length>=FU_LANG;
-  FU_AKT=id;
+  FU_AKT=id; FU_ZM=monatNr();
   if(lang){const d=document.createElement('div'); d.id='fdunkel'; document.body.appendChild(d)}
   const el=document.createElement('div'); el.id='fuehrer'; el.setAttribute('role','dialog'); el.setAttribute('aria-label',P.name);
   el.innerHTML=`<i class="fzipfel"></i><div class="fgesicht"><i style="background-image:url(bilder/${P.bild}.jpg)"></i></div><div class="fkopf"><div><b class="fname">${P.name}</b><span class="frolle">${P.rolle}</span></div></div>
@@ -4440,12 +4457,22 @@ function fuehrerZeig(){
   fx('menue');
 }
 // Abhaken: aus der Warteschlange in die Liste der gezeigten, danach kommt die nächste wartende.
+// Seit 10.3 (C3): Für Bremse und Kniff-Abstand zählt der Monat, in dem die Blase aufging, nicht der, in dem sie abgehakt wird.
 function fuFertig(){
   const id=FU_AKT; fuehrerWeg(); if(!id||!S||!S.fu) return;
   S.fu.q=S.fu.q.filter(x=>x!==id); if(!S.fu.ges.includes(id)) S.fu.ges.push(id);
-  if(fuBremse(id)) S.fu.mon=monatNr();
-  if(FU_KNIFF[id]) S.fu.km=monatNr();
+  if(fuBremse(id)) S.fu.mon=FU_ZM;
+  if(FU_KNIFF[id]) S.fu.km=FU_ZM;
   save(); return id;
+}
+// Seit 10.3 (C1, C2, Maik 19.11.2026): Ein geparkter Kopf wird abgelegt, wenn eine andere Blase dran ist oder der Monat wechselt.
+// Kern-Blasen und Warnungen, deren Anlass noch besteht, kommen im nächsten Monat wieder. Alles andere ist abgehakt,
+// auch eine Blase, bei der "Zeig mir, wo" getippt wurde, und eine Warnung, die sich erledigt hat.
+function fuAblegen(){
+  const id=FU_AKT; if(!id) return;
+  const b=FUEHRER[id];
+  if(!FU_WO&&(b.k||b.a==='warnung')&&fuNochDran(id)){FU_SPAET[id]=FU_ZM; fuehrerWeg(); return}
+  fuFertig();
 }
 // Fenster "Spielführer" im Büro (Paket B): drei Stellungen und "Tipps von vorn".
 function fuFenster(){
@@ -4467,8 +4494,8 @@ function render(){
   // Seit 10.1: Ein abgeschlossener Spielstand zeigt nur noch die letzte Ausgabe vom Winzerboten und danach die Chronik.
   if(S.ende&&TAB!=='monat'&&!(TAB==='feier'&&endeFeier())) TAB='ende';
   fuehrerPruef(); fuErlCheck();
-  // Seit 10.2.1: Beim Monatswechsel ist ein Kopf erledigt, sonst hielte er alle weiteren Tipps auf (Annahme Claude). Eine offene Blase kommt danach wieder.
-  if(!SUBS[TAB]){if(FU_AKT&&FU_KLEIN) fuFertig(); else fuehrerWeg()}
+  // Seit 10.3: Beim Monatswechsel wird ein Kopf abgelegt (fuAblegen), Kern-Blasen und Warnungen kommen danach wieder. Eine offene Blase kommt ohnehin wieder.
+  if(!SUBS[TAB]){if(FU_AKT&&FU_KLEIN) fuAblegen(); else fuehrerWeg()}
   if(SUBS[TAB]&&!SUBS[TAB].some(s=>s[0]===SUB)) SUB=START_SUB[TAB];
   // Kellerbuch und Aktuelles öffnen sich mit einem eigenen Geräusch.
   ortFarbe(SUBS[TAB]?TAB:'gut');
@@ -4532,7 +4559,7 @@ const AKT={
   fuVorn(){const f=S.fu; if(!f||!f.an) return; const n=fuAlt(); n.an=f.an; n.nur=f.nur; n.geld=f.geld; n.rm=f.rm||{}; S.fu=n; fuehrerWeg(); FU_PAUSE=false; save(); render();
     meldung('Tipps von vorn','Warnungen und Kniffe kommen wieder, sobald sie passen. In den ersten zwei Jahren kommt auch der Rest des Fahrplans.')},
   // Seit 10.2.1: "Zeig mir, wo" klappt die Blase zum Kopf zusammen, statt sie abzuhaken. Weg ist sie erst mit "Verstanden" oder wenn die Aufgabe erledigt ist.
-  fuWo(){const id=FU_AKT, z=FU_ZEIG[id]; if(!z) return; fuKlein(true); FU_PAUSE=true; if(z.tab){geh(z.tab,z.sub); render(); window.scrollTo(0,0)} setTimeout(()=>fuLeuchte(z),z.tab?120:0)},
+  fuWo(){const id=FU_AKT, z=FU_ZEIG[id]; if(!z) return; fuKlein(true); FU_WO=true; FU_PAUSE=true; if(z.tab){geh(z.tab,z.sub); render(); window.scrollTo(0,0)} setTimeout(()=>fuLeuchte(z),z.tab?120:0)},
   fuAuf(){fuKlein(false)},
   fuBuch(d){BUCH=d.id||''; buchZeig()},
   // Seit 8.0.1 "Dein Stand" statt "Deine Kasse": Kasse, Bis zum nächsten Rang (alle drei Bedingungen mit Balken wie in vRang) und die Rangleiter.
@@ -5183,7 +5210,8 @@ document.addEventListener('keydown',e=>{
 });
 document.addEventListener('click',e=>{
   // Seit 10.2.1: Ein Tipp neben die Sprechblase klappt sie zum Kopf zusammen, der Tipp selbst wirkt trotzdem (Maik 19.11.2026).
-  if(FU_AKT&&!FU_KLEIN&&!e.target.closest('#fuehrer,#fkopf,#titel')) fuKlein(true);
+  // Seit 10.3: Der Tipp, der die Blase wegklappt, holt nicht gleich die nächste, die kommt erst mit dem Tipp danach.
+  const park=!!(FU_AKT&&!FU_KLEIN&&!e.target.closest('#fuehrer,#fkopf,#titel')); if(park) fuKlein(true);
   // Nach einem Wischen zählt das Loslassen nicht als Tipp.
   const b=e.target.closest('[data-a]'); if(!b||b.disabled||Date.now()-WISCH_ZEIT<350) return;
   tonAn(); if(AC&&AC.state==='suspended') AC.resume();
@@ -5195,9 +5223,9 @@ document.addEventListener('click',e=>{
   if(!vorn&&S&&S.pruefer&&!['pruefJa','pruefBestechen','slMinus','slPlus','slOk','close','ton','menue','buch','buchZu'].includes(a)) return zeigePruefer();
   // Schritt G 7.0: Solange die Übergabe offen ist, geht nur das Übergeben.
   if(!vorn&&erbeOffen()&&!['erbeJa','erbeArt','ton','menue','buch','buchZu'].includes(a)) return zeigeErbe();
-  if(a!=='fuWo') FU_PAUSE=false;
+  if(a!=='fuWo') FU_PAUSE=park;
   const f=AKT[a]; if(f){f(b.dataset,e); fx('klick')}
-  if(FU_AKT==null&&!FU_PAUSE) setTimeout(fuehrerZeig,0);
+  if((FU_AKT==null||FU_KLEIN)&&!FU_PAUSE) setTimeout(fuehrerZeig,0);
 });
 $('#datei').addEventListener('change',e=>{const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>dateiLaden(String(r.result),ZIEL); r.readAsText(f)});
 $('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet'&&!SL)closeSheet()});
