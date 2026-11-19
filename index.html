@@ -67,6 +67,7 @@ main>h3{font-size:17px;margin:16px 0 8px;padding-left:10px;border-left:4px solid
 .sb h3 small{display:block;font-weight:400;font-size:13px;color:var(--mut);margin-top:2px}
 .sb .sbz{margin:6px 0;font-size:14px;line-height:1.5}
 .sterne{color:#a87908;letter-spacing:1px;white-space:nowrap}.sterne i{font-style:normal;opacity:.28}
+.rolle{display:inline-block;padding:0 7px;border-radius:9px;font-size:12px;font-weight:700;line-height:1.5;background:rgba(123,30,58,.09);color:#4a1526;white-space:nowrap}
 .sb .schild{display:inline-block;margin:2px 0 4px;padding:3px 10px;border-radius:12px;font-size:13px;font-weight:700;background:rgba(123,30,58,.09);color:#4a1526}
 .sb .schild.leicht{background:rgba(60,130,60,.14);color:#24521f}.sb .schild.riskant{background:rgba(170,40,30,.14);color:#6e1a12}
 .sb .strat{margin:4px 0 0;padding-left:20px}.sb .strat li{margin:2px 0}
@@ -657,6 +658,24 @@ const SORTEN={
   portug:{name:'Portugieser',farbe:'rot',ertrag:6,zucker:-5,preis:2.8,minL:3,maxL:48,q:2,reife:.04},
   troll:{name:'Trollinger',farbe:'rot',ertrag:5.6,zucker:-3,preis:3.2,minL:6,maxL:60,q:3,reife:.05}
 };
+// Version 11.4: Rebsorten in drei Rollen, nur in neuen Partien (S.rollen). Jedes Gebiet hat eine Menge-Sorte (ab Start), eine Sekt-Sorte (ab R_SORTE2)
+// und eine Spitzen-Sorte (ab R_SORTE3). Die Sorten einer Rolle haben dieselben Werte und unterscheiden sich nur in Name und Farbe,
+// gemessen werden also drei Profile statt 15 Sorten. Menge startet mit den Werten des alten Müller-Thurgau, Spitze mit denen des alten Rieslings,
+// die Sekt-Sorte liegt dazwischen und ist als einzige Sekt-Star. Die sechs alten Sorten oben bleiben für Spielstände von vor 11.4 unberührt.
+const ROLLEN={
+  menge:{name:'Menge-Sorte',satz:'trägt viel und ist früh verkaufsreif',ertrag:5.6,zucker:-4,preis:3,minL:6,maxL:96,q:3,reife:.05},
+  sekt:{name:'Sekt-Sorte',satz:'gibt den Regional-Sekt',ertrag:4.8,zucker:-2,preis:4.5,minL:9,maxL:144,q:6,reife:.08,sektStar:true},
+  spitze:{name:'Spitzen-Sorte',satz:'trägt wenig, bringt die beste Qualität und reift lange',ertrag:4,zucker:0,preis:6,minL:18,maxL:360,q:10,reife:.12}
+};
+// 17 neue Kennungen für 15 Namen (Riesling und Silvaner gibt es in zwei Rollen). Kennungen nie umbenennen, sie stehen in Spielständen und ab 11.4 im Album.
+const SORTEN_ROLLEN={
+  me_mueller:['menge','Müller-Thurgau','weiss'],me_weissb:['menge','Weißburgunder','weiss'],me_silvaner:['menge','Silvaner','weiss'],me_dornf:['menge','Dornfelder','rot'],me_troll:['menge','Trollinger','rot'],
+  se_elbling:['sekt','Elbling','weiss'],se_riesling:['sekt','Riesling','weiss'],se_graub:['sekt','Grauburgunder','weiss'],se_chard:['sekt','Chardonnay','weiss'],se_bacchus:['sekt','Bacchus','weiss'],se_schwarzr:['sekt','Schwarzriesling','rot'],
+  sp_riesling:['spitze','Riesling','weiss'],sp_spaetb:['spitze','Spätburgunder','rot'],sp_scheu:['spitze','Scheurebe','weiss'],sp_gewuerz:['spitze','Gewürztraminer','weiss'],sp_silvaner:['spitze','Silvaner','weiss'],sp_lemb:['spitze','Lemberger','rot']
+};
+for(const [id,[rolle,name,farbe]] of Object.entries(SORTEN_ROLLEN)){const P=ROLLEN[rolle]; SORTEN[id]={name,farbe,rolle,ertrag:P.ertrag,zucker:P.zucker,preis:P.preis,minL:P.minL,maxL:P.maxL,q:P.q,reife:P.reife,...(P.sektStar?{sektStar:true}:{})}}
+// Schalter für die Messung: 1 = neue Partien bekommen die Rollen. Mit 0 startet auch ein neues Spiel mit den alten Sorten (Lauf s114_alt).
+const ROLLEN_NEU=1;
 // Hürden in zwei Stufen: vier Gebiete mit normalen Mindestwerten, Franken und Württemberg mit niedrigeren.
 // Die beiden sind dafür 10° kühler (warm), unter dem Strich also 3° hinter Mosel und Rheingau. Seit 7.0 (Schritt H) -10 statt -11:
 // Mit -11 schaffte der Test-Spieler in Franken den Präsidenten nur in 4 von 9 Partien, mit -10 in 9 von 9 (Mitte Jahr 116). Sie bleiben die riskanten Gebiete.
@@ -689,14 +708,42 @@ const GEBIET_TEXT={
   wuerttemberg:{stufe:'riskant',stil:'Kalkuliertes Risiko',sekt:2,lohnt:'Auf Rotwein setzen, Eiswein nur gezielt',
     strat:['Trollinger trägt viel und ist nach 6 Monaten verkaufsreif, damit kommt am Anfang Geld rein.','Eiswein nur mit Riesling oder Spätburgunder versuchen, den Trollinger lieber rechtzeitig lesen.','Für Könner: Württemberg bringt weniger Geld als die warmen Gebiete, jeder Fehler wiegt schwerer.']}
 };
+// Version 11.4: Sorten nach Rollen je Gebiet (Menge, Sekt, Spitze, in dieser Reihenfolge kommen sie auch) und die zweite Fassung von lohnt und strat.
+// REGIONEN_ROLLEN erbt alles andere vom Gebiet, eine umgestellte Zahl in REGIONEN gilt also für beide.
+const GEBIET_ROLLEN={
+  mosel:{sorten:['me_mueller','se_elbling','sp_riesling'],lohnt:'Auf Wettbewerbe und Riesling-Auslese setzen, Sekt vom Elbling',
+    strat:['Müller-Thurgau trägt viel und ist nach 6 Monaten verkaufsreif, damit kommt am Anfang Geld rein.','Als Jungwinzer kommt der Elbling, ab Winzer wird daraus der Sekt der Mosel.','Der Riesling für die großen Weine kommt als Weingutsbesitzer. Bei Wettbewerben bringt der Steillagen-Ruf jedem Wein 3 Punkte mehr.']},
+  rheingau:{sorten:['me_weissb','se_riesling','sp_spaetb'],lohnt:'Auf den Verkauf setzen, Spätburgunder darf lange reifen',
+    strat:['Weißburgunder trägt viel und ist nach 6 Monaten verkaufsreif, der Start ist entspannt.','Jeder Wein bringt 10 % mehr, das lohnt sich bei großen Mengen und bei langer Reife.','Riesling kommt als Jungwinzer und wird ab Winzer zum Rheingauer Sekt. Der Spätburgunder für die großen Weine folgt als Weingutsbesitzer.']},
+  rheinhessen:{sorten:['me_silvaner','se_graub','sp_scheu'],lohnt:'Auf Edelfäulnis und große Mengen setzen',
+    strat:['Silvaner trägt viel und bringt schon nach 6 Monaten Geld, der Start ist entspannt.','Im Herbst ruhig länger hängen lassen: mehr Zucker und öfter Edelfäulnis machen Auslese und Beerenauslese leicht.','Grauburgunder gibt ab Winzer den Sekt, die Scheurebe für edelsüße Spitzenweine kommt als Weingutsbesitzer.']},
+  pfalz:{sorten:['me_dornf','se_chard','sp_gewuerz'],lohnt:'Auf Edelfäulnis pokern, Chardonnay als Sekt',
+    strat:['Dornfelder trägt viel und ist nach 6 Monaten verkaufsreif, damit kommt am Anfang Geld rein.','Warm und sonnig: Edelfäulnis kommt oft, edelsüße Weine gelingen hier am leichtesten. Der Gewürztraminer dafür kommt als Weingutsbesitzer.','Eiswein gibt es fast nie, dafür verzeiht die Pfalz viele Wege.']},
+  franken:{sorten:['me_mueller','se_bacchus','sp_silvaner'],lohnt:'Auf Eiswein pokern',
+    strat:['Die Hürden sind niedriger: Schon mit wenig Zucker wird aus Müller-Thurgau Kabinett und Spätlese.','Bei Edelfäulnis im Herbst ein Feld hängen lassen und auf Frost im Dezember hoffen. Eiswein bringt hier am meisten, am besten vom Silvaner.','Für Könner: Franken bringt weniger Geld als die anderen Gebiete, jeder Fehler wiegt schwerer.']},
+  wuerttemberg:{sorten:['me_troll','se_schwarzr','sp_lemb'],lohnt:'Auf Rotwein setzen, Eiswein nur gezielt',
+    strat:['Trollinger trägt viel und ist nach 6 Monaten verkaufsreif, damit kommt am Anfang Geld rein.','Eiswein nur mit Schwarzriesling oder Lemberger versuchen, den Trollinger lieber rechtzeitig lesen.','Für Könner: Württemberg bringt weniger Geld als die warmen Gebiete, jeder Fehler wiegt schwerer.']}
+};
+const REGIONEN_ROLLEN={};
+for(const r of Object.keys(REGIONEN)) REGIONEN_ROLLEN[r]=Object.assign(Object.create(REGIONEN[r]),{sorten:GEBIET_ROLLEN[r].sorten});
+// rollenAn: Spielt die Partie mit den Rollen? Ohne Spielstand (Titelbild, Neues Spiel) gilt, was ein neues Spiel bekäme.
+const rollenAn=()=>S?!!S.rollen:!!ROLLEN_NEU;
+// Das Gebiet mit der passenden Sortenliste. neu: true oder false erzwingt die Fassung, ohne Angabe gilt die der laufenden Partie.
+const REG=(r,neu)=>(neu??rollenAn())?REGIONEN_ROLLEN[r]:REGIONEN[r];
+const gebietText=(r,neu)=>(neu??rollenAn())?{...GEBIET_TEXT[r],lohnt:GEBIET_ROLLEN[r].lohnt,strat:GEBIET_ROLLEN[r].strat}:GEBIET_TEXT[r];
 const GEBIET_STUFE={leicht:['🟢','Leicht'],mittel:['🟡','Mittel'],riskant:['🔴','Riskant']};
 // Eignung der Rebsorte im Gebiet: 1 = sehr gut, .85 = gut, .7 = geht noch. Wirkt als Faktor auf die Qualitätspunkte.
 const EIGNUNG={mosel:{riesling:1,mueller:.85,spaetb:.7},rheingau:{riesling:1,spaetb:.85,silvaner:.7},rheinhessen:{silvaner:1,mueller:.85,portug:.7},
   pfalz:{riesling:1,portug:.85,mueller:.7},franken:{silvaner:1,mueller:.85,spaetb:.7},wuerttemberg:{troll:1,riesling:.85,spaetb:.7}};
-const eignung=(id,r)=>(EIGNUNG[r||S.region]||{})[id]||.85;
+// Seit 11.4: Sorten mit Rolle passen überall gleich gut (1), statt Sternen zeigt das Spiel ihre Rolle.
+const eignung=(id,r)=>(SORTEN[id]||{}).rolle?1:(EIGNUNG[r||S.region]||{})[id]||.85;
 // Zucker der Sorte im Gebiet: Die beste Sorte startet überall gleich. Die anderen behalten ihren Abzug und liegen mindestens 1° darunter.
-const zuckerIm=(id,r)=>eignung(id,r)>=1?0:Math.min(-1,SORTEN[id].zucker);
+// Seit 11.4: Sorten mit Rolle bringen den Zucker ihres Profils mit (ROLLEN), in jedem Gebiet gleich.
+const zuckerIm=(id,r)=>SORTEN[id].rolle?SORTEN[id].zucker:eignung(id,r)>=1?0:Math.min(-1,SORTEN[id].zucker);
 const eigText=e=>e>=1?'★★★ sehr gut geeignet':e>=.85?'★★ gut geeignet':'★ geht noch';
+// Seit 11.4: das Schild einer Sorte. Mit Rolle steht dort die Rolle und was sie kann, sonst die Sterne im Gebiet.
+const rolleVon=id=>ROLLEN[(SORTEN[id]||{}).rolle];
+const sorteSchild=(id,r)=>rolleVon(id)?`${rolleVon(id).name}: ${rolleVon(id).satz}`:eigText(eignung(id,r));
 // Version 6.0 (Schritt 3): Sterne am Preis. Faktor je Stern der Sorte im Gebiet, zusätzlich zu den Qualitätspunkten, in preis, lotWert und leseWert.
 // Die Gegner bekommen den Faktor für ★★★, weil sie mit ihrer besten Sorte rechnen. Neutral gestellt (1), abgestimmt wird in Schritt 4.
 const STERN_PREIS_3=1, STERN_PREIS_2=1, STERN_PREIS_1=1;
@@ -765,7 +812,8 @@ const R_MAX=RAENGE.length-1, R_AUKTION=1, R_LAND=3, R_BUND=5, R_LADEN=6, R_HOFFE
 // Version 7.0 (Schritt C): Freischalt-Plan aus Schritt A. Die Rebsorten kommen nacheinander nach ihren Sternen im Gebiet (sortenFolge):
 // die ★★★-Sorte von Anfang an, die ★★-Sorte ab R_SORTE2, die ★-Sorte ab R_SORTE3. Sekt ab R_SEKT, der Exporthandel ab R_EXPORT, Kellerausbau ab R_KELLER (weiter unten).
 const R_SORTE2=1, R_SORTE3=4, R_SEKT=2, R_EXPORT=2, SORTE_RANG=[0,R_SORTE2,R_SORTE3];
-function sortenFolge(r){r=r||S.region; return REGIONEN[r].sorten.slice().sort((a,b)=>eignung(b,r)-eignung(a,r))}
+// Seit 11.4: mit Rollen in der Reihenfolge der Liste (Menge, Sekt, Spitze), die Eignung ist dort für alle 1. neu wie bei REG.
+function sortenFolge(r,neu){r=r||S.region; return REG(r,neu).sorten.slice().sort((a,b)=>eignung(b,r)-eignung(a,r))}
 function sorteAb(id,r){return SORTE_RANG[sortenFolge(r).indexOf(id)]??0}
 function sorteFrei(id){return S.rang>=sorteAb(id)}
 function sektFrei(){return S.rang>=R_SEKT}
@@ -1384,7 +1432,7 @@ function marktFrei(){return Math.round((MARKT_FREI+MARKT_RANG*S.rang+MARKT_EXPOR
 function haUeber(){return Math.max(0,flaecheBep()-HA_FREI)}
 function marktRest(){return Math.max(0,marktFrei()-(S.absatz||0))}
 function marktF(n){n=Math.max(0,n);const Q=marktFrei(),a=S.absatz||0,f=x=>x<=Q?1:Math.max(MARKT_MIN,1-(1-MARKT_MIN)*(x-Q)/(Q*MARKT_BREIT)); if(n<=0) return f(a); let s=0; for(let i=0;i<40;i++) s+=f(a+n*(i+.5)/40); return s/40}
-function R(){return REGIONEN[S.region]}
+function R(){return S.rollen?REGIONEN_ROLLEN[S.region]:REGIONEN[S.region]}
 // Seit 7.9: zwei Namen und Anrede. S.name ist das Weingut, S.ich der eigene Name, S.anrede 'm' oder 'w'. Bei der Übergabe ersetzt der Erbe beides
 // (erbeBenennen). Alte Spielstände ohne S.ich behalten die alten Texte, bis die Namen im Büro nachgetragen sind.
 function frau(){return S.anrede?S.anrede==='w':!!(S.erbe&&S.erbe.name&&S.erbe.art==='t')}
@@ -1570,7 +1618,11 @@ function wege(l){
   return W.sort((a,b)=>b.p-a.p);
 }
 // Seit 7.0 wünschen sie nur, was schon geht: eine Farbe erst mit einer freien Sorte dieser Farbe, Sekt erst ab R_SEKT.
-function ladenWuensche(){const fr=R().sorten.filter(sorteFrei); return ['weiss','rot','sekt','edel'].filter(w=>w==='edel'||(w==='sekt'?sektFrei():fr.some(id=>SORTEN[id].farbe===w)))}
+// Seit 11.4 vier klare Felder: eine der freigeschalteten eigenen Sorten oder Sekt. Der Wunsch ist dann die Kennung der Sorte oder 'sekt'.
+// Die alten Wünsche (weiss, rot, edel) versteht ladenPasst weiter, bis der nächste Monat neu würfelt. LADEN_SORTEN=0 stellt für die Messung auf die alten Wünsche zurück.
+const LADEN_SORTEN=1;
+const wunschName=w=>WUNSCH[w]||(SORTEN[w]?SORTEN[w].name:'Wein');
+function ladenWuensche(){const fr=R().sorten.filter(sorteFrei); if(LADEN_SORTEN) return [...fr,...(sektFrei()?['sekt']:[])]; return ['weiss','rot','sekt','edel'].filter(w=>w==='edel'||(w==='sekt'?sektFrei():fr.some(id=>SORTEN[id].farbe===w)))}
 function neueLaeden(){S.laeden={};const W=ladenWuensche();for(const r of Object.keys(REGIONEN)) if(r!==S.region) S.laeden[r]={rest:Math.round(rint(1,LADEN_MAX)*(LADEN_MENGE+LADEN_HA*haUeber())),wunsch:W[rint(0,W.length-1)]}}
 function ladenOk(l){return l.status==='flasche'&&!l.regal&&preis(l)>0&&(l.sekt||STUFEN[l.stufe].rang>=3)}
 // Eigene Weinhandlung ab Weinbaurat: Weine im Regal (l.regal) verkaufen sich jeden Monat von selbst, das Teuerste zuerst, bis LADEN_EIGEN Euro Listenwert.
@@ -1593,7 +1645,7 @@ function ladenMonat(Z){
   S.lots=S.lots.filter(l=>l.liter>0);
   if(n){ein=Math.round(ein); kassiere(ein); Z.push(`Deine Weinhandlung hat ${num(n)} Flaschen für ${eur(ein)} verkauft.`)}
 }
-function ladenPasst(l,r){const w=S.laeden[r].wunsch; return ladenOk(l)&&(w==='sekt'?!!l.sekt:w==='edel'?!l.sekt&&STUFEN[l.stufe].rang>=5:!l.sekt&&SORTEN[l.sorte].farbe===w)}
+function ladenPasst(l,r){const w=S.laeden[r].wunsch; return ladenOk(l)&&(w==='sekt'?!!l.sekt:w==='edel'?!l.sekt&&STUFEN[l.stufe].rang>=5:w==='weiss'||w==='rot'?!l.sekt&&SORTEN[l.sorte].farbe===w:!l.sekt&&l.sorte===w)}
 function ladenPreis(l,r){return Math.round(preis(l)*LADEN_AUF*100)/100}
 
 /* ================= Wettbewerbe ================= */
@@ -1742,7 +1794,7 @@ function variante(k){S.vz=S.vz||{}; const V=VARIANTEN[k], i=(S.vz[k]=(S.vz[k]||0
 const EREIGNIS={
   gut:{
     supersommer:{ok:()=>(S.monat===6||S.monat===7)&&feldHaengt().length,los(){const n=rint(6,9); for(const id of feldHaengt()) S.felder[id].oe=Math.min(150,S.felder[id].oe+n); S.sonne++; schlag(80,'Supersommer!',`Wochenlang Sonne satt ${WO[S.region]}. Deine Trauben legen ${n}° Öchsle zu, und der Sommer zählt als zusätzlicher Sonnenmonat.`,'supersommer',{du:1})}},
-    mode:{ok:()=>!S.lage,los(){const id=R().sorten.slice().sort((a,b)=>eignung(b)-eignung(a))[0], f=1+rnd(.2,.4), n=rint(4,6); S.lage={typ:'mode',f,rest:n,sorte:id}; schlag(80,`${SORTEN[id].name} ist plötzlich in Mode`,`Ein Fernsehkoch schwärmt vom ${SORTEN[id].name} ${WO[S.region]}, und plötzlich wollen ihn alle. ${n} Monate lang bringt er ${Math.round((f-1)*100)}\u00a0% mehr.`,'rieslingmode',{du:1})}},
+    mode:{ok:()=>!S.lage,los(){const fr=S.rollen?R().sorten.filter(sorteFrei):null, id=fr?fr[rint(0,fr.length-1)]:R().sorten.slice().sort((a,b)=>eignung(b)-eignung(a))[0], f=1+rnd(.2,.4), n=rint(4,6); S.lage={typ:'mode',f,rest:n,sorte:id}; schlag(80,`${SORTEN[id].name} ist plötzlich in Mode`,`Ein Fernsehkoch schwärmt ${fr?`von der Rebsorte ${SORTEN[id].name} ${WO[S.region]}, und plötzlich wollen alle diesen Wein`:`vom ${SORTEN[id].name} ${WO[S.region]}, und plötzlich wollen ihn alle`}. ${n} Monate lang bringt er ${Math.round((f-1)*100)}\u00a0% mehr.`,'rieslingmode',{du:1})}},
     erbschaft:{ok:()=>true,los(){const b=Math.round(rint(8,20)*1000*(1+S.rang/2)/100)*100; S.geld+=b; fx('kasse'); schlag(80,'Unverhoffte Erbschaft',`${variante('erbschaft').replace('{b}',eur(b))} Das Geld ist steuerfrei.`,'erbschaft',{du:1})}},
     kritiker:{ok:()=>S.lots.some(kritikerWein),los(){const l=S.lots.filter(kritikerWein).sort((a,b)=>b.qp-a.qp)[0], q=rint(3,5); l.qp+=q; const a=ruhm(6); schlag(80,`Kritiker lobt deinen ${lotName(l)}`,`Ein bekannter Weinkritiker hat deinen ${lotName(l)} probiert und schwärmt in seiner Kolumne. Der Wein bekommt ${q} Qualitätspunkte mehr, dazu +${a} Ansehen.`,'weinkritiker',{du:1})}}
   },
@@ -2179,7 +2231,7 @@ const KOMP_TEXT={
 // b: Satz für Bronze. s: Schwelle für Silber, sW: Wort zum Zähler. g: Satz für Gold (Meisterstück im Wettbewerb, gd). gAb mit gW: Gold ab so vielen verkauften Flaschen (g).
 const KOMP={};
 for(const id of Object.keys(SORTEN)) KOMP['sorte_'+id]={kap:'sorte',titel:SORTEN[id].name,
-  text:()=>{const so=SORTEN[id]; return `${so.farbe==='weiss'?'Weißwein':'Rotwein'}, im Gebiet ${R().name} ${eigText(eignung(id))}. Als Prädikatswein reift er mindestens ${Math.max(1,so.minL-(S.keller||0))} Monate in der Flasche und hält bis zu ${Math.round(so.maxL/12)} Jahre.${so.sektStar?` Als Sekt bringt er ${Math.round((SEKT_STAR-1)*100)} % mehr als andere Sorten.`:''}`},
+  text:()=>{const so=SORTEN[id]; return `${so.farbe==='weiss'?'Weißwein':'Rotwein'}, ${rolleVon(id)?`die ${rolleVon(id).name} im Gebiet ${R().name}`:`im Gebiet ${R().name} ${eigText(eignung(id))}`}. Als Prädikatswein reift er mindestens ${Math.max(1,so.minL-(S.keller||0))} Monate in der Flasche und hält bis zu ${Math.round(so.maxL/12)} Jahre.${so.sektStar?` Als Sekt bringt er ${Math.round((SEKT_STAR-1)*100)} % mehr als andere Sorten.`:''}`},
   b:'Pflanz die Sorte zum ersten Mal.',s:KOMP_W.sorteFl,sW:'Flaschen verkauft (ohne Sekt)',g:'Hol mit einem Wein dieser Sorte Platz 1 bei einem Wettbewerb.'};
 KOMP.sekt={kap:'sorte',titel:'Sekt',
   text:()=>`Sekt machst du ab dem Rang ${RAENGE[R_SEKT].name} aus Qualitätswein und Kabinett. Er kostet ${eur2(SEKT_KOSTEN)} je Flasche, ruht 9 Monate und bringt dann rund ${Math.round((SEKT_F-1)*100)} % mehr als der Grundwein.`,
@@ -2356,7 +2408,7 @@ function kompKapHtml(kap){
   if(K[0]==='stufe') h+=`<p class="mut">Was ein Wein für jede Stufe braucht, mit den Hürden ${WO[S.region]}.</p>`;
   h+=kompSeiten(K[0]).map(kompZeile).join('');
   if(K[0]==='stufe') h+=`<div class="hilfe"><b>⏳ Reifezeit in der Flasche bis zum Verkauf</b><br>Tafel- und Qualitätswein: 2 Monate.<br>Kabinett bis Trockenbeerenauslese: ${reife(x=>Math.max(1,x-(S.keller||0)))}.<br>Eiswein: ${reife(x=>Math.max(1,Math.round(x*1.5)-(S.keller||0)))}.${S.keller?`<br>Dein ausgebauter Keller kürzt das schon um ${S.keller} ${S.keller===1?'Monat':'Monate'}.`:''}</div>`
-    +`<div class="hilfe"><b>📜 Gut zu wissen</b><br>Jeder Wein liegt mindestens einen Monat im Fass, höchstens sieben.<br>Ab Kabinett und beim Eiswein darfst du erst im Januar nach der Lese anmelden.<br>Überreife Trauben bringen 5° mehr Öchsle.<br>${edelRegel()}. Am häufigsten trifft sie die Sorte, die am besten ins Gebiet passt. Dann gibt es von dem Feld kein Kabinett und keine Spätlese mehr.<br>Kälteeinbruch im November: im Schnitt jedes vierte Jahr, die Vorhersage warnt meist davor.<br>${frostText()}, nur dann gibt es Eiswein.<br>Bei der Lese zeigt jede Leseart, ab wann der Wein verkaufsfertig ist.</div>${mib('stufen')}`;
+    +`<div class="hilfe"><b>📜 Gut zu wissen</b><br>Jeder Wein liegt mindestens einen Monat im Fass, höchstens sieben.<br>Ab Kabinett und beim Eiswein darfst du erst im Januar nach der Lese anmelden.<br>Überreife Trauben bringen 5° mehr Öchsle.<br>${edelRegel()}.${S.rollen?'':' Am häufigsten trifft sie die Sorte, die am besten ins Gebiet passt.'} Dann gibt es von dem Feld kein Kabinett und keine Spätlese mehr.<br>Kälteeinbruch im November: im Schnitt jedes vierte Jahr, die Vorhersage warnt meist davor.<br>${frostText()}, nur dann gibt es Eiswein.<br>Bei der Lese zeigt jede Leseart, ab wann der Wein verkaufsfertig ist.</div>${mib('stufen')}`;
   return h;
 }
 // Einträge mit Siegeln fürs Album: alle sechs Sorten, Sekt und neun Stufen.
@@ -2394,10 +2446,10 @@ function kompFenster(){
 
 /* ================= Spielstart ================= */
 function neuesSpiel(){
-  const reg=REGIONEN[NEU.region];
+  const reg=REG(NEU.region,!!ROLLEN_NEU);
   S={v:1,v7:1,name:NEU.name.trim()||'Weingut Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:START_GELD,ha:3,boden:80,duengungen:0,
     felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',sonne:0,markt:1,ansehen:0,
-    jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:1,lagerarb:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],komp:{},kompV:2};
+    jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:1,lagerarb:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],komp:{},kompV:2,...(ROLLEN_NEU?{rollen:1}:{})};
   if(NEU.fu==='0') S.fu.an=0;
   for(const id of reg.sorten){S.felder[id]={reben:0,jung:0}; feldReset(S.felder[id])}
   etappe3(3,NEU.schwer);
@@ -3203,7 +3255,7 @@ function vStart(){
     <label class="feld">Name des Weinguts<input type="text" id="nm" maxlength="30" placeholder="Weingut Rebenreich" autocomplete="off" value="${esc(NEU.name)}"></label>
     <div class="feld">Anrede</div><div class="zwei">${[['m','Herr'],['w','Frau']].map(([k,x])=>`<button class="wahl ${NEU.anrede===k?'an':''}" data-a="neuOpt" data-k="anrede" data-v="${k}"><b>${x}</b></button>`).join('')}</div>`;
   const gebiete=Object.entries(REGIONEN).map(([id,r])=>{
-    const G=GEBIET_TEXT[id], [ssym,stufe]=GEBIET_STUFE[G.stufe], an=NEU.region===id, sb=steckbrief(id,{fen:1});
+    const G=GEBIET_TEXT[id], [ssym,stufe]=GEBIET_STUFE[G.stufe], an=NEU.region===id, sb=steckbrief(id,{fen:1,neu:!!ROLLEN_NEU});
     return fenster('g_'+id,r.name,`<button class="wahl gwahl" data-a="region" data-id="${id}" aria-pressed="${an}"><img class="gs" src="bilder/gebiet-${id}.webp" alt=""><span><b>${ssym} ${stufe} · ${G.stil}</b><small>${an?'✓ Gewählt':'Tippen zum Wählen'}</small></span></button>`,
       {kl:an?'gan':'',buch:'',i:`<div class="sb"><b>${sb.name}</b> <span class="mut">${sb.art}</span>${sb.rumpf}</div>`})}).join('');
   return `<div id="top"><div><b>150 Grad Öchsle</b><small>Neues Spiel auf Spielstand ${SLOT+1}</small></div></div><main>
@@ -3676,23 +3728,24 @@ function vGut(){
 const SPAET_JAHR=8;
 const sterne=n=>`<span class="sterne">${'★'.repeat(n)}<i>${'★'.repeat(3-n)}</i></span>`;
 const gebietArt=r=>r.warm>0?['🔥','Warm']:r.warm<0?['🧊','Kühl']:['⛰️','Mitte'];
+// Seit 11.4: o.neu wählt die Fassung (Rollen oder alte Sorten), ohne Angabe gilt die der laufenden Partie (rollenAn).
 function steckbrief(id,o={}){
-  const r=REGIONEN[id], [sym,art]=gebietArt(r), mi=r.min, pz=x=>Math.round(x*100)+'\u00a0%';
+  const neu=o.neu??rollenAn(), r=REG(id,neu), [sym,art]=gebietArt(r), mi=r.min, pz=x=>Math.round(x*100)+'\u00a0%';
   const bonus=r.wettPlus?'Steillagen-Ruf':r.preisF?'berühmte Lage':r.warm>0?'viel Sonne':'kalte Winter';
   const stark=[r.warm>0?`${r.warm}° mehr Zucker${r.edelF?` und ${pz(r.edelF-1)} öfter Edelfäulnis`:''}.`:'',r.warm<0?`Niedrigere Hürden (Auslese ab ${mi.aus}°) und oft Frost für Eiswein. Edelfäulnis erst ab dem Auslese-Wert, das schont Kabinett und Spätlese.`:'',
     r.wettPlus?`Bei Wettbewerben zählt jeder Wein ${r.wettPlus} Punkte mehr.`:'',r.preisF?`Jeder Wein bringt ${pz(r.preisF-1)} mehr Geld.`:'',r.ertragF>1?`Die Reben tragen ${pz(r.ertragF-1)} mehr.`:'',r.sektPreisF>1?`Sekt bringt ${pz(r.sektPreisF-1)} mehr Geld.`:'',r.edelSpatF?'Edelfäulnis kommt vor dem Auslese-Wert nur selten, Kabinett und Spätlese bleiben öfter heil.':''].join(' ').trim();
   const schwach=[r.warm>0?'Kaum Frost im Dezember, Eiswein ist selten.':r.warm<0?`${-r.warm}° weniger Zucker, edelsüße Weine sind schwer.`:'Kein Zuckervorteil und normale Hürden.',
     r.ertragF<1?`Die Reben tragen ${pz(1-r.ertragF)} weniger.`:'',r.sektPreisF<1?`Sekt bringt ${pz(1-r.sektPreisF)} weniger Geld.`:''].join(' ').trim();
-  const G=GEBIET_TEXT[id], [ssym,stufe]=GEBIET_STUFE[G.stufe], lohnt=G.lohnt;
-  const stars=sortenFolge(id).filter(s=>SORTEN[s].sektStar).map(s=>SORTEN[s].name);
+  const G=gebietText(id,neu), [ssym,stufe]=GEBIET_STUFE[G.stufe], lohnt=G.lohnt, SF=sortenFolge(id,neu);
+  const stars=SF.filter(s=>SORTEN[s].sektStar).map(s=>SORTEN[s].name);
   const sekt=`<span class="sterne">${'🍾'.repeat(G.sekt)}<i>${'🍾'.repeat(3-G.sekt)}</i></span>`;
   // Seit 7.0: dazu, ab wann die Sorte kommt (sortenFolge, SORTE_RANG).
-  const so=sortenFolge(id).map((s,i)=>{const e=eignung(s,id); return `${dot(s)}${SORTEN[s].name} ${sterne(e>=1?3:e>=.85?2:1)} <span class="mut">${i?`ab ${RAENGE[SORTE_RANG[i]].name}`:'zum Start'}</span>`}).join('<br>');
+  const so=SF.map((s,i)=>{const e=eignung(s,id); return `${dot(s)}${SORTEN[s].name} ${rolleVon(s)?`<span class="rolle">${rolleVon(s).name}</span>`:sterne(e>=1?3:e>=.85?2:1)} <span class="mut">${i?`ab ${RAENGE[SORTE_RANG[i]].name}`:'zum Start'}</span>`}).join('<br>');
   const kv=(a,x)=>`<div class="kv"><span>${a}</span><span>${x}</span></div>`;
   // o.fen (seit 7.4): ohne eigene Karte, für das zugeklappte Fenster "Dein Gebiet" im Weinberg. Kopf und Rumpf kommen einzeln zurück.
   const rumpf=`<div class="schild ${G.stufe}">${ssym} ${stufe} · ${G.stil}</div><div class="sbz">${so}</div>
-    ${kv('💶 Geld',sterne(r.preisF?3:2))}${kv('🎖️ Ansehen',sterne(r.wettPlus?3:2))}${kv('🍾 Sekt-Potenzial',sekt)}
-    <div class="mut" style="font-size:13px">${stars.length?`Sekt-Stars hier: ${stars.join(' und ')}, sie bringen als Sekt ${Math.round((SEKT_STAR-1)*100)} % mehr.`:'Hier wächst keine Sekt-Star-Sorte.'} Sekt gibt es ab ${RAENGE[R_SEKT].name}.</div>
+    ${kv('💶 Geld',sterne(r.preisF?3:2))}${kv('🎖️ Ansehen',sterne(r.wettPlus?3:2))}${neu?kv('🍾 Regional-Sekt',`vom ${stars[0]}`):kv('🍾 Sekt-Potenzial',sekt)}
+    <div class="mut" style="font-size:13px">${neu?`Sekt vom ${stars[0]} bringt ${Math.round((SEKT_STAR-1)*100)} % mehr als Sekt aus den anderen Sorten.`:stars.length?`Sekt-Stars hier: ${stars.join(' und ')}, sie bringen als Sekt ${Math.round((SEKT_STAR-1)*100)} % mehr.`:'Hier wächst keine Sekt-Star-Sorte.'} Sekt gibt es ab ${RAENGE[R_SEKT].name}.</div>
     <div class="sbz">💪 ${stark}<br>⚠️ ${schwach}</div>
     <div class="sbz">📏 Hürden: Spätlese ${mi.spat}°, Auslese ${mi.aus}°, Beerenauslese ${mi.ba}°</div>
     ${kv('❄️ Frost im Dezember',`${pz(r.frost)} der Jahre`)}${kv('🌨️ Kälteeinbruch im November',`im Schnitt jedes ${Math.round(1/KAELTE)}. Jahr`)}${kv('🌸 Spätfrost im Frühjahr',`rund jedes ${SPAET_JAHR}. Jahr`)}
@@ -3715,7 +3768,7 @@ function sternPreisText(){
 function gebieteGenauer(){
   const h=m=>REIHE.filter(st=>m[st]).map(st=>`${STUFEN[st].name} ${m[st]}°`).join(', ');
   return `<details open><summary>Genauer</summary><ul><li>Hürden in Mosel, Rheingau, Rheinhessen und Pfalz: ${h(MIN_NORMAL)}.</li><li>Hürden in Franken und Württemberg: ${h(MIN_KUEHL)}.</li>
-    <li>Die Sorte mit ★★★ startet mit dem vollen Zucker, die anderen mindestens 1° darunter. Die Qualitätspunkte zählen bei ★★ zu 85\u00a0%, bei ★ zu 70\u00a0%.${sternPreisText()}</li></ul>${Object.keys(REGIONEN).map(id=>steckbrief(id)).join('')}</details>`;
+    <li>${rollenAn()?`Jedes Gebiet hat drei Rebsorten mit festen Rollen. Die ${ROLLEN.spitze.name} startet mit dem vollen Zucker, die ${ROLLEN.sekt.name} ${-ROLLEN.sekt.zucker}° und die ${ROLLEN.menge.name} ${-ROLLEN.menge.zucker}° darunter. Spielstände von vor Version 11.4 behalten ihre alten Sorten mit Sternen.`:`Die Sorte mit ★★★ startet mit dem vollen Zucker, die anderen mindestens 1° darunter. Die Qualitätspunkte zählen bei ★★ zu 85\u00a0%, bei ★ zu 70\u00a0%.${sternPreisText()}`}</li></ul>${Object.keys(REGIONEN).map(id=>steckbrief(id)).join('')}</details>`;
 }
 function buchZeig(){
   const b=$('#buch'); if(BUCH==null){b.className=''; b.innerHTML=''; return}
@@ -4149,12 +4202,12 @@ function vBerg(){
   const m=S.monat, ges=S.ha*HA_REBEN, bep=rebenGesamt(), frei=ges-bep, ant=ges?bep/ges*100:0;
   const phase=PHASE, vs=verlustSpanne(bodenSchnitt()), fp=frostPlus(), WM=`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name}`, wm=`Dein ${MGR_BEREICHE.weingut.name}`;
   const mr=aufgabeAktiv('reben'), md=aufgabeAktiv('duengen'), mh=aufgabeAktiv('helfer'), rot=t=>`<div class="rot" style="font-size:14px;margin-top:4px">${t}</div>`;
-  const feldI=`Gepflanzt und gerodet wird nur von Januar bis März, gelesen ab August. Je länger die Trauben hängen, desto mehr Öchsle und desto höher die Weinstufe. Aber Regen, Kälteeinbruch und fehlender Frost können alles kosten. Die Sterne zeigen, wie gut die Sorte in dein Gebiet passt.${mr?` ${wm} pflanzt von Januar bis März nach, was über den Winter eingegangen ist.`:''}`;
+  const feldI=`Gepflanzt und gerodet wird nur von Januar bis März, gelesen ab August. Je länger die Trauben hängen, desto mehr Öchsle und desto höher die Weinstufe. Aber Regen, Kälteeinbruch und fehlender Frost können alles kosten. ${S.rollen?'Jede Sorte hat ihre Rolle: Die Menge-Sorte trägt viel, die Sekt-Sorte gibt den besten Sekt, die Spitzen-Sorte die besten Weine.':'Die Sterne zeigen, wie gut die Sorte in dein Gebiet passt.'}${mr?` ${wm} pflanzt von Januar bis März nach, was über den Winter eingegangen ist.`:''}`;
   let h='', zu='';
   for(const id of R().sorten){
     const f=S.felder[id], so=SORTEN[id], titel=dot(id)+so.name;
-    if(!f.reben&&!sorteFrei(id)){zu+=fenster('feld_'+id,titel,'',{zu:`ab dem Rang ${RAENGE[sorteAb(id)].name}`,i:`${eigText(eignung(id))}. ${feldI}`}); continue}
-    let z=`<div class="kv"><span>Reben</span><span>${num(f.reben)}</span></div><div class="kv"><span>Eignung</span><span>${eigText(eignung(id))}</span></div>`;
+    if(!f.reben&&!sorteFrei(id)){zu+=fenster('feld_'+id,titel,'',{zu:`ab dem Rang ${RAENGE[sorteAb(id)].name}`,i:`${sorteSchild(id)}. ${feldI}`}); continue}
+    let z=`<div class="kv"><span>Reben</span><span>${num(f.reben)}</span></div><div class="kv"><span>${rolleVon(id)?'Rolle':'Eignung'}</span><span>${rolleVon(id)?rolleVon(id).name:eigText(eignung(id))}</span></div>`;
     if(!f.reben) z+=`<div class="kv"><span>Preis je Rebe</span><span>${eur2(rebenPreis(id))}</span></div><div class="kv"><span>Ertrag je Rebe</span><span>rund ${String(Math.round(so.ertrag*(R().ertragF||1)*10)/10).replace('.',',')} l</span></div><div class="fleer" style="margin-top:6px">Nicht angebaut.</div>`;
     else if(f.gelesen) z+=`<div class="mut">✂️ Für dieses Jahr gelesen.</div>${S.lots.some(l=>l.status==='trauben'&&l.sorte===id)?rot('Die Trauben müssen diesen Monat im Keller ins Fass.'):''}`;
     else if(f.teil&&f.menge<=0) z+=`<div class="mut">Ein Teil ist gelesen, der Rest ist verloren.</div>`;
@@ -4411,7 +4464,7 @@ function vStadt(){
     // Ohne passenden Wein sagt ein Hinweis, was fehlt und ab wann es geht (seit 5.0). Wie man zu Kabinett kommt, steht im i.
     const bald=n?null:S.lots.filter(l=>l.status==='flasche'&&!l.regal&&!preis(l)&&(l.sekt||STUFEN[l.stufe].rang>=3)).map(l=>({l,n:lager(l).min-l.flMonate})).sort((a,b)=>a.n-b.n)[0];
     h+=fenster('laeden','Weinhandlungen',Object.entries(S.laeden).map(([r,d])=>{const k=S.lots.filter(l=>ladenPasst(l,r)).length;
-        return fz(`Weinhandlung ${WO[r]}`,`Sucht diesen Monat nur ${WUNSCH[d.wunsch]}`,
+        return fz(`Weinhandlung ${WO[r]}`,`Sucht diesen Monat nur ${wunschName(d.wunsch)}`,
           d.rest<=0?'Nimmt diesen Monat nichts mehr.':`Nimmt noch ${num(d.rest)} Flaschen, ${k?`${k} ${k===1?'Wein passt':'Weine passen'}`:'du hast keinen passenden Wein'}.`,
           `<button class="klein" data-a="ladenAngebot" data-id="${r}"${d.rest>0&&k?'':' disabled'}>Anbieten</button>`)}),{
       hin:[D.hin,!n&&`🍷 <b>Noch kein passender Wein.</b> ${bald?`Als Erstes reif: ${esc(lotName(bald.l))} im ${inMonaten(bald.n)}.`:'Weinhandlungen nehmen nur Prädikatswein ab Kabinett oder Sekt.'} Bis dahin verkaufst du im Großhandel.`],
@@ -4622,7 +4675,8 @@ function fuLandZuViel(){
   return S.geld-aukNaechstes()<a.ha*HA_REBEN*p;
 }
 // Seit 10.3 (C24): w4 kommt im Rathaus, bevor der erste Riesling als Kabinett oder höher angemeldet wird. w6 schon im fünften Monat (C37).
-const fuReiht=l=>l.sorte==='riesling'&&l.status==='fass'&&!l.stufe&&FU_PRAED.some(st=>!pruefeAnmeldung(l,st).length);
+// Seit 11.4: jede Sorte, die ab Kabinett 18 Monate reift (alte Spielstände: Riesling, mit Rollen: die Spitzen-Sorte).
+const fuReiht=l=>SORTEN[l.sorte].minL>=18&&l.status==='fass'&&!l.stufe&&FU_PRAED.some(st=>!pruefeAnmeldung(l,st).length);
 const fuLange=l=>l.status==='fass'&&l.stufe!=='feder'&&l.fassMonate>=5;
 // Seit 10.3 (C28): Anlässe. Erste Medaille und erster Bundessieg nur im Monat der Ehrung oder danach, die Blasen zur Übergabe in den ersten zwei Jahren der Generation.
 function fuEhrNeu(f){const e=(S.ehrungen||[]).find(e=>!e.a&&f(e)); return !!e&&e.j!=null&&(S.jahr*12+S.monat)-(e.j*12+e.m)<=1}
@@ -4853,7 +4907,7 @@ const FU_HUERDE={'Qualitätswein':'qba','Kabinett':'kab','Spätlese':'spat','Aus
 const fuPz=s=>Math.round(s.reife*100)+'\u00a0%';
 function fuFrostJahre(){const f=R().frost; return f>=.4?'fast jedes zweite Jahr':f>=.2?'etwa jedes vierte Jahr':'nur etwa jedes zehnte Jahr'}
 function fuText(t,chef){
-  return t.replace(/\{(Mein Lieber|mein Lieber|Nachbar|Sorte|Reife|Zuwachs|Haltbar|Sortenzuwachs|Frostjahre|Hürde ([^}]+))\}/g,(x,a,h)=>{
+  return t.replace(/\{(Mein Lieber|mein Lieber|Nachbar|Sorte|Reife|Zuwachs|Haltbar|Sortenzuwachs|Frostjahre|Sektstar|Dritte Sorte|Langsorte|Hürde ([^}]+))\}/g,(x,a,h)=>{
     if(h) return R().min[FU_HUERDE[h]]+'°';
     const L=sortenFolge().map(id=>SORTEN[id]), s=L[0];
     if(a==='Sorte') return s.name;
@@ -4862,6 +4916,10 @@ function fuText(t,chef){
     if(a==='Haltbar') return Math.round(s.maxL/12);
     if(a==='Sortenzuwachs') return `${s.name} legt jedes Jahr ${fuPz(s)} zu, ${L[1].name} ${fuPz(L[1])} und ${L[2].name} ${fuPz(L[2])}`;
     if(a==='Frostjahre') return fuFrostJahre();
+    // Seit 11.4: Sätze, die von den Sorten der Partie abhängen. Sektstar hängt an "mehr als der Grundwein", Dritte Sorte beschreibt die dritte Rebsorte, Langsorte ist die Sorte mit 18 Monaten Reife.
+    if(a==='Sektstar'){const st=L.filter(x=>x.sektStar).map(x=>x.name); return !st.length?'':S.rollen?`, als Sekt vom ${st[0]} noch etwas mehr`:`, ${st.join(' und ')} noch etwas mehr`}
+    if(a==='Dritte Sorte') return S.rollen?`Es ist ${L[2].name}, deine Spitzen-Sorte: Sie trägt wenig, bringt aber die beste Qualität und reift am längsten. Drei Sorten verteilen außerdem das Wetterrisiko.`:'Sie hat nur einen Stern, startet mit weniger Zucker und bringt weniger Qualitätspunkte. Dafür ist sie in manchen Gebieten der erste Rotwein, und drei Sorten verteilen das Wetterrisiko.';
+    if(a==='Langsorte') return (L.find(x=>x.minL>=18)||s).name;
     if(chef) return 'Chef';
     return a==='Nachbar'?anr('Nachbar','Nachbarin'):a==='Mein Lieber'?anr('Mein Lieber','Meine Liebe'):anr('mein Lieber','meine Liebe');
   });
@@ -5106,7 +5164,7 @@ const AKT={
   },
   ladenAngebot(d){
     const r=d.id, la=S.laeden[r], ls=S.lots.filter(l=>ladenPasst(l,r)).sort((a,b)=>ladenPreis(b,r)-ladenPreis(a,r));
-    openSheet(`${sbild('laden')}<h3>Weinhandlung ${WO[r]}</h3><p class="mut">Sucht nur <b>${WUNSCH[la.wunsch]}</b> und nimmt noch ${num(la.rest)} Flaschen. Zum Vergleich steht der beste Preis im Großhandel dabei.</p>${ls.length?'':`<div class="card mut">Gerade hast du keinen ${WUNSCH[la.wunsch]} für diese Weinhandlung.</div>`}
+    openSheet(`${sbild('laden')}<h3>Weinhandlung ${WO[r]}</h3><p class="mut">Sucht nur <b>${wunschName(la.wunsch)}</b> und nimmt noch ${num(la.rest)} Flaschen. Zum Vergleich steht der beste Preis im Großhandel dabei.</p>${ls.length?'':`<div class="card mut">Gerade hast du ${WUNSCH[la.wunsch]?`keinen ${WUNSCH[la.wunsch]}`:'keinen passenden Wein'} für diese Weinhandlung.</div>`}
       ${ls.map(l=>`<button class="wahl" data-a="ladenVerkauf" data-id="${l.id}" data-r="${r}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${num(l.liter)} Flaschen · hier ${eur2(ladenPreis(l,r))} · Großhandel ${eur2(wege(l)[0].p)}</span></button>`).join('')}
       <div class="btns"><button class="sec" data-a="close">Schließen</button></div>`);
   },
