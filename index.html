@@ -202,9 +202,10 @@ img.fass{height:1.1em;vertical-align:-.18em}
 #titel>*{position:relative}
 #titel .fuss{margin-top:auto}
 /* Hochkant (Handy, Tablet): Seit 10.4 (Maik 19.11.2026) füllt Timos Titelbild im Hochformat (titel-hochkant, Himmel in Bordeaux wie der Knopf "Nächster Monat")
-   den ganzen Schirm, der gerahmte Torbogen auf der Holzwand (9.1) ist raus. Titel oben im Himmel, Knöpfe und Namen unten auf dem Pflaster, beides leicht abgedunkelt. */
+   den ganzen Schirm, der gerahmte Torbogen auf der Holzwand (9.1) ist raus. Titel oben im Himmel, Knöpfe und Namen unten auf dem Pflaster, beides leicht abgedunkelt.
+   --ty schiebt das Bild hoch (Maik 19.11.2026, eingepasst mit _titel_einpassen.html), damit der Knopf das Tor nicht verdeckt. Unten läuft das Pflaster in dunkles Braun aus. */
 @media (max-aspect-ratio:5/4){
-#titel{background:#3a0f1c url(bilder/titel-hochkant.jpg) center 42%/cover no-repeat}
+#titel{--ty:-6vh;background:linear-gradient(rgba(38,24,14,0) calc(84% + var(--ty)),#26180e calc(100% + var(--ty))),url(bilder/titel-hochkant.jpg) center var(--ty)/auto max(100vh,177.7vw) no-repeat,#26180e}
 #titel::before{background:linear-gradient(rgba(20,6,10,.5),rgba(20,6,10,0) 24%,rgba(20,6,10,0) 52%,rgba(20,10,5,.55) 72%,rgba(20,10,5,.85))}
 }
 #titel h1{font:700 44px/1.05 Georgia,"Times New Roman",serif;margin:1vh 0 6px;white-space:nowrap;text-shadow:0 2px 10px rgba(0,0,0,.85)}
@@ -5283,6 +5284,9 @@ function titelBuendig(t){
     for(const z of rz){const n=z.textContent.length; for(let i=0;i<4;i++){const ls=parseFloat(z.style.letterSpacing)||0, neu=ls+(W-(breit(z)-ls))/(n-1); z.style.letterSpacing=neu+'px'; z.style.marginRight=(-neu)+'px'}}
     for(let i=0;i<3;i++){const ws=parseFloat(nz.style.wordSpacing)||0; nz.style.wordSpacing=(ws+(W-breit(nz)))+'px'}
   }
+  // Seit 10.4 (Maik 19.11.2026): Die Knöpfe sind genau so breit wie der Namensblock, vom M bei Maik bis zum t bei Timo Dienst.
+  const bl=[...t.querySelectorAll('.nenn .blk')], kn=t.querySelector('.tkn');
+  if(bl.length&&kn){const w=bl[bl.length-1].getBoundingClientRect().right-bl[0].getBoundingClientRect().left; if(w>0) kn.style.maxWidth=Math.round(w)+'px'}
 }
 function titelZu(){const t=$('#titel'); t.className=''; t.innerHTML=''; delete t.dataset.a}
 
