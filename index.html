@@ -549,6 +549,14 @@ button.fi.wort{width:auto;padding:0 11px;font:600 13px/1 system-ui,-apple-system
 #fuehrer .fschatten{height:22px;margin-top:-22px;position:relative;pointer-events:none;background:linear-gradient(rgba(243,231,202,0),rgba(240,228,198,.96));text-align:center;font-size:12px;color:#7b1e3a;line-height:30px}
 #fuehrer .fknopf{display:flex;gap:8px;margin-top:10px}
 #fuehrer .fknopf button{flex:1 1 0;white-space:nowrap}
+/* Seit 8.5.5: zusammengeklappte Blase als Kopf oben rechts auf der Bildecke, dort deckt er keine Knöpfe ab */
+#fuehrer.zu{display:none}
+#fkopf{position:fixed;right:12px;top:70px;z-index:15;width:66px;height:66px;padding:0;border-radius:50%;border:3px solid #d2a94a;background:#f8f0dc;overflow:visible;
+  box-shadow:0 0 0 1.5px #5d3f18,0 3px 8px rgba(0,0,0,.55);animation:fkopfein .35s ease-out both}
+#fkopf i{display:block;width:100%;height:100%;border-radius:50%;background:center/cover no-repeat}
+#fkopf b{position:absolute;right:-6px;top:-6px;font-size:18px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5));animation:fkopfwink 2.4s ease-in-out infinite}
+@keyframes fkopfein{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+@keyframes fkopfwink{0%,80%,100%{transform:none}88%{transform:rotate(-14deg) scale(1.15)}}
 #fuehrer .fbuch{display:block;margin-top:10px;font-size:15px;color:#7b1e3a;text-decoration:underline;text-align:center;cursor:pointer}
 .fleuchte{animation:fleucht 1s ease-in-out 4;border-radius:12px}
 @keyframes fleucht{0%,100%{box-shadow:0 0 0 0 rgba(240,199,90,0)}50%{box-shadow:0 0 0 6px rgba(240,199,90,.95),0 0 22px 8px rgba(240,199,90,.7)}}
@@ -2883,10 +2891,10 @@ function vRang(){
     :`<div class="kv"><span>⭐ Ansehen</span><span>${S.ansehen}</span></div><div class="kv"><span>💰 Vermögen</span><span>${eur(v)}</span></div>`
       // Seit 8.5: Am Ziel stehen die Stimmung im Verband und die nächste Wahl.
       +(S.amt?`<div class="kv"><span>🗳️ Stimmung im Verband</span><span>${stimmZ()} von 100</span></div>${amtBalken()}<div class="mut">${amtSatz()}</div>${weltZeile()}${kz('',`<button class="sec klein" data-a="tab" data-id="stadt" data-sub="amt">🗳️ Zum Weinbauverband</button>`)}`
-        :`<div class="fleer" style="margin-top:6px">Höher geht es nicht.</div>`))+rangLeiter();
+        :`<div class="fleer" style="margin-top:6px">Höher geht es nicht.</div>`));   // Seit 8.5.5 ohne Rangleiter, der Rang steht in der Überschrift (Maik 19.11.2026).
   return fenster('rang',`${neu?'<span class="rneuB">Neu</span> ':''}Aktueller Rang: ${duN()}`,h,{kl:neu?'rneu':'',buch:'ziel',
     hin:[S.sieger&&`🏆 Gewonnen hat: ${esc(S.sieger)}`],
-    stand:`Stufe ${r+1} von ${RAENGE.length} · ${genNr()}. Generation, ${S.amt?`letzte Übergabe im Januar ${endeJahr()}`:`die nächste übernimmt im Januar ${genJahr(genNr())}`}${n?`<br>Für den Aufstieg zum Rang ${n.name} brauchst du alles drei zugleich.`:''}`,
+    stand:`${genNr()}. Generation, ${S.amt?`letzte Übergabe im Januar ${endeJahr()}`:`die nächste übernimmt im Januar ${genJahr(genNr())}`}${n?`<br>Für den Aufstieg zum Rang ${n.name} brauchst du alles drei zugleich.`:''}`,
     i:'Wer zuerst Präsident des Weinbauverbands wird, gewinnt. Jeder Aufstieg braucht Ansehen, bepflanzte Fläche und Vermögen zugleich. Bei der Fläche zählt nur, was bepflanzt ist: Der helle Balken zeigt dein gekauftes Land, der dunkle das bepflanzte.'+(S.amt?` Wer ${anr('Präsident','Präsidentin')} ist, muss das Amt alle ${WAHL_JAHRE} Jahre in einer Wahl verteidigen. Die Regeln stehen im Rathaus im Fenster „Weinbauverband“.`:'')});
 }
 // Version 8.5: Balken der Stimmung von 0 bis 100, der Strich ist die Marke des Herausforderers.
@@ -3002,7 +3010,8 @@ let FSTUFE=1, FT=[];
 // Version 7.7: Zehn Szenen, 0 der Spielstart, 1 bis 8 der Aufstieg zu RAENGE[i], 9 der Sieg. bild ist das Standbild, video der Name für 8.1 (bilder/<video>.mp4).
 // Bewegung: p0 und p1 schieben den Bildausschnitt (am Handy im Hochformat gut zu sehen), o ist der Brennpunkt, auf den bis s gezoomt wird.
 const SZENEN=[
-  {bild:'titel',      ort:'📰 Wie alles anfing',                   p0:'45% 50%',p1:'55% 50%',o:'50% 45%',s:1.18},
+  // Seit 8.5.5: Die Anzeige zeigt den verwitterten Hof 1 im Sommer, so wie man ihn kauft (Maik 19.11.2026).
+  {bild:'weingut-01-sommer',ort:'📰 Wie alles anfing',                   p0:'45% 50%',p1:'55% 50%',o:'50% 45%',s:1.18},
   {bild:'szene-1',    ort:'🎉 Feier vor der Scheune',              p0:'40% 50%',p1:'52% 50%',o:'50% 65%',s:1.18},
   {bild:'szene-2',    ort:'🎉 Feier im Gewölbekeller',             p0:'60% 50%',p1:'48% 50%',o:'52% 62%',s:1.2},
   {bild:'szene-3',    ort:'🎉 Feier im Weinberg',                  p0:'45% 50%',p1:'55% 50%',o:'50% 60%',s:1.2},
@@ -3114,6 +3123,12 @@ function spFeierStart(){
 // und das Sommerbild der neuen Stufe blendet über, egal welcher Monat ist (Sommer-Regel, Maik 18.11.2026). Ein Tipp zeigt gleich das Ende.
 const WACHS_WECHSEL=2600, WACHS_WENDE=3900;   // Bei der Wende erst nach dem Rauszoomen überblenden.
 function vWachs(F){
+  // Seit 8.5.5 auch beim Spielstart nach dem Kaufvertrag: Hof 1 im Sommer blendet in die Jahreszeit des Startmonats über, dann kommt der Winzerbote (Maik 19.11.2026).
+  if(F.start){const bs=(z,kl)=>`<div class="wbild ${kl}" style="background-image:url(bilder/${wgBild(1,z)}.jpg);--wr:1.5"></div>`;
+    return `<div id="feier" class="buehne wachs wtor" data-a="wachsAlle">${bs('sommer','walt')}${bs(JZ[S.monat],'wneu')}<div class="fverl"></div>
+    <div class="fkarte"><small>🏡 ${esc(S.name)}</small><h2><span class="wvon">Gekauft im Sommer</span><span class="wzu">${MON[S.monat]} ${S.jahr}: Es geht los</span></h2>
+    <p class="wsatz">Viel Arbeit, aber jetzt gehört er dir.</p></div>
+    <div class="ifuss"><button data-a="feierEnde">Zum Winzerboten ▶</button></div><div class="ischw"></div></div>`}
   const a=F.von+1, b=F.zu+1, rn=i=>esc(frau()&&RAENGE[i].w||RAENGE[i].name);
   const bild=(st,kl)=>`<div class="wbild ${kl}${wgGross(st)?' gross':''}" style="background-image:url(bilder/${wgBild(st,'sommer')}.jpg);--wr:${wgGross(st)?1.777:1.5}"></div>`;
   const art=b<=4?' wtor':a<=4?' wwende':' wlang';
@@ -4127,15 +4142,20 @@ const FU_ART={warnung:0,einstieg:1,erstes:1,rang:2,kniff:3};
 // Ab so vielen Zeichen gilt ein Tipp als lang, dann wird das Spiel dahinter abgedunkelt.
 const FU_LANG=380;
 // Monats-Blasen: Spielmonat (0 = erster Januar) je Blase.
-const FU_MON={'e1-05':1,'e1-07':2,'e1-08':3,'e1-09':4,'e1-10':5,'e1-11':6,'e1-12':7,'e1-17':9,'e1-18':11,
+const FU_MON={'e1-07':2,'e1-08':3,'e1-09':4,'e1-10':5,'e1-11':6,'e1-12':7,'e1-17':9,'e1-18':11,
   'z2-01':12,'z2-02':13,'z2-03':14,'z2-04':15,'z2-05':16,'z2-06':18,'z2-07':21,'z2-08':23};
 const fuGes=id=>!!(S.fu&&S.fu.ges.includes(id));
 const FU_WANN={
-  'e1-01':()=>monatNr()===0,
+  // Seit 8.5.5: Erst stellt sich der alte Winzer vor (e1-0a), dann erklärt er den Kopf (e1-0b), dann geht es los (Maik 19.11.2026).
+  'e1-0a':()=>monatNr()===0,
+  'e1-0b':()=>monatNr()===0&&fuGes('e1-0a'),
+  'e1-01':()=>monatNr()===0&&fuGes('e1-0b'),
   'e1-02':()=>TAB==='stadt'&&SUB==='arbeit',
   'e1-03':()=>TAB==='gut'&&SUB==='berg',
   'e1-04':()=>monatNr()===0&&rebenGesamt()>0,
-  'e1-06':()=>monatNr()<12&&(!!S.fu.geld||monatNr()>=1&&fuGes('e1-05')),
+  // Seit 8.5.5: e1-05 erst, wenn wirklich ein roter oder gelber Punkt an einem Reiter leuchtet (Maik 19.11.2026), e1-06 hängt nicht mehr an e1-05.
+  'e1-05':()=>monatNr()>=1&&Object.keys(badges()).length>0,
+  'e1-06':()=>monatNr()<12&&(!!S.fu.geld||monatNr()>=1),
   'e1-13':()=>S.lots.some(l=>l.status==='trauben'),
   'e1-14':()=>S.lots.some(l=>l.status==='fass'&&!l.stufe&&l.fassMonate>=1),
   'e1-15':()=>S.lots.some(l=>l.status==='fass'&&l.stufe),
@@ -4194,6 +4214,7 @@ const FU_KNIFF={
 // Bei Fenster-Tipps leuchtet das i (Regel 3), bei den Kern-Blasen der Knopf selbst.
 const fiSel=id=>`[data-a="fi"][data-id="${id}"]`;
 const FU_ZEIG={
+  'e1-0a':{tab:'gut',sub:'buero',sel:[fiSel('fuehrer')]},
   'e1-01':{tab:'stadt',sub:'arbeit',sel:['#subs [data-id="arbeit"]']},
   'e1-02':{tab:'stadt',sub:'arbeit',sel:[fiSel('helfer')]},
   'e1-03':{tab:'gut',sub:'berg',sel:['[data-a="fi"][data-id^="feld_"]']},
@@ -4279,7 +4300,7 @@ const FU_ZEIG={
 };
 function fuNeu(){return {an:1,nur:0,ges:[],q:[],mon:-1,rm:{},km:-99}}
 // Fahrplan der ersten zwei Jahre (Paket A), nur diese Blasen fallen bei alten Spielständen nach der Zeit weg.
-const FU_PLAN=['e1-01','e1-02','e1-03','e1-04','e1-06','e1-13','e1-14','e1-15','e1-16','k01',...Object.keys(FU_MON)];
+const FU_PLAN=['e1-0a','e1-0b','e1-01','e1-02','e1-03','e1-04','e1-05','e1-06','e1-13','e1-14','e1-15','e1-16','k01',...Object.keys(FU_MON)];
 // Alte Spielstände (bis 8.0.1): Wer schon zwei Jahre oder länger spielt, bekommt den Einstieg nicht nachgeliefert.
 // Darunter fällt weg, was schon vorbei ist, der Rest des Fahrplans kommt noch. Neuheiten schon erreichter Ränge kommen nicht nach,
 // Warnungen und Kniffe kommen alle (Paket B).
@@ -4288,8 +4309,8 @@ function fuAlt(){
   fuRangWeg(f);
   if(m>=24){FU_PLAN.forEach(weg); return f}
   for(const id in FU_MON) if(FU_MON[id]<m) weg(id);
-  if(m>0) ['e1-01','e1-02','e1-03','e1-04'].forEach(weg);
-  if(m>1) weg('e1-06');
+  if(m>0) ['e1-0a','e1-0b','e1-01','e1-02','e1-03','e1-04'].forEach(weg);
+  if(m>1){weg('e1-05'); weg('e1-06')}
   if(m>=12||L.some(l=>l.status!=='trauben')) weg('e1-13');
   if(m>=12||L.some(l=>l.stufe)) weg('e1-14');
   if(m>=12||L.some(l=>l.status==='flasche')) weg('e1-15');
@@ -4351,8 +4372,32 @@ function fuAbsaetze(t){
   return P.map(p=>`<p>${esc(p)}</p>`).join('');
 }
 // FU_PAUSE: Nach "Zeig mir, wo" wartet die nächste Blase, bis der Spieler selbst etwas antippt, damit sie den leuchtenden Knopf nicht verdeckt.
-let FU_AKT=null, FU_RUHE=0, FU_UHR=null, FU_PAUSE=false;
-function fuehrerWeg(){const a=$('#fuehrer'), d=$('#fdunkel'); if(a) a.remove(); if(d) d.remove(); FU_AKT=null}
+let FU_AKT=null, FU_RUHE=0, FU_UHR=null, FU_PAUSE=false, FU_KLEIN=false;
+function fuehrerWeg(){const a=$('#fuehrer'), d=$('#fdunkel'), k=$('#fkopf'); if(a) a.remove(); if(d) d.remove(); if(k) k.remove(); FU_AKT=null; FU_KLEIN=false}
+// Seit 8.5.5 (Maik 19.11.2026): Die Blase klappt zum Kopf am rechten Rand zusammen, ein Tipp auf den Kopf holt sie zurück.
+function fuKlein(an){
+  const f=$('#fuehrer'); if(!f) return; FU_KLEIN=an; f.classList.toggle('zu',an);
+  const d=$('#fdunkel'); if(d) d.style.display=an?'none':'';
+  let k=$('#fkopf');
+  if(an&&!k){const P=FU_SPRECHER[fuSprecher(FU_AKT).s]; k=document.createElement('button'); k.id='fkopf'; k.dataset.a='fuAuf'; k.setAttribute('aria-label',P.name+': Tipp öffnen');
+    k.innerHTML=`<i style="background-image:url(bilder/${P.bild}.jpg)"></i><b>💬</b>`; document.body.appendChild(k)}
+  if(!an&&k) k.remove();
+}
+// Erledigt, sobald der Spieler getan hat, was in der Blase steht. Dann verschwindet auch der Kopf. Blasen ohne Eintrag gehen nur mit "Verstanden".
+const FU_ERL={
+  'e1-0a':()=>TAB==='gut'&&SUB==='buero',
+  'e1-01':()=>TAB==='stadt'&&SUB==='arbeit',
+  'e1-02':()=>helferKraft()*REBEN_JE_HELFER>=S.ha*HA_REBEN,
+  'e1-03':()=>rebenGesamt()>0,
+  'e1-04':()=>monatNr()>0,
+  'e1-06':()=>!!S.fu.geld,
+  'e1-07':()=>rebenGesamt()>=S.ha*HA_REBEN,
+  'e1-09':()=>S.duengungen>0,
+  'e1-13':()=>!S.lots.some(l=>l.status==='trauben'),
+  'e1-14':()=>S.lots.some(l=>l.stufe),
+  'e1-15':()=>S.lots.some(l=>l.status==='flasche')
+};
+function fuErlCheck(){const id=FU_AKT; if(!id||!FU_ERL[id]||!S||!S.fu) return; let ja=false; try{ja=!!FU_ERL[id]()}catch(e){} if(ja) fuFertig()}
 function fuehrerZeig(){
   if(!fuBereit()) return fuehrerWeg();
   if(!SUBS[TAB]) return fuehrerWeg();
@@ -4366,7 +4411,7 @@ function fuehrerZeig(){
   const el=document.createElement('div'); el.id='fuehrer'; el.setAttribute('role','dialog'); el.setAttribute('aria-label',P.name);
   el.innerHTML=`<i class="fzipfel"></i><div class="fgesicht"><i style="background-image:url(bilder/${P.bild}.jpg)"></i></div><div class="fkopf"><div><b class="fname">${P.name}</b><span class="frolle">${P.rolle}</span></div></div>
     <div class="ftext">${fuAbsaetze(text)}</div><div class="fschatten">▼ weiter unten mehr</div>
-    <div class="fknopf">${FU_ZEIG[id]?`<button class="klein" data-a="fuWo">Zeig mir, wo</button>`:''}<button class="sec klein" data-a="fuOk">Verstanden</button></div>
+    <div class="fknopf">${FU_ZEIG[id]?`<button class="klein" data-a="fuWo">Zeig mir, wo</button>`:''}<button class="sec klein" data-a="fuOk">${id==='e1-0a'?'Nein danke':'Verstanden'}</button></div>
     ${b.b?`<span class="fbuch" data-a="fuBuch" data-id="${b.b}">📖 Mehr im Buch</span>`:''}`;
   document.body.appendChild(el);
   const t=el.querySelector('.ftext'), sch=el.querySelector('.fschatten');
@@ -4401,7 +4446,9 @@ function render(){
   if(!S){fuehrerWeg(); FU_PAUSE=false; ortFarbe('gut'); ORT_ALT=null; musikOrt(musikWahl()); $('#app').innerHTML=START==='neu'||![0,1,2].some(i=>roh(i))?vStart():vSlots(); return}
   // Seit 8.5.2: Ein abgeschlossener Spielstand zeigt nur noch die letzte Ausgabe vom Winzerboten und danach die Chronik.
   if(S.ende&&TAB!=='monat'&&!(TAB==='feier'&&endeFeier())) TAB='ende';
-  fuehrerPruef(); if(!SUBS[TAB]) fuehrerWeg();
+  fuehrerPruef(); fuErlCheck();
+  // Seit 8.5.5: Beim Monatswechsel ist ein Kopf erledigt, sonst hielte er alle weiteren Tipps auf (Annahme Claude). Eine offene Blase kommt danach wieder.
+  if(!SUBS[TAB]){if(FU_AKT&&FU_KLEIN) fuFertig(); else fuehrerWeg()}
   if(SUBS[TAB]&&!SUBS[TAB].some(s=>s[0]===SUB)) SUB=START_SUB[TAB];
   // Kellerbuch und Aktuelles öffnen sich mit einem eigenen Geräusch.
   ortFarbe(SUBS[TAB]?TAB:'gut');
@@ -4464,7 +4511,9 @@ const AKT={
   fuStell(d){const f=S.fu; f.an=d.id==='aus'?0:1; f.nur=d.id==='neu'?1:0; if(!f.an){FU_PAUSE=false; fuehrerWeg()} else if(FU_AKT&&!fuErlaubt(FU_AKT)) fuehrerWeg(); save(); const y=window.scrollY; render(); window.scrollTo(0,y)},
   fuVorn(){const f=S.fu; if(!f||!f.an) return; const n=fuAlt(); n.an=f.an; n.nur=f.nur; n.geld=f.geld; n.rm=f.rm||{}; S.fu=n; fuehrerWeg(); FU_PAUSE=false; save(); render();
     meldung('Tipps von vorn','Warnungen und Kniffe kommen wieder, sobald sie passen. In den ersten zwei Jahren kommt auch der Rest des Fahrplans.')},
-  fuWo(){const id=fuFertig(), z=FU_ZEIG[id]; if(!z) return; FU_PAUSE=true; if(z.tab){geh(z.tab,z.sub); render(); window.scrollTo(0,0)} setTimeout(()=>fuLeuchte(z),z.tab?120:0)},
+  // Seit 8.5.5: "Zeig mir, wo" klappt die Blase zum Kopf zusammen, statt sie abzuhaken. Weg ist sie erst mit "Verstanden" oder wenn die Aufgabe erledigt ist.
+  fuWo(){const id=FU_AKT, z=FU_ZEIG[id]; if(!z) return; fuKlein(true); FU_PAUSE=true; if(z.tab){geh(z.tab,z.sub); render(); window.scrollTo(0,0)} setTimeout(()=>fuLeuchte(z),z.tab?120:0)},
+  fuAuf(){fuKlein(false)},
   fuBuch(d){BUCH=d.id||''; buchZeig()},
   // Seit 8.0.1 "Dein Stand" statt "Deine Kasse": Kasse, Bis zum nächsten Rang (alle drei Bedingungen mit Balken wie in vRang) und die Rangleiter.
   geldInfo(){if(S.fu&&!S.fu.geld){S.fu.geld=1; save()} const K=kosten(), k=S.kredit, kv=(a,x,c)=>`<div class="kv"><span>${a}</span><span class="${c||''}">${x}</span></div>`, n=RAENGE[S.rang+1];
@@ -4570,6 +4619,8 @@ const AKT={
   feierEnde(){
     const el=$('#feier'); if(!el||el.classList.contains('aus')) return;
     const start=S.feier&&S.feier.start, sp=S.feier&&S.feier.spende, w=S.feier&&S.feier.welt, amt=w==='schau'||w==='brief'&&S.feier.schau;
+    // Seit 8.5.5: Nach dem Kaufvertrag erst die Szene vom Hof im Sommer zum Startmonat, dann der Winzerbote.
+    if(start&&FSTUFE!==-1){feierStopp(); FSTUFE=-1; render(); window.scrollTo(0,0); schnitt(); return}
     feierStopp(); if(!start&&w!=='ende') fx('korken'); S.feier=null; save(); el.classList.add('aus');
     // Seit 8.5.3: Nach der Schau geht es ins Rathaus zum Einreichen, nach der Übergabe zur Chronik.
     setTimeout(()=>{if(start) TAB='monat'; else if(w==='ende') TAB='ende'; else if(sp||amt) geh('stadt','amt'); else geh('gut','aktuell'); render();window.scrollTo(0,0);schnitt()},matchMedia('(prefers-reduced-motion:reduce)').matches?0:450);
@@ -5067,6 +5118,8 @@ document.addEventListener('keydown',e=>{
   subNachbar(e.key==='ArrowLeft'?-1:1);
 });
 document.addEventListener('click',e=>{
+  // Seit 8.5.5: Ein Tipp neben die Sprechblase klappt sie zum Kopf zusammen, der Tipp selbst wirkt trotzdem (Maik 19.11.2026).
+  if(FU_AKT&&!FU_KLEIN&&!e.target.closest('#fuehrer,#fkopf,#titel')) fuKlein(true);
   // Nach einem Wischen zählt das Loslassen nicht als Tipp.
   const b=e.target.closest('[data-a]'); if(!b||b.disabled||Date.now()-WISCH_ZEIT<350) return;
   tonAn(); if(AC&&AC.state==='suspended') AC.resume();
