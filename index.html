@@ -687,7 +687,9 @@ const START_JAHR=2027, LANDWERT=15000, START_GELD=60000;
 // Jede Weinhandlung nimmt im Monat 1 bis LADEN_MAX mal LADEN_MENGE Flaschen, seit Paket 9 nur Wein, der zu ihrem Wunsch passt (ladenPasst).
 // Seit 5.1 (Paket 10) kommen je bepflanztem Hektar über HA_FREI LADEN_HA Flaschen dazu, über denselben Flächenwert wie MARKT_HA (haUeber). Sie zahlen LADEN_AUF mal den Listenpreis. Der Wein im Keller zählt beim Vermögen nur mit WEIN_WERT seines Listenwerts und höchstens mit dem, was der Großhandel in einem Jahr zum vollen Preis kauft.
 // Die Gegner fangen mit GEGNER_START ihrer Stärke an und wachsen über GEGNER_JAHRE Jahre auf GEGNER_ENDE.
-const HA_FREI=3, HA_KOSTEN_KLEIN=50, HA_KOSTEN=300, MARKT_FREI=3000, MARKT_RANG=250, MARKT_EXPORT=1000, MARKT_HA=900, MARKT_MIN=.25, MARKT_BREIT=.75, GEGNER_START=.5, GEGNER_ENDE=4, GEGNER_JAHRE=100, LADEN_MENGE=30, LADEN_HA=5, LADEN_MAX=3, LADEN_AUF=1.2, WEIN_WERT=.5;
+// Seit 10.3 (B13): Mehr als GEGNER_HA_MAX Hektar sammelt kein Gegner. Am Deckel zahlt er weiter und bekommt das Ansehen, baut aber den Keller aus statt Land zu kaufen.
+// Gemessen am 19.11.2026 (54 Partien, Mittel): Ohne diesen Ausgleich wäre der erste Gegner erst in Jahr 147 statt 140 am Ziel.
+const HA_FREI=3, HA_KOSTEN_KLEIN=50, HA_KOSTEN=300, MARKT_FREI=3000, MARKT_RANG=250, MARKT_EXPORT=1000, MARKT_HA=900, MARKT_MIN=.25, MARKT_BREIT=.75, GEGNER_START=.5, GEGNER_ENDE=4, GEGNER_JAHRE=100, GEGNER_HA_MAX=30, LADEN_MENGE=30, LADEN_HA=5, LADEN_MAX=3, LADEN_AUF=1.2, WEIN_WERT=.5;
 const WO={mosel:'an der Mosel',rheingau:'im Rheingau',rheinhessen:'in Rheinhessen',pfalz:'in der Pfalz',franken:'in Franken',wuerttemberg:'in Württemberg'};
 // Zehn Stufen. ha ist beim Spieler die bepflanzte Fläche (flaecheBep), bei den Gegnern ihre Fläche.
 // Hürden seit 7.0 (Schritt H, 16.11.2026): abgestimmt auf rund 120 Spieljahre. Der Test-Spieler wird auf Mittel in der Mitte in Jahr 109 Präsident (h16_gesamt_warm10).
@@ -1361,10 +1363,10 @@ const SPENDEN=[null,
   {b:750000, z:'das Gemeindehaus',               kurz:'Gemeindehaus',  ans:20, ehre:'urkunde',bild:'amt',     lohn:'5 % mehr Budget im Großhandel'},
   {b:2000000,z:'das Weinbaumuseum',              kurz:'Weinbaumuseum', ans:50, ehre:'urkunde',bild:'fassgang',lohn:'Deine Weinhandlung verkauft ein Viertel mehr'},
   {b:3000000,z:'den Wanderweg mit Aussichtspunkt',kurz:'Wanderweg',    ans:150,ehre:'urkunde',bild:'bank',    lohn:'Eine Bank an der Spitzenlage und mehr Gäste beim Hoffest'},
-  {b:5000000,z:'das Dorf',                       kurz:'Ehrenbürger',   ans:200,ehre:'buerger',bild:'bogen',   lohn:'Der Holzbogen auf dem Dorfplatz, und bei der nächsten Übergabe bleiben 85 statt 80 % Ansehen'}
+  {b:5000000,z:'das Dorf',                       kurz:'Ehrenbürger',   ans:200,ehre:'buerger',bild:'bogen',   lohn:'Der Holzbogen auf dem Dorfplatz, bei der nächsten Übergabe bleiben 85 statt 80 % Ansehen, und im Verband startet die Stimmung für dich bei 65 statt 60'}
 ];
 // Raten in Zwanzigsteln des Betrags. Belohnungen: Frostfeuer retten SP_FROST, Lohn mal SP_LOHN, Segen +SP_SEGEN Öchsle, Großhandel mal SP_MARKT, Weinhandlung mal SP_LADEN, Hoffest-Ansehen mal SP_HOFFEST.
-const SP_TEIL=20, SP_DECKEL=.2, SP_FROST=.25, SP_LOHN=.95, SP_SEGEN=4, SP_MARKT=1.05, SP_LADEN=1.25, SP_HOFFEST=1.25, SP_ERBE=.85;
+const SP_TEIL=20, SP_DECKEL=.2, SP_FROST=.25, SP_LOHN=.95, SP_SEGEN=4, SP_MARKT=1.05, SP_LADEN=1.25, SP_HOFFEST=1.25, SP_ERBE=.85, SP_STIMM=5;
 // Maiks Bilder seit 17.11.2026: Holzbogen (Spruch steht im Bild) und die Bank als eigene Nahansicht am Wanderweg (sitzbank, nicht bank.jpg, das ist die Bank in der Stadt).
 // Das Spitzenlage-Bild bei den Auktionen bleibt, wie es ist.
 const SP_BILD={bank:'sitzbank',bogen:'holzbogen'};
@@ -1418,6 +1420,8 @@ const spFoto=s=>{const b=SPENDEN[s].bild; return b==='bank'?bankBild():b==='boge
 // Ehrenbürger der Generation n? Dann bleiben bei ihrer Übergabe SP_ERBE vom Ansehen.
 const spBuerger=n=>(S.spenden||[]).some(x=>x.s===8&&x.g===n);
 function erbAnsehen(){return spBuerger(genNr())&&spLohn(8)?SP_ERBE:ERB_ANSEHEN}
+// Seit 10.3 (A21): Wer die achte Spende selbst gemacht hat, startet im Verband mit SP_STIMM mehr Stimmung, beim Amtsantritt, nach jeder Wahl und nach einer Abwahl.
+const spStimm=()=>spLohn(8)?SP_STIMM:0;
 function ladenEigen(){return Math.round(LADEN_EIGEN*(spLohn(6)?SP_LADEN:1))}
 function festAns(F){return F.ans*(F===FESTE.hoffest&&spLohn(7)?SP_HOFFEST:1)}
 // Stufe 1: In den Lese-Monaten August bis November des Jahres S.spDorf zahlt der teuerste Erntehelfer keinen Lohn.
@@ -1619,7 +1623,9 @@ function neueAuktion(spitze){
   const ha=auktionHa(), start=ha*8000, B=misch(NACHBARN).slice(0,rint(2,3)).map(n=>({name:n,limit:Math.round(ha*rnd(11000,30000)/500)*500}));
   for(const g of S.gegner) if(g.region===S.region){
     const t=GEGNER_TYP[g.typ];
-    B.push({name:g.name,ki:g.id,limit:Math.round(Math.min(g.geld+(g.typ==='zocker'?30000:0),ha*rnd(14000,26000)*(1+t.biet*.6))/500)*500});
+    // Der Zufall wird immer gezogen, auch wenn der Gegner am Deckel ist und nicht mitbietet.
+    const lim=Math.round(Math.min(g.geld+(g.typ==='zocker'?30000:0),ha*rnd(14000,26000)*(1+t.biet*.6))/500)*500;
+    if(g.ha+ha<=GEGNER_HA_MAX) B.push({name:g.name,ki:g.id,limit:lim});
   }
   const offen=B.filter(b=>b.limit>=start);
   S.auktion={ha,start,schritt:Math.max(500,Math.round(start*.1/500)*500),gebot:start,fuehrer:offen.length?offen[rint(0,offen.length-1)].name:null,bieter:B,ende:null,text:'',phase:0};
@@ -1747,9 +1753,9 @@ function gegnerMonat(){
     if(g.falsch&&--g.falsch<=0){g.falsch=0; g.ansehen=Math.max(0,g.ansehen-20); g.geld-=Math.max(10000,Math.round(g.geld*.15)); neu(6,`Weinkontrolle bei ${g.name}: Im Kellerbuch steht gepanschter Wein. Das kostet Strafe und Ansehen.`)}
     if(m===1&&g.jahre){g.ansehen+=rnd(t.ans[0],t.ans[1])*st*auf; if(Math.random()<.5) neu(1,`${g.name} meldet im Rathaus ${t.weine[rint(0,t.weine.length-1)]} an.`)}
     if(m===2&&!heim&&auf===1&&Math.random()<t.med*st){const P=PREISE.land[rint(0,2)]; g.ansehen+=P.ans*st; neu(4,`${g.name} holt ${P.t} bei der Landesprämierung ${wo}.`)}
-    if(!heim&&Math.random()<1/18){
+    if((!heim||g.ha>=GEGNER_HA_MAX)&&Math.random()<1/18){
       const ha=auktionHa(), pr=Math.round(ha*rnd(12000,26000)/500)*500;
-      if(g.geld+(g.typ==='zocker'?30000:0)>=pr&&Math.random()<t.biet*st){g.geld-=pr; g.ha+=ha; g.ansehen+=(3+Math.min(ha,7))*st; neu(4,`${g.name} ersteigert ${ha}\u00a0Hektar ${wo}.`)}
+      if(g.geld+(g.typ==='zocker'?30000:0)>=pr&&Math.random()<t.biet*st){g.geld-=pr; g.ansehen+=(3+Math.min(ha,7))*st; const voll=g.ha+ha>GEGNER_HA_MAX; if(!voll) g.ha+=ha; neu(4,voll?`${g.name} baut den Keller aus.`:`${g.name} ersteigert ${ha}\u00a0Hektar ${wo}.`)}
     }
     // Panschen im Oktober: Zocker oft, die anderen selten. Mal fliegt es gleich auf, sonst bleibt es eine Weile im Keller, manchmal mit Gerücht.
     if(m===9&&Math.random()<PANSCH[g.typ]){
@@ -2701,7 +2707,7 @@ function sabotageGegenDich(Z){
 // vert (davon im Amt verteidigt), kauf (gekaufte Stimmen dieser Wahl), geg (Herausforderer ab der Umfrage, id des Gegners, sonst null),
 // sab (Monat der Sabotage vor der Wahl oder 0), stuhl (id des Gegners, der nach einer Abwahl auf dem Stuhl sitzt),
 // wahlen (alle Wahlen: j, m, s Stimmung, marke, ok, im, geg Name). Paket 2 braucht vert und wahlen für den Schlüssel "Verband", die Chronik und die Bestenliste.
-function amtStart(){S.amt={seit:monatNr(),stimm:STIMM_START,marke:MARKE_START,wahl:monatNr()+WAHL_JAHRE*12,im:1,zeit:1,siege:0,vert:0,kauf:0,geg:null,sab:0,stuhl:null,wahlen:[]}}
+function amtStart(){S.amt={seit:monatNr(),stimm:STIMM_START+spStimm(),marke:MARKE_START,wahl:monatNr()+WAHL_JAHRE*12,im:1,zeit:1,siege:0,vert:0,kauf:0,geg:null,sab:0,stuhl:null,wahlen:[]}}
 // Alte Spielstände: Wer in 9.0.1 schon Präsident ist, bekommt das Amt beim Laden, die Meldung dazu steht im nächsten Winzerboten.
 function altAmt(){if(S.rang===R_MAX&&!S.amt){amtStart(); S.amt.alt=1}}
 function stimmung(d){const A=S.amt; A.stimm=clamp(A.stimm+d,0,100)}
@@ -2785,12 +2791,12 @@ function amtWahl(){
   A.wahl=monatNr()+WAHL_JAHRE*12; A.kauf=0; A.geg=null; A.sab=0;
   const par={s,marke,wann:monJahr(A.wahl),letzte:wahlAus()?endeJahr():0,...gPar(g)};
   if(ok){
-    A.siege++; if(war) A.vert++; A.zeit++; A.marke=Math.min(MARKE_MAX,marke+MARKE_PLUS); A.stimm=STIMM_START; A.im=1; A.stuhl=null;
+    A.siege++; if(war) A.vert++; A.zeit++; A.marke=Math.min(MARKE_MAX,marke+MARKE_PLUS); A.stimm=STIMM_START+spStimm(); A.im=1; A.stuhl=null;
     ehre('🗳️',war?`Wiedergewählt, ${A.zeit}. Amtszeit`:`Zurück im Amt, ${A.zeit}. Amtszeit`,0,`Stimmung ${s}, gebraucht ${marke}.`);
     amtSchlag(96,war?'gewonnen':'zurueck',{...par,zeit:A.zeit,neu:A.marke},'wahl',{gold:1});
   }else{
     // Seit 10.1 (Maik 18.11.2026): Nach der Abwahl sinkt die Marke um MARKE_ABWAHL, nie unter MARKE_START. Verliert der Altpräsident noch einmal, bleibt sie.
-    A.stimm=STIMM_ALT; if(war){A.im=0; A.stuhl=g?g.id:null; A.marke=Math.max(MARKE_START,marke-MARKE_ABWAHL)}
+    A.stimm=STIMM_ALT+spStimm(); if(war){A.im=0; A.stuhl=g?g.id:null; A.marke=Math.max(MARKE_START,marke-MARKE_ABWAHL)}
     amtSchlag(96,war?'verloren':'wieder',{...par,neu:A.marke},'gegnerpraesident');
   }
 }
@@ -2961,7 +2967,7 @@ function vVerband(){
     stand:kampf?(s>=A.marke?'Wahlkampf: Im Moment reicht die Stimmung. Bis zur Wahl bröckelt sie aber weiter.':'<span class="rot">Wahlkampf: Im Moment reicht die Stimmung nicht.</span>'):`Die Umfrage kommt im ${monJahr(A.wahl-WAHL_UMFRAGE)}, ein Jahr vor der Wahl.`,
     links:kampf?(frei<=0?`Mehr als ${KAUF_MAX} Käufe je Wahl gehen nicht.`:`Noch ${frei} von ${KAUF_MAX} Käufen. Jeder fliegt mit ${pz(KAUF_SKANDAL)} auf.`):'',
     kn,
-    buch:'wahl',i:`Als ${anr('Präsident','Präsidentin')} musst du dein Amt alle ${WAHL_JAHRE} Jahre verteidigen. Es zählt die Stimmung im Verband: Liegt sie am Wahltag auf oder über der Marke (der Strich im Balken), bleibst du im Amt. Gewürfelt wird nicht.<br><br><b>Was die Stimmung hebt:</b> alles, was Ansehen bringt, zum Beispiel Medaillen, ein Hoffest, Sekt oder eine saubere Weinkontrolle. Von jedem gewonnenen Ansehen gehen ${pz(STIMM_PLUS)} auf die Stimmung. Nur das Ansehen aus der Stiftung fürs Dorf zählt nicht.<br><b>Was sie drückt:</b> Jeder Monat kostet ${String(STIMM_MONAT).replace('.',',')}, und jeder Abzug beim Ansehen schlägt voll durch.<br><br><b>Die Marke:</b> Dein Herausforderer ist der stärkste Gegner. Bei der ersten Wahl brauchst du ${MARKE_START}, nach jeder gewonnenen Wahl ${MARKE_PLUS} mehr, höchstens ${MARKE_MAX}. Nach jeder gewonnenen Wahl startet die Stimmung wieder bei ${STIMM_START}.<br><br><b>Wahlkampf:</b> Ein Jahr vor der Wahl bringt der Winzerbote die Umfrage. Ab dann kannst du hier Stimmen kaufen: ${eur(KAUF_PREIS)} vom Konto für ${KAUF_PLUS} Punkte, höchstens ${KAUF_MAX} Mal je Wahl. Jeder Kauf fliegt mit ${pz(KAUF_SKANDAL)} auf, dann ist das Geld weg und die Stimmung fällt um ${KAUF_STRAFE}. Auch der Herausforderer spielt im Wahlkampf nicht immer sauber.<br><br><b>Abgewählt:</b> Der Herausforderer übernimmt den Stuhl, du behältst alles andere. Die Stimmung startet dann bei ${STIMM_ALT}, die Marke sinkt um ${MARKE_ABWAHL} (nie unter ${MARKE_START}), und bei der nächsten Wahl kannst du dir den Stuhl zurückholen.<br><br><b>Weltweinschau:</b> Mit zwei Schlüsseln holst du sie ins Dorf. Dorf: alle ${SPENDEN.length-1} Spenden, verpasste holt die Stiftung fürs Dorf nach. Verband: eine gewonnene Wahl, auch eine Rückkehr zählt. Dann ist jeden August Schau, und du reichst im Fenster „Wettbewerbe“ einen verkaufsreifen Prädikatswein oder Sekt ein, gern auch jedes Jahr denselben. Platz 1 macht dich ${anr('zum Ehrenpräsidenten','zur Ehrenpräsidentin')}.<br><br><b>Übergabe:</b> Als ${anr('Präsident','Präsidentin')} übergibst du nur noch einmal, danach endet die Partie mit der Chronik. Die Familie wartet damit bis zum Januar nach deiner zweiten Wahl. Mit „Weingut übergeben“ gehst du früher, wann du willst. Erbschaftssteuer fällt dabei nicht an.`});
+    buch:'wahl',i:`Als ${anr('Präsident','Präsidentin')} musst du dein Amt alle ${WAHL_JAHRE} Jahre verteidigen. Es zählt die Stimmung im Verband: Liegt sie am Wahltag auf oder über der Marke (der Strich im Balken), bleibst du im Amt. Gewürfelt wird nicht.<br><br><b>Was die Stimmung hebt:</b> alles, was Ansehen bringt, zum Beispiel Medaillen, ein Hoffest, Sekt oder eine saubere Weinkontrolle. Von jedem gewonnenen Ansehen gehen ${pz(STIMM_PLUS)} auf die Stimmung. Nur das Ansehen aus der Stiftung fürs Dorf zählt nicht.<br><b>Was sie drückt:</b> Jeder Monat kostet ${String(STIMM_MONAT).replace('.',',')}, und jeder Abzug beim Ansehen schlägt voll durch.<br><br><b>Die Marke:</b> Dein Herausforderer ist der stärkste Gegner. Bei der ersten Wahl brauchst du ${MARKE_START}, nach jeder gewonnenen Wahl ${MARKE_PLUS} mehr, höchstens ${MARKE_MAX}. Nach jeder gewonnenen Wahl startet die Stimmung wieder bei ${STIMM_START}. Als ${anr('Ehrenbürger','Ehrenbürgerin')} startest du immer ${SP_STIMM} Punkte höher.<br><br><b>Wahlkampf:</b> Ein Jahr vor der Wahl bringt der Winzerbote die Umfrage. Ab dann kannst du hier Stimmen kaufen: ${eur(KAUF_PREIS)} vom Konto für ${KAUF_PLUS} Punkte, höchstens ${KAUF_MAX} Mal je Wahl. Jeder Kauf fliegt mit ${pz(KAUF_SKANDAL)} auf, dann ist das Geld weg und die Stimmung fällt um ${KAUF_STRAFE}. Auch der Herausforderer spielt im Wahlkampf nicht immer sauber.<br><br><b>Abgewählt:</b> Der Herausforderer übernimmt den Stuhl, du behältst alles andere. Die Stimmung startet dann bei ${STIMM_ALT}, die Marke sinkt um ${MARKE_ABWAHL} (nie unter ${MARKE_START}), und bei der nächsten Wahl kannst du dir den Stuhl zurückholen.<br><br><b>Weltweinschau:</b> Mit zwei Schlüsseln holst du sie ins Dorf. Dorf: alle ${SPENDEN.length-1} Spenden, verpasste holt die Stiftung fürs Dorf nach. Verband: eine gewonnene Wahl, auch eine Rückkehr zählt. Dann ist jeden August Schau, und du reichst im Fenster „Wettbewerbe“ einen verkaufsreifen Prädikatswein oder Sekt ein, gern auch jedes Jahr denselben. Platz 1 macht dich ${anr('zum Ehrenpräsidenten','zur Ehrenpräsidentin')}.<br><br><b>Übergabe:</b> Als ${anr('Präsident','Präsidentin')} übergibst du nur noch einmal, danach endet die Partie mit der Chronik. Die Familie wartet damit bis zum Januar nach deiner zweiten Wahl. Mit „Weingut übergeben“ gehst du früher, wann du willst. Erbschaftssteuer fällt dabei nicht an.`});
 }
 function vRangliste(){
   const v=vermoegen();
@@ -3136,7 +3142,7 @@ function vSpFeier(){
   if(FSTUFE===0) return `<div id="feier" class="buehne${B?' unten':''}" data-a="feierAlle">${bild('bewegt')}<div class="fglanz"></div>${konfetti(12)}<div class="fverl"></div>
     <div class="fkarte"><small>🤝 Auf dem Dorfplatz</small><h2>Das Dorf sagt Danke!</h2>${spKapitel().map(s=>`<p>${esc(s)}</p>`).join('')}</div>
     <div class="ifuss"><button data-a="feierWeiter">Zum Ehrenbrief ▶</button></div><div class="ischw"></div></div>`;
-  const P=[['⭐',`${SPENDEN[8].ans} Ansehen`],['🪵','Der Holzbogen auf dem Dorfplatz, im Rathaus jederzeit anzusehen'],['👪',`Bei der nächsten Übergabe bleiben ${pz(SP_ERBE)} statt ${pz(ERB_ANSEHEN)} vom Ansehen`]];
+  const P=[['⭐',`${SPENDEN[8].ans} Ansehen`],['🪵','Der Holzbogen auf dem Dorfplatz, im Rathaus jederzeit anzusehen'],['👪',`Bei der nächsten Übergabe bleiben ${pz(SP_ERBE)} statt ${pz(ERB_ANSEHEN)} vom Ansehen`],['🗳️',`Im Verband startet die Stimmung für dich bei ${STIMM_START+SP_STIMM} statt ${STIMM_START}`]];
   return `<div id="feier" class="urkseite">${bild('still')}<div class="fdunkel"></div>${konfetti(6)}
     <div class="fin"><div class="fkopf">Herzlichen Glückwunsch!</div>${spEhrHtml(8,'neu')}
     ${SP_BILD.bogen?'':`<div class="spspruch hell">„${SP_SPRUCH}“</div>`}${spTafel()}
