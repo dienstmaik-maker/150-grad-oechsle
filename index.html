@@ -1115,6 +1115,20 @@ function maklerStaffel(){const T=[]; for(let i=R_AUKTION;i<R_MAX;i++) if(i===R_A
 /* ================= Helfer ================= */
 const $=s=>document.querySelector(s);
 const rnd=(a,b)=>a+Math.random()*(b-a), rint=(a,b)=>Math.floor(rnd(a,b+1)), clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+// Seit 11.6 "Schummeln verboten" (Maik 20.11.2026): festes Wetter je Partie. S.zf ist die Startzahl der Partie, fest() macht daraus mit Thema, Nummer, Jahr und Monat
+// immer dieselbe Zahl zwischen 0 und 1 (Rechnung wie zufallH in _h.js). Neu laden ändert Wetter, Kälteeinbruch, Vorhersage und Weinberg also nicht.
+// Themen: 1 Wetter, 2 Kälteeinbruch, 3 Vorhersage, 4 Edelfäulnis, 5 Öchsle-Streuung, 6 Ertrag, 7 Reben-Sterben, 8 Temperatur. nr trennt Sorten und Würfe im selben Monat.
+// Die Startzahl entsteht über Math.random, damit Messläufe mit festem Zufall wiederholbar bleiben. Ohne Startzahl würfelt fest() wie früher.
+const zfNeu=()=>Math.floor(Math.random()*4294967296)|0;
+function fest(thema,nr,jahr=S.jahr,monat=S.monat){
+  if(!S||S.zf==null) return Math.random();
+  let a=(S.zf^Math.imul(jahr*12+monat+1,0x9E3779B1)^Math.imul(thema*131+(nr||0)+1,0x85EBCA6B))|0;
+  a=a+0x6D2B79F5|0;
+  let t=Math.imul(a^a>>>15,1|a);
+  t=t+Math.imul(t^t>>>7,61|t)^t;
+  return ((t^t>>>14)>>>0)/4294967296;
+}
+const festR=(a,b,u)=>a+u*(b-a), festI=(a,b,u)=>Math.floor(festR(a,b+1,u));
 const num=n=>Math.round(n).toLocaleString('de-DE'), eur=n=>num(n)+'\u00a0€';
 const eur2=n=>n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+'\u00a0€';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1172,7 +1186,7 @@ function roh(i){try{const o=JSON.parse(localStorage.getItem(KEYS[i])||'null');re
 function lies(i){const o=roh(i);return o&&o.v7?o:null}
 function liesAlt(i){const o=roh(i);return o&&!o.v7?o:null}
 // Übernimmt einen gelesenen Spielstand und bringt alte Stände auf den heutigen Stand.
-function nimm(o){S=o;if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();altDoppelt();altSpende();altKeller();altZeit();altAmt();if(!S.fu)S.fu=fuAlt(); else fuPaketB(); altKomp(); altAns(); altLeute(); altRuf()}
+function nimm(o){S=o;if(S.zf==null)S.zf=zfNeu();if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();altDoppelt();altSpende();altKeller();altZeit();altAmt();if(!S.fu)S.fu=fuAlt(); else fuPaketB(); altKomp(); altAns(); altLeute(); altRuf()}
 // Seit 8.3: Spielstände ohne Uhr fangen bei 0 an und merken sich, dass sie erst seit 8.3 zählen.
 // Seit 8.5: Kellermeister Stufe 1 keltert statt abzufüllen. Hatte ein alter Spielstand auf Stufe 1 das Abfüllen an, ist jetzt das Keltern an.
 function altKeller(){if(S.v83) return; const m=(S.manager||{}).keller; if(m&&m.stufe===1&&m.an&&m.an.flaschen) m.an.keltern=1; S.v83=1}
@@ -2133,8 +2147,8 @@ function sektFaehig(l){return sektFrei()&&l.status==='flasche'&&!l.regal&&!l.sek
 function dot(id){return `<i class="dot ${SORTEN[id].farbe==='weiss'?'weiss':'rotw'}"></i>`}
 
 /* ================= Wetter ================= */
-function wuerfelWetter(m){
-  const r=Math.random(), fr=R().frost;
+function wuerfelWetter(m,u){
+  const r=u!=null?u:Math.random(), fr=R().frost;
   let t;
   if(m===11||m<=1) t=[['frost',fr],['kalt',.4],['regen',.2],['mild',1]];
   else if(m===10) t=[['kalt',.45],['regen',.3],['mild',1]];
@@ -2148,9 +2162,10 @@ function wuerfelWetter(m){
 // Kälteeinbruch im November (KAELTE): wird schon mit der Vorhersage im Oktober ausgewürfelt, damit sie davor warnen kann. Sie trifft wie sonst in 75 % der Fälle.
 // S.kaelte merkt das Jahr des Kälteeinbruchs, S.kaelteVor das Jahr, in dem schon gewürfelt ist, S.kaelteWarn das Jahr mit Warnung in der Vorhersage.
 function neuePrognose(){
-  const n=(S.monat+1)%12; S.wetterNext=wuerfelWetter(n);
-  if(n===10){S.kaelte=Math.random()<KAELTE?S.jahr:0; S.kaelteVor=S.jahr; if(S.kaelte) S.wetterNext='frost'}
-  S.prognose=Math.random()<.75?S.wetterNext:n===10&&Math.random()<KAELTE?'frost':wuerfelWetter(n);
+  // Seit 11.6: alles aus der Startzahl, gerechnet auf den Monat, für den es gilt (jn, n).
+  const n=(S.monat+1)%12, jn=n===0?S.jahr+1:S.jahr; S.wetterNext=wuerfelWetter(n,fest(1,0,jn,n));
+  if(n===10){S.kaelte=fest(2,0,S.jahr,10)<KAELTE?S.jahr:0; S.kaelteVor=S.jahr; if(S.kaelte) S.wetterNext='frost'}
+  S.prognose=fest(3,0,jn,n)<.75?S.wetterNext:n===10&&fest(3,1,jn,n)<KAELTE?'frost':wuerfelWetter(n,fest(3,2,jn,n));
   if(n===10) S.kaelteWarn=S.prognose==='frost'?S.jahr:0;
 }
 // Vorhersage als Text, Frost im November heißt Kälteeinbruch.
@@ -2159,9 +2174,11 @@ const wbonus=w=>({sonnig:5,mild:0,regen:-4,kalt:-3,frost:-3}[w]);
 // Temperatur: Gradzahl passend zu Monat und Wetter, nur zur Anzeige. Frost liegt immer unter null, alles andere bei mindestens 1 °C.
 // S.temp merkt die gewürfelte Zahl des Monats. Fehlt sie (alte Spielstände, Spielstart), gilt der Wert ohne Streuung.
 const TEMP_MONAT=[2,3,7,11,15,18,20,20,16,11,6,3], TEMP_WETTER={sonnig:4,mild:0,regen:-2,kalt:-5};
+// Seit 11.6: streu darf eine feste Zahl zwischen 0 und 1 sein (fest), true würfelt wie früher.
 function tempFuer(m,w,streu){
-  if(w==='frost') return (m>=2&&m<=4?-2:-4)+(streu?rint(-2,1):0);
-  return Math.max(1,TEMP_MONAT[m]+TEMP_WETTER[w]+Math.round((R().warm||0)/7)+(streu?rint(-1,1):0));
+  const st=(a,b)=>typeof streu==='number'?festI(a,b,streu):rint(a,b);
+  if(w==='frost') return (m>=2&&m<=4?-2:-4)+(streu!=null&&streu!==false?st(-2,1):0);
+  return Math.max(1,TEMP_MONAT[m]+TEMP_WETTER[w]+Math.round((R().warm||0)/7)+(streu!=null&&streu!==false?st(-1,1):0));
 }
 const wetterText=()=>`${WETTER[S.wetter].join(' ')}, ${S.temp!=null?S.temp:tempFuer(S.monat,S.wetter)} °C`;
 
@@ -2189,18 +2206,18 @@ function wachse(m){
   const segen=m===8&&S.spSegen; if(segen){S.spSegen=0; if(reg.sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)) L.push(`Erntedank-Segen: Deine Trauben bekommen diesen Monat ${SP_SEGEN}° Öchsle extra.`)}
   // Kälteeinbruch: In jedem vierten November (KAELTE) erfriert alles, was noch hängt. In allen Gebieten gleich, gewürfelt schon mit der Vorhersage im Oktober (neuePrognose).
   // Alte Spielstände ohne S.kaelteVor würfeln hier. S.kaelte merkt das Jahr, damit es auch die Gegner trifft.
-  if(m===10){if(S.kaelteVor!==S.jahr) S.kaelte=Math.random()<KAELTE?S.jahr:0; if(S.kaelte===S.jahr&&S.wetter!=='frost'){S.wetter='frost'; S.temp=tempFuer(10,'frost',true)}}
+  if(m===10){if(S.kaelteVor!==S.jahr) S.kaelte=fest(2,0,S.jahr,10)<KAELTE?S.jahr:0; if(S.kaelte===S.jahr&&S.wetter!=='frost'){S.wetter='frost'; S.temp=tempFuer(10,'frost',fest(8,0,S.jahr,10))}}
   const w=S.wetter;
   if(w==='sonnig'&&m>=5&&m<=9) S.sonne++;
-  for(const id of reg.sorten){
+  for(const [si,id] of reg.sorten.entries()){
     const f=S.felder[id], so=SORTEN[id]; if(!f.reben) continue;
     if((m===3||m===4)&&w==='frost'){f.frostF=.7; L.push(`Spätfrost schädigt die Blüte beim ${so.name}.`)}
-    if(m===5) f.menge=Math.round((f.reben-f.jung+f.jung*.5)*so.ertrag*(reg.ertragF||1)*(.6+.4*S.boden/100)*f.frostF*rnd(.9,1.1));
-    if(m===6){f.oe=OE_START+zuckerIm(id)+reg.warm+wbonus(w)+rint(-2,2)+(S.spitze?SPITZE_OE:0); f.reif=5; f.ueber=0; f.plus=0}
+    if(m===5) f.menge=Math.round((f.reben-f.jung+f.jung*.5)*so.ertrag*(reg.ertragF||1)*(.6+.4*S.boden/100)*f.frostF*festR(.9,1.1,fest(6,si,S.jahr,m)));
+    if(m===6){f.oe=OE_START+zuckerIm(id)+reg.warm+wbonus(w)+festI(-2,2,fest(5,si,S.jahr,m))+(S.spitze?SPITZE_OE:0); f.reif=5; f.ueber=0; f.plus=0}
     if(m>=7&&f.menge>0&&!f.gelesen){
       // f.plus merkt den Öchsle-Zuwachs des Monats für die Infoseite.
       const vor=f.oe;
-      f.oe=Math.min(150,f.oe+OE_PLUS[m-7]+wbonus(w)+rint(-2,2)+(f.edel?edelBonus():0)+(segen?SP_SEGEN:0)); f.plus=f.oe-vor;
+      f.oe=Math.min(150,f.oe+OE_PLUS[m-7]+wbonus(w)+festI(-2,2,fest(5,si,S.jahr,m))+(f.edel?edelBonus():0)+(segen?SP_SEGEN:0)); f.plus=f.oe-vor;
       if(f.edel) f.menge=Math.round(f.menge*.8);
       f.reif=clamp([35,70,92,100,100][m-7]+(w==='sonnig'?5:w==='regen'?-5:0),0,100);
       f.ueber=clamp([0,5,20,45,70][m-7]+(w==='sonnig'?5:0)+(f.edel?EDEL_UEBER:0),0,100);
@@ -2215,7 +2232,7 @@ function wachse(m){
       }
       const aus=f.oe>=reg.min.aus;
       if(f.menge>0&&!f.edel&&!f.edelGeprueft&&(aus||(!reg.edelAus&&m>=9&&f.oe>=reg.min.spat))){
-        f.edel=Math.random()<Math.min(.95,(aus?EDEL_CHANCE.aus:(w==='regen'||w==='mild'?EDEL_CHANCE.feucht:EDEL_CHANCE.spat)*(reg.edelSpatF||1))*(reg.edelF||1)*eignung(id)**2);
+        f.edel=fest(4,si,S.jahr,m)<Math.min(.95,(aus?EDEL_CHANCE.aus:(w==='regen'||w==='mild'?EDEL_CHANCE.feucht:EDEL_CHANCE.spat)*(reg.edelSpatF||1))*(reg.edelF||1)*eignung(id)**2);
         if(f.edel){f.ueber=clamp(f.ueber+EDEL_UEBER,0,100); L.push(`Edelfäulnis beim ${so.name} bei ${f.oe}° Öchsle! Der Zucker steigt jetzt ${S.sonne>=3?'kräftig':'schneller'}, die Menge schrumpft${EDEL_UEBER?', und mehr Trauben werden überreif':''}. Kabinett und Spätlese gibt es von diesem Feld nicht mehr.${aus?'':` Bis zur Auslese fehlen noch ${reg.min.aus-f.oe}°, lass die Trauben am besten noch einen Monat hängen.`}`)}
         else if(aus){f.edelGeprueft=true; L.push(`Der ${so.name} hat den Auslese-Wert von ${reg.min.aus}° erreicht, aber die Edelfäulnis bleibt dieses Jahr aus.`)}
       }
@@ -2706,7 +2723,7 @@ function kompFenster(){
 /* ================= Spielstart ================= */
 function neuesSpiel(){
   const reg=REG(NEU.region,!!ROLLEN_NEU);
-  S={v:1,v7:1,name:NEU.name.trim()||'Weingut Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:START_GELD,ha:3,boden:80,duengungen:0,
+  S={v:1,v7:1,zf:zfNeu(),name:NEU.name.trim()||'Weingut Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:START_GELD,ha:3,boden:80,duengungen:0,
     felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',sonne:0,markt:1,ansehen:0,ansV:1,leuteV:1,
     jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:ALLEIN_HA?0:1,lagerarb:ALLEIN_FASS?0:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,meilen:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],komp:{},kompV:3,...(ROLLEN_NEU?{rollen:1}:{})};
   if(NEU.fu==='0') S.fu.an=0;
@@ -3083,14 +3100,14 @@ function monatLauf(){
     // Reben-Abnutzung: je Sorte ein gewürfelter Anteil aus der Spanne des Bodenschnitts, Frost kommt obendrauf. S.verlust merkt die Zahlen für Aktuelles.
     const schnitt=Math.round(S.bodenSum/S.bodenN), sp=verlustSpanne(schnitt), fp=frostPlus(), rebVor=rebenGesamt(); let totAlle=0;
     S.verlust={};
-    for(const id of R().sorten){
+    for(const [si,id] of R().sorten.entries()){
       const f=S.felder[id]; f.jung=0; feldReset(f);
-      if(f.reben){const tot=Math.min(f.reben,Math.round(f.reben*(rnd(sp[1],sp[2])+fp)/1000)*10); if(tot){f.reben-=tot; S.verlust[id]=tot; totAlle+=tot}}
+      if(f.reben){const tot=Math.min(f.reben,Math.round(f.reben*(festR(sp[1],sp[2],fest(7,si))+fp)/1000)*10); if(tot){f.reben-=tot; S.verlust[id]=tot; totAlle+=tot}}
     }
     if(totAlle) Z.push(`Zum Jahreswechsel sind ${String(Math.round(totAlle/rebVor*1000)/10).replace('.',',')}\u00a0% deiner Reben eingegangen (${R().sorten.filter(id=>S.verlust[id]).map(id=>`${num(S.verlust[id])} ${SORTEN[id].name}`).join(', ')}). Der Boden lag im Jahresschnitt bei ${schnitt}\u00a0%${fp?', dazu kam der Frost':''}. Bis März kannst du nachpflanzen.`);
     S.bodenSum=0; S.bodenN=0; S.winterFrost=0; S.spaetFrost=false;
   }
-  S.wetter=S.wetterNext; S.temp=tempFuer(S.monat,S.wetter,true); neuePrognose();
+  S.wetter=S.wetterNext; S.temp=tempFuer(S.monat,S.wetter,fest(8,0)); neuePrognose();
   // Frost fürs Reben-Sterben mitzählen: Wintermonate und Spätfrost zur Blüte. Der Kälteeinbruch im November zählt nicht.
   if(S.wetter==='frost'){if(S.monat===11||S.monat<=1) S.winterFrost=(S.winterFrost||0)+1; else if(S.monat===3||S.monat===4) S.spaetFrost=true}
   // Rebenmarkt: in der Pflanzzeit jeden Monat neu gewürfelt, ohne Vorschau.
