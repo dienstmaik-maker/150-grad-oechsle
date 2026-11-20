@@ -809,7 +809,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='12.6';
+const VERSION='12.6.1';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 // Seit 11.5 (Teil C2, Maik 20.11.2026): realistische Löhne. Das Arbeitsamt bietet LOHN_MIN bis LOHN_MAX im Monat (bis 11.4: 200 bis 500 €, Startlohn 350, Vermittlung 300).
 // LOHN_F ist der gemeinsame Faktor auf alle Löhne (Angestellte und Manager), eingestellt über die Dosis-Reihe der Messung. lohnF rechnet einen Lohn damit um, auf 10 € gerundet.
@@ -2997,7 +2997,6 @@ function neuesSpiel(){
   S={v:1,v7:1,zf:zfNeu(),name:NEU.name.trim().slice(0,NAME_MAX)||'Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:startGeld(NEU.schwer),ha:3,boden:80,duengungen:0,
     felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',sonne:0,markt:1,ansehen:0,ansV:1,leuteV:1,
     jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:ALLEIN_HA?0:1,lagerarb:ALLEIN_FASS?0:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,meilen:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],komp:{},kompV:3,v121:1,ein:{f:[]},...(ROLLEN_NEU?{rollen:1}:{})};
-  if(NEU.fu==='0') S.fu.an=0;
   for(const id of reg.sorten){S.felder[id]={reben:0,jung:0}; feldReset(S.felder[id])}
   etappe3(3,NEU.schwer);
   lohnAbgleich();
@@ -3855,8 +3854,7 @@ function vStart(){
   ${fenster('neu_mit','Mitspieler',`<div class="kv"><span>🍇 Computer-Winzer</span><span>3</span></div><div class="fleer">🔒 Online mit Freunden, kommt später</div>`,{buch:'',i:'Du spielst gegen drei Computer-Winzer: die Vorsichtige, den Qualitätsfanatiker und den Zocker. Sie spielen nach denselben Regeln wie du und wollen auch Präsident werden. Später kannst du hier Freunde einladen.'})}
   ${fenster('neu_schwer','Schwierigkeit',`<div class="zwei stufu">${Object.entries(DIFF).map(([id,d])=>`<button class="wahl neuwahl stufk ${NEU.schwer===id?'an':''}" data-a="neuOpt" data-k="schwer" data-v="${id}"><small>${d.kurz}</small><b>${d.name}</b></button>`).join('')}</div>`,{buch:'',
     i:Object.values(DIFF).map(d=>`<b>${d.name}:</b> ${d.text}`).join('<br>')+`<br><br>Bis zum Präsidenten dauert es rund 100 bis 120 Spieljahre, danach kommen noch die Jahre im Amt. Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation, Präsident wird meist erst dein Enkel. Gespeichert wird nach jedem Monat, du kannst also jederzeit aufhören.`})}
-  ${fenster('neu_fuehrer','Mit Spielführer?',`<div class="zwei">${[['1','Mit Spielführer'],['0','Ohne']].map(([k,x])=>`<button class="wahl neuwahl ${(NEU.fu||'1')===k?'an':''}" data-a="neuOpt" data-k="fu" data-v="${k}"><b>${x}</b></button>`).join('')}</div>`,{buch:'',
-    i:'Der alte Winzer nimmt dich an die Hand. Er führt dich durch dein erstes Jahr, von der Rebe bis zur verkauften Flasche, und später erklären er und deine Manager, was jeder Rang Neues bringt. Wer das Spiel schon kennt, spielt ohne. Im Büro lässt sich der Spielführer jederzeit umstellen.'})}
+  ${''/* Seit 12.6.8 (Maik 21.11.2026): keine Frage "Mit Spielführer?" mehr, jede neue Partie startet mit Spielführer, ausschalten geht im Büro. */}
   <div class="btns"><button data-a="start">Spiel starten</button></div></main>`;
 }
 // Liste der drei Speicherplätze: weiterspielen, neu anfangen, als Datei sichern, aus Datei laden, löschen.
@@ -6477,7 +6475,7 @@ function ideeFertig(){try{localStorage.removeItem(IDEE_KEY)}catch(e){} meldung('
 const WAS_NEU=[
   {k:'🏁 12.0 Neue Bilder und Ideen',d:'in Arbeit',p:['Ideen von Timo und neue Bilder kommen ins Spiel','Seit 12.6 ein ruhigerer Start für neue Partien'],v:[
     ['▶️','12.7','Spielführer-Update'],
-    ['✅','12.6','Fehlerbehebung','21.11.2026',['Ruhiger Start: Jeder Ort zeigt nur, was du gerade brauchst, der Rest kommt, wenn es so weit ist','Der alte Winzer führt erst in den Weinberg, das Arbeitsamt kommt, wenn du Leute brauchst','Erstes Jahr in klarer Reihenfolge: pflanzen, ab April Ruhe mit „Weiter bis etwas ansteht“, im Juli die Erinnerung vor der Lese','Jeder Tipp nennt den Weg, ein grüner Punkt zeigt ihn, ein Tipp aufs Gesicht klappt die Blase zu','Beim Start nennt er dein echtes Startgeld']],
+    ['✅','12.6','Fehlerbehebung','21.11.2026',['Ruhiger Start: Jeder Ort zeigt nur, was du gerade brauchst, der Rest kommt, wenn es so weit ist','Jede neue Partie startet mit Spielführer, ausschalten geht im Büro','Der alte Winzer führt erst in den Weinberg, das Arbeitsamt kommt, wenn du Leute brauchst','Erstes Jahr in klarer Reihenfolge: pflanzen, ab April Ruhe mit „Weiter bis etwas ansteht“, im Juli die Erinnerung vor der Lese','Jeder Tipp nennt den Weg, ein grüner Punkt zeigt ihn, ein Tipp aufs Gesicht klappt die Blase zu']],
     ['✅','12.4','Bilder-Kür','20.11.2026',['15 neue Bilder von Timo, damit ist das ganze Spiel im neuen Look','Zehn alte Bilder neu gemalt, vom Amt über die Auktion bis zum Sieg bei der Weltweinschau','Fünf Nahansichten vom Weingut: Kelterhaus, Festwiese, Gästezimmer, Turmstube und Steillage','Im Winzerboten zeigt „Dein Weingut“ jeden zweiten Monat eine Nahansicht, sobald du das Gebäude hast','Beim Aufstieg zeigt die Zeitung gleich dein Weingut der neuen Stufe']],
     ['✅','12.3','Lesbare Tafeln','20.11.2026',['Die Tafel an der Pinnwand ist jetzt gut lesbar, mit Tinte und Ornament','Neu auf der Tafel: „Weinhof und Weinberg der Familie“ über deinem Namen','Der Familienname am Holzbogen wie ins Holz geschnitzt','Am Holzbogen steht vor jedem Namen, wer er war: Gründer, Sohn, Enkel …','Der Name des Weinguts hat höchstens 14 Zeichen, damit er groß bleibt']],
     ['✅','12.5','Kleine Verbesserungen','20.11.2026',['Maschinen tragen nur noch eine Nummer, wenn du zwei gleiche hast','Die Plaketten im Büro trennen lange Namen an der richtigen Stelle','Das Spendenfenster zeigt, wie viel in diesem Jahr noch Steuer spart']],
