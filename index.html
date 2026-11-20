@@ -965,11 +965,13 @@ const SAB={gift:['🧪 Wein vergiften','Sein bester Fasswein ist hin.'],buch:['�
 // auf Mittel um Jahr 139, auf Einfach in 170 Jahren nie. Das alte Ziel "auf Schwer jede vierte Partie" gilt seit 11.6 nicht mehr.
 // Seit 11.6 (Maik 20.11.2026): Auf Schwer steht das Ansehen des Spielers wie auf Mittel bei 1 (vorher 0,9). Es bleiben die schnelleren Gegner (ki) und das stärkere
 // Wettbewerbsfeld (feld). Ziel: Der Test-Spieler ist in etwa jeder zweiten Partie vor dem ersten Gegner Präsident (45 bis 60 %).
+// Gemessen am 20.11.2026 (54 Partien über 170 Jahre): mit ki 0,77 ist er in 36 von 54 Partien vorn (67 %), mit 0,79 in 31 von 54 (57 %). Deshalb steht ki auf Schwer bei 0,79.
+// Der erste Gegner wird seit 11.5 später Präsident als oben steht: auf Schwer im Schnitt in Jahr 139, auf Mittel um Jahr 158 und nur in jeder neunten Partie.
 // geld: Startgeld der Stufe, ohne Eintrag gilt START_GELD (Einfach hat 20.000 € Polster). biet: Faktor auf die Bietlust der Gegner bei Land, neutral 1, nur Stellschraube.
 const DIFF={
   einfach:{name:'Einfach',text:'Ansehen wächst schneller, die Gegner sind gemütlich, und du startest mit mehr Geld. Du hast alle Zeit der Welt.',ans:1.25,ki:.45,feld:-4,biet:1,geld:80000},
-  mittel:{name:'Mittel',text:'Ausgeglichen. Die Gegner brauchen rund 140 Jahre bis an die Spitze, mit guter Arbeit bist du früher da.',ans:1,ki:.6,feld:0,biet:1},
-  schwer:{name:'Schwer',text:'Die Gegner sind stark und schnell, und bei den Wettbewerben ist das Feld stärker. Machbar, aber da musst du richtig gut sein.',ans:1,ki:.77,feld:3,biet:1}
+  mittel:{name:'Mittel',text:'Ausgeglichen. Die Gegner brauchen rund 160 Jahre bis an die Spitze, mit guter Arbeit bist du früher da.',ans:1,ki:.6,feld:0,biet:1},
+  schwer:{name:'Schwer',text:'Die Gegner sind stark und schnell, und bei den Wettbewerben ist das Feld stärker. Machbar, aber da musst du richtig gut sein.',ans:1,ki:.79,feld:3,biet:1}
 };
 const startGeld=s=>(DIFF[s]||{}).geld||START_GELD, bietF=()=>(DIFF[S.schwer]||{}).biet||1;
 const GEGNER_TYP={
