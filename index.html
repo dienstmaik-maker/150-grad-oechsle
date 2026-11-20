@@ -779,7 +779,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='11.5';
+const VERSION='11.6';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 // Seit 11.5 (Teil C2, Maik 20.11.2026): realistische Löhne. Das Arbeitsamt bietet LOHN_MIN bis LOHN_MAX im Monat (bis 11.4: 200 bis 500 €, Startlohn 350, Vermittlung 300).
 // LOHN_F ist der gemeinsame Faktor auf alle Löhne (Angestellte und Manager), eingestellt über die Dosis-Reihe der Messung. lohnF rechnet einen Lohn damit um, auf 10 € gerundet.
@@ -874,6 +874,8 @@ const MGR_AUFGABEN={
   lager:{kurz:'Lagerarbeiter einstellen',text:'Fehlende Lagerarbeiter einstellen'},
   reben:{kurz:'Reben nachpflanzen',text:'Eingegangene Reben nachpflanzen'},
   duengen:{kurz:'düngen',text:'Düngen, wenn der Boden mager wird'},
+  // Seit 11.6 (Maik 20.11.2026): ab Stufe 2 spritzt er im Monat der Warnung selbst, wenn mgrPuffer('weingut') auf dem Konto bleibt.
+  spritzen:{kurz:'spritzen',text:'Spritzen, sobald das Weinbauamt vor einem Schädling warnt'},
   // Seit 8.0. Der Text liest MGR_WART_AB erst beim Zeichnen, die Zahl steht weiter unten bei den Maschinen.
   warten:{kurz:'Maschinen warten',get text(){return `Nach der Lese jede Maschine unter ${MGR_WART_AB} % auf 100 % warten, ausgefallene Erntemaschinen sofort`}},
   helfer:{kurz:'Erntehelfer einstellen',text:'Fehlende Erntehelfer einstellen, auch Fahrer für die Maschinen. Vor der Lese die Helfer für die Handlese, danach gehen sie wieder'},
@@ -891,7 +893,7 @@ const MANAGER=[
   {bereich:'weingut',stufe:1,rang:4,aufgaben:['reben','warten']},
   {bereich:'handel',stufe:2,rang:4,aufgaben:['handel']},
   {bereich:'keller',stufe:2,rang:5,aufgaben:['flaschen','sekt']},
-  {bereich:'weingut',stufe:2,rang:6,aufgaben:['duengen']},
+  {bereich:'weingut',stufe:2,rang:6,aufgaben:['duengen','spritzen']},
   {bereich:'handel',stufe:3,rang:7,aufgaben:['regal','wett','fest']},
   {bereich:'weingut',stufe:3,rang:8,aufgaben:['helfer']},
   {bereich:'keller',stufe:3,rang:8,aufgaben:[]}
@@ -960,12 +962,16 @@ const STIFT_FAKTOR=2, MARKE_ABWAHL=10, AMT_MIN=2, WELT_MONAT=7, WELT_STARK=[55,8
 const WELT_GUETER=['Château Belmont, Frankreich','Tenuta Montefiore, Italien','Bodega Sierra Alta, Spanien','Quinta do Vale Dourado, Portugal','Weingut Steinterrassen, Österreich','Domaine du Lac, Schweiz','Eagle Canyon Estate, Kalifornien','Southern Cross Vineyards, Australien','Kaapse Hoop, Südafrika','Viña Cóndor, Chile','Finca Los Andes, Argentinien','Kiwi Ridge Winery, Neuseeland'];
 const SAB={gift:['🧪 Wein vergiften','Sein bester Fasswein ist hin.'],buch:['📖 Kellerbuch fälschen','Seine Weine stehen als gepanscht im Buch. Bei seiner nächsten Kontrolle zahlt er Strafe und verliert Ansehen.'],berg:['🪓 Im Weinberg wüten','Ein Viertel seiner Reben und Flaschen ist weg.']};
 // ki: Tempo der Gegner, eingestellt mit dem Test-Spieler in Schritt H von 7.0 (16.11.2026). Der erste Gegner wird Präsident auf Schwer in Jahr 106 bis 112,
-// auf Mittel um Jahr 139, auf Einfach in 170 Jahren nie. Auf Schwer gewinnt der Test-Spieler etwa jede vierte Partie.
+// auf Mittel um Jahr 139, auf Einfach in 170 Jahren nie. Das alte Ziel "auf Schwer jede vierte Partie" gilt seit 11.6 nicht mehr.
+// Seit 11.6 (Maik 20.11.2026): Auf Schwer steht das Ansehen des Spielers wie auf Mittel bei 1 (vorher 0,9). Es bleiben die schnelleren Gegner (ki) und das stärkere
+// Wettbewerbsfeld (feld). Ziel: Der Test-Spieler ist in etwa jeder zweiten Partie vor dem ersten Gegner Präsident (45 bis 60 %).
+// geld: Startgeld der Stufe, ohne Eintrag gilt START_GELD (Einfach hat 20.000 € Polster). biet: Faktor auf die Bietlust der Gegner bei Land, neutral 1, nur Stellschraube.
 const DIFF={
-  einfach:{name:'Einfach',text:'Ansehen wächst schneller, die Gegner sind gemütlich. Du hast alle Zeit der Welt.',ans:1.25,ki:.45,feld:-4},
-  mittel:{name:'Mittel',text:'Ausgeglichen. Die Gegner brauchen rund 140 Jahre bis an die Spitze, mit guter Arbeit bist du früher da.',ans:1,ki:.6,feld:0},
-  schwer:{name:'Schwer',text:'Ansehen wächst etwas langsamer, die Gegner sind stark und schnell. Machbar, aber da musst du richtig gut sein.',ans:.9,ki:.77,feld:3}
+  einfach:{name:'Einfach',text:'Ansehen wächst schneller, die Gegner sind gemütlich, und du startest mit mehr Geld. Du hast alle Zeit der Welt.',ans:1.25,ki:.45,feld:-4,biet:1,geld:80000},
+  mittel:{name:'Mittel',text:'Ausgeglichen. Die Gegner brauchen rund 140 Jahre bis an die Spitze, mit guter Arbeit bist du früher da.',ans:1,ki:.6,feld:0,biet:1},
+  schwer:{name:'Schwer',text:'Die Gegner sind stark und schnell, und bei den Wettbewerben ist das Feld stärker. Machbar, aber da musst du richtig gut sein.',ans:1,ki:.77,feld:3,biet:1}
 };
+const startGeld=s=>(DIFF[s]||{}).geld||START_GELD, bietF=()=>(DIFF[S.schwer]||{}).biet||1;
 const GEGNER_TYP={
   vorsicht:{name:'Hannelore Brück',art:'die Vorsichtige',eink:[9000,12000],ans:[16,24],biet:.4,med:.2,ws:[18,30],weine:['einen Kabinett','eine Spätlese','einen Qualitätswein']},
   qualitaet:{name:'Konrad Steinfeld',art:'der Qualitätsfanatiker',eink:[8000,13000],ans:[20,30],biet:.45,med:.45,ws:[26,42],weine:['eine Auslese','eine Beerenauslese','eine Spätlese','eine Trockenbeerenauslese']},
@@ -1019,7 +1025,8 @@ const ANREG_ANS=60, ANREG_FEHL=6, PANSCH={zocker:.4,vorsicht:.08,qualitaet:.04},
 // Seit 11.5 (Teil B) wächst sein Angebot mit dem Rang: MAKLER_HA Hektar im Jahr je Rang (Idee Maik 20.11.2026, Zahlen von Claude). Bis 11.4 war es immer einer.
 // Weinfest: ab Winzermeister bis zum Hoffest, einmal im Jahr von Juni bis August, kostet WEINFEST_PREIS und bringt WEINFEST_ANS Ansehen mal Wetter-Faktor.
 // Kellerausbau: drei Stufen (KELLER_PREISE), seit 8.6 gestaffelt nach KELLER_RANG: Jungwinzer, Winzermeister, Gutsherr (Maik 18.11.2026, vorher alle ab Jungwinzer). Jede Stufe kürzt die Reifezeit von Prädikatswein und Eiswein in der Flasche um einen Monat, und jeder Wein gewinnt beim Reifen KELLER_REIFE schneller an Wert.
-const MAKLER_PREIS=45000, MAKLER_HA=[0,1,1,1,2,2,2,3,3,3], WEINFEST_PREIS=30000, WEINFEST_ANS=10, KELLER_PREISE=[50000,120000,250000], KELLER_REIFE=.1, KELLER_RANG=[1,3,5], R_WEINFEST=R_LAND, R_KELLER=KELLER_RANG[0];
+// Seit 11.6: KELLER_NAMEN gibt den drei Stufen im Kellerausbau Namen, nur für die Anzeige. S.keller bleibt die Zahl der Stufen.
+const MAKLER_PREIS=45000, MAKLER_HA=[0,1,1,1,2,2,2,3,3,3], WEINFEST_PREIS=30000, WEINFEST_ANS=10, KELLER_PREISE=[50000,120000,250000], KELLER_NAMEN=['Edelstahltank','Großes Holzfass','Barrique-Keller'], KELLER_REIFE=.1, KELLER_RANG=[1,3,5], R_WEINFEST=R_LAND, R_KELLER=KELLER_RANG[0];
 const FESTE={weinfest:{name:'Weinfest',preis:WEINFEST_PREIS,ans:WEINFEST_ANS,text:'Ein Weinfest im Hof mit Zelt, Musik und deinem Wein',kurz:'Musik, Zwiebelkuchen und dein Wein für Nachbarn und Gäste'},hoffest:{name:'Hoffest',preis:HOFFEST_PREIS,ans:HOFFEST_ANS,text:'Ein großes Fest für das ganze Dorf',kurz:'Musik, Flammkuchen und dein Wein für das ganze Dorf'}};
 // Erntemaschinen (Paket 4, Variante C): die kleine ab Winzermeister, der große Vollernter ab Gutsherr. Maschinen ohne Typ (alte Spielstände) sind klein und bleiben, auch vor Winzermeister.
 // Seit 11.5 (Teil C2): Der Vollernter deckt einen großen Betrieb allein ab, VOLL_HELFER Hektar (bis 11.4: 10 Hektar, 10.000 Reben, 120.000 €, Wartung 300 € je Punkt).
@@ -1117,7 +1124,7 @@ const $=s=>document.querySelector(s);
 const rnd=(a,b)=>a+Math.random()*(b-a), rint=(a,b)=>Math.floor(rnd(a,b+1)), clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 // Seit 11.6 "Schummeln verboten" (Maik 20.11.2026): festes Wetter je Partie. S.zf ist die Startzahl der Partie, fest() macht daraus mit Thema, Nummer, Jahr und Monat
 // immer dieselbe Zahl zwischen 0 und 1 (Rechnung wie zufallH in _h.js). Neu laden ändert Wetter, Kälteeinbruch, Vorhersage und Weinberg also nicht.
-// Themen: 1 Wetter, 2 Kälteeinbruch, 3 Vorhersage, 4 Edelfäulnis, 5 Öchsle-Streuung, 6 Ertrag, 7 Reben-Sterben, 8 Temperatur. nr trennt Sorten und Würfe im selben Monat.
+// Themen: 1 Wetter, 2 Kälteeinbruch, 3 Vorhersage, 4 Edelfäulnis, 5 Öchsle-Streuung, 6 Ertrag, 7 Reben-Sterben, 8 Temperatur, 9 Schädlinge (Plan), 10 Schädlinge (Schaden). nr trennt Sorten und Würfe im selben Monat.
 // Die Startzahl entsteht über Math.random, damit Messläufe mit festem Zufall wiederholbar bleiben. Ohne Startzahl würfelt fest() wie früher.
 const zfNeu=()=>Math.floor(Math.random()*4294967296)|0;
 function fest(thema,nr,jahr=S.jahr,monat=S.monat){
@@ -1186,7 +1193,7 @@ function roh(i){try{const o=JSON.parse(localStorage.getItem(KEYS[i])||'null');re
 function lies(i){const o=roh(i);return o&&o.v7?o:null}
 function liesAlt(i){const o=roh(i);return o&&!o.v7?o:null}
 // Übernimmt einen gelesenen Spielstand und bringt alte Stände auf den heutigen Stand.
-function nimm(o){S=o;if(S.zf==null)S.zf=zfNeu();if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();altDoppelt();altSpende();altKeller();altZeit();altAmt();if(!S.fu)S.fu=fuAlt(); else fuPaketB(); altKomp(); altAns(); altLeute(); altRuf()}
+function nimm(o){S=o;if(S.zf==null)S.zf=zfNeu();if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();altDoppelt();altSpende();altKeller();altZeit();altAmt();if(!S.fu)S.fu=fuAlt(); else fuPaketB(); altKomp(); altAns(); altLeute(); altRuf(); altSchaed()}
 // Seit 8.3: Spielstände ohne Uhr fangen bei 0 an und merken sich, dass sie erst seit 8.3 zählen.
 // Seit 8.5: Kellermeister Stufe 1 keltert statt abzufüllen. Hatte ein alter Spielstand auf Stufe 1 das Abfüllen an, ist jetzt das Keltern an.
 function altKeller(){if(S.v83) return; const m=(S.manager||{}).keller; if(m&&m.stufe===1&&m.an&&m.an.flaschen) m.an.keltern=1; S.v83=1}
@@ -1591,7 +1598,7 @@ function rufFenster(){
   const zeile=k=>{const da=k<n, j=J[k]; return `<div class="rl"><span>${da?'🏅':'🔒'}</span><div><b>${esc(RUF_NAMEN[k])}</b><span class="mut">${da?(j?`${MON[j.m]} ${j.j}, `:'')+`Stufe ${k+1}`:`ab ${RUF_STUFEN[k]} Siegeln`}, +${rufProz(k+1)} %</span></div></div>`};
   const L=Array.from({length:Math.min(S7,n+1)},(_,k)=>zeile(k)).reverse();
   return fenster('ruf','Ruf des Hauses',kopf+L.join(''),{buch:'buero',kn:pk('weinQual','Weinkompendium','',{sec:1}),
-    i:`Je mehr Siegel du im Weinkompendium sammelst, desto besser ist der Ruf deines Hauses. Bei ${RUF_STUFEN.slice(0,-1).join(', ')} und ${RUF_STUFEN[S7-1]} Siegeln steigt er um eine Stufe. Jede bringt eine Ehrung und ${rufProz(1)} % mehr bei jedem Verkauf: Großhandel, Exporthandel, Weinhandlungen, deine eigene Weinhandlung und Sekt. Mit allen sieben sind es ${rufProz(S7)} %. Es zählen die Siegel dieser Partie, das Album über alle Partien wirkt nicht mit.`});
+    i:`Je mehr Siegel du im Weinkompendium sammelst, desto besser ist der Ruf deines Hauses. Bei ${RUF_STUFEN.slice(0,-1).join(', ')} und ${RUF_STUFEN[S7-1]} Siegeln steigt er um eine Stufe. Jede bringt eine Ehrung und ${rufProz(1)} % mehr bei jedem Verkauf: Großhandel, Exporthandel, Weinhandlungen, deine eigene Weinhandlung, Sekt und Federweißer. Mit allen sieben sind es ${rufProz(S7)} %. Es zählen die Siegel dieser Partie, das Album über alle Partien wirkt nicht mit.`});
 }
 // Großhandel: Budget des Monats zum vollen Preis, was davon noch offen ist, und der Schnitt-Faktor auf den Preis für Wein im Listenwert von w Euro.
 function marktFrei(){return Math.round((MARKT_FREI+MARKT_RANG*S.rang+MARKT_EXPORT*exportStufen()+MARKT_HA*haUeber())*(spLohn(5)?SP_MARKT:1))}
@@ -1910,7 +1917,7 @@ function neueAuktion(spitze){
   for(const g of S.gegner) if(g.region===S.region){
     const t=GEGNER_TYP[g.typ];
     // Der Zufall wird immer gezogen, auch wenn der Gegner am Deckel ist und nicht mitbietet.
-    const lim=Math.round(Math.min(g.geld+(g.typ==='zocker'?30000:0),ha*rnd(14000,26000)*(1+t.biet*.6))/500)*500;
+    const lim=Math.round(Math.min(g.geld+(g.typ==='zocker'?30000:0),ha*rnd(14000,26000)*(1+t.biet*bietF()*.6))/500)*500;
     if(g.ha+ha<=gegnerDeckel(g)) B.push({name:g.name,ki:g.id,limit:lim});
   }
   const offen=B.filter(b=>b.limit>=start);
@@ -2041,7 +2048,7 @@ function gegnerMonat(){
     if(m===2&&!heim&&auf===1&&Math.random()<t.med*st){const P=PREISE.land[rint(0,2)]; g.ansehen+=P.ans*st; neu(4,`${g.name} holt ${P.t} bei der Landesprämierung ${wo}.`)}
     if((!heim||g.ha>=gegnerDeckel(g))&&Math.random()<1/18){
       const ha=auktionHa(), pr=Math.round(ha*rnd(12000,26000)/500)*500;
-      if(g.geld+(g.typ==='zocker'?30000:0)>=pr&&Math.random()<t.biet*st){g.geld-=pr; g.ansehen+=2*(3+Math.min(ha,7))*st; const voll=g.ha+ha>gegnerDeckel(g); if(!voll) g.ha+=ha; neu(4,voll?`${g.name} baut den Keller aus.`:`${g.name} ersteigert ${ha}\u00a0Hektar ${wo}.`)}
+      if(g.geld+(g.typ==='zocker'?30000:0)>=pr&&Math.random()<t.biet*st*bietF()){g.geld-=pr; g.ansehen+=2*(3+Math.min(ha,7))*st; const voll=g.ha+ha>gegnerDeckel(g); if(!voll) g.ha+=ha; neu(4,voll?`${g.name} baut den Keller aus.`:`${g.name} ersteigert ${ha}\u00a0Hektar ${wo}.`)}
     }
     // Panschen im Oktober: Zocker oft, die anderen selten. Mal fliegt es gleich auf, sonst bleibt es eine Weile im Keller, manchmal mit Gerücht.
     if(m===9&&Math.random()<PANSCH[g.typ]){
@@ -2242,6 +2249,119 @@ function wachse(m){
 }
 function feldReset(f){Object.assign(f,{oe:0,plus:0,menge:0,reif:0,ueber:0,edel:false,edelGeprueft:false,gelesen:false,teil:false,gefroren:false,frostF:1})}
 
+/* ================= Schädlinge ================= */
+// Seit 11.6 (Maik 20.11.2026): drei Schädlinge, auf allen Spielstufen. Der Traubenwickler kommt ab dem Rang WICKLER_RANG, der Falsche Mehltau mit der zweiten Generation
+// (ein festes Jahr aus MEHLTAU_JAHR), die Kirschessigfliege mit der dritten (KIRSCH_JAHR). In den Gebieten aus SCHAED_SPAET_IN kommt jeder SCHAED_SPAET Jahre später.
+// Befall: zusammen alle SCHAED_PAUSE[0] bis [1] Jahre einer, egal wie viele Schädlinge es schon gibt. Wer neu ist, kommt beim nächsten Befall zuerst, sonst entscheidet
+// die Startzahl, der Mehltau zählt je Regenmonat von Mai bis Juli einmal mehr. Im April steht fest, wer kommt (S.schaed). Im Monat warn warnt das Weinbauamt im Winzerboten,
+// im Monat danach kommt der Befall. Spritzen (AKT.spritzen, ab Stufe 2 der Weingut-Manager) geht nur im Warnmonat, kostet SPRITZ_HA je bepflanztem Hektar und lässt vom
+// Schaden SPRITZ_F übrig. Alles kommt aus der Startzahl (fest, Thema 9 Plan, Thema 10 Schaden), neu laden ändert also nichts. SCHAED_AN=0 schaltet für Messläufe alles ab.
+// Spielstand: S.schaedAb {wickler: erstes Jahr}, S.schaedNext Jahr des nächsten Befalls, S.schaed {j,art,regen,warn,gespritzt,da}, S.schaedGes {art: Zahl der Befälle},
+// S.schaedLetzt {art,m,j}, S.spritzN Zahl der Spritzungen. Die Gegner trifft es nicht, ihre Ernte ist nur eine Zahl.
+const SCHAED_AN=1, SCHAED_PAUSE=[2,4], SCHAED_SPAET=5, SCHAED_SPAET_IN=['franken','wuerttemberg'], SPRITZ_HA=200, SPRITZ_F=.5;
+const WICKLER_RANG=3, WICKLER_FELDER=[1,2], WICKLER_P=[.05,.1], MEHLTAU_JAHR=[40,45], MEHLTAU_P=[.08,.12], KIRSCH_JAHR=[80,85], KIRSCH_OE=[4,6];
+const SCHAED={
+  wickler:{name:'Traubenwickler',der:'der Traubenwickler',dem:'dem Traubenwickler',den:'den Traubenwickler',er:'er',sym:'🐛',warn:5},
+  mehltau:{name:'Falscher Mehltau',der:'der Falsche Mehltau',dem:'dem Falschen Mehltau',den:'den Falschen Mehltau',er:'er',sym:'🍂',warn:4},
+  kirsch:{name:'Kirschessigfliege',der:'die Kirschessigfliege',dem:'der Kirschessigfliege',den:'die Kirschessigfliege',er:'sie',sym:'🦟',warn:7}
+};
+// Beim ersten Befall je Schädling erzählt der Winzerbote, wie es früher war. Die Geschichte wächst von Generation zu Generation.
+const SCHAED_FAMILIE={
+  wickler:'Die Alten im Dorf nicken nur: „Den Wurm hat jeder, der Reben hat.“',
+  mehltau:'Die Alten hatten es noch einfacher, damals gab es nur den Traubenwickler. Der Mehltau ist ein Pilz und kommt mit dem Regen.',
+  kirsch:'Die Großeltern kannten nur den Traubenwickler, die Eltern dazu den Mehltau. Die kleine Fliege ist neu im Land und kommt ausgerechnet kurz vor der Lese.'
+};
+const schaedSpaet=()=>SCHAED_SPAET_IN.includes(S.region)?SCHAED_SPAET:0;
+// Erstes Spieljahr je Schädling, gezählt ab 0 (40 heißt: mit der zweiten Generation).
+function schaedJahr(a){
+  if(a==='wickler') return S.schaedAb&&S.schaedAb.wickler!=null?S.schaedAb.wickler-START_JAHR:Infinity;
+  const J=a==='mehltau'?MEHLTAU_JAHR:KIRSCH_JAHR;
+  return festI(J[0],J[1],fest(9,a==='mehltau'?1:2,0,0))+schaedSpaet();
+}
+function schaedDa(){return SCHAED_AN?Object.keys(SCHAED).filter(a=>S.jahr-START_JAHR>=schaedJahr(a)):[]}
+// Die Menge-Sorten des Gebiets. Ohne Rollen (alte Spielstände) gilt die Sorte mit dem größten Ertrag.
+function mengeSorten(){const s=R().sorten, M=s.filter(id=>SORTEN[id].rolle==='menge'); return M.length?M:[s.slice().sort((a,b)=>SORTEN[b].ertrag-SORTEN[a].ertrag)[0]]}
+function schaedKann(a){return a!=='kirsch'||mengeSorten().some(id=>S.felder[id]&&S.felder[id].reben>0)}
+const spritzKosten=()=>Math.max(SPRITZ_HA,Math.round(flaecheBep()*SPRITZ_HA/50)*50);
+// Läuft gerade eine Warnung? Dann kann gespritzt werden, solange b.gespritzt fehlt.
+function schaedWarn(){const b=S.schaed; return SCHAED_AN&&b&&b.j===S.jahr&&b.warn&&!b.da?b:null}
+function spritze(){zahle(spritzKosten()); S.schaed.gespritzt=1; S.spritzN=(S.spritzN||0)+1}
+// Ein Satz je Schädling für das i im Weinberg und fürs Weinkompendium, die Zahlen kommen aus den Konstanten.
+function schaedRegel(a){
+  const pz=P=>`${Math.round(P[0]*100)} bis ${Math.round(P[1]*100)}\u00a0%`;
+  return {wickler:`Der Traubenwickler kommt im ${MON[SCHAED.wickler.warn+1]} und kostet auf ${WICKLER_FELDER[0]} bis ${WICKLER_FELDER[1]} Feldern ${pz(WICKLER_P)} der Trauben.`,
+    mehltau:`Der Falsche Mehltau kommt im ${MON[SCHAED.mehltau.warn+1]}, öfter in Jahren mit Regen zwischen Mai und Juli, und kostet auf allen Feldern ${pz(MEHLTAU_P)} der Trauben.`,
+    kirsch:`Die Kirschessigfliege kommt im ${MON[SCHAED.kirsch.warn+1]} und kostet die Menge-Sorte ${KIRSCH_OE[0]} bis ${KIRSCH_OE[1]}° Öchsle, wenn sie noch hängt. Früher lesen hilft, kostet aber auch Öchsle.`}[a];
+}
+const spritzRegel=()=>`Das Weinbauamt warnt einen Monat vorher im Winzerboten. Spritzen kostet ${eur(SPRITZ_HA)} je Hektar Reben, geht nur im Monat der Warnung und halbiert den Schaden.`;
+function schaedWarnText(b){
+  const T=SCHAED[b.art], ms=aufgabeAktiv('spritzen');
+  const was={wickler:'fliegt der Traubenwickler, seine Raupen bohren sich in die jungen Beeren',
+    mehltau:`zeigen die Blätter helle Ölflecken, der Falsche Mehltau geht um${b.regen?'. Der Regen macht es ihm leicht':''}`,
+    kirsch:`sticht die Kirschessigfliege die reifen Beeren an. Am liebsten mag sie dünne Schalen, bei dir also den ${mengeSorten().map(id=>SORTEN[id].name).join(' und den ')}`}[b.art];
+  return `Das Weinbauamt meldet: In den Nachbarorten ${was}. Nächsten Monat ist ${T.er} wohl auch bei dir. Spritzen kostet ${eur(spritzKosten())} und halbiert den Schaden${b.art==='kirsch'?', früher lesen hilft auch':''}. ${ms?`Dein ${MGR_BEREICHE.weingut.name} spritzt beim Weiterblättern, wenn das Geld reicht.`:'Gespritzt wird im Weinberg, aber nur diesen Monat.'}`;
+}
+// Der Befall im Monat nach der Warnung. Gespritzt bleibt vom Schaden SPRITZ_F.
+function schaedBefall(b,Z){
+  const T=SCHAED[b.art], g=b.gespritzt?SPRITZ_F:1, H=feldHaengt(), G=S.schaedGes=S.schaedGes||{}, erst=!G[b.art], u=fest(10,9);
+  const namen=F=>F.map(id=>SORTEN[id].name).join(' und ');
+  b.da=1; G[b.art]=(G[b.art]||0)+1; S.schaedLetzt={art:b.art,m:S.monat,j:S.jahr};
+  let F=H, t;
+  if(b.art==='kirsch') F=mengeSorten().filter(id=>H.includes(id));
+  if(b.art==='wickler') F=H.map((id,i)=>[fest(10,1+i),id]).sort((x,y)=>x[0]-y[0]).slice(0,festI(WICKLER_FELDER[0],WICKLER_FELDER[1],fest(10,0))).map(x=>x[1]);
+  if(!F.length){Z.push(b.art==='kirsch'?`${T.sym} Die Kirschessigfliege war da, aber dein ${namen(mengeSorten())} war schon gelesen. Glück gehabt.`:`${T.sym} ${T.name} im Ort, bei dir hing aber nichts am Stock.`); return}
+  if(b.art==='kirsch'){
+    const d=Math.ceil(festI(KIRSCH_OE[0],KIRSCH_OE[1],u)*g);
+    for(const id of F){const f=S.felder[id]; f.oe=Math.max(0,f.oe-d); f.plus=(f.plus||0)-d}
+    t=`Die Kirschessigfliege hat beim ${namen(F)} die reifen Beeren angestochen. Was nach Essig riecht, muss raus, das kostet ${d}° Öchsle.`;
+  }else{
+    const P=b.art==='wickler'?WICKLER_P:MEHLTAU_P, p=festR(P[0],P[1],u)*g, pz=String(Math.round(p*1000)/10).replace('.',',');
+    for(const id of F){const f=S.felder[id]; f.menge=Math.round(f.menge*(1-p))}
+    t=b.art==='wickler'?`Die Raupen des Traubenwicklers haben sich in deine Trauben gebohrt. Beim ${namen(F)} sind ${pz}\u00a0% der Trauben hin.`
+      :`Der Falsche Mehltau hat Blätter und junge Trauben befallen. ${F.length>1?'Auf allen Feldern':`Beim ${namen(F)}`} sind ${pz}\u00a0% der Trauben hin.`;
+  }
+  schlag(80,`${T.name} im Weinberg`,`${t} ${b.gespritzt?'Weil gespritzt war, ist es nur halb so schlimm gekommen.':'Mit Spritzen wäre es nur halb so schlimm gekommen.'}${erst?' '+SCHAED_FAMILIE[b.art]:''}`,'',{du:1});
+}
+// Läuft jeden Monat nach dem Wachstum: freischalten, im April planen, warnen, Befall.
+function schaedMonat(Z){
+  if(!SCHAED_AN) return;
+  const m=S.monat;
+  if(S.rang>=WICKLER_RANG&&!(S.schaedAb&&S.schaedAb.wickler!=null)) (S.schaedAb=S.schaedAb||{}).wickler=S.jahr+schaedSpaet();
+  const D=schaedDa();
+  if(D.length&&S.schaedNext==null) S.schaedNext=S.jahr+festI(1,2,fest(9,3,S.jahr,0));
+  if(m===3&&S.schaedNext!=null&&S.jahr>=S.schaedNext){
+    const K=D.filter(schaedKann);
+    if(K.length){
+      const G=S.schaedGes||{}, regen=[4,5,6].filter(n=>wuerfelWetter(n,fest(1,0,S.jahr,n))==='regen').length;
+      let art=K.find(a=>!G[a]);
+      if(!art){const W=K.map(a=>a==='mehltau'?1+regen:1); let u=fest(9,4,S.jahr,0)*W.reduce((a,x)=>a+x,0); art=K[K.length-1]; for(let i=0;i<K.length;i++){u-=W[i]; if(u<0){art=K[i]; break}}}
+      S.schaed={j:S.jahr,art,regen};
+      S.schaedNext=S.jahr+festI(SCHAED_PAUSE[0],SCHAED_PAUSE[1],fest(9,0,S.jahr,0));
+    }
+  }
+  const b=S.schaed; if(!b||b.j!==S.jahr||b.da) return;
+  const T=SCHAED[b.art];
+  if(m===T.warn){
+    if(!rebenGesamt()){S.schaed=null; return}
+    b.warn=1; schlag(70,`Weinbauamt warnt vor ${T.dem}`,schaedWarnText(b),'amt',{du:1});
+  }else if(m===T.warn+1&&b.warn) schaedBefall(b,Z);
+}
+// Fenster im Weinberg. Es erscheint erst mit der ersten Warnung, vorher kündigt nichts die Schädlinge an.
+function schutzHtml(WM){
+  const b=schaedWarn(), L=S.schaedLetzt; if(!b&&!L) return '';
+  const k=spritzKosten(), G=S.schaedGes||{}, T=b&&SCHAED[b.art], kennt=Object.keys(SCHAED).filter(a=>G[a]||(b&&b.art===a));
+  let z=!b?'<div class="mut">Im Moment ist Ruhe im Weinberg.</div>'
+    :b.gespritzt?`<div class="mut">🧴 Gegen ${T.den} ist gespritzt, der Schaden fällt nur halb so groß aus.</div>`
+    :`<div class="rot" style="font-size:14px">${T.sym} Das Weinbauamt warnt vor ${T.dem}. Nächsten Monat ist ${T.er} wohl auch bei dir.</div><div class="mut">Spritzen halbiert den Schaden und geht nur diesen Monat.</div>`;
+  if(L) z+=`<div class="kv"><span>Letzter Befall</span><span>${SCHAED[L.art].name}, ${MON[L.m]} ${L.j}</span></div>`;
+  return fenster('schutz','Pflanzenschutz',z,{
+    hin:[aufgabeAktiv('spritzen')&&`${WM} spritzt beim Weiterblättern, sobald das Weinbauamt warnt.`],
+    kn:pk('spritzen','Spritzen',eur(k),{aus:!b||!!b.gespritzt,arm:S.geld<k}),
+    i:`Alle paar Jahre kommt ein Schädling in den Weinberg. ${spritzRegel()} ${kennt.map(schaedRegel).join(' ')} Dein ${MGR_BEREICHE.weingut.name} spritzt ab Stufe 2 selbst, wenn danach genug Geld auf dem Konto bleibt.`});
+}
+// Alte Spielstände: Wer den Weingut-Manager schon auf Stufe 2 hat, bekommt die neue Aufgabe Spritzen eingeschaltet dazu.
+function altSchaed(){const w=(S.manager||{}).weingut; if(w&&w.stufe>=2){w.an=w.an||{}; if(!('spritzen' in w.an)) w.an.spritzen=1}}
+
 /* ================= Weinstufen ================= */
 function mindest(st){const m=R().min; return (st==='feder'||st==='eis')?m.tafel:m[st]}
 // q = {oe, leseart, edel, eis}
@@ -2385,6 +2505,9 @@ const KOMP_KAP=[['sorte','🍇','Sorten','Rebsorten und Sekt'],['stufe','🍷','
 // Die Geschichten (seit 11.3): Weinwissen in höchstens vier Sätzen, ohne Zahlen des Spiels. Die Zahlen stehen je Eintrag in der Zeile "Im Spiel" und kommen aus dem Code.
 // Quelle und Faktencheck: Vault-Notiz "Weinbau-Spiel Weinkompendium Texte". Seit 11.4 dazu die zehn neuen Sorten und je Gebiet der Regional-Sekt (sekt_<Sorte>).
 const KOMP_TEXT={
+  wickler:'Ein kleiner Falter, dessen Raupen zweimal im Jahr zuschlagen. Die erste Generation heißt Heuwurm und frisst im Frühsommer an den Blüten, die zweite heißt Sauerwurm und bohrt sich im Sommer in die Beeren. Wo sie fressen, zieht Fäulnis ein. Viele Winzer hängen Duftstoffe in den Weinberg, die die Männchen verwirren.',
+  mehltau:'Ein Pilz, der mit Reben aus Amerika nach Europa kam und auch Peronospora heißt. Er braucht Wärme und Nässe: Nach Regen zeigen die Blätter helle Ölflecken, auf der Unterseite wächst ein weißer Rasen. Befallene Beeren schrumpfen zu Lederbeeren. Gegen ihn wurde die Bordeauxbrühe aus Kupfer und Kalk erfunden.',
+  kirsch:'Eine kleine Fruchtfliege aus Ostasien. Anders als die heimischen Essigfliegen sägt das Weibchen gesunde, reifende Beeren an und legt seine Eier hinein. Die Beeren laufen aus, und es riecht nach Essig. Dunkle Sorten mit dünner Schale trifft es am härtesten.',
   sorte_riesling:'Der König der deutschen Weißweine und der Spezialist für kühle Steillagen. Er reift spät und braucht Geduld im Keller. Dafür belohnt er dich mit feiner Säure und Weinen, die Jahrzehnte halten. Als Sekt ist er eine Klasse für sich.',
   sorte_mueller:'1882 von Hermann Müller aus dem Thurgau gezüchtet, eine Kreuzung aus Riesling und Madeleine Royale. Die Rebe ist genügsam, reift früh und trägt viel. Ihre Weine sind mild, fruchtig und schnell trinkreif. Große Kunst wird selten daraus, ein verlässliches Einkommen schon.',
   sorte_silvaner:'Seit 1659 in Franken zu Hause, zuerst gepflanzt in Castell. Auf Muschelkalk und Lehm wird er erdig und würzig, mit milder Säure. Er drängt sich nicht vor und passt deshalb zu fast jedem Essen, am liebsten zu Spargel.',
@@ -2486,8 +2609,8 @@ function kompSektText(){
 // Wissens-Seiten: Geschichte und die Zeile "Im Spiel", ohne Siegel. Die Kennungen aus 11.1 bleiben, neu ist helferweg.
 for(const r of Object.keys(REGIONEN)) kompWissen('gebiet_'+r,'gebiet',REGIONEN[r].name,()=>`${REGIONEN[r].text} ${r===S.region?'Hier steht dein Weingut.':`So spielt es sich in einer Partie ${WO[r]}.`}`);
 kompWissen('spitze','gebiet','Spitzenlage',()=>`Die beste Lage weit und breit: ${SPITZE_HA} Hektar Steilhang in voller Südsonne. Wem sie gehört, dessen Trauben starten jeden Juli mit ${SPITZE_OE}° Öchsle mehr. Unter den Hammer kommt sie ab dem Rang ${RAENGE[R_SPITZE].name}.`);
-for(let k=1;k<=KELLER_PREISE.length;k++) kompWissen('keller'+k,'technik',`Kellerausbau Stufe ${k}`,
-  ()=>`Kostet ${eur(KELLER_PREISE[k-1])} und geht ab dem Rang ${RAENGE[KELLER_RANG[k-1]].name}. Prädikatsweine und Eiswein sind damit ${k} ${k===1?'Monat':'Monate'} früher verkaufsreif, und jeder Wein gewinnt beim Reifen schneller an Wert.`);
+for(let k=1;k<=KELLER_PREISE.length;k++) kompWissen('keller'+k,'technik',KELLER_NAMEN[k-1],
+  ()=>`Stufe ${k} im Kellerausbau. Kostet ${eur(KELLER_PREISE[k-1])} und geht ab dem Rang ${RAENGE[KELLER_RANG[k-1]].name}. Prädikatsweine und Eiswein sind damit ${k} ${k===1?'Monat':'Monate'} früher verkaufsreif, und jeder Wein gewinnt beim Reifen schneller an Wert.`);
 kompWissen('reife','technik','Reife in der Flasche',()=>'In der Flasche gewinnt ein Wein mit jedem Jahr an Wert, höchstens bis zum Vierfachen. Wie schnell das geht und wie lange er hält, hängt an der Rebsorte und am Kellerausbau.');
 kompWissen('zuckern','technik','Zuckern und Wässern',()=>`Zucker hebt die Öchsle im Most, Wasser streckt die Menge, beides um höchstens ${ZUCKER_MAX} %. Bis ${ZUCKER_ERLAUBT} % ist das beim Tafelwein erlaubt. Alles andere ist Panscherei und ein Fall für den Weinprüfer.`);
 for(const id of Object.keys(MASCH)) kompWissen('masch_'+id,'technik',MASCH[id].name,
@@ -2499,6 +2622,8 @@ kompWissen('skandal','gefahr','Weinskandal',()=>'Ein Skandal im Land drückt ein
 kompWissen('kontrolle','gefahr','Weinkontrolle',()=>'Der Prüfer kommt unangemeldet, im Schnitt alle drei Jahre. Findet er gepanschten Wein, wird der vernichtet, es gibt Strafe, und fünf Jahre lang kommt er jedes Jahr wieder.');
 kompWissen('maschine','gefahr','Maschinenschaden',()=>`Ein Schaden kostet eine Maschine auf einen Schlag viel Zustand. Unter ${MASCH_ROT} % fällt sie aus, bis sie gewartet ist.`);
 kompWissen('helferweg','gefahr','Erntehelfer über alle Berge',()=>`Trifft nur, wer einem Erntehelfer höchstens ${eur(lohnF(LOHN_BILLIG))} im Monat zahlt. Dann verschwindet der billigste Helfer über Nacht und nimmt 5 bis 10 % aus der Kasse mit, mindestens ${eur(2000)} und höchstens ${eur(30000)}.`);
+// Seit 11.6: die drei Schädlinge. Ihre Seiten erscheinen erst, wenn der Schädling zum ersten Mal da war (kompSeiten).
+for(const a of Object.keys(SCHAED)) kompWissen(a,'gefahr',SCHAED[a].name,()=>`${schaedRegel(a)} ${spritzRegel()}`);
 // Die Edelfäulnis ist keine Gefahr, sie ist ein Gütezeichen (Maik 19.11.2026). Ihre Seite steht deshalb bei den Stufen.
 kompWissen('edel','stufe','Edelfäulnis',()=>`${edelRegel()}. Mit ihr steigt der Zucker schneller, die Menge schrumpft. Kabinett und Spätlese gibt es von dem Feld dann nicht mehr, dafür Auslese und mehr.`);
 // Was eine Stufe braucht, mit den Hürden des eigenen Gebiets (früher die Zeilen im Weinlexikon).
@@ -2520,7 +2645,7 @@ function kompSeiten(kap){
   if(kap==='stufe') return [...kompIds(kap),'edel'];
   if(kap==='gebiet') return ['gebiet_'+S.region,'spitze',...Object.keys(REGIONEN).filter(r=>r!==S.region).map(r=>'gebiet_'+r)];
   if(kap==='technik') return [...KELLER_PREISE.map((p,i)=>'keller'+(i+1)),'reife','zuckern',...Object.keys(MASCH).map(id=>'masch_'+id)];
-  if(kap==='gefahr') return ['hagel','spaetfrost','kaelte','skandal','kontrolle','maschine','helferweg'];
+  if(kap==='gefahr') return ['hagel','spaetfrost','kaelte','skandal','kontrolle','maschine','helferweg',...Object.keys(SCHAED).filter(a=>(S.schaedGes||{})[a])];
   return kompIds(kap);
 }
 const kompSt=id=>((S.komp||{})[id]||{}).st||0;
@@ -2723,7 +2848,7 @@ function kompFenster(){
 /* ================= Spielstart ================= */
 function neuesSpiel(){
   const reg=REG(NEU.region,!!ROLLEN_NEU);
-  S={v:1,v7:1,zf:zfNeu(),name:NEU.name.trim()||'Weingut Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:START_GELD,ha:3,boden:80,duengungen:0,
+  S={v:1,v7:1,zf:zfNeu(),name:NEU.name.trim()||'Weingut Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:startGeld(NEU.schwer),ha:3,boden:80,duengungen:0,
     felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',sonne:0,markt:1,ansehen:0,ansV:1,leuteV:1,
     jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:ALLEIN_HA?0:1,lagerarb:ALLEIN_FASS?0:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,meilen:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],komp:{},kompV:3,...(ROLLEN_NEU?{rollen:1}:{})};
   if(NEU.fu==='0') S.fu.an=0;
@@ -2732,7 +2857,7 @@ function neuesSpiel(){
   lohnAbgleich();
   neuePrognose();
   TOP=[]; FUSS=[];
-  schlag(100,'Willkommen auf deinem Weingut',`${S.ich?`${S.ich} übernimmt ${S.name} ${WO[S.region]}: 3 Hektar kahler Weinberg, leere Fässer und ${eur(START_GELD)}.`:`${S.name} ${WO[S.region]} startet mit 3 Hektar kahlem Weinberg, leeren Fässern und ${eur(START_GELD)}.`} Bis März ist Pflanzzeit, im Weinberg pflanzt du deinen ${SORTEN[sortenFolge()[0]].name}. Die zweite und dritte Rebsorte bringt der Aufstieg. Im ersten Jahr tragen junge Reben nur die Hälfte.`,'weingut-01-sommer',{du:1});
+  schlag(100,'Willkommen auf deinem Weingut',`${S.ich?`${S.ich} übernimmt ${S.name} ${WO[S.region]}: 3 Hektar kahler Weinberg, leere Fässer und ${eur(S.geld)}.`:`${S.name} ${WO[S.region]} startet mit 3 Hektar kahlem Weinberg, leeren Fässern und ${eur(S.geld)}.`} Bis März ist Pflanzzeit, im Weinberg pflanzt du deinen ${SORTEN[sortenFolge()[0]].name}. Die zweite und dritte Rebsorte bringt der Aufstieg. Im ersten Jahr tragen junge Reben nur die Hälfte.`,'weingut-01-sommer',{du:1});
   // Seit 10.3 (Frage 11): Mit Spielführer fallen die zwei Artikel weg, die der alte Winzer im ersten Monat selbst sagt.
   if(!(S.fu&&S.fu.an)) schlag(50,'So kommst du herum','Unten wählst du Weingut, Kellerei oder Stadt, die Leiste darüber bringt dich zu den Orten. Wischen übers Bild geht auch. Ein Punkt am Reiter zeigt Neues oder Dringendes, ein Tipp aufs Geld öffnet deinen Stand mit Kasse und Rängen. Das kleine i oben rechts in jedem Fenster erklärt, was du dort tust. Spielstände, Ton und das Buch liegen im Büro.');
   if(!(S.fu&&S.fu.an)) schlag(40,'Leute für Weinberg und Keller',`${helferRegel()}. ${lagerRegel()}. Leute findest du beim Arbeitsamt in der Stadt, der Lohn dort schwankt jeden Monat, wer eingestellt ist, behält seinen. Fehlen dir Leute, geht es nicht in den nächsten Monat.`,'arbeit');
@@ -3118,6 +3243,7 @@ function monatLauf(){
   if(S.lage&&--S.lage.rest<=0){Z.push(S.lage.typ==='mode'?`Die Mode im Ausland ist vorbei, ${SORTEN[S.lage.sorte].name} kostet wieder so viel wie üblich.`:'Der Weinskandal ist vergessen, die Weinpreise erholen sich.'); S.lage=null}
   neuesLohnAngebot();
   const W=wachse(S.monat);
+  schaedMonat(Z);
   // Seit 8.0 (Paket B): Der Laubschneider macht im Juni den Sommerschnitt, wenn er im Einsatz ist. Gemeldet wird im Winzerboten vom Juli.
   if(S.monat===6){const lb=S.maschinen.find(x=>x.typ==='laub');
     if(lb){const an=bonusMasch('laub');
@@ -3516,6 +3642,8 @@ function aufgaben(){
   if(m<=2&&frei>0) A.push({t:`Pflanzzeit: Platz für ${rbn(frei)} Reben`,tab:'gut',sub:'berg',ruhig:1});
   // Version 7.3: Düngen steht an, sobald der Boden auf 70 % oder weniger fällt (Gelb), seit 7.9 Rot ab DUENG_ROT. Düngt der Weingut-Manager, nur ein ruhiger Hinweis.
   if(S.boden<=70&&S.duengungen<3) A.push(aufgabeAktiv('duengen')?{t:`Boden bei ${S.boden}\u00a0%: dein ${MGR_BEREICHE.weingut.name} düngt beim Weiterblättern`,tab:'gut',sub:'berg',ruhig:1}:{t:`🌱 Boden bei ${S.boden}\u00a0%: Düngen ist ${S.boden<=DUENG_ROT?'überfällig':'dran'}`,tab:'gut',sub:'berg',rot:S.boden<=DUENG_ROT?1:0});
+  // Seit 11.6: Warnung vor einem Schädling, Gelb. Spritzt der Weingut-Manager, nur ein ruhiger Hinweis.
+  {const b=schaedWarn(); if(b&&!b.gespritzt){const T=SCHAED[b.art]; A.push(aufgabeAktiv('spritzen')?{t:`${T.sym} Warnung vor ${T.dem}: dein ${MGR_BEREICHE.weingut.name} spritzt beim Weiterblättern`,tab:'gut',sub:'berg',ruhig:1}:{t:`${T.sym} Warnung vor ${T.dem}: Spritzen halbiert den Schaden, nur diesen Monat`,tab:'gut',sub:'berg'})}}
   if(m===11){const t=steuerSchau(); if(t.steuer>0){
     A.push({t:`💶 Im Januar rund ${eur(t.steuer)} Steuer auf ${eur(t.gew)} Gewinn. Fassraum oder Flaschen kaufen senkt sie`,tab:'keller',sub:'lager',ruhig:1});
     if(S.duengungen<3&&S.boden<100) A.push({t:`💶 Steuer senken: noch düngen (${S.duengungen} von 3 Mal)`,tab:'gut',sub:'berg',ruhig:1});
@@ -3807,7 +3935,7 @@ function urkHtml(i,m,j,kl,p){
 function vertragHtml(){
   return `<div class="urk vertrag neu"><div class="utext"><div class="utitel">Kaufvertrag</div><p>Verkauft an</p><b class="uname">${esc(S.ich||S.name)}</b><p>${S.ich?esc(S.name)+':<br>':''}drei Hektar Weinberg, ein alter Gewölbekeller<br>und eine Untermieterin im Keller</p><small>Sommer ${START_JAHR-1} · ${esc(REGIONEN[S.region].name)}</small></div><div class="usiegel"></div></div>`;
 }
-const startPunkte=()=>[['🌱','3 Hektar kahler Weinberg'],['💶',`Startgeld ${eur(START_GELD)}`],['🍇',`Deine erste Rebsorte: ${SORTEN[sortenFolge()[0]].name}`],['📅','Pflanzzeit bis März']];
+const startPunkte=()=>[['🌱','3 Hektar kahler Weinberg'],['💶',`Startgeld ${eur(startGeld(S.schwer))}`],['🍇',`Deine erste Rebsorte: ${SORTEN[sortenFolge()[0]].name}`],['📅','Pflanzzeit bis März']];
 // Seit 10.2: funken = goldene Funken statt bunter Schnipsel, beim Sieg der Weltweinschau.
 function konfetti(n,funken){
   const F=funken?['#f0c75a','#ffe39a','#e8b84a','#fff4d0']:['#f0c75a','#d9a520','#fbeede','#9b2a4a','#e8b84a'];
@@ -4185,7 +4313,7 @@ function mgrSchalter(b){
       +mgrExtra(e).map(t=>`<div class="mut" style="margin:0 0 8px">✅ ${t}, ohne Schalter</div>`).join('');
   return E.map(teil).join('')
     +(b==='handel'&&(aufgabeAktiv('laeden')||aufgabeAktiv('handel')||aufgabeAktiv('regal'))?`<div class="mut" style="margin:8px 0 6px">Je Wein bleiben im Keller, außer kurz vorm Verderben:</div>${reserveChips()}`:'')
-    +(b==='keller'&&(aufgabeAktiv('sekt')||aufgabeAktiv('keltern'))||b==='handel'&&aufgabeAktiv('fest')||b==='weingut'&&aufgabeAktiv('warten')?`<div class="mut" style="margin:8px 0 6px">${b==='keller'?'Für '+[aufgabeAktiv('sekt')&&'Sekt',aufgabeAktiv('keltern')&&'Fassraum'].filter(Boolean).join(' und '):b==='weingut'?'Für die Wartung':'Für das Fest'} gibt ${G.er} nur so viel aus, dass mindestens das auf dem Konto bleibt:</div>${pufferChips(b)}`:'');
+    +(b==='keller'&&(aufgabeAktiv('sekt')||aufgabeAktiv('keltern'))||b==='handel'&&aufgabeAktiv('fest')||b==='weingut'&&(aufgabeAktiv('warten')||aufgabeAktiv('spritzen'))?`<div class="mut" style="margin:8px 0 6px">${b==='keller'?'Für '+[aufgabeAktiv('sekt')&&'Sekt',aufgabeAktiv('keltern')&&'Fassraum'].filter(Boolean).join(' und '):b==='weingut'?'Für '+[aufgabeAktiv('warten')&&'die Wartung',aufgabeAktiv('spritzen')&&'das Spritzen'].filter(Boolean).join(' und '):'Für das Fest'} gibt ${G.er} nur so viel aus, dass mindestens das auf dem Konto bleibt:</div>${pufferChips(b)}`:'');
 }
 // Fenster von unten: Porträt, Lohn, zuletzt Erledigtes, die Schalter (mgrSchalter) und der Knopf zum Befördern. Öffnet sich nach Einstellen oder Befördern.
 let MGR_OFFEN=null;
@@ -4239,6 +4367,7 @@ function mgrBetrieb(){
     if(n>0){zahle(Math.round(n*pr*100)/100); const f=S.felder[id]; f.reben+=n; f.jung+=n; S.verlust[id]-=n; LW.push(`${rbn(n)} ${SORTEN[id].name}-Reben nachgepflanzt`)}
   }
   if(aufgabeAktiv('duengen')&&S.duengungen<3&&S.boden<100&&(S.boden<=70||(m===7&&S.boden<90))&&S.geld>=duengKosten()){const st=bonusMasch('duenger'); duenge(); LW.push(st?'mit dem Düngerstreuer gedüngt':'gedüngt')}
+  if(aufgabeAktiv('spritzen')){const b=schaedWarn(); if(b&&!b.gespritzt){if(S.geld-mgrPuffer('weingut')>=spritzKosten()){spritze(); LW.push(`gegen ${SCHAED[b.art].den} gespritzt`)} else LW.push(`fürs Spritzen gegen ${SCHAED[b.art].den} hat das Geld nicht gereicht`)}}
   // Seit 8.0: Maschinen warten (Stufe 1, bis Paket B Stufe 2), alle fünf Maschinen. Nach der Lese, also vor August oder wenn kein Feld mehr hängt, jede Maschine unter MGR_WART_AB auf 100 %.
   // Er lässt mgrPuffer('weingut') auf dem Konto, reicht es nicht ganz, wartet er so weit, wie das Geld reicht.
   if(aufgabeAktiv('warten')&&(m<7||!R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen))){
@@ -4534,6 +4663,7 @@ function vBerg(){
     hin:[md&&`${WM} düngt beim Weiterblättern, wenn der Boden mager wird.`,bonusMasch('duenger')&&`🚜 Mit dem Düngerstreuer: ${STREU_PLUS} statt ${DUENG_PLUS} Punkte Boden und ${Math.round(STREU_RABATT*100)} % billiger.`],
     links:`Gedüngt: ${S.duengungen} von 3 Mal`,kn:pk('duengen','Düngen',eur(duengKosten()),{aus:S.duengungen>=3||S.boden>=100,arm:S.geld<duengKosten()}),
     i:`Der Boden verliert jeden Monat ${BODEN_MONAT} Punkte, in einem Regenmonat ${BODEN_REGEN}, und mit jeder Lese 4. Einmal Düngen bringt ${DUENG_PLUS}, mit dem Düngerstreuer ${STREU_PLUS} und ${Math.round(STREU_RABATT*100)} % billiger, höchstens dreimal im Jahr. Ein guter Boden bringt mehr Trauben, bessere Weine und weniger tote Reben: Je besser der Bodenschnitt des Jahres, desto weniger Reben gehen zum Jahreswechsel ein.${md?` ${wm} düngt, sobald der Boden auf 70 % fällt, im August schon unter 90 %.`:''}`});
+  h+=schutzHtml(WM);
   h+=fenster('uebersicht','Übersicht',`<div class="kv"><span>Bepflanzt</span><span>${rbn(bep)} von ${rbn(ges)} Reben</span></div><div class="bar"><i style="width:${ant}%"></i></div>
     <div class="kv"><span>Fläche</span><span>${S.ha} Hektar, ${Math.round(ant)} % bepflanzt</span></div>
     <div class="kv"><span>Platz für</span><span>${rbn(frei)} Reben</span></div>
@@ -4609,16 +4739,16 @@ function vLager(){
 }
 // Kellerausbau in drei Stufen, je Stufe ab dem Rang in KELLER_RANG. Vor Jungwinzer steht das Fenster zugeklappt mit Schloss unten im Lager,
 // danach steht unter dem Stand, ab welchem Rang die nächste Stufe geht (seit 8.6).
-function kellerRangText(){return ` Stufe 1 gibt es ab ${RAENGE[KELLER_RANG[0]].name}, Stufe 2 ab ${RAENGE[KELLER_RANG[1]].name}, Stufe 3 ab ${RAENGE[KELLER_RANG[2]].name}.`}
+function kellerRangText(){return ` Stufe 1 (${KELLER_NAMEN[0]}) gibt es ab ${RAENGE[KELLER_RANG[0]].name}, Stufe 2 (${KELLER_NAMEN[1]}) ab ${RAENGE[KELLER_RANG[1]].name}, Stufe 3 (${KELLER_NAMEN[2]}) ab ${RAENGE[KELLER_RANG[2]].name}.`}
 function kellerAusHtml(){
   const K=S.keller||0, pr=KELLER_PREISE[K], N=KELLER_PREISE.length;
   const was='Jede Stufe lässt Prädikatsweine und Eiswein einen Monat früher verkaufsreif werden, und jeder Wein gewinnt beim Reifen in der Flasche schneller an Wert.'+kellerRangText();
   if(pr!=null&&S.rang<R_KELLER) return fenster('ausbau','Kellerausbau','',{zu:`ab dem Rang ${RAENGE[R_KELLER].name}`,i:`${was} Ausbauen kannst du ab dem Rang ${RAENGE[R_KELLER].name}.`});
-  const stand=`<div class="kv"><span>Ausgebaut</span><span>Stufe ${K} von ${N}</span></div><div class="bar w"><i style="width:${K/N*100}%"></i></div>
+  const stand=`<div class="kv"><span>Ausgebaut</span><span>Stufe ${K} von ${N}</span></div>${K?`<div class="kv"><span>Zuletzt gebaut</span><span>${KELLER_NAMEN[K-1]}</span></div>`:''}<div class="bar w"><i style="width:${K/N*100}%"></i></div>
     ${K?`<div class="kv"><span>Prädikat und Eiswein</span><span>${K} ${K===1?'Monat':'Monate'} früher reif</span></div>`:''}`;
   if(pr==null) return fenster('ausbau','Kellerausbau',stand+`<div class="fleer" style="margin-top:6px">Dein Keller ist fertig ausgebaut.</div>`,{i:was});
-  if(S.rang<KELLER_RANG[K]) return fenster('ausbau','Kellerausbau',stand+`<div class="fleer" style="margin-top:6px">🔒 Stufe ${K+1} kannst du ab dem Rang ${RAENGE[KELLER_RANG[K]].name} ausbauen.</div>`,{i:was+kellerRangText()});
-  return fenster('ausbau','Kellerausbau',stand,{kn:pk('kellerAus','Ausbauen',eur(pr),{klein:`Stufe ${K+1}`,arm:S.geld<pr}),i:was});
+  if(S.rang<KELLER_RANG[K]) return fenster('ausbau','Kellerausbau',stand+`<div class="fleer" style="margin-top:6px">🔒 Stufe ${K+1} (${KELLER_NAMEN[K]}) kannst du ab dem Rang ${RAENGE[KELLER_RANG[K]].name} ausbauen.</div>`,{i:was+kellerRangText()});
+  return fenster('ausbau','Kellerausbau',stand,{kn:pk('kellerAus','Ausbauen',eur(pr),{klein:KELLER_NAMEN[K],arm:S.geld<pr}),i:was});
 }
 // Hintertür im Keller (seit 7.4 auf dem Fenster-Baustein): Zuckern und Wässern, Verschneiden, darunter der Weinprüfer als Zustand, Sabotage als Seltenes unten.
 // Die roten Zeilen zu gepanschtem Wein und zum Prüfer stehen immer sichtbar im Fenster "Weinprüfer", die Erklärungen im i.
@@ -5685,13 +5815,13 @@ const AKT={
     const K=S.keller||0, pr=KELLER_PREISE[K];
     if(pr==null||S.rang<KELLER_RANG[K]) return;
     if(S.geld<pr) return meldung('Zu wenig Geld',`Die nächste Stufe kostet ${eur(pr)}.`,'fassgang');
-    openSheet(`${sbild('fassgang')}<h3>🏗️ Keller ausbauen?</h3><p>Stufe ${K+1} von ${KELLER_PREISE.length} kostet ${eur(pr)}.</p><p class="mut">Danach dürfen Prädikatsweine und Eiswein ${K+1} ${K?'Monate':'Monat'} früher aus dem Keller, und jeder Wein gewinnt beim Reifen schneller an Wert.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button data-a="kellerAusJa">Ausbauen</button></div>`);
+    openSheet(`${sbild('fassgang')}<h3>🏗️ Keller ausbauen?</h3><p>Stufe ${K+1} von ${KELLER_PREISE.length}, ${KELLER_NAMEN[K]}, kostet ${eur(pr)}.</p><p class="mut">Danach dürfen Prädikatsweine und Eiswein ${K+1} ${K?'Monate':'Monat'} früher aus dem Keller, und jeder Wein gewinnt beim Reifen schneller an Wert.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button data-a="kellerAusJa">Ausbauen</button></div>`);
   },
   kellerAusJa(){
     const K=S.keller||0, pr=KELLER_PREISE[K];
     if(pr==null||S.rang<KELLER_RANG[K]||S.geld<pr) return;
     zahle(pr); S.keller=K+1; fx('stempel'); closeSheet(); save(); render();
-    meldung('Der Keller ist ausgebaut',`Stufe ${S.keller} von ${KELLER_PREISE.length} ist fertig. Prädikatsweine und Eiswein sind jetzt ${S.keller} ${S.keller===1?'Monat':'Monate'} früher verkaufsreif.`,'fassgang');
+    meldung('Der Keller ist ausgebaut',`Stufe ${S.keller} von ${KELLER_PREISE.length}, ${KELLER_NAMEN[S.keller-1]}, ist fertig. Prädikatsweine und Eiswein sind jetzt ${S.keller} ${S.keller===1?'Monat':'Monate'} früher verkaufsreif.`,'fassgang');
   },
   hoffest(){
     const art=festArt(), F=FESTE[art];
@@ -5722,6 +5852,12 @@ const AKT={
       ok:n=>{fx('korken'); regalStellen(l,n)}});
   },
   regalRaus(d){const l=lot(d.id); if(!l) return; l.regal=false; weinZusammen(l); closeSheet(); save(); render()},
+  spritzen(){
+    const b=schaedWarn(); if(!b||b.gespritzt) return;
+    const k=spritzKosten();
+    if(S.geld<k) return meldung('Zu wenig Geld',`Spritzen kostet ${eur(k)}.`);
+    spritze();fx('stempel');save();render();
+  },
   duengen(){
     const k=duengKosten();
     if(S.geld<k) return meldung('Zu wenig Geld',`Düngen kostet ${eur(k)}.`);
@@ -5983,7 +6119,6 @@ function neuHinweis(hat){let alt=null; try{alt=localStorage.getItem(NEU_KEY); lo
 // Seit 11.0 "Was geplant ist" (Idee A, Maik 19.11.2026): der Ausblick steht über "Was ist neu" und im Büro bei "Deine Idee".
 // Je Zeile Titel und ein Satz, ohne Versionsnummer und Datum. Was gebaut ist, wandert von hier nach WAS_NEU.
 const AUSBLICK=[
-  ['🐛 Neue Gefahren','Schädlinge im Weinberg, dazu Namen für den Kellerausbau und ein Sektkeller.'],
   ['📜 Weinkompendium neu sortiert','Die zehn Weine mit ihren Siegeln auf einem Brett, das Wissen zum Nachlesen daneben.'],
   ['🎬 Kurze Filme','Die großen Momente bekommen bewegte Bilder.'],
   ['👥 Online mit Freunden','Eine gemeinsame Bestenliste, jeder spielt auf seinem Handy für sich.']];
@@ -5997,6 +6132,7 @@ function ideeText(){
 }
 function ideeFertig(){try{localStorage.removeItem(IDEE_KEY)}catch(e){} meldung('Danke für deine Idee!','Jede Idee wird gelesen. Was daraus wird, siehst du bei „Was geplant ist“ und später bei „Was ist neu“.')}
 const WAS_NEU=[
+  ['11.6','20.11.2026','Neue Gefahren im Weinberg: Alle paar Jahre kommt ein Schädling, das Weinbauamt warnt vorher, und Spritzen halbiert den Schaden. Das Wetter einer Partie steht jetzt von Anfang an fest, neu laden ändert es nicht. Der Kellerausbau hat Namen bekommen. Auf Einfach startest du mit 80.000 €, auf Schwer wächst das Ansehen jetzt so schnell wie auf Mittel.'],
   ['11.5','20.11.2026','Ein Weingut wie im echten Leben: Die ersten 4 Hektar schaffst du mit deiner Familie, danach arbeiten Leute für echte Löhne, und deine Manager kommen mit dem Rang von selbst. Jeder Rang verlangt mehr Land, das Ansehen ist verdoppelt, Präsident wirst du in drei Generationen. Neu ist der Ruf des Hauses: Je mehr Siegel im Weinkompendium, desto mehr zahlen dir die Händler.'],
   ['11.4.1','20.11.2026','Beim neuen Spiel siehst du jetzt, was gewählt ist: Anrede, Schwierigkeit und Spielführer leuchten als weinrotes Schild.'],
   ['11.4','20.11.2026','Neue Rebsorten in drei Rollen: In neuen Partien hat jedes Gebiet eine Sorte für die Menge, eine für den Sekt und eine für Spitzenweine. Die Siegel im Weinkompendium hängen jetzt an diesen Sorten, zum Beispiel Kabinett vom Müller-Thurgau.'],
