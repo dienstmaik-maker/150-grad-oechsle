@@ -575,31 +575,18 @@ button.fi.wort{width:auto;padding:0 11px;font:600 13px/1 system-ui,-apple-system
 /* Version 8.1: Spielführer, Sprechblase nach Entwurf D (Maik 17.11.2026). Maße und Farben aus _entwurf_blase.html.
    Ebene 15: über Kopfleiste und Reitern, unter Dialogen (20), Titel (30) und Buch (40). Abgedunkelt wird nur bei langen Tipps. */
 #fdunkel{position:fixed;inset:0;z-index:14;background:rgba(15,9,4,.55)}
-#fuehrer{position:fixed;left:10px;right:10px;top:172px;z-index:15;max-width:540px;margin:0 auto;box-sizing:border-box;
+#fuehrer{position:fixed;left:10px;right:10px;top:120px;z-index:15;max-width:540px;margin:0 auto;box-sizing:border-box;
   border:2.5px solid #d2a94a;border-radius:18px;background:linear-gradient(rgba(255,251,236,.42),rgba(255,251,236,.42)),#f3e7ca url(bilder/papier.jpg) center/cover;
   box-shadow:0 0 0 1.5px #5d3f18,inset 0 0 0 1px rgba(255,255,255,.55),0 10px 26px rgba(20,10,4,.75);color:#2b2118;padding:14px 16px 16px;
   font:18px/1.38 var(--schrift);animation:fplopp .28s cubic-bezier(.3,1.5,.5,1)}
 @keyframes fplopp{from{transform:scale(.8) translateY(-12px);opacity:0}to{transform:none;opacity:1}}
-#fuehrer .fgesicht{position:absolute;right:8px;top:-104px;width:92px;height:92px;border-radius:50%;border:3px solid #d2a94a;background:#f8f0dc;overflow:hidden;box-shadow:0 0 0 1.5px #5d3f18,0 3px 7px rgba(0,0,0,.5)}
-#fuehrer .fgesicht{cursor:pointer}#fuehrer .fgesicht i{display:block;width:100%;height:100%;background:center/cover no-repeat}
-#fuehrer .fkopf{position:absolute;left:12px;top:-78px;margin:0;padding:6px 12px 7px;border-radius:10px;border:2px solid #d2a94a;
-  background:linear-gradient(rgba(255,251,236,.42),rgba(255,251,236,.42)),#f3e7ca url(bilder/papier.jpg) center/cover;box-shadow:0 0 0 1.5px #5d3f18,0 3px 7px rgba(0,0,0,.5)}
 #fuehrer .fname{display:block;font:700 19px/1.1 "Alegreya SC",var(--schrift);color:#7b1e3a;letter-spacing:.02em}
 #fuehrer .frolle{display:block;font-size:14px;color:#857560;margin-top:2px}
-#fuehrer .fzipfel{position:absolute;right:40px;top:-13px;width:22px;height:22px;transform:rotate(45deg) skew(8deg,8deg);
-  background:#f8efd6;border-left:2.5px solid #d2a94a;border-top:2.5px solid #d2a94a;box-shadow:-1.5px -1.5px 0 0 #5d3f18;border-top-left-radius:4px}
 #fuehrer p{margin:0 0 8px}#fuehrer p:last-child{margin-bottom:0}
 #fuehrer .ftext{max-height:max(200px,calc(100vh - 300px));overflow-y:auto;padding-right:6px;-webkit-overflow-scrolling:touch}
 #fuehrer .fschatten{height:22px;margin-top:-22px;position:relative;pointer-events:none;background:linear-gradient(rgba(243,231,202,0),rgba(240,228,198,.96));text-align:center;font-size:12px;color:#7b1e3a;line-height:30px}
 #fuehrer .fknopf{display:flex;gap:8px;margin-top:10px}
 #fuehrer .fknopf button{flex:1 1 0;white-space:nowrap}
-/* Seit 10.2.1: Der Winzer sitzt immer oben rechts, offen wie zusammengeklappt an derselben Stelle (Maik 19.11.2026). Dort deckt er keine Knöpfe ab. */
-#fuehrer.zu{display:none}
-#fkopf{position:fixed;right:max(18px,calc(50vw - 262px));top:68px;z-index:15;width:92px;height:92px;box-sizing:border-box;padding:0;border-radius:50%;border:3px solid #d2a94a;background:#f8f0dc;overflow:visible;
-  box-shadow:0 0 0 1.5px #5d3f18,0 3px 8px rgba(0,0,0,.55);animation:fkopfein .35s ease-out both}
-#fkopf i{display:block;width:100%;height:100%;border-radius:50%;background:center/cover no-repeat}
-#fkopf b{position:absolute;right:-6px;top:-6px;font-size:18px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5));animation:fkopfwink 2.4s ease-in-out infinite}
-@keyframes fkopfein{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
 @keyframes fkopfwink{0%,80%,100%{transform:none}88%{transform:rotate(-14deg) scale(1.15)}}
 #fuehrer .fbuch{display:block;margin-top:10px;font-size:15px;color:#7b1e3a;text-decoration:underline;text-align:center;cursor:pointer}
 .fleuchte{animation:fleucht 1s ease-in-out 4;border-radius:12px}
@@ -667,6 +654,35 @@ button,#tabs #weiter{border-image-slice:50% 42 fill;border-image-width:50% 18px}
 #tabs #weiter span{font-size:21px;line-height:1.4}
 #tabs #weiter:active{transform:translateY(-1px)}
 #subs button.an{background:none;box-shadow:none;border:0 solid transparent;border-image:url(bilder/karte-neu.webp) 56 fill/9px stretch;border-radius:0}
+/* Seit 12.7 (Maik 20. und 21.11.2026): Der Kopf des Spielführers sitzt fest genau in der Mitte der Statusleiste und ist immer da, solange der Spielführer an ist.
+   Ein Tipp auf ihn öffnet die Blase jederzeit. Sie hängt darunter, drei kleine Kreise wie bei einer Denkblase führen vom Kopf zu ihr.
+   In der Blase oben die Leiste mit den Gesichtern (ab zwei Sprechern), Name und Kurzname des Tipps, unten Blättern mit ‹ und ›. Maße aus _entwurf_127_spielfuehrer.html.
+   Die Kästen links und rechts brechen nicht um, fehlt neben dem Kopf Platz, kürzt fuTopMess() den Monat und blendet den Rang aus. */
+#top>div{white-space:nowrap;flex:none}
+#tkopf{position:absolute;left:50%;top:calc(50% + env(safe-area-inset-top)/2);z-index:1;width:46px;height:46px;min-height:0;margin:-23px 0 0 -23px;padding:0;box-sizing:border-box;border-radius:50%;
+  border:2.5px solid #d2a94a;border-image:none;background:#f8f0dc center/cover no-repeat;box-shadow:0 0 0 1.5px #5d3f18,0 2px 5px rgba(0,0,0,.6);filter:none;
+  font:22px/40px system-ui,sans-serif;text-align:center;text-shadow:none;letter-spacing:0;cursor:pointer}
+#tkopf.offen{box-shadow:0 0 0 1.5px #5d3f18,0 0 0 4px rgba(242,199,102,.55),0 2px 5px rgba(0,0,0,.6)}
+#top #tkopf b{position:absolute;right:-7px;top:-7px;font-size:16px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6));animation:fkopfwink 2.4s ease-in-out infinite}
+body.fuoffen #top{z-index:16}
+.fkreis{position:fixed;z-index:17;box-sizing:border-box;border-radius:50%;border:2px solid #d2a94a;background:#f8efd6;box-shadow:0 0 0 1.5px #5d3f18,0 3px 6px rgba(20,10,4,.6);pointer-events:none;animation:fkreis .2s ease-out both}
+.fkreis.k1{width:8px;height:8px}.fkreis.k2{width:12px;height:12px;animation-delay:.06s}.fkreis.k3{width:17px;height:17px;animation-delay:.12s}
+@keyframes fkreis{from{transform:scale(0)}to{transform:none}}
+#fuehrer{animation-delay:.15s;animation-fill-mode:both}
+#fuehrer .fleiste{display:flex;gap:6px;align-items:center;margin:-4px -6px 10px;padding:0 0 10px;border-bottom:1px solid rgba(154,106,53,.45);overflow-x:auto}
+#fuehrer .fleiste button{flex:none;height:40px;min-width:40px;min-height:0;margin:0;padding:0;box-sizing:border-box;border-radius:20px;border:2px solid #cdb68a;border-image:none;filter:none;
+  background:#f8f0dc center/cover no-repeat;font:700 15px var(--knopf);font-variant-caps:normal;letter-spacing:0;color:#7b1e3a;text-shadow:none;cursor:pointer}
+#fuehrer .fleiste .alle{padding:0 14px}#fuehrer .fleiste .gesicht{width:40px;font-size:20px}
+#fuehrer .fleiste button.an{border-color:#7b1e3a;box-shadow:0 0 0 2px #e5a93c}
+#fuehrer .fleiste .alle.an{background:#7b1e3a;color:#fff}
+#fuehrer .fnamen{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+#fuehrer .fnamen>div{flex:1;min-width:0}
+#fuehrer .fneu{flex:none;font:700 13px var(--knopf);color:#fff;background:#3e8e41;border-radius:8px;padding:2px 8px}
+#fuehrer .fnix{font-style:italic;color:#6b5a45}
+#fuehrer .fblatt{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid rgba(154,106,53,.45)}
+#fuehrer .fblatt button{flex:none;width:56px;height:44px;min-height:44px;margin:0;padding:4px 12px;font-size:22px;line-height:1}
+#fuehrer .fblatt button:disabled{opacity:.35;filter:none}
+#fuehrer .fblatt span{flex:1;text-align:center;font:600 16px var(--knopf);color:#6b5a45;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -5607,11 +5623,32 @@ function fuHalt(){fuehrerPruef(); return fuBereit()&&S.fu.q.some(id=>FUEHRER[id]
 const fuDa=s=>!FU_VOR[s]||fuGes(FU_VOR[s]);
 function fuSprecher(id){
   const b=FUEHRER[id], v=FU_VOR[b.s], ersatz=!!(v&&v!==id&&!fuGes(v)&&b.e);
-  if(!fuNach()||id==='g2-1') return ersatz?{s:'winzer',t:b.e}:{s:b.s,t:b.t};
-  let s=b.s==='winzer'?b.ss||'handel':b.s, t=b.s==='winzer'?b.sp||b.t:ersatz?b.e:b.t;
+  if(!fuNach()||id==='g2-1') return ersatz?{s:'winzer',t:b.e,k:'e'}:{s:b.s,t:b.t,k:''};
+  let s=b.s==='winzer'?b.ss||'handel':b.s, k=b.s==='winzer'?(b.sp?'sp':''):ersatz?'e':'';
   if(!fuDa(s)&&FU_VOR[s]!==id) s=['handel','keller','weingut'].find(fuDa)||'gut';
-  return {s,t,chef:1};
+  return {s,t:b[k||'t'],k,chef:1};
 }
+// Seit 12.7.2: Sprecher eines Eintrags im Verlauf, für alte Spielstände aus der Reihenfolge in S.fu.ges (vor = alles, was davor dran war).
+// Wie fuSprecher, nur zählt statt des heutigen Stands, was damals schon dran war: Hatte sich der Manager noch nicht vorgestellt, sprach der alte Winzer
+// mit dem Ersatz-Text, stand der Abschied g2-1 schon davor, sprach der Nachfolger.
+function fuSpAus(id,vor){
+  const b=FUEHRER[id], v=FU_VOR[b.s], ersatz=!!(v&&v!==id&&!vor.has(v)&&b.e);
+  if(!vor.has('g2-1')||id==='g2-1') return ersatz?{s:'winzer',k:'e'}:{s:b.s};
+  const da=x=>!FU_VOR[x]||vor.has(FU_VOR[x]);
+  let s=b.s==='winzer'?b.ss||'handel':b.s;
+  if(!da(s)&&FU_VOR[s]!==id) s=['handel','keller','weingut'].find(da)||'gut';
+  return {s,k:b.s==='winzer'?(b.sp?'sp':''):ersatz?'e':'',c:1};
+}
+// Verlauf (12.7.2, Maik 21.11.2026): alle Einträge aus S.fu.ges in ihrer Reihenfolge, auch weggedrückte und übersprungene, der offene Tipp (FU_AKT) hinten.
+// S.fu.sp merkt sich je gezeigtem Tipp den Sprecher (s), den Text (k) und ob "Chef" gilt (c). S.fu.vl = ab hier zählt der Verlauf, gesetzt von "Tipps von vorn".
+function fuVerlauf(){
+  const f=S.fu, sp=f.sp||{}, vor=new Set(), V=[];
+  f.ges.forEach((id,i)=>{if(FUEHRER[id]&&i>=(f.vl||0)) V.push({id,...(sp[id]||fuSpAus(id,vor))}); vor.add(id)});
+  if(FU_AKT&&FUEHRER[FU_AKT]&&!f.ges.includes(FU_AKT)) V.push({id:FU_AKT,...(sp[FU_AKT]||fuSpAus(FU_AKT,vor))});
+  return V;
+}
+// Wer spricht, wenn noch nichts im Verlauf steht: vor der ersten Übergabe der alte Winzer, danach der erste Manager, der schon da ist.
+const fuStandSp=()=>fuNach()?['handel','keller','weingut'].find(fuDa)||'gut':'winzer';
 const FU_HUERDE={'Qualitätswein':'qba','Kabinett':'kab','Spätlese':'spat','Auslese':'aus','Beerenauslese':'ba'};
 // Seit 10.3 (C11, C38, C6): Platzhalter für die Startsorte des Gebiets, den Wertzuwachs aller Sorten und die Frost-Häufigkeit.
 const fuPz=s=>Math.round(s.reife*100)+'\u00a0%';
@@ -5645,8 +5682,13 @@ function fuAbsaetze(t){
 // FU_PAUSE: Nach "Zeig mir, wo" wartet die nächste Blase, bis der Spieler selbst etwas antippt, damit sie den leuchtenden Knopf nicht verdeckt.
 // Seit 10.3: FU_WO = bei der Blase wurde "Zeig mir, wo" getippt (gilt als gelesen), FU_ZM = Monat, in dem sie aufging,
 // FU_SPAET = abgelegte Kern-Blasen und Warnungen mit ihrem Monat, sie kommen erst im nächsten Monat wieder.
-let FU_AKT=null, FU_RUHE=0, FU_UHR=null, FU_PAUSE=false, FU_KLEIN=false, FU_WO=false, FU_ZM=-1, FU_SPAET={};
-function fuehrerWeg(){const a=$('#fuehrer'), d=$('#fdunkel'), k=$('#fkopf'); if(a) a.remove(); if(d) d.remove(); if(k) k.remove(); FU_AKT=null; FU_KLEIN=false; FU_WO=false; fuPunkt()}
+// Seit 12.7: FU_OFFEN = Blase offen, FU_VL = Verlauf beim Öffnen, FU_FILTER = 'alle' oder ein Sprecher, FU_POS = Stelle in der gefilterten Liste (hinten der neueste).
+let FU_AKT=null, FU_RUHE=0, FU_UHR=null, FU_PAUSE=false, FU_OFFEN=false, FU_WO=false, FU_ZM=-1, FU_SPAET={}, FU_VL=null, FU_FILTER='alle', FU_POS=0;
+function fuBlaseZu(){
+  ['#fuehrer','#fdunkel'].forEach(q=>{const x=$(q); if(x) x.remove()}); document.querySelectorAll('.fkreis').forEach(x=>x.remove());
+  document.body.classList.remove('fuoffen'); FU_OFFEN=false; FU_VL=null; fuKopfStell();
+}
+function fuehrerWeg(){fuBlaseZu(); FU_AKT=null; FU_WO=false; fuPunkt(); fuKopfStell()}
 // Seit 12.6.2 (Maik 20.11.2026): Ein grüner Punkt zeigt den Weg der offenen Blase, erst am Hauptreiter, dann am Unterreiter, am Ziel ist er weg.
 // Er sitzt links, damit Rot und Gelb aus "Das steht an" rechts daneben sichtbar bleiben. Gilt auch, solange die Blase als Kopf am Rand wartet.
 function fuPunkt(){
@@ -5655,15 +5697,73 @@ function fuPunkt(){
   const el=TAB!==z.tab?d.querySelector(`#tabs [data-id="${z.tab}"]`):z.sub&&SUB!==z.sub?d.querySelector(`#subs [data-id="${z.sub}"]`):null;
   if(el) el.insertAdjacentHTML('beforeend','<span class="badge gruen"></span>');
 }
-// Seit 10.2.1 (Maik 19.11.2026): Die Blase klappt zum Kopf am rechten Rand zusammen, ein Tipp auf den Kopf holt sie zurück.
-function fuKlein(an){
-  const f=$('#fuehrer'); if(!f) return; FU_KLEIN=an; f.classList.toggle('zu',an);
-  const d=$('#fdunkel'); if(d) d.style.display=an?'none':'';
-  let k=$('#fkopf');
-  if(an&&!k){const P=FU_SPRECHER[fuSprecher(FU_AKT).s]; k=document.createElement('button'); k.id='fkopf'; k.dataset.a='fuAuf'; k.setAttribute('aria-label',P.name+': Tipp öffnen');
-    k.innerHTML=`<i${P.bild?` style="background-image:url(bilder/${P.bild}.jpg)"`:''}></i><b>💬</b>`; document.body.appendChild(k)}
-  if(!an&&k) k.remove();
+// Seit 12.7.1 (Maik 21.11.2026): Der Kopf in der Statusleiste zeigt den, der zuletzt gesprochen hat, bei offener Blase den Sprecher des Tipps,
+// der gerade darin steht. 💬, solange der neue Tipp noch nicht mit "Verstanden" oder "Zeig mir, wo" gelesen ist. Leuchtet, solange die Blase offen ist.
+function fuKopfStell(){
+  const k=$('#tkopf'); if(!k||!S||!S.fu) return;
+  const x=FU_OFFEN&&FU_VL?fuListe()[FU_POS]:null, V=x?null:fuVerlauf();
+  const s=x?x.s:V.length?V[V.length-1].s:fuStandSp(), P=FU_SPRECHER[s]||FU_SPRECHER.winzer;
+  k.classList.toggle('offen',FU_OFFEN);
+  k.style.backgroundImage=P.bild?`url(bilder/${P.bild}.jpg)`:'none';
+  k.setAttribute('aria-label',P.name+(FU_OFFEN?': Blase zuklappen':': Tipps öffnen'));
+  k.innerHTML=(P.bild?'':'📜')+(FU_AKT&&!FU_WO&&!FU_OFFEN?'<b>💬</b>':'');
 }
+// Bleiben neben dem Kopf weniger als 6 Pixel Luft, wird links der Monat abgekürzt ("Sep. 2068") und rechts der Rang ausgeblendet. Nach jedem render() einmal.
+function fuTopMess(){
+  const t=$('#top'), k=$('#tkopf'); if(!t||!k) return;
+  const w=t.querySelector('.wtr'), g=t.querySelector('.geld'), kr=k.getBoundingClientRect(), rg=g&&g.querySelector('small');
+  if(rg){rg.style.display=''; if(g.getBoundingClientRect().left-kr.right<6) rg.style.display='none'}
+  const mb=w&&w.querySelector('b'); if(mb&&kr.left-w.getBoundingClientRect().right<6) mb.textContent=mb.textContent.replace(/^(\S{3})\S{2,}/,'$1.');
+}
+const fuListe=()=>!FU_VL?[]:FU_FILTER==='alle'?FU_VL:FU_VL.filter(x=>x.s===FU_FILTER);
+// Öffnet die Blase beim neuesten Eintrag mit "Alle" (Entscheidung 10: "31 von 31", ‹ geht zurück in der Zeit).
+function fuOeffne(){
+  FU_VL=fuVerlauf(); FU_FILTER='alle'; FU_POS=FU_VL.length-1; FU_OFFEN=true;
+  if(!$('#fuehrer')){
+    for(let i=1;i<=3;i++){const c=document.createElement('i'); c.className='fkreis k'+i; document.body.appendChild(c)}
+    const el=document.createElement('div'); el.id='fuehrer'; el.setAttribute('role','dialog'); document.body.appendChild(el);
+  }
+  document.body.classList.add('fuoffen'); fuBlase(); fuKopfStell();
+}
+// Inhalt der Blase für den Eintrag an FU_POS: Leiste mit Gesichtern, Name und Kurzname, Text, Knöpfe und Blättern.
+function fuBlase(){
+  const el=$('#fuehrer'); if(!el) return;
+  const L=fuListe(), x=L[FU_POS];
+  let d=$('#fdunkel');
+  if(!x){
+    const P=FU_SPRECHER[fuStandSp()]; el.setAttribute('aria-label',P.name); if(d) d.remove();
+    el.innerHTML=`<div class="fnamen"><div><b class="fname">${P.name}</b><span class="frolle">${P.rolle}</span></div></div>
+      <div class="ftext"><p class="fnix">Noch keine Tipps. Sobald etwas ansteht, melde ich mich hier.</p></div><div class="fschatten">▼ weiter unten mehr</div>
+      <div class="fknopf"><button class="klein sec" data-a="fuZu">Zuklappen</button></div>`;
+    return fuLage();
+  }
+  const b=FUEHRER[x.id], P=FU_SPRECHER[x.s]||FU_SPRECHER.winzer, text=fuText(b[x.k]||b.t,x.c), akt=x.id===FU_AKT;
+  // Entscheidung 11: Die Leiste mit den Gesichtern erst ab zwei Sprechern, nur wer schon gesprochen hat.
+  const sp=[...new Set(FU_VL.map(v=>v.s))];
+  const leiste=sp.length<2?'':`<div class="fleiste"><button class="alle${FU_FILTER==='alle'?' an':''}" data-a="fuFilter" data-id="alle">Alle</button>${sp.map(s=>{const Q=FU_SPRECHER[s]||FU_SPRECHER.winzer;
+    return `<button class="gesicht${FU_FILTER===s?' an':''}" data-a="fuFilter" data-id="${s}" aria-label="${Q.name}" title="${Q.name}"${Q.bild?` style="background-image:url(bilder/${Q.bild}.jpg)"`:''}>${Q.bild?'':'📜'}</button>`}).join('')}</div>`;
+  el.setAttribute('aria-label',P.name);
+  el.innerHTML=`${leiste}<div class="fnamen"><div><b class="fname">${P.name}</b><span class="frolle">${esc(b.n||P.rolle)}</span></div>${akt&&!FU_WO?'<span class="fneu">Neu</span>':''}</div>
+    <div class="ftext">${fuAbsaetze(text)}</div><div class="fschatten">▼ weiter unten mehr</div>
+    <div class="fknopf">${FU_ZEIG[x.id]?`<button class="klein" data-a="fuWo" data-id="${x.id}">Zeig mir, wo</button>`:''}${akt?`<button class="klein" data-a="fuOk">${x.id==='e1-0a'&&FU_ZEIG[x.id]?'Bleib ruhig da':'Verstanden'}</button>`:'<button class="klein sec" data-a="fuZu">Zuklappen</button>'}</div>
+    ${b.b?`<span class="fbuch" data-a="fuBuch" data-id="${b.b}">📖 Mehr im Buch</span>`:''}
+    <div class="fblatt"><button data-a="fuBlatt" data-id="-1" aria-label="Älterer Tipp"${FU_POS<=0?' disabled':''}>‹</button><span>${FU_POS+1} von ${L.length}</span><button data-a="fuBlatt" data-id="1" aria-label="Neuerer Tipp"${FU_POS>=L.length-1?' disabled':''}>›</button></div>`;
+  // Lange Tipps dunkeln das Spiel dahinter ab wie bisher.
+  if(text.length>=FU_LANG){if(!d){d=document.createElement('div'); d.id='fdunkel'; document.body.appendChild(d)}} else if(d) d.remove();
+  fuLage();
+}
+// Lage von Kreisen und Blase unter dem Kopf, der Text darf bis kurz vor den unteren Rand reichen, sonst scrollt er.
+function fuLage(){
+  const k=$('#tkopf'), el=$('#fuehrer'); if(!k||!el) return;
+  const r=k.getBoundingClientRect(), mx=r.left+r.width/2, ky=r.bottom;
+  document.querySelectorAll('.fkreis').forEach((c,i)=>{const [w,dx,dy]=[[8,10,4],[12,18,14],[17,10,28]][i]; c.style.left=(mx+dx-w/2)+'px'; c.style.top=(ky+dy)+'px'});
+  el.style.top=(ky+50)+'px';
+  const t=el.querySelector('.ftext'), sch=el.querySelector('.fschatten'); if(!t) return;
+  t.style.maxHeight='none'; const rest=el.offsetHeight-t.offsetHeight; t.style.maxHeight=Math.max(140,innerHeight-(ky+50)-rest-12)+'px';
+  const pruef=()=>{sch.style.display=t.scrollHeight>t.clientHeight+4?'':'none'; sch.style.opacity=t.scrollTop+t.clientHeight>=t.scrollHeight-4?0:1};
+  t.onscroll=pruef; pruef();
+}
+addEventListener('resize',()=>{fuTopMess(); if(FU_OFFEN) fuLage()});
 // Erledigt, sobald der Spieler getan hat, was in der Blase steht. Dann verschwindet auch der Kopf. Blasen ohne Eintrag gehen nur mit "Verstanden".
 const FU_ERL={
   'e1-0a':()=>TAB==='gut'&&SUB==='buero',
@@ -5683,23 +5783,15 @@ function fuehrerZeig(){
   if(!fuBereit()) return fuehrerWeg();
   if(!SUBS[TAB]) return fuehrerWeg();
   // Seit 10.3 (C1): Nur eine offene Blase hält die nächste auf. Ein geparkter Kopf macht Platz, sobald eine andere Blase dran ist.
-  if(FU_AKT&&!FU_KLEIN||FU_PAUSE||$('#sheet').classList.contains('an')||$('#titel').classList.contains('an')||$('#buch').classList.contains('an')||S.pleite||S.pruefer||erbeOffen()) return;
+  if(FU_OFFEN||FU_PAUSE||$('#sheet').classList.contains('an')||$('#titel').classList.contains('an')||$('#buch').classList.contains('an')||S.pleite||S.pruefer||erbeOffen()) return;
   fuehrerPruef();
   const id=fuNaechste(); if(!id) return;
   const w=FU_RUHE-Date.now(); if(w>0){clearTimeout(FU_UHR); FU_UHR=setTimeout(fuehrerZeig,w+20); return}
   if(FU_AKT) fuAblegen();
-  const b=FUEHRER[id], sp=fuSprecher(id), P=FU_SPRECHER[sp.s], text=fuText(sp.t,sp.chef), lang=text.length>=FU_LANG;
-  FU_AKT=id; FU_ZM=monatNr();
-  if(lang){const d=document.createElement('div'); d.id='fdunkel'; document.body.appendChild(d)}
-  const el=document.createElement('div'); el.id='fuehrer'; el.setAttribute('role','dialog'); el.setAttribute('aria-label',P.name);
-  el.innerHTML=`<i class="fzipfel"></i>${P.bild?`<div class="fgesicht" data-a="fuZu" role="button" aria-label="Tipp zum Kopf zuklappen"><i style="background-image:url(bilder/${P.bild}.jpg)"></i></div>`:''}<div class="fkopf"><div><b class="fname">${P.name}</b><span class="frolle">${P.rolle}</span></div></div>
-    <div class="ftext">${fuAbsaetze(text)}</div><div class="fschatten">▼ weiter unten mehr</div>
-    <div class="fknopf">${FU_ZEIG[id]?`<button class="klein" data-a="fuWo">Zeig mir, wo</button>`:''}<button class="klein" data-a="fuOk">${id==='e1-0a'&&FU_ZEIG[id]?'Bleib ruhig da':'Verstanden'}</button></div>
-    ${b.b?`<span class="fbuch" data-a="fuBuch" data-id="${b.b}">📖 Mehr im Buch</span>`:''}`;
-  document.body.appendChild(el);
-  const t=el.querySelector('.ftext'), sch=el.querySelector('.fschatten');
-  const pruef=()=>{sch.style.display=t.scrollHeight>t.clientHeight+4?'':'none'; sch.style.opacity=t.scrollTop+t.clientHeight>=t.scrollHeight-4?0:1};
-  t.addEventListener('scroll',pruef,{passive:true}); pruef();
+  // Seit 12.7.2: Der Sprecher wird gemerkt, damit der Verlauf den Tipp später mit demselben Gesicht und Text zeigt.
+  const sp=fuSprecher(id); S.fu.sp=S.fu.sp||{}; S.fu.sp[id]={s:sp.s,...(sp.k?{k:sp.k}:{}),...(sp.chef?{c:1}:{})};
+  FU_AKT=id; FU_ZM=monatNr(); FU_WO=false;
+  fuOeffne();
   fuPunkt(); fx('menue');
 }
 // Abhaken: aus der Warteschlange in die Liste der gezeigten, danach kommt die nächste wartende.
@@ -5741,7 +5833,7 @@ function render(){
   if(S.ende&&TAB!=='monat'&&!(TAB==='feier'&&endeFeier())) TAB='ende';
   einPruef(); fuehrerPruef(); fuErlCheck();
   // Seit 10.3: Beim Monatswechsel wird ein Kopf abgelegt (fuAblegen), Kern-Blasen und Warnungen kommen danach wieder. Eine offene Blase kommt ohnehin wieder.
-  if(!SUBS[TAB]){if(FU_AKT&&FU_KLEIN) fuAblegen(); else fuehrerWeg()}
+  if(!SUBS[TAB]){if(FU_AKT&&!FU_OFFEN) fuAblegen(); else fuehrerWeg()}
   if(SUBS[TAB]&&!SUBS[TAB].some(s=>s[0]===SUB)) SUB=START_SUB[TAB];
   // Kellerbuch und Aktuelles öffnen sich mit einem eigenen Geräusch.
   ortFarbe(SUBS[TAB]?TAB:'gut');
@@ -5753,10 +5845,12 @@ function render(){
   if(TAB==='feier'){$('#app').innerHTML=v; feierStart(); return}
   const tabs=[['gut','🏡','Weingut'],['keller',FASS,'Kellerei'],['stadt','🏛️','Stadt']], B=badges();
   if(TAB==='monat'){$('#app').innerHTML=v; zWehen(); return}
-  $('#app').innerHTML=`<div id="top"><div class="wtr" data-a="wetterInfo"><b>${MON[S.monat]} ${S.jahr}</b><small>${wetterText()} · ${R().name}</small></div><div class="geld" data-a="geldInfo"><b>${geldKurz(S.geld)}</b><small>${duK()} · ${num(S.ansehen)} Ansehen</small></div></div>
+  // Seit 12.7 (Maik 21.11.2026): Gebiet und Ansehen fliegen aus der Statusleiste, rechts steht nur noch der Rang, in der Mitte sitzt der Kopf des Spielführers.
+  $('#app').innerHTML=`<div id="top"><div class="wtr" data-a="wetterInfo"><b>${MON[S.monat]} ${S.jahr}</b><small>${wetterText()}</small></div>${fuBereit()?'<button id="tkopf" data-a="fuKopf"></button>':''}<div class="geld" data-a="geldInfo"><b>${geldKurz(S.geld)}</b><small>${duK()}</small></div></div>
   <main>${v}</main>
   <nav id="dock">${SUBS[TAB]?`<div id="subs">${SUBS[TAB].map(s=>`<button class="${SUB===s[0]?'an':''}" data-a="sub" data-id="${s[0]}"><i>${s[1]}</i><b>${SUB_NAME[s[0]]}</b>${SUB===s[0]?'':badge(B[TAB+'/'+s[0]])}</button>`).join('')}</div>`:''}<div id="tabs">${tabs.map(t=>`<button class="${TAB===t[0]?'an':''}" data-a="tab" data-id="${t[0]}"><span>${t[1]}</span>${t[2]}${badge(B[t[0]])}</button>`).join('')}<button id="weiter" class="${fehlt?'zu':''}" data-a="weiter"><span>${fehlt?'🔒':'▶'}</span>${fehlt?'Leute fehlen':'Nächster Monat'}</button></div></nav>`;
   panoStell(); wgStart();
+  fuKopfStell(); fuTopMess(); if(FU_OFFEN) fuLage();
   fuehrerZeig(); fuPunkt();
   mgrVorstellen();
 }
@@ -5807,13 +5901,20 @@ const AKT={
     // Seit 10.3 (C21): Wer ab dem dritten Jahr auf "Alle Tipps" stellt, bekommt den Fahrplan der ersten zwei Jahre nicht nachgeliefert.
     if(d.id==='alle'&&monatNr()>=24){FU_PLAN.forEach(id=>{if(!f.ges.includes(id)) f.ges.push(id)}); f.q=f.q.filter(id=>!FU_PLAN.includes(id))}
     if(!f.an){FU_PAUSE=false; fuehrerWeg()} else if(FU_AKT&&!fuErlaubt(FU_AKT)) fuehrerWeg(); save(); const y=window.scrollY; render(); window.scrollTo(0,y)},
-  fuVorn(){const f=S.fu; if(!f||!f.an) return; const n=fuAlt(); n.an=f.an; n.nur=f.nur; n.geld=f.geld; n.rm=f.rm||{}; S.fu=n; fuehrerWeg(); FU_PAUSE=false; save(); render();
+  // Seit 12.7.2: "Tipps von vorn" leert auch den Verlauf (vl), was fuAlt als erledigt einträgt, zählt nicht mit.
+  fuVorn(){const f=S.fu; if(!f||!f.an) return; const n=fuAlt(); n.an=f.an; n.nur=f.nur; n.geld=f.geld; n.rm=f.rm||{}; n.vl=n.ges.length; n.sp={}; S.fu=n; fuehrerWeg(); FU_PAUSE=false; save(); render();
     meldung('Tipps von vorn','Warnungen und Kniffe kommen wieder, sobald sie passen. In den ersten zwei Jahren kommt auch der Rest des Fahrplans.')},
   // Seit 10.2.1: "Zeig mir, wo" klappt die Blase zum Kopf zusammen, statt sie abzuhaken. Weg ist sie erst mit "Verstanden" oder wenn die Aufgabe erledigt ist.
-  fuWo(){const id=FU_AKT, z=FU_ZEIG[id]; if(!z) return; fuKlein(true); FU_WO=true; FU_PAUSE=true; if(z.tab){geh(z.tab,z.sub); if(z.sub==='buch') ARCHIV='weine'; if(z.sub==='buero'){const m=/data-id="(\w+)"/.exec((z.sel||[])[0]||''); if(m&&BUERO_WO[m[1]]) BUERO=BUERO_WO[m[1]]} render(); window.scrollTo(0,0)} setTimeout(()=>fuLeuchte(z),z.tab?120:0)},
-  fuAuf(){fuKlein(false)},
-  // Seit 12.6.1 (Maik 20.11.2026): Ein Tipp aufs Gesicht in der offenen Blase klappt sie zum Kopf am Rand.
-  fuZu(){fuKlein(true)},
+  // Seit 12.7: "Zeig mir, wo" geht auch bei älteren Tipps aus dem Verlauf. Beim neuen Tipp gilt er damit als gelesen (FU_WO).
+  fuWo(d){const id=d&&d.id||FU_AKT, z=FU_ZEIG[id]; if(!z) return; fuBlaseZu(); if(id===FU_AKT) FU_WO=true; FU_PAUSE=true; fuKopfStell(); if(z.tab){geh(z.tab,z.sub); if(z.sub==='buch') ARCHIV='weine'; if(z.sub==='buero'){const m=/data-id="(\w+)"/.exec((z.sel||[])[0]||''); if(m&&BUERO_WO[m[1]]) BUERO=BUERO_WO[m[1]]} render(); window.scrollTo(0,0)} setTimeout(()=>fuLeuchte(z),z.tab?120:0)},
+  // Seit 12.7 (Maik 20.11.2026): Ein Tipp auf den Kopf in der Statusleiste öffnet die Blase jederzeit, noch ein Tipp klappt sie zu.
+  // Wie ein Tipp daneben: Wer zuklappt, bekommt den nächsten Tipp erst mit dem Tipp danach (FU_PAUSE).
+  fuKopf(){if(FU_OFFEN){fuBlaseZu(); FU_PAUSE=true} else fuOeffne()},
+  fuZu(){fuBlaseZu(); FU_PAUSE=true},
+  // Blättern: ‹ zurück in der Zeit, › stößt beim neuesten an die Wand. Der Kopf oben wechselt das Gesicht (Entscheidung 13).
+  fuBlatt(d){const L=fuListe(); FU_POS=clamp(FU_POS+(+d.id),0,L.length-1); fuBlase(); fuKopfStell()},
+  // Leiste mit Gesichtern: zeigt nur die Tipps dieses Sprechers, beim neuesten.
+  fuFilter(d){FU_FILTER=d.id; FU_POS=fuListe().length-1; fuBlase(); fuKopfStell()},
   fuBuch(d){BUCH=d.id||''; buchZeig()},
   // Seit 8.0.1 "Dein Stand" statt "Deine Kasse": Kasse, Bis zum nächsten Rang (alle drei Bedingungen mit Balken wie in vRang) und die Rangleiter.
   geldInfo(){if(S.fu&&!S.fu.geld){S.fu.geld=1; save()} const K=kosten(), k=S.kredit, kv=(a,x,c)=>`<div class="kv"><span>${a}</span><span class="${c||''}">${x}</span></div>`, n=RAENGE[S.rang+1];
@@ -5821,13 +5922,15 @@ const AKT={
     if(n){const v=vermoegen(), bep=flaecheBep(), w=(ist,soll)=>clamp(ist/soll*100,0,100), bar=(ist,soll)=>`<div class="bar ${ist>=soll?'':'g'}"><i style="width:${w(ist,soll)}%"></i></div>`;
       ziel=`<h4 class="gs">🎯 Bis zum nächsten Rang</h4>${kv('⭐ Ansehen',`${num(S.ansehen)} von ${num(n.ans)}`)}${bar(S.ansehen,n.ans)}${kv('🌱 Bepflanzt',`${bep.toLocaleString('de-DE')} von ${n.ha} ha`)}<div class="bar fl ${bep>=n.ha?'':'g'}"><i class="hell" style="width:${w(S.ha,n.ha)}%"></i><i style="width:${w(bep,n.ha)}%"></i></div>${kv('💰 Vermögen',vonGeld(v,n.verm))}${bar(v,n.verm)}`}
     // Seit 10.0: Am Ziel steht hier die Stimmung im Verband mit der nächsten Wahl.
-    else if(S.amt) ziel=`<h4 class="gs">🗳️ Weinbauverband</h4>${kv('Stimmung im Verband',`${stimmZ()} von 100`)}${amtBalken()}<div class="mut" style="margin-bottom:8px">${amtSatz()}</div>`;
+    // Seit 12.7: Das Ansehen steht nicht mehr in der Statusleiste, deshalb hier auch auf dem höchsten Rang.
+    if(!n) ziel=`<h4 class="gs">🏆 Am Ziel</h4>${kv('⭐ Ansehen',num(S.ansehen))}`;
+    if(!n&&S.amt) ziel+=`<h4 class="gs">🗳️ Weinbauverband</h4>${kv('Stimmung im Verband',`${stimmZ()} von 100`)}${amtBalken()}<div class="mut" style="margin-bottom:8px">${amtSatz()}</div>`;
     openSheet(`<h3>📋 Dein Stand</h3><h4 class="gs">💶 Kasse</h4>${kv('🏦 Kontostand',eur(S.geld),S.geld<0?'rot':'')}<h4 class="gk">Dieses Jahr bisher</h4>${kv('📈 Einnahmen',eur(S.jahrEin),'gruen')}${kv('📉 Ausgaben',eur(S.jahrAus),'rot')}${kv('⚖️ Ergebnis',eur(S.jahrEin-S.jahrAus),S.jahrEin>=S.jahrAus?'gruen':'rot')}
     <h4 class="gk">Jeden Monat fällig</h4>${kv('Löhne',eur(K.loehne))}${kv('Feste Kosten',eur(K.basis))}${k?kv('Zinsen',eur(K.zins))+kv('Tilgung',eur(K.tilgung))+kv('Kredit offen',eur(k.rest)):''}${kv('Zusammen',eur(K.basis+K.loehne+K.zins+K.tilgung))}${ziel}${rangLeiter()}${zeitStand()}
     ${mib('geld')}<div class="btns"><button data-a="zurBank">🏦 Zur Bank</button><button data-a="close">Okay</button></div>`)},
   // Version 7.6: Wetter oben links als Blatt.
   wetterInfo(){fx('menue'); const kv=(a,x)=>`<div class="kv"><span>${a}</span><span>${x}</span></div>`;
-    openSheet(`<h3>🌤️ Wetter</h3>${kv('Heute, '+MON[S.monat],wetterText())}${kv('Vorhersage '+MON[(S.monat+1)%12],progText())}<p class="mut" style="margin:10px 0 0">Die Vorhersage stimmt meistens, aber nicht immer.</p><div class="btns"><button data-a="close">Okay</button></div>`)},
+    openSheet(`<h3>🌤️ Wetter</h3>${kv('Gebiet',R().name)}${kv('Heute, '+MON[S.monat],wetterText())}${kv('Vorhersage '+MON[(S.monat+1)%12],progText())}<p class="mut" style="margin:10px 0 0">Die Vorhersage stimmt meistens, aber nicht immer.</p><div class="btns"><button data-a="close">Okay</button></div>`)},
   zurBank(){closeSheet();geh('stadt','bank');render();window.scrollTo(0,0)},
   fi(d,e){const f=e.target.closest('.fen'), b=f.querySelector('.fi'), x=f.querySelector('.finfo'), auf=x.hidden; x.hidden=!auf; b.classList.toggle('an',auf); b.setAttribute('aria-expanded',auf); if(auf) FI_AUF.add(d.id); else FI_AUF.delete(d.id)},
   // Zugeklappter Teil eines Fensters (Steckbrief im Weinberg): auf und zu ohne neues Zeichnen, offen bleibt er bis zum Ortswechsel.
@@ -6575,7 +6678,8 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('click',e=>{
   // Seit 10.2.1: Ein Tipp neben die Sprechblase klappt sie zum Kopf zusammen, der Tipp selbst wirkt trotzdem (Maik 19.11.2026).
   // Seit 10.3: Der Tipp, der die Blase wegklappt, holt nicht gleich die nächste, die kommt erst mit dem Tipp danach.
-  const park=!!(FU_AKT&&!FU_KLEIN&&!e.target.closest('#fuehrer,#fkopf,#titel')); if(park) fuKlein(true);
+  // Seit 12.7: gilt für jede offene Blase, auch beim Blättern im Verlauf. Der Kopf oben klappt selbst auf und zu.
+  const park=!!(FU_OFFEN&&!e.target.closest('#fuehrer,#tkopf,#titel')); if(park) fuBlaseZu();
   // Nach einem Wischen zählt das Loslassen nicht als Tipp.
   const b=e.target.closest('[data-a]'); if(!b||b.disabled||Date.now()-WISCH_ZEIT<350) return;
   tonAn(); if(AC&&AC.state==='suspended') AC.resume();
@@ -6591,7 +6695,7 @@ document.addEventListener('click',e=>{
   if(!vorn&&erbeOffen()&&!['erbeJa','erbeArt','ton','menue','buch','buchZu'].includes(a)) return zeigeErbe();
   if(a!=='fuWo') FU_PAUSE=park;
   const f=AKT[a]; if(f){f(b.dataset,e); fx('klick')}
-  if((FU_AKT==null||FU_KLEIN)&&!FU_PAUSE) setTimeout(fuehrerZeig,0);
+  if(!FU_OFFEN&&!FU_PAUSE) setTimeout(fuehrerZeig,0);
 });
 $('#datei').addEventListener('change',e=>{const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>dateiLaden(String(r.result),ZIEL); r.readAsText(f)});
 $('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet'&&!SL)closeSheet()});
