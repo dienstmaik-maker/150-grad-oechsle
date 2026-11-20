@@ -785,7 +785,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='11.6';
+const VERSION='11.6.1';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 // Seit 11.5 (Teil C2, Maik 20.11.2026): realistische Löhne. Das Arbeitsamt bietet LOHN_MIN bis LOHN_MAX im Monat (bis 11.4: 200 bis 500 €, Startlohn 350, Vermittlung 300).
 // LOHN_F ist der gemeinsame Faktor auf alle Löhne (Angestellte und Manager), eingestellt über die Dosis-Reihe der Messung. lohnF rechnet einen Lohn damit um, auf 10 € gerundet.
@@ -6138,7 +6138,7 @@ function neuHinweis(hat){let alt=null; try{alt=localStorage.getItem(NEU_KEY); lo
 // Seit 11.0 "Was geplant ist" (Idee A, Maik 19.11.2026): der Ausblick steht über "Was ist neu" und im Büro bei "Deine Idee".
 // Je Zeile Titel und ein Satz, ohne Versionsnummer und Datum. Was gebaut ist, wandert von hier nach WAS_NEU.
 const AUSBLICK=[
-  ['📜 Weinkompendium neu sortiert','Die zehn Weine mit ihren Siegeln auf einem Brett, das Wissen zum Nachlesen daneben.'],
+  ['📜 Aus dem Weinkompendium wird das Weinarchiv','Die zehn Weine mit ihren Siegeln auf einem Brett, das Wissen zum Nachlesen daneben.'],
   ['🎬 Kurze Filme','Die großen Momente bekommen bewegte Bilder.'],
   ['👥 Online mit Freunden','Eine gemeinsame Bestenliste, jeder spielt auf seinem Handy für sich.']];
 function ausblickHtml(){return `<div class="ausbl">${AUSBLICK.map(([t,x])=>`<div><b>${t}</b>${esc(x)}</div>`).join('')}</div>`}
@@ -6151,6 +6151,7 @@ function ideeText(){
 }
 function ideeFertig(){try{localStorage.removeItem(IDEE_KEY)}catch(e){} meldung('Danke für deine Idee!','Jede Idee wird gelesen. Was daraus wird, siehst du bei „Was geplant ist“ und später bei „Was ist neu“.')}
 const WAS_NEU=[
+  ['11.6.1','20.11.2026','Der Ausblick sagt jetzt deutlicher, was mit dem Weinkompendium noch kommt: Es wird zum Weinarchiv.'],
   ['11.6','20.11.2026','Die drei Stufen heißen jetzt Lehrjahre (einfach), Gesellenjahre (mittel) und Meisterprüfung (schwer). Neue Gefahren nur in der Meisterprüfung: Alle paar Jahre kommt ein Schädling in den Weinberg, das Weinbauamt warnt vorher, und Spritzen halbiert den Schaden. Das Wetter einer Partie steht jetzt von Anfang an fest, neu laden ändert es nicht. Der Kellerausbau hat Namen bekommen. In den Lehrjahren startest du mit 80.000 €, in der Meisterprüfung wächst das Ansehen jetzt so schnell wie in den Gesellenjahren.'],
   ['11.5','20.11.2026','Ein Weingut wie im echten Leben: Die ersten 4 Hektar schaffst du mit deiner Familie, danach arbeiten Leute für echte Löhne, und deine Manager kommen mit dem Rang von selbst. Jeder Rang verlangt mehr Land, das Ansehen ist verdoppelt, Präsident wirst du in drei Generationen. Neu ist der Ruf des Hauses: Je mehr Siegel im Weinkompendium, desto mehr zahlen dir die Händler.'],
   ['11.4.1','20.11.2026','Beim neuen Spiel siehst du jetzt, was gewählt ist: Anrede, Schwierigkeit und Spielführer leuchten als weinrotes Schild.'],
