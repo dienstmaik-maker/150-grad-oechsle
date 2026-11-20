@@ -382,6 +382,7 @@ img.fass{height:1.1em;vertical-align:-.18em}
 #feier.buehne .fkarte p{display:none;margin:6px 0 0}
 #feier.buehne .fkarte p.da,#feier.alle .fkarte p{display:block;animation:ein 1.4s ease both}
 #feier.alle .fkarte p{animation:none}
+#feier.buehne .fkarte p.fzw{font:700 14px/1.3 var(--schrift);color:#c9a227;margin:12px 0 0}
 @media (prefers-reduced-motion:reduce){#feier .fbild.bewegt,#feier.buehne .fkarte p.da{animation:none}#feier .fglanz{display:none}}
 #feier .fbild.still{animation:none;filter:blur(2px);transform:scale(1.04);background-position:var(--p1)}
 /* Version 9.0: Aufstiegs-Szene "Dein Weingut wächst" vor der Feier. Sommerbild der alten Stufe, der Rangtitel wechselt, das Sommerbild der neuen Stufe blendet über (Sommer-Regel). */
@@ -790,7 +791,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='11.7.1';
+const VERSION='11.7';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 // Seit 11.5 (Teil C2, Maik 20.11.2026): realistische Löhne. Das Arbeitsamt bietet LOHN_MIN bis LOHN_MAX im Monat (bis 11.4: 200 bis 500 €, Startlohn 350, Vermittlung 300).
 // LOHN_F ist der gemeinsame Faktor auf alle Löhne (Angestellte und Manager), eingestellt über die Dosis-Reihe der Messung. lohnF rechnet einen Lohn damit um, auf 10 € gerundet.
@@ -3030,13 +3031,30 @@ function endeText(){
     :fl?['Auf dem Küchentisch liegen der alte Kellerschlüssel und die leere Flasche vom ersten Jahrgang.','„Die ist ja leer“, sagt dein Kind.','„Die war nie zum Trinken da.“']
     :['Auf dem Küchentisch liegt der alte Kellerschlüssel.','„Den kannst du jetzt benutzen“, sagst du zu deinem Kind. „Den Rest findest du im Keller.“'];
   if(S.ende.alt&&!best) P.push('Auf dem Stuhl im Festsaal sitzt inzwischen jemand anderes. Aber wer ihn erreicht hat, steht in jeder Chronik.');
+  if(nfName()) P.push(`Es übernimmt: ${nfName()}.`);
   return P;
+}
+// Seit 11.7 (A24): der Nachfolger nach der letzten Übergabe. S.ende.nf: {offen, art 't' oder 's', Vorschläge vt und vs, name, voll mit Familienname}.
+const nfOffen=()=>!!(S&&S.ende&&S.ende.nf&&S.ende.nf.offen);
+function nfVorschlag(){const f=S.ende.nf; return f.art==='s'?f.vs:f.vt}
+function nfName(){const f=S&&S.ende&&S.ende.nf; return f&&!f.offen&&f.name?`${f.voll||f.name}, ${f.art==='s'?'der Sohn':'die Tochter'}`:''}
+function nfBenennen(name){const f=S.ende.nf, fam=famName(); f.name=name; f.voll=(fam&&!name.includes(' ')?name+' '+fam:name).slice(0,40); f.offen=0}
+const nfZeile=()=>nfName()?`<div class="mut" style="margin-top:8px">Es übernimmt: ${esc(nfName())}.</div>`:'';
+function zeigeNachfolger(){
+  const f=S.ende.nf, alt=$('#nfname'), name=alt?alt.value:f.name;
+  openSheet(`${sbild(GEN_BILD.uebergabe)}<h3>Der letzte Schlüssel</h3><p>Zum letzten Mal liegt der alte Kellerschlüssel auf dem Küchentisch. Mit dieser Übergabe endet die Partie, danach kommt die Chronik.</p>
+    <h3>Wer übernimmt?</h3><div class="chips">${[['t','Die Tochter'],['s','Der Sohn']].map(([k,t])=>`<button class="chip ${f.art===k?'an':''}" data-a="nfArt" data-id="${k}">${t}</button>`).join('')}</div>
+    <input type="text" id="nfname" maxlength="20" placeholder="${esc(nfVorschlag())}" value="${esc(name)}">
+    <div class="btns"><button data-a="nfJa">Zum Küchentisch</button></div>`);
 }
 function spielEnde(wie){
   const n=genNr(), alt=S.erbe||{}, best=amtEhre(), ab=amtAlt();
   (S.chronik=S.chronik||[]).push({n,name:S.ich||alt.name||'',art:S.anrede?(S.anrede==='w'?'t':'s'):alt.art||'',von:genJahr(n-1),bis:S.jahr,rang:S.rang,ans:S.ansehen,verm:vermoegen(),steuer:0,kredit:0,ende:1,...(ab?{alt:1}:{}),...(best?{ehr:1}:{})});
   S.ende={art:best?'best':'gut',wie,j:S.jahr,m:S.monat,stand:endStand(),...(ab?{alt:1}:{})};
   S.ende.platz=bestenEintrag();
+  // Seit 11.7 (A24): Wer das Weingut nach der letzten Übergabe bekommt, wählst du vor dem Küchentisch wie bei jeder Übergabe (zeigeNachfolger).
+  S.ende.nf={offen:1,art:Math.random()<.5?'t':'s',vt:ERB_NAMEN.t[rint(0,ERB_NAMEN.t.length-1)],vs:ERB_NAMEN.s[rint(0,ERB_NAMEN.s.length-1)],name:''};
+  if(window.BOT) nfBenennen(nfVorschlag());
   // Seit 10.2 kommt das Gespräch am Küchentisch auf der Bild-Bühne (S.feier.welt 'ende'), danach die Chronik. Der Winzerbote meldet nur noch die Übergabe.
   S.wett=null; S.auktion=null; S.feier={welt:'ende'};
   if(wie==='gen') schlag(100,best?`${S.name}: Die Übergabe am Küchentisch`:`${S.name} geht in neue Hände`,`Zum Jahreswechsel übergibt ${S.ich||anr('der '+duN(),'die '+duN())} das Weingut an die nächste Generation. Damit schließt sich nach ${jahreTxt(S.ende.stand.jahre)} ${WO[S.region]} der Kreis für ${S.name}.${spLohn(SPENDEN.length-1)?` ${anr('Der Ehrenbürger','Die Ehrenbürgerin')} geht in den Ruhestand, das ganze Dorf zieht den Hut.`:''} Am Küchentisch wartet schon dein Kind, danach kommt die Chronik.`,ENDE_BILD[S.ende.art],{gold:1,sonder:1,du:1,schluss:1});
@@ -3064,7 +3082,7 @@ function vEnde(){
   <div class="ein">
     <div class="card etext">${endeText().map(x=>`<p>${esc(x)}</p>`).join('')}<p class="mut">${MON[E.m]} ${E.j}: ${esc(S.ich||S.name)} übergibt als ${duN()}${E.wie==='frei'?', aus freien Stücken':''}. ${best?`Mehr geht nicht: ${anr('Präsident','Präsidentin')}, Weltweinschau, ${ehrP()}.`:'Das beste Ende gibt es mit einem Sieg bei der Weltweinschau im eigenen Dorf.'}</p></div>
     <div class="card"><h3>📜 Chronik von ${esc(S.name)}</h3>${kv('Gespielt',`${st.jahre} Jahre, ${genNr()} ${genNr()===1?'Generation':'Generationen'}`)}${S.zeit!=null?kv('Spielzeit',zeitTxt(S.zeit)+(S.zeitAlt?' (seit 8.3)':'')):''}${kv('Vermögen',eur(st.verm||0))}${kv('Ansehen',num(st.ans||0))}${amtZ?kv('Im Amt',amtZ):''}${kv('Das Ende',ENDE_NAME[E.art])}${E.platz?kv('Bestenliste',`Platz ${E.platz}`):''}</div>
-    ${karte('👪 Die Generationen',gen)}${karte('🪜 Der Weg nach oben',raenge)}
+    ${karte('👪 Die Generationen',gen+nfZeile())}${karte('🪜 Der Weg nach oben',raenge)}
     ${stufen?`<div class="card"><h3>🏡 Das Weingut wächst</h3><div class="ewg">${stufen}</div></div>`:''}
     ${karte('🗳️ Die Wahlen im Verband',wahlen)}${karte('🌍 Die Weltweinschau',welt)}${karte('🤝 Für das Dorf',spenden)}${karte('🏅 Medaillen',med)}
     ${L.length?`<div class="card"><h3>🏆 Bestenliste</h3>${L.map(bestenZeile).join('')}</div>`:''}
@@ -3101,7 +3119,7 @@ function zeigeErz(){
 function chronikHtml(){
   const C=S.chronik||[], n=genNr(), e=S.erbe, wer=(nr,name,art)=>nr===1?(name?`${esc(name)}, ${art==='t'?'die Gründerin':'der Gründer'}`:'die Gründung'):name?`${esc(name)}, ${art==='s'?'der Sohn':'die Tochter'}`:'die nächste Generation';
   return fenster('chronik','Generationen-Chronik',`${C.map(c=>`<div class="rl"><span>${c.n}.</span><div><b>${c.von} bis ${c.bis}: ${wer(c.n,c.name,c.art)}</b><span class="mut">übergeben als ${c.ehr?(c.art==='t'?'Ehrenpräsidentin':'Ehrenpräsident'):c.alt?(c.art==='t'?'Altpräsidentin':'Altpräsident'):c.art==='t'&&RAENGE[c.rang].kw||RAENGE[c.rang].kurz} mit ${num(c.ans)} Ansehen${c.ende?'':`, Erbschaftssteuer ${eur(c.steuer)}`}</span></div></div>`).join('')}
-    ${S.ende?'':`<div class="rl du"><span>${n}.</span><div><b>seit ${genJahr(n-1)}: ${wer(n,S.ich||(e&&e.name),S.anrede?(S.anrede==='w'?'t':'s'):e&&e.art)}</b><span class="mut">${S.flascheAuf?'Die Flasche vom ersten Jahrgang ist getrunken. ':S.gesch&&S.gesch.flasche?'Die Flasche vom ersten Jahrgang liegt noch im Regal. ':''}${S.amt?`Letzte Übergabe im Januar ${endeJahr()}`:`Nächste Übergabe im Januar ${genJahr(n)}`}</span></div></div>`}`,{
+    ${S.ende?'':`<div class="rl du"><span>${n}.</span><div><b>seit ${genJahr(n-1)}: ${wer(n,S.ich||(e&&e.name),S.anrede?(S.anrede==='w'?'t':'s'):e&&e.art)}</b><span class="mut">${S.flascheAuf?'Die Flasche vom ersten Jahrgang ist getrunken. ':S.gesch&&S.gesch.flasche?'Die Flasche vom ersten Jahrgang liegt noch im Regal. ':''}${S.amt?`Letzte Übergabe im Januar ${endeJahr()}`:`Nächste Übergabe im Januar ${genJahr(n)}`}</span></div></div>`}${S.ende?nfZeile():''}`,{
     buch:'generationen',i:`Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation. Vom Ansehen bleiben ${pz(ERB_ANSEHEN)}, als Ehrenbürger ${pz(SP_ERBE)}, ${pz(ERB_STEUER)} vom Vermögen gehen als Erbschaftssteuer weg, alles andere bleibt. Wer ${anr('Präsident','Präsidentin')} geworden ist, übergibt nur noch einmal: Danach endet die Partie mit der Chronik, ohne Erbschaftssteuer.`});
 }
 function geschichteMonat(){
@@ -3296,7 +3314,7 @@ function monatLauf(){
   // Schritt G 7.0: Der Kredit für die Erbschaftssteuer (erbRest) zählt nicht gegen den Kreditrahmen.
   if(schulden()-erbRest()>rahmen()){
     S.mahnung++;
-    if(S.mahnung>=3){S.pleite=true; schlag(90,`Pfändung bei ${S.name}`,'Der Gerichtsvollzieher steht vor der Tür. Dein Weingut ist pleite.','pleite',{du:1})}
+    if(S.mahnung>=3){S.pleite=true; S.pleiteP=S.rang?bestenEintrag():0; schlag(90,`Pfändung bei ${S.name}`,'Der Gerichtsvollzieher steht vor der Tür. Dein Weingut ist pleite.','pleite',{du:1})}
     else{ruhm(-6); schlag(58,`${S.mahnung}. Mahnung der Bank`,`Deine Schulden von ${eur(schulden()-erbRest())} liegen über dem Kreditrahmen von ${eur(rahmen())}. Das kostet 6 Ansehen. Beim dritten Mal kommt der Gerichtsvollzieher.`,'bank',{du:1})}
   }else{S.mahnung=0; if(S.geld<0) Z.push('Dein Konto ist im Minus. Die Bank nimmt dafür 1 % Zinsen im Monat.')}
   // Seit 10.1: Endet die Partie in diesem Januar (spielEnde in generationMonat), passiert danach nichts mehr.
@@ -3307,7 +3325,7 @@ function monatLauf(){
   const ehr=(S.ehrungen||[]).slice(S.ehrZeig||0); S.ehrZeig=(S.ehrungen||[]).length;
   S.bericht=zeitung(Z,W,ehr,{basis:K.basis,loehne:K.loehne,rate:K.tilgung+K.zins,ueberz:uz,steuer});
   TAB='monat'; save(); render(); window.scrollTo(0,0);
-  if(S.pleite) zeigePleite(); else if(S.pruefer) zeigePruefer(); else if(erbeOffen()) zeigeErbe(); else if(S.erz) zeigeErz();
+  if(S.pleite) zeigePleite(); else if(nfOffen()) zeigeNachfolger(); else if(S.pruefer) zeigePruefer(); else if(erbeOffen()) zeigeErbe(); else if(S.erz) zeigeErz();
 }
 // ---- Spielende: Sonderausgabe und Bestenliste ----
 // 7.8: Einzahl bei genau einem Jahr ("nach 1 Jahr" statt "nach 1 Jahren").
@@ -3319,16 +3337,17 @@ function besten(){try{const L=JSON.parse(localStorage.getItem(BESTEN_KEY)||'[]')
 // Version 7.7: Je Partie ein Eintrag (S.bestenD), der bei jedem Aufstieg erneuert wird, höchstens 10. Sortiert nach Rang, dann Zeit vom Spielstart bis zum Aufstieg
 // (schneller vorn), dann Spielstufe (schwerer vorn), bei völligem Gleichstand der ältere Eintrag vorn. Kein Ansehen mehr. Alte Einträge ohne Monate zählen mit ihren Jahren.
 // Gibt deinen Platz zurück, 0 wenn du nicht unter den zehn bist.
-const STUFE_WERT={einfach:0,mittel:1,schwer:2}, ENDE_WERT={gut:1,best:2}, ENDE_NAME={gut:'🏁 gutes Ende',best:'🌍 bestes Ende'};
+const STUFE_WERT={einfach:0,mittel:1,schwer:2}, ENDE_WERT={gut:1,best:2,pleite:-1}, ENDE_NAME={gut:'🏁 gutes Ende',best:'🌍 bestes Ende',pleite:'💸 pleite'};
 const bestenMon=e=>e.mon!=null?e.mon:(e.jahre||0)*12;
 function bestenEintrag(){
   if(window.BOT) return 0;
   const alle=besten(), alt=alle.find(e=>e.d===S.bestenD), L=alle.filter(e=>e.d!==S.bestenD), d=S.bestenD||Date.now(); S.bestenD=d;
   // Seit 8.3 mit der Spielzeit bis zum Rang (zs, Sekunden), nur wenn die Partie von Anfang an gezählt wurde.
   // Seit 10.1: Beim Ende kommen die Amtszeiten (amt) und das Ende (ende: gut oder best) dazu. Die Zeit bis zum Präsidenten bleibt dabei stehen.
-  const fest=S.ende&&alt&&alt.rang===S.rang, zr=(S.zeitRang||[]).find(x=>x.r===S.rang);
+  // Seit 11.7 (A29): Eine Pleite bleibt mit ihrem Rang stehen und steht als "pleite" in der Liste, hinter laufenden Partien mit gleichem Rang.
+  const fest=(S.ende||S.pleite)&&alt&&alt.rang===S.rang, zr=(S.zeitRang||[]).find(x=>x.r===S.rang);
   L.push({name:S.name,ich:S.ich||'',w:frau()?1:0,rang:S.rang,mon:fest?bestenMon(alt):(S.jahr-START_JAHR)*12+S.monat,region:S.region,schwer:S.schwer,gen:genNr(),d,
-    ...(fest?(alt.zs!=null?{zs:alt.zs}:{}):S.zeit!=null&&!S.zeitAlt?{zs:S.ende&&zr?zr.s:Math.round(S.zeit)}:{}),...(S.ende?{ende:S.ende.art,amt:S.amt?S.amt.zeit:0}:{})});
+    ...(fest?(alt.zs!=null?{zs:alt.zs}:{}):S.zeit!=null&&!S.zeitAlt?{zs:S.ende&&zr?zr.s:Math.round(S.zeit)}:{}),...(S.ende?{ende:S.ende.art,amt:S.amt?S.amt.zeit:0}:S.pleite?{ende:'pleite'}:{})});
   L.sort((a,b)=>b.rang-a.rang||(ENDE_WERT[b.ende]||0)-(ENDE_WERT[a.ende]||0)||bestenMon(a)-bestenMon(b)||(STUFE_WERT[b.schwer]||0)-(STUFE_WERT[a.schwer]||0)||a.d-b.d);
   const K=L.slice(0,10);
   try{localStorage.setItem(BESTEN_KEY,JSON.stringify(K))}catch(e){return 0}
@@ -3620,7 +3639,18 @@ function amtWahl(){
   }
 }
 function zeigePleite(){
-  openSheet(`${sbild('pleite')}<h3>Dein Weingut ist pleite</h3><p>Der Gerichtsvollzieher hat gepfändet. Deine Schulden von ${eur(schulden())} lagen dreimal in Folge über dem Kreditrahmen.</p>${(st=>`<h4 class="gk">Was bis hierher geschafft war</h4><div class="kv"><span>Gespielt</span><span>${st.jahre} Jahre, ${genNr()}. Generation</span></div><div class="kv"><span>Rang</span><span>${esc(duN())}</span></div><div class="kv"><span>Platz</span><span>${st.platz}. von ${S.gegner.length+1}</span></div><div class="kv"><span>Ansehen</span><span>${num(st.ans)}</span></div>`)(endStand())}<div class="btns"><button data-a="neuJa">Neues Spiel beginnen</button></div>`);
+  openSheet(`${sbild('pleite')}<h3>Dein Weingut ist pleite</h3><p>Der Gerichtsvollzieher hat gepfändet. Deine Schulden von ${eur(schulden())} lagen dreimal in Folge über dem Kreditrahmen.</p>${(st=>`<h4 class="gk">Was bis hierher geschafft war</h4><div class="kv"><span>Gespielt</span><span>${st.jahre} Jahre, ${genNr()}. Generation</span></div><div class="kv"><span>Rang</span><span>${esc(duN())}</span></div><div class="kv"><span>Platz</span><span>${st.platz}. von ${S.gegner.length+1}</span></div><div class="kv"><span>Ansehen</span><span>${num(st.ans)}</span></div>${S.pleiteP?`<div class="kv"><span>Bestenliste</span><span>Platz ${S.pleiteP}, als pleite</span></div>`:''}`)(endStand())}
+    <h4 class="gk">👪 Die Generationen</h4>${pleiteGen()}
+    <p class="mut">Der Spielstand bleibt mit allem liegen, bis du ihn löschst. Ein neues Spiel kannst du auch auf einem freien Platz unter „Spielstände“ beginnen.</p>
+    <div class="btns"><button class="sec" data-a="menue">Spielstände</button><button data-a="pleiteNeu">Neues Spiel</button></div>`);
+}
+// Seit 11.7 (A29): die Generationen im Pleite-Fenster, wie in der Chronik, die laufende mit dem Jahr der Pfändung.
+function pleiteGen(){
+  const C=S.chronik||[], n=genNr(), e=S.erbe;
+  const wer=(nr,name,art)=>nr===1?(name?`${esc(name)}, ${art==='t'?'die Gründerin':'der Gründer'}`:'die Gründung'):name?`${esc(name)}, ${art==='s'?'der Sohn':'die Tochter'}`:'die nächste Generation';
+  const titel=c=>c.ehr?(c.art==='t'?'Ehrenpräsidentin':'Ehrenpräsident'):c.alt?(c.art==='t'?'Altpräsidentin':'Altpräsident'):c.art==='t'&&RAENGE[c.rang].kw||RAENGE[c.rang].kurz;
+  return C.map(c=>`<div class="rl"><span>${c.n}.</span><div><b>${c.von} bis ${c.bis}: ${wer(c.n,c.name,c.art)}</b><span class="mut">übergeben als ${titel(c)} mit ${num(c.ans)} Ansehen</span></div></div>`).join('')
+    +`<div class="rl du"><span>${n}.</span><div><b>${genJahr(n-1)} bis ${S.jahr}: ${wer(n,S.ich||(e&&e.name),S.anrede?(S.anrede==='w'?'t':'s'):e&&e.art)}</b><span class="mut">gepfändet als ${esc(rangK(S.rang))} mit ${num(S.ansehen)} Ansehen</span></div></div>`;
 }
 
 /* ================= Aufgaben-Liste ================= */
@@ -3936,6 +3966,14 @@ function szeneHtml(k,still){
     +(vid?`<video class="fvid" src="bilder/${z.video}.mp4" poster="bilder/${z.bild}.jpg" muted playsinline autoplay preload="auto" onerror="this.remove()"></video>`:'');
 }
 const feierSzene=F=>F.start?0:F.zu;
+// Seit 11.7 (A13, Maik 20.11.2026): Bei einem Aufstieg über mehrere Ränge kommen die Kapitel aller neuen Ränge nacheinander auf dieselbe Bühne,
+// jedes mit dem Rang als Zwischenzeile. Bild und Überschrift bleiben beim höchsten Rang.
+function feierKapitel(F){
+  const p=s=>`<p>${esc(s)}</p>`;
+  if(F.start||F.von==null||F.zu-F.von<2) return kapitel(feierSzene(F)).map(p);
+  const L=[]; for(let r=F.von+1;r<=F.zu;r++) L.push(`<p class="fzw">${esc(rangN(r))}</p>`,...kapitel(r).map(p));
+  return L;
+}
 function feierStopp(){FT.forEach(clearTimeout); FT=[]}
 // Kurzer Schnitt aus Schwarz beim Wechsel zwischen Zeitung, Feier und Aktuelles.
 function schnitt(){const s=document.createElement('div');s.className='schnitt';document.body.appendChild(s);setTimeout(()=>s.remove(),600)}
@@ -4093,7 +4131,7 @@ function vFeier(){
   const F=S.feier||{von:Math.max(0,S.rang-1),zu:S.rang}, i=F.zu, k=feierSzene(F);
   if(FSTUFE===-1) return vWachs(F);
   if(FSTUFE===0) return `<div id="feier" class="buehne" data-a="feierAlle">${szeneHtml(k)}<div class="fglanz"></div>${konfetti(konfN(k))}<div class="fverl"></div>
-    <div class="fkarte"><small>${SZENEN[k].ort}</small><h2>${k?`Du bist jetzt ${esc(rangN(i))}!`:'Die Anzeige'}</h2>${kapitel(k).map(s=>`<p>${esc(s)}</p>`).join('')}</div>
+    <div class="fkarte"><small>${SZENEN[k].ort}</small><h2>${k?`Du bist jetzt ${esc(rangN(i))}!`:'Die Anzeige'}</h2>${feierKapitel(F).join('')}</div>
     <div class="ifuss"><button data-a="feierWeiter">${k?'Zur Urkunde':'Zum Kaufvertrag'} ▶</button></div><div class="ischw"></div></div>`;
   const P=F.start?startPunkte():feierPunkte(F.von,i);
   return `<div id="feier" class="urkseite">${szeneHtml(k,1)}<div class="fdunkel"></div>${konfetti(konfN(k)>>1)}
@@ -5693,7 +5731,11 @@ const AKT={
       <p class="mut">${A.ehren?`Als ${ehrP()} bekommst du das beste Ende.`:A.brief?'Die Weltweinschau hast du noch nicht gewonnen. Ohne den Sieg ist es das gute Ende, nicht das beste.':'Die Weltweinschau war noch nicht im Dorf. Ohne sie ist es das gute Ende, nicht das beste.'} Erbschaftssteuer fällt nicht an. Von selbst übergibt die Familie im Januar ${endeJahr()}.</p>
       <div class="btns"><button class="sec" data-a="close">Noch nicht</button><button class="wag" data-a="endeJa">Weingut übergeben</button></div>`);
   },
-  endeJa(){if(!S.amt||S.ende) return; closeSheet(); spielEnde('frei'); TAB='feier'; FSTUFE=0; save(); render(); window.scrollTo(0,0); schnitt()},
+  endeJa(){if(!S.amt||S.ende) return; closeSheet(); spielEnde('frei'); save(); if(nfOffen()) return zeigeNachfolger(); TAB='feier'; FSTUFE=0; render(); window.scrollTo(0,0); schnitt()},
+  // Seit 11.7 (A24): Nachfolger wählen. Bei der freiwilligen Übergabe geht es danach gleich an den Küchentisch, zum Jahreswechsel erst mit dem Knopf im Winzerboten.
+  nfArt(d){if(!nfOffen()) return; S.ende.nf.art=d.id==='s'?'s':'t'; zeigeNachfolger()},
+  nfJa(){if(!nfOffen()) return; const n=(($('#nfname')||{}).value||'').trim().slice(0,20)||nfVorschlag(); nfBenennen(n); closeSheet(); save();
+    if(S.ende.wie==='frei'){TAB='feier'; FSTUFE=0} render(); window.scrollTo(0,0); if(TAB==='feier') schnitt()},
   spEhre(d){
     const s=+d.n, e=(S.spenden||[]).find(x=>x.s===s); if(!e) return; const D=SPENDEN[s];
     openSheet(`<h2>🤝 ${esc(spKurz(s,e))}</h2>${spEhrHtml(s,'gross',e)}<p class="mut" style="margin:10px 0">${e.st?`Nachgeholt von der Stiftung im ${MON[e.m]} ${e.j}, für ${esc(D.z)}.${s===8?' Der Holzbogen kam mit.':''}`:`Gespendet für ${esc(D.z)} im ${MON[e.m]} ${e.j}. ${esc(D.lohn)}.`}</p>${s===8?spBogenHtml():s===7&&!e.st?`<div class="spbogen" style="background-image:url(bilder/${bankBild()}.jpg)"></div>${spBankTafel()}`:''}<div class="btns"><button data-a="close">Schließen</button></div>`);
@@ -5756,6 +5798,9 @@ const AKT={
   slPlus(){const r=$('#slr');r.value=Math.min(+r.max,+r.value+(+r.dataset.st));slUpd()},
   slOk(){const n=+$('#slr').value,f=SL.ok;closeSheet();f(n);save();render()},
   neuFrage(){openSheet(`<h3>Neues Spiel beginnen?</h3><p>Spielstand ${SLOT+1} wird dabei gelöscht. Für ein zweites Spiel nimm unter „Spielstände“ einen freien Platz.</p><div class="btns"><button class="sec" data-a="close">Abbrechen</button><button class="wag" data-a="neuJa">Ja, neu anfangen</button></div>`)},
+  // Seit 11.7 (A29): Nach der Pleite löscht "Neues Spiel" den Stand erst nach einer Nachfrage, "Zurück" holt das Pleite-Fenster wieder.
+  pleiteNeu(){if(!S||!S.pleite) return; openSheet(`<h3>Neues Spiel beginnen?</h3><p>Spielstand ${SLOT+1} mit ${esc(S.name)} wird dabei gelöscht, auch seine Chronik. Behalten kannst du ihn, wenn du unter „Spielstände“ einen freien Platz nimmst.</p><div class="btns"><button class="sec" data-a="pleiteZurueck">Zurück</button><button class="wag" data-a="neuJa">Ja, neu anfangen</button></div>`)},
+  pleiteZurueck(){if(S&&S.pleite) zeigePleite()},
   neuJa(){closeSheet();try{localStorage.removeItem(KEYS[SLOT])}catch(e){}S=null;NEU=neuStart();START='neu';render();window.scrollTo(0,0)},
   /* ---- Titelbild und Geschichte ---- */
   titelWeiter(){titelZu(); if(!S){const i=[0,1,2].find(i=>lies(i)); return i==null?AKT.titelNeu():AKT.slotLaden({id:i})} geh('gut');render();window.scrollTo(0,0)},
@@ -6171,9 +6216,8 @@ function ideeFertig(){try{localStorage.removeItem(IDEE_KEY)}catch(e){} meldung('
 // Je Version: [Zeichen, Nummer, Titel, Datum, Punkte]. Kommendes ohne Datum und Punkte.
 const WAS_NEU=[
   {k:'🏁 11.0 Weinkompendium',d:'in Arbeit',p:['Das Weinkompendium ersetzt das Weinlexikon','Siegel in Bronze, Silber und Gold'],v:[
-    ['⏳','11.9','Ergänzungen'],
-    ['⏳','11.8','Weinarchiv'],
-    ['▶️','11.7','Buch und Spielführer'],
+    ['▶️','11.8','Weinarchiv'],
+    ['✅','11.7','Buch und Abschluss','20.11.2026',['Kapitel im Buch neu geordnet, wie die Orte im Spiel','Ein Aufstieg über zwei Ränge zeigt beide Kapitel','Die letzte Übergabe bekommt einen Nachfolger mit Namen','Die Pleite zeigt deine Generationen und steht in der Bestenliste','Neues Spiel nach der Pleite erst nach Nachfrage']],
     // 10.6 ist ein Nachzügler aus Meilenstein 10 und steht an ihrem Platz in der Reihenfolge (Maik 20.11.2026).
     ['✅','10.6','Aufgeräumte Fenster','20.11.2026',['Gesperrtes bleibt unsichtbar bis zum passenden Rang','Die Aufstiegsfeier nennt alles Neue','Fenster von unten auf Pergament, Überschriften dunkelbraun','Leiste für die Flaschen im Lager','Sabotage erst ab Winzer']],
     ['✅','11.6','Schummelsperre','20.11.2026',['Festes Wetter je Partie, neu laden ändert nichts','Stufen heißen Lehrjahre, Gesellenjahre und Meisterprüfung','Schädlinge in der Meisterprüfung, Spritzen halbiert den Schaden','Kellerausbau mit Namen','Mehr Startgeld in den Lehrjahren']],
@@ -6271,9 +6315,11 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]'); if(!b||b.disabled||Date.now()-WISCH_ZEIT<350) return;
   tonAn(); if(AC&&AC.state==='suspended') AC.resume();
   const a=b.dataset.a, vorn=/^titel/.test(a);
-  if(!vorn&&S&&S.pleite&&!['neuJa','tab','sub','close','weiter','menue','ton','infoWeiter','feierAlle','feierWeiter','wachsAlle','feierBuehne','feierEnde','buch','buchZu'].includes(a)) return;
+  if(!vorn&&S&&S.pleite&&!['neuJa','pleiteNeu','pleiteZurueck','tab','sub','close','weiter','menue','ton','infoWeiter','feierAlle','feierWeiter','wachsAlle','feierBuehne','feierEnde','buch','buchZu'].includes(a)) return;
   // Seit 10.1: Nach dem Ende gehen nur noch Chronik, neues Spiel, Spielstände, Ton und Buch, seit 10.2 auch die Feier am Küchentisch.
-  if(!vorn&&S&&S.ende&&!['menue','close','ton','infoWeiter','feierEnde','feierAlle','buch','buchZu','neuFrage','neuJa','idee','ideeWa','ideeTeilen','ausblick'].includes(a)) return;
+  // Seit 11.7: Solange der Nachfolger fehlt, geht nur das Wählen (dazu Ton, Spielstände und Buch).
+  if(!vorn&&nfOffen()&&!['nfJa','nfArt','ton','menue','buch','buchZu'].includes(a)) return zeigeNachfolger();
+  if(!vorn&&S&&S.ende&&!['menue','close','ton','infoWeiter','feierEnde','feierAlle','buch','buchZu','neuFrage','neuJa','idee','ideeWa','ideeTeilen','ausblick','nfJa','nfArt'].includes(a)) return;
   // Solange der Weinprüfer wartet, geht nichts anderes.
   if(!vorn&&S&&S.pruefer&&!['pruefJa','pruefBestechen','slMinus','slPlus','slOk','close','ton','menue','buch','buchZu'].includes(a)) return zeigePruefer();
   // Schritt G 7.0: Solange die Übergabe offen ist, geht nur das Übergeben.
