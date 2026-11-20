@@ -1,7 +1,7 @@
 // Helfer für die App: legt alle Dateien des Spiels aufs Gerät, damit es ohne Netz läuft.
 // Die Spielseite (index.html), das Buch (anleitung.js) und seit 8.1 die Sprechblasen (fuehrer.js) kommen immer zuerst frisch aus dem Netz, so kommen neue Fassungen von selbst an. Ohne Netz gilt die gespeicherte.
 // Bilder und Töne kommen aus dem Speicher. Ändert sich eines davon, die Nummer in LAGER erhöhen, dann lädt das Gerät alles neu.
-const LAGER = 'oechsle-42';
+const LAGER = 'oechsle-43';
 const DATEIEN = [
   './', 'index.html', 'manifest.webmanifest', 'anleitung.js', 'fuehrer.js',
   'bilder/amt.jpg',
@@ -62,6 +62,11 @@ const DATEIEN = [
   'bilder/maschine.jpg',
   // Seit 12.2: Timos Bilder für Maschinen, Schädlinge und Sektkeller.
   'bilder/masch-abfuell.jpg',
+  'bilder/nah-kelterhaus.jpg',
+  'bilder/nah-festwiese.jpg',
+  'bilder/nah-gaestezimmer.jpg',
+  'bilder/nah-turmstube.jpg',
+  'bilder/nah-steillage.jpg',
   'bilder/masch-duenger.jpg',
   'bilder/masch-gross.jpg',
   'bilder/masch-klein.jpg',

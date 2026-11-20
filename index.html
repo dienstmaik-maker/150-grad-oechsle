@@ -302,6 +302,7 @@ img.fass{height:1.1em;vertical-align:-.18em}
 /* Luftbild in der Zeitung: dasselbe Bild klein und ganz, wie ein altes Foto aus dem Archiv. */
 #info .zluft{aspect-ratio:3/2;background:#8a7356 center/cover no-repeat;margin:3px 0 6px;border-radius:3px;filter:sepia(.55) saturate(.85) contrast(1.05);box-shadow:0 0 0 1px rgba(90,60,30,.55),0 1px 3px rgba(60,40,20,.35)}
 #info .zluft.gross{aspect-ratio:16/9}
+#info .znah{margin:-3px 0 6px;font-size:.72em;font-style:italic;text-align:center;opacity:.75}
 #info .zvier{display:grid;grid-template-columns:1fr 1fr;column-gap:8px}
 @media (prefers-reduced-motion:reduce){#info.wg .ibild,#info.wg.gross .ibild{animation:none}#info.wg .ineu{-webkit-mask:none;mask:none}#info .iteile{display:none}}
 #info .iverl{position:fixed;inset:0;background:linear-gradient(transparent 55%,rgba(0,0,0,.55))}
@@ -1500,6 +1501,13 @@ const wgBild=(st,jz)=>`weingut-${String(st).padStart(2,'0')}-${jz}`, wgGross=st=
 // Aufstieg in diesem Monat? Dann zeigt der Winzerbote noch die alte Stufe, das Wachsen kommt erst in der Feier (Annahme Claude).
 const wgAuf=F=>!!(F&&!F.start&&!F.spende&&F.von!=null&&F.zu>F.von);
 const wgStufe=()=>(wgAuf(S.feier)?S.feier.von:S.rang)+1;
+// Seit 12.4.3: Nahansichten vom großen Weingut. Ab ihrer Stufe zeigt "Dein Weingut" im Winzerboten jeden zweiten Monat statt des Weinguts eine davon, reihum (Maik 20.11.2026).
+// Stufen nach den Baupaketen: Kelterhaus ab 6, Festwiese und Gästehaus ab 8, Turm und Steillage ab 9. Im Monat eines Aufstiegs bleibt das Weingut.
+const NAH=[['nah-kelterhaus',6,'Im Kelterhaus'],['nah-festwiese',8,'Auf der Festwiese'],['nah-gaestezimmer',8,'Im Gästezimmer'],['nah-turmstube',9,'Oben in der Turmstube'],['nah-steillage',9,'In der Steillage']];
+function nahBild(st){
+  const L=NAH.filter(n=>st>=n[1]), m=monatNr();
+  return !L.length||m%2===0||wgAuf(S.feier)?null:L[((m-1)/2)%L.length];
+}
 function monatBild(){
   if(S.monat===10&&S.kaelte===S.jahr) return 'frost';
   return wgBild(wgStufe(),JZ[S.monat]);
@@ -3529,7 +3537,7 @@ function etappe3Monat(Z){
     S.rangNeu=S.jahr*12+S.monat;
     zeitAufstieg(alt,S.rang);
     S.feier={von:alt,zu:S.rang,platz:bestenEintrag()}; if(S.rang<R_MAX) S.aufBrief=S.rang;
-    schlag(95,`Aufstieg: Du bist jetzt ${rangN(S.rang)}`,`Das ${bringtSatz(S.rang)}.${rahmenSatz(S.rang)}${r.weg?' '+anr(r.weg,r.wegW):''}`,'aufstieg',{sonder:1,gold:1,du:1});
+    schlag(95,`Aufstieg: Du bist jetzt ${rangN(S.rang)}`,`Das ${bringtSatz(S.rang)}.${rahmenSatz(S.rang)}${r.weg?' '+anr(r.weg,r.wegW):''}`,wgBild(S.rang+1,'sommer'),{sonder:1,gold:1,du:1});   // Seit 12.4.3: Weingut-Bild der neuen Stufe statt 'aufstieg' (Maik 20.11.2026)
     if(S.rang===R_MAX&&!S.sieger) siegSpieler();
     else if(S.rang===R_MAX) schlag(99,`Du bist ${anr('Präsident','Präsidentin')}!`,`Der Weinbauverband wählt dich an seine Spitze. ${S.sieger} saß vor dir auf dem Stuhl im Festsaal und muss ihn jetzt räumen: Er gehört dir.${S.gesch&&S.gesch.flasche&&!S.flascheAuf?(S.flascheAuf=S.jahr,' Die Flasche vom ersten Jahrgang wird heute Abend doch noch geöffnet.'):''} ${AMT_AUSBLICK}`,S.flascheAuf===S.jahr?GEN_BILD.sieg:'sieg',{gold:1,du:1});
     // Seit 10.0: Das Amt beginnt in dem Monat, in dem der Spieler Präsident wird, auch wenn ein Gegner vorher schon Präsident war.
@@ -3998,7 +4006,8 @@ function vMonat(){
   let frei=1;
   const art=(b.art||[]).map(a=>{const f=(frei||a.foto)&&a.bild&&a.bild!==k.bild?(a.foto||(frei=0),foto(a,'klein')):''; return `<div class="zart">${f}<h3>${esc(a.t)}</h3>${a.text?`<p>${esc(a.text)}</p>`:''}${liste(a)}</div>`}).join('');
   const haengt=S.monat>=7&&R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen);
-  const rechts=`<h4>Dein Weingut</h4>${wg?`<div class="zluft${wgGross(st)?' gross':''}" style="background-image:url(bilder/${bild}.jpg)"></div>`:''}<div class="zvier"><div class="zz"><b>Rang</b>${duK()}</div><div class="zz"><b>Boden</b><span class="${S.boden<80?'rot':''}">${S.boden}\u00a0%${S.boden<80&&S.duengungen<3?', Düngen ist dran':''}</span></div>
+  const nah=wg?nahBild(st):null;
+  const rechts=`<h4>Dein Weingut</h4>${nah?`<div class="zluft gross" style="background-image:url(bilder/${nah[0]}.jpg)"></div><div class="znah">${nah[2]}</div>`:wg?`<div class="zluft${wgGross(st)?' gross':''}" style="background-image:url(bilder/${bild}.jpg)"></div>`:''}<div class="zvier"><div class="zz"><b>Rang</b>${duK()}</div><div class="zz"><b>Boden</b><span class="${S.boden<80?'rot':''}">${S.boden}\u00a0%${S.boden<80&&S.duengungen<3?', Düngen ist dran':''}</span></div>
     <div class="zz"><b>Ansehen</b>${num(S.ansehen)}</div><div class="zz"><b>Konto</b><span class="${S.geld<0?'rot':''}">${eur(S.geld)}</span></div></div>`;   // Seit 10.2.1 zwei Spalten: Rang und Ansehen links, Boden und Konto rechts (Maik 19.11.2026)
   return `<div id="info" class="${wg?'wg'+(wgGross(st)?' gross':'')+(wech?' jzw':''):bild}">${hinten}<div class="iverl"></div>
   <div class="zt"><div class="zkopf"></div><div class="zmitte">
