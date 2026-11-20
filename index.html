@@ -163,6 +163,8 @@ textarea{display:block;width:100%;min-height:150px;resize:none;font:inherit;line
 .slval{text-align:center;font-size:15px;margin:8px 0}.slval b{font-size:24px;display:block}
 .wahl{display:block;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1.5px solid var(--line);margin:0 0 8px;font-weight:500}
 .wahl.an{border-color:var(--wein);box-shadow:0 0 0 2px var(--wein) inset}
+/* Seit 11.4.1 (Maik 20.11.2026): Anrede, Schwierigkeit und Spielführer beim neuen Spiel zeigen die Wahl als weinrotes Schild mit heller Schrift. */
+.wahl.neuwahl.an{background:#7b1e3a;color:#fff8e8;border-image:none;border:2px solid #5c1830;border-radius:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 2px 4px rgba(43,24,12,.3)}
 .mgrportraet{width:96px;height:96px;margin:0 auto 10px;border-radius:50%;background:#f8f0dc center/cover no-repeat;border:3px solid var(--wein);box-shadow:0 3px 8px rgba(0,0,0,.3)}
 .fen .wahl.schalter{padding:8px 11px;font-size:15px;margin:0 0 6px}.fen .wahl.an{box-shadow:0 0 0 1px #7b1e3a inset}
 .pkopf{display:flex;gap:12px;align-items:center;margin:0 0 10px}.pkopf>div:last-child{flex:1}.mgrbild{width:52px;height:52px;flex:none;border-radius:50%;background:#f8f0dc center/cover no-repeat;border:2px solid var(--wein);box-shadow:0 2px 5px rgba(0,0,0,.25)}
@@ -774,7 +776,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='11.4';
+const VERSION='11.4.1';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
 // Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
@@ -3331,7 +3333,7 @@ function neuLies(){const a=$('#nm'), b=$('#nmI'); if(a) NEU.name=a.value; if(b) 
 function vStart(){
   const namen=`<label class="feld">Dein Name<input type="text" id="nmI" maxlength="30" placeholder="Vorname Nachname" autocomplete="off" value="${esc(NEU.ich||'')}"></label>
     <label class="feld">Name des Weinguts<input type="text" id="nm" maxlength="30" placeholder="Weingut Rebenreich" autocomplete="off" value="${esc(NEU.name)}"></label>
-    <div class="feld">Anrede</div><div class="zwei">${[['m','Herr'],['w','Frau']].map(([k,x])=>`<button class="wahl ${NEU.anrede===k?'an':''}" data-a="neuOpt" data-k="anrede" data-v="${k}"><b>${x}</b></button>`).join('')}</div>`;
+    <div class="feld">Anrede</div><div class="zwei">${[['m','Herr'],['w','Frau']].map(([k,x])=>`<button class="wahl neuwahl ${NEU.anrede===k?'an':''}" data-a="neuOpt" data-k="anrede" data-v="${k}"><b>${x}</b></button>`).join('')}</div>`;
   const gebiete=Object.entries(REGIONEN).map(([id,r])=>{
     const G=GEBIET_TEXT[id], [ssym,stufe]=GEBIET_STUFE[G.stufe], an=NEU.region===id, sb=steckbrief(id,{fen:1,neu:!!ROLLEN_NEU});
     return fenster('g_'+id,r.name,`<button class="wahl gwahl" data-a="region" data-id="${id}" aria-pressed="${an}"><img class="gs" src="bilder/gebiet-${id}.webp" alt=""><span><b>${ssym} ${stufe} · ${G.stil}</b><small>${an?'✓ Gewählt':'Tippen zum Wählen'}</small></span></button>`,
@@ -3342,9 +3344,9 @@ function vStart(){
   ${fenster('neu_namen','Namen',namen,{buch:'',i:'Dein Name steht auf dem Kaufvertrag, auf jeder Urkunde, in der Bestenliste, in der Chronik und im Winzerboten. Der Name des Weinguts steht am Hof, in der Rangliste und in den Schlagzeilen. Die Anrede bestimmt, ob du Winzer oder Winzerin, Inhaber oder Inhaberin bist. Übernimmt später dein Kind, ersetzt sein Name deinen.'})}
   ${gebiete}
   ${fenster('neu_mit','Mitspieler',`<div class="kv"><span>🍇 Computer-Winzer</span><span>3</span></div><div class="fleer">🔒 Online mit Freunden, kommt später</div>`,{buch:'',i:'Du spielst gegen drei Computer-Winzer: die Vorsichtige, den Qualitätsfanatiker und den Zocker. Sie spielen nach denselben Regeln wie du und wollen auch Präsident werden. Später kannst du hier Freunde einladen.'})}
-  ${fenster('neu_schwer','Schwierigkeit',`<div class="zwei">${Object.entries(DIFF).map(([id,d])=>`<button class="wahl ${NEU.schwer===id?'an':''}" data-a="neuOpt" data-k="schwer" data-v="${id}"><b>${d.name}</b></button>`).join('')}</div>`,{buch:'',
+  ${fenster('neu_schwer','Schwierigkeit',`<div class="zwei">${Object.entries(DIFF).map(([id,d])=>`<button class="wahl neuwahl ${NEU.schwer===id?'an':''}" data-a="neuOpt" data-k="schwer" data-v="${id}"><b>${d.name}</b></button>`).join('')}</div>`,{buch:'',
     i:Object.values(DIFF).map(d=>`<b>${d.name}:</b> ${d.text}`).join('<br>')+`<br><br>Bis zum Präsidenten dauert es rund 100 bis 120 Spieljahre, danach kommen noch die Jahre im Amt. Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation, Präsident wird meist erst dein Enkel. Gespeichert wird nach jedem Monat, du kannst also jederzeit aufhören.`})}
-  ${fenster('neu_fuehrer','Mit Spielführer?',`<div class="zwei">${[['1','Mit Spielführer'],['0','Ohne']].map(([k,x])=>`<button class="wahl ${(NEU.fu||'1')===k?'an':''}" data-a="neuOpt" data-k="fu" data-v="${k}"><b>${x}</b></button>`).join('')}</div>`,{buch:'',
+  ${fenster('neu_fuehrer','Mit Spielführer?',`<div class="zwei">${[['1','Mit Spielführer'],['0','Ohne']].map(([k,x])=>`<button class="wahl neuwahl ${(NEU.fu||'1')===k?'an':''}" data-a="neuOpt" data-k="fu" data-v="${k}"><b>${x}</b></button>`).join('')}</div>`,{buch:'',
     i:'Der alte Winzer nimmt dich an die Hand. Er führt dich durch dein erstes Jahr, von der Rebe bis zur verkauften Flasche, und später erklären er und deine Manager, was jeder Rang Neues bringt. Wer das Spiel schon kennt, spielt ohne. Im Büro lässt sich der Spielführer jederzeit umstellen.'})}
   <div class="btns"><button data-a="start">Spiel starten</button></div></main>`;
 }
@@ -5780,6 +5782,7 @@ function ideeText(){
 }
 function ideeFertig(){try{localStorage.removeItem(IDEE_KEY)}catch(e){} meldung('Danke für deine Idee!','Jede Idee wird gelesen. Was daraus wird, siehst du bei „Was geplant ist“ und später bei „Was ist neu“.')}
 const WAS_NEU=[
+  ['11.4.1','20.11.2026','Beim neuen Spiel siehst du jetzt, was gewählt ist: Anrede, Schwierigkeit und Spielführer leuchten als weinrotes Schild.'],
   ['11.4','20.11.2026','Neue Rebsorten in drei Rollen: In neuen Partien hat jedes Gebiet eine Sorte für die Menge, eine für den Sekt und eine für Spitzenweine. Die Siegel im Weinkompendium hängen jetzt an diesen Sorten, zum Beispiel Kabinett vom Müller-Thurgau.'],
   ['11.3','19.11.2026','Weinkompendium mit Geschichten: zu jedem Eintrag ein kurzer Text über Wein und Weinbau. Siegel gibt es jetzt für Rebsorten, Sekt und Stufen, alles andere liest du einfach nach.'],
   ['11.2','19.11.2026','Aufgeräumtes Büro: vier Bereiche statt einer langen Liste, die Rangliste steht als Zeile bei deinem Rang.'],
