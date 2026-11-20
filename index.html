@@ -165,6 +165,12 @@ textarea{display:block;width:100%;min-height:150px;resize:none;font:inherit;line
 .wahl.an{border-color:var(--wein);box-shadow:0 0 0 2px var(--wein) inset}
 /* Seit 11.4.1 (Maik 20.11.2026): Anrede, Schwierigkeit und Spielführer beim neuen Spiel zeigen die Wahl als weinrotes Schild mit heller Schrift. */
 .wahl.neuwahl.an{background:#7b1e3a;color:#fff8e8;border-image:none;border:2px solid #5c1830;border-radius:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 2px 4px rgba(43,24,12,.3)}
+/* Seit 11.6 (Idee Maik 20.11.2026): Stufen-Knopf beim neuen Spiel. Oben das alte Wort etwas größer in Grau, darunter der neue Name etwas kleiner in Dunkel.
+   stufn: drei Knöpfe nebeneinander. stufu: breite Knöpfe untereinander. Auf dem weinroten Schild werden beide Zeilen hell. */
+.stufk small{display:block;font-size:16px;line-height:1.2;font-weight:600;color:#9e9589}.stufk b{display:block;font-size:13px;line-height:1.3;color:var(--ink);white-space:nowrap}
+.stufk.an small{color:#e3c3b6}.stufk.an b{color:#fff8e8}
+.fin .zwei.stufn{gap:4px}.fin .zwei.stufn .wahl{padding:9px 1px;min-width:0}.zwei.stufn .stufk b{font-size:11.5px;letter-spacing:-.1px}
+.fin .zwei.stufu{flex-direction:column;gap:6px}.fin .zwei.stufu .wahl{padding:8px 6px}.zwei.stufu .stufk small{font-size:17px}.zwei.stufu .stufk b{font-size:15px}
 .mgrportraet{width:96px;height:96px;margin:0 auto 10px;border-radius:50%;background:#f8f0dc center/cover no-repeat;border:3px solid var(--wein);box-shadow:0 3px 8px rgba(0,0,0,.3)}
 .fen .wahl.schalter{padding:8px 11px;font-size:15px;margin:0 0 6px}.fen .wahl.an{box-shadow:0 0 0 1px #7b1e3a inset}
 .pkopf{display:flex;gap:12px;align-items:center;margin:0 0 10px}.pkopf>div:last-child{flex:1}.mgrbild{width:52px;height:52px;flex:none;border-radius:50%;background:#f8f0dc center/cover no-repeat;border:2px solid var(--wein);box-shadow:0 2px 5px rgba(0,0,0,.25)}
@@ -874,7 +880,7 @@ const MGR_AUFGABEN={
   lager:{kurz:'Lagerarbeiter einstellen',text:'Fehlende Lagerarbeiter einstellen'},
   reben:{kurz:'Reben nachpflanzen',text:'Eingegangene Reben nachpflanzen'},
   duengen:{kurz:'düngen',text:'Düngen, wenn der Boden mager wird'},
-  // Seit 11.6 (Maik 20.11.2026): ab Stufe 2 spritzt er im Monat der Warnung selbst, wenn mgrPuffer('weingut') auf dem Konto bleibt.
+  // Seit 11.6 (Maik 20.11.2026): ab Stufe 2 spritzt er im Monat der Warnung selbst, wenn mgrPuffer('weingut') auf dem Konto bleibt. Nur auf Schwer (aufgabeDa, mgrAufg).
   spritzen:{kurz:'spritzen',text:'Spritzen, sobald das Weinbauamt vor einem Schädling warnt'},
   // Seit 8.0. Der Text liest MGR_WART_AB erst beim Zeichnen, die Zahl steht weiter unten bei den Maschinen.
   warten:{kurz:'Maschinen warten',get text(){return `Nach der Lese jede Maschine unter ${MGR_WART_AB} % auf 100 % warten, ausgefallene Erntemaschinen sofort`}},
@@ -903,7 +909,9 @@ function mgrEintrag(b,st){return MANAGER.find(e=>e.bereich===b&&e.stufe===st)}
 function mgrNaechste(b){return mgrEintrag(b,mgrSt(b)+1)}
 function mgrAufgabe(k){return MANAGER.find(e=>e.aufgaben.includes(k))}
 // aufgabeDa: Der Manager ist auf der Stufe, die die Aufgabe bringt. aufgabeAktiv: dazu ist ihr Schalter an.
-function aufgabeDa(k){const e=mgrAufgabe(k); return !!e&&mgrSt(e.bereich)>=e.stufe}
+function aufgabeDa(k){if(k==='spritzen'&&!schaedAn()) return false; const e=mgrAufgabe(k); return !!e&&mgrSt(e.bereich)>=e.stufe}
+// Die Aufgaben einer Stufe für die Anzeige: ohne Schädlinge fehlt das Spritzen (Liste der Stufen, Schalter, Vorstellung des Managers).
+function mgrAufg(e){return schaedAn()?e.aufgaben:e.aufgaben.filter(k=>k!=='spritzen')}
 function aufgabeAktiv(k){return aufgabeDa(k)&&!!(S.manager[mgrAufgabe(k).bereich].an||{})[k]}
 function mgrLohn(){let s=0; for(const b in S.manager||{}) s+=(mgrEintrag(b,mgrSt(b))||{}).lohn||0; return s}
 // Seit 11.5 (Teil C1): Bringt jeden Manager auf die Stufe, die der Rang erlaubt. Neue Aufgaben sind eingeschaltet, was die Stufe kostet, steht in e.kosten (im Spiel 0).
@@ -964,16 +972,22 @@ const SAB={gift:['🧪 Wein vergiften','Sein bester Fasswein ist hin.'],buch:['�
 // ki: Tempo der Gegner, eingestellt mit dem Test-Spieler in Schritt H von 7.0 (16.11.2026). Der erste Gegner wird Präsident auf Schwer in Jahr 106 bis 112,
 // auf Mittel um Jahr 139, auf Einfach in 170 Jahren nie. Das alte Ziel "auf Schwer jede vierte Partie" gilt seit 11.6 nicht mehr.
 // Seit 11.6 (Maik 20.11.2026): Auf Schwer steht das Ansehen des Spielers wie auf Mittel bei 1 (vorher 0,9). Es bleiben die schnelleren Gegner (ki) und das stärkere
-// Wettbewerbsfeld (feld). Ziel: Der Test-Spieler ist in etwa jeder zweiten Partie vor dem ersten Gegner Präsident (45 bis 60 %).
-// Gemessen am 20.11.2026 (54 Partien über 170 Jahre): mit ki 0,77 ist er in 36 von 54 Partien vorn (67 %), mit 0,79 in 31 von 54 (57 %). Deshalb steht ki auf Schwer bei 0,79.
-// Der erste Gegner wird seit 11.5 später Präsident als oben steht: auf Schwer im Schnitt in Jahr 139, auf Mittel um Jahr 158 und nur in jeder neunten Partie.
+// Wettbewerbsfeld (feld). Ziel (Maik 20.11.2026 spät): Der Test-Spieler ist in 40 bis 50 % der Partien vor dem ersten Gegner Präsident (vorher 45 bis 60 %).
+// Gemessen am 20.11.2026 (54 Partien über 170 Jahre, damals mit Schädlingen auf allen Stufen): mit ki 0,77 ist er in 36 von 54 Partien vorn (67 %), mit 0,79 in 31 von 54 (57 %).
+// Daraus hochgerechnet steht ki auf Schwer bei 0,81, gemessen am 20.11.2026 (l116_schwer_ki81): Er ist in 26 von 54 Partien vorn (48 %), einmal gleichauf. Im Fenster, keine Korrektur.
+// Der erste Gegner wird seit 11.5 später Präsident als oben steht: auf Schwer im Schnitt in Jahr 133 (mit ki 0,81, in 47 von 54 Partien), auf Mittel um Jahr 158 und nur in jeder neunten Partie.
 // geld: Startgeld der Stufe, ohne Eintrag gilt START_GELD (Einfach hat 20.000 € Polster). biet: Faktor auf die Bietlust der Gegner bei Land, neutral 1, nur Stellschraube.
+// schaed: Schädlinge gibt es nur auf Stufen mit schaed:1, also nur auf Schwer (Maik 20.11.2026 spät, schaedAn). Einfach und Mittel spielen sich ohne sie wie in 11.5.
+// name und text sind nur Anzeige: seit 11.6 Lehrjahre, Gesellenjahre, Meisterprüfung (Maik 20.11.2026 spät). kurz ist das alte Wort, es steht klein auf dem Knopf beim neuen Spiel.
+// Die Schlüssel einfach, mittel, schwer bleiben, an ihnen hängen Spielstände und Bestenliste.
 const DIFF={
-  einfach:{name:'Einfach',text:'Ansehen wächst schneller, die Gegner sind gemütlich, und du startest mit mehr Geld. Du hast alle Zeit der Welt.',ans:1.25,ki:.45,feld:-4,biet:1,geld:80000},
-  mittel:{name:'Mittel',text:'Ausgeglichen. Die Gegner brauchen rund 160 Jahre bis an die Spitze, mit guter Arbeit bist du früher da.',ans:1,ki:.6,feld:0,biet:1},
-  schwer:{name:'Schwer',text:'Die Gegner sind stark und schnell, und bei den Wettbewerben ist das Feld stärker. Machbar, aber da musst du richtig gut sein.',ans:1,ki:.79,feld:3,biet:1}
+  einfach:{name:'Lehrjahre',kurz:'Einfach',text:'Sonne satt und Zeit zum Lernen. Du startest mit einem dicken Polster, und die Nachbarn lassen es gemütlich angehen. Genau richtig für die erste Partie.',ans:1.25,ki:.45,feld:-4,biet:1,geld:80000},
+  mittel:{name:'Gesellenjahre',kurz:'Mittel',text:'So ist das Winzerleben gedacht. Die Nachbarn sind fleißig, aber mit guter Arbeit bist du vor ihnen an der Spitze.',ans:1,ki:.6,feld:0,biet:1},
+  schwer:{name:'Meisterprüfung',kurz:'Schwer',text:'Trau dich! Die Nachbarn sind schnell, die Konkurrenz ist stark, und im Weinberg lauern Schädlinge. Wer hier Präsident wird, hat es sich verdient.',ans:1,ki:.81,feld:3,biet:1,schaed:1}
 };
 const startGeld=s=>(DIFF[s]||{}).geld||START_GELD, bietF=()=>(DIFF[S.schwer]||{}).biet||1;
+// Gibt es in dieser Partie Schädlinge? Nur auf Stufen mit schaed:1. Daran hängen Befall, Warnung, Spritzen, der Schalter beim Weingut-Manager und die Seiten im Weinkompendium.
+const schaedAn=()=>!!(SCHAED_AN&&S&&(DIFF[S.schwer]||{}).schaed);
 const GEGNER_TYP={
   vorsicht:{name:'Hannelore Brück',art:'die Vorsichtige',eink:[9000,12000],ans:[16,24],biet:.4,med:.2,ws:[18,30],weine:['einen Kabinett','eine Spätlese','einen Qualitätswein']},
   qualitaet:{name:'Konrad Steinfeld',art:'der Qualitätsfanatiker',eink:[8000,13000],ans:[20,30],biet:.45,med:.45,ws:[26,42],weine:['eine Auslese','eine Beerenauslese','eine Spätlese','eine Trockenbeerenauslese']},
@@ -2252,12 +2266,13 @@ function wachse(m){
 function feldReset(f){Object.assign(f,{oe:0,plus:0,menge:0,reif:0,ueber:0,edel:false,edelGeprueft:false,gelesen:false,teil:false,gefroren:false,frostF:1})}
 
 /* ================= Schädlinge ================= */
-// Seit 11.6 (Maik 20.11.2026): drei Schädlinge, auf allen Spielstufen. Der Traubenwickler kommt ab dem Rang WICKLER_RANG, der Falsche Mehltau mit der zweiten Generation
+// Seit 11.6 (Maik 20.11.2026): drei Schädlinge, nur auf Schwer (DIFF.schaed, schaedAn). Auf Einfach und Mittel gibt es keinen Befall, keine Warnung, kein Spritzen,
+// keinen Schalter beim Weingut-Manager und keine Seiten im Weinkompendium, auch nicht in alten Spielständen. Der Traubenwickler kommt ab dem Rang WICKLER_RANG, der Falsche Mehltau mit der zweiten Generation
 // (ein festes Jahr aus MEHLTAU_JAHR), die Kirschessigfliege mit der dritten (KIRSCH_JAHR). In den Gebieten aus SCHAED_SPAET_IN kommt jeder SCHAED_SPAET Jahre später.
 // Befall: zusammen alle SCHAED_PAUSE[0] bis [1] Jahre einer, egal wie viele Schädlinge es schon gibt. Wer neu ist, kommt beim nächsten Befall zuerst, sonst entscheidet
 // die Startzahl, der Mehltau zählt je Regenmonat von Mai bis Juli einmal mehr. Im April steht fest, wer kommt (S.schaed). Im Monat warn warnt das Weinbauamt im Winzerboten,
 // im Monat danach kommt der Befall. Spritzen (AKT.spritzen, ab Stufe 2 der Weingut-Manager) geht nur im Warnmonat, kostet SPRITZ_HA je bepflanztem Hektar und lässt vom
-// Schaden SPRITZ_F übrig. Alles kommt aus der Startzahl (fest, Thema 9 Plan, Thema 10 Schaden), neu laden ändert also nichts. SCHAED_AN=0 schaltet für Messläufe alles ab.
+// Schaden SPRITZ_F übrig. Alles kommt aus der Startzahl (fest, Thema 9 Plan, Thema 10 Schaden), neu laden ändert also nichts. SCHAED_AN=0 schaltet für Messläufe alles ab, auch auf Schwer.
 // Spielstand: S.schaedAb {wickler: erstes Jahr}, S.schaedNext Jahr des nächsten Befalls, S.schaed {j,art,regen,warn,gespritzt,da}, S.schaedGes {art: Zahl der Befälle},
 // S.schaedLetzt {art,m,j}, S.spritzN Zahl der Spritzungen. Die Gegner trifft es nicht, ihre Ernte ist nur eine Zahl.
 const SCHAED_AN=1, SCHAED_PAUSE=[2,4], SCHAED_SPAET=5, SCHAED_SPAET_IN=['franken','wuerttemberg'], SPRITZ_HA=200, SPRITZ_F=.5;
@@ -2280,13 +2295,13 @@ function schaedJahr(a){
   const J=a==='mehltau'?MEHLTAU_JAHR:KIRSCH_JAHR;
   return festI(J[0],J[1],fest(9,a==='mehltau'?1:2,0,0))+schaedSpaet();
 }
-function schaedDa(){return SCHAED_AN?Object.keys(SCHAED).filter(a=>S.jahr-START_JAHR>=schaedJahr(a)):[]}
+function schaedDa(){return schaedAn()?Object.keys(SCHAED).filter(a=>S.jahr-START_JAHR>=schaedJahr(a)):[]}
 // Die Menge-Sorten des Gebiets. Ohne Rollen (alte Spielstände) gilt die Sorte mit dem größten Ertrag.
 function mengeSorten(){const s=R().sorten, M=s.filter(id=>SORTEN[id].rolle==='menge'); return M.length?M:[s.slice().sort((a,b)=>SORTEN[b].ertrag-SORTEN[a].ertrag)[0]]}
 function schaedKann(a){return a!=='kirsch'||mengeSorten().some(id=>S.felder[id]&&S.felder[id].reben>0)}
 const spritzKosten=()=>Math.max(SPRITZ_HA,Math.round(flaecheBep()*SPRITZ_HA/50)*50);
 // Läuft gerade eine Warnung? Dann kann gespritzt werden, solange b.gespritzt fehlt.
-function schaedWarn(){const b=S.schaed; return SCHAED_AN&&b&&b.j===S.jahr&&b.warn&&!b.da?b:null}
+function schaedWarn(){const b=S.schaed; return schaedAn()&&b&&b.j===S.jahr&&b.warn&&!b.da?b:null}
 function spritze(){zahle(spritzKosten()); S.schaed.gespritzt=1; S.spritzN=(S.spritzN||0)+1}
 // Ein Satz je Schädling für das i im Weinberg und fürs Weinkompendium, die Zahlen kommen aus den Konstanten.
 function schaedRegel(a){
@@ -2326,7 +2341,7 @@ function schaedBefall(b,Z){
 }
 // Läuft jeden Monat nach dem Wachstum: freischalten, im April planen, warnen, Befall.
 function schaedMonat(Z){
-  if(!SCHAED_AN) return;
+  if(!schaedAn()) return;
   const m=S.monat;
   if(S.rang>=WICKLER_RANG&&!(S.schaedAb&&S.schaedAb.wickler!=null)) (S.schaedAb=S.schaedAb||{}).wickler=S.jahr+schaedSpaet();
   const D=schaedDa();
@@ -2350,6 +2365,7 @@ function schaedMonat(Z){
 }
 // Fenster im Weinberg. Es erscheint erst mit der ersten Warnung, vorher kündigt nichts die Schädlinge an.
 function schutzHtml(WM){
+  if(!schaedAn()) return '';
   const b=schaedWarn(), L=S.schaedLetzt; if(!b&&!L) return '';
   const k=spritzKosten(), G=S.schaedGes||{}, T=b&&SCHAED[b.art], kennt=Object.keys(SCHAED).filter(a=>G[a]||(b&&b.art===a));
   let z=!b?'<div class="mut">Im Moment ist Ruhe im Weinberg.</div>'
@@ -2361,7 +2377,7 @@ function schutzHtml(WM){
     kn:pk('spritzen','Spritzen',eur(k),{aus:!b||!!b.gespritzt,arm:S.geld<k}),
     i:`Alle paar Jahre kommt ein Schädling in den Weinberg. ${spritzRegel()} ${kennt.map(schaedRegel).join(' ')} Dein ${MGR_BEREICHE.weingut.name} spritzt ab Stufe 2 selbst, wenn danach genug Geld auf dem Konto bleibt.`});
 }
-// Alte Spielstände: Wer den Weingut-Manager schon auf Stufe 2 hat, bekommt die neue Aufgabe Spritzen eingeschaltet dazu.
+// Alte Spielstände: Wer den Weingut-Manager schon auf Stufe 2 hat, bekommt die neue Aufgabe Spritzen eingeschaltet dazu. Auf Einfach und Mittel bleibt der Eintrag ohne Wirkung.
 function altSchaed(){const w=(S.manager||{}).weingut; if(w&&w.stufe>=2){w.an=w.an||{}; if(!('spritzen' in w.an)) w.an.spritzen=1}}
 
 /* ================= Weinstufen ================= */
@@ -2624,7 +2640,8 @@ kompWissen('skandal','gefahr','Weinskandal',()=>'Ein Skandal im Land drückt ein
 kompWissen('kontrolle','gefahr','Weinkontrolle',()=>'Der Prüfer kommt unangemeldet, im Schnitt alle drei Jahre. Findet er gepanschten Wein, wird der vernichtet, es gibt Strafe, und fünf Jahre lang kommt er jedes Jahr wieder.');
 kompWissen('maschine','gefahr','Maschinenschaden',()=>`Ein Schaden kostet eine Maschine auf einen Schlag viel Zustand. Unter ${MASCH_ROT} % fällt sie aus, bis sie gewartet ist.`);
 kompWissen('helferweg','gefahr','Erntehelfer über alle Berge',()=>`Trifft nur, wer einem Erntehelfer höchstens ${eur(lohnF(LOHN_BILLIG))} im Monat zahlt. Dann verschwindet der billigste Helfer über Nacht und nimmt 5 bis 10 % aus der Kasse mit, mindestens ${eur(2000)} und höchstens ${eur(30000)}.`);
-// Seit 11.6: die drei Schädlinge. Ihre Seiten erscheinen erst, wenn der Schädling zum ersten Mal da war (kompSeiten).
+// Seit 11.6: die drei Schädlinge. Ihre Seiten erscheinen nur auf Schwer und erst, wenn der Schädling zum ersten Mal da war (kompSeiten). Es sind Wissens-Seiten ohne Siegel,
+// die Zähler im Weinkompendium (kompZahlen, kompIds) stimmen also mit und ohne sie.
 for(const a of Object.keys(SCHAED)) kompWissen(a,'gefahr',SCHAED[a].name,()=>`${schaedRegel(a)} ${spritzRegel()}`);
 // Die Edelfäulnis ist keine Gefahr, sie ist ein Gütezeichen (Maik 19.11.2026). Ihre Seite steht deshalb bei den Stufen.
 kompWissen('edel','stufe','Edelfäulnis',()=>`${edelRegel()}. Mit ihr steigt der Zucker schneller, die Menge schrumpft. Kabinett und Spätlese gibt es von dem Feld dann nicht mehr, dafür Auslese und mehr.`);
@@ -2647,7 +2664,7 @@ function kompSeiten(kap){
   if(kap==='stufe') return [...kompIds(kap),'edel'];
   if(kap==='gebiet') return ['gebiet_'+S.region,'spitze',...Object.keys(REGIONEN).filter(r=>r!==S.region).map(r=>'gebiet_'+r)];
   if(kap==='technik') return [...KELLER_PREISE.map((p,i)=>'keller'+(i+1)),'reife','zuckern',...Object.keys(MASCH).map(id=>'masch_'+id)];
-  if(kap==='gefahr') return ['hagel','spaetfrost','kaelte','skandal','kontrolle','maschine','helferweg',...Object.keys(SCHAED).filter(a=>(S.schaedGes||{})[a])];
+  if(kap==='gefahr') return ['hagel','spaetfrost','kaelte','skandal','kontrolle','maschine','helferweg',...Object.keys(SCHAED).filter(a=>schaedAn()&&(S.schaedGes||{})[a])];
   return kompIds(kap);
 }
 const kompSt=id=>((S.komp||{})[id]||{}).st||0;
@@ -3678,7 +3695,7 @@ function vStart(){
   ${fenster('neu_namen','Namen',namen,{buch:'',i:'Dein Name steht auf dem Kaufvertrag, auf jeder Urkunde, in der Bestenliste, in der Chronik und im Winzerboten. Der Name des Weinguts steht am Hof, in der Rangliste und in den Schlagzeilen. Die Anrede bestimmt, ob du Winzer oder Winzerin, Inhaber oder Inhaberin bist. Übernimmt später dein Kind, ersetzt sein Name deinen.'})}
   ${gebiete}
   ${fenster('neu_mit','Mitspieler',`<div class="kv"><span>🍇 Computer-Winzer</span><span>3</span></div><div class="fleer">🔒 Online mit Freunden, kommt später</div>`,{buch:'',i:'Du spielst gegen drei Computer-Winzer: die Vorsichtige, den Qualitätsfanatiker und den Zocker. Sie spielen nach denselben Regeln wie du und wollen auch Präsident werden. Später kannst du hier Freunde einladen.'})}
-  ${fenster('neu_schwer','Schwierigkeit',`<div class="zwei">${Object.entries(DIFF).map(([id,d])=>`<button class="wahl neuwahl ${NEU.schwer===id?'an':''}" data-a="neuOpt" data-k="schwer" data-v="${id}"><b>${d.name}</b></button>`).join('')}</div>`,{buch:'',
+  ${fenster('neu_schwer','Schwierigkeit',`<div class="zwei stufn">${Object.entries(DIFF).map(([id,d])=>`<button class="wahl neuwahl stufk ${NEU.schwer===id?'an':''}" data-a="neuOpt" data-k="schwer" data-v="${id}"><small>${d.kurz}</small><b>${d.name}</b></button>`).join('')}</div>`,{buch:'',
     i:Object.values(DIFF).map(d=>`<b>${d.name}:</b> ${d.text}`).join('<br>')+`<br><br>Bis zum Präsidenten dauert es rund 100 bis 120 Spieljahre, danach kommen noch die Jahre im Amt. Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation, Präsident wird meist erst dein Enkel. Gespeichert wird nach jedem Monat, du kannst also jederzeit aufhören.`})}
   ${fenster('neu_fuehrer','Mit Spielführer?',`<div class="zwei">${[['1','Mit Spielführer'],['0','Ohne']].map(([k,x])=>`<button class="wahl neuwahl ${(NEU.fu||'1')===k?'an':''}" data-a="neuOpt" data-k="fu" data-v="${k}"><b>${x}</b></button>`).join('')}</div>`,{buch:'',
     i:'Der alte Winzer nimmt dich an die Hand. Er führt dich durch dein erstes Jahr, von der Rebe bis zur verkauften Flasche, und später erklären er und deine Manager, was jeder Rang Neues bringt. Wer das Spiel schon kennt, spielt ohne. Im Büro lässt sich der Spielführer jederzeit umstellen.'})}
@@ -4292,7 +4309,7 @@ function mgrPersonal(b){
 }
 // Was eine Stufe ohne Schalter bringt: der Kellermeister auf Stufe 3 lässt Wein schneller reifen, aber erst, wenn Schritt H einen Wert setzt.
 function mgrExtra(e){return e.bereich==='keller'&&e.stufe===3&&(MGR_REIFE||MGR_REIFE_MIN)?['Wein reift schneller']:e.bereich==='weingut'&&e.stufe===3&&MGR_ABNUTZ?[`Maschinen nutzen sich ${Math.round(MGR_ABNUTZ*100)} % weniger ab`]:[]}
-function mgrStufenText(e,st){const t=[...e.aufgaben.map(k=>MGR_AUFGABEN[k].kurz),...mgrExtra(e)]; return `${e.stufe<=st?'✅':S.rang>=e.rang?'⬜':'🔒'} Stufe ${e.stufe} ab ${RAENGE[e.rang].name}${t.length?': '+t.join(', '):''}`}
+function mgrStufenText(e,st){const t=[...mgrAufg(e).map(k=>MGR_AUFGABEN[k].kurz),...mgrExtra(e)]; return `${e.stufe<=st?'✅':S.rang>=e.rang?'⬜':'🔒'} Stufe ${e.stufe} ab ${RAENGE[e.rang].name}${t.length?': '+t.join(', '):''}`}
 function pufferChips(b){const p=mgrPuffer(b); return `<div class="chips" style="flex-wrap:wrap">${MGR_PUFFER.map(n=>`<button class="chip ${p===n?'an':''}" data-a="mgrPuffer" data-b="${b}" data-id="${n}">${n?eur(n):'nichts'}</button>`).join('')}</div>`}
 // Seit 7.5 ein Fenster "Manager" im Arbeitsamt: je Manager eine Zeile mit Stufe und Lohn. Seit 11.5 (Teil C1) ohne Knopf, die Manager kommen von selbst.
 // Die Schalter der Aufgaben stehen im Betrieb. Vor dem Rang des ersten Managers steht das Fenster zugeklappt mit Schloss unten.
@@ -4302,7 +4319,7 @@ function mgrAmt(){
   const stufen=B.map(b=>`<div style="margin-top:6px"><b>${MGR_BEREICHE[b].name}</b><br>${MANAGER.filter(e=>e.bereich===b).map(e=>mgrStufenText(e,mgrSt(b))).join('<br>')}</div>`).join('');
   if(S.rang<ab) return fenster('mgr_amt','Manager','',{zu:`ab dem Rang ${RAENGE[ab].name}`,buch:'manager',i:mgI+stufen});
   return fenster('mgr_amt','Manager',B.map(b=>{
-    const st=mgrSt(b), n=mgrNaechste(b), E=MANAGER.filter(e=>e.bereich===b), neu=n?[...n.aufgaben.map(k=>MGR_AUFGABEN[k].kurz),...mgrExtra(n)]:[];
+    const st=mgrSt(b), n=mgrNaechste(b), E=MANAGER.filter(e=>e.bereich===b), neu=n?[...mgrAufg(n).map(k=>MGR_AUFGABEN[k].kurz),...mgrExtra(n)]:[];
     return fz(MGR_BEREICHE[b].name,st?`Stufe ${st} von ${E.length}, ${eur(mgrEintrag(b,st).lohn)} Lohn im Monat`:S.rang>=E[0].rang?'Kommt mit dem nächsten Monat':`Ab dem Rang ${RAENGE[E[0].rang].name}`,
       n?`Stufe ${n.stufe} ab ${RAENGE[n.rang].name}${neu.length?': '+neu.join(', '):''}, dann ${eur(n.lohn)} Lohn`:'Höchste Stufe erreicht')}),{buch:'manager',i:mgI+stufen});
 }
@@ -4311,7 +4328,7 @@ function mgrAmt(){
 function mgrSchalter(b){
   const st=mgrSt(b), E=MANAGER.filter(e=>e.bereich===b), G=mgrG(b);
   const teil=e=>e.stufe>st?`<div class="mut" style="margin:0 0 8px">${mgrStufenText(e,st)}</div>`
-    :e.aufgaben.map(k=>{const an=aufgabeAktiv(k); return `<button class="wahl schalter ${an?'an':''}" data-a="mgrAn" data-id="${k}">${an?'✅':'⬜'} ${k==='laeden'||k==='handel'?'📋 ':''}${MGR_AUFGABEN[k].text}</button>`}).join('')
+    :mgrAufg(e).map(k=>{const an=aufgabeAktiv(k); return `<button class="wahl schalter ${an?'an':''}" data-a="mgrAn" data-id="${k}">${an?'✅':'⬜'} ${k==='laeden'||k==='handel'?'📋 ':''}${MGR_AUFGABEN[k].text}</button>`}).join('')
       +mgrExtra(e).map(t=>`<div class="mut" style="margin:0 0 8px">✅ ${t}, ohne Schalter</div>`).join('');
   return E.map(teil).join('')
     +(b==='handel'&&(aufgabeAktiv('laeden')||aufgabeAktiv('handel')||aufgabeAktiv('regal'))?`<div class="mut" style="margin:8px 0 6px">Je Wein bleiben im Keller, außer kurz vorm Verderben:</div>${reserveChips()}`:'')
@@ -4324,7 +4341,7 @@ let MGR_NEU=0;
 function mgrFenster(b){
   const M=MGR_BEREICHE[b], st=mgrSt(b), E=MANAGER.filter(e=>e.bereich===b), m=(S.manager||{})[b]||{};
   const G=mgrG(b), q=MGR_NEU&&(S.mgrNeu||[])[0], neu=q&&q.b===b?q:null, n=mgrNaechste(b), lohn=st?eur(mgrEintrag(b,st).lohn):'';
-  const was=neu?E.filter(e=>e.stufe>neu.von&&e.stufe<=st).flatMap(e=>[...e.aufgaben.map(k=>MGR_AUFGABEN[k].kurz),...mgrExtra(e)]):[];
+  const was=neu?E.filter(e=>e.stufe>neu.von&&e.stufe<=st).flatMap(e=>[...mgrAufg(e).map(k=>MGR_AUFGABEN[k].kurz),...mgrExtra(e)]):[];
   const vor=!neu?'':(neu.von?`<p><b>${G.Dein} ${M.name} ist mit dir aufgestiegen und jetzt auf Stufe ${st}.</b> ${was.length?`Neu dazu: ${was.join(', ')}. `:''}${G.Er} bekommt jetzt ${lohn} im Monat.</p>`
     :`<p><b>${G.Dein} ${M.name} stellt sich vor.</b> Mit deinem Rang gehört ${G.er} ab jetzt fest zu deinem Weingut${was.length?` und übernimmt: ${was.join(', ')}`:''}. ${G.Er} bekommt ${lohn} im Monat.</p>`)
     +`<p class="mut">Alles Neue ist eingeschaltet. Was du lieber selbst machst, schaltest du hier oder später im Betrieb ab, der Lohn läuft trotzdem weiter.</p>`;
@@ -4613,7 +4630,7 @@ function bueroFamilie(){
 }
 function bueroEinst(){
   return fenster('ton','Ton',tonZeilen(),{i:'Musik „an“ spielt durchgehend, „kurz“ spielt beim Wechsel zwischen Weingut, Kellerei und Stadt ein paar Sekunden, „aus“ ist still. Feiern, Wettbewerbe und Pfändung laufen auch bei „kurz“ in voller Länge. Mit den Reglern stellst du Musik und Geräusche getrennt leiser oder lauter.'})
-    +fenster('spiel','Dein Spiel',`<div class="kv"><span>Speicherplatz</span><span>Spielstand ${SLOT+1}</span></div><div class="kv"><span>Schwierigkeit</span><span>${DIFF[S.schwer].name}</span></div>`
+    +fenster('spiel','Dein Spiel',`<div class="kv"><span>Speicherplatz</span><span>Spielstand ${SLOT+1}</span></div><div class="kv"><span>Schwierigkeit</span><span>${DIFF[S.schwer].name} (${DIFF[S.schwer].kurz.toLowerCase()})</span></div>`
       // Seit 8.5.1: Knopf "Spiel laden" statt "Spielstände", die Erklärung steht sichtbar beim passenden Knopf.
       +`<div class="fzl">${fz('Spiel laden','Hier lädst du einen anderen oder älteren Spielstand oder sicherst ihn als Datei.','',pk('menue','Spiel laden','',{sec:1}))}${fz('Neues Spiel','Löscht diesen Spielstand und fängt von vorn an.','',pk('neuFrage','Neues Spiel','',{sec:1}))}</div>`,{buch:'bedienung',
       i:'Gespeichert wird von selbst nach jedem Monat.'})
@@ -6134,7 +6151,7 @@ function ideeText(){
 }
 function ideeFertig(){try{localStorage.removeItem(IDEE_KEY)}catch(e){} meldung('Danke für deine Idee!','Jede Idee wird gelesen. Was daraus wird, siehst du bei „Was geplant ist“ und später bei „Was ist neu“.')}
 const WAS_NEU=[
-  ['11.6','20.11.2026','Neue Gefahren im Weinberg: Alle paar Jahre kommt ein Schädling, das Weinbauamt warnt vorher, und Spritzen halbiert den Schaden. Das Wetter einer Partie steht jetzt von Anfang an fest, neu laden ändert es nicht. Der Kellerausbau hat Namen bekommen. Auf Einfach startest du mit 80.000 €, auf Schwer wächst das Ansehen jetzt so schnell wie auf Mittel.'],
+  ['11.6','20.11.2026','Die drei Stufen heißen jetzt Lehrjahre (einfach), Gesellenjahre (mittel) und Meisterprüfung (schwer). Neue Gefahren nur in der Meisterprüfung: Alle paar Jahre kommt ein Schädling in den Weinberg, das Weinbauamt warnt vorher, und Spritzen halbiert den Schaden. Das Wetter einer Partie steht jetzt von Anfang an fest, neu laden ändert es nicht. Der Kellerausbau hat Namen bekommen. In den Lehrjahren startest du mit 80.000 €, in der Meisterprüfung wächst das Ansehen jetzt so schnell wie in den Gesellenjahren.'],
   ['11.5','20.11.2026','Ein Weingut wie im echten Leben: Die ersten 4 Hektar schaffst du mit deiner Familie, danach arbeiten Leute für echte Löhne, und deine Manager kommen mit dem Rang von selbst. Jeder Rang verlangt mehr Land, das Ansehen ist verdoppelt, Präsident wirst du in drei Generationen. Neu ist der Ruf des Hauses: Je mehr Siegel im Weinkompendium, desto mehr zahlen dir die Händler.'],
   ['11.4.1','20.11.2026','Beim neuen Spiel siehst du jetzt, was gewählt ist: Anrede, Schwierigkeit und Spielführer leuchten als weinrotes Schild.'],
   ['11.4','20.11.2026','Neue Rebsorten in drei Rollen: In neuen Partien hat jedes Gebiet eine Sorte für die Menge, eine für den Sekt und eine für Spitzenweine. Die Siegel im Weinkompendium hängen jetzt an diesen Sorten, zum Beispiel Kabinett vom Müller-Thurgau.'],
