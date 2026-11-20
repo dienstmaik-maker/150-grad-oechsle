@@ -636,8 +636,11 @@ button,#tabs #weiter{border-image-slice:50% 42 fill;border-image-width:50% 18px}
 .fin>.kv{font-family:var(--schrift);font-size:16px;font-variant-numeric:lining-nums tabular-nums;padding:4px 0;border-bottom:1px solid rgba(120,80,40,.2)}
 .fin>.kv:last-of-type{border-bottom:0}
 .fin>.kv>span{font-variant-numeric:lining-nums tabular-nums}.fin>.kv>span:last-child{font-weight:600}
-button.fi>i{border:2px solid #7b1e3a;color:#7b1e3a;font-size:16px;line-height:20px}
-button.fi.an>i{background:#7b1e3a;color:#fbf5e6}
+/* Seit 10.6 (Maik 20.11.2026): Überschriften Dunkelbraun statt Weinrot, der Info-Knopf wieder grau mit dünnem Rand wie vor Optik 2.0 (Regeln oben bei --fgrau). */
+:root{--ftitel:#2b180c}
+/* Seit 10.6 (Maik 20.11.2026, Variante N1): Fenster von unten auf dem Pergament der Karten mit Rahmen rundherum statt auf dem Zeitungspapier. */
+#sheet>div{background:none;border:0 solid transparent;border-image:url(bilder/karte-neu.webp) 56 fill/20px stretch;border-radius:0}
+#sheet .sbild{margin:-14px -6px 14px;border-radius:12px}
 /* Maik 19.11.2026: "Nächster Monat" sieht aus wie der aktive Hauptreiter und ist genauso hoch. Der aktive Unterreiter liegt auf Pergament ohne roten Rahmen, die Leiste bleibt Holz. */
 #tabs #weiter{flex:1.5;flex-direction:column;gap:2px;margin:2px 2px 4px;min-height:56px;padding:6px 2px;border-image:url(bilder/knopf-aktiv.webp) 48 fill/11px stretch;color:#7b1e3a;text-shadow:none;font:800 11.5px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-caps:normal;letter-spacing:0;white-space:nowrap;filter:none;transform:translateY(-3px)}
 #tabs #weiter span{font-size:21px;line-height:1.4}
@@ -820,9 +823,9 @@ const WO={mosel:'an der Mosel',rheingau:'im Rheingau',rheinhessen:'in Rheinhesse
 // Gemessen mit l115_staffel (54 Partien, Mittel): Mosel, Rheingau, Rheinhessen und Pfalz im Median in Jahr 114, 31 von 36 Partien vor Jahr 120.
 const RAENGE=[
   {name:'Neuling',kurz:'Neuling',ans:0,ha:0,verm:0,rahmen:20000,haAlt:0,deckel:4},
-  {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:30,ha:3,verm:100000,rahmen:40000,haAlt:3,deckel:8,neu:'du darfst bei Auktionen mitbieten, {sorte}, Kellerausbau'},
-  {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:6,verm:250000,rahmen:80000,haAlt:4,deckel:11,neu:'Sekt, der Exporthandel, der Düngerstreuer'},
-  {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:300,ha:9,verm:600000,rahmen:160000,haAlt:5,deckel:16,neu:'Landesprämierung, Erntemaschinen'},
+  {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:30,ha:3,verm:100000,rahmen:40000,haAlt:3,deckel:8,neu:'du darfst bei Auktionen mitbieten, der Makler im Rathaus, Spenden fürs Dorf, {sorte}, Kellerausbau'},
+  {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:6,verm:250000,rahmen:80000,haAlt:4,deckel:11,neu:'Sekt, der Exporthandel, der Düngerstreuer, Sabotage hinter der Hintertür'},
+  {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:300,ha:9,verm:600000,rahmen:160000,haAlt:5,deckel:16,neu:'Landesprämierung, das Weinfest, Erntemaschinen'},
   {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:13,verm:1500000,rahmen:300000,haAlt:6,deckel:20,neu:'{sorte}, der Laubschneider'},
   {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:16,verm:3500000,rahmen:300000,haAlt:8,deckel:26,neu:'Bundeswettbewerb, der große Vollernter',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.',wegW:'Sabotage ist für dich ab jetzt tabu, eine Dame macht so etwas nicht.'},
   {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:21,verm:6000000,rahmen:300000,haAlt:10,deckel:33,neu:'eine eigene Weinhandlung, das Amt des Weinbotschafters, die Abfüllanlage'},
@@ -950,6 +953,9 @@ function rahmenSatz(i){const r=RAENGE[i];return (r.rahmen>RAENGE[i-1].rahmen?` D
 const KAELTE=.25, ZUCKER_MAX=20, ZUCKER_ERLAUBT=10, SCHMIER_ANTEIL=.1, SCHMIER_MIN=2000;
 const STRAFE_MIN=10000, STRAFE_ANS=30, STRAFE_ANS_WEITER=10, BESTECH_MIN=5000, BESTECH_MAX=50000, BESTECH_NEIN_ANS=20;
 const SAB_KONTAKT=20000, SAB_MIN=5000, SAB_MAX=50000, SAB_AUFFLIEGEN=.2, SAB_STRAFE=30000, SAB_STRAFE_ANS=40, SAB_RANG=R_BUND;
+// Seit 10.6 (Maik 20.11.2026): Sabotage erst ab Winzer (SAB_AB), vorher ist das Fenster in der Hintertür nicht zu sehen. Ab SAB_RANG (Gutsherr) bleibt sie tabu.
+// Der Zocker sabotiert dich frühestens ab dem fünften Jahr, Winzer wird man etwa in Jahr 7, ab da kannst du zurückschlagen. Bis 10.5 ging sie vom Neuling an.
+const SAB_AB=2;
 // Version 10.0 (Spielende, Paket 1): Amtszeit und Wahl. Als Präsident ist alle WAHL_JAHRE Jahre Wahl, gerechnet in Monaten ab dem Amtsantritt.
 // WAHL_UMFRAGE Monate vorher kommt die Umfrage, ab da läuft der Wahlkampf. Die Stimmung im Verband (0 bis 100) startet bei STIMM_START,
 // nach einer Abwahl bei STIMM_ALT. Der Herausforderer ist die Marke auf dem Balken: MARKE_START, je gewonnener Wahl MARKE_PLUS mehr, höchstens MARKE_MAX.
@@ -1164,7 +1170,8 @@ const FASS='<img class="fass" src="bilder/fass.png" alt="">';
 const SUBS={
   gut:[['berg','🍇'],['betrieb','🏡'],['aktuell','📌'],['maschinen','🚜'],['buero','🏆']],
   keller:[['buch','📖'],['sabotage','🐀'],['start',FASS],['lager','📦']],
-  stadt:[['amt','🏛️'],['handel','🏪'],['laeden','🍷'],['bank','🏦'],['arbeit','👷']]
+  // Seit 10.6 (Maik 20.11.2026): Großhandel mit Waage statt Laden, Arbeitsamt mit Winzer statt Bauarbeiter.
+  stadt:[['amt','🏛️'],['handel','⚖️'],['laeden','🍷'],['bank','🏦'],['arbeit','🧑‍🌾']]
 };
 const START_SUB={gut:'betrieb',keller:'start',stadt:'amt'};
 // Große Beträge ab einer Million kurz, damit die Statusleiste nie überläuft.
@@ -3487,7 +3494,7 @@ function mischung(a,b){
 /* ---- Sabotage ---- */
 const sabChance=n=>.3+.45*(n-SAB_MIN)/(SAB_MAX-SAB_MIN);
 function sabSperre(){
-  return S.rang>=SAB_RANG?`Als ${duK()} machst du so etwas nicht mehr.`:S.monat<6?'Die Unterwelt ist nur von Juli bis Dezember zu sprechen.':S.sabJahr===S.jahr?'Für dieses Jahr hast du dein Glück schon versucht.'
+  return S.rang<SAB_AB?`Sabotage geht erst ab dem Rang ${RAENGE[SAB_AB].name}.`:S.rang>=SAB_RANG?`Als ${duK()} machst du so etwas nicht mehr.`:S.monat<6?'Die Unterwelt ist nur von Juli bis Dezember zu sprechen.':S.sabJahr===S.jahr?'Für dieses Jahr hast du dein Glück schon versucht.'
     :S.geld<SAB_KONTAKT+SAB_MIN?`Du brauchst mindestens ${eur(SAB_KONTAKT+SAB_MIN)}: ${eur(SAB_KONTAKT)} für den Kontakt und ${eur(SAB_MIN)} Handgeld.`:'';
 }
 // Sabotage gegen den Spieler: nur vom Zocker, frühestens ab dem fünften Jahr, höchstens alle fünf Jahre. Schaden: ein Fass oder rund 15 % der Reben.
@@ -3736,15 +3743,16 @@ function vRang(){
   const h=(n?`<div class="kv"><span>⭐ Ansehen</span><span>${num(S.ansehen)} von ${num(n.ans)}</span></div>${bar(S.ansehen,n.ans)}
     <div class="kv"><span>🌱 Bepflanzt</span><span>${bep.toLocaleString('de-DE')} von ${n.ha} Hektar</span></div>${barF(n.ha)}${nach}${S.ha<n.ha&&!maklerGrund()?`<div class="mut" style="margin:-4px 0 8px">Keine Auktion in Sicht? Der Makler im Rathaus verkauft dir einen Hektar für ${eur(MAKLER_PREIS)}.</div>`:''}
     <div class="kv"><span>💰 Vermögen</span><span>${eur(v)} von ${eur(n.verm)}</span></div>${bar(v,n.verm)}
-    <div class="mut">Der Aufstieg zum Rang ${n.name} ${bringtSatz(r+1)}.${rahmenSatz(r+1)}</div>`
+    <div class="mut">Der Aufstieg zum Rang ${n.name} ${bringtSatz(r+1)}.${rahmenSatz(r+1)} Dafür brauchst du alles drei zugleich.</div>`
     :`<div class="kv"><span>⭐ Ansehen</span><span>${num(S.ansehen)}</span></div><div class="kv"><span>💰 Vermögen</span><span>${eur(v)}</span></div>`
       // Seit 10.0: Am Ziel stehen die Stimmung im Verband und die nächste Wahl.
       +(S.amt?`<div class="kv"><span>🗳️ Stimmung im Verband</span><span>${stimmZ()} von 100</span></div>${amtBalken()}<div class="mut">${amtSatz()}</div>${weltZeile()}${kz('',`<button class="klein" data-a="tab" data-id="stadt" data-sub="amt">🗳️ Zum Weinbauverband</button>`)}`
-        :`<div class="fleer" style="margin-top:6px">Höher geht es nicht.</div>`));   // Seit 10.2.1 ohne Rangleiter, der Rang steht in der Überschrift (Maik 19.11.2026).
+        :`<div class="fleer" style="margin-top:6px">Höher geht es nicht.</div>`))   // Seit 10.2.1 ohne Rangleiter, der Rang steht in der Überschrift (Maik 19.11.2026).
+    +(S.sieger&&!S.amt?`<div class="mut" style="margin-top:6px">🪑 Auf dem Stuhl im Festsaal: ${esc(S.sieger)}</div>`:'');
+  // Seit 10.6 (Maik 20.11.2026): Die drei Regler stehen direkt unter der Überschrift, der übrige Text darunter. Die Generation steht im i.
+  const gen=`Du bist die ${genNr()}. Generation, ${S.amt?`die letzte Übergabe ist im Januar ${endeJahr()}`:`die nächste übernimmt im Januar ${genJahr(genNr())}`}.<br><br>`;
   return fenster('rang',`${neu?'<span class="rneuB">Neu</span> ':''}Aktueller Rang: ${duN()}`,h,{kl:neu?'rneu':'',buch:'ziel',
-    hin:[S.sieger&&!S.amt&&`🪑 Auf dem Stuhl im Festsaal: ${esc(S.sieger)}`],
-    stand:`${genNr()}. Generation, ${S.amt?`letzte Übergabe im Januar ${endeJahr()}`:`die nächste übernimmt im Januar ${genJahr(genNr())}`}${n?`<br>Für den Aufstieg zum Rang ${n.name} brauchst du alles drei zugleich.`:''}`,
-    i:'Dein Ziel ist der Stuhl des Präsidenten im Weinbauverband. Gewonnen ist die Partie erst danach, mit der letzten Übergabe und der Chronik. Jeder Aufstieg braucht Ansehen, bepflanzte Fläche und Vermögen zugleich. Bei der Fläche zählt nur, was bepflanzt ist: Der helle Balken zeigt dein gekauftes Land, der dunkle das bepflanzte.'+(S.amt?` Wer ${anr('Präsident','Präsidentin')} ist, muss das Amt alle ${WAHL_JAHRE} Jahre in einer Wahl verteidigen. Die Regeln stehen im Rathaus im Fenster „Weinbauverband“.`:'')});
+    i:gen+'Dein Ziel ist der Stuhl des Präsidenten im Weinbauverband. Gewonnen ist die Partie erst danach, mit der letzten Übergabe und der Chronik. Jeder Aufstieg braucht Ansehen, bepflanzte Fläche und Vermögen zugleich. Bei der Fläche zählt nur, was bepflanzt ist: Der helle Balken zeigt dein gekauftes Land, der dunkle das bepflanzte.'+(S.amt?` Wer ${anr('Präsident','Präsidentin')} ist, muss das Amt alle ${WAHL_JAHRE} Jahre in einer Wahl verteidigen. Die Regeln stehen im Rathaus im Fenster „Weinbauverband“.`:'')});
 }
 // Version 10.0: Balken der Stimmung von 0 bis 100, der Strich ist die Marke des Herausforderers.
 function amtBalken(){const A=S.amt, s=stimmZ(); return `<div class="bar stb ${s>=A.marke?'':'g'}"><i style="width:${s}%"></i><u style="left:${A.marke}%"></u></div>`}
@@ -3929,8 +3937,9 @@ const feierSzene=F=>F.start?0:F.zu;
 function feierStopp(){FT.forEach(clearTimeout); FT=[]}
 // Kurzer Schnitt aus Schwarz beim Wechsel zwischen Zeitung, Feier und Aktuelles.
 function schnitt(){const s=document.createElement('div');s.className='schnitt';document.body.appendChild(s);setTimeout(()=>s.remove(),600)}
-const FREI_SYM=[[/Manager|Stufe/,'👔'],[/Rebsorte/,'🍇'],[/Auktion/,'🔨'],[/Sekt/,'🍾'],[/Export/,'🚢'],[/Keller/i,'🛢️'],[/prämierung|wettbewerb/i,'🏅'],[/ernte|vollernter/i,'🚜'],
-  [/Weinhandlung/,'🏪'],[/botschafter/i,'🎗️'],[/Hoffest/,'🎉'],[/Kontrolle/,'🔍'],[/Spitzenlage/,'⛰️'],[/Sieg/,'👑']];
+// Seit 10.6 nennt die Feier alles, was mit dem Rang auftaucht (gesperrte Fenster sind unsichtbar), dazu Makler, Spenden, Weinfest und Sabotage.
+const FREI_SYM=[[/Sabotage/,'💣'],[/Makler/,'🤝'],[/Spenden/,'💝'],[/Manager|Stufe/,'👔'],[/Rebsorte/,'🍇'],[/Auktion/,'🔨'],[/Sekt/,'🍾'],[/Export/,'🚢'],[/Keller/i,'🛢️'],[/prämierung|wettbewerb/i,'🏅'],[/ernte|vollernter/i,'🚜'],
+  [/Weinhandlung/,'🏪'],[/botschafter/i,'🎗️'],[/Hoffest|Weinfest/,'🎉'],[/Kontrolle/,'🔍'],[/Spitzenlage/,'⛰️'],[/Sieg/,'👑']];
 const gross=t=>t.charAt(0).toUpperCase()+t.slice(1);
 // Alles, was die Ränge von+1 bis zu bringen, als Liste [Symbol, Text]. Der Kreditrahmen steht zuletzt.
 function feierPunkte(von,zu){
@@ -4211,7 +4220,7 @@ function buchZeig(){
   b.className='an'; $('.binnen',b).scrollTop=0;
 }
 // Betrieb (seit 7.4 auf dem Fenster-Baustein, seit 7.5 mit dem Personal): Dein Betrieb, die drei Manager untereinander, Deine Leute, das Fest.
-// Von Juni bis August steht das Fest oben, solange es nicht gefeiert ist. Was der Rang noch sperrt, steht zugeklappt mit Schloss unten.
+// Von Juni bis August steht das Fest oben, solange es nicht gefeiert ist. Was der Rang noch sperrt, ist seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten).
 // Der Gebiets-Steckbrief steht seit 7.4 im Weinberg.
 function vBetrieb(){
   const F=hoffestHtml(), M=mgrHtml();
@@ -4289,7 +4298,7 @@ function mgrLogHtml(b){
   return `<div style="margin-top:8px"><b>Zuletzt erledigt</b></div>`+(L.length?L.slice().reverse().map(e=>`<div style="margin-top:3px"><b>${mgrWann(e.z)}:</b> ${esc(e.t)}</div>`).join('')
     :`<div>Noch nichts. Hier stehen später die letzten sechs Monate, in denen ${mgrG(b).er} etwas erledigt hat.</div>`);
 }
-// Manager im Betrieb: {h} für die, die der Rang schon erlaubt, {zu} für die gesperrten (zugeklappt mit Schloss unten).
+// Manager im Betrieb: {h} für die, die der Rang schon erlaubt, {zu} für die gesperrten (seit 10.6 leer, bis 10.5 zugeklappt mit Schloss unten).
 function mgrHtml(){
   const B=Object.keys(MGR_BEREICHE), da=b=>S.rang>=mgrEintrag(b,1).rang;
   return {h:B.filter(da).map(mgrPersonal).join(''),zu:B.filter(b=>!da(b)).map(mgrPersonal).join('')};
@@ -4312,15 +4321,16 @@ function mgrExtra(e){return e.bereich==='keller'&&e.stufe===3&&(MGR_REIFE||MGR_R
 function mgrStufenText(e,st){const t=[...mgrAufg(e).map(k=>MGR_AUFGABEN[k].kurz),...mgrExtra(e)]; return `${e.stufe<=st?'✅':S.rang>=e.rang?'⬜':'🔒'} Stufe ${e.stufe} ab ${RAENGE[e.rang].name}${t.length?': '+t.join(', '):''}`}
 function pufferChips(b){const p=mgrPuffer(b); return `<div class="chips" style="flex-wrap:wrap">${MGR_PUFFER.map(n=>`<button class="chip ${p===n?'an':''}" data-a="mgrPuffer" data-b="${b}" data-id="${n}">${n?eur(n):'nichts'}</button>`).join('')}</div>`}
 // Seit 7.5 ein Fenster "Manager" im Arbeitsamt: je Manager eine Zeile mit Stufe und Lohn. Seit 11.5 (Teil C1) ohne Knopf, die Manager kommen von selbst.
-// Die Schalter der Aufgaben stehen im Betrieb. Vor dem Rang des ersten Managers steht das Fenster zugeklappt mit Schloss unten.
+// Die Schalter der Aufgaben stehen im Betrieb. Vor dem Rang des ersten Managers ist das Fenster seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten).
 function mgrAmt(){
-  const B=Object.keys(MGR_BEREICHE), ab=Math.min(...MANAGER.map(e=>e.rang));
+  // Seit 10.6: nur die Manager, die der Rang schon freigibt, die anderen tauchen erst mit ihrem Rang auf.
+  const B=Object.keys(MGR_BEREICHE).filter(b=>S.rang>=mgrEintrag(b,1).rang), ab=Math.min(...MANAGER.map(e=>e.rang));
   const mgI='Manager nehmen dir Arbeit ab. Jeder kommt mit seinem Rang von selbst dazu und steigt mit späteren Rängen auf, einstellen und befördern musst du niemanden. Jede Stufe bringt neue Aufgaben, sie sind gleich eingeschaltet. Was du lieber selbst machst, schaltest du im Betrieb ab. Manager gehören fest zum Gut, entlassen kannst du sie nicht. Ihr Lohn hängt nur an der Stufe und läuft weiter, auch wenn du alle Schalter ausschaltest.';
   const stufen=B.map(b=>`<div style="margin-top:6px"><b>${MGR_BEREICHE[b].name}</b><br>${MANAGER.filter(e=>e.bereich===b).map(e=>mgrStufenText(e,mgrSt(b))).join('<br>')}</div>`).join('');
   if(S.rang<ab) return fenster('mgr_amt','Manager','',{zu:`ab dem Rang ${RAENGE[ab].name}`,buch:'manager',i:mgI+stufen});
   return fenster('mgr_amt','Manager',B.map(b=>{
     const st=mgrSt(b), n=mgrNaechste(b), E=MANAGER.filter(e=>e.bereich===b), neu=n?[...mgrAufg(n).map(k=>MGR_AUFGABEN[k].kurz),...mgrExtra(n)]:[];
-    return fz(MGR_BEREICHE[b].name,st?`Stufe ${st} von ${E.length}, ${eur(mgrEintrag(b,st).lohn)} Lohn im Monat`:S.rang>=E[0].rang?'Kommt mit dem nächsten Monat':`Ab dem Rang ${RAENGE[E[0].rang].name}`,
+    return fz(MGR_BEREICHE[b].name,st?`Stufe ${st} von ${E.length}, ${eur(mgrEintrag(b,st).lohn)} Lohn im Monat`:'Kommt mit dem nächsten Monat',
       n?`Stufe ${n.stufe} ab ${RAENGE[n.rang].name}${neu.length?': '+neu.join(', '):''}, dann ${eur(n.lohn)} Lohn`:'Höchste Stufe erreicht')}),{buch:'manager',i:mgI+stufen});
 }
 // Schalter je Aufgabe der erreichten Stufen, darunter die noch fehlenden Stufen und die Auswahl für Reserve und Geldgrenze.
@@ -4526,7 +4536,8 @@ function kz(links,...kn){return `<div class="kz${links?'':' reihe'}"><div>${link
 // o.buch: Kapitel für "Mehr im Buch" (ohne Angabe das Kapitel des Ortes, false = kein Link).
 // o.hin: Hinweise an der Aufgabe, immer sichtbar ("Dein Kellermeister keltert beim Weiterblättern"). o.stand: graue Zeile zum Zustand.
 // o.leer: graue Zeile, wenn die Liste leer ist. o.kn: Knopf oder Knöpfe unten rechts, o.links: kurzer grauer Text links daneben.
-// o.zu: Das Fenster ist gesperrt, der Text nennt den Rang. Es steht zugeklappt mit Schloss ganz unten am Ort.
+// o.zu: Das Fenster ist gesperrt, der Text nennt den Rang. Seit 10.6 (Maik 20.11.2026) ist es dann ganz weg und taucht erst mit dem Rang auf,
+//      bis 10.5 stand es zugeklappt mit Schloss ganz unten am Ort. Was schon freigespielt ist, aber gerade nicht geht, bleibt sichtbar und sagt warum.
 // o.kl: zusätzliche Klasse am Fenster (golden im Monat des Aufstiegs).
 // o.iWort und o.iAkt: ein graues Wort statt des i mit eigener Aktion (Kellerbuch: "Weinkompendium").
 const FI_AUF=new Set();
@@ -4535,7 +4546,7 @@ function fenster(id,titel,inhalt,o={}){
   const i=o.iWort?`<button class="fi wort" data-a="${o.iAkt}">${o.iWort}</button>`
     :o.i?`<button class="fi${auf?' an':''}" data-a="fi" data-id="${id}" aria-label="Erklärung zu ${esc(titel)}" aria-expanded="${auf}"><i>i</i></button>`:'';
   const info=o.i&&!o.iWort?`<div class="finfo"${auf?'':' hidden'}>${o.i}${buch?mib(buch):''}</div>`:'';
-  if(o.zu) return `<section class="card fen zu"><header class="fkopf"><h3>🔒 ${titel}<small>${o.zu}</small></h3>${i}</header>${info}</section>`;
+  if(o.zu) return '';
   const kern=Array.isArray(inhalt)?(inhalt.length?`<div class="fzl">${inhalt.join('')}</div>`:`<div class="fleer">${o.leer||'Gerade gibt es hier nichts zu tun.'}</div>`):(inhalt||'');
   return `<section class="card fen${o.kl?' '+o.kl:''}"><header class="fkopf"><h3>${titel}</h3>${i}</header>${info}<div class="fin">${(o.hin||[]).filter(Boolean).map(t=>`<div class="hilfe">${t}</div>`).join('')}${o.stand?`<div class="fstand">${o.stand}</div>`:''}${kern}${o.links||[].concat(o.kn||[]).length?kz(o.links||'',...[].concat(o.kn||[])):''}</div></section>`;
 }
@@ -4550,7 +4561,7 @@ function vAktuell(){
     i:'Hier steht, was diesen Monat zu tun ist. Ein Tipp führt dich direkt an den Ort. <b>Rot</b> kann nicht warten, <b>Gelb</b> hat Zeit, <b>Grau</b> ist nur ein Hinweis. Die Punkte an den Reitern zeigen dasselbe, Hinweise bekommen keinen Punkt.<br><br>⏩ „Weiter bis etwas ansteht“ blättert am Stück, höchstens zwölf Monate. Es hält nur bei Rot und bei Schlagzeilen, die dich selbst betreffen. Bei Gelb und bei Hinweisen blättert es weiter. Ausnahme ist die Lese: Von September bis November hält es einmal im Monat, solange Trauben hängen, im Dezember nur bei gefrorenen Trauben.<br><br>Geboten und eingereicht wird im Rathaus, der Tipp hier führt dich hin. „Winzerbote“ zeigt die letzte Ausgabe noch einmal. Tipps gibt dir der Spielführer in der Sprechblase.'+(fuSperre()?'<br><br>Mit dem Spielführer gibt es ⏩ erst ab dem Januar des zweiten Jahres, im ersten Jahr kommt fast jeden Monat ein Tipp.':'')})+vRang();
 }
 // Maschinen (seit 7.4 auf dem Fenster-Baustein): "Deine Maschinen" mit einer Zeile je Maschine, darunter je Bauart ein Fenster zum Kaufen.
-// Was der Rang noch sperrt, steht zugeklappt mit Schloss unten: die kleine Maschine ab Winzermeister, der Vollernter ab Gutsherr.
+// Was der Rang noch sperrt, ist seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten): die kleine Maschine ab Winzermeister, der Vollernter ab Gutsherr.
 function vMaschinen(){
   const saison=S.monat<=2, zu=[];
   // Seit 8.0: Fahrer-Regel, Abnutzung je Lese, Gelb und Rot, Pflege-Bonus. Alle Zahlen aus den Konstanten bei MASCH.
@@ -4641,7 +4652,7 @@ function bueroEinst(){
     +`<div class="fussnote">Bilder, Musik und Geräusche sind mit KI erstellt (Musik mit Treblo, Geräusche mit ElevenLabs, elevenlabs.io).</div>`;
 }
 // Weinberg (seit 7.4 auf dem Fenster-Baustein): je Sorte ein Fenster (seit 4.4 oben), dann Düngung und Übersicht, darunter zugeklappt der Steckbrief des Gebiets.
-// Sorten, die der Rang noch sperrt, stehen zugeklappt mit Schloss ganz unten. Lese-Hinweise und rote Warnungen bleiben sichtbar, die Erklärungen stehen im i.
+// Sorten, die der Rang noch sperrt, sind seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten). Lese-Hinweise und rote Warnungen bleiben sichtbar, die Erklärungen stehen im i.
 function vBerg(){
   const m=S.monat, ges=S.ha*HA_REBEN, bep=rebenGesamt(), frei=ges-bep, ant=ges?bep/ges*100:0;
   const phase=PHASE, vs=verlustSpanne(bodenSchnitt()), fp=frostPlus(), WM=`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name}`, wm=`Dein ${MGR_BEREICHE.weingut.name}`;
@@ -4748,15 +4759,17 @@ function vLager(){
     links:kf<500?'Für mehr Fassraum brauchst du mehr Lagerarbeiter.':`Möglich sind noch ${num(kf)} l.`,
     kn:pk('kaufFass','Kaufen',eur2(fassPreis()),{klein:'je Liter',arm:kf<500||S.geld<500*fassPreis()}),
     i:`Fassraum brauchst du zum Keltern, kauf ihn am besten vor der Lese. ${ALLEIN_FASS?`${num(ALLEIN_FASS)} l betreust du selbst, jeder Lagerarbeiter ${num(FASS_JE_LAGERARB)} l dazu`:`Ein Lagerarbeiter betreut ${num(FASS_JE_LAGERARB)} l Fassraum`}. Der Preis schwankt jeden Monat.${mk?` Dein ${KM} kauft beim Keltern nur so viel, wie gerade fehlt.${leute}`:''}`})
-  +fenster('flaschen','Flaschen',`<div class="kv"><span>Leere Flaschen (1 l)</span><span>${num(S.flaschen)}</span></div>
-    <div class="kv"><span>Betreut (Lagerarbeiter: ${S.lagerarb})</span><span>bis ${num(flKap())}</span></div>`,{
+  // Seit 10.6 (Maik 20.11.2026): Leiste wie beim Fassraum, darunter, was du selbst betreust und was die Lagerarbeiter dazu schaffen.
+  +fenster('flaschen','Flaschen',`<div class="kv"><span>Flaschenplatz belegt</span><span>${num(S.flaschen)} von ${num(flKap())}</span></div><div class="bar w"><i style="width:${flKap()?Math.min(100,S.flaschen/flKap()*100):0}%"></i></div>
+    <div class="kv"><span>Betreust du selbst</span><span>${num(ALLEIN_FL)}</span></div>
+    <div class="kv"><span>Lagerarbeiter (${S.lagerarb}) betreuen</span><span>+ ${num(flKap()-ALLEIN_FL)}</span></div>`,{
     hin:[mf&&`🍷 Dein ${KM} kauft fehlende Flaschen beim Abfüllen dazu.`],
     links:kl<100?'Für mehr Flaschen brauchst du mehr Lagerarbeiter.':`Möglich sind noch ${num(kl)} Flaschen.`,
     kn:pk('kaufFlaschen','Kaufen',eur2(flaschePreis()),{klein:'je Flasche',arm:kl<100||S.geld<100*flaschePreis()}),
     i:`Leere Flaschen brauchst du zum Abfüllen, ein Liter je Flasche. Kauf sie am besten vor dem Abfüllen. ${ALLEIN_FL?`${num(ALLEIN_FL)} leere Flaschen betreust du selbst, jeder Lagerarbeiter ${num(FLASCHEN_JE_LAGERARB)} dazu`:`Ein Lagerarbeiter betreut ${num(FLASCHEN_JE_LAGERARB)} leere Flaschen`}, mit der Abfüllanlage im Einsatz ${num(ABF_FLASCHEN)}. Der Preis schwankt jeden Monat.${mf?` Dein ${KM} kauft beim Abfüllen nur so viele, wie gerade fehlen.${leute}`:''}`})
   +kellerAusHtml();
 }
-// Kellerausbau in drei Stufen, je Stufe ab dem Rang in KELLER_RANG. Vor Jungwinzer steht das Fenster zugeklappt mit Schloss unten im Lager,
+// Kellerausbau in drei Stufen, je Stufe ab dem Rang in KELLER_RANG. Vor Jungwinzer ist das Fenster seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten),
 // danach steht unter dem Stand, ab welchem Rang die nächste Stufe geht (seit 8.6).
 function kellerRangText(){return ` Stufe 1 (${KELLER_NAMEN[0]}) gibt es ab ${RAENGE[KELLER_RANG[0]].name}, Stufe 2 (${KELLER_NAMEN[1]}) ab ${RAENGE[KELLER_RANG[1]].name}, Stufe 3 (${KELLER_NAMEN[2]}) ab ${RAENGE[KELLER_RANG[2]].name}.`}
 function kellerAusHtml(){
@@ -4788,13 +4801,13 @@ function vSabotage(){
     <div class="kv"><span>Kontrolle</span><span${scharf?' class="rot"':''}>${scharf?'jedes Jahr':'etwa alle drei Jahre'}</span></div>
     ${scharf?'<div class="rot" style="font-size:14px;margin-top:4px">Der Prüfer hat dich auf dem Kieker.</div>':''}`,{
     i:'Hinter der unscheinbaren Tür geht es nicht ganz sauber zu. Der Weinprüfer kommt unangemeldet, im Schnitt alle drei Jahre, spätestens nach vier. Was bis dahin verkauft ist, findet er nicht mehr.'})
-  +(S.rang>=SAB_RANG?fenster('sabotage','Sabotage',[],{leer:sp,i:sabI})
+  +(S.rang<SAB_AB?'':S.rang>=SAB_RANG?fenster('sabotage','Sabotage',[],{leer:sp,i:sabI})
     :fenster('sabotage','Sabotage','',{links:sp,kn:`<button class="klein wag" data-a="sabZiel" ${sp?'disabled':''}>Sabotage planen</button>`,i:sabI}));
 }
 function vStadt(){
   let h=kopf({amt:'Rathaus',handel:'Großhandel',laeden:S.rang>=R_LADEN?'Deine Weinhandlung':'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'}[SUB]);
   // Rathaus (seit 7.4 auf dem Fenster-Baustein): festes Fenster "Wein anmelden" mit der Anzahl, darunter Makler und Kontrolle anregen.
-  // Was der Rang noch sperrt, steht zugeklappt mit Schloss unten. Am Ziel (Präsident) gibt es keinen Makler mehr.
+  // Was der Rang noch sperrt, ist seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten). Am Ziel (Präsident) gibt es keinen Makler mehr.
   if(SUB==='amt'){
     const fa=S.lots.filter(l=>l.status==='fass'&&!l.stufe).sort(BSORT_F.dringend), zu=[], mon=n=>n===1?'Monat':'Monaten';
     // Seit 10.0: Mit Amt steht der Weinbauverband ganz oben.
@@ -4807,14 +4820,14 @@ function vStadt(){
       :`<div class="fleer" style="margin-top:6px">Kein Fasswein wartet auf die Anmeldung.</div>`),{
       i:'Im Rathaus meldest du deinen Fasswein an. Erst dann bekommt er seine Stufe und darf in die Flasche. Welche Stufen für einen Wein möglich sind, siehst du nach dem Tipp auf „Anmelden“. Was zuerst verdirbt, steht oben.'});
     // Seit 7.9: feste Fenster "Wettbewerbe" und "Auktionen". Einreichen und Bieten gehen hier, die Tipps in "Das steht an" führen her.
-    const wI=`Bei der Landesprämierung im Februar treten die Winzer deines Gebiets mit Prädikatsweinen vom letzten Jahrgang an (ab dem Rang ${RAENGE[R_LAND].name}). Der Bundeswettbewerb ist alle drei Jahre im Juni, mit verkaufsreifen Prädikatsweinen und Sekten aus der Flasche (ab dem Rang ${RAENGE[R_BUND].name}). Eingereicht wird im Monat der Ausschreibung, das Ergebnis steht im nächsten Winzerboten. Ein Platz auf dem Treppchen bringt Ansehen und Qualitätspunkte für den Wein.${S.amt&&S.amt.brief?' Die Weltweinschau ist jeden August bei dir im Dorf: neun Weingüter aus aller Welt, zugelassen sind verkaufsreife Prädikatsweine und Sekte aus der Flasche, derselbe Wein darf jedes Jahr wieder antreten.':''}`;
+    const wI=`Bei der Landesprämierung im Februar treten die Winzer deines Gebiets mit Prädikatsweinen vom letzten Jahrgang an.${S.rang>=R_BUND?' Der Bundeswettbewerb ist alle drei Jahre im Juni, mit verkaufsreifen Prädikatsweinen und Sekten aus der Flasche.':''} Eingereicht wird im Monat der Ausschreibung, das Ergebnis steht im nächsten Winzerboten. Ein Platz auf dem Treppchen bringt Ansehen und Qualitätspunkte für den Wein.${S.amt&&S.amt.brief?' Die Weltweinschau ist jeden August bei dir im Dorf: neun Weingüter aus aller Welt, zugelassen sind verkaufsreife Prädikatsweine und Sekte aus der Flasche, derselbe Wein darf jedes Jahr wieder antreten.':''}`;
     if(S.rang<R_LAND) zu.push(fenster('wettb','Wettbewerbe','',{zu:`ab dem Rang ${RAENGE[R_LAND].name}`,i:wI}));
     else{
       const w=S.wett&&!S.wett.fertig?S.wett:null, mb=aufgabeAktiv('wett')?mgrAufgabe('wett').bereich:'';
       const wz=typ=>{
         const name=WETTNAME[typ], rg=typ==='bund'?R_BUND:R_LAND;
         if(typ==='welt'&&amtEhre()) return fz('🌍 '+name,`Gewonnen ${S.amt.ehren.j} mit ${esc(S.amt.ehren.wein)}. Als ${ehrP()} trittst du nicht mehr an.`);
-        if(S.rang<rg) return fz('🔒 '+name,`ab dem Rang ${RAENGE[rg].name}`);
+        if(S.rang<rg) return '';   // Seit 10.6: Der Bundeswettbewerb taucht erst mit seinem Rang auf.
         if(!w||w.typ!==typ) return fz(name,`Gerade nichts, als Nächstes im ${wettNaechst(typ)}.`);
         const n=S.lots.filter(wettFaehig).length;
         return fz(`${name} ${S.jahr}`,w.ein?`Eingereicht: ${esc(w.ein.name)}`:n?`${n} ${n===1?'Wein ist':'Weine sind'} zugelassen`:'Du hast gerade keinen zugelassenen Wein.',
@@ -6160,6 +6173,8 @@ const WAS_NEU=[
   ['11.2','19.11.2026','Aufgeräumtes Büro','Aufgeräumtes Büro: vier Bereiche statt einer langen Liste, die Rangliste steht als Zeile bei deinem Rang.'],
   ['11.1','19.11.2026','Weinkompendium','Das Weinkompendium ersetzt das Weinlexikon: ein Sammelbuch mit Siegeln in Bronze, Silber und Gold, im Kellerbuch und im Büro.'],
   ['11.0','19.11.2026','Ideenknopf','Deine Idee zählt: Im Büro gibst du Ideen per WhatsApp weiter und siehst, was geplant ist.'],
+  // 10.6 gehört zur Optik-Runde 10.5 und steht deshalb hier, nicht ganz oben (Maik 20.11.2026).
+  ['10.6','20.11.2026','Aufgeräumte Fenster','Was dein Rang noch nicht freigibt, ist unsichtbar und taucht erst mit dem Aufstieg auf. Überschriften in Dunkelbraun, Fenster von unten auf Pergament, eine Leiste für die Flaschen im Lager und neue Zeichen für Großhandel und Arbeitsamt. Sabotage geht jetzt erst ab Winzer.'],
   ['10.5','19.11.2026','Optik 2.0','Neue Optik: Holz, Rahmen, Pergament und Knöpfe neu gezeichnet. Helle Knöpfe sind dein Weg, rote heißen „Überleg noch mal“, dunkle führen zurück.'],
   ['10.4','19.11.2026','Titelbild','Neues Titelbild im Hochformat und elf Zeitungsbilder im Stil der Weingut-Reihe.'],
   ['10.3','19.11.2026','Spielprüfung','Das ganze Spiel geprüft: Nach dem alten Winzer sprechen deine Manager, gewonnen ist erst mit der Chronik, dazu viele Regeln und Texte im Buch.'],
