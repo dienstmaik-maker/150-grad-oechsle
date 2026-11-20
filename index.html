@@ -615,6 +615,19 @@ button.fi.wort{width:auto;padding:0 11px;font:600 13px/1 system-ui,-apple-system
 #ksiegel{position:fixed;left:50%;bottom:calc(138px + env(safe-area-inset-bottom));z-index:30;display:flex;align-items:center;gap:10px;width:max-content;max-width:min(92vw,520px);padding:9px 16px 9px 12px;border-radius:14px;border:1px solid #b9995a;background:#f3e7ca url(bilder/papier.jpg) center/cover;color:#2b2118;box-shadow:0 6px 20px rgba(0,0,0,.5);font-size:15px;line-height:1.3;cursor:pointer;opacity:0;pointer-events:none;transform:translate(-50%,24px);transition:opacity .3s,transform .3s}
 #ksiegel.an{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
 #ksiegel.oben{bottom:auto;top:calc(14px + env(safe-area-inset-top))}
+/* ===== Weinarchiv (seit 11.8): Siegelbrett in Zeilen (B), Ruf des Hauses mit sieben Marken (R1), Lexikon mit "Neu" (L1), Siegel an den Weinen (D1) ===== */
+.fzl>.bzeile.sz{padding:9px 0}.fzl>.bzeile.sz:first-child{padding-top:0}
+.sz .bz1{align-items:center}.sz .bz1 b{font-size:16px;line-height:1.2}.sz.leer .bz1 b{color:var(--mut)}
+.sz .ksg3{flex:none}.sz .ksg3 .ksg{width:21px;height:21px;margin:0 0 0 4px}
+.sz .bz2{font-size:13px;margin:2px 0 4px}.sz .bar{height:6px;margin:0}
+.sz.gold .bz2{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#7a5a06;font-weight:700}
+.getik{display:inline-block;padding:1px 9px;border:1px solid #a87908;border-radius:4px;background:linear-gradient(#ffeaa6,#e5a93c);color:#2b180c;font:700 12px/18px var(--knopf);box-shadow:inset 0 0 0 2px rgba(255,248,225,.55);white-space:nowrap}
+.getik.bb{border-radius:50%/60%;padding:1px 12px}
+.bar.g.stb u{background:#5c3a21}.fin>.fstand.ruf{margin:2px 0 0;font-size:13.5px}
+.bz3.dws{display:flex;justify-content:space-between;align-items:center}.ksg3.klein .ksg{width:13px;height:13px;margin:0 0 0 3px}
+.lneu{display:inline-block;margin-left:7px;padding:0 6px;border-radius:8px;background:#e5a93c;color:#2b180c;font-size:11px;font-weight:800;line-height:17px;vertical-align:2px}
+.lpunkt{display:inline-block;width:8px;height:8px;margin-left:5px;border-radius:50%;background:#e5a93c;vertical-align:1px}
+.bkach .wahl .lneu{margin-left:4px;font-size:10px;line-height:14px;padding:0 4px}
 #ksiegel .ksg{width:30px;height:30px;margin:0}#ksiegel b{display:block}#ksiegel small{display:block;font-size:13px;color:#6b5a45}
 /* Optik 2.0: nur Code, ohne neue Bilder */
 :root{--holz:url(bilder/holz-weingut.jpg);--dunkel:.12}
@@ -791,7 +804,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='11.7';
+const VERSION='11.8';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 // Seit 11.5 (Teil C2, Maik 20.11.2026): realistische Löhne. Das Arbeitsamt bietet LOHN_MIN bis LOHN_MAX im Monat (bis 11.4: 200 bis 500 €, Startlohn 350, Vermittlung 300).
 // LOHN_F ist der gemeinsame Faktor auf alle Löhne (Angestellte und Manager), eingestellt über die Dosis-Reihe der Messung. lohnF rechnet einen Lohn damit um, auf 10 € gerundet.
@@ -1172,7 +1185,7 @@ let S=null, TAB='gut', SUB='betrieb', NEU=neuStart(), SLOT=0, START=null, ZIEL=0
 const FASS='<img class="fass" src="bilder/fass.png" alt="">';
 const SUBS={
   gut:[['berg','🍇'],['betrieb','🏡'],['aktuell','📌'],['maschinen','🚜'],['buero','🏆']],
-  keller:[['buch','📖'],['sabotage','🐀'],['start',FASS],['lager','📦']],
+  keller:[['buch','📜'],['sabotage','🐀'],['start',FASS],['lager','📦']],
   // Seit 10.6 (Maik 20.11.2026): Großhandel mit Waage statt Laden, Arbeitsamt mit Winzer statt Bauarbeiter.
   stadt:[['amt','🏛️'],['handel','⚖️'],['laeden','🍷'],['bank','🏦'],['arbeit','🧑‍🌾']]
 };
@@ -1180,7 +1193,7 @@ const START_SUB={gut:'betrieb',keller:'start',stadt:'amt'};
 // Große Beträge ab einer Million kurz, damit die Statusleiste nie überläuft.
 const geldKurz=b=>Math.abs(b)>=1e6?(b/1e6).toLocaleString('de-DE',{maximumFractionDigits:2})+'\u00a0Mio.\u00a0€':eur(b);
 // Kurze Namen für die Unterreiter-Leiste unten.
-const SUB_NAME={berg:'Weinberg',betrieb:'Betrieb',aktuell:'Aktuelles',maschinen:'Maschinen',buero:'Büro',buch:'Kellerbuch',sabotage:'Hintertür',start:'Keller',lager:'Lager',amt:'Rathaus',handel:'Großhandel',laeden:'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'};
+const SUB_NAME={berg:'Weinberg',betrieb:'Betrieb',aktuell:'Aktuelles',maschinen:'Maschinen',buero:'Büro',buch:'Weinarchiv',sabotage:'Hintertür',start:'Keller',lager:'Lager',amt:'Rathaus',handel:'Großhandel',laeden:'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'};
 // Punkte an den Reitern: rot bei Dringendem aus "Das steht an", gelb bei allem anderen.
 // Seit 7.9 gibt es drei Arten: Rot (rot:1) hält das Weiterblättern an, Gelb zeigt nur den Punkt, Hinweise (ruhig:1) bekommen keinen Punkt.
 function badges(){const B={}, A=aufgaben(); if(ladenPunkt()) A.push({tab:'stadt',sub:'laeden'}); for(const a of A){if(!a.tab||a.ruhig) continue;for(const k of [a.tab,a.tab+'/'+(a.sub||START_SUB[a.tab])]) B[k]=B[k]==='rot'||a.rot?'rot':'neu'}return B}
@@ -1578,7 +1591,7 @@ function rufTxt(){const k=RUF_BONUS?rufStufe():0; return k?`<br>🏅 mit ${rufPr
 // S.rufJ je Stufe Monat und Jahr. rufPruef läuft nach jedem neuen Siegel. Eine neue Stufe meldet sich nach dem Siegel mit Korkenknall (rufMeldung)
 // und mit einer Zeile im Winzerboten (rufBote). Alte Spielstände ohne S.meilen bekommen erreichte Stufen beim ersten Laden in einer einzigen Meldung (altRuf).
 // Die Ehrungen stehen nicht in S.ehrungen, dort zählen nur Medaillen und Aufstiege. Am Geld ändert das nichts, der Erlös rechnet weiter live mit rufStufe.
-const RUF_NAMEN=['Kellerlehrling','Kellergeselle','Kenner der Lage','Meister des Gewölbekellers','Meister der Prädikate','Großmeister des Weins','Legende des Weinkompendiums'];
+const RUF_NAMEN=['Kellerlehrling','Kellergeselle','Kenner der Lage','Meister des Gewölbekellers','Meister der Prädikate','Großmeister des Weins','Legende des Weinarchivs'];
 const rufProz=k=>Math.round(RUF_BONUS*100*k);
 let RUF_M=0;
 function rufPruef(){
@@ -1601,7 +1614,7 @@ function rufBote(Z){
   const N=S.rufNeu||[]; S.rufNeu=[];
   const S7=RUF_STUFEN.length, n=S.meilen||0, nm=k=>`„${RUF_NAMEN[k-1]}“`;
   if(S.rufAlt){delete S.rufAlt;
-    Z.push(`🏅 Neu ist der Ruf des Hauses: Bei ${RUF_STUFEN.slice(0,-1).join(', ')} und ${RUF_STUFEN[S7-1]} Siegeln im Weinkompendium steigt er um eine Stufe. Jede bringt eine Ehrung und ${rufProz(1)} % mehr bei jedem Verkauf.${n?` Deine Siegel reichen schon für Stufe ${n} von ${S7} (${Array.from({length:n},(_,i)=>nm(i+1)).join(', ')}), die Händler zahlen dir ${rufProz(n)} % mehr.`:''}`);
+    Z.push(`🏅 Neu ist der Ruf des Hauses: Bei ${RUF_STUFEN.slice(0,-1).join(', ')} und ${RUF_STUFEN[S7-1]} Siegeln auf dem Siegelbrett steigt er um eine Stufe. Jede bringt eine Ehrung und ${rufProz(1)} % mehr bei jedem Verkauf.${n?` Deine Siegel reichen schon für Stufe ${n} von ${S7} (${Array.from({length:n},(_,i)=>nm(i+1)).join(', ')}), die Händler zahlen dir ${rufProz(n)} % mehr.`:''}`);
     return}
   if(!N.length) return;
   const k=N[N.length-1];
@@ -1623,8 +1636,8 @@ function rufFenster(){
     +`<div class="mut">${num(z.hab)} von ${num(z.max)} Siegeln${nx?`, ${nx-z.hab===1?'noch 1 Siegel':`noch ${nx-z.hab} Siegel`} bis Stufe ${n+1}`:', alle Stufen erreicht'}</div>`;
   const zeile=k=>{const da=k<n, j=J[k]; return `<div class="rl"><span>${da?'🏅':'🔒'}</span><div><b>${esc(RUF_NAMEN[k])}</b><span class="mut">${da?(j?`${MON[j.m]} ${j.j}, `:'')+`Stufe ${k+1}`:`ab ${RUF_STUFEN[k]} Siegeln`}, +${rufProz(k+1)} %</span></div></div>`};
   const L=Array.from({length:Math.min(S7,n+1)},(_,k)=>zeile(k)).reverse();
-  return fenster('ruf','Ruf des Hauses',kopf+L.join(''),{buch:'buero',kn:pk('weinQual','Weinkompendium','',{sec:1}),
-    i:`Je mehr Siegel du im Weinkompendium sammelst, desto besser ist der Ruf deines Hauses. Bei ${RUF_STUFEN.slice(0,-1).join(', ')} und ${RUF_STUFEN[S7-1]} Siegeln steigt er um eine Stufe. Jede bringt eine Ehrung und ${rufProz(1)} % mehr bei jedem Verkauf: Großhandel, Exporthandel, Weinhandlungen, deine eigene Weinhandlung, Sekt und Federweißer. Mit allen sieben sind es ${rufProz(S7)} %. Es zählen die Siegel dieser Partie, das Album über alle Partien wirkt nicht mit.`});
+  return fenster('ruf','Ruf des Hauses',kopf+L.join(''),{buch:'buero',kn:pk('archivGeh','Siegelbrett','',{sec:1,id:'brett'}),
+    i:`Je mehr Siegel du auf dem Siegelbrett sammelst, desto besser ist der Ruf deines Hauses. Bei ${RUF_STUFEN.slice(0,-1).join(', ')} und ${RUF_STUFEN[S7-1]} Siegeln steigt er um eine Stufe. Jede bringt eine Ehrung und ${rufProz(1)} % mehr bei jedem Verkauf: Großhandel, Exporthandel, Weinhandlungen, deine eigene Weinhandlung, Sekt und Federweißer. Mit allen sieben sind es ${rufProz(S7)} %. Es zählen die Siegel dieser Partie, das Album über alle Partien wirkt nicht mit.`});
 }
 // Großhandel: Budget des Monats zum vollen Preis, was davon noch offen ist, und der Schnitt-Faktor auf den Preis für Wein im Listenwert von w Euro.
 function marktFrei(){return Math.round((MARKT_FREI+MARKT_RANG*S.rang+MARKT_EXPORT*exportStufen()+MARKT_HA*haUeber())*(spLohn(5)?SP_MARKT:1))}
@@ -2529,7 +2542,7 @@ const KOMP_ST=['','Bronze','Silber','Gold'], KOMP_ST_WORT=['','entdeckt','gemeis
 // Goldmedaille heißt im Spiel Platz 1: Gold bei der Landesprämierung, Platz 1 beim Bundeswettbewerb oder bei der Weltweinschau. Sekt tritt erst ab dem Bundeswettbewerb an.
 const KOMP_GOLDMED='eine Goldmedaille (Platz 1 bei einem Wettbewerb)', KOMP_GOLDMED_SEKT='eine Goldmedaille (Platz 1 beim Bundeswettbewerb oder bei der Weltweinschau)';
 // Kapitel: Kennung, Zeichen, kurzer Name für den Knopf, voller Name.
-const KOMP_KAP=[['sorte','🍇','Sorten','Rebsorten und Sekt'],['stufe','🍷','Stufen','Stufen'],['gebiet','⛰️','Gebiet','Gebiet und Lagen'],['technik','⚙️','Technik','Keller und Technik'],['gefahr','⛈️','Gefahren','Gefahren']];
+const KOMP_KAP=[['sorte','🍇','Sorten','Rebsorten'],['stufe','🍷','Stufen','Stufen'],['gebiet','⛰️','Gebiet','Gebiet und Lagen'],['technik','⚙️','Technik','Keller und Technik'],['gefahr','⛈️','Gefahren','Gefahren']];
 // Die Geschichten (seit 11.3): Weinwissen in höchstens vier Sätzen, ohne Zahlen des Spiels. Die Zahlen stehen je Eintrag in der Zeile "Im Spiel" und kommen aus dem Code.
 // Quelle und Faktencheck: Vault-Notiz "Weinbau-Spiel Weinkompendium Texte". Seit 11.4 dazu die zehn neuen Sorten und je Gebiet der Regional-Sekt (sekt_<Sorte>).
 const KOMP_TEXT={
@@ -2653,6 +2666,13 @@ kompWissen('helferweg','gefahr','Erntehelfer über alle Berge',()=>`Trifft nur, 
 // Seit 11.6: die drei Schädlinge. Ihre Seiten erscheinen nur auf Schwer und erst, wenn der Schädling zum ersten Mal da war (kompSeiten). Es sind Wissens-Seiten ohne Siegel,
 // die Zähler im Weinkompendium (kompZahlen, kompIds) stimmen also mit und ohne sie.
 for(const a of Object.keys(SCHAED)) kompWissen(a,'gefahr',SCHAED[a].name,()=>`${schaedRegel(a)} ${spritzRegel()}`);
+// Seit 11.8: Die beiden Kästen aus dem alten Kapitel Stufen sind die Seite "Reifezeit und Regeln" im Lexikon.
+KOMP_TEXT.regeln='Ein Wein braucht Zeit, erst im Fass und dann in der Flasche. Wann du was anmelden darfst, schreibt das Weinrecht genau vor.';
+kompWissen('regeln','stufe','Reifezeit und Regeln',()=>{
+  const so=R().sorten, reife=f=>so.map(id=>`${SORTEN[id].name} ${f(SORTEN[id].minL)} Monate`).join(', ');
+  return `<b>⏳ Reifezeit in der Flasche bis zum Verkauf</b><br>Tafel- und Qualitätswein: 2 Monate.<br>Kabinett bis Trockenbeerenauslese: ${reife(x=>Math.max(1,x-(S.keller||0)))}.<br>Eiswein: ${reife(x=>Math.max(1,Math.round(x*1.5)-(S.keller||0)))}.${S.keller?`<br>Dein ausgebauter Keller kürzt das schon um ${S.keller} ${S.keller===1?'Monat':'Monate'}.`:''}`
+    +`<br><br><b>📜 Gut zu wissen</b><br>Jeder Wein liegt mindestens einen Monat im Fass, höchstens sieben.<br>Ab Kabinett und beim Eiswein darfst du erst im Januar nach der Lese anmelden.<br>Überreife Trauben bringen 5° mehr Öchsle.<br>${edelRegel()}.${S.rollen?'':' Am häufigsten trifft sie die Sorte, die am besten ins Gebiet passt.'} Dann gibt es von dem Feld kein Kabinett und keine Spätlese mehr.<br>Kälteeinbruch im November: im Schnitt jedes vierte Jahr, die Vorhersage warnt meist davor.<br>${frostText()}, nur dann gibt es Eiswein.<br>Bei der Lese zeigt jede Leseart, ab wann der Wein verkaufsfertig ist.`;
+});
 // Die Edelfäulnis ist keine Gefahr, sie ist ein Gütezeichen (Maik 19.11.2026). Ihre Seite steht deshalb bei den Stufen.
 kompWissen('edel','stufe','Edelfäulnis',()=>`${edelRegel()}. Mit ihr steigt der Zucker schneller, die Menge schrumpft. Kabinett und Spätlese gibt es von dem Feld dann nicht mehr, dafür Auslese und mehr.`);
 // Was eine Stufe braucht, mit den Hürden des eigenen Gebiets (früher die Zeilen im Weinlexikon).
@@ -2671,7 +2691,7 @@ function kompIds(kap){
 // Alles, was ein Kapitel zeigt: erst die Einträge mit Siegeln, dann die Wissens-Seiten. Bei den Gebieten steht das eigene oben.
 function kompSeiten(kap){
   if(kap==='sorte') return [...kompIds(kap),...sortenFolge().map(id=>'sorte_'+id)];
-  if(kap==='stufe') return [...kompIds(kap),'edel'];
+  if(kap==='stufe') return [...kompIds(kap),'edel','regeln'];
   if(kap==='gebiet') return ['gebiet_'+S.region,'spitze',...Object.keys(REGIONEN).filter(r=>r!==S.region).map(r=>'gebiet_'+r)];
   if(kap==='technik') return [...KELLER_PREISE.map((p,i)=>'keller'+(i+1)),'reife','zuckern',...Object.keys(MASCH).map(id=>'masch_'+id)];
   if(kap==='gefahr') return ['hagel','spaetfrost','kaelte','skandal','kontrolle','maschine','helferweg',...Object.keys(SCHAED).filter(a=>schaedAn()&&(S.schaedGes||{})[a])];
@@ -2696,7 +2716,7 @@ function komp(id,o){
 }
 // Neues Siegel: Zeile für den nächsten Winzerboten, Album, und die Siegel-Meldung unten im Bild.
 // KOMP_LEISE: Beim Monatswechsel und bei der Arbeit der Manager kommt keine Meldung, dann reicht die Zeile im Winzerboten.
-let KOMP_LEISE=0, KOMP_Q=[], KOMP_T=0, KOMP_AUS=0, KOMP_AKT='stufe';
+let KOMP_LEISE=0, KOMP_Q=[], KOMP_T=0, KOMP_AUS=0, KOMP_AKT='sorte';
 function kompNeu(id,st){
   (S.kompNeu=S.kompNeu||[]).push([id,st]); const a=kompAlbumId(id); if(a) kompAlbum(a,st);
   rufPruef();
@@ -2706,7 +2726,7 @@ function kompNeu(id,st){
 function kompMeldung(){
   KOMP_T=0; const el=$('#ksiegel'), Q=KOMP_Q; KOMP_Q=[];
   if(!el||!S||!Q.length) return;
-  const [id,st]=Q[Q.length-1], t=Q.length===1?`Neues Siegel: ${KOMP[id].titel}`:`${Q.length} neue Siegel`, u=Q.length===1?`${KOMP_ST[st]} im Weinkompendium`:Q.map(q=>KOMP[q[0]].titel).join(', ');
+  const [id,st]=Q[Q.length-1], t=Q.length===1?`Neues Siegel: ${KOMP[id].titel}`:`${Q.length} neue Siegel`, u=Q.length===1?`${KOMP_ST[st]} auf dem Siegelbrett`:Q.map(q=>KOMP[q[0]].titel).join(', ');
   el.dataset.id=id; el.innerHTML=`<i class="ksg s${st} an"></i><div><b>${esc(t)}</b><small>${esc(u)}</small></div>`;
   // Liegt ein Fenster von unten offen, kommt die Meldung oben, sonst verdeckt sie dessen Knöpfe.
   el.classList.toggle('oben',$('#sheet').classList.contains('an')); el.classList.add('an'); fx('korken');
@@ -2717,14 +2737,15 @@ function kompMeldung(){
 // Zeilen für "Kurz gemeldet". Alte Spielstände bekommen beim ersten Mal einen Satz zum neuen Buch (kompAlt) oder zu den Regeln seit 11.4 (kompUm3,
 // mit kompUm auch zu den Wissens-Seiten aus 11.3).
 function kompBote(Z){
+  lexInit();
   const M=new Map(); for(const q of S.kompNeu||[]) if(KOMP[q[0]]&&!KOMP[q[0]].wissen) M.set(q[0],q[1]);
   S.kompNeu=[];
   const z=kompZahlen();
-  if(S.kompAlt){Z.push(`📖 Neu im Kellerbuch und im Büro: das Weinkompendium. Siegel gibt es für die neun Stufen und den Sekt, jeder Eintrag hängt an einer deiner Rebsorten. Gezählt wird ab jetzt, du hast ${z.hab} von ${z.max} Siegeln.`); delete S.kompAlt; delete S.kompUm; delete S.kompUm3; return}
-  if(S.kompUm3){Z.push(`📖 Das Weinkompendium zählt jetzt nach Rollen: Siegel gibt es für die neun Stufen und den Sekt, und jeder Eintrag hängt an einer deiner Rebsorten, zum Beispiel „${KOMP.stufe_kab.titel}“. Bronze und Silber bringen verkaufte Flaschen, Gold viele Flaschen oder eine Goldmedaille. Deine Siegel bleiben, du hast ${z.hab} von ${z.max}. ${S.kompUm?'Rebsorten, Gebiet, Technik und Gefahren sind jetzt Seiten zum Nachlesen, jede mit einer kleinen Geschichte.':'Die Rebsorten sind jetzt Seiten zum Nachlesen.'}`); delete S.kompUm3; delete S.kompUm; return}
+  if(S.kompAlt){Z.push(`🏅 Neu im Weinarchiv der Kellerei: das Siegelbrett. Siegel gibt es für die neun Stufen und den Sekt, jeder Eintrag hängt an einer deiner Rebsorten. Gezählt wird ab jetzt, du hast ${z.hab} von ${z.max} Siegeln.`); delete S.kompAlt; delete S.kompUm; delete S.kompUm3; return}
+  if(S.kompUm3){Z.push(`🏅 Das Siegelbrett zählt jetzt nach Rollen: Siegel gibt es für die neun Stufen und den Sekt, und jeder Eintrag hängt an einer deiner Rebsorten, zum Beispiel „${KOMP.stufe_kab.titel}“. Bronze und Silber bringen verkaufte Flaschen, Gold viele Flaschen oder eine Goldmedaille. Deine Siegel bleiben, du hast ${z.hab} von ${z.max}. ${S.kompUm?'Rebsorten, Gebiet, Technik und Gefahren sind jetzt Seiten zum Nachlesen, jede mit einer kleinen Geschichte.':'Die Rebsorten sind jetzt Seiten zum Nachlesen.'}`); delete S.kompUm3; delete S.kompUm; return}
   const T=[...M].map(([id,st])=>`${KOMP[id].titel} (${KOMP_ST[st]})`);
-  if(T.length<=3) for(const t of T) Z.push(`📖 Neues Siegel im Weinkompendium: ${t}.`);
-  else Z.push(`📖 ${T.length} neue Siegel im Weinkompendium: ${T.join(', ')}.`);
+  if(T.length<=3) for(const t of T) Z.push(`🏅 Neues Siegel auf dem Siegelbrett: ${t}.`);
+  else Z.push(`🏅 ${T.length} neue Siegel auf dem Siegelbrett: ${T.join(', ')}.`);
 }
 // Album über alle Partien (Maik 19.11.2026): bester Stand je Eintrag, eigener Speicher-Schlüssel wie bei der Bestenliste. Der Test-Spieler schreibt nichts hinein.
 // Es liegt getrennt von den drei Spielständen, Löschen oder Überschreiben eines Spielstands rührt es nicht an. Das Spiel schreibt nur hinein und liest nie daraus zurück.
@@ -2805,7 +2826,7 @@ function kompUmbau3(){
   try{for(const l of S.lots) kompMedLot(l)}finally{KOMP_LEISE--}
 }
 /* ---- Anzeige: Fenster von unten, aus dem Kellerbuch und aus dem Büro ---- */
-const kompSiegel=st=>`<span class="ksg3">${[1,2,3].map(i=>`<i class="ksg s${i}${st>=i?' an':''}"></i>`).join('')}</span>`;
+const kompSiegel=(st,k)=>`<span class="ksg3${k?' '+k:''}">${[1,2,3].map(i=>`<i class="ksg s${i}${st>=i?' an':''}"></i>`).join('')}</span>`;
 const kompVon=(a,b,w)=>`${num(Math.min(a||0,b))} von ${num(b)} ${w}`;
 // Bedingung je Siegel (1 bis 3). Geschaffte Stufen nennen nur die Schwelle, offene den Stand.
 function kompBed(D,e,i){
@@ -2831,47 +2852,77 @@ const kompKurz=id=>(KOMP_TEXT[id]||'').split(/(?<=[.!?]) /)[0];
 function kompGeschichte(id){const so=id==='sekt'&&S.rollen?kompSorte(id):null; return (so&&KOMP_TEXT['sekt_'+so])||KOMP_TEXT[id]||''}
 function kompZeile(id){
   const D=KOMP[id], st=kompSt(id);
-  if(D.wissen) return `<button class="bzeile" data-a="kompEintrag" data-id="${id}"><div class="bz1"><b>${esc(D.titel)}${id==='gebiet_'+S.region?' (dein Gebiet)':''}</b><span class="kpf">›</span></div><div class="bz2">${esc(kompKurz(id))}</div></button>`;
+  if(D.wissen) return `<button class="bzeile" data-a="kompEintrag" data-id="${id}"><div class="bz1"><b>${esc(D.titel)}${id==='gebiet_'+S.region?' (dein Gebiet)':''}${lexNeu(id)?'<span class="lneu">Neu</span>':''}</b><span class="kpf">›</span></div><div class="bz2">${esc(kompKurz(id))}</div></button>`;
   return `<button class="bzeile${st?'':' kzu'}" data-a="kompEintrag" data-id="${id}"><div class="bz1"><b>${esc(D.titel)}</b>${kompSiegel(st)}</div>${D.immer?`<div class="bz2">${D.text()}</div>`:''}<div class="${D.immer?'bz3':'bz2'}">${esc(kompNaechst(id))}</div></button>`;
 }
-function kompKapHtml(kap){
-  const K=KOMP_KAP.find(k=>k[0]===kap)||KOMP_KAP[0], z=kompZahlen(K[0]), so=R().sorten;
-  const reife=f=>so.map(id=>`${SORTEN[id].name} ${f(SORTEN[id].minL)} Monate`).join(', ');
-  let h=`<h4 class="gk">${K[1]} ${K[3]}${z.max?` · ${z.hab} von ${z.max} Siegeln`:''}</h4>`;
-  if(!z.max) h+=`<p class="mut">Zum Nachlesen, ohne Siegel. Tipp einen Eintrag an.</p>`;
-  if(K[0]==='stufe') h+=`<p class="mut">Was ein Wein für jede Stufe braucht, mit den Hürden ${WO[S.region]}. Jede Stufe hängt an einer deiner Rebsorten, nur deren Flaschen zählen.</p>`;
-  h+=kompSeiten(K[0]).map(kompZeile).join('');
-  if(K[0]==='stufe') h+=`<div class="hilfe"><b>⏳ Reifezeit in der Flasche bis zum Verkauf</b><br>Tafel- und Qualitätswein: 2 Monate.<br>Kabinett bis Trockenbeerenauslese: ${reife(x=>Math.max(1,x-(S.keller||0)))}.<br>Eiswein: ${reife(x=>Math.max(1,Math.round(x*1.5)-(S.keller||0)))}.${S.keller?`<br>Dein ausgebauter Keller kürzt das schon um ${S.keller} ${S.keller===1?'Monat':'Monate'}.`:''}</div>`
-    +`<div class="hilfe"><b>📜 Gut zu wissen</b><br>Jeder Wein liegt mindestens einen Monat im Fass, höchstens sieben.<br>Ab Kabinett und beim Eiswein darfst du erst im Januar nach der Lese anmelden.<br>Überreife Trauben bringen 5° mehr Öchsle.<br>${edelRegel()}.${S.rollen?'':' Am häufigsten trifft sie die Sorte, die am besten ins Gebiet passt.'} Dann gibt es von dem Feld kein Kabinett und keine Spätlese mehr.<br>Kälteeinbruch im November: im Schnitt jedes vierte Jahr, die Vorhersage warnt meist davor.<br>${frostText()}, nur dann gibt es Eiswein.<br>Bei der Lese zeigt jede Leseart, ab wann der Wein verkaufsfertig ist.</div>${mib('stufen')}`;
-  return h;
+// Seit 11.8 (Maik 20.11.2026): Das Fenster von unten mit fünf Kapiteln ist weg. Siegel stehen auf dem Siegelbrett, Wissen im Lexikon, beides im Weinarchiv.
+// Siegelbrett, Variante B: oben Zähler und Ruf des Hauses mit sieben Marken (R1), darunter je Sorte ein Fenster mit einer Zeile je Wein, unten das Album.
+// Wer alle drei Siegel hat, bekommt das Gold-Etikett, beim Silvaner in Franken ist es der Bocksbeutel (Maik 20.11.2026). Nur zum Ansehen, ohne Wirkung aufs Geld.
+const KOMP_BRETT=[['menge','Menge-Sorte'],['spitze','Spitzen-Sorte'],['sekt','Sekt-Sorte']];
+const kompBrettIds=rl=>rl==='sekt'?['sekt']:Object.keys(STUFEN).filter(st=>KOMP_STUFE_ROLLE[st]===rl).map(st=>'stufe_'+st);
+const kompBocks=id=>id!=='sekt'&&S.region==='franken'&&/silvaner/.test(kompSorte(id)||'');
+const kompEtikett=id=>`<span class="getik${kompBocks(id)?' bb':''}">${kompBocks(id)?'Bocksbeutel':'Gold-Etikett'}</span>`;
+function kompBrettZeile(id){
+  const D=KOMP[id], e=(S.komp||{})[id]||{st:0}, st=e.st||0, W=D.w, name=id==='sekt'?(S.rollen?'Regional-Sekt':'Sekt'):D.name;
+  const lauf=st<3&&(st<2||W[2]);
+  return `<button class="bzeile sz${st?'':' leer'}${st>=3?' gold':''}" data-a="kompEintrag" data-id="${id}"><div class="bz1"><b>${esc(name)}</b>${kompSiegel(st)}</div>`
+    +`<div class="bz2">${st>=3?`<span>✔ Alle drei Siegel</span>${kompEtikett(id)}`:esc(kompNaechst(id))}</div>${lauf?`<div class="bar g"><i style="width:${Math.min(100,(e.f||0)/W[st]*100)}%"></i></div>`:''}</button>`;
 }
-function kompHtml(){
-  const z=kompZahlen(), A=kompAlbumLies(), an=KOMP_ALBUM.filter(id=>A[id]).length, sg=KOMP_ALBUM.reduce((s,id)=>s+Math.min(3,Math.max(0,Math.floor(+A[id]||0))),0), alt=KOMP_ALBUM_ALT.filter(id=>A[id]).length;
-  return `${sbild('kellerbuch')}<h3>📖 Weinkompendium</h3><div class="kv"><span>Siegel in dieser Partie</span><span>${z.hab} von ${z.max}</span></div><div class="bar g"><i style="width:${z.hab/z.max*100}%"></i></div>
-    <div class="chips kchips" id="kchips">${KOMP_KAP.map(k=>`<button class="chip ${k[0]===KOMP_AKT?'an':''}" data-a="kompKap" data-id="${k[0]}">${k[1]} ${k[2]}</button>`).join('')}</div>
-    <div id="kinh">${kompKapHtml(KOMP_AKT)}</div>
-    <p class="mut kalbum">📚 Album über alle Partien: ${an} von ${KOMP_ALBUM.length} Weinen entdeckt, ${sg} von ${KOMP_ALBUM.length*3} Siegeln.${alt?`<br>Aus der Zeit vor Version 11.4: ${alt} von ${KOMP_ALBUM_ALT.length} Einträgen.`:''}</p>
-    <div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`;
+function vBrett(){
+  const z=kompZahlen(), n=rufStufe(), S7=RUF_STUFEN.length, nx=RUF_STUFEN[n], RL=kompRollen(), fr=S.region==='franken';
+  const marken=RUF_STUFEN.map(x=>`<u style="left:${(x/z.max*100).toFixed(2)}%"></u>`).join('');
+  const ruf=(n?`${RUF_NAMEN[n-1]}: Die Händler zahlen ${rufProz(n)} % mehr.`:'Noch keine Stufe.')+(nx?` Noch ${nx-z.hab===1?'1 Siegel':`${nx-z.hab} Siegel`} bis Stufe ${n+1}, ${RUF_NAMEN[n]}.`:' Alle Stufen erreicht.');
+  let h=fenster('brett','Siegelbrett',`<div class="kv"><span>Siegel in dieser Partie</span><span>${z.hab} von ${z.max}</span></div><div class="bar g stb"><i style="width:${z.hab/z.max*100}%"></i>${marken}</div>
+    <div class="kv"><span>🏛️ Ruf des Hauses</span><span>${n?`Stufe ${n} von ${S7}`:'noch keine Stufe'}</span></div><div class="fstand ruf">${ruf}</div>`,{
+    i:`Für die neun Stufen und den Sekt gibt es je drei Siegel, und jeder Eintrag hängt an einer deiner Rebsorten: Federweißer bis Spätlese an der Menge-Sorte, Auslese bis Eiswein an der Spitzen-Sorte, der Sekt an der Sekt-Sorte. Bronze und Silber bringen verkaufte Flaschen, Gold viele Flaschen oder eine Goldmedaille. Mit allen drei Siegeln bekommt der Wein sein Gold-Etikett${fr?', ein Silvaner in Franken den Bocksbeutel':''}. Bei ${RUF_STUFEN.slice(0,-1).join(', ')} und ${RUF_STUFEN[S7-1]} Siegeln steigt der Ruf des Hauses um eine Stufe, jede bringt ${rufProz(1)} % mehr bei jedem Verkauf. Ein Tipp auf einen Wein zeigt seine Geschichte und was noch fehlt. Die Siegel zählen je Partie, das Album merkt sich deine besten über alle Partien.`});
+  for(const [rl,rn] of KOMP_BRETT){
+    const I=kompBrettIds(rl), hab=I.reduce((a,id)=>a+kompSt(id),0), alt=rl==='sekt'&&!S.rollen;
+    h+=fenster('brett_'+rl,`${esc(alt?'Sekt':SORTEN[RL[rl]].name)}<small>${alt?'jede Sorte zählt':rn} · ${hab} von ${I.length*3} Siegeln</small>`,`<div class="fzl">${I.map(kompBrettZeile).join('')}</div>`,{buch:false});
+  }
+  const A=kompAlbumLies(), an=KOMP_ALBUM.filter(id=>A[id]).length, sg=KOMP_ALBUM.reduce((s,id)=>s+Math.min(3,Math.max(0,Math.floor(+A[id]||0))),0), alt=KOMP_ALBUM_ALT.filter(id=>A[id]).length;
+  return h+`<p class="fussnote">📚 Album über alle Partien: ${an} von ${KOMP_ALBUM.length} Weinen entdeckt, ${sg} von ${KOMP_ALBUM.length*3} Siegeln.${alt?`<br>Aus der Zeit vor Version 11.4: ${alt} von ${KOMP_ALBUM_ALT.length} Einträgen.`:''}</p>`;
+}
+// Lexikon, Variante L1: die Wissens-Seiten ohne Siegel, ein Kapitel zum Antippen. Neue Seiten tragen ein gelbes "Neu", bis man sie einmal geöffnet hat.
+// S.lexK merkt die Seiten, die der Spieler kennt. Beim ersten Mal gilt alles, was es dann gibt, als bekannt. Neu sind also nur später dazugekommene Seiten (zum Beispiel die Schädlinge).
+const lexSeiten=kap=>kompSeiten(kap).filter(id=>KOMP[id]&&KOMP[id].wissen);
+const lexAlle=()=>KOMP_KAP.flatMap(k=>lexSeiten(k[0]));
+function lexInit(){if(S&&!S.lexK){S.lexK={}; for(const id of lexAlle()) S.lexK[id]=1}}
+const lexNeu=id=>!!(S&&S.lexK&&!S.lexK[id]);
+const lexNeuZahl=()=>S&&S.lexK?lexAlle().filter(lexNeu).length:0;
+function vLexikon(){
+  if(!KOMP_KAP.some(k=>k[0]===KOMP_AKT)) KOMP_AKT='sorte';
+  const K=KOMP_KAP.find(k=>k[0]===KOMP_AKT), L=lexSeiten(K[0]);
+  return fenster('lexikon',`Lexikon<small>${lexAlle().length} Seiten zum Nachlesen, ohne Siegel</small>`,`<div class="chips kchips">${KOMP_KAP.map(k=>`<button class="chip ${k[0]===KOMP_AKT?'an':''}" data-a="kompKap" data-id="${k[0]}">${k[1]} ${k[2]}${lexSeiten(k[0]).some(lexNeu)?'<i class="lpunkt"></i>':''}</button>`).join('')}</div>
+    <h4 class="gk">${K[1]} ${K[3]} · ${L.length} ${L.length===1?'Seite':'Seiten'}</h4><div class="fzl">${L.map(kompZeile).join('')}</div>`,{
+    i:'Alles zum Nachlesen, ohne Siegel: deine Rebsorten, die Edelfäulnis und die Regeln zur Reifezeit, Gebiet und Lagen, Keller und Technik und die Gefahren. Oben wählst du ein Kapitel, ein Tipp auf eine Seite zeigt ihre Geschichte und was im Spiel gilt. Neue Seiten, zum Beispiel ein Schädling nach dem ersten Befall, tragen ein gelbes „Neu“, bis du sie einmal geöffnet hast.'});
 }
 // Eine Seite: Geschichte, die Zeile "Im Spiel" und bei Einträgen mit Siegeln die drei Bedingungen. Die Geschichte gibt es mit dem ersten Siegel, auf Wissens-Seiten sofort.
 function kompEintragHtml(id){
   const D=KOMP[id], w=D.wissen, e=(S.komp||{})[id]||{st:0}, st=w?0:e.st||0, K=KOMP_KAP.find(k=>k[0]===D.kap), aid=w?null:kompAlbumId(id), A=aid?Math.floor(+kompAlbumLies()[aid]||0):0;
   const bal=(a,b)=>`<div class="bar g"><i style="width:${Math.min(100,(a||0)/b*100)}%"></i></div>`;
   const bed=(i,extra)=>`<div class="kbed"><i class="ksg s${i}${st>=i?' an':''}"></i><div><b>${KOMP_ST[i]}, ${KOMP_ST_WORT[i]}</b><span>${esc(kompBed(D,e,i))}${extra||''}</span>${st===i-1&&(i<3||D.w[2])?bal(e.f,D.w[i-1]):''}</div></div>`;
-  return `<h3>${K[1]} ${esc(D.titel)}</h3><p class="mut" style="margin:-4px 0 8px">${K[3]} · ${w?'zum Nachlesen':st?`${KOMP_ST[st]}, ${KOMP_ST_WORT[st]}`:'noch kein Siegel'}</p>
+  return `<h3>${K[1]} ${esc(D.titel)}</h3><p class="mut" style="margin:-4px 0 8px">${w?K[3]:(KOMP_BRETT.find(b=>b[0]===D.rl)||[0,K[3]])[1]} · ${w?'zum Nachlesen':st?`${KOMP_ST[st]}, ${KOMP_ST_WORT[st]}`:'noch kein Siegel'}</p>
     <p>${st||w?kompGeschichte(id):'<span class="mut">Die Geschichte dazu gibt es mit dem ersten Siegel.</span>'}</p>
     <div class="hilfe kspiel"><b>📌 Im Spiel</b><br>${D.text()}</div>
-    ${w?'':`<p class="mut">${esc(kompZaehlt(id))}</p>${bed(1)}${bed(2)}${bed(3,(st<2?' Gold zählt erst, wenn du Silber hast.':'')+(e.gm&&!D.w[2]&&st<3?' ✔ Die Goldmedaille hast du schon.':''))}
+    ${w?'':`<p class="mut">${esc(kompZaehlt(id))}</p>${bed(1)}${bed(2)}${bed(3,`${/\.$/.test(kompBed(D,e,3))?'':'.'} Dafür gibt es ${kompBocks(id)?'den Bocksbeutel':'das Gold-Etikett'}.`+(st<2?' Gold zählt erst, wenn du Silber hast.':'')+(e.gm&&!D.w[2]&&st<3?' ✔ Die Goldmedaille hast du schon.':''))}
     ${A>st?`<p class="mut" style="margin-top:8px">📚 Im Album aus einer anderen Partie: ${KOMP_ST[A]}.</p>`:''}`}
     ${e.l?`<div class="kv" style="margin-top:8px"><span>Bisher gelesen</span><span>${num(e.l)} l</span></div>`:''}
-    <div class="btns"><button class="sec" data-a="weinQual">Zurück</button></div>`;
+    <div class="btns"><button class="sec" data-a="archivGeh" data-id="${w?'lexikon':'brett'}">Zurück</button></div>`;
 }
-function kompAuf(id){if(id&&KOMP[id]){KOMP_AKT=KOMP[id].kap; return openSheet(kompEintragHtml(id))} openSheet(kompHtml())}
-// Fenster im Büro: Zähler und der Weg ins Buch.
+function kompAuf(id){
+  if(id&&KOMP[id]){if(KOMP[id].wissen){KOMP_AKT=KOMP[id].kap; if(S.lexK) S.lexK[id]=1} return openSheet(kompEintragHtml(id))}
+  archivGeh('brett');
+}
+// Seit 11.8: Alle Wege ins frühere Weinkompendium führen ins Weinarchiv, aufs Siegelbrett oder ins Lexikon.
+function archivGeh(teil){
+  if(!S) return; if($('#sheet').classList.contains('an')) closeSheet();
+  const da=TAB==='keller'&&SUB==='buch'; ARCHIV=ARCHIV_B.some(b=>b[0]===teil)?teil:'brett'; FI_AUF.clear(); geh('keller','buch'); render(); if(!da) window.scrollTo(0,0);
+}
+// Fenster im Büro: Zähler und die Wege aufs Siegelbrett und ins Lexikon (seit 11.8).
 function kompFenster(){
   const z=kompZahlen();
-  return fenster('komp','Weinkompendium',`<div class="kv"><span>Siegel in dieser Partie</span><span>${z.hab} von ${z.max}</span></div><div class="bar g"><i style="width:${z.hab/z.max*100}%"></i></div>`,{buch:'stufen',kn:pk('weinQual','Aufschlagen',''),
-    i:`Dein Sammelbuch und Nachschlagewerk. Für die neun Stufen und den Sekt gibt es je drei Siegel, und jeder Eintrag hängt an einer deiner Rebsorten, zum Beispiel „${esc(KOMP.stufe_kab.titel)}“. Bronze und Silber bringen verkaufte Flaschen, Gold viele Flaschen oder eine Goldmedaille. Über deine Rebsorten, Gebiet, Keller, Technik und Gefahren liest du dort nach, ohne Siegel. Die Siegel zählen je Partie, das Album merkt sich deine besten über alle Partien. Belohnungen dafür kommen in einer späteren Version. Im Kellerbuch öffnet „Weinkompendium“ oben rechts dasselbe Buch.`});
+  return fenster('komp','Weinarchiv',`<div class="kv"><span>Siegel in dieser Partie</span><span>${z.hab} von ${z.max}</span></div><div class="bar g"><i style="width:${z.hab/z.max*100}%"></i></div>`,{buch:'buch',kn:[pk('archivGeh','Siegelbrett','',{id:'brett'}),pk('archivGeh','Lexikon','',{sec:1,id:'lexikon'})],
+    i:`Dein Weinarchiv steht in der Kellerei: deine Weine, das Siegelbrett und das Lexikon. Für die neun Stufen und den Sekt gibt es je drei Siegel, und jeder Eintrag hängt an einer deiner Rebsorten, zum Beispiel „${esc(KOMP.stufe_kab.titel)}“. Bronze und Silber bringen verkaufte Flaschen, Gold viele Flaschen oder eine Goldmedaille. Mit den Siegeln steigt der Ruf des Hauses. Über deine Rebsorten, Gebiet, Keller, Technik und Gefahren liest du im Lexikon nach, ohne Siegel. Die Siegel zählen je Partie, das Album merkt sich deine besten über alle Partien.`});
 }
 
 /* ================= Spielstart ================= */
@@ -4659,8 +4710,8 @@ function bueroErfolge(){
   const zeile=e=>`<div class="rl"><span>${esc(e.i)}</span><div><b>${esc(e.t)}</b>${e.j?`<span class="mut">${MON[e.m]} ${e.j}</span>`:''}</div></div>`;
   return bueroRang()
     +fenster('ehrungen','Ehrungen für deine Weine',wein.length?`<div class="gold" style="font-size:17px;margin-bottom:6px">${ehrSumme(wein)}</div><div class="mut">Zuletzt:</div>`+wein.slice(0,3).map(zeile).join(''):[],{
-      leer:'Noch keine Ehrungen.',buch:'wettbewerb',links:`📖 Weinkompendium: ${sz.hab} von ${sz.max} Siegeln`,kn:pk('weinQual','Aufschlagen','',{sec:1}),
-      i:'Medaillen gibt es bei der Landesprämierung, beim Bundeswettbewerb und als Präsident bei der Weltweinschau. Sie bringen Ansehen und machen den Wein wertvoller. Darunter steht, wie viele Siegel du im Weinkompendium gesammelt hast.'})
+      leer:'Noch keine Ehrungen.',buch:'wettbewerb',links:`🏅 Siegelbrett: ${sz.hab} von ${sz.max} Siegeln`,kn:pk('archivGeh','Aufschlagen','',{sec:1,id:'brett'}),
+      i:'Medaillen gibt es bei der Landesprämierung, beim Bundeswettbewerb und als Präsident bei der Weltweinschau. Sie bringen Ansehen und machen den Wein wertvoller. Darunter steht, wie viele Siegel du auf dem Siegelbrett gesammelt hast.'})
     +rufFenster()
     +(S.rang>=R_LADEN?fenster('botschafter','Weinbotschafter',`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/weinbotschafter.jpg);height:150px"><b>🎗️ Weinbotschafter ${WO[S.region]}</b></div>
       <div class="kv"><span>Jeden Januar</span><span>+${BOTSCHAFT_ANS} Ansehen</span></div>`,{buch:'ziel',i:`Seit dem Rang ${RAENGE[R_LADEN].name} bist du Weinbotschafter ${WO[S.region]}. Für deine Reisen bekommst du jeden Januar ${BOTSCHAFT_ANS} Ansehen.`}):'')
@@ -4668,7 +4719,7 @@ function bueroErfolge(){
 }
 function bueroWissen(){
   return fenster('anleitung','Spielanleitung','',{links:`Alles zum Nachschlagen in ${buchKap().length} kurzen Kapiteln, von der Bedienung bis zum Spielführer.`,kn:pk('buch','Aufschlagen',''),
-      i:'Das Büro hat vier Bereiche, oben wählst du einen aus. <b>Erfolge:</b> dein Rang mit dem Platz in der Rangliste, Ehrungen und Urkunden. <b>Wissen:</b> Spielanleitung, Weinkompendium und Spielführer. <b>Familie:</b> Mein Weingut, Chronik und Bestenliste. <b>Einstellungen:</b> Ton, dein Spiel mit den Spielständen und deine Idee. Das kleine i erklärt jedes Fenster kurz, „Mehr im Buch“ schlägt das passende Kapitel auf.'})
+      i:'Das Büro hat vier Bereiche, oben wählst du einen aus. <b>Erfolge:</b> dein Rang mit dem Platz in der Rangliste, Ehrungen und Urkunden. <b>Wissen:</b> Spielanleitung, Weinarchiv und Spielführer. <b>Familie:</b> Mein Weingut, Chronik und Bestenliste. <b>Einstellungen:</b> Ton, dein Spiel mit den Spielständen und deine Idee. Das kleine i erklärt jedes Fenster kurz, „Mehr im Buch“ schlägt das passende Kapitel auf.'})
     +kompFenster()
     +fuFenster();
 }
@@ -4753,7 +4804,7 @@ function vBerg(){
   return h+zu;
 }
 function vKeller(){
-  const T={start:'Weinkeller',buch:'Kellerbuch',sabotage:'Hintertür',lager:'Lager'};
+  const T={start:'Weinkeller',buch:'Weinarchiv',sabotage:'Hintertür',lager:'Lager'};
   return kopf(T[SUB])+{start:vKellerStart,buch:vBuch,sabotage:vSabotage,lager:vLager}[SUB]();
 }
 // Startansicht des Kellers (seit 7.4 das Muster für den Fenster-Baustein): Keltern und Abfüllen oben, dann Sekt, darunter der Vorrat als kleines Fenster (Maik 17.11.2026).
@@ -4967,7 +5018,7 @@ function vStadt(){
           `<button class="klein" data-a="ladenAngebot" data-id="${r}"${d.rest>0&&k?'':' disabled'}>Anbieten</button>`)}),{
       hin:[D.hin,!n&&`🍷 <b>Noch kein passender Wein.</b> ${bald?`Als Erstes reif: ${esc(lotName(bald.l))} im ${inMonaten(bald.n)}.`:'Weinhandlungen nehmen nur Prädikatswein ab Kabinett oder Sekt.'} Bis dahin verkaufst du im Großhandel.`],
       stand:D.stand,
-      i:`Weinhandlungen in den anderen Anbaugebieten zahlen mehr als der Großhandel. Sie nehmen aber nur Prädikatswein und Sekt, jede nur das, was sie gerade sucht, und jeden Monat nur eine kleine Menge. Für Kabinett liest du reife Trauben ab ${R().min.kab}° ohne Edelfäulnis, anmelden darfst du ab Januar, danach reift er je nach Sorte noch einige Monate in der Flasche (📖 Weinkompendium im Kellerbuch).${D.text}`});
+      i:`Weinhandlungen in den anderen Anbaugebieten zahlen mehr als der Großhandel. Sie nehmen aber nur Prädikatswein und Sekt, jede nur das, was sie gerade sucht, und jeden Monat nur eine kleine Menge. Für Kabinett liest du reife Trauben ab ${R().min.kab}° ohne Edelfäulnis, anmelden darfst du ab Januar, danach reift er je nach Sorte noch einige Monate in der Flasche (📜 Weinarchiv, Lexikon).${D.text}`});
     const regalI=`Was im Regal steht, verkauft sich jeden Monat von selbst, das Teuerste zuerst, bis ${eur(ladenEigen())} Listenwert. Dafür bekommst du ${mehr} % mehr als den Listenpreis. Regalweine fehlen im Großhandel.`;
     if(S.rang>=R_LADEN){
       const rg=regalWeine(), kann=S.lots.filter(l=>l.status==='flasche'&&!l.regal&&preis(l)>0).sort((a,b)=>preis(b)-preis(a));
@@ -5044,20 +5095,39 @@ const lotRest=l=>l.status==='fass'?8-l.fassMonate:lager(l).max-l.flMonate;
 const BSORT_F={dringend:(a,b)=>lotRest(a)-lotRest(b)||a.jahrgang-b.jahrgang};
 // Haltbarkeit als kurzer Text, wie im Kellerbuch.
 function haltText(l){const fl=l.status==='flasche', r=fl?(lager(l).max===Infinity?Infinity:lager(l).max-l.flMonate):8-l.fassMonate; return {r,t:r===Infinity?'unbegrenzt haltbar':`noch ${r} ${r===1?'Monat':'Monate'} haltbar${fl?'':' im Fass'}`}}
-// Kellerbuch (seit 7.4 auf dem Fenster-Baustein): ein Fenster "Deine Weine" mit Zahl und geschätztem Wert, darunter je Wein eine kurze Zeile.
-// Die Liste steht fest nach Dringlichkeit. Antippen zeigt alle Angaben und die passenden Knöpfe. Statt des i steht oben rechts das graue Wort "Weinkompendium" (bis 11.0 "Weinlexikon").
+// Seit 11.8 (Maik 20.11.2026): Der Unterreiter heißt Weinarchiv und hat drei Kacheln wie das Büro (W1): Deine Weine, Siegelbrett, Lexikon.
+// ARCHIV hält die Wahl, bis das Spiel neu geladen wird. Die Kennung buch des Unterreiters bleibt.
+const ARCHIV_B=[['weine','🍷','Deine Weine'],['brett','🏅','Siegelbrett'],['lexikon','📚','Lexikon']];
+let ARCHIV='weine';
+function archivKacheln(){return `<div class="bkach" role="tablist" aria-label="Teile im Weinarchiv">${ARCHIV_B.map(([k,s,n])=>`<button class="wahl${ARCHIV===k?' an':''}" role="tab" aria-selected="${ARCHIV===k}" data-a="archiv" data-id="${k}"><i>${s}</i>${n}${k==='lexikon'&&lexNeuZahl()?'<span class="lneu">Neu</span>':''}</button>`).join('')}</div>`}
 function vBuch(){
-  const ls=S.lots.filter(l=>l.status!=='trauben').slice().sort(BSORT_F.dringend), wert=ls.reduce((a,l)=>a+lotWert(l),0), o={iWort:'Weinkompendium',iAkt:'weinQual'};
+  if(!ARCHIV_B.some(b=>b[0]===ARCHIV)) ARCHIV='weine';
+  lexInit();
+  return archivKacheln()+{weine:vWeine,brett:vBrett,lexikon:vLexikon}[ARCHIV]();
+}
+// Für welchen Eintrag auf dem Siegelbrett ein Wein zählt (seit 11.8, D1), nach denselben Regeln wie kompVerkauf. Wein im Fass und gepanschter Wein zählen nie.
+function kompLotId(l){
+  if(!l||l.pansch||l.status==='fass'||l.status==='trauben') return null;
+  const so=kompRollen();
+  if(l.sekt) return !S.rollen||l.sorte===so.sekt?'sekt':null;
+  const rl=KOMP_STUFE_ROLLE[l.stufe]; return rl&&l.sorte===so[rl]?'stufe_'+l.stufe:null;
+}
+function kompLotZeile(l){const id=kompLotId(l); return id?`<div class="kv"><span>Zählt für</span><span>${esc(KOMP[id].titel)} ${kompSiegel(kompSt(id),'klein')}</span></div>`:''}
+// Deine Weine (seit 7.4 auf dem Fenster-Baustein): Zahl und geschätzter Wert, darunter je Wein eine kurze Zeile, fest nach Dringlichkeit.
+// Antippen zeigt alle Angaben und die passenden Knöpfe. Seit 11.8 ein normales i statt des grauen Worts "Weinkompendium", und rechts unten die drei kleinen Siegel des Eintrags, für den der Wein zählt.
+function vWeine(){
+  const ls=S.lots.filter(l=>l.status!=='trauben').slice().sort(BSORT_F.dringend), wert=ls.reduce((a,l)=>a+lotWert(l),0),
+    o={i:'Alle deine Weine im Fass und in der Flasche, was zuerst verdirbt, steht oben. Rot heißt, bald ist es zu spät. Die drei kleinen Siegel rechts zeigen, wie weit der Eintrag auf dem Siegelbrett ist, für den dieser Wein zählt. Wein im Fass, gepanschter Wein und Stufen aus einer anderen Sorte zählen nicht.'};
   if(!ls.length) return fenster('weine','Deine Weine',[],{...o,leer:'Noch keine Einträge. Hier stehen später alle deine Weine im Fass und in der Flasche.'});
   return fenster('weine','Deine Weine',`<div class="kv"><span>Weine im Fass und in der Flasche</span><span>${ls.length}</span></div>
     <div class="kv"><span>Geschätzter Wert</span><span>${eur(Math.round(wert/100)*100)}</span></div>
     <div class="fstand" style="margin:2px 0 0">Antippen zeigt alle Angaben. Was zuerst verdirbt, steht oben.</div>
     <div class="fzl ab">${ls.map(l=>{
-      const fl=l.status==='flasche', L=l.stufe?lager(l):null, p=preis(l), H=haltText(l);
+      const fl=l.status==='flasche', L=l.stufe?lager(l):null, p=preis(l), H=haltText(l), kid=kompLotId(l);
       const pr=p?eur2(p):fl?`reif in ${L.min-l.flMonate} ${L.min-l.flMonate===1?'Monat':'Monaten'}`:'im Fass';
       return `<button class="bzeile" data-a="buchDetail" data-id="${l.id}"><div class="bz1"><b>${dot(l.sorte)}${esc(lotName(l))}${l.pansch?' 🤫':''}${l.regal?' 🏪':''}${l.med&&l.med.length?' 🏅':''}</b><span>${pr}</span></div>
       <div class="bz2">${l.stufe?l.qp+' Qualitätspunkte':'nicht angemeldet'} · ${num(l.liter)} ${fl?'Flaschen':'l im Fass'}</div>
-      <div class="bz3 ${H.r<=2?'rot':''}">${H.t}</div></button>`}).join('')}</div>`,o);
+      <div class="bz3 ${kid?'dws ':''}${H.r<=2?'rot':''}">${kid?`<span>${H.t}</span>${kompSiegel(kompSt(kid),'klein')}`:H.t}</div></button>`}).join('')}</div>`,o);
 }
 // Winzerbote: Erst steht das Bild allein da, dann rollt sich die Zeitung wie eine Schriftrolle vom oberen Rand ab, bis ihr Kopf oben steht.
 // Oben hängt immer die Rolle. Ganz hochgeschoben verschwindet die Zeitung darin und gibt das Bild frei, Tippen auf die Rolle rollt sie wieder ab.
@@ -5237,7 +5307,7 @@ const FU_ZEIG={
   'e1-08':{sel:['#top .wtr']},
   'e1-09':{tab:'gut',sub:'berg',sel:[fiSel('duengung')]},
   'e1-10':{tab:'keller',sub:'lager',sel:[fiSel('faesser')]},
-  'e1-11':{tab:'keller',sub:'buch',sel:['[data-a="weinQual"]']},
+  'e1-11':{tab:'keller',sub:'buch',sel:['[data-a="archiv"][data-id="brett"]']},
   'e1-12':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
   'e1-13':{tab:'keller',sub:'start',sel:['[data-a="keltern"]']},
   'e1-14':{tab:'stadt',sub:'amt',sel:['[data-a="anmelden"]',fiSel('anmelden')]},
@@ -5248,12 +5318,12 @@ const FU_ZEIG={
   'z2-01':{tab:'stadt',sub:'amt',sel:['[data-a="anmelden"]',fiSel('anmelden')]},
   'k01':{tab:'gut',sub:'aktuell',sel:['[data-a="weiterBis"]']},
   'z2-02':{tab:'gut',sub:'berg',sel:['[data-a="pflanzen"]','[data-a="fi"][data-id^="feld_"]']},
-  'z2-03':{tab:'keller',sub:'buch',sel:['.bzeile[data-a="buchDetail"]','[data-a="weinQual"]']},
+  'z2-03':{tab:'keller',sub:'buch',sel:['.bzeile[data-a="buchDetail"]','[data-a="archiv"][data-id="brett"]']},
   'z2-04':{tab:'stadt',sub:'bank',sel:[fiSel('kredit')]},
   'z2-05':{tab:'stadt',sub:'laeden',sel:[fiSel('laeden'),'#subs [data-id="laeden"]']},
   'z2-06':{tab:'gut',sub:'aktuell',sel:[fiSel('rang')]},
   'z2-07':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
-  'z2-08':{tab:'keller',sub:'buch',sel:['.bzeile[data-a="buchDetail"]','[data-a="weinQual"]']},
+  'z2-08':{tab:'keller',sub:'buch',sel:['.bzeile[data-a="buchDetail"]','[data-a="archiv"][data-id="brett"]']},
   // Paket B: Rang-Neuheiten. Beim Befördern leuchtet der Knopf des Managers im Arbeitsamt.
   'r3-1':{tab:'stadt',sub:'amt',sel:[fiSel('auktionen'),fiSel('makler')]},
   'r3-2':{tab:'gut',sub:'berg',sel:['[data-a="fi"][data-id^="feld_"]']},
@@ -5287,7 +5357,7 @@ const FU_ZEIG={
   'a1':{tab:'stadt',sub:'amt',sel:[fiSel('verband')]},
   'm1':{tab:'gut',sub:'buero',sel:[fiSel('urkunden')]},
   'm2':{tab:'stadt',sub:'amt',sel:[fiSel('makler'),fiSel('auktionen')]},
-  'm3':{tab:'keller',sub:'buch',sel:['.bzeile[data-a="buchDetail"]','[data-a="weinQual"]']},
+  'm3':{tab:'keller',sub:'buch',sel:['.bzeile[data-a="buchDetail"]','[data-a="archiv"][data-id="brett"]']},
   'm4':{tab:'stadt',sub:'amt',sel:[fiSel('wettb')]},
   'p2':{tab:'stadt',sub:'amt',sel:[fiSel('verband')]},
   'r10-2':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="weingut"]',fiSel('mgr_amt')]},
@@ -5298,13 +5368,13 @@ const FU_ZEIG={
   'w3':{tab:'stadt',sub:'handel',sel:[fiSel('markt')]},
   'w4':{tab:'stadt',sub:'amt',sel:()=>{const l=S.lots.find(fuReiht); return [l?`[data-a="anmelden"][data-id="${l.id}"]`:'',fiSel('anmelden')]}},
   'w5':{tab:'gut',sub:'berg',sel:[fiSel('duengung')]},
-  'w6':{tab:'keller',sub:'buch',sel:()=>{const l=S.lots.find(fuLange); return [l?`.bzeile[data-a="buchDetail"][data-id="${l.id}"]`:'','[data-a="weinQual"]']}},
+  'w6':{tab:'keller',sub:'buch',sel:()=>{const l=S.lots.find(fuLange); return [l?`.bzeile[data-a="buchDetail"][data-id="${l.id}"]`:'','[data-a="archiv"][data-id="brett"]']}},
   'w7':{tab:'stadt',sub:'bank',sel:[fiSel('kredit')]},
   'w8':{tab:'keller',sub:'lager',sel:[fiSel('faesser')]},
   'w9':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
   // Kniffe
   'k02':{tab:'keller',sub:'lager',sel:[fiSel('faesser')]},
-  'k03':{tab:'keller',sub:'buch',sel:['[data-a="weinQual"]']},
+  'k03':{tab:'keller',sub:'buch',sel:['[data-a="archiv"][data-id="brett"]']},
   'k04':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
   'k05':{tab:'gut',sub:'berg',sel:[fiSel('gebiet')]},
   'k06':{tab:'gut',sub:'maschinen',sel:[fiSel('maschinen')]},
@@ -5588,7 +5658,7 @@ const AKT={
   fuVorn(){const f=S.fu; if(!f||!f.an) return; const n=fuAlt(); n.an=f.an; n.nur=f.nur; n.geld=f.geld; n.rm=f.rm||{}; S.fu=n; fuehrerWeg(); FU_PAUSE=false; save(); render();
     meldung('Tipps von vorn','Warnungen und Kniffe kommen wieder, sobald sie passen. In den ersten zwei Jahren kommt auch der Rest des Fahrplans.')},
   // Seit 10.2.1: "Zeig mir, wo" klappt die Blase zum Kopf zusammen, statt sie abzuhaken. Weg ist sie erst mit "Verstanden" oder wenn die Aufgabe erledigt ist.
-  fuWo(){const id=FU_AKT, z=FU_ZEIG[id]; if(!z) return; fuKlein(true); FU_WO=true; FU_PAUSE=true; if(z.tab){geh(z.tab,z.sub); if(z.sub==='buero'){const m=/data-id="(\w+)"/.exec((z.sel||[])[0]||''); if(m&&BUERO_WO[m[1]]) BUERO=BUERO_WO[m[1]]} render(); window.scrollTo(0,0)} setTimeout(()=>fuLeuchte(z),z.tab?120:0)},
+  fuWo(){const id=FU_AKT, z=FU_ZEIG[id]; if(!z) return; fuKlein(true); FU_WO=true; FU_PAUSE=true; if(z.tab){geh(z.tab,z.sub); if(z.sub==='buch') ARCHIV='weine'; if(z.sub==='buero'){const m=/data-id="(\w+)"/.exec((z.sel||[])[0]||''); if(m&&BUERO_WO[m[1]]) BUERO=BUERO_WO[m[1]]} render(); window.scrollTo(0,0)} setTimeout(()=>fuLeuchte(z),z.tab?120:0)},
   fuAuf(){fuKlein(false)},
   fuBuch(d){BUCH=d.id||''; buchZeig()},
   // Seit 8.0.1 "Dein Stand" statt "Deine Kasse": Kasse, Bis zum nächsten Rang (alle drei Bedingungen mit Balken wie in vRang) und die Rangleiter.
@@ -5748,9 +5818,11 @@ const AKT={
   rangliste(){openSheet(`<h3>Rangliste</h3><p class="mut">${RANGL_I}</p>${ranglisteHtml()}<div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`)},
   arbeitsamt(){closeSheet();geh('stadt','arbeit');render();window.scrollTo(0,0)},
   // Seit 11.1 öffnet der Knopf im Kellerbuch das Weinkompendium. Der Name der Aktion bleibt, die Sprechblasen zeigen darauf.
-  weinQual(){if(S) kompAuf()},
+  weinQual(){archivGeh('brett')},
   kompAuf(d){const el=$('#ksiegel'); if(el) el.classList.remove('an'); if(S) kompAuf(d&&d.id)},
-  kompKap(d){if(!KOMP_KAP.some(k=>k[0]===d.id)) return; KOMP_AKT=d.id; const el=$('#kinh'); if(!el) return kompAuf(); el.innerHTML=kompKapHtml(KOMP_AKT); for(const b of $('#kchips').children) b.classList.toggle('an',b.dataset.id===KOMP_AKT)},
+  kompKap(d){if(!KOMP_KAP.some(k=>k[0]===d.id)||KOMP_AKT===d.id) return; KOMP_AKT=d.id; render()},
+  archiv(d){if(ARCHIV===d.id) return; ARCHIV=d.id; FI_AUF.clear(); render()},
+  archivGeh(d){archivGeh(d.id)},
   kompEintrag(d){if(S&&KOMP[d.id]) kompAuf(d.id)},
   // Ein Wein aus dem Kellerbuch mit allen Angaben und den Knöpfen, die gerade passen.
   buchDetail(d){
@@ -5761,7 +5833,7 @@ const AKT={
     if(sektFaehig(l)) kn.push(`<button data-a="sekt" data-id="${l.id}">Zu Sekt machen</button>`);
     if(fl&&S.rang>=R_LADEN) kn.push(l.regal?`<button data-a="regalRaus" data-id="${l.id}">Aus dem Regal nehmen</button>`:p?`<button data-a="regal" data-id="${l.id}">Ins Regal stellen</button>`:'');
     if(W.length&&!l.regal) kn.push(`<button data-a="verkaufen" data-id="${l.id}">Verkaufen ${W[0].flag} ${eur2(W[0].p)}</button>`);
-    openSheet(`${sbild('kellerbuch')}<h3>${dot(l.sorte)}${esc(lotName(l))}</h3>${l.stufe?'':'<div class="mut">Noch nicht angemeldet</div>'}${l.pansch?'<div class="rot">🤫 gepanscht</div>':''}${l.regal?'<div class="mut">🏪 Steht im Regal deiner Weinhandlung</div>':''}${medHtml(l)}
+    openSheet(`${sbild('kellerbuch')}<h3>${dot(l.sorte)}${esc(lotName(l))}</h3>${l.stufe?'':'<div class="mut">Noch nicht angemeldet</div>'}${l.pansch?'<div class="rot">🤫 gepanscht</div>':''}${l.regal?'<div class="mut">🏪 Steht im Regal deiner Weinhandlung</div>':''}${medHtml(l)}${kompLotZeile(l)}
     <div class="kv"><span>Menge</span><span>${num(l.liter)} ${fl?'Flaschen':'l'}</span></div>
     <div class="kv"><span>Lagerort</span><span>${fl?'Flasche':'Fass'}</span></div>
     <div class="kv"><span>Lagert seit</span><span>${fl?l.flMonate:l.fassMonate} Monaten</span></div>
@@ -6216,7 +6288,7 @@ function ideeFertig(){try{localStorage.removeItem(IDEE_KEY)}catch(e){} meldung('
 // Je Version: [Zeichen, Nummer, Titel, Datum, Punkte]. Kommendes ohne Datum und Punkte.
 const WAS_NEU=[
   {k:'🏁 11.0 Weinkompendium',d:'in Arbeit',p:['Das Weinkompendium ersetzt das Weinlexikon','Siegel in Bronze, Silber und Gold'],v:[
-    ['▶️','11.8','Weinarchiv'],
+    ['✅','11.8','Weinarchiv','20.11.2026',['Das Kellerbuch heißt jetzt Weinarchiv, mit drei Kacheln','Siegelbrett mit einer Zeile je Wein und dem Ruf des Hauses','Gold-Etikett für alle drei Siegel, in Franken der Bocksbeutel','Deine Weine zeigen ihre drei Siegel','Lexikon zum Nachlesen, neue Seiten mit „Neu“']],
     ['✅','11.7','Buch und Abschluss','20.11.2026',['Kapitel im Buch neu geordnet, wie die Orte im Spiel','Ein Aufstieg über zwei Ränge zeigt beide Kapitel','Die letzte Übergabe bekommt einen Nachfolger mit Namen','Die Pleite zeigt deine Generationen und steht in der Bestenliste','Neues Spiel nach der Pleite erst nach Nachfrage']],
     // 10.6 ist ein Nachzügler aus Meilenstein 10 und steht an ihrem Platz in der Reihenfolge (Maik 20.11.2026).
     ['✅','10.6','Aufgeräumte Fenster','20.11.2026',['Gesperrtes bleibt unsichtbar bis zum passenden Rang','Die Aufstiegsfeier nennt alles Neue','Fenster von unten auf Pergament, Überschriften dunkelbraun','Leiste für die Flaschen im Lager','Sabotage erst ab Winzer']],
