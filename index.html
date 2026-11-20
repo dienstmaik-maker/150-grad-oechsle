@@ -200,10 +200,11 @@ ul.kl{margin:4px 0 0;padding-left:18px;font-size:14px}
 .pano.teile>i{left:-14%;right:-14%;background-size:cover;background-position:center;will-change:transform}
 .pano .tafel{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1.08;color:#2b1a0c;pointer-events:none}
 .pano .tafel>*{display:block;white-space:nowrap;font-weight:400;font-style:normal;text-decoration:none;margin:0}
-.pano .tafel b{font-family:"Winzerbote Fraktur",serif;font-size:15em}
-.pano .tafel em{font-family:"Urkunde Schreibschrift",cursive;font-size:11.5em;margin-top:.1em}
-.pano .tafel s{font-family:Alegreya,serif;font-style:italic;font-size:6.6em;margin-top:1.5em}
-.pano .tafel hr{width:40%;border:0;border-top:1px solid #2b1a0c;margin:3em 0 2.4em;opacity:.8}
+.pano .tafel i{font-family:Alegreya,serif;font-size:6.4em;letter-spacing:.02em;margin-bottom:.15em}
+.pano .tafel b{font-family:"Alegreya SC",Alegreya,serif;font-weight:700;font-size:13.5em;letter-spacing:.02em}
+.pano .tafel em{font-family:Alegreya,serif;font-style:italic;font-size:9.5em;margin-top:.15em}
+.pano .tafel s{font-family:Alegreya,serif;font-style:italic;font-size:6.6em;margin-top:1.1em}
+.pano .tafel hr{width:40%;border:0;border-top:1px solid #2b1a0c;margin:2em 0 1.6em;opacity:.8}
 .pano .tafel u{font-family:Alegreya,serif;letter-spacing:.03em;font-size:6.2em}
 .ptitel{position:absolute;left:0;right:0;bottom:0;padding:28px 12px 8px;background:linear-gradient(transparent,rgba(0,0,0,.66));color:#fff;text-align:center;pointer-events:none}
 .ptitel b{display:block;font-size:18px;text-shadow:0 1px 3px rgba(0,0,0,.8)}
@@ -478,7 +479,7 @@ img.fass{height:1.1em;vertical-align:-.18em}
 .spbogen{height:200px;border-radius:12px;background:var(--line) center/cover no-repeat;margin:4px 0 8px;box-shadow:0 2px 6px rgba(0,0,0,.3)}
 .spspruch{text-align:center;font:400 19px/1.2 "Urkunde Fraktur",var(--schrift);color:#7b1e3a;margin:4px 0 8px}.spspruch.hell{color:#f0c75a;margin-top:12px}
 .sptafel{margin:6px 0 12px;padding:12px 14px;border-radius:8px;background:#5b3a1e url(bilder/brett-dunkel.jpg) center/cover;color:#f3e3c3;font:15px/1.4 var(--schrift);text-align:center;box-shadow:inset 0 0 0 2px rgba(0,0,0,.35),0 3px 8px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.6)}
-.sptafel b{display:block;font:400 19px/1.2 "Urkunde Fraktur",var(--schrift);color:#f0c75a;margin-bottom:4px}
+.sptafel b{display:block;font:700 19px/1.2 "Alegreya SC",var(--schrift);letter-spacing:.03em;color:#f7d97a;margin-bottom:4px}
 @media (prefers-reduced-motion:reduce){.spschild.neu{animation:none}}
 .umini{all:unset;box-sizing:border-box;cursor:pointer;aspect-ratio:1000/670;background:url(bilder/urkunde.webp) center/100% 100% no-repeat;border:3px solid #6b4a24;border-radius:3px;box-shadow:0 2px 5px rgba(0,0,0,.35),inset 0 0 0 1px #c9a227;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#5a1426;text-align:center;padding:0 12%}
 .umini b{font:700 11.5px/1.1 var(--schrift)}
@@ -804,7 +805,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='12.5';
+const VERSION='12.3';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 // Seit 11.5 (Teil C2, Maik 20.11.2026): realistische Löhne. Das Arbeitsamt bietet LOHN_MIN bis LOHN_MAX im Monat (bis 11.4: 200 bis 500 €, Startlohn 350, Vermittlung 300).
 // LOHN_F ist der gemeinsame Faktor auf alle Löhne (Angestellte und Manager), eingestellt über die Dosis-Reihe der Messung. lohnF rechnet einen Lohn damit um, auf 10 € gerundet.
@@ -1521,6 +1522,7 @@ function tafelOrt(el,T){
   const W=el.clientWidth, H=el.clientHeight, k=Math.max(W/PANO_BILD[0],H/PANO_BILD[1]), ox=(W-PANO_BILD[0]*k)/2, oy=(H-PANO_BILD[1]*k)/2;
   return {x:ox+T[0]*k,y:oy+T[1]*k,w:(T[2]-T[0])*k,h:(T[3]-T[1])*k,W,H};
 }
+// Seit 12.3 (Maik 20.11.2026): fester Satz "Weinhof und Weinberg der Familie" über dem Namen, Name in Alegreya SC fett, Winzer in Alegreya kursiv statt Fraktur und Schreibschrift, damit alles lesbar ist.
 // Schreibt den Schild-Text auf die Tafel. Er hängt in der Ebene des Bilds und gleitet und zoomt deshalb mit. Lange Namen schrumpfen, bis sie passen (gemerkt je Text und Breite).
 const TAFEL_FIT={};
 function tafelText(el,T){
@@ -1528,9 +1530,9 @@ function tafelText(el,T){
   const t=tafelOrt(el,T), ich=S.ich||(S.erbe&&S.erbe.name)||'', adr=`${WAND_STR[S.region]||'Weinstraße'} ${wandNr(S.name||'')}`, d=document.createElement('div');
   d.className='tafel'; d.setAttribute('aria-hidden','true');
   d.style.cssText=`left:${t.x}px;top:${t.y}px;width:${t.w}px;height:${t.h}px;font-size:${t.w/100}px`;
-  d.innerHTML=`<b>${esc(S.name)}</b>${ich?`<em>${esc(ich)}</em>`:''}<s>${esc(adr)}</s><hr><u>Weinbaugebiet ${esc(R().name)}</u>`;
+  d.innerHTML=`<i>Weinhof und Weinberg der Familie</i><b>${esc(S.name)}</b>${ich?`<em>${esc(ich)}</em>`:''}<s>${esc(adr)}</s><hr><u>Weinbaugebiet ${esc(R().name)}</u>`;
   el.append(d);
-  const lang=[...d.querySelectorAll('b,em')], k=[S.name,ich,Math.round(t.w)].join('|'), fit=TAFEL_FIT[k];
+  const lang=[...d.querySelectorAll('i,b,em')], k=[S.name,ich,Math.round(t.w)].join('|'), fit=TAFEL_FIT[k];
   if(fit) return lang.forEach((e,i)=>{if(fit[i]) e.style.fontSize=fit[i]+'px'});
   const pass=()=>lang.map(e=>{e.style.fontSize=''; let f=parseFloat(getComputedStyle(e).fontSize), g=0; while(e.offsetWidth>t.w*.9&&f>4){f-=.5; g=f; e.style.fontSize=f+'px'} return g});
   const r=pass();
@@ -1815,6 +1817,7 @@ function spEhrHtml(s,kl,e){
     :`<p>Die Gemeinde dankt</p><b class="uname">${esc(wer)}</b>${inh}<p>für die Spende für</p><b class="urang lang">${esc(D.z)}</b>`;
   return `<div class="urk ${kl||''}"><div class="utext"><div class="utitel">${s===8?'Ehrenbrief':'Dankesurkunde'}</div>${mitte}<small>${MON[e.m]} ${e.j} · ${esc(REGIONEN[S.region].name)}</small></div><div class="usiegel"></div></div>`;
 }
+// Seit 12.3 (Maik 20.11.2026) steht "Familie …" in Alegreya SC fett mit hellerem Gold statt Fraktur.
 // Namenstafel unter dem Holzbogen: alle Generationen aus der Chronik und die heutige, die Ehrenbürger-Generation mit Stern.
 function spTafel(){
   const C=S.chronik||[], n=genNr(), e=S.erbe||{}, rolle=(nr,art)=>nr===1?(art==='t'?'Gründerin':'Gründer'):art==='s'?'Sohn':'Tochter';
@@ -6379,7 +6382,8 @@ function ideeFertig(){try{localStorage.removeItem(IDEE_KEY)}catch(e){} meldung('
 // Je Version: [Zeichen, Nummer, Titel, Datum, Punkte]. Kommendes ohne Datum und Punkte.
 const WAS_NEU=[
   {k:'🏁 12.0 Neue Bilder und Ideen',d:'in Arbeit',p:['Ideen von Timo und neue Bilder kommen ins Spiel'],v:[
-    ['▶️','12.3','Reste aus 1 bis 10'],
+    ['▶️','12.4','Bilder-Kür'],
+    ['✅','12.3','Lesbare Tafeln','20.11.2026',['Die Tafel an der Pinnwand ist jetzt gut lesbar','Neu auf der Tafel: „Weinhof und Weinberg der Familie“ über deinem Namen','Der Familienname am Holzbogen in klarer Schrift und hellerem Gold']],
     ['✅','12.5','Kleine Verbesserungen','20.11.2026',['Maschinen tragen nur noch eine Nummer, wenn du zwei gleiche hast','Die Plaketten im Büro trennen lange Namen an der richtigen Stelle','Das Spendenfenster zeigt, wie viel in diesem Jahr noch Steuer spart']],
     ['✅','12.2','Neue Bilder','20.11.2026',['Neun neue Bilder von Timo','Jede Maschine zeigt beim Kauf ihr Bild, das erste Gerät jeder Art kommt in den Winzerboten','Traubenwickler, Mehltau und Kirschessigfliege mit Bild beim ersten Befall','Der Sektkeller mit eigenem Bild beim Kauf und im Winzerboten','Neun Lexikon-Seiten zeigen oben ihr Bild']],
     ['✅','12.1','Sektkeller','20.11.2026',['Sekt nur mit eigenem Sektkeller, zu kaufen ab Winzer','Sektflasche, Korken und Agraffe als Kosten je Flasche','Degorgier- und Abfüllanlage halbiert die Kosten','24 Monate Hefelager bringen mehr Geld','Der Kellermeister macht Sekt schon auf Stufe 1']]]},
