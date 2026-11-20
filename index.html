@@ -1616,7 +1616,7 @@ function etappe3(n,schwer){
   neueLaeden(); S.absatz=0;
 }
 function zahle(b){S.geld-=b;S.jahrAus+=b}
-function kassiere(b){S.geld+=b;S.jahrEin+=b;fx('kasse')}
+function kassiere(b){S.geld+=b;S.jahrEin+=b;if(b>0&&S.fu) S.fu.ein1=1;fx('kasse')}
 // Seit 11.5 (Teil C1): Ruf des Hauses, vorerst nur die Rechnung (Anzeige, Ehrungen und Texte baut Teil D). Sieben Stufen bei RUF_STUFEN Siegeln im Weinkompendium,
 // jede hebt den Erlös bei jedem Weinverkauf um RUF_BONUS: Großhandel, Exporthandel, Weinhandlungen, eigene Weinhandlung, Sekt und Federweißer (Maik 20.11.2026).
 // erloes(b) ist die Zeile im Erlös. Das Budget des Großhandels (S.absatz) rechnet weiter mit dem Listenpreis. RUF_BONUS=0 schaltet für Messläufe ab.
@@ -2996,7 +2996,7 @@ function neuesSpiel(){
   const reg=REG(NEU.region,!!ROLLEN_NEU);
   S={v:1,v7:1,zf:zfNeu(),name:NEU.name.trim().slice(0,NAME_MAX)||'Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:startGeld(NEU.schwer),ha:3,boden:80,duengungen:0,
     felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',sonne:0,markt:1,ansehen:0,ansV:1,leuteV:1,
-    jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:ALLEIN_HA?0:1,lagerarb:ALLEIN_FASS?0:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,meilen:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],komp:{},kompV:3,v121:1,...(ROLLEN_NEU?{rollen:1}:{})};
+    jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:ALLEIN_HA?0:1,lagerarb:ALLEIN_FASS?0:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,meilen:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],komp:{},kompV:3,v121:1,ein:{f:[]},...(ROLLEN_NEU?{rollen:1}:{})};
   if(NEU.fu==='0') S.fu.an=0;
   for(const id of reg.sorten){S.felder[id]={reben:0,jung:0}; feldReset(S.felder[id])}
   etappe3(3,NEU.schwer);
@@ -4390,6 +4390,7 @@ function vBetrieb(){
     ${S.spitze?`<div class="kv"><span>Spitzenlage</span><span>${SPITZE_HA} Hektar, +${SPITZE_OE}° im Juli</span></div>`:''}
     <div class="kv"><span>Fassraum belegt</span><span>${num(fassBelegt())} von ${num(S.fassraum)} l</span></div>
     <div class="kv"><span>Leere Flaschen</span><span>${num(S.flaschen)}</span></div>
+    ${einFrei('leute')?'':`<div class="kv"><span>Deine Leute</span><span>Familie, schafft ${ALLEIN_HA} Hektar</span></div>`}
     <div class="kv"><span>Maschinen</span><span>${S.maschinen.length}${S.maschinen.length?`, ${maschVerteilung().length} im Einsatz`:''}</span></div>
     <div class="kv"><span>Löhne im Monat</span><span>${eur(kosten().loehne)}</span></div>
     <div class="kv"><span>Feste Kosten im Monat</span><span>${(k=>eur(k.basis+k.loehne+k.tilgung+k.zins))(kosten())}</span></div>
@@ -4701,7 +4702,43 @@ function kz(links,...kn){return `<div class="kz${links?'':' reihe'}"><div>${link
 // o.kl: zusätzliche Klasse am Fenster (golden im Monat des Aufstiegs).
 // o.iWort und o.iAkt: ein graues Wort statt des i mit eigener Aktion (Kellerbuch: "Weinkompendium").
 const FI_AUF=new Set();
+// Seit 12.6.4 (Maik 20.11.2026, Prüfliste Einstieg): ruhiger Einstieg. Nur neue Partien haben S.ein, darin S.ein.f mit den Fenstern, die schon frei sind.
+// Ein Fenster aus EIN_REGEL bleibt weg, bis seine Bedingung einmal stimmt, danach bleibt es für immer. Alte Spielstände ohne S.ein sehen alles wie vorher.
+// "Deine Weine" gibt es zweimal (Weinarchiv und Großhandel), im Großhandel heißt die Regel weine_gh.
+const einFass=()=>S.lots.some(l=>l.status!=='trauben'), einFlasche=()=>S.lots.some(l=>l.status==='flasche');
+const EIN_REGEL={
+  // Der Boden fällt jeden Monat um 3 Punkte, unter 80 ist er schon im Februar. Deshalb erst ab Mai oder sobald "Das steht an" ab 70 % zum Düngen ruft (Annahme Claude).
+  duengung:()=>monatNr()>=4||S.boden<=70,
+  gebiet:()=>monatNr()>=12,
+  helfer:()=>S.ha>ALLEIN_HA||S.rang>=R_AUKTION||S.helfer>0||S.maschinen.length>0||!!leuteFehlen().helfer,
+  lagerarb:()=>S.fassraum>ALLEIN_FASS||S.flaschen>ALLEIN_FL||S.lagerarb>0||!!leuteFehlen().lagerarb||fassKap()-S.fassraum<500||flKap()-S.flaschen<100,
+  leute:()=>einFrei('helfer')||einFrei('lagerarb'),
+  maschinen:()=>S.maschinen.length>0||Object.values(MASCH).some(T=>S.rang>=T.rang),
+  rangliste:()=>monatNr()>=12,
+  ehrungen:()=>(S.ehrungen||[]).some(e=>!e.a)||kompZahlen().hab>0,
+  ruf:()=>kompZahlen().hab>0,
+  urkunden:()=>S.rang>=1,
+  komp:einFass,
+  meingut:()=>S.rang>=1, chronik:()=>S.rang>=1, besten:()=>S.rang>=1&&bestenZeilen().length>0,   // Die Bestenliste gilt über alle Partien, deshalb erst mit dem ersten Aufstieg (Annahme Claude).
+  weine:()=>S.lots.length>0,
+  zuckern:()=>S.lots.length>0, keltern:()=>S.lots.length>0,
+  verschneiden:()=>{const mi=S.lots.filter(mischbar); return mi.some(a=>mi.some(b=>a!==b&&farbe(a)===farbe(b)))},
+  pruefer:()=>S.lots.some(l=>l.pansch),
+  abfuellen:einFass, vorrat:einFass, flaschen:einFass, anmelden:einFass,
+  faesser:()=>monatNr()>=5||S.lots.length>0,
+  markt:einFlasche, weine_gh:einFlasche,
+  laeden:()=>S.lots.some(l=>l.status==='flasche'&&(l.sekt||STUFEN[l.stufe]&&STUFEN[l.stufe].rang>=3)),
+  kredit:()=>!!S.kredit||S.geld<0||monatNr()>=15
+};
+function einKey(id){return id==='weine'&&SUB==='handel'?'weine_gh':id}
+// Prüft einmal je Zeichnen alle noch gesperrten Fenster und merkt sich, was frei geworden ist.
+function einPruef(){if(!S||!S.ein) return; for(const k of Object.keys(EIN_REGEL)) if(!S.ein.f.includes(k)) try{if(EIN_REGEL[k]()) S.ein.f.push(k)}catch(e){}}
+function einFrei(k){return !S||!S.ein||!EIN_REGEL[k]||S.ein.f.includes(k)}
+function einZu(id){const k=einKey(id); return !!(S&&S.ein&&EIN_REGEL[k]&&!S.ein.f.includes(k))}
+// Kurze Karte für einen Ort, an dem am Anfang noch nichts steht (ein Satz, was hier später passiert).
+function einKarte(id,titel,text){return `<section class="card fen"><header class="fkopf"><h3>${titel}</h3></header><div class="fin"><div class="fleer">${text}</div></div></section>`}
 function fenster(id,titel,inhalt,o={}){
+  if(einZu(id)) return '';
   const auf=FI_AUF.has(id), buch=o.buch===undefined?BUCH_ORT[SUB]:o.buch;
   const i=o.iWort?`<button class="fi wort" data-a="${o.iAkt}">${o.iWort}</button>`
     :o.i?`<button class="fi${auf?' an':''}" data-a="fi" data-id="${id}" aria-label="Erklärung zu ${esc(titel)}" aria-expanded="${auf}"><i>i</i></button>`:'';
@@ -4718,7 +4755,7 @@ function vAktuell(){
   return fenster('ansteht','Das steht an',A.length?A.map(a=>`<button class="task ${a.rot?'rot':a.ruhig?'hin':'gelb'}" data-a="${a.akt||'tab'}" data-id="${a.tab||''}" data-sub="${a.sub||''}">${a.rot?'⚠️ ':''}${esc(a.t)}</button>`).join(''):[],{
     leer:'Diesen Monat steht nichts an. Du kannst weiterblättern.',
     kn:an?`<button class="klein" data-a="tab" data-id="monat">📰 Winzerbote</button>`:`<div class="zweikn"><button class="klein" data-a="tab" data-id="monat">📰 Winzerbote</button><button class="klein" data-a="weiterBis">⏩ Weiter bis etwas ansteht</button></div>`,
-    i:'Hier steht, was diesen Monat zu tun ist. Ein Tipp führt dich direkt an den Ort. <b>Rot</b> kann nicht warten, <b>Gelb</b> hat Zeit, <b>Grau</b> ist nur ein Hinweis. Die Punkte an den Reitern zeigen dasselbe, Hinweise bekommen keinen Punkt.<br><br>⏩ „Weiter bis etwas ansteht“ blättert am Stück, höchstens zwölf Monate. Es hält nur bei Rot und bei Schlagzeilen, die dich selbst betreffen. Bei Gelb und bei Hinweisen blättert es weiter. Ausnahme ist die Lese: Von September bis November hält es einmal im Monat, solange Trauben hängen, im Dezember nur bei gefrorenen Trauben.<br><br>Geboten und eingereicht wird im Rathaus, der Tipp hier führt dich hin. „Winzerbote“ zeigt die letzte Ausgabe noch einmal. Tipps gibt dir der Spielführer in der Sprechblase.'+(fuSperre()?'<br><br>Mit dem Spielführer gibt es ⏩ erst ab dem Januar des zweiten Jahres, im ersten Jahr kommt fast jeden Monat ein Tipp.':'')})+vRang();
+    i:'Hier steht, was diesen Monat zu tun ist. Ein Tipp führt dich direkt an den Ort. <b>Rot</b> kann nicht warten, <b>Gelb</b> hat Zeit, <b>Grau</b> ist nur ein Hinweis. Die Punkte an den Reitern zeigen dasselbe, Hinweise bekommen keinen Punkt.<br><br>⏩ „Weiter bis etwas ansteht“ blättert am Stück, höchstens zwölf Monate. Es hält nur bei Rot und bei Schlagzeilen, die dich selbst betreffen. Bei Gelb und bei Hinweisen blättert es weiter. Ausnahme ist die Lese: Von September bis November hält es einmal im Monat, solange Trauben hängen, im Dezember nur bei gefrorenen Trauben.<br><br>Geboten und eingereicht wird im Rathaus, der Tipp hier führt dich hin. „Winzerbote“ zeigt die letzte Ausgabe noch einmal. Tipps gibt dir der Spielführer in der Sprechblase.'+(fuSperre()?(S.ein?'<br><br>Mit dem Spielführer gibt es ⏩ ab April, bis dahin zeigt dir der alte Winzer das Pflanzen.':'<br><br>Mit dem Spielführer gibt es ⏩ erst ab dem Januar des zweiten Jahres, im ersten Jahr kommt fast jeden Monat ein Tipp.'):'')})+vRang();
 }
 // Maschinen (seit 7.4 auf dem Fenster-Baustein): "Deine Maschinen" mit einer Zeile je Maschine, darunter je Bauart ein Fenster zum Kaufen.
 // Was der Rang noch sperrt, ist seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten): die kleine Maschine ab Winzermeister, der Vollernter ab Gutsherr.
@@ -4744,6 +4781,7 @@ function vMaschinen(){
       <div class="kv"><span>Deckt übers Jahr ab</span><span>${T.helfer} Hektar Reben</span></div>`)+`<div class="kv"><span>${lw}</span><span>${fa}</span></div><div class="kv"><span>Wartung</span><span>${eur(T.wart)} je %</span></div>`,{
       links:hat?`Du hast schon ${T.f?'eine':'einen'}.`:saison?'':'Zu kaufen von Januar bis März.',kn:pk('maschKauf','Kaufen',eur(T.preis),{id,aus:!saison||hat,arm:S.geld<T.preis}),i:was});
   }
+  if(einZu('maschinen')) return einKarte('maschinen','Noch alles von Hand',`Am Anfang machst du alles von Hand. Die erste Maschine gibt es ab dem Rang ${RAENGE[Math.min(...Object.values(MASCH).map(T=>T.rang))].name}.`);
   return h+zu.join('');
 }
 // Büro als Pokalraum (seit 7.4 auf dem Fenster-Baustein), seit 11.2 in vier Bereichen (siehe vBuero).
@@ -4759,7 +4797,7 @@ function namenFenster(){
   return fenster('namen','Deine Namen',`<label class="feld">Dein Name<input type="text" id="bnI" maxlength="30" placeholder="Vorname Nachname" autocomplete="off" value="${esc(e)}"></label>
     <label class="feld">Name des Weinguts<input type="text" id="bnG" maxlength="${NAME_MAX}" autocomplete="off" value="${esc(S.name)}"></label>
     <div class="feld">Anrede</div><div class="zwei" id="bnA">${[['m','Herr'],['w','Frau']].map(([k,x])=>`<button class="wahl ${(k==='w')===w?'an':''}" data-a="bAnrede" data-v="${k}"><b>${x}</b></button>`).join('')}</div>`,{
-    buch:'',hin:['✍️ Seit Version 7.9 gibt es zwei Namen: deinen eigenen und den des Weinguts. Trag hier beide ein.'],kn:'<button class="klein" data-a="namenJa">Speichern</button>',
+    buch:'',hin:[S.ein?'✍️ Beim Start ist dein Name leer geblieben, trag ihn hier ein.':'✍️ Seit Version 7.9 gibt es zwei Namen: deinen eigenen und den des Weinguts. Trag hier beide ein.'],kn:'<button class="klein" data-a="namenJa">Speichern</button>',
     i:'Dein Name steht künftig auf Urkunden, in der Bestenliste, in der Chronik und im Winzerboten. Der Name des Weinguts steht am Hof und in den Schlagzeilen. Urkunden, die schon an der Wand hängen, bleiben, wie sie sind.'});
 }
 // Seit 11.2 (Maik 19.11.2026): vier Bereiche statt einer langen Liste. Oben im Büro stehen vier Kacheln, darunter nur die Fenster des gewählten Bereichs.
@@ -4769,9 +4807,11 @@ function namenFenster(){
 const BUERO_B=[['erfolge','🏆','Erfolge'],['wissen','📖','Wissen'],['familie','👪','Familie'],['einst','⚙️','Einstellungen']];
 const BUERO_WO={rangliste:'erfolge',ehrungen:'erfolge',ruf:'erfolge',botschafter:'erfolge',urkunden:'erfolge',anleitung:'wissen',komp:'wissen',fuehrer:'wissen',meingut:'familie',chronik:'familie',besten:'familie',ton:'einst',spiel:'einst',idee:'einst'};
 let BUERO='erfolge';
-function bueroKacheln(){return `<div class="bkach" role="tablist" aria-label="Bereiche im Büro">${BUERO_B.map(([k,s,n])=>`<button class="wahl${BUERO===k?' an':''}" role="tab" aria-selected="${BUERO===k}" data-a="buero" data-id="${k}"><i>${s}</i>${n}</button>`).join('')}</div>`}
+// Seit 12.6.4: Bei einer neuen Partie fehlen Erfolge und Familie, bis dort das erste Fenster frei ist. Dann öffnet das Büro auf Wissen.
+function bueroBer(){return BUERO_B.filter(([k])=>k==='erfolge'?['rangliste','ehrungen','ruf','urkunden'].some(einFrei):k==='familie'?['meingut','chronik','besten'].some(einFrei):true)}
+function bueroKacheln(){return `<div class="bkach" role="tablist" aria-label="Bereiche im Büro">${bueroBer().map(([k,s,n])=>`<button class="wahl${BUERO===k?' an':''}" role="tab" aria-selected="${BUERO===k}" data-a="buero" data-id="${k}"><i>${s}</i>${n}</button>`).join('')}</div>`}
 function vBuero(){
-  if(!BUERO_B.some(b=>b[0]===BUERO)) BUERO='erfolge';
+  const BB=bueroBer(); if(!BB.some(b=>b[0]===BUERO)) BUERO=BB[0][0];
   return bueroKacheln()+namenFenster()+{erfolge:bueroErfolge,wissen:bueroWissen,familie:bueroFamilie,einst:bueroEinst}[BUERO]();
 }
 function bueroErfolge(){
@@ -4899,7 +4939,7 @@ function vKellerStart(){
   const vorrat=fenster('vorrat','Vorrat',`<div class="kv"><span>Fassraum</span><span>${num(bel)} von ${num(S.fassraum)} l</span></div><div class="kv"><span>Leere Flaschen (1 l)</span><span>${num(S.flaschen)}</span></div>`,
     {buch:'lager',i:'Fassraum und leere Flaschen kaufst du im Lager, beides braucht Lagerarbeiter. Fassraum am besten vor der Lese kaufen, Flaschen vor dem Abfüllen.'});
   // Seit 12.1 (Maik 20.11.2026): eine Karte Sektkeller. Vor dem Kauf nur der Kaufknopf, danach die Weine für Sekt und, sobald der Rang reicht, der Ausbau-Knopf für die Anlage.
-  if(!sektRang()) return h+vorrat;
+  if(!sektRang()) return h||vorrat?h+vorrat:einKarte('keller','Noch keine Trauben','Nach der Lese kelterst du hier deine Trauben, später füllst du den Wein ab. Bis zur ersten Lese ab August ist es hier still.');
   const hefeI=`Beim Versekten wählst du ${SEKT_REIFE} oder ${HEFE_LANG} Monate Hefelager. Mit ${HEFE_LANG} Monaten bringt der Sekt ${Math.round((HEFE_LANG_F-1)*100)} % mehr.`;
   if(!S.sektkeller) return h+fenster('sekt','Sektkeller','',{
     hin:[aufgabeDa('sekt')&&`🍷 Dein ${KM} macht Sekt, sobald du einen Sektkeller hast.`],
@@ -4923,6 +4963,7 @@ function vLager(){
   const bel=fassBelegt(), KM=MGR_BEREICHE.keller.name, la=aufgabeAktiv('lager'), mk=aufgabeAktiv('keltern'), mf=aufgabeAktiv('flaschen');
   const kf=fassKap()-S.fassraum, kl=flKap()-S.flaschen;
   const leute=la?' Fehlen dafür Lagerarbeiter, stellt er sie ein.':' Fehlen dafür Lagerarbeiter, kauft er nichts.';
+  if(einZu('faesser')&&einZu('flaschen')&&S.rang<R_KELLER) return einKarte('lager','Noch genug Platz',`Hier kaufst du Fässer und Flaschen. Noch reichen ${num(S.fassraum)} l Fassraum und ${num(S.flaschen)} leere Flaschen, vor der Lese schaust du wieder rein.`);
   return fenster('faesser','Fässer',`<div class="kv"><span>Fassraum belegt</span><span>${num(bel)} von ${num(S.fassraum)} l</span></div><div class="bar w"><i style="width:${S.fassraum?bel/S.fassraum*100:0}%"></i></div>
     <div class="kv"><span>Betreut (Lagerarbeiter: ${S.lagerarb})</span><span>bis ${num(fassKap())} l</span></div>`,{
     hin:[mk&&`🍷 Dein ${KM} kauft fehlenden Fassraum beim Keltern dazu.`],
@@ -4957,6 +4998,7 @@ function kellerAusHtml(){
 function vSabotage(){
   const tr=S.lots.filter(l=>l.status==='trauben'), mi=S.lots.filter(mischbar), paare=mi.some(a=>mi.some(b=>a!==b&&farbe(a)===farbe(b))), P=panschListe().length, sp=sabSperre(), scharf=S.kontr.scharf>0;
   const sabI=`Ein Mittelsmann erledigt bei einem Gegner die schmutzige Arbeit. Von Juli bis Dezember, höchstens einmal im Jahr. ${eur(SAB_KONTAKT)} für den Kontakt, dazu ${eur(SAB_MIN)} bis ${eur(SAB_MAX)} Handgeld. Je mehr Handgeld, desto eher klappt es. Jeder fünfte Versuch fliegt auf, das kostet ${eur(SAB_STRAFE)} und ${SAB_STRAFE_ANS} Ansehen.`;
+  if(['zuckern','verschneiden','pruefer'].every(einZu)&&S.rang<SAB_AB) return einKarte('hinter','Noch alles sauber','Hinter dieser Tür geht es nicht ganz sauber zu. Bis zur ersten Lese gibt es hier nichts zu tun.');
   return fenster('zuckern','Most zuckern oder wässern',tr.map(l=>fz(dot(l.sorte)+SORTEN[l.sorte].name,
       `${num(l.liter)} l Trauben · ${l.oe}° Öchsle${mani(l)?' · 🤫 '+maniText(l):''}`,'',
       `<button class="klein wag" data-a="zuckern" data-id="${l.id}" data-k="wasser" ${(l.wasser||0)>=ZUCKER_MAX?'disabled':''}>Wässern</button>`,
@@ -5057,6 +5099,7 @@ function vStadt(){
         i:`Die Stiftung holt nach, was du auf dem Weg nach oben nicht gespendet hast, eine Stufe nach der anderen und zum ${STIFT_FAKTOR===2?'doppelten':STIFT_FAKTOR+'-fachen'} Preis. Du zahlst in Raten wie bei den Spenden, mit demselben Steuervorteil (höchstens ${pz(SP_DECKEL)} des Gewinns).<br><br>Beim vollen Betrag gibt es das Ansehen und die Ehrung der Spende, aber nicht mehr ihre Belohnung. Nur der Holzbogen der letzten Stufe kommt mit. Auf die Stimmung im Verband zählt dieses Ansehen nicht. Sind alle ${SPENDEN.length-1} Stufen erledigt, hast du den Schlüssel „Dorf“ für die Weltweinschau.`});
     }}
     h+=zu.join('');
+    if(einZu('anmelden')&&!S.amt&&S.rang<1&&!stOffen()) h+=einKarte('rathaus','Noch kein Wein','Im Rathaus meldest du deinen Wein an, sobald er im Fass liegt. Erst dann darf er in die Flasche.');
   }
   // Großhandel (seit 7.4 auf dem Fenster-Baustein): "Markt diesen Monat" mit Marktlage und Budget, darunter "Deine Weine" als Liste zum Antippen.
   // Die Liste steht fest nach Dringlichkeit. Budget und Exporthandel stehen im i, vom Dauerauftrag bleibt eine Zeile (dauerInfo).
@@ -5083,6 +5126,7 @@ function vStadt(){
       hin:[D.hin,erst&&`⏳ Noch nichts verkaufsreif. Als Erstes reif: ${esc(lotName(erst.l))} im ${inMonaten(erst.n)}.`],
       stand:D.stand,
       i:`Antippen verkauft. Der Preis je Flasche gilt für den besten Absatzweg, Zoll ist abgezogen. Darunter steht, wie viele Flaschen der Großhandel diesen Monat noch zum vollen Preis nimmt. „Markt satt 📉“ heißt: Das Budget ist weg, jede weitere Flasche drückt den Preis. Was zuerst verdirbt, steht oben.${S.rang>=R_LADEN?' Weine im Regal deiner Weinhandlung fehlen hier.':''} Wein aus dem Fass meldest du im Rathaus an und füllst ihn danach im Keller ab. Tafel- und Qualitätswein sind zwei Monate danach verkaufsreif.${D.text}`});
+    if(einZu('markt')&&einZu('weine_gh')) h+=einKarte('gross','Noch kein Wein','Hier verkaufst du deinen Wein, sobald er in der Flasche und verkaufsreif ist.');
   }
   // Weinhandel (seit 7.4 auf dem Fenster-Baustein), Reihenfolge nach der Regel "was diesen Monat ansteht, Handgriffe, Zustand, Gesperrtes":
   // die Weinhandlungen der anderen Gebiete mit ihrem Wunsch des Monats, dann "Ins Regal stellen" und "Dein Regal" der eigenen Weinhandlung (ab R_LADEN).
@@ -5110,6 +5154,7 @@ function vStadt(){
         leer:'Das Regal ist leer.',
         i:`${regalI} Antippen zeigt alle Angaben, dort nimmst du einen Wein auch wieder aus dem Regal.`});
     } else h+=fenster('regal','Eigene Weinhandlung','',{zu:`ab dem Rang ${RAENGE[R_LADEN].name}`,i:`Ab dem Rang ${RAENGE[R_LADEN].name} hast du eine eigene Weinhandlung. ${regalI}`});
+    if(einZu('laeden')&&S.rang<R_LADEN) h+=einKarte('handel','Noch kein passender Wein','Ab Kabinett oder Sekt kaufen hier Weinhandlungen aus den anderen Gebieten. Bis dahin verkaufst du im Großhandel.');
   }
   // Bank (seit 7.4 auf dem Fenster-Baustein): "Dein Konto" mit dem, was zuletzt abgebucht wurde, darunter der Kredit.
   // Seit 7.9.2 steht dort der Spielraum bis zur Mahnung: Kreditrahmen minus Schulden, der Kredit für die Erbschaftssteuer zählt nicht mit.
@@ -5165,6 +5210,8 @@ function vStadt(){
       hin:[aufgabeAktiv('lager')&&`${MGR_BEREICHE.keller.sym} Dein ${KM} stellt fehlende Lagerarbeiter beim Weiterblättern ein.`],
       kn:lohnKnoepfe('lagerarb'),
       i:`${lagerRegel()}, mit der Abfüllanlage im Einsatz ${num(ABF_FLASCHEN)} Flaschen. Einer deiner Lagerarbeiter bedient sie. Mehr Fassraum oder Flaschen kaufen kannst du erst mit mehr Leuten. ${amtI}${aufgabeAktiv('lager')?` Dein ${KM} stellt zum Angebot des Monats ein, entlassen musst du selbst.`:''}`});
+    // Seit 12.6.4 (Entscheidung 4): Solange die Familie alles schafft, steht hier nur eine Karte.
+    if(einZu('helfer')&&einZu('lagerarb')) h+=einKarte('amt','Noch packt die Familie an',`Noch packst du mit deiner Familie allein an. Ab ${ALLEIN_HA} Hektar brauchst du Helfer, dann geht hier die Tür auf.`);
     h+=mgrAmt();
   }
   return h;
@@ -5197,6 +5244,7 @@ function kompLotZeile(l){const id=kompLotId(l); return id?`<div class="kv"><span
 function vWeine(){
   const ls=S.lots.filter(l=>l.status!=='trauben').slice().sort(BSORT_F.dringend), wert=ls.reduce((a,l)=>a+lotWert(l),0),
     o={i:'Alle deine Weine im Fass und in der Flasche, was zuerst verdirbt, steht oben. Rot heißt, bald ist es zu spät. Die drei kleinen Siegel rechts zeigen, wie weit der Eintrag auf dem Siegelbrett ist, für den dieser Wein zählt. Wein im Fass, gepanschter Wein und Stufen aus einer anderen Sorte zählen nicht.'};
+  if(einZu('weine')) return einKarte('weine','Noch keine Weine','Nach der ersten Lese stehen hier alle deine Weine, im Fass und in der Flasche.');
   if(!ls.length) return fenster('weine','Deine Weine',[],{...o,leer:'Noch keine Einträge. Hier stehen später alle deine Weine im Fass und in der Flasche.'});
   return fenster('weine','Deine Weine',`<div class="kv"><span>Weine im Fass und in der Flasche</span><span>${ls.length}</span></div>
     <div class="kv"><span>Geschätzter Wert</span><span>${eur(Math.round(wert/100)*100)}</span></div>
@@ -5278,27 +5326,40 @@ const FU_ART={warnung:0,einstieg:1,erstes:1,rang:2,kniff:3};
 // Ab so vielen Zeichen gilt ein Tipp als lang, dann wird das Spiel dahinter abgedunkelt.
 const FU_LANG=380;
 // Monats-Blasen: Spielmonat (0 = erster Januar) je Blase.
-const FU_MON={'e1-07':2,'e1-08':3,'e1-09':4,'e1-10':5,'e1-11':6,'e1-12':7,'e1-17':8,'e1-18':10,
+// Seit 12.6 (Prüfliste Einstieg): Wetter (e1-08) und Düngen (e1-09) im zweiten Jahr, Fassraum (e1-10) im Juli gleich nach e1-11.
+// Alte Spielstände ohne S.ein behalten die alten Monate (FU_MON_ALT).
+const FU_MON={'e1-07':2,'e1-11':6,'e1-10':6,'e1-08':15,'e1-09':16,'e1-12':7,'e1-17':8,'e1-18':10,
   'z2-01':12,'z2-02':13,'z2-03':14,'z2-04':15,'z2-06':18,'z2-07':21,'z2-08':23};
+const FU_MON_ALT={'e1-08':3,'e1-09':4,'e1-10':5};
+const fuMon=id=>!S.ein&&FU_MON_ALT[id]!=null?FU_MON_ALT[id]:FU_MON[id];
 const fuGes=id=>!!(S.fu&&S.fu.ges.includes(id));
 const FU_WANN={
   // Seit 10.2.1: Erst stellt sich der alte Winzer vor (e1-0a), dann erklärt er den Kopf (e1-0b), dann geht es los (Maik 19.11.2026).
   'e1-0a':()=>monatNr()===0,
   // Seit 10.3 (Frage 11): e1-0b steckt in e1-0a.
   'e1-01':()=>monatNr()===0&&fuGes('e1-0a'),
-  'e1-02':()=>TAB==='stadt'&&SUB==='arbeit',
+  // Seit 12.6: Bei neuen Partien erst, wenn im Arbeitsamt Erntehelfer oder Lagerarbeiter zu sehen sind.
+  'e1-02':()=>TAB==='stadt'&&SUB==='arbeit'&&(!S.ein||einFrei('helfer')||einFrei('lagerarb')),
   'e1-03':()=>TAB==='gut'&&SUB==='berg',
   'e1-04':()=>monatNr()===0&&rebenGesamt()>0,
   // Seit 10.2.1: e1-05 erst, wenn wirklich ein roter oder gelber Punkt an einem Reiter leuchtet (Maik 19.11.2026), e1-06 hängt nicht mehr an e1-05.
-  'e1-05':()=>monatNr()>=1&&Object.keys(badges()).length>0,
-  'e1-06':()=>monatNr()<12&&(!!S.fu.geld||monatNr()>=1),
+  // Seit 12.6: e1-05 fest im Februar, e1-06 beim ersten Tipp aufs Geld oder sobald zum ersten Mal Geld reinkommt (S.fu.ein1). Alte Spielstände wie vorher.
+  'e1-05':()=>monatNr()>=1&&(!!S.ein||Object.keys(badges()).length>0),
+  'e1-06':()=>S.ein?!!S.fu.geld||!!S.fu.ein1:monatNr()<12&&(!!S.fu.geld||monatNr()>=1),
   'e1-13':()=>S.lots.some(l=>l.status==='trauben'),
   'e1-14':()=>S.lots.some(l=>l.status==='fass'&&!l.stufe&&l.fassMonate>=1),
   'e1-15':()=>S.lots.some(l=>l.status==='fass'&&l.stufe),
   'e1-16':()=>S.lots.some(l=>l.status==='flasche'&&preis(l)>0),
-  'k01':()=>monatNr()>=12&&monatNr()<24&&fuGes('z2-01')
+  // Seit 12.6: Ruhe bis zur Lese im April des ersten Jahres (e1-19), gleich danach k01. Alte Spielstände: k01 im zweiten Jahr nach z2-01.
+  'e1-19':()=>!!S.ein&&monatNr()===3,
+  'k01':()=>S.ein?monatNr()>=3&&monatNr()<24&&fuGes('e1-19'):monatNr()>=12&&monatNr()<24&&fuGes('z2-01')
 };
-for(const id in FU_MON) FU_WANN[id]=()=>monatNr()===FU_MON[id];
+for(const id in FU_MON) FU_WANN[id]=()=>monatNr()===fuMon(id);
+// Seit 12.6: Fassraum nur, wenn er für die erwartete Menge nicht reicht, Edelfäulnis und Eiswein nur, wenn noch etwas hängt.
+const fuMenge=()=>R().sorten.reduce((a,id)=>a+(S.felder[id].reben&&!S.felder[id].gelesen?S.felder[id].menge||0:0),0);
+FU_WANN['e1-10']=()=>monatNr()===fuMon('e1-10')&&(!S.ein||fuMenge()>S.fassraum-fassBelegt());
+FU_WANN['e1-17']=()=>monatNr()===8&&(!S.ein||feldHaengt().length>0);
+FU_WANN['e1-18']=()=>monatNr()===10&&(!S.ein||feldHaengt().some(id=>S.felder[id].edel));
 // Seit 10.3 (C15, C16): Pflanz-Blasen nur, wenn noch Boden frei ist. z2-05 kommt, sobald zum ersten Mal ein Wein zu einer Weinhandlung passt.
 FU_WANN['e1-07']=()=>monatNr()===2&&rebenGesamt()<S.ha*HA_REBEN;
 FU_WANN['z2-02']=()=>monatNr()===13&&rebenGesamt()<S.ha*HA_REBEN;
@@ -5335,7 +5396,7 @@ Object.assign(FU_WANN,{
   'w2':()=>TAB==='stadt'&&SUB==='amt'&&fuLandZuViel(),
   'w3':()=>S.fu.w3===monatNr(),
   'w4':()=>TAB==='stadt'&&SUB==='amt'&&S.lots.some(fuReiht),
-  'w5':()=>S.monat===4&&monatNr()>=12&&S.boden<80,
+  'w5':()=>S.monat===4&&(monatNr()>=12||!!S.ein)&&S.boden<80,
   'w6':()=>S.lots.some(fuLange),
   'w7':()=>S.geld<0,
   'w8':()=>S.monat===5&&monatNr()>=12&&R().sorten.reduce((a,id)=>a+(S.felder[id].reben?S.felder[id].menge||0:0),0)>S.fassraum-fassBelegt(),
@@ -5375,9 +5436,9 @@ const FU_KNIFF={
 // Bei Fenster-Tipps leuchtet das i (Regel 3), bei den Kern-Blasen der Knopf selbst.
 const fiSel=id=>`[data-a="fi"][data-id="${id}"]`;
 const FU_ZEIG={
-  'e1-0a':{tab:'gut',sub:'buero',sel:[fiSel('fuehrer')]},
-  'e1-01':{tab:'stadt',sub:'arbeit',sel:['#subs [data-id="arbeit"]']},
-  'e1-02':{tab:'stadt',sub:'arbeit',sel:[fiSel('helfer')]},
+  // Seit 12.6: e1-0a ohne Ziel, e1-01 führt in den Weinberg.
+  'e1-01':{tab:'gut',sub:'berg',sel:['#subs [data-id="berg"]']},
+  'e1-02':{tab:'stadt',sub:'arbeit',sel:[fiSel('helfer'),fiSel('lagerarb')]},
   'e1-03':{tab:'gut',sub:'berg',sel:['[data-a="fi"][data-id^="feld_"]']},
   'e1-04':{sel:['#weiter']},
   'e1-05':{tab:'gut',sub:'aktuell',sel:[fiSel('ansteht')]},
@@ -5386,7 +5447,7 @@ const FU_ZEIG={
   'e1-08':{sel:['#top .wtr']},
   'e1-09':{tab:'gut',sub:'berg',sel:[fiSel('duengung')]},
   'e1-10':{tab:'keller',sub:'lager',sel:[fiSel('faesser')]},
-  'e1-11':{tab:'keller',sub:'buch',sel:['[data-a="archiv"][data-id="brett"]']},
+  'e1-11':{tab:'gut',sub:'berg',sel:['[data-a="fi"][data-id^="feld_"]']},
   'e1-12':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
   'e1-13':{tab:'keller',sub:'start',sel:['[data-a="keltern"]']},
   'e1-14':{tab:'stadt',sub:'amt',sel:['[data-a="anmelden"]',fiSel('anmelden')]},
@@ -5395,6 +5456,7 @@ const FU_ZEIG={
   'e1-17':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
   'e1-18':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
   'z2-01':{tab:'stadt',sub:'amt',sel:['[data-a="anmelden"]',fiSel('anmelden')]},
+  'e1-19':{tab:'gut',sub:'aktuell',sel:['[data-a="weiterBis"]']},
   'k01':{tab:'gut',sub:'aktuell',sel:['[data-a="weiterBis"]']},
   'z2-02':{tab:'gut',sub:'berg',sel:['[data-a="pflanzen"]','[data-a="fi"][data-id^="feld_"]']},
   'z2-03':{tab:'keller',sub:'buch',sel:['.bzeile[data-a="buchDetail"]','[data-a="archiv"][data-id="brett"]']},
@@ -5466,7 +5528,7 @@ const FU_ZEIG={
 };
 function fuNeu(){return {an:1,nur:0,ges:[],q:[],mon:-1,rm:{},km:-99}}
 // Fahrplan der ersten zwei Jahre (Paket A), nur diese Blasen fallen bei alten Spielständen nach der Zeit weg.
-const FU_PLAN=['e1-0a','e1-01','e1-02','e1-03','e1-04','e1-05','e1-06','e1-13','e1-14','e1-15','e1-16','k01',...Object.keys(FU_MON)];
+const FU_PLAN=['e1-0a','e1-01','e1-02','e1-03','e1-04','e1-05','e1-06','e1-13','e1-14','e1-15','e1-16','e1-19','k01',...Object.keys(FU_MON)];
 // Alte Spielstände (bis 8.0.1): Wer schon zwei Jahre oder länger spielt, bekommt den Einstieg nicht nachgeliefert.
 // Darunter fällt weg, was schon vorbei ist, der Rest des Fahrplans kommt noch. Neuheiten schon erreichter Ränge kommen nicht nach,
 // Warnungen und Kniffe kommen alle (Paket B).
@@ -5474,7 +5536,8 @@ function fuAlt(){
   const f=fuNeu(), m=monatNr(), L=S.lots||[], weg=id=>{if(!f.ges.includes(id)) f.ges.push(id)};
   fuRangWeg(f);
   if(m>=24){FU_PLAN.forEach(weg); return f}
-  for(const id in FU_MON) if(FU_MON[id]<m) weg(id);
+  for(const id in FU_MON) if(fuMon(id)<m) weg(id);
+  weg('e1-19');
   if(m>0) ['e1-0a','e1-01','e1-02','e1-03','e1-04'].forEach(weg);
   if(m>1){weg('e1-05'); weg('e1-06')}
   if(m>=12||L.some(l=>l.status!=='trauben')) weg('e1-13');
@@ -5488,7 +5551,8 @@ function fuRangWeg(f){if(typeof FUEHRER==='undefined') return; for(const id in F
 // Spielstände aus Paket A (S.fu ohne rm): Neuheiten der schon erreichten Ränge gelten als gezeigt.
 function fuPaketB(){const f=S.fu; if(f.rm) return; f.rm={}; f.km=-99; f.nur=f.nur||0; fuRangWeg(f)}
 // Mit Spielführer ("alle Tipps") gibt es "Weiter bis etwas ansteht" erst ab dem Januar des zweiten Jahres (k01 stellt den Knopf vor).
-function fuSperre(){return !!(S&&S.fu&&S.fu.an&&!S.fu.nur&&monatNr()<12)}
+// Seit 12.6: bei neuen Partien schon ab April des ersten Jahres (e1-19 und k01).
+function fuSperre(){return !!(S&&S.fu&&S.fu.an&&!S.fu.nur&&monatNr()<(S.ein?3:12))}
 // Bremse: Rang-Neuheiten und Kniffe höchstens eine je Monat. Kern-Blasen, Warnungen, Einstieg und der Fahrplan der ersten zwei Jahre sind ausgenommen (Annahme Claude),
 // k01 kommt fest gleich nach z2-01.
 // Seit 10.3 (C30): r3-4 hängt am November und ist von der Bremse ausgenommen.
@@ -5605,8 +5669,8 @@ function fuKlein(an){
 // Erledigt, sobald der Spieler getan hat, was in der Blase steht. Dann verschwindet auch der Kopf. Blasen ohne Eintrag gehen nur mit "Verstanden".
 const FU_ERL={
   'e1-0a':()=>TAB==='gut'&&SUB==='buero',
-  'e1-01':()=>TAB==='stadt'&&SUB==='arbeit',
-  'e1-02':()=>helferReben()>=S.ha*HA_REBEN,
+  'e1-01':()=>S.ein?TAB==='gut'&&SUB==='berg':TAB==='stadt'&&SUB==='arbeit',
+  'e1-02':()=>!S.ein&&helferReben()>=S.ha*HA_REBEN,
   'e1-03':()=>rebenGesamt()>0,
   'e1-04':()=>monatNr()>0,
   'e1-06':()=>!!S.fu.geld,
@@ -5632,7 +5696,7 @@ function fuehrerZeig(){
   const el=document.createElement('div'); el.id='fuehrer'; el.setAttribute('role','dialog'); el.setAttribute('aria-label',P.name);
   el.innerHTML=`<i class="fzipfel"></i>${P.bild?`<div class="fgesicht" data-a="fuZu" role="button" aria-label="Tipp zum Kopf zuklappen"><i style="background-image:url(bilder/${P.bild}.jpg)"></i></div>`:''}<div class="fkopf"><div><b class="fname">${P.name}</b><span class="frolle">${P.rolle}</span></div></div>
     <div class="ftext">${fuAbsaetze(text)}</div><div class="fschatten">▼ weiter unten mehr</div>
-    <div class="fknopf">${FU_ZEIG[id]?`<button class="klein" data-a="fuWo">Zeig mir, wo</button>`:''}<button class="klein" data-a="fuOk">${id==='e1-0a'?'Bleib ruhig da':'Verstanden'}</button></div>
+    <div class="fknopf">${FU_ZEIG[id]?`<button class="klein" data-a="fuWo">Zeig mir, wo</button>`:''}<button class="klein" data-a="fuOk">${id==='e1-0a'&&FU_ZEIG[id]?'Bleib ruhig da':'Verstanden'}</button></div>
     ${b.b?`<span class="fbuch" data-a="fuBuch" data-id="${b.b}">📖 Mehr im Buch</span>`:''}`;
   document.body.appendChild(el);
   const t=el.querySelector('.ftext'), sch=el.querySelector('.fschatten');
@@ -5677,7 +5741,7 @@ function render(){
   if(!S){fuehrerWeg(); FU_PAUSE=false; ortFarbe('gut'); ORT_ALT=null; musikOrt(musikWahl()); $('#app').innerHTML=START==='neu'||![0,1,2].some(i=>roh(i))?vStart():vSlots(); return}
   // Seit 10.1: Ein abgeschlossener Spielstand zeigt nur noch die letzte Ausgabe vom Winzerboten und danach die Chronik.
   if(S.ende&&TAB!=='monat'&&!(TAB==='feier'&&endeFeier())) TAB='ende';
-  fuehrerPruef(); fuErlCheck();
+  einPruef(); fuehrerPruef(); fuErlCheck();
   // Seit 10.3: Beim Monatswechsel wird ein Kopf abgelegt (fuAblegen), Kern-Blasen und Warnungen kommen danach wieder. Eine offene Blase kommt ohnehin wieder.
   if(!SUBS[TAB]){if(FU_AKT&&FU_KLEIN) fuAblegen(); else fuehrerWeg()}
   if(SUBS[TAB]&&!SUBS[TAB].some(s=>s[0]===SUB)) SUB=START_SUB[TAB];
