@@ -778,10 +778,13 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
 const VERSION='11.4.1';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
-const HELFER_LEISTUNG=1000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
-// Leute-Regel: Je REBEN_JE_HELFER angebaute Reben braucht es das ganze Jahr einen Erntehelfer, eine Erntemaschine zählt wie MASCH_HELFER Helfer.
-// Ein Lagerarbeiter betreut FASS_JE_LAGERARB Liter Fassraum und FLASCHEN_JE_LAGERARB leere Flaschen. Fehlen Leute, sperrt "Nächster Monat".
-const REBEN_JE_HELFER=1000, MASCH_HELFER=3, FASS_JE_LAGERARB=10000, FLASCHEN_JE_LAGERARB=20000;
+const HELFER_LEISTUNG=3000, MASCH_LEISTUNG=3000, MASCH_PREIS=28000, WARTUNG=100, LOHN_MIN=200, LOHN_MAX=500, LOHN_START=350, VERMITTLUNG=300, ZINS=.06, SEKT_KOSTEN=.8;
+// Leute-Regel seit 11.5 (Teil C1, Maik 20.11.2026): Bis ALLEIN_HA Hektar Reben, ALLEIN_FASS Liter Fassraum und ALLEIN_FL leere Flaschen schafft die Familie alles allein
+// und liest ihre ALLEIN_HA Hektar selbst. Darüber braucht es das ganze Jahr je REBEN_JE_HELFER angebaute Reben (3 Hektar) einen fest angestellten Erntehelfer,
+// jeder liest HELFER_LEISTUNG Reben (oben, dreimal so viel wie bis 11.4). Eine Erntemaschine im Einsatz deckt MASCH_HELFER Hektar ab (bis 11.4 "zählt wie so viele Helfer", das war dasselbe).
+// Zahlen bis 11.4, für Messläufe: ALLEIN_HA, ALLEIN_FASS und ALLEIN_FL 0, REBEN_JE_HELFER, HELFER_LEISTUNG und HAND_REBEN 1000, FASS_JE_LAGERARB 10000, FLASCHEN_JE_LAGERARB 20000, ABF_FLASCHEN 25000.
+// Ein Lagerarbeiter betreut FASS_JE_LAGERARB Liter Fassraum und FLASCHEN_JE_LAGERARB leere Flaschen, zusätzlich zu dem, was die Familie schafft. Fehlen Leute, sperrt "Nächster Monat".
+const ALLEIN_HA=4, ALLEIN_FASS=10000, ALLEIN_FL=10000, REBEN_JE_HELFER=3000, MASCH_HELFER=3, FASS_JE_LAGERARB=30000, FLASCHEN_JE_LAGERARB=60000;
 /* ---- Etappe 3: Ränge, Gegner, Auktionen, Wettbewerbe, Export ---- */
 // START_GELD: seit 7.0 (Schritt C, Maik 16.11.2026) 60.000 € statt 40.000 €, weil am Start nur die ★★★-Sorte geht und Riesling erst nach 18 Monaten Geld bringt. Endgültig in Schritt H.
 const START_JAHR=2027, LANDWERT=15000, START_GELD=60000;
@@ -832,7 +835,11 @@ function sektFrei(){return S.rang>=R_SEKT}
 // Kosten und Lohn stehen bis Schritt H auf 0 (neutral, wie der frühere Verwalter). Startwerte für Schritt H: 5.000 / 20.000 / 60.000 € und 500 / 1.000 / 2.000 € im Monat.
 // Schritt E: Handel 3 (Regal, Wettbewerb, Fest), Keller 2 (Sekt, seit 8.5 dazu Abfüllen, Keltern ist seit 8.5 Stufe 1), Keller 3 (schnellere Reife, über MGR_REIFE und MGR_REIFE_MIN, kein Schalter).
 // Spielstand: S.manager={handel|keller|weingut:{stufe,an:{aufgabe:1},zuletzt,puffer}}, die Reserve der Daueraufträge wie bisher in S.dauer.reserve.
-const MGR_KOSTEN=[5000,20000,60000], MGR_LOHN=[500,1000,2000];
+// Seit 11.5 (Teil C1, Maik 20.11.2026): Manager sind Pflicht. Sie kommen mit dem Rang von selbst (mgrKommen), Einstellen, Befördern und Entlassen gibt es nicht mehr,
+// und die Kosten dafür entfallen (bis 11.4: 5.000, 20.000 und 60.000 €). Für Messläufe: hSet({code:'MANAGER.forEach(e=>e.kosten=[5000,20000,60000][e.stufe-1])'}).
+// MGR_GLEICH=1: Der Manager kommt im Monat des Aufstiegs. 0 nur für Messläufe: erst beim nächsten Weiterblättern, so hat ihn der Test-Spieler bis 11.4 eingestellt.
+const MGR_KOSTEN=[0,0,0], MGR_LOHN=[500,1000,2000];
+const MGR_GLEICH=1;
 // Schritt E: Geldgrenze für Sekt (Kellermeister) und Fest (Handels-Manager). So viel bleibt mindestens auf dem Konto, Auswahl im Manager-Fenster.
 const MGR_PUFFER=[0,20000,50000,100000,250000], MGR_PUFFER_START=20000;
 // Schritt E: Kellermeister Stufe 3, Wein reift bei ihm schneller und besser. Wirkt wie eine zusätzliche Stufe Kellerausbau:
@@ -885,6 +892,20 @@ function mgrAufgabe(k){return MANAGER.find(e=>e.aufgaben.includes(k))}
 function aufgabeDa(k){const e=mgrAufgabe(k); return !!e&&mgrSt(e.bereich)>=e.stufe}
 function aufgabeAktiv(k){return aufgabeDa(k)&&!!(S.manager[mgrAufgabe(k).bereich].an||{})[k]}
 function mgrLohn(){let s=0; for(const b in S.manager||{}) s+=(mgrEintrag(b,mgrSt(b))||{}).lohn||0; return s}
+// Seit 11.5 (Teil C1): Bringt jeden Manager auf die Stufe, die der Rang erlaubt. Neue Aufgaben sind eingeschaltet, was die Stufe kostet, steht in e.kosten (im Spiel 0).
+// Läuft beim Aufstieg, beim Laden alter Spielstände und zur Sicherheit vor der Arbeit der Manager. S.mgrNeu merkt je Bereich, wer sich noch vorstellen muss ({b, von, st}).
+function mgrKommen(){
+  const neu=[];
+  for(const e of MANAGER.slice().sort((a,b)=>a.rang-b.rang||a.stufe-b.stufe)){
+    if(S.rang<e.rang||mgrSt(e.bereich)!==e.stufe-1) continue;
+    S.manager=S.manager||{}; const m=S.manager[e.bereich]=S.manager[e.bereich]||{stufe:0,an:{}};
+    if(e.kosten) zahle(e.kosten);
+    m.stufe=e.stufe; m.an=m.an||{}; for(const k of e.aufgaben) m.an[k]=1;
+    neu.push(e);
+    const q=S.mgrNeu=S.mgrNeu||[], x=q.find(x=>x.b===e.bereich); if(x) x.st=e.stufe; else q.push({b:e.bereich,von:e.stufe-1,st:e.stufe});
+  }
+  return neu;
+}
 // Für den Aufstiegstext: neue Manager und Beförderungen des Rangs i, gleiche Stufen zusammengefasst.
 function mgrBringt(i){
   const E=MANAGER.filter(e=>e.rang===i), g={};
@@ -1002,7 +1023,7 @@ const VOLL_PREIS=120000, VOLL_LEISTUNG=10000, VOLL_HELFER=10, VOLL_WARTUNG=300;
 // Abnutzung ABF_ABN je ABF_NORM abgefüllte Flaschen (rund ein Jahr auf 10 Hektar). Bedient wird sie von einem Lagerarbeiter.
 const STREU_PREIS=8000, STREU_WARTUNG=30, STREU_ABN=5, DUENG_PLUS=30, STREU_PLUS=40, STREU_RABATT=.3, R_STREU=2;
 const LAUB_PREIS=20000, LAUB_WARTUNG=60, LAUB_ABN=15, LAUB_QP=1, LAUB_ANS=4, R_LAUB=4;
-const ABF_PREIS=60000, ABF_WARTUNG=200, ABF_ABN=15, ABF_NORM=40000, ABF_PLUS=.05, ABF_FLASCHEN=25000, R_ABF=6;
+const ABF_PREIS=60000, ABF_WARTUNG=200, ABF_ABN=15, ABF_NORM=40000, ABF_PLUS=.05, ABF_FLASCHEN=75000, R_ABF=6;
 // Reihenfolge wie die Ränge, so stehen sie auch im Feld Maschinen. f:1 heißt "die" (Dein/Deine, er/sie), ernte:1 liest bei der Lese mit.
 const MASCH={duenger:{name:'Düngerstreuer',preis:STREU_PREIS,leist:0,helfer:0,wart:STREU_WARTUNG,rang:R_STREU,fahrer:1,leute:'helfer',bonus:1,text:'streut den Dünger gleichmäßig'},
   klein:{name:'Erntemaschine',preis:MASCH_PREIS,leist:MASCH_LEISTUNG,helfer:MASCH_HELFER,wart:WARTUNG,rang:R_LAND,fahrer:1,leute:'helfer',ernte:1,f:1,text:'die kleine Maschine für den Anfang'},
@@ -1135,7 +1156,7 @@ function roh(i){try{const o=JSON.parse(localStorage.getItem(KEYS[i])||'null');re
 function lies(i){const o=roh(i);return o&&o.v7?o:null}
 function liesAlt(i){const o=roh(i);return o&&!o.v7?o:null}
 // Übernimmt einen gelesenen Spielstand und bringt alte Stände auf den heutigen Stand.
-function nimm(o){S=o;if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();altDoppelt();altSpende();altKeller();altZeit();altAmt();if(!S.fu)S.fu=fuAlt(); else fuPaketB(); altKomp(); altAns()}
+function nimm(o){S=o;if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();altDoppelt();altSpende();altKeller();altZeit();altAmt();if(!S.fu)S.fu=fuAlt(); else fuPaketB(); altKomp(); altAns(); altLeute()}
 // Seit 8.3: Spielstände ohne Uhr fangen bei 0 an und merken sich, dass sie erst seit 8.3 zählen.
 // Seit 8.5: Kellermeister Stufe 1 keltert statt abzufüllen. Hatte ein alter Spielstand auf Stufe 1 das Abfüllen an, ist jetzt das Keltern an.
 function altKeller(){if(S.v83) return; const m=(S.manager||{}).keller; if(m&&m.stufe===1&&m.an&&m.an.flaschen) m.an.keltern=1; S.v83=1}
@@ -1144,6 +1165,21 @@ function altKeller(){if(S.v83) return; const m=(S.manager||{}).keller; if(m&&m.s
 function altAns(){if(S.ansV) return; S.ansehen=Math.round((S.ansehen||0)*2); for(const g of S.gegner||[]) g.ansehen=(g.ansehen||0)*2;
   for(const c of S.chronik||[]) if(c.ans!=null) c.ans*=2; if(S.erbe){if(S.erbe.ans!=null) S.erbe.ans*=2; if(S.erbe.ansVor!=null) S.erbe.ansVor*=2}
   if(S.ende&&S.ende.stand&&S.ende.stand.ans!=null) S.ende.stand.ans*=2; S.ansV=1}
+// Seit 11.5 (Teil C1): neue Leute-Regel. Alte Spielstände kürzen einmal ihre Lohnliste auf den neuen Bedarf, die teuersten gehen zuerst, niemand bekommt eine Abfindung.
+// Es bleiben die Fahrer der Maschinen, der Bediener der Abfüllanlage und, solange Trauben hängen, wer für Lese und Handlese gebraucht wird.
+// Manager, die der Rang erlaubt und die noch fehlen, kommen dazu und stellen sich vor (mgrKommen). S.leuteNeu trägt die Zahlen in den nächsten Winzerboten, S.leuteV merkt, dass es passiert ist.
+function altLeute(){
+  if(S.leuteV) return; S.leuteV=1;
+  if(S.ende||S.pleite) return;
+  const haengt=R().sorten.map(id=>S.felder[id]).filter(f=>f&&f.menge>0&&!f.gelesen), reben=rebenGesamt();
+  const fahrer=S.maschinen.filter(x=>x.zustand>=MASCH_ROT&&mTyp(x).leute==='helfer').reduce((a,x)=>a+mTyp(x).fahrer,0), hand=Math.max(0,...haengt.filter(handFeld).map(handBedarf));
+  const lese=h=>alleinReben()+h*HELFER_LEISTUNG+maschEinsatz(h).reduce((a,m)=>a+Math.round(mTyp(m).leist*m.zustand/100),0);
+  let h=0, l=0;
+  while(S.helfer>0&&S.helfer-1>=fahrer&&helferReben(S.helfer-1)>=reben&&(!haengt.length||(S.helfer-1>=hand&&lese(S.helfer-1)>=reben))){S.helfer--; S.loehne.helfer.pop(); h++}
+  const bed=Math.max(lagerBedarf(),S.maschinen.some(x=>mTyp(x).leute==='lagerarb'&&x.zustand>=MASCH_ROT)?1:0);
+  while(S.lagerarb>bed){S.lagerarb--; S.loehne.lagerarb.pop(); l++}
+  S.leuteNeu={h,l,m:mgrKommen().length};
+}
 function altZeit(){if(S.zeit==null){S.zeit=0; S.zeitAb=monatNr(); S.zeitAlt=1; S.zeitRang=[]}}
 // Seit 8.2: doppelte Weine aus älteren Spielständen (geteilt fürs Regal, dann wieder rausgenommen) wieder zusammenlegen.
 function altDoppelt(){for(const l of S.lots.slice()) if(l.status==='flasche'&&S.lots.includes(l)) weinZusammen(l)}
@@ -1464,6 +1500,13 @@ function etappe3(n,schwer){
 }
 function zahle(b){S.geld-=b;S.jahrAus+=b}
 function kassiere(b){S.geld+=b;S.jahrEin+=b;fx('kasse')}
+// Seit 11.5 (Teil C1): Ruf des Hauses, vorerst nur die Rechnung (Anzeige, Ehrungen und Texte baut Teil D). Sieben Stufen bei RUF_STUFEN Siegeln im Weinkompendium,
+// jede hebt den Erlös bei jedem Weinverkauf um RUF_BONUS: Großhandel, Exporthandel, Weinhandlungen, eigene Weinhandlung, Sekt und Federweißer (Maik 20.11.2026).
+// erloes(b) ist die Zeile im Erlös. Das Budget des Großhandels (S.absatz) rechnet weiter mit dem Listenpreis. RUF_BONUS=0 schaltet für Messläufe ab.
+const RUF_STUFEN=[3,6,10,15,20,25,30], RUF_BONUS=.01;
+function rufStufe(){const n=kompZahlen().hab; return RUF_STUFEN.filter(x=>n>=x).length}
+function rufF(){return RUF_BONUS?1+RUF_BONUS*rufStufe():1}
+function erloes(b){const f=rufF(); return f===1?b:Math.round(b*f)}
 // Großhandel: Budget des Monats zum vollen Preis, was davon noch offen ist, und der Schnitt-Faktor auf den Preis für Wein im Listenwert von w Euro.
 function marktFrei(){return Math.round((MARKT_FREI+MARKT_RANG*S.rang+MARKT_EXPORT*exportStufen()+MARKT_HA*haUeber())*(spLohn(5)?SP_MARKT:1))}
 // Bepflanzte Hektar über HA_FREI: daran hängen das Budget des Großhandels und die Menge der Weinhandlungen.
@@ -1538,7 +1581,7 @@ function stZahle(n){
   n=Math.min(n,b-S.stift.bez,Math.max(0,S.geld)); if(n<=0) return;
   S.geld-=n; S.stift.bez+=n; S.spJahr=(S.spJahr||0)+n;
   if(S.stift.bez<b){fx('kasse'); return}
-  S.stift=null; ruhm(D.ans,1);
+  S.stift=null; ruhm(D.ans,1,'Stiftung');
   (S.spenden=S.spenden||[]).push({s,j:S.jahr,m:S.monat,n:S.ich||'',w:frau()?1:0,g:genNr(),st:1});
   (S.stBote=S.stBote||[]).push(s);
   if(s===8){S.feier={spende:8}; TAB='feier'; FSTUFE=0; return}
@@ -1578,7 +1621,7 @@ function spZahle(n){
   n=Math.min(n,D.b-S.sp.bez,Math.max(0,S.geld)); if(n<=0) return;
   S.geld-=n; S.sp.bez+=n; S.spJahr=(S.spJahr||0)+n;
   if(S.sp.bez<D.b){fx('kasse'); return}
-  S.sp=null; ruhm(D.ans);
+  S.sp=null; ruhm(D.ans,0,'Spenden');
   (S.spenden=S.spenden||[]).push({s,j:S.jahr,m:S.monat,n:S.ich||'',w:frau()?1:0,g:genNr()});
   if(s===1) S.spDorf=S.monat<7?S.jahr:S.jahr+1;
   if(s===4) S.spSegen=1;
@@ -1632,6 +1675,8 @@ function rahmen(){return RAENGE[S.rang].rahmen}
 // Ansehen gutschreiben. Die Schwierigkeit verschiebt nur Zuwächse, Abzüge bleiben gleich.
 // Seit 10.0: Wer ein Amt hat (S.amt), dessen Stimmung im Verband geht mit. Gewinne zählen mit STIMM_PLUS, Abzüge mit STIMM_MINUS.
 // Seit 10.1: still=1 lässt die Stimmung aus, für das Ansehen aus der Stiftung fürs Dorf (Maik 19.11.2026).
+// Seit 11.5 (Teil C1): Ein drittes Argument nennt die Quelle (Weine, Wettbewerbe, Spenden, Feste, Stiftung), ohne zählt es als Sonstiges.
+// Das Spiel selbst braucht es nicht, nur der Messbericht liest es mit (_pruefung.js, Zeile "Ansehen nach Quelle").
 function ruhm(n,still){if(n>0)n=Math.max(1,Math.round(n*DIFF[S.schwer].ans));S.ansehen=Math.max(0,S.ansehen+n);if(S.amt&&n&&!still)stimmung(n>0?n*STIMM_PLUS:n*STIMM_MINUS);return n}
 function reifeFaktor(l){const L=lager(l);return l.status==='flasche'?Math.min(4,1+Math.max(0,l.flMonate-L.min)/12*L.rate):1}
 function lotWert(l){
@@ -1681,7 +1726,7 @@ function ladenMonat(Z){
     l.liter-=k; rest-=k*p; n+=k; ein+=k*p*LADEN_EIGEN_F; kompVerkauf(l,k);
   }
   S.lots=S.lots.filter(l=>l.liter>0);
-  if(n){ein=Math.round(ein); kassiere(ein); Z.push(`Deine Weinhandlung hat ${num(n)} Flaschen für ${eur(ein)} verkauft.`)}
+  if(n){ein=erloes(Math.round(ein)); kassiere(ein); Z.push(`Deine Weinhandlung hat ${num(n)} Flaschen für ${eur(ein)} verkauft.`)}
 }
 function ladenPasst(l,r){const w=S.laeden[r].wunsch; return ladenOk(l)&&(w==='sekt'?!!l.sekt:w==='edel'?!l.sekt&&STUFEN[l.stufe].rang>=5:w==='weiss'||w==='rot'?!l.sekt&&SORTEN[l.sorte].farbe===w:!l.sekt&&l.sorte===w)}
 function ladenPreis(l,r){return Math.round(preis(l)*LADEN_AUF*100)/100}
@@ -1722,7 +1767,7 @@ function wettAuswerten(){
   F.slice(0,3).forEach((x,i)=>{
     const pr=P[i];
     if(x.du){
-      const mit=l&&!(schonWelt&&i>0), r=ruhm(pr.ans), was=`+${r} Ansehen${mit?`, +${pr.qp} Qualitätspunkte`:''}${pr.geld?', '+eur(pr.geld)+' Preisgeld':''}`;
+      const mit=l&&!(schonWelt&&i>0), r=ruhm(pr.ans,0,'Wettbewerbe'), was=`+${r} Ansehen${mit?`, +${pr.qp} Qualitätspunkte`:''}${pr.geld?', '+eur(pr.geld)+' Preisgeld':''}`;
       if(mit){l.qp+=pr.qp; (l.med=l.med||[]).push(`${pr.m} ${name} ${S.jahr}`); if(w.typ==='bund') l.bund=true}
       ehre(pr.m,`${pr.t} ${wo}: ${e.name}`,0,was); kompMedaille(l||e,i);
       if(pr.geld) kassiere(pr.geld);
@@ -1935,16 +1980,26 @@ function gegnerMonat(){
   return N.filter((n,i)=>n.p>=9||i<3).map(n=>n.t);
 }
 function maschLeistung(){return maschEinsatz().reduce((a,m)=>a+Math.round(mTyp(m).leist*m.zustand/100),0)}
-function leistung(){return S.helfer*HELFER_LEISTUNG+maschLeistung()}
+function alleinReben(){return ALLEIN_HA*HA_REBEN}
+function leistung(){return alleinReben()+S.helfer*HELFER_LEISTUNG+maschLeistung()}
 function leseFaktor(){const b=rebenGesamt();return b?Math.min(1,leistung()/b):1}
 // Leute-Regel: Gezählt werden Köpfe. Seit 8.0 zählt eine Maschine nur im Einsatz (Fahrer da, Zustand ab MASCH_ROT), darüber bremst der Zustand nur die Ernteleistung.
-function helferKraft(h){h=h==null?S.helfer:h; return h+maschHelfer(h)}
-function helferBedarf(){return Math.ceil(rebenGesamt()/REBEN_JE_HELFER)}
+// Seit 11.5 (Teil C1) wird in Reben gerechnet: helferReben sagt, für wie viele Reben die Familie, h Erntehelfer und die Maschinen im Einsatz übers Jahr reichen.
+function helferReben(h){h=h==null?S.helfer:h; return alleinReben()+h*REBEN_JE_HELFER+maschHelfer(h)*HA_REBEN}
+// Erntehelfer, die es ohne Maschinen braucht (nur für die Anzeige).
+function helferBedarf(){return Math.max(0,Math.ceil((rebenGesamt()-alleinReben())/REBEN_JE_HELFER))}
 // Seit 8.0 (Paket B): Mit der Abfüllanlage im Einsatz betreut ein Lagerarbeiter ABF_FLASCHEN leere Flaschen, sonst FLASCHEN_JE_LAGERARB.
 function flJeLager(){return bonusMasch('abfuell')?ABF_FLASCHEN:FLASCHEN_JE_LAGERARB}
 // Seit 10.3 (B9): Für die Leute-Sperre zählt ABF_FLASCHEN auch, wenn die Anlage ausgefallen ist. Bei Rot fällt nur der Bonus beim Abfüllen weg.
 function flSperre(){return S.maschinen.some(m=>m.typ==='abfuell'&&m.zustand<MASCH_ROT)?ABF_FLASCHEN:flJeLager()}
-function lagerBedarf(){return Math.max(Math.ceil(S.fassraum/FASS_JE_LAGERARB),Math.ceil(S.flaschen/flSperre()))}
+// Seit 11.5 (Teil C1): so viel Fassraum und so viele leere Flaschen betreuen die Familie und n Lagerarbeiter.
+function fassKap(n){return ALLEIN_FASS+(n==null?S.lagerarb:n)*FASS_JE_LAGERARB}
+function flKap(n){return ALLEIN_FL+(n==null?S.lagerarb:n)*flJeLager()}
+function lagerBedarf(){return Math.max(0,Math.ceil((S.fassraum-ALLEIN_FASS)/FASS_JE_LAGERARB),Math.ceil((S.flaschen-ALLEIN_FL)/flSperre()))}
+// Die Leute-Regel als Satz ohne Punkt, für Arbeitsamt, Betrieb, Sperre und den Start. Mit den Zahlen bis 11.4 (ALLEIN_HA 0) liest er sich wie früher.
+function haWort(n){return n===1?'Hektar':`${String(n).replace('.',',')} Hektar`}
+function helferRegel(){const je=`einen Erntehelfer je ${haWort(REBEN_JE_HELFER/HA_REBEN)} Reben`; return ALLEIN_HA?`Die ersten ${ALLEIN_HA} Hektar Reben schaffst du mit deiner Familie allein, darüber brauchst du das ganze Jahr ${je}`:`Du brauchst das ganze Jahr ${je}`}
+function lagerRegel(fl){const was=`${num(FASS_JE_LAGERARB)}\u00a0l Fassraum und ${num(fl||FLASCHEN_JE_LAGERARB)} leere Flaschen`; return ALLEIN_FASS||ALLEIN_FL?`${num(ALLEIN_FASS)}\u00a0l Fassraum und ${num(ALLEIN_FL)} leere Flaschen betreust du selbst, jeder Lagerarbeiter schafft ${was} dazu`:`Ein Lagerarbeiter betreut ${was}`}
 // Abfüllen (von Hand und beim Kellermeister): mit der Abfüllanlage ABF_PLUS mehr Flaschen aus dem Fass, dafür so viele leere Flaschen.
 // Die Anlage nutzt sich je ABF_NORM Flaschen um ABF_ABN Prozentpunkte ab, mal Pflege-Faktor.
 function abfFl(l){return bonusMasch('abfuell')?Math.round(l.liter*(1+ABF_PLUS)):l.liter}
@@ -1954,7 +2009,7 @@ function duengKosten(){return Math.round(DUENGER_HA*S.ha*(bonusMasch('duenger')?
 function duengPlus(){return bonusMasch('duenger')?STREU_PLUS:DUENG_PLUS}
 function duenge(){const ma=bonusMasch('duenger'), p=duengPlus(); zahle(duengKosten()); S.duengungen++; S.boden=Math.min(100,S.boden+p); if(ma) abnutz(ma,STREU_ABN); return p}
 // Fehlende Erntehelfer: so viele, wie man mindestens einstellen muss. Seit 8.0 machen neue Helfer auch stillstehende Maschinen wieder flott.
-function helferFehlen(){const b=helferBedarf(); let k=0; while(helferKraft(S.helfer+k)<b) k++; return k}
+function helferFehlen(){const b=rebenGesamt(); let k=0; while(helferReben(S.helfer+k)<b) k++; return k}
 function leuteFehlen(){return {helfer:helferFehlen(),lagerarb:Math.max(0,lagerBedarf()-S.lagerarb)}}
 // "Es fehlen 2 Erntehelfer und 1 Lagerarbeiter" oder leer, wenn niemand fehlt. Seit 8.0 mit dem Hinweis auf Fahrer, wenn Maschinen stillstehen.
 function fehlText(){
@@ -1993,7 +2048,7 @@ function sektSchwelle(){return Math.round(SEKT_ANS_HA*Math.max(HA_FREI,flaecheBe
 function sektMenge(){if(!S.sektMenge||S.sektMenge.j!==S.jahr) S.sektMenge={j:S.jahr,n:0}; return S.sektMenge}
 function sektAnsText(){if(S.sektJahr===S.jahr) return `Die ${SEKT_ANS} Ansehen für Sekt hast du dieses Jahr schon.`; const r=sektSchwelle()-sektMenge().n; return `Ab ${num(sektSchwelle())} Flaschen Sekt im Jahr gibt es ${SEKT_ANS} Ansehen, dieses Jahr fehlen noch ${num(Math.max(0,r))}.`}
 // n Flaschen aus l zu Sekt machen, von Hand (AKT.sekt) oder durch den Kellermeister (seit 7.0, Schritt E). Zählt zur Sekt-Schwelle, außer gepanscht.
-function versekten(l,n){zahle(n*SEKT_KOSTEN);S.lots.push({...l,id:S.nextId++,liter:n,sekt:true,flMonate:0,qp:l.qp+5,med:(l.med||[]).slice(),bund:false});l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l);if(!l.pansch){const m=sektMenge(); m.n+=n; if(S.sektJahr!==S.jahr&&m.n>=sektSchwelle()){S.sektJahr=S.jahr;ruhm(SEKT_ANS)}}}
+function versekten(l,n){zahle(n*SEKT_KOSTEN);S.lots.push({...l,id:S.nextId++,liter:n,sekt:true,flMonate:0,qp:l.qp+5,med:(l.med||[]).slice(),bund:false});l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l);if(!l.pansch){const m=sektMenge(); m.n+=n; if(S.sektJahr!==S.jahr&&m.n>=sektSchwelle()){S.sektJahr=S.jahr;ruhm(SEKT_ANS,0,'Weine')}}}
 function sektFaehig(l){return sektFrei()&&l.status==='flasche'&&!l.regal&&!l.sekt&&SEKT_STUFEN.includes(l.stufe)&&l.flMonate>=lagerBasis(l).min}
 function dot(id){return `<i class="dot ${SORTEN[id].farbe==='weiss'?'weiss':'rotw'}"></i>`}
 
@@ -2122,11 +2177,12 @@ const eisF=l=>l.stufe==='eis'?EIS_WERT[l.eisW||0].f:1;
 // Name der Stufe für die Lese-Hilfe, beim Eiswein mit seiner Wertstufe.
 const stufeText=(st,oe)=>STUFEN[st].name+(st==='eis'?` (Öchsle einer ${EIS_WERT[eisStufe(oe)].name})`:'');
 // Seit 8.0 Handlese: Felder mit Edelfäulnis brauchen je HAND_REBEN Reben einen echten Erntehelfer (Köpfe, Fahrer zählen mit).
+// Seit 11.5 (Teil C1) liest jeder dreimal so viel (HAND_REBEN 3000 statt 1000), und die Familie liest ihre ALLEIN_HA Hektar auch von Hand selbst.
 // Seit 10.3 (B3) zählen gefrorene Trauben ohne Edelfäulnis nicht mehr, Eiswein gibt es ohne sie ohnehin nicht.
 // Fehlen sie und ist eine Maschine im Einsatz, liest die Maschine (masch), daraus wird höchstens Qualitätswein. Ohne Maschine lesen die Helfer, die da sind.
-const HAND_REBEN=1000;
+const HAND_REBEN=3000;
 const handFeld=f=>!!f.edel;
-const handBedarf=f=>Math.ceil(f.reben/HAND_REBEN);
+const handBedarf=f=>Math.max(0,Math.ceil((f.reben-alleinReben())/HAND_REBEN));
 const handFehlt=f=>handFeld(f)&&S.helfer<handBedarf(f)&&maschEinsatz().length>0;
 const handlese=f=>handFeld(f)&&!handFehlt(f);
 function feldQ(f,la){return {oe:Math.min(150,f.oe+(la==='ueber'?5:0)),leseart:la,edel:f.edel,eis:f.gefroren,masch:handFehlt(f)?1:0}}
@@ -2163,7 +2219,7 @@ function handText(f,vor){
   if(!handFeld(f)||!(f.menge>0)||f.gelesen) return '';
   const n=handBedarf(f), w=f.gefroren?'Gefrorene Trauben mit Edelfäulnis':'Trauben mit Edelfäulnis';
   if(handFehlt(f)) return `${vor}<b>✋ Handlese:</b> <span class="rot">${w} liest man von Hand, dafür brauchst du ${n} Erntehelfer, du hast ${S.helfer}. Liest du so, liest die Maschine, und es gibt höchstens Qualitätswein.</span>`;
-  return `${vor}<b>✋ Handlese:</b> ${w} liest man von Hand. Dafür brauchst du ${n} Erntehelfer, ${S.helfer>=n?`deine ${S.helfer} reichen`:`du hast ${S.helfer}, mehr Trauben bleiben hängen`}.`;
+  return `${vor}<b>✋ Handlese:</b> ${w} liest man von Hand. ${n?`Dafür brauchst du ${n} Erntehelfer, ${S.helfer>=n?`deine ${S.helfer} reichen`:`du hast ${S.helfer}, mehr Trauben bleiben hängen`}`:'Dieses Feld schafft deine Familie allein'}.`;
 }
 function leseHilfe(f){
   let best=null,bla=null;
@@ -2334,7 +2390,7 @@ for(let k=1;k<=KELLER_PREISE.length;k++) kompWissen('keller'+k,'technik',`Keller
 kompWissen('reife','technik','Reife in der Flasche',()=>'In der Flasche gewinnt ein Wein mit jedem Jahr an Wert, höchstens bis zum Vierfachen. Wie schnell das geht und wie lange er hält, hängt an der Rebsorte und am Kellerausbau.');
 kompWissen('zuckern','technik','Zuckern und Wässern',()=>`Zucker hebt die Öchsle im Most, Wasser streckt die Menge, beides um höchstens ${ZUCKER_MAX} %. Bis ${ZUCKER_ERLAUBT} % ist das beim Tafelwein erlaubt. Alles andere ist Panscherei und ein Fall für den Weinprüfer.`);
 for(const id of Object.keys(MASCH)) kompWissen('masch_'+id,'technik',MASCH[id].name,
-  ()=>{const T=MASCH[id]; return `${T.bonus?MASCH_BONUS[id]():`Schafft ${num(T.leist)} Reben bei der Lese und zählt wie ${T.helfer} Erntehelfer`}. Zu kaufen ab dem Rang ${RAENGE[T.rang].name} für ${eur(T.preis)}.`});
+  ()=>{const T=MASCH[id]; return `${T.bonus?MASCH_BONUS[id]():`Schafft ${num(T.leist)} Reben bei der Lese und deckt übers Jahr ${T.helfer} Hektar Reben ab`}. Zu kaufen ab dem Rang ${RAENGE[T.rang].name} für ${eur(T.preis)}.`});
 kompWissen('hagel','gefahr','Hagel',()=>'Zwischen Juni und September kann ein Unwetter einen Teil der Trauben zerschlagen, die noch am Stock hängen.');
 kompWissen('spaetfrost','gefahr','Spätfrost',()=>'Friert es im April oder Mai noch einmal, leidet die Blüte, und die Ernte des Jahres fällt kleiner aus.');
 kompWissen('kaelte','gefahr','Kälteeinbruch',()=>`In rund ${Math.round(KAELTE*100)} % der Jahre wird es im November über Nacht bitterkalt. Dann erfriert alles, was noch hängt. Die Vorhersage im Oktober warnt meist davor.`);
@@ -2564,8 +2620,8 @@ function kompFenster(){
 function neuesSpiel(){
   const reg=REG(NEU.region,!!ROLLEN_NEU);
   S={v:1,v7:1,name:NEU.name.trim()||'Weingut Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:START_GELD,ha:3,boden:80,duengungen:0,
-    felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',sonne:0,markt:1,ansehen:0,ansV:1,
-    jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:1,lagerarb:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],komp:{},kompV:3,...(ROLLEN_NEU?{rollen:1}:{})};
+    felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',sonne:0,markt:1,ansehen:0,ansV:1,leuteV:1,
+    jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:ALLEIN_HA?0:1,lagerarb:ALLEIN_FASS?0:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],komp:{},kompV:3,...(ROLLEN_NEU?{rollen:1}:{})};
   if(NEU.fu==='0') S.fu.an=0;
   for(const id of reg.sorten){S.felder[id]={reben:0,jung:0}; feldReset(S.felder[id])}
   etappe3(3,NEU.schwer);
@@ -2575,7 +2631,7 @@ function neuesSpiel(){
   schlag(100,'Willkommen auf deinem Weingut',`${S.ich?`${S.ich} übernimmt ${S.name} ${WO[S.region]}: 3 Hektar kahler Weinberg, leere Fässer und ${eur(START_GELD)}.`:`${S.name} ${WO[S.region]} startet mit 3 Hektar kahlem Weinberg, leeren Fässern und ${eur(START_GELD)}.`} Bis März ist Pflanzzeit, im Weinberg pflanzt du deinen ${SORTEN[sortenFolge()[0]].name}. Die zweite und dritte Rebsorte bringt der Aufstieg. Im ersten Jahr tragen junge Reben nur die Hälfte.`,'weingut-01-sommer',{du:1});
   // Seit 10.3 (Frage 11): Mit Spielführer fallen die zwei Artikel weg, die der alte Winzer im ersten Monat selbst sagt.
   if(!(S.fu&&S.fu.an)) schlag(50,'So kommst du herum','Unten wählst du Weingut, Kellerei oder Stadt, die Leiste darüber bringt dich zu den Orten. Wischen übers Bild geht auch. Ein Punkt am Reiter zeigt Neues oder Dringendes, ein Tipp aufs Geld öffnet deinen Stand mit Kasse und Rängen. Das kleine i oben rechts in jedem Fenster erklärt, was du dort tust. Spielstände, Ton und das Buch liegen im Büro.');
-  if(!(S.fu&&S.fu.an)) schlag(40,'Leute für Weinberg und Keller','Je 1.000 Reben brauchst du das ganze Jahr einen Erntehelfer. Du hast einen, für mehr Reben stellst du vor dem Pflanzen beim Arbeitsamt in der Stadt ein. Der Lohn dort schwankt jeden Monat, wer eingestellt ist, behält seinen. Dein Lagerarbeiter betreut 10.000 l Fassraum und 20.000 leere Flaschen. Fehlen dir Leute, geht es nicht in den nächsten Monat.','arbeit');
+  if(!(S.fu&&S.fu.an)) schlag(40,'Leute für Weinberg und Keller',`${helferRegel()}. ${lagerRegel()}. Leute findest du beim Arbeitsamt in der Stadt, der Lohn dort schwankt jeden Monat, wer eingestellt ist, behält seinen. Fehlen dir Leute, geht es nicht in den nächsten Monat.`,'arbeit');
   schlag(30,'Die Konkurrenz schläft nicht','Deine Gegner: '+S.gegner.map(g=>`${g.name}, ${GEGNER_TYP[g.typ].art}, ${WO[g.region]}`).join('; ')+`. Alle wollen auf den großen Stuhl im Weinbauverband, und es passt immer nur einer darauf. Alle ${GEN_JAHRE} Jahre übernimmt bei allen die nächste Generation.`);
   dorf('n0');
   S.bericht=zeitung([],[],[]);
@@ -2900,10 +2956,13 @@ function monatLauf(){
   TOP=[]; FUSS=[];
   // Hoffest und Manager-Berichte aus dem alten Monat kommen in diese Ausgabe. Beim Hoffest zählt das Wetter des Festmonats.
   if(S.fest){
-    const w=S.fest.w, f=HOFFEST_WETTER[w]||1, F=FESTE[S.fest.art||'hoffest'], n=F.name, a=ruhm(Math.round(festAns(F)*f));
+    const w=S.fest.w, f=HOFFEST_WETTER[w]||1, F=FESTE[S.fest.art||'hoffest'], n=F.name, a=ruhm(Math.round(festAns(F)*f),0,'Feste');
     const T={sonnig:'Bei strahlender Sonne kamen Hunderte Gäste',mild:'Bei mildem Wetter kamen viele Gäste',regen:'Im Regen kamen nur wenige Gäste',kalt:'Bei kühlem Wetter blieben einige Gäste zu Hause',frost:'Bei klirrender Kälte blieben einige Gäste zu Hause'};
     schlag(65,f>1?`Rauschendes ${n} bei ${S.name}`:f<.8?`${n} bei ${S.name} fällt ins Wasser`:`${n} bei ${S.name}`,`${T[w]||T.mild}, es gab Musik, ${S.fest.art==='weinfest'?'Zwiebelkuchen':'Flammkuchen'} und deinen Wein. Das ganze Dorf redet davon: +${a} Ansehen.`,f<.8?'hoffest-regen':'hoffest'); S.fest=null;
   }
+  // Seit 11.5 (Teil C1): Der Winzerbote erklärt alten Spielständen einmal die neue Leute-Regel.
+  if(S.leuteNeu){const n=S.leuteNeu, weg=[n.h&&`${n.h} Erntehelfer`,n.l&&`${n.l} Lagerarbeiter`].filter(Boolean).join(' und ');
+    schlag(60,'Neue Regeln für deine Leute',`${helferRegel()}. ${lagerRegel()}. ${weg?`Dein Gut kommt deshalb mit weniger Leuten aus: ${weg} ${n.h+n.l===1?'ist':'sind'} gegangen, eine Abfindung hat niemand verlangt. `:''}Deine Manager gehören jetzt fest zum Gut. Jeder kommt mit seinem Rang von selbst und steigt mit dir auf, einstellen, befördern und entlassen musst du niemanden mehr.${n.m?' Wer dir noch gefehlt hat, hat sich schon vorgestellt.':''}`,'arbeit'); S.leuteNeu=null}
   if(S.mgrLog){const T=['weingut','keller'].filter(b=>(S.mgrLog[b]||[]).length).map(b=>`Dein ${MGR_BEREICHE[b].name} meldet: ${S.mgrLog[b].join(', ')}.`); if(T.length) schlag(15,'Aus dem Gutsbüro',T.join(' '))}
   S.mgrLog=null;
   if(S.dauerLog&&S.dauerLog.length) Z.push(`📋 ${mgrG('handel').Dein} ${MGR_BEREICHE.handel.name}: ${S.dauerLog.join(', ')}.`);
@@ -3078,6 +3137,8 @@ function etappe3Monat(Z){
     // Der Aufstieg steht als Ehrung im Büro und als Thema in der Zeitung. Seit 7.2 bekommt jeder Rang eine eigene Ehrung (eine Urkunde an der Wand).
     for(let i=alt+1;i<=S.rang;i++){const ri=RAENGE[i]; ehre(i===R_MAX?'👑':'🎖️',`Aufstieg! Du bist jetzt ${rangN(i)}.`,1,`Das ${i===R_MAX?bringtSatz(i):'bringt dir: '+bringt(i)}.${rahmenSatz(i)}${ri.weg?' '+anr(ri.weg,ri.wegW):''}`,i)}
     // Version 7.2: Feier nach der Zeitung, goldene Rang-Karte für diesen Monat. Seit 7.7 feiert auch der Präsident (Sieg-Szene), der Leserbrief bleibt bis Vizepräsident.
+    // Seit 11.5 (Teil C1): Die Manager des neuen Rangs kommen von selbst und stellen sich nach der Feier vor.
+    if(MGR_GLEICH) mgrKommen();
     S.rangNeu=S.jahr*12+S.monat;
     zeitAufstieg(alt,S.rang);
     S.feier={von:alt,zu:S.rang,platz:bestenEintrag()}; if(S.rang<R_MAX) S.aufBrief=S.rang;
@@ -3919,12 +3980,12 @@ function leuteHtml(){
   const z=(k,name,aufg)=>`<div class="fz"><b>${name}</b><div class="mut">${aufg}</div><div class="kv"><span>Angestellt</span><span>${S[k]}</span></div>
     ${S[k]?`<div class="kv"><span>Lohn im Monat</span><span>${eur(lohnSumme(k))}</span></div>`:''}${fe[k]?`<div class="rot" style="font-size:14px;margin-top:4px">${fe[k]===1?'Es fehlt einer':'Es fehlen '+fe[k]}, vorher geht es nicht in den nächsten Monat.</div>`:''}</div>`;
   return fenster('leute','Deine Leute',[
-    z('helfer','Erntehelfer',`Pflegen die Reben und lesen die Trauben. Einer je ${num(REBEN_JE_HELFER)} Reben${ms?`, deine Erntemaschinen im Einsatz zählen wie ${ms}`:''}. ${S.rang>=R_STREU?'Sie fahren auch die Maschinen und lesen':'Sie lesen auch'} Edelfäulnis und Eiswein von Hand.`),
-    z('lagerarb','Lagerarbeiter',`Betreuen Fassraum und leere Flaschen. Einer je ${num(FASS_JE_LAGERARB)} l Fassraum und ${num(flJeLager())} Flaschen${bonusMasch('abfuell')?', mit der Abfüllanlage':''}.${S.rang>=MASCH.abfuell.rang?' Einer bedient auch die Abfüllanlage.':''}`)],{
+    z('helfer','Erntehelfer',`Fest angestellt, pflegen die Reben und lesen die Trauben. Einer je ${haWort(REBEN_JE_HELFER/HA_REBEN)} Reben${ALLEIN_HA?`, die ersten ${ALLEIN_HA} Hektar schafft deine Familie`:''}${ms?`, deine Erntemaschinen im Einsatz decken ${haWort(ms)} ab`:''}. ${S.rang>=R_STREU?'Sie fahren auch die Maschinen und lesen':'Sie lesen auch'} Edelfäulnis und Eiswein von Hand.`),
+    z('lagerarb','Lagerarbeiter',`Betreuen Fassraum und leere Flaschen. Einer je ${num(FASS_JE_LAGERARB)} l Fassraum und ${num(flJeLager())} Flaschen${bonusMasch('abfuell')?', mit der Abfüllanlage':''}${ALLEIN_FASS||ALLEIN_FL?`, ${num(ALLEIN_FASS)} l und ${num(ALLEIN_FL)} Flaschen betreust du selbst`:''}.${S.rang>=MASCH.abfuell.rang?' Einer bedient auch die Abfüllanlage.':''}`)],{
     hin:[aufgabeAktiv('helfer')&&`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name} stellt fehlende Erntehelfer beim Weiterblättern ein.`,
       aufgabeAktiv('lager')&&`${MGR_BEREICHE.keller.sym} Dein ${MGR_BEREICHE.keller.name} stellt fehlende Lagerarbeiter beim Weiterblättern ein.`],
     kn:pk('arbeitsamt','Zum Arbeitsamt','',{sec:1}),buch:'arbeit',
-    i:`Deine Leute brauchst du das ganze Jahr: Fehlt jemand, geht es nicht in den nächsten Monat. Einstellen und entlassen kannst du im Arbeitsamt. Dort schwankt der Lohn jeden Monat zwischen ${eur(LOHN_MIN)} und ${eur(LOHN_MAX)}, wer eingestellt ist, behält seinen Lohn.`});
+    i:`${helferRegel()}. ${lagerRegel()}. Deine Leute brauchst du das ganze Jahr: Fehlt jemand, geht es nicht in den nächsten Monat. Einstellen und entlassen kannst du im Arbeitsamt. Dort schwankt der Lohn jeden Monat zwischen ${eur(LOHN_MIN)} und ${eur(LOHN_MAX)}, wer eingestellt ist, behält seinen Lohn.`});
 }
 // Daueraufträge für den Verkauf (seit 4.4, seit 7.0 beim Handels-Manager: Weinhandlungen ab Stufe 1, Großhandel ab Stufe 2).
 // Sie laufen beim Weiterblättern vor dem Monatswechsel: erst die Weinhandlungen (sie zahlen mehr), dann der Großhandel bis zum Budget, nie unter dem vollen Preis.
@@ -3937,11 +3998,11 @@ function dauerAuftrag(){
   let nL=0,eL=0,nH=0,eH=0;
   if(aL) for(const [r,la] of Object.entries(S.laeden)) for(const l of ls().filter(l=>ladenPasst(l,r))){
     if(la.rest<=0) break; const n=Math.min(frei(l),la.rest); if(n<=0) continue;
-    const p=ladenPreis(l,r); kassiere(Math.round(n*p)); la.rest-=n; l.liter-=n; nL+=n; eL+=n*p; kompVerkauf(l,n);
+    const p=ladenPreis(l,r); kassiere(erloes(Math.round(n*p))); la.rest-=n; l.liter-=n; nL+=n; eL+=n*p; kompVerkauf(l,n);
   }
   if(aH) for(const l of ls()){
     const w=wege(l)[0]; if(!w) continue; const fw=federHandel(l), n=fw?l.liter:Math.min(frei(l),Math.floor(marktRest()/w.p)); if(n<=0) continue;
-    kassiere(Math.round(n*w.p)); if(!fw) S.absatz=(S.absatz||0)+n*w.p; l.liter-=n; nH+=n; eH+=n*w.p; kompVerkauf(l,n);
+    kassiere(erloes(Math.round(n*w.p))); if(!fw) S.absatz=(S.absatz||0)+n*w.p; l.liter-=n; nH+=n; eH+=n*w.p; kompVerkauf(l,n);
   }
   S.lots=S.lots.filter(l=>l.liter>0);
   if(nL) L.push(`${num(nL)} Flaschen an Weinhandlungen für ${eur(eL)} verkauft`);
@@ -3954,7 +4015,7 @@ function reserveChips(){const d=S.dauer||{}; return `<div class="chips" style="f
 function dauerInfo(k){
   const e=mgrAufgabe(k), M=MGR_BEREICHE[e.bereich], G=mgrG(e.bereich), st=mgrSt(e.bereich), wer=`${G.Dein} ${M.name}`, lae=k==='laeden';
   if(!aufgabeDa(k)) return {text:` Den Dauerauftrag ${lae?'für die Weinhandlungen':'für den Großhandel'} übernimmt `+(S.rang<e.rang?`ab dem Rang ${RAENGE[e.rang].name} ${G.dein} ${M.name}${e.stufe>1?` auf Stufe ${e.stufe}`:''}. Bis dahin verkaufst du selbst.`
-    :`${G.dein} ${M.name}, sobald du ${G.ihn} im Arbeitsamt ${st?`auf Stufe ${e.stufe} beförderst`:e.stufe>1?`einstellst und auf Stufe ${e.stufe} beförderst`:'einstellst'}.`)};
+    :`${G.dein} ${M.name}${e.stufe>1?` auf Stufe ${e.stufe}`:''}, sobald ${G.er} beim nächsten Weiterblättern dazukommt.`)};
   if(!aufgabeAktiv(k)) return {stand:'📋 Der Dauerauftrag ist aus. Einschalten kannst du ihn im Betrieb bei deinen Managern.',
     text:` ${wer} kann den Verkauf ${lae?'an die Weinhandlungen':'an den Großhandel'} als Dauerauftrag übernehmen.`};
   return {hin:`${M.sym} ${wer} ${lae?'beliefert die Weinhandlungen':'verkauft'} beim Weiterblättern.`,
@@ -3981,33 +4042,32 @@ function mgrHtml(){
 }
 function mgrPersonal(b){
   const M=MGR_BEREICHE[b], st=mgrSt(b), E=MANAGER.filter(e=>e.bereich===b), G=mgrG(b), n=mgrNaechste(b), id='p_'+b;
-  const mI=`${G.Er} erledigt beim Weiterblättern, was du hier einschaltest, und berichtet im Winzerboten. Einkäufe zahlt ${G.er} aus deiner Kasse. Eingestellt und befördert wird im Arbeitsamt.`;
+  const mI=`${G.Er} erledigt beim Weiterblättern, was du hier einschaltest, und berichtet im Winzerboten. Einkäufe zahlt ${G.er} aus deiner Kasse. ${G.Er} gehört fest zum Gut und steigt mit deinem Rang von selbst auf.`;
   const stufen=`<div class="fstand" style="margin:6px 0 0">${E.map(e=>mgrStufenText(e,st)).join('<br>')}</div>`;
   if(S.rang<E[0].rang) return fenster(id,M.name,'',{zu:`ab dem Rang ${RAENGE[E[0].rang].name}`,buch:'manager',i:mI+stufen});
-  if(!st) return fenster(id,M.name,`<div class="kv"><span>Stufe</span><span>nicht eingestellt</span></div>${stufen}`,{
-    links:`Einstellen kannst du ${G.ihn} im Arbeitsamt.`,kn:pk('arbeitsamt','Zum Arbeitsamt','',{sec:1}),buch:'manager',i:mI});
+  if(!st) return fenster(id,M.name,`<div class="kv"><span>Stufe</span><span>kommt mit dem nächsten Monat</span></div>${stufen}`,{
+    buch:'manager',i:mI});
   const frei=n&&S.rang>=n.rang;
   return fenster(id,M.name,`<div class="pkopf">${M.bild?`<div class="mgrbild" style="background-image:url(bilder/${M.bild})"></div>`:''}<div>
     <div class="kv"><span>Stufe</span><span>${st} von ${E.length}</span></div><div class="kv"><span>Lohn im Monat</span><span>${eur(mgrEintrag(b,st).lohn)}</span></div></div></div>
     ${mgrSchalter(b)}`,{
-    links:frei?`Stufe ${n.stufe} gibt es jetzt im Arbeitsamt.`:'',kn:frei?pk('arbeitsamt','Zum Arbeitsamt','',{sec:1}):'',buch:'manager',i:mI+mgrLogHtml(b)});
+    links:n?`Stufe ${n.stufe} kommt mit dem Rang ${RAENGE[n.rang].name}.`:'',buch:'manager',i:mI+mgrLogHtml(b)});
 }
 // Was eine Stufe ohne Schalter bringt: der Kellermeister auf Stufe 3 lässt Wein schneller reifen, aber erst, wenn Schritt H einen Wert setzt.
 function mgrExtra(e){return e.bereich==='keller'&&e.stufe===3&&(MGR_REIFE||MGR_REIFE_MIN)?['Wein reift schneller']:[]}
 function mgrStufenText(e,st){const t=[...e.aufgaben.map(k=>MGR_AUFGABEN[k].kurz),...mgrExtra(e)]; return `${e.stufe<=st?'✅':S.rang>=e.rang?'⬜':'🔒'} Stufe ${e.stufe} ab ${RAENGE[e.rang].name}${t.length?': '+t.join(', '):''}`}
 function pufferChips(b){const p=mgrPuffer(b); return `<div class="chips" style="flex-wrap:wrap">${MGR_PUFFER.map(n=>`<button class="chip ${p===n?'an':''}" data-a="mgrPuffer" data-b="${b}" data-id="${n}">${n?eur(n):'nichts'}</button>`).join('')}</div>`}
-function mgrKnopf(b){const n=mgrNaechste(b); if(!n) return ''; return pk('mgrStufe',n.stufe===1?'Einstellen':`Auf Stufe ${n.stufe} befördern`,n.kosten?eur(n.kosten):'',{id:b,aus:S.rang<n.rang,arm:S.geld<n.kosten,klein:S.rang<n.rang?`ab ${RAENGE[n.rang].name}`:n.lohn?`${eur(n.lohn)} Lohn im Monat`:''})}
-// Seit 7.5 ein Fenster "Manager" im Arbeitsamt: je Manager eine Zeile mit Stufe, Lohn und dem Knopf zum Einstellen oder Befördern.
+// Seit 7.5 ein Fenster "Manager" im Arbeitsamt: je Manager eine Zeile mit Stufe und Lohn. Seit 11.5 (Teil C1) ohne Knopf, die Manager kommen von selbst.
 // Die Schalter der Aufgaben stehen im Betrieb. Vor dem Rang des ersten Managers steht das Fenster zugeklappt mit Schloss unten.
 function mgrAmt(){
   const B=Object.keys(MGR_BEREICHE), ab=Math.min(...MANAGER.map(e=>e.rang));
-  const mgI='Manager nehmen dir Arbeit ab. Jeder kommt mit einem Rang dazu, und mit späteren Rängen kannst du ihn befördern. Jede Stufe bringt neue Aufgaben, die du im Betrieb einzeln einschaltest. Manager bleiben, entlassen kannst du sie nicht. Ihr Lohn läuft weiter, auch wenn du alle Schalter ausschaltest.';
+  const mgI='Manager nehmen dir Arbeit ab. Jeder kommt mit seinem Rang von selbst dazu und steigt mit späteren Rängen auf, einstellen und befördern musst du niemanden. Jede Stufe bringt neue Aufgaben, sie sind gleich eingeschaltet. Was du lieber selbst machst, schaltest du im Betrieb ab. Manager gehören fest zum Gut, entlassen kannst du sie nicht. Ihr Lohn hängt nur an der Stufe und läuft weiter, auch wenn du alle Schalter ausschaltest.';
   const stufen=B.map(b=>`<div style="margin-top:6px"><b>${MGR_BEREICHE[b].name}</b><br>${MANAGER.filter(e=>e.bereich===b).map(e=>mgrStufenText(e,mgrSt(b))).join('<br>')}</div>`).join('');
   if(S.rang<ab) return fenster('mgr_amt','Manager','',{zu:`ab dem Rang ${RAENGE[ab].name}`,buch:'manager',i:mgI+stufen});
   return fenster('mgr_amt','Manager',B.map(b=>{
     const st=mgrSt(b), n=mgrNaechste(b), E=MANAGER.filter(e=>e.bereich===b), neu=n?[...n.aufgaben.map(k=>MGR_AUFGABEN[k].kurz),...mgrExtra(n)]:[];
-    return fz(MGR_BEREICHE[b].name,st?`Stufe ${st} von ${E.length}, ${eur(mgrEintrag(b,st).lohn)} Lohn im Monat`:S.rang>=E[0].rang?'Noch nicht eingestellt':`Ab dem Rang ${RAENGE[E[0].rang].name}`,
-      n?(neu.length?`Stufe ${n.stufe}: ${neu.join(', ')}`:''):'Höchste Stufe erreicht',...(n?[mgrKnopf(b)]:[]))}),{buch:'manager',i:mgI+stufen});
+    return fz(MGR_BEREICHE[b].name,st?`Stufe ${st} von ${E.length}, ${eur(mgrEintrag(b,st).lohn)} Lohn im Monat`:S.rang>=E[0].rang?'Kommt mit dem nächsten Monat':`Ab dem Rang ${RAENGE[E[0].rang].name}`,
+      n?`Stufe ${n.stufe} ab ${RAENGE[n.rang].name}${neu.length?': '+neu.join(', '):''}, dann ${eur(n.lohn)} Lohn`:'Höchste Stufe erreicht')}),{buch:'manager',i:mgI+stufen});
 }
 // Schalter je Aufgabe der erreichten Stufen, darunter die noch fehlenden Stufen und die Auswahl für Reserve und Geldgrenze.
 // Steht seit 7.5 im Fenster des Managers im Betrieb und im Fenster von unten, beide zeigen dasselbe.
@@ -4022,16 +4082,28 @@ function mgrSchalter(b){
 }
 // Fenster von unten: Porträt, Lohn, zuletzt Erledigtes, die Schalter (mgrSchalter) und der Knopf zum Befördern. Öffnet sich nach Einstellen oder Befördern.
 let MGR_OFFEN=null;
+// Seit 11.5 (Teil C1): Kommt ein Manager neu oder steigt er auf, stellt er sich in diesem Fenster vor (MGR_NEU, Eintrag aus S.mgrNeu): wer er ist, was er abnimmt, was er im Monat kostet.
+let MGR_NEU=0;
 function mgrFenster(b){
   const M=MGR_BEREICHE[b], st=mgrSt(b), E=MANAGER.filter(e=>e.bereich===b), m=(S.manager||{})[b]||{};
-  const G=mgrG(b);
+  const G=mgrG(b), q=MGR_NEU&&(S.mgrNeu||[])[0], neu=q&&q.b===b?q:null, n=mgrNaechste(b), lohn=st?eur(mgrEintrag(b,st).lohn):'';
+  const was=neu?E.filter(e=>e.stufe>neu.von&&e.stufe<=st).flatMap(e=>[...e.aufgaben.map(k=>MGR_AUFGABEN[k].kurz),...mgrExtra(e)]):[];
+  const vor=!neu?'':(neu.von?`<p><b>${G.Dein} ${M.name} ist mit dir aufgestiegen und jetzt auf Stufe ${st}.</b> ${was.length?`Neu dazu: ${was.join(', ')}. `:''}${G.Er} bekommt jetzt ${lohn} im Monat.</p>`
+    :`<p><b>${G.Dein} ${M.name} stellt sich vor.</b> Mit deinem Rang gehört ${G.er} ab jetzt fest zu deinem Weingut${was.length?` und übernimmt: ${was.join(', ')}`:''}. ${G.Er} bekommt ${lohn} im Monat.</p>`)
+    +`<p class="mut">Alles Neue ist eingeschaltet. Was du lieber selbst machst, schaltest du hier oder später im Betrieb ab, der Lohn läuft trotzdem weiter.</p>`;
   return `${M.bild?`<div class="mgrportraet" style="background-image:url(bilder/${M.bild})"></div>`:''}<h3>${M.sym} ${st?G.Dein+' '+M.name:M.name}</h3>
-  <div class="mut" style="margin-bottom:8px">${st?`Stufe ${st} von ${E.length}. ${G.Er} erledigt beim Weiterblättern, was du hier einschaltest, und berichtet im Winzerboten. Einkäufe zahlt ${G.er} aus deiner Kasse.`:`Noch nicht eingestellt. Ab dem Rang ${RAENGE[E[0].rang].name} gibt es ${G.ihn} im Arbeitsamt.`}</div>
-  ${st?`<div class="kv"><span>Lohn im Monat</span><span>${eur(mgrEintrag(b,st).lohn)}</span></div>`:''}
+  ${vor}<div class="mut" style="margin-bottom:8px">${st?`Stufe ${st} von ${E.length}. ${G.Er} erledigt beim Weiterblättern, was du hier einschaltest, und berichtet im Winzerboten. Einkäufe zahlt ${G.er} aus deiner Kasse.`:`${G.Er} kommt mit dem Rang ${RAENGE[E[0].rang].name} von selbst.`}</div>
+  ${st?`<div class="kv"><span>Lohn im Monat</span><span>${lohn}</span></div>`:''}
   ${m.zuletzt?`<div class="kv"><span>Zuletzt</span><span>${esc(m.zuletzt)}</span></div>`:''}
   ${mgrSchalter(b)}
-  ${mgrNaechste(b)?kz('',mgrKnopf(b)):''}${mib('manager')}
-  <div class="btns"><button class="sec" data-a="close">Zurück</button></div>`;
+  ${n&&st&&!neu?`<div class="mut" style="margin:8px 0">Stufe ${n.stufe} kommt mit dem Rang ${RAENGE[n.rang].name}.</div>`:''}${mib('manager')}
+  ${neu?`<div class="mitte"><button class="siegel" data-a="mgrDa">Okay</button></div>`:`<div class="btns"><button class="sec" data-a="close">Zurück</button></div>`}`;
+}
+// Stellt den nächsten Manager aus S.mgrNeu vor, sobald Zeitung und Feier vorbei sind und kein Fenster offen ist. Läuft am Ende von render.
+function mgrVorstellen(){
+  if(!S||window.BOT||S.ende||!S.mgrNeu||!S.mgrNeu.length||S.feier||!SUBS[TAB]||$('#sheet').classList.contains('an')) return;
+  if(!mgrSt(S.mgrNeu[0].b)){S.mgrNeu.shift(); return}
+  MGR_OFFEN=S.mgrNeu[0].b; MGR_NEU=1; openSheet(mgrFenster(MGR_OFFEN));
 }
 // Hoffest ab Verbandsvorstand: Juni bis August, einmal im Jahr.
 // Weinfest ab Winzermeister, ab Verbandsvorstand wird daraus das Hoffest. Beide teilen sich Bild, Monate und S.festJahr.
@@ -4055,8 +4127,8 @@ function mgrBetrieb(){
   const stell=k=>{zahle(VERMITTLUNG); S[k]++; S.loehne[k].push(S.angebot[k]); S.loehne[k].sort((x,y)=>x-y); neu[k]++};
   if(aufgabeAktiv('reben')&&m<=2&&S.verlust) for(const id of R().sorten){
     const pr=rebenPreis(id), platz=()=>Math.min(S.verlust[id]||0,S.ha*HA_REBEN-rebenGesamt(),Math.floor(Math.max(0,S.geld-5000)/pr/10)*10);
-    if(hf){let i=0; while(platz()>=10&&helferKraft()*REBEN_JE_HELFER<rebenGesamt()+platz()&&S.geld>5000+VERMITTLUNG&&i++<20) stell('helfer')}
-    const n=Math.floor(Math.min(platz(),helferKraft()*REBEN_JE_HELFER-rebenGesamt())/10)*10;
+    if(hf){let i=0; while(platz()>=10&&helferReben()<rebenGesamt()+platz()&&S.geld>5000+VERMITTLUNG&&i++<20) stell('helfer')}
+    const n=Math.floor(Math.min(platz(),helferReben()-rebenGesamt())/10)*10;
     if(n>0){zahle(Math.round(n*pr*100)/100); const f=S.felder[id]; f.reben+=n; f.jung+=n; S.verlust[id]-=n; LW.push(`${num(n)} ${SORTEN[id].name}-Reben nachgepflanzt`)}
   }
   if(aufgabeAktiv('duengen')&&S.duengungen<3&&S.boden<100&&(S.boden<=70||(m===7&&S.boden<90))&&S.geld>=duengKosten()){const st=bonusMasch('duenger'); duenge(); LW.push(st?'mit dem Düngerstreuer gedüngt':'gedüngt')}
@@ -4088,8 +4160,8 @@ function mgrBetrieb(){
       const fehlt=l.liter-(S.fassraum-fassBelegt());
       if(fehlt>0){
         const n=Math.ceil(fehlt/500)*500, kost=Math.round(n*fp*100)/100;
-        if(la){let i=0; while(S.lagerarb*FASS_JE_LAGERARB<S.fassraum+n&&S.geld-pu>=VERMITTLUNG+kost&&i++<20) stell('lagerarb')}
-        if(S.lagerarb*FASS_JE_LAGERARB<S.fassraum+n){l.mgrNot='leute'; continue}
+        if(la){let i=0; while(fassKap()<S.fassraum+n&&S.geld-pu>=VERMITTLUNG+kost&&i++<20) stell('lagerarb')}
+        if(fassKap()<S.fassraum+n){l.mgrNot='leute'; continue}
         if(S.geld-pu<kost){l.mgrNot='geld'; continue}
         zahle(kost); S.fassraum+=n; kauf+=n;
       }
@@ -4100,8 +4172,8 @@ function mgrBetrieb(){
   if(aufgabeAktiv('flaschen')) for(const l of S.lots.filter(l=>l.status==='fass'&&l.stufe)){
     const fehlt=abfFl(l)-S.flaschen, fp=flaschePreis();
     if(fehlt>0){
-      if(la){let i=0; while(S.lagerarb*flJeLager()<S.flaschen+fehlt&&S.geld>VERMITTLUNG+fehlt*fp&&i++<20) stell('lagerarb')}
-      if(S.lagerarb*flJeLager()>=S.flaschen+fehlt&&S.geld>=fehlt*fp){zahle(Math.round(fehlt*fp*100)/100); S.flaschen+=fehlt}
+      if(la){let i=0; while(flKap()<S.flaschen+fehlt&&S.geld>VERMITTLUNG+fehlt*fp&&i++<20) stell('lagerarb')}
+      if(flKap()>=S.flaschen+fehlt&&S.geld>=fehlt*fp){zahle(Math.round(fehlt*fp*100)/100); S.flaschen+=fehlt}
     }
     if(S.flaschen>=abfFl(l)){const an=bonusMasch('abfuell'); fuelleAb(l); LK.push(`${lotName(l)} abgefüllt${an?' mit der Abfüllanlage':''}`)}
   }
@@ -4124,7 +4196,7 @@ function mgrBetrieb(){
   {const mw=S.manager.weingut;
   if(hf&&mw&&mw.handH&&!R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)){
     const fahrer=S.maschinen.filter(x=>x.zustand>=MASCH_ROT&&mTyp(x).leute==='helfer').reduce((a,x)=>a+mTyp(x).fahrer,0); let k=0;
-    while(k<mw.handH&&S.helfer>0&&S.helfer-1>=fahrer&&helferKraft(S.helfer-1)>=helferBedarf()){S.helfer--; S.loehne.helfer.pop(); k++}
+    while(k<mw.handH&&S.helfer>0&&S.helfer-1>=fahrer&&helferReben(S.helfer-1)>=rebenGesamt()){S.helfer--; S.loehne.helfer.pop(); k++}
     mw.handH=0; if(k) LW.push(`${k===1?'einen Erntehelfer':k+' Erntehelfer'} nach der Handlese entlassen`);
   }}
   if(neu.lagerarb) LK.unshift(`${neu.lagerarb} Lagerarbeiter eingestellt`);
@@ -4180,7 +4252,7 @@ function mgrHandel(){
 function mgrMelde(b,L){if(!L.length) return; S.mgrLog=S.mgrLog||{}; S.mgrLog[b]=(S.mgrLog[b]||[]).concat(L); S.manager[b].zuletzt=L.join(', '); S.manager[b].zm=S.jahr*12+S.monat; mgrLogbuch(b,S.mgrLog[b].join(', '))}
 // Alles, was die Manager beim Weiterblättern erledigen (früher verwalter() und dauerAuftrag()).
 // Seit 11.1: Siegel aus der Arbeit der Manager melden sich nur im Winzerboten (KOMP_LEISE).
-function managerArbeit(){KOMP_LEISE++; try{mgrBetrieb(); mgrHandel(); dauerAuftrag()}finally{KOMP_LEISE--}}
+function managerArbeit(){KOMP_LEISE++; try{mgrKommen(); mgrBetrieb(); mgrHandel(); dauerAuftrag()}finally{KOMP_LEISE--}}
 // Aktuelles: der Rang und darunter die anklickbaren Hinweise, die zur passenden Stelle führen.
 // Version 4.0: Kauf- und Verkaufsknopf mit dem Preis drauf. o: id, n (data-Werte), sec (zweiter Knopf), aus (gesperrt),
 // arm (Geld fehlt: grau, aber antippbar, die Aktion erklärt es), klein (kleine Zeile unter dem Preis, etwa der Preis je Stück).
@@ -4240,7 +4312,7 @@ function vMaschinen(){
     leer:'Du hast noch keine Maschine.',i:`${mI}<br><br>Warten bringt den Zustand wieder hoch, verkaufen bringt die Hälfte vom Neupreis, je nach Zustand.`});
   for(const [id,T] of Object.entries(MASCH)){
     const titel=`Neue${T.f?' ':'r '}${T.name}`, lw=T.leute==='lagerarb'?'Lagerarbeiter':'Fahrer', fa=`braucht ${T.fahrer} ${lw}`, hat=T.bonus&&S.maschinen.some(x=>x.typ===id);
-    const was=(T.bonus?`${MASCH_BONUS[id]()}. ${wie[id]} Mehr als ${T.f?'eine':'einen'} brauchst du nicht`:`Schafft ${num(T.leist)} Reben bei der Lese und zählt wie ${T.helfer} Erntehelfer`)+`, ${fa}. Die Wartung kostet ${eur(T.wart)} je Prozentpunkt.<br><br>${mI}`;
+    const was=(T.bonus?`${MASCH_BONUS[id]()}. ${wie[id]} Mehr als ${T.f?'eine':'einen'} brauchst du nicht`:`Schafft ${num(T.leist)} Reben bei der Lese und deckt übers Jahr ${T.helfer} Hektar Reben ab`)+`, ${fa}. Die Wartung kostet ${eur(T.wart)} je Prozentpunkt.<br><br>${mI}`;
     if(S.rang<T.rang){zu.push(fenster('kauf_'+id,titel,'',{zu:`ab dem Rang ${RAENGE[T.rang].name}`,i:was})); continue}
     h+=fenster('kauf_'+id,titel,(T.bonus?`<div class="mut" style="margin-bottom:4px">${MASCH_BONUS[id]()}.</div>`:`<div class="kv"><span>Leistung bei der Lese</span><span>${num(T.leist)} Reben</span></div>
       <div class="kv"><span>Zählt wie</span><span>${T.helfer} Erntehelfer</span></div>`)+`<div class="kv"><span>${lw}</span><span>${fa}</span></div><div class="kv"><span>Wartung</span><span>${eur(T.wart)} je %</span></div>`,{
@@ -4361,11 +4433,11 @@ function vBerg(){
     ${R().sorten.filter(id=>S.felder[id].reben).map(id=>`<div class="kv"><span>${dot(id)}${SORTEN[id].name}</span><span>${num(S.felder[id].reben)} Reben</span></div>`).join('')}
     <div class="kv"><span>Wetter jetzt</span><span>${wetterText()}</span></div>
     <div class="kv"><span>Vorhersage ${MON[(m+1)%12]}</span><span>${progText()}</span></div>
-    <div class="kv"><span>Erntehelfer reichen für</span><span class="${leuteFehlen().helfer?'rot':''}">${num(helferKraft()*REBEN_JE_HELFER)} Reben</span></div>
+    <div class="kv"><span>Deine Leute reichen für</span><span class="${leuteFehlen().helfer?'rot':''}">${num(helferReben())} Reben</span></div>
     <div class="kv"><span>Ernteleistung</span><span class="${leseFaktor()<1?'rot':''}">${num(leistung())} Reben</span></div>
     ${leseFaktor()<1?rot(`Bei der Lese bleiben ${100-Math.round(leseFaktor()*100)} % hängen.`):''}`,{
     hin:[mh&&`${WM} stellt fehlende Erntehelfer beim Weiterblättern ein.`],
-    i:`Für den Aufstieg zählt nur die bepflanzte Fläche. Je ${num(REBEN_JE_HELFER)} Reben brauchst du einen Erntehelfer, fehlt einer, geht es nicht in den nächsten Monat. Die Ernteleistung zählt bei der Lese: Reicht sie nicht für alle Reben, bleibt ein Teil der Trauben hängen. Leute stellst du im Arbeitsamt ein, Maschinen kaufst du unter „Maschinen“.`});
+    i:`Für den Aufstieg zählt nur die bepflanzte Fläche. ${helferRegel()}, fehlt einer, geht es nicht in den nächsten Monat. Die Ernteleistung zählt bei der Lese: Reicht sie nicht für alle Reben, bleibt ein Teil der Trauben hängen. Leute stellst du im Arbeitsamt ein, Maschinen kaufst du unter „Maschinen“.`});
   const G=steckbrief(S.region,{fen:1}), auf=FI_AUF.has('gebiet+');
   h+=fenster('gebiet','Dein Gebiet',`<div class="gkopf"><img class="gs" src="bilder/gebiet-${S.region}.webp" alt=""><div class="kv"><span>${G.name}</span><span>${G.art}</span></div></div><div class="sb fklapp"${auf?'':' hidden'}>${G.rumpf}</div>`,{buch:'gebiete',
     kn:`<button class="klein" data-a="klapp" data-id="gebiet" data-auf="Zuklappen" data-zu="Steckbrief zeigen">${auf?'Zuklappen':'Steckbrief zeigen'}</button>`,
@@ -4411,20 +4483,20 @@ function vKellerStart(){
 // Was der Kellermeister von selbst kauft, steht als kurzer Hinweis im Fenster, ob er dafür Lagerarbeiter einstellt, im i.
 function vLager(){
   const bel=fassBelegt(), KM=MGR_BEREICHE.keller.name, la=aufgabeAktiv('lager'), mk=aufgabeAktiv('keltern'), mf=aufgabeAktiv('flaschen');
-  const kf=S.lagerarb*FASS_JE_LAGERARB-S.fassraum, kl=S.lagerarb*flJeLager()-S.flaschen;
+  const kf=fassKap()-S.fassraum, kl=flKap()-S.flaschen;
   const leute=la?' Fehlen dafür Lagerarbeiter, stellt er sie ein.':' Fehlen dafür Lagerarbeiter, kauft er nichts.';
   return fenster('faesser','Fässer',`<div class="kv"><span>Fassraum belegt</span><span>${num(bel)} von ${num(S.fassraum)} l</span></div><div class="bar w"><i style="width:${S.fassraum?bel/S.fassraum*100:0}%"></i></div>
-    <div class="kv"><span>Lagerarbeiter (${S.lagerarb}) betreuen</span><span>bis ${num(S.lagerarb*FASS_JE_LAGERARB)} l</span></div>`,{
+    <div class="kv"><span>Betreut (Lagerarbeiter: ${S.lagerarb})</span><span>bis ${num(fassKap())} l</span></div>`,{
     hin:[mk&&`🍷 Dein ${KM} kauft fehlenden Fassraum beim Keltern dazu.`],
     links:kf<500?'Für mehr Fassraum brauchst du mehr Lagerarbeiter.':`Möglich sind noch ${num(kf)} l.`,
     kn:pk('kaufFass','Kaufen',eur2(fassPreis()),{klein:'je Liter',arm:kf<500||S.geld<500*fassPreis()}),
-    i:`Fassraum brauchst du zum Keltern, kauf ihn am besten vor der Lese. Ein Lagerarbeiter betreut ${num(FASS_JE_LAGERARB)} l Fassraum. Der Preis schwankt jeden Monat.${mk?` Dein ${KM} kauft beim Keltern nur so viel, wie gerade fehlt.${leute}`:''}`})
+    i:`Fassraum brauchst du zum Keltern, kauf ihn am besten vor der Lese. ${ALLEIN_FASS?`${num(ALLEIN_FASS)} l betreust du selbst, jeder Lagerarbeiter ${num(FASS_JE_LAGERARB)} l dazu`:`Ein Lagerarbeiter betreut ${num(FASS_JE_LAGERARB)} l Fassraum`}. Der Preis schwankt jeden Monat.${mk?` Dein ${KM} kauft beim Keltern nur so viel, wie gerade fehlt.${leute}`:''}`})
   +fenster('flaschen','Flaschen',`<div class="kv"><span>Leere Flaschen (1 l)</span><span>${num(S.flaschen)}</span></div>
-    <div class="kv"><span>Lagerarbeiter (${S.lagerarb}) betreuen</span><span>bis ${num(S.lagerarb*flJeLager())}</span></div>`,{
+    <div class="kv"><span>Betreut (Lagerarbeiter: ${S.lagerarb})</span><span>bis ${num(flKap())}</span></div>`,{
     hin:[mf&&`🍷 Dein ${KM} kauft fehlende Flaschen beim Abfüllen dazu.`],
     links:kl<100?'Für mehr Flaschen brauchst du mehr Lagerarbeiter.':`Möglich sind noch ${num(kl)} Flaschen.`,
     kn:pk('kaufFlaschen','Kaufen',eur2(flaschePreis()),{klein:'je Flasche',arm:kl<100||S.geld<100*flaschePreis()}),
-    i:`Leere Flaschen brauchst du zum Abfüllen, ein Liter je Flasche. Kauf sie am besten vor dem Abfüllen. Ein Lagerarbeiter betreut ${num(FLASCHEN_JE_LAGERARB)} leere Flaschen, mit der Abfüllanlage im Einsatz ${num(ABF_FLASCHEN)}. Der Preis schwankt jeden Monat.${mf?` Dein ${KM} kauft beim Abfüllen nur so viele, wie gerade fehlen.${leute}`:''}`})
+    i:`Leere Flaschen brauchst du zum Abfüllen, ein Liter je Flasche. Kauf sie am besten vor dem Abfüllen. ${ALLEIN_FL?`${num(ALLEIN_FL)} leere Flaschen betreust du selbst, jeder Lagerarbeiter ${num(FLASCHEN_JE_LAGERARB)} dazu`:`Ein Lagerarbeiter betreut ${num(FLASCHEN_JE_LAGERARB)} leere Flaschen`}, mit der Abfüllanlage im Einsatz ${num(ABF_FLASCHEN)}. Der Preis schwankt jeden Monat.${mf?` Dein ${KM} kauft beim Abfüllen nur so viele, wie gerade fehlen.${leute}`:''}`})
   +kellerAusHtml();
 }
 // Kellerausbau in drei Stufen, je Stufe ab dem Rang in KELLER_RANG. Vor Jungwinzer steht das Fenster zugeklappt mit Schloss unten im Lager,
@@ -4634,24 +4706,25 @@ function vStadt(){
       return [pk('helfer','Einstellen',eur(VERMITTLUNG),{id:k,n:1,arm:S.geld<VERMITTLUNG&&!leuteFehlen()[k],klein:`+${eur(S.angebot[k])} Lohn`}),pk('helfer','Entlassen','',{id:k,n:-1,sec:1,aus:S[k]<1,klein:a.length?`−${eur(a[a.length-1])} Lohn`:''})]};
     const amtI=`Der Lohn beim Arbeitsamt schwankt jeden Monat zwischen ${eur(LOHN_MIN)} und ${eur(LOHN_MAX)}. Wer eingestellt ist, behält seinen Lohn. Die Vermittlung kostet einmalig ${eur(VERMITTLUNG)}. Entlassen wird immer der teuerste. Deine Leute brauchst du das ganze Jahr: Fehlt jemand, geht es nicht in den nächsten Monat.`;
     h+=fenster('helfer','Erntehelfer',`${lohnTeil('helfer')}
-      ${ms?`<div class="kv"><span>Erntemaschinen</span><span>${ms}, ${maschEinsatz().length} im Einsatz, ${maschEinsatz().length===1?'zählt':'zählen'} wie ${maschHelfer()} Helfer</span></div>`:''}
+      ${ms?`<div class="kv"><span>Erntemaschinen</span><span>${ms}, ${maschEinsatz().length} im Einsatz, ${maschEinsatz().length===1?'deckt':'decken'} ${haWort(maschHelfer())} ab</span></div>`:''}
       ${fahrerFehlen()?`<div class="kv"><span>Fahrer fehlen</span><span class="rot">${fahrerFehlen()}</span></div>`:''}
+      ${ALLEIN_HA?`<div class="kv"><span>Deine Familie schafft</span><span>${num(alleinReben())} Reben</span></div>`:''}
       <div class="kv"><span>Gebraucht für ${num(bed)} Reben</span><span class="${fe.helfer?'rot':''}">${helferBedarf()}</span></div>
-      <div class="kv"><span>Deine Leute reichen für</span><span>${num(helferKraft()*REBEN_JE_HELFER)} Reben</span></div>
+      <div class="kv"><span>Deine Leute reichen für</span><span>${num(helferReben())} Reben</span></div>
       ${ohneGeld('helfer')}
       <div class="kv"><span>Ernteleistung</span><span class="${lei<bed?'rot':''}">${num(lei)} von ${num(bed)} Reben</span></div>
       <div class="bar"><i style="width:${bed?Math.min(100,lei/bed*100):100}%"></i></div>`,{
       hin:[aufgabeAktiv('helfer')&&`${MGR_BEREICHE.weingut.sym} Dein ${WM} stellt fehlende Erntehelfer beim Weiterblättern ein.`],
       kn:lohnKnoepfe('helfer'),
-      i:`Je ${num(REBEN_JE_HELFER)} angebaute Reben brauchst du einen Erntehelfer, eine Erntemaschine zählt wie ${MASCH_HELFER}, ein Vollernter wie ${VOLL_HELFER}. Das gilt nur mit Fahrern: Die Erntemaschine braucht ${MASCH.klein.fahrer}, der Vollernter ${MASCH.gross.fahrer}, gefahren wird von deinen Erntehelfern. Düngerstreuer und Laubschneider brauchen je ${MASCH.duenger.fahrer}, sie bekommen ihre Fahrer erst nach den Erntemaschinen. Trauben mit Edelfäulnis liest man von Hand, dafür brauchst du je ${num(HAND_REBEN)} Reben des Felds einen Erntehelfer, sonst liest die Maschine und es gibt höchstens Qualitätswein. Pflanzen kannst du nur so viel, wie deine Leute schaffen. Bei der Lese leistet eine abgenutzte Maschine weniger. ${amtI}${aufgabeAktiv('helfer')?` Dein ${WM} stellt zum Angebot des Monats ein, entlassen musst du selbst. Nur die Helfer für die Handlese schickt er nach der Lese wieder heim.`:''}`});
+      i:`${helferRegel()}. Eine Erntemaschine im Einsatz deckt ${MASCH_HELFER} Hektar ab, ein Vollernter ${VOLL_HELFER}. Das gilt nur mit Fahrern: Die Erntemaschine braucht ${MASCH.klein.fahrer}, der Vollernter ${MASCH.gross.fahrer}, gefahren wird von deinen Erntehelfern. Düngerstreuer und Laubschneider brauchen je ${MASCH.duenger.fahrer}, sie bekommen ihre Fahrer erst nach den Erntemaschinen. Trauben mit Edelfäulnis liest man von Hand, dafür brauchst du je ${num(HAND_REBEN)} Reben des Felds einen Erntehelfer${ALLEIN_HA?`, die ersten ${num(alleinReben())} liest deine Familie`:''}, sonst liest die Maschine und es gibt höchstens Qualitätswein. Pflanzen kannst du nur so viel, wie deine Leute schaffen. Bei der Lese leistet eine abgenutzte Maschine weniger. ${amtI}${aufgabeAktiv('helfer')?` Dein ${WM} stellt zum Angebot des Monats ein, entlassen musst du selbst. Nur die Helfer für die Handlese schickt er nach der Lese wieder heim.`:''}`});
     h+=fenster('lagerarb','Lagerarbeiter',`${lohnTeil('lagerarb')}
       <div class="kv"><span>Gebraucht</span><span class="${fe.lagerarb?'rot':''}">${lagerBedarf()}</span></div>
-      <div class="kv"><span>Fassraum</span><span>${num(S.fassraum)} l, betreut bis ${num(S.lagerarb*FASS_JE_LAGERARB)} l</span></div>
-      <div class="kv"><span>Leere Flaschen</span><span>${num(S.flaschen)}, betreut bis ${num(S.lagerarb*flJeLager())}</span></div>
+      <div class="kv"><span>Fassraum</span><span>${num(S.fassraum)} l, betreut bis ${num(fassKap())} l</span></div>
+      <div class="kv"><span>Leere Flaschen</span><span>${num(S.flaschen)}, betreut bis ${num(flKap())}</span></div>
       ${ohneGeld('lagerarb')}`,{
       hin:[aufgabeAktiv('lager')&&`${MGR_BEREICHE.keller.sym} Dein ${KM} stellt fehlende Lagerarbeiter beim Weiterblättern ein.`],
       kn:lohnKnoepfe('lagerarb'),
-      i:`Ein Lagerarbeiter betreut ${num(FASS_JE_LAGERARB)} l Fassraum und ${num(FLASCHEN_JE_LAGERARB)} leere Flaschen, mit der Abfüllanlage im Einsatz ${num(ABF_FLASCHEN)}. Einer deiner Lagerarbeiter bedient sie. Mehr Fassraum oder Flaschen kaufen kannst du erst mit mehr Leuten. ${amtI}${aufgabeAktiv('lager')?` Dein ${KM} stellt zum Angebot des Monats ein, entlassen musst du selbst.`:''}`});
+      i:`${lagerRegel()}, mit der Abfüllanlage im Einsatz ${num(ABF_FLASCHEN)} Flaschen. Einer deiner Lagerarbeiter bedient sie. Mehr Fassraum oder Flaschen kaufen kannst du erst mit mehr Leuten. ${amtI}${aufgabeAktiv('lager')?` Dein ${KM} stellt zum Angebot des Monats ein, entlassen musst du selbst.`:''}`});
     h+=mgrAmt();
   }
   return h;
@@ -5064,7 +5137,7 @@ function fuKlein(an){
 const FU_ERL={
   'e1-0a':()=>TAB==='gut'&&SUB==='buero',
   'e1-01':()=>TAB==='stadt'&&SUB==='arbeit',
-  'e1-02':()=>helferKraft()*REBEN_JE_HELFER>=S.ha*HA_REBEN,
+  'e1-02':()=>helferReben()>=S.ha*HA_REBEN,
   'e1-03':()=>rebenGesamt()>0,
   'e1-04':()=>monatNr()>0,
   'e1-06':()=>!!S.fu.geld,
@@ -5154,6 +5227,7 @@ function render(){
   <nav id="dock">${SUBS[TAB]?`<div id="subs">${SUBS[TAB].map(s=>`<button class="${SUB===s[0]?'an':''}" data-a="sub" data-id="${s[0]}"><i>${s[1]}</i><b>${SUB_NAME[s[0]]}</b>${SUB===s[0]?'':badge(B[TAB+'/'+s[0]])}</button>`).join('')}</div>`:''}<div id="tabs">${tabs.map(t=>`<button class="${TAB===t[0]?'an':''}" data-a="tab" data-id="${t[0]}"><span>${t[1]}</span>${t[2]}${badge(B[t[0]])}</button>`).join('')}<button id="weiter" class="${fehlt?'zu':''}" data-a="weiter"><span>${fehlt?'🔒':'▶'}</span>${fehlt?'Leute fehlen':'Nächster Monat'}</button></div></nav>`;
   panoStell(); wgStart();
   fuehrerZeig();
+  mgrVorstellen();
 }
 
 /* ================= Dialoge ================= */
@@ -5290,7 +5364,7 @@ const AKT={
     const l=lot(d.id), la=S.laeden[d.r], p=ladenPreis(l,d.r), max=Math.min(l.liter,la.rest);
     mengeSheet({titel:`${lotName(l)} an die Weinhandlung`,bild:'laden',text:`${eur2(p)} je Flasche, höchstens ${num(la.rest)} Flaschen. Die Weinhandlung zahlt immer voll, der Großhandel merkt davon nichts.`,max,rangeStep:1,step:max>200?10:1,start:max,okText:'Verkaufen',
       info:n=>`<b>${num(n)} Flaschen</b>bringt dir ${eur(n*p)}`,
-      ok:n=>{kassiere(n*p);kompVerkauf(l,n);la.rest-=n;l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l)}});
+      ok:n=>{kassiere(erloes(n*p));kompVerkauf(l,n);la.rest-=n;l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l)}});
   },
   tab(d,e){if(d.id===TAB&&!d.sub&&window.scrollY>20){window.scrollTo({top:0,behavior:'smooth'});return} geh(d.id,d.sub);render();window.scrollTo(0,0)},
   infoWeiter(){
@@ -5444,8 +5518,8 @@ const AKT={
     // Leute-Regel: Ohne genug Erntehelfer und Lagerarbeiter geht es nicht in den nächsten Monat.
     const fl=fehlText(), fe=leuteFehlen();
     if(fl) return leuteSheet('⚠️ Zu wenig Leute',`<p>${fl}. Vorher geht es nicht in den nächsten Monat.</p>
-      ${fe.helfer?`<p class="mut">Je ${num(REBEN_JE_HELFER)} Reben brauchst du einen Erntehelfer, du hast ${num(rebenGesamt())} Reben. ${S.monat<=2?'Statt einzustellen, kannst du bis März auch Reben roden oder eine Erntemaschine kaufen.':''}${maschOhneFahrer().length||S.maschinen.some(m=>m.zustand<MASCH_ROT)?` Eine Maschine zählt nur im Einsatz, also mit Fahrer und ab ${MASCH_ROT}\u00a0% Zustand.`:''}</p>`:''}
-      ${fe.lagerarb?`<p class="mut">Ein Lagerarbeiter betreut ${num(FASS_JE_LAGERARB)} l Fassraum und ${num(flSperre())} leere Flaschen. Du hast ${num(S.fassraum)}\u00a0l Fassraum und ${num(S.flaschen)} leere Flaschen.</p>`:''}
+      ${fe.helfer?`<p class="mut">${helferRegel()}. Du hast ${num(rebenGesamt())} Reben, deine Leute reichen für ${num(helferReben())}. ${S.monat<=2?'Statt einzustellen, kannst du bis März auch Reben roden oder eine Erntemaschine kaufen.':''}${maschOhneFahrer().length||S.maschinen.some(m=>m.zustand<MASCH_ROT)?` Eine Maschine zählt nur im Einsatz, also mit Fahrer und ab ${MASCH_ROT}\u00a0% Zustand.`:''}</p>`:''}
+      ${fe.lagerarb?`<p class="mut">${lagerRegel(flSperre())}. Du hast ${num(S.fassraum)}\u00a0l Fassraum und ${num(S.flaschen)} leere Flaschen.</p>`:''}
       <p class="mut">Einstellen geht auch ohne Geld, dein Konto rutscht dann ins Minus.</p>`);
     const v=verfallListe(), t=S.monat===11?steuerSchau():null, st=!!(t&&t.steuer>0);
     if(v.length||st) openSheet(`<h3>⚠️ Letzte Warnung</h3>${v.length?`<p>Wenn du jetzt weiterblätterst, geht das verloren:</p><ul class="kl">${v.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}${st?`<p>💶 Zum Jahreswechsel zahlst du rund ${eur(t.steuer)} Steuer auf rund ${eur(t.gew)} Gewinn. Was du jetzt noch kaufst, senkt die Steuer.</p>`:''}<div class="btns"><button class="sec" data-a="close">Zurück</button><button ${v.length?'class="wag" ':''}data-a="weiterJa">${v.length?'Trotzdem weiter':'Weiter'}</button></div>`);
@@ -5472,15 +5546,9 @@ const AKT={
     }
   },
   // Version 7.0 (Schritt D): Manager. mgr öffnet das Fenster, mgrStufe stellt ein oder befördert um eine Stufe, mgrAn schaltet eine Aufgabe.
-  mgr(d){MGR_OFFEN=d.id; openSheet(mgrFenster(d.id))},
-  mgrStufe(d){
-    const b=d.id, n=mgrNaechste(b); if(!n) return;
-    if(S.rang<n.rang) return meldung('Noch nicht',`${n.stufe===1?'Einstellen':'Befördern'} geht ab dem Rang ${RAENGE[n.rang].name}.`);
-    if(S.geld<n.kosten) return meldung('Zu wenig Geld',`Das kostet ${eur(n.kosten)}. Einen Kredit gibt es bei der Bank.`);
-    if(n.kosten) zahle(n.kosten);
-    S.manager=S.manager||{}; const m=S.manager[b]=S.manager[b]||{stufe:0,an:{}}; m.stufe=n.stufe;
-    save(); const y=window.scrollY; render(); window.scrollTo(0,y); AKT.mgr({id:b});
-  },
+  mgr(d){MGR_OFFEN=d.id; MGR_NEU=0; openSheet(mgrFenster(d.id))},
+  // Seit 11.5 (Teil C1): Einstellen und Befördern gibt es nicht mehr (mgrKommen). mgrDa schließt die Vorstellung, der nächste Manager aus S.mgrNeu folgt beim Zeichnen.
+  mgrDa(){if(S.mgrNeu) S.mgrNeu.shift(); MGR_NEU=0; MGR_OFFEN=null; closeSheet(); save(); const y=window.scrollY; render(); window.scrollTo(0,y)},
   mgrAn(d){
     const e=mgrAufgabe(d.id); if(!e||!aufgabeDa(d.id)) return;
     const m=S.manager[e.bereich]; m.an=m.an||{}; m.an[d.id]=m.an[d.id]?0:1;
@@ -5553,8 +5621,8 @@ const AKT={
   },
   pflanzen(d){
     if(!sorteFrei(d.id)) return meldung('Noch nicht',`${SORTEN[d.id].name} kannst du ab dem Rang ${RAENGE[sorteAb(d.id)].name} pflanzen.`);
-    const so=SORTEN[d.id], pr=rebenPreis(d.id), frei=S.ha*HA_REBEN-rebenGesamt(), kap=helferKraft()*REBEN_JE_HELFER-rebenGesamt(), max=Math.min(frei,kap,Math.floor(S.geld/pr/10)*10);
-    if(frei>=10&&kap<10) return leuteSheet('Zu wenige Erntehelfer',`<p>Je ${num(REBEN_JE_HELFER)} Reben brauchst du das ganze Jahr einen Erntehelfer. Deine Leute reichen für ${num(helferKraft()*REBEN_JE_HELFER)} Reben, gepflanzt sind ${num(rebenGesamt())}.</p><p class="mut">Stell erst beim Arbeitsamt ein${S.rang>=MASCH.klein.rang?` oder kauf eine Erntemaschine, mit ${MASCH.klein.fahrer} Fahrer zählt sie wie ${MASCH_HELFER} Helfer`:''}.</p>`);
+    const so=SORTEN[d.id], pr=rebenPreis(d.id), frei=S.ha*HA_REBEN-rebenGesamt(), kap=helferReben()-rebenGesamt(), max=Math.min(frei,kap,Math.floor(S.geld/pr/10)*10);
+    if(frei>=10&&kap<10) return leuteSheet('Zu wenige Erntehelfer',`<p>${helferRegel()}. Deine Leute reichen für ${num(helferReben())} Reben, gepflanzt sind ${num(rebenGesamt())}.</p><p class="mut">Stell erst beim Arbeitsamt ein${S.rang>=MASCH.klein.rang?` oder kauf eine Erntemaschine, mit ${MASCH.klein.fahrer} Fahrer deckt sie ${MASCH_HELFER} Hektar ab`:''}.</p>`);
     if(max<10) return meldung('Geht gerade nicht','Dir fehlt das Geld oder der Platz für 10 Reben.');
     mengeSheet({titel:`${so.name} pflanzen`,text:`${eur2(pr)} je Rebe${pr!==so.preis?`, üblich sind ${eur2(so.preis)}`:''}. Junge Reben tragen im ersten Jahr die Hälfte. Deine Erntehelfer reichen noch für ${num(kap)} Reben${kap<frei?', für mehr musst du erst einstellen':''}.`,max,step:10,start:Math.min(max,1000),okText:'Pflanzen',
       info:n=>`<b>${num(n)} Reben</b>kostet ${eur(n*pr)}`,
@@ -5683,17 +5751,17 @@ const AKT={
   },
   kelternJa(d){const l=lot(d.id);closeSheet();l.liter=Math.min(l.liter,S.fassraum-fassBelegt());l.status='fass';l.fassMonate=0;save();render()},
   kaufFass(){
-    const kap=S.lagerarb*FASS_JE_LAGERARB-S.fassraum, max=Math.min(20000,kap,Math.floor(S.geld/fassPreis()/500)*500);
-    if(kap<500) return leuteSheet('Zu wenige Lagerarbeiter',`<p>Ein Lagerarbeiter betreut ${num(FASS_JE_LAGERARB)}\u00a0l Fassraum. Deine Leute betreuen ${num(S.lagerarb*FASS_JE_LAGERARB)}\u00a0l, du hast schon ${num(S.fassraum)}\u00a0l.</p><p class="mut">Für mehr Fassraum stell erst beim Arbeitsamt ein.</p>`);
+    const kap=fassKap()-S.fassraum, max=Math.min(20000,kap,Math.floor(S.geld/fassPreis()/500)*500);
+    if(kap<500) return leuteSheet('Zu wenige Lagerarbeiter',`<p>${lagerRegel()}. Betreut werden so ${num(fassKap())}\u00a0l, du hast schon ${num(S.fassraum)}\u00a0l.</p><p class="mut">Für mehr Fassraum stell erst beim Arbeitsamt ein.</p>`);
     if(max<500) return meldung('Zu wenig Geld',`500 l Fassraum kosten ${eur(500*fassPreis())}.`);
-    mengeSheet({titel:'Fassraum kaufen',bild:'fassgang',text:`${eur2(fassPreis())} je Liter Fassraum. Deine Lagerarbeiter schaffen noch ${num(kap)}\u00a0l mehr.`,max,step:500,start:Math.min(max,2000),okText:'Kaufen',
+    mengeSheet({titel:'Fassraum kaufen',bild:'fassgang',text:`${eur2(fassPreis())} je Liter Fassraum. Betreut werden noch ${num(kap)}\u00a0l mehr.`,max,step:500,start:Math.min(max,2000),okText:'Kaufen',
       info:n=>`<b>${num(n)}\u00a0l</b>kostet ${eur(n*fassPreis())}`,ok:n=>{fx('stempel');zahle(n*fassPreis());S.fassraum+=n}});
   },
   kaufFlaschen(){
-    const kap=S.lagerarb*flJeLager()-S.flaschen, max=Math.min(30000,kap,Math.floor(S.geld/flaschePreis()/100)*100);
-    if(kap<100) return leuteSheet('Zu wenige Lagerarbeiter',`<p>Ein Lagerarbeiter betreut ${num(flJeLager())} leere Flaschen. Deine Leute betreuen ${num(S.lagerarb*flJeLager())}, du hast schon ${num(S.flaschen)}.</p><p class="mut">Für mehr Flaschen stell erst beim Arbeitsamt ein, oder füll erst Wein ab.</p>`);
+    const kap=flKap()-S.flaschen, max=Math.min(30000,kap,Math.floor(S.geld/flaschePreis()/100)*100);
+    if(kap<100) return leuteSheet('Zu wenige Lagerarbeiter',`<p>${lagerRegel(flJeLager())}. Betreut werden so ${num(flKap())} leere Flaschen, du hast schon ${num(S.flaschen)}.</p><p class="mut">Für mehr Flaschen stell erst beim Arbeitsamt ein, oder füll erst Wein ab.</p>`);
     if(max<100) return meldung('Zu wenig Geld',`100 Flaschen kosten ${eur(100*flaschePreis())}.`);
-    mengeSheet({titel:'Leere Flaschen kaufen',text:`${eur2(flaschePreis())} je Flasche (1 Liter). Deine Lagerarbeiter schaffen noch ${num(kap)} mehr.`,max,step:100,start:Math.min(max,2000),okText:'Kaufen',
+    mengeSheet({titel:'Leere Flaschen kaufen',text:`${eur2(flaschePreis())} je Flasche (1 Liter). Betreut werden noch ${num(kap)} mehr.`,max,step:100,start:Math.min(max,2000),okText:'Kaufen',
       info:n=>`<b>${num(n)} Flaschen</b>kostet ${eur(n*flaschePreis())}`,ok:n=>{fx('stempel');zahle(n*flaschePreis());S.flaschen+=n}});
   },
   anmelden(d){
@@ -5722,7 +5790,7 @@ const AKT={
     // Ansehen gibt es je Sorte, Jahrgang und Stufe nur einmal, auch wenn die Lese auf mehrere Fässer verteilt ist. S.ansGeb merkt sich das.
     const ak=l.sorte+'|'+l.jahrgang+'|'+st, AG=S.ansGeb=(S.ansGeb||[]).filter(k=>+k.split('|')[1]>=S.jahr-2), erst=!AG.includes(ak);
     if(s.ans&&!ill&&erst) AG.push(ak);
-    const ans=s.ans&&!ill&&erst?ruhm(s.ans):0;closeSheet();save();render();fx('stempel');
+    const ans=s.ans&&!ill&&erst?ruhm(s.ans,0,'Weine'):0;closeSheet();save();render();fx('stempel');
     meldung('Angemeldet',`${lotName(l)} steht jetzt mit ${l.qp} Qualitätspunkten im Kellerbuch.`+(ill?` Der Beamte hat ${eur(sg)} eingesteckt. Bis der Wein verkauft ist, darf ihn kein Prüfer finden.`:'')+(ans?` +${ans} Ansehen.`:s.ans&&!ill?' Ansehen gab es für diesen Jahrgang und diese Stufe schon.':'')+(st==='feder'?' Federweißer muss noch diesen Monat in die Flasche.':' Jetzt darf er abgefüllt werden.'),'kellerbuch');
   },
   abfuellen(d){
@@ -5778,7 +5846,7 @@ const AKT={
     const l=lot(d.id), w=wege(l)[0]; if(!w||l.regal) return; const p=w.p, fw=federHandel(l);
     mengeSheet({titel:`${lotName(l)} verkaufen`,text:`${w.flag} ${w.name}: ${eur2(p)} je Flasche. ${fw?'Federweißer kauft der Weinhändler in jeder Menge zum vollen Preis, am Budget des Großhandels vorbei. Schnelles Geld für den Notfall, aber reich wird damit keiner. Er hält nur 3 Monate.':marktRest()?`Zum vollen Preis kauft der Großhandel diesen Monat noch für ${eur(marktRest())}, danach sinkt er.`:'Der Markt ist diesen Monat satt, der Preis ist gedrückt. Nächsten Monat zahlt der Großhandel wieder voll.'}${fw?'':' Was du behältst, reift weiter.'}`,max:l.liter,rangeStep:1,step:l.liter>2000?100:l.liter>200?10:1,start:fw?l.liter:Math.min(l.liter,Math.floor(marktRest()/p)||l.liter),okText:'Verkaufen',
       info:n=>{const f=fw?1:marktF(n*p);return `<b>${num(n)} Flaschen</b>bringt dir ${eur(n*p*f)}${f<.995?`<br>📉 im Schnitt ${eur2(p*f)} je Flasche, der Markt ist satt`:''}`},
-      ok:n=>{if(!fw&&S.fu&&marktF(n*p)<.995) S.fu.w3=monatNr(); kassiere(Math.round(n*p*(fw?1:marktF(n*p))));kompVerkauf(l,n);if(!fw)S.absatz=(S.absatz||0)+n*p;l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l)}});
+      ok:n=>{if(!fw&&S.fu&&marktF(n*p)<.995) S.fu.w3=monatNr(); kassiere(erloes(Math.round(n*p*(fw?1:marktF(n*p)))));kompVerkauf(l,n);if(!fw)S.absatz=(S.absatz||0)+n*p;l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l)}});
   }
 };
 /* ================= Titelbild und Geschichte ================= */
