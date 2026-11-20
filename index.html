@@ -809,7 +809,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='12.3.1';
+const VERSION='12.4';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 // Seit 11.5 (Teil C2, Maik 20.11.2026): realistische Löhne. Das Arbeitsamt bietet LOHN_MIN bis LOHN_MAX im Monat (bis 11.4: 200 bis 500 €, Startlohn 350, Vermittlung 300).
 // LOHN_F ist der gemeinsame Faktor auf alle Löhne (Angestellte und Manager), eingestellt über die Dosis-Reihe der Messung. lohnF rechnet einen Lohn damit um, auf 10 € gerundet.
@@ -1501,12 +1501,14 @@ const wgBild=(st,jz)=>`weingut-${String(st).padStart(2,'0')}-${jz}`, wgGross=st=
 // Aufstieg in diesem Monat? Dann zeigt der Winzerbote noch die alte Stufe, das Wachsen kommt erst in der Feier (Annahme Claude).
 const wgAuf=F=>!!(F&&!F.start&&!F.spende&&F.von!=null&&F.zu>F.von);
 const wgStufe=()=>(wgAuf(S.feier)?S.feier.von:S.rang)+1;
-// Seit 12.4.3: Nahansichten vom großen Weingut. Ab ihrer Stufe zeigt "Dein Weingut" im Winzerboten jeden zweiten Monat statt des Weinguts eine davon, reihum (Maik 20.11.2026).
+// Seit 12.4.3: Nahansichten vom großen Weingut. Ab ihrer Stufe zeigt "Dein Weingut" im Winzerboten im Juni und August statt des Weinguts eine davon, reihum, Juli und der Rest des Jahres zeigen das Weingut (Maik 20.11.2026, nie im Winter).
 // Stufen nach den Baupaketen: Kelterhaus ab 6, Festwiese und Gästehaus ab 8, Turm und Steillage ab 9. Im Monat eines Aufstiegs bleibt das Weingut.
 const NAH=[['nah-kelterhaus',6,'Im Kelterhaus'],['nah-festwiese',8,'Auf der Festwiese'],['nah-gaestezimmer',8,'Im Gästezimmer'],['nah-turmstube',9,'Oben in der Turmstube'],['nah-steillage',9,'In der Steillage']];
 function nahBild(st){
-  const L=NAH.filter(n=>st>=n[1]), m=monatNr();
-  return !L.length||m%2===0||wgAuf(S.feier)?null:L[((m-1)/2)%L.length];
+  const L=NAH.filter(n=>st>=n[1]);
+  if(!L.length||(S.monat!==5&&S.monat!==7)||wgAuf(S.feier)) return null;
+  const k=(S.jahr-START_JAHR)*2+(S.monat===7?1:0);
+  return L[k%L.length];
 }
 function monatBild(){
   if(S.monat===10&&S.kaelte===S.jahr) return 'frost';
@@ -6398,7 +6400,7 @@ function ideeFertig(){try{localStorage.removeItem(IDEE_KEY)}catch(e){} meldung('
 // Je Version: [Zeichen, Nummer, Titel, Datum, Punkte]. Kommendes ohne Datum und Punkte.
 const WAS_NEU=[
   {k:'🏁 12.0 Neue Bilder und Ideen',d:'in Arbeit',p:['Ideen von Timo und neue Bilder kommen ins Spiel'],v:[
-    ['▶️','12.4','Bilder-Kür'],
+    ['✅','12.4','Bilder-Kür','20.11.2026',['15 neue Bilder von Timo, damit ist das ganze Spiel im neuen Look','Zehn alte Bilder neu gemalt, vom Amt über die Auktion bis zum Sieg bei der Weltweinschau','Fünf Nahansichten vom Weingut: Kelterhaus, Festwiese, Gästezimmer, Turmstube und Steillage','Im Winzerboten zeigt „Dein Weingut“ jeden zweiten Monat eine Nahansicht, sobald du das Gebäude hast','Beim Aufstieg zeigt die Zeitung gleich dein Weingut der neuen Stufe']],
     ['✅','12.3','Lesbare Tafeln','20.11.2026',['Die Tafel an der Pinnwand ist jetzt gut lesbar, mit Tinte und Ornament','Neu auf der Tafel: „Weinhof und Weinberg der Familie“ über deinem Namen','Der Familienname am Holzbogen wie ins Holz geschnitzt','Am Holzbogen steht vor jedem Namen, wer er war: Gründer, Sohn, Enkel …','Der Name des Weinguts hat höchstens 14 Zeichen, damit er groß bleibt']],
     ['✅','12.5','Kleine Verbesserungen','20.11.2026',['Maschinen tragen nur noch eine Nummer, wenn du zwei gleiche hast','Die Plaketten im Büro trennen lange Namen an der richtigen Stelle','Das Spendenfenster zeigt, wie viel in diesem Jahr noch Steuer spart']],
     ['✅','12.2','Neue Bilder','20.11.2026',['Neun neue Bilder von Timo','Jede Maschine zeigt beim Kauf ihr Bild, das erste Gerät jeder Art kommt in den Winzerboten','Traubenwickler, Mehltau und Kirschessigfliege mit Bild beim ersten Befall','Der Sektkeller mit eigenem Bild beim Kauf und im Winzerboten','Neun Lexikon-Seiten zeigen oben ihr Bild']],
