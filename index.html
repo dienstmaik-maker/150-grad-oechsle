@@ -163,14 +163,14 @@ textarea{display:block;width:100%;min-height:150px;resize:none;font:inherit;line
 .slval{text-align:center;font-size:15px;margin:8px 0}.slval b{font-size:24px;display:block}
 .wahl{display:block;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1.5px solid var(--line);margin:0 0 8px;font-weight:500}
 .wahl.an{border-color:var(--wein);box-shadow:0 0 0 2px var(--wein) inset}
-/* Seit 11.4.1 (Maik 20.11.2026): Anrede, Schwierigkeit und Spielführer beim neuen Spiel zeigen die Wahl als weinrotes Schild mit heller Schrift. */
-.wahl.neuwahl.an{background:#7b1e3a;color:#fff8e8;border-image:none;border:2px solid #5c1830;border-radius:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 2px 4px rgba(43,24,12,.3)}
-/* Seit 11.6 (Idee Maik 20.11.2026): Stufen-Knopf beim neuen Spiel. Oben das alte Wort etwas größer in Grau, darunter der neue Name etwas kleiner in Dunkel.
-   stufn: drei Knöpfe nebeneinander. stufu: breite Knöpfe untereinander. Auf dem weinroten Schild werden beide Zeilen hell. */
-.stufk small{display:block;font-size:16px;line-height:1.2;font-weight:600;color:#9e9589}.stufk b{display:block;font-size:13px;line-height:1.3;color:var(--ink);white-space:nowrap}
-.stufk.an small{color:#e3c3b6}.stufk.an b{color:#fff8e8}
-.fin .zwei.stufn{gap:4px}.fin .zwei.stufn .wahl{padding:9px 1px;min-width:0}.zwei.stufn .stufk b{font-size:11.5px;letter-spacing:-.1px}
-.fin .zwei.stufu{flex-direction:column;gap:6px}.fin .zwei.stufu .wahl{padding:8px 6px}.zwei.stufu .stufk small{font-size:17px}.zwei.stufu .stufk b{font-size:15px}
+/* Seit 11.4.1 (Maik 20.11.2026): Anrede, Schwierigkeit und Spielführer beim neuen Spiel zeigen die Wahl als rotes Schild mit heller Schrift.
+   Seit 11.6 (Maik 20.11.2026): Das Schild ist die gemalte Vorlage knopf-rot.webp, nicht mehr die selbst gebaute rote Fläche. */
+button.wahl.neuwahl.an{background:none;color:#f8e6bf;text-shadow:0 1px 2px #3a0a16;border:0 solid transparent;border-image:url(bilder/knopf-rot.webp) 50% 42 fill/50% 18px stretch;border-radius:0;box-shadow:none;filter:drop-shadow(0 2px 1px rgba(0,0,0,.4))}
+/* Seit 11.6 (Idee Maik 20.11.2026): Stufen-Knopf beim neuen Spiel, drei breite Knöpfe untereinander (Maik wählte am Bild Variante 2).
+   Oben das alte Wort etwas größer in Grau, darunter der neue Name etwas kleiner in Dunkel. Auf dem roten Schild werden beide Zeilen hell. */
+.stufk small{display:block;font-size:17px;line-height:1.2;font-weight:600;color:#7a6453}.stufk b{display:block;font-size:15px;line-height:1.3;color:var(--ink);white-space:nowrap}
+.stufk.an small{color:#ecc9a4}.stufk.an b{color:#f8e6bf}
+.fin .zwei.stufu{flex-direction:column;gap:6px}.fin .zwei.stufu .wahl{padding:8px 6px}
 .mgrportraet{width:96px;height:96px;margin:0 auto 10px;border-radius:50%;background:#f8f0dc center/cover no-repeat;border:3px solid var(--wein);box-shadow:0 3px 8px rgba(0,0,0,.3)}
 .fen .wahl.schalter{padding:8px 11px;font-size:15px;margin:0 0 6px}.fen .wahl.an{box-shadow:0 0 0 1px #7b1e3a inset}
 .pkopf{display:flex;gap:12px;align-items:center;margin:0 0 10px}.pkopf>div:last-child{flex:1}.mgrbild{width:52px;height:52px;flex:none;border-radius:50%;background:#f8f0dc center/cover no-repeat;border:2px solid var(--wein);box-shadow:0 2px 5px rgba(0,0,0,.25)}
@@ -978,7 +978,7 @@ const SAB={gift:['🧪 Wein vergiften','Sein bester Fasswein ist hin.'],buch:['�
 // Der erste Gegner wird seit 11.5 später Präsident als oben steht: auf Schwer im Schnitt in Jahr 133 (mit ki 0,81, in 47 von 54 Partien), auf Mittel um Jahr 158 und nur in jeder neunten Partie.
 // geld: Startgeld der Stufe, ohne Eintrag gilt START_GELD (Einfach hat 20.000 € Polster). biet: Faktor auf die Bietlust der Gegner bei Land, neutral 1, nur Stellschraube.
 // schaed: Schädlinge gibt es nur auf Stufen mit schaed:1, also nur auf Schwer (Maik 20.11.2026 spät, schaedAn). Einfach und Mittel spielen sich ohne sie wie in 11.5.
-// name und text sind nur Anzeige: seit 11.6 Lehrjahre, Gesellenjahre, Meisterprüfung (Maik 20.11.2026 spät). kurz ist das alte Wort, es steht klein auf dem Knopf beim neuen Spiel.
+// name und text sind nur Anzeige: seit 11.6 Lehrjahre, Gesellenjahre, Meisterprüfung (Maik 20.11.2026 spät). kurz ist das alte Wort, es steht in Grau über dem Namen auf dem Knopf beim neuen Spiel.
 // Die Schlüssel einfach, mittel, schwer bleiben, an ihnen hängen Spielstände und Bestenliste.
 const DIFF={
   einfach:{name:'Lehrjahre',kurz:'Einfach',text:'Sonne satt und Zeit zum Lernen. Du startest mit einem dicken Polster, und die Nachbarn lassen es gemütlich angehen. Genau richtig für die erste Partie.',ans:1.25,ki:.45,feld:-4,biet:1,geld:80000},
@@ -3695,7 +3695,7 @@ function vStart(){
   ${fenster('neu_namen','Namen',namen,{buch:'',i:'Dein Name steht auf dem Kaufvertrag, auf jeder Urkunde, in der Bestenliste, in der Chronik und im Winzerboten. Der Name des Weinguts steht am Hof, in der Rangliste und in den Schlagzeilen. Die Anrede bestimmt, ob du Winzer oder Winzerin, Inhaber oder Inhaberin bist. Übernimmt später dein Kind, ersetzt sein Name deinen.'})}
   ${gebiete}
   ${fenster('neu_mit','Mitspieler',`<div class="kv"><span>🍇 Computer-Winzer</span><span>3</span></div><div class="fleer">🔒 Online mit Freunden, kommt später</div>`,{buch:'',i:'Du spielst gegen drei Computer-Winzer: die Vorsichtige, den Qualitätsfanatiker und den Zocker. Sie spielen nach denselben Regeln wie du und wollen auch Präsident werden. Später kannst du hier Freunde einladen.'})}
-  ${fenster('neu_schwer','Schwierigkeit',`<div class="zwei stufn">${Object.entries(DIFF).map(([id,d])=>`<button class="wahl neuwahl stufk ${NEU.schwer===id?'an':''}" data-a="neuOpt" data-k="schwer" data-v="${id}"><small>${d.kurz}</small><b>${d.name}</b></button>`).join('')}</div>`,{buch:'',
+  ${fenster('neu_schwer','Schwierigkeit',`<div class="zwei stufu">${Object.entries(DIFF).map(([id,d])=>`<button class="wahl neuwahl stufk ${NEU.schwer===id?'an':''}" data-a="neuOpt" data-k="schwer" data-v="${id}"><small>${d.kurz}</small><b>${d.name}</b></button>`).join('')}</div>`,{buch:'',
     i:Object.values(DIFF).map(d=>`<b>${d.name}:</b> ${d.text}`).join('<br>')+`<br><br>Bis zum Präsidenten dauert es rund 100 bis 120 Spieljahre, danach kommen noch die Jahre im Amt. Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation, Präsident wird meist erst dein Enkel. Gespeichert wird nach jedem Monat, du kannst also jederzeit aufhören.`})}
   ${fenster('neu_fuehrer','Mit Spielführer?',`<div class="zwei">${[['1','Mit Spielführer'],['0','Ohne']].map(([k,x])=>`<button class="wahl neuwahl ${(NEU.fu||'1')===k?'an':''}" data-a="neuOpt" data-k="fu" data-v="${k}"><b>${x}</b></button>`).join('')}</div>`,{buch:'',
     i:'Der alte Winzer nimmt dich an die Hand. Er führt dich durch dein erstes Jahr, von der Rebe bis zur verkauften Flasche, und später erklären er und deine Manager, was jeder Rang Neues bringt. Wer das Spiel schon kennt, spielt ohne. Im Büro lässt sich der Spielführer jederzeit umstellen.'})}
