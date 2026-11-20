@@ -470,7 +470,7 @@ img.fass{height:1.1em;vertical-align:-.18em}
 .spschild i{font-style:normal;font-size:13px;opacity:.8}
 .spschild.neu{animation:urkein .7s cubic-bezier(.2,.9,.3,1.1) .15s both}
 .spmini{all:unset;box-sizing:border-box;cursor:pointer;aspect-ratio:1;width:78%;margin:auto;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--m1),var(--m2) 62%,var(--m3));display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#2b1a0c;box-shadow:inset 0 0 0 3px rgba(0,0,0,.18),0 2px 5px rgba(0,0,0,.35)}
-.uwand.spw{grid-template-columns:repeat(3,minmax(0,1fr))}.spw b{overflow-wrap:anywhere;hyphens:auto}.spw .umini b{font-size:10.5px}
+.uwand.spw{grid-template-columns:repeat(3,minmax(0,1fr))}.spw b{overflow-wrap:normal;hyphens:manual}.spw .umini b{font-size:10.5px}
 .spmini b{font:700 10.5px/1.1 var(--schrift);padding:0 4px}.spmini small{font:400 9.5px/1.2 var(--schrift)}
 .m-kupfer{--m1:#f2b38a;--m2:#b86a3c;--m3:#7a3e1c}.m-bronze{--m1:#ecd096;--m2:#a8793a;--m3:#6e4a1e}.m-silber{--m1:#ffffff;--m2:#b9bec4;--m3:#7c838b}
 .spehre{margin:10px 0}.spbringt{display:grid;gap:4px;margin:8px 0 14px;font-size:15px}
@@ -804,7 +804,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='12.2';
+const VERSION='12.5';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 // Seit 11.5 (Teil C2, Maik 20.11.2026): realistische Löhne. Das Arbeitsamt bietet LOHN_MIN bis LOHN_MAX im Monat (bis 11.4: 200 bis 500 €, Startlohn 350, Vermittlung 300).
 // LOHN_F ist der gemeinsame Faktor auf alle Löhne (Angestellte und Manager), eingestellt über die Dosis-Reihe der Messung. lohnF rechnet einen Lohn damit um, auf 10 € gerundet.
@@ -1723,6 +1723,17 @@ const SP_DANK=[null,
   ['„Am Wanderweg über der Spitzenlage steht jetzt deine Bank“, sagt der Bürgermeister.','„Wer dort rastet, will danach zu deinem Hoffest.“'],
   null];
 const spKurz=(s,e)=>s===8&&e&&e.w?'Ehrenbürgerin':SPENDEN[s].kurz;
+// Version 12.5: Die Plaketten im Büro trennen nur an der Wortfuge (weiches Trennzeichen), nie mitten im Wort (Maik 20.11.2026).
+const SP_FUGE={Dorffest:'Dorf­fest',Feuerwehr:'Feuer­wehr',Weinbauschule:'Weinbau­schule',Kirchenfenster:'Kirchen­fenster',Gemeindehaus:'Gemeinde­haus',Weinbaumuseum:'Weinbau­museum',Wanderweg:'Wander­weg',Ehrenbürger:'Ehren­bürger',Ehrenbürgerin:'Ehren­bürgerin'};
+const spFuge=t=>SP_FUGE[t]||t;
+// Version 12.5: Text zum Steuervorteil im Spendenfenster. Zeigt den Rest, der in diesem Jahr noch Steuer senkt (Deckel minus schon gespendet), erst ohne Rest den Satz "voll genutzt".
+function spSteuerText(t,n){
+  if(t.gew<=0) return 'Dieses Jahr gibt es bisher keinen Gewinn, die Rate senkt keine Steuer.';
+  const deckel=Math.round(t.gew*SP_DECKEL), rest=Math.max(0,deckel-(S.spJahr||0));
+  if(rest<=0) return 'Steuervorteil für dieses Jahr schon voll genutzt. Spenden geht weiter, nur ohne Steuerersparnis.';
+  const spart=Math.round((Math.min((S.spJahr||0)+n,deckel)-t.abz)*STEUER);
+  return `${spart>0?`Spart dir rund ${eur(spart)} Steuer. `:''}Steuervorteil: bisher noch ${eur(rest)} absetzbar in diesem Jahr.`;
+}
 const spFertig=s=>(S.spenden||[]).some(x=>x.s===s);
 // Seit 10.1: Die Belohnung einer Stufe gibt es nur für die echte Spende. Was die Stiftung nachholt (Merkmal st), bringt Ansehen und Ehrung, bei Stufe 8 auch den Holzbogen.
 const spLohn=s=>(S.spenden||[]).some(x=>x.s===s&&!x.st);
@@ -4283,7 +4294,7 @@ function wgStart(){const b=document.querySelector('.wgbild'); if(!b||b.dataset.o
 function spWand(){
   const E=(S.spenden||[]).slice().sort((a,b)=>a.s-b.s); if(!E.length) return '';
   return `<div class="mut" style="margin:12px 0 6px">Dank für deine Spenden</div><div class="uwand spw">${E.map(e=>{const D=SPENDEN[e.s];
-    return `<button class="${e.s<=4?'spmini m-'+D.ehre:'umini'}" data-a="spEhre" data-n="${e.s}"><b>${esc(spKurz(e.s,e))}</b><small>${e.s<=4?e.j:`${MON[e.m].slice(0,3)} ${e.j}`}</small></button>`}).join('')}</div>`;
+    return `<button class="${e.s<=4?'spmini m-'+D.ehre:'umini'}" data-a="spEhre" data-n="${e.s}"><b>${esc(spFuge(spKurz(e.s,e)))}</b><small>${e.s<=4?e.j:`${MON[e.m].slice(0,3)} ${e.j}`}</small></button>`}).join('')}</div>`;
 }
 // Kopf jeder Ansicht: das Bild des Ortes mit dem Titel darin.
 function kopf(titel){return ortBild(titel)}
@@ -4697,7 +4708,7 @@ function vMaschinen(){
   const mI=`Kaufen und verkaufen kannst du von Januar bis März, warten das ganze Jahr.<br><br>🚜 <b>Keine Leute, keine Bewegung:</b> Jede Maschine braucht ihre Leute: die Erntemaschine ${MASCH.klein.fahrer} Fahrer, der Vollernter ${MASCH.gross.fahrer}, Düngerstreuer und Laubschneider je ${MASCH.duenger.fahrer}, die Abfüllanlage ${MASCH.abfuell.fahrer} Lagerarbeiter. Fahrer sind deine Erntehelfer, wer welche Maschine fährt, ist egal. Reichen sie nicht für alle, bekommen erst die Erntemaschinen ihre Fahrer, die großen zuerst. Eine Maschine ohne Fahrer steht still: Eine Erntemaschine zählt dann weder als Helfer noch bei der Ernteleistung, bei den anderen fällt der Bonus weg.<br><br>🔧 <b>Abnutzung:</b> Eine Maschine nutzt sich nur im Einsatz ab. Eine Erntemaschine verliert voll ausgelastet im Jahr rund ${ABNUTZ_VOLL} Prozentpunkte, halb ausgelastet rund die Hälfte, und mit dem Zustand sinkt ihre Leistung bei der Lese. Der Düngerstreuer verliert rund ${STREU_ABN} je Düngung, der Laubschneider rund ${LAUB_ABN} je Sommer, die Abfüllanlage rund ${ABF_ABN} je ${num(ABF_NORM)} Flaschen. Unter ${MASCH_GELB} % lohnt sich das Warten, unter ${MASCH_ROT} % fällt sie ganz aus, bis sie gewartet ist. Bei Düngerstreuer, Laubschneider und Abfüllanlage hält dich das nicht auf, dann fehlt nur der Bonus.<br><br>✨ <b>Pflege lohnt sich:</b> Steht sie vor dem Einsatz bei ${PFLEGE[0][0]} % oder mehr, nutzt sie sich um ein Fünftel weniger ab, bei den Erntemaschinen zählt der Stand vor der ersten Lese des Jahres. Unter ${PFLEGE[1][0]} % nutzt sie sich um zwei Fünftel mehr ab.`;
   // Wie der Bonus genutzt wird, steht unter dem Bonus im Kauf-Fenster.
   const wie={duenger:`Er hilft beim Düngen, von Hand und bei deinem ${MGR_BEREICHE.weingut.name}.`,laub:'Er läuft im Juni von selbst, sobald er da ist und einen Fahrer hat.',abfuell:`Sie hilft beim Abfüllen, von Hand und bei deinem ${MGR_BEREICHE.keller.name}.`};
-  let h=fenster('maschinen','Deine Maschinen',S.maschinen.map((ma,i)=>{const T=mTyp(ma), st=maschStatus(ma), ein=st==='im Einsatz'; return `<div class="fz"><b>${T.name} ${i+1}</b>
+  let h=fenster('maschinen','Deine Maschinen',S.maschinen.map((ma,i)=>{const T=mTyp(ma), st=maschStatus(ma), ein=st==='im Einsatz', gl=S.maschinen.filter(x=>mTyp(x)===T), nr=gl.length>1?' '+(gl.indexOf(ma)+1):''; return `<div class="fz"><b>${T.name}${nr}</b>
     <div class="kv"><span>Einsatz</span><span class="${ein?'':'rot'}">${st}</span></div>
     <div class="kv"><span>Zustand</span><span class="${ma.zustand<MASCH_ROT?'rot':''}">${ma.zustand} %${ma.zustand<MASCH_ROT?'':ma.zustand<MASCH_GELB?', Warten lohnt sich':''}</span></div><div class="bar"><i style="width:${ma.zustand}%"></i></div>
     ${T.bonus?`<div class="kv"><span>Bonus</span><span class="${ein?'':'rot'}">${ein?'wirkt':'fällt weg'}</span></div>`:`<div class="kv"><span>Leistung</span><span>${ein?rbn(T.leist*ma.zustand/100):0} Reben</span></div>`}
@@ -5829,18 +5840,18 @@ const AKT={
   spenden(){
     const s=spOffen(); if(!s) return; const D=SPENDEN[s], st=D.b/SP_TEIL, rest=D.b-spBezahlt(), max=Math.min(rest,Math.floor(Math.max(0,S.geld)/st)*st);
     if(max<=0) return meldung('Zu wenig Geld',`Die kleinste Rate sind ${eur(Math.min(st,rest))}. So viel ist gerade nicht auf deinem Konto.`,'amt');
-    const t=steuerSchau(), mit=n=>t.gew>0?Math.min((S.spJahr||0)+n,Math.round(t.gew*SP_DECKEL)):0, spart=n=>Math.round((mit(n)-t.abz)*STEUER);
+    const t=steuerSchau();
     mengeSheet({titel:`Spende für ${D.z}`,bild:'amt',text:`Noch offen sind ${eur(rest)} von ${eur(D.b)}. Den Dank des Dorfs gibt es, sobald alles gezahlt ist. Steigst du vorher auf, verfällt der Rest.`,max,step:st,okText:'Spenden',
-      info:n=>`<b>${eur(n)}</b>${n>=rest?'Damit ist die Spende voll.':`Danach sind noch ${eur(rest-n)} offen.`}<br><small>${t.gew<=0?'Dieses Jahr gibt es bisher keinen Gewinn, die Rate senkt keine Steuer.':spart(n)>0?`Spart dir rund ${eur(spart(n))} Steuer.`:'Der Steuervorteil für dieses Jahr ist ausgeschöpft.'}</small>`,
+      info:n=>`<b>${eur(n)}</b>${n>=rest?'Damit ist die Spende voll.':`Danach sind noch ${eur(rest-n)} offen.`}<br><small>${spSteuerText(t,n)}</small>`,
       ok:n=>spZahle(n)});
   },
   // Version 10.1: Stiftung fürs Dorf (Raten wie bei den Spenden) und die freiwillige Übergabe im Fenster "Weinbauverband".
   stiften(){
     const s=stOffen(); if(!s) return; const D=SPENDEN[s], b=stPreis(s), st=b/SP_TEIL, rest=b-stBezahlt(), max=Math.min(rest,Math.floor(Math.max(0,S.geld)/st)*st);
     if(max<=0) return meldung('Zu wenig Geld',`Die kleinste Rate sind ${eur(Math.min(st,rest))}. So viel ist gerade nicht auf deinem Konto.`,'amt');
-    const t=steuerSchau(), mit=n=>t.gew>0?Math.min((S.spJahr||0)+n,Math.round(t.gew*SP_DECKEL)):0, spart=n=>Math.round((mit(n)-t.abz)*STEUER);
+    const t=steuerSchau();
     mengeSheet({titel:`Stiftung: ${D.kurz}`,bild:'amt',text:`Die Stiftung holt die Spende für ${D.z} nach. Noch offen sind ${eur(rest)} von ${eur(b)}. Ansehen und Ehrung gibt es, sobald alles gezahlt ist.`,max,step:st,okText:'Einzahlen',
-      info:n=>`<b>${eur(n)}</b>${n>=rest?'Damit ist die Stufe voll.':`Danach sind noch ${eur(rest-n)} offen.`}<br><small>${t.gew<=0?'Dieses Jahr gibt es bisher keinen Gewinn, die Rate senkt keine Steuer.':spart(n)>0?`Spart dir rund ${eur(spart(n))} Steuer.`:'Der Steuervorteil für dieses Jahr ist ausgeschöpft.'}</small>`,
+      info:n=>`<b>${eur(n)}</b>${n>=rest?'Damit ist die Stufe voll.':`Danach sind noch ${eur(rest-n)} offen.`}<br><small>${spSteuerText(t,n)}</small>`,
       ok:n=>stZahle(n)});
   },
   endeFrage(){
@@ -6368,8 +6379,8 @@ function ideeFertig(){try{localStorage.removeItem(IDEE_KEY)}catch(e){} meldung('
 // Je Version: [Zeichen, Nummer, Titel, Datum, Punkte]. Kommendes ohne Datum und Punkte.
 const WAS_NEU=[
   {k:'🏁 12.0 Neue Bilder und Ideen',d:'in Arbeit',p:['Ideen von Timo und neue Bilder kommen ins Spiel'],v:[
-    ['⏳','12.3','Reste aus 1 bis 10'],
-    ['▶️','12.5','Kleine Verbesserungen'],
+    ['▶️','12.3','Reste aus 1 bis 10'],
+    ['✅','12.5','Kleine Verbesserungen','20.11.2026',['Maschinen tragen nur noch eine Nummer, wenn du zwei gleiche hast','Die Plaketten im Büro trennen lange Namen an der richtigen Stelle','Das Spendenfenster zeigt, wie viel in diesem Jahr noch Steuer spart']],
     ['✅','12.2','Neue Bilder','20.11.2026',['Neun neue Bilder von Timo','Jede Maschine zeigt beim Kauf ihr Bild, das erste Gerät jeder Art kommt in den Winzerboten','Traubenwickler, Mehltau und Kirschessigfliege mit Bild beim ersten Befall','Der Sektkeller mit eigenem Bild beim Kauf und im Winzerboten','Neun Lexikon-Seiten zeigen oben ihr Bild']],
     ['✅','12.1','Sektkeller','20.11.2026',['Sekt nur mit eigenem Sektkeller, zu kaufen ab Winzer','Sektflasche, Korken und Agraffe als Kosten je Flasche','Degorgier- und Abfüllanlage halbiert die Kosten','24 Monate Hefelager bringen mehr Geld','Der Kellermeister macht Sekt schon auf Stufe 1']]]},
   {k:'✅ 11 Weinkompendium',v:[
