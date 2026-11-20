@@ -142,7 +142,7 @@ details.stz{margin-top:8px}details.stz summary{cursor:pointer;font-weight:700;op
 #tabs #weiter{flex:1.3;margin:6px 8px 6px 2px;border-radius:0;border-image:var(--schild) 50% 40 fill/50% 12px stretch;color:var(--kschrift);text-shadow:var(--kschatten);font:700 13px/1.1 var(--knopf);font-variant-caps:small-caps;letter-spacing:.03em;min-height:46px;justify-content:center;padding:5px 18px;filter:drop-shadow(0 2px 1px rgba(0,0,0,.4))}
 #tabs #weiter{flex-direction:row;gap:6px;--schild:url(bilder/schild-haupt.webp);--kschrift:#f8e6bf;--kschatten:0 1px 2px #3a0a16;margin:5px 4px 7px 4px}#tabs #weiter span{font-size:14px}
 #tabs #weiter.zu{filter:grayscale(1) brightness(.9)}
-.badge{position:absolute;top:5px;right:calc(50% - 21px);width:10px;height:10px;border-radius:50%;background:#e5a93c;box-shadow:0 0 0 2px #f5ebd6}.badge.rot{background:#c62828}#tabs .badge{top:4px;right:calc(50% - 22px);box-shadow:0 0 0 2px #4a2e18}#tabs button.an .badge{box-shadow:0 0 0 2px #f5ebd6}
+.badge{position:absolute;top:5px;right:calc(50% - 21px);width:10px;height:10px;border-radius:50%;background:#e5a93c;box-shadow:0 0 0 2px #f5ebd6}.badge.rot{background:#c62828}.badge.gruen{background:#3e8e41;right:auto;left:calc(50% - 21px)}#tabs .badge{top:4px;right:calc(50% - 22px);box-shadow:0 0 0 2px #4a2e18}#tabs button.an .badge{box-shadow:0 0 0 2px #f5ebd6}#tabs .badge.gruen{right:auto;left:calc(50% - 22px)}
 /* Steht nichts mehr an, pulsiert der Knopf sanft. */
 #tabs #weiter.frei{animation:wpuls 2.6s ease-in-out infinite}
 @keyframes wpuls{50%{filter:drop-shadow(0 0 7px rgba(255,214,120,.95)) brightness(1.07)}}
@@ -581,7 +581,7 @@ button.fi.wort{width:auto;padding:0 11px;font:600 13px/1 system-ui,-apple-system
   font:18px/1.38 var(--schrift);animation:fplopp .28s cubic-bezier(.3,1.5,.5,1)}
 @keyframes fplopp{from{transform:scale(.8) translateY(-12px);opacity:0}to{transform:none;opacity:1}}
 #fuehrer .fgesicht{position:absolute;right:8px;top:-104px;width:92px;height:92px;border-radius:50%;border:3px solid #d2a94a;background:#f8f0dc;overflow:hidden;box-shadow:0 0 0 1.5px #5d3f18,0 3px 7px rgba(0,0,0,.5)}
-#fuehrer .fgesicht i{display:block;width:100%;height:100%;background:center/cover no-repeat}
+#fuehrer .fgesicht{cursor:pointer}#fuehrer .fgesicht i{display:block;width:100%;height:100%;background:center/cover no-repeat}
 #fuehrer .fkopf{position:absolute;left:12px;top:-78px;margin:0;padding:6px 12px 7px;border-radius:10px;border:2px solid #d2a94a;
   background:linear-gradient(rgba(255,251,236,.42),rgba(255,251,236,.42)),#f3e7ca url(bilder/papier.jpg) center/cover;box-shadow:0 0 0 1.5px #5d3f18,0 3px 7px rgba(0,0,0,.5)}
 #fuehrer .fname{display:block;font:700 19px/1.1 "Alegreya SC",var(--schrift);color:#7b1e3a;letter-spacing:.02em}
@@ -1202,7 +1202,7 @@ const START_SUB={gut:'betrieb',keller:'start',stadt:'amt'};
 const geldKurz=b=>Math.abs(b)>=1e6?(b/1e6).toLocaleString('de-DE',{maximumFractionDigits:2})+'\u00a0Mio.\u00a0€':eur(b);
 // Kurze Namen für die Unterreiter-Leiste unten.
 const SUB_NAME={berg:'Weinberg',betrieb:'Betrieb',aktuell:'Aktuelles',maschinen:'Maschinen',buero:'Büro',buch:'Weinarchiv',sabotage:'Hintertür',start:'Keller',lager:'Lager',amt:'Rathaus',handel:'Großhandel',laeden:'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'};
-// Punkte an den Reitern: rot bei Dringendem aus "Das steht an", gelb bei allem anderen.
+// Punkte an den Reitern: rot bei Dringendem aus "Das steht an", gelb bei allem anderen. Seit 12.6.2 kommt grün für den Weg der offenen Blase dazu (fuPunkt).
 // Seit 7.9 gibt es drei Arten: Rot (rot:1) hält das Weiterblättern an, Gelb zeigt nur den Punkt, Hinweise (ruhig:1) bekommen keinen Punkt.
 function badges(){const B={}, A=aufgaben(); if(ladenPunkt()) A.push({tab:'stadt',sub:'laeden'}); for(const a of A){if(!a.tab||a.ruhig) continue;for(const k of [a.tab,a.tab+'/'+(a.sub||START_SUB[a.tab])]) B[k]=B[k]==='rot'||a.rot?'rot':'neu'}return B}
 // Seit 7.9: gelber Punkt am Weinhandel, wenn eine Weinhandlung diesen Monat einen deiner Weine nimmt (ab Kabinett oder Sekt) oder dein eigenes Regal Wein brauchen kann.
@@ -5555,7 +5555,7 @@ const FU_HUERDE={'Qualitätswein':'qba','Kabinett':'kab','Spätlese':'spat','Aus
 const fuPz=s=>Math.round(s.reife*100)+'\u00a0%';
 function fuFrostJahre(){const f=R().frost; return f>=.4?'fast jedes zweite Jahr':f>=.2?'etwa jedes vierte Jahr':'nur etwa jedes zehnte Jahr'}
 function fuText(t,chef){
-  return t.replace(/\{(Mein Lieber|mein Lieber|Nachbar|Sorte|Reife|Zuwachs|Haltbar|Sortenzuwachs|Frostjahre|Sektstar|Dritte Sorte|Langsorte|Hürde ([^}]+))\}/g,(x,a,h)=>{
+  return t.replace(/\{(Mein Lieber|mein Lieber|Nachbar|Sorte|Reife|Zuwachs|Haltbar|Sortenzuwachs|Frostjahre|Sektstar|Dritte Sorte|Langsorte|Startgeld|Hürde ([^}]+))\}/g,(x,a,h)=>{
     if(h) return R().min[FU_HUERDE[h]]+'°';
     const L=sortenFolge().map(id=>SORTEN[id]), s=L[0];
     if(a==='Sorte') return s.name;
@@ -5568,6 +5568,8 @@ function fuText(t,chef){
     if(a==='Sektstar'){const st=L.filter(x=>x.sektStar).map(x=>x.name); return !st.length?'':S.rollen?`, als Sekt vom ${st[0]} noch etwas mehr`:`, ${st.join(' und ')} noch etwas mehr`}
     if(a==='Dritte Sorte') return S.rollen?`Es ist ${L[2].name}, deine Spitzen-Sorte: Sie trägt wenig, bringt aber die beste Qualität und reift am längsten. Drei Sorten verteilen außerdem das Wetterrisiko.`:'Sie hat nur einen Stern, startet mit weniger Zucker und bringt weniger Qualitätspunkte. Dafür ist sie in manchen Gebieten der erste Rotwein, und drei Sorten verteilen das Wetterrisiko.';
     if(a==='Langsorte') return (L.find(x=>x.minL>=18)||s).name;
+    // Seit 12.6.1: das echte Startgeld der Schwierigkeit (Einfach 80.000 €, sonst 60.000 €).
+    if(a==='Startgeld') return eur(startGeld(S.schwer));
     if(chef) return 'Chef';
     return a==='Nachbar'?anr('Nachbar','Nachbarin'):a==='Mein Lieber'?anr('Mein Lieber','Meine Liebe'):anr('mein Lieber','meine Liebe');
   });
@@ -5582,7 +5584,15 @@ function fuAbsaetze(t){
 // Seit 10.3: FU_WO = bei der Blase wurde "Zeig mir, wo" getippt (gilt als gelesen), FU_ZM = Monat, in dem sie aufging,
 // FU_SPAET = abgelegte Kern-Blasen und Warnungen mit ihrem Monat, sie kommen erst im nächsten Monat wieder.
 let FU_AKT=null, FU_RUHE=0, FU_UHR=null, FU_PAUSE=false, FU_KLEIN=false, FU_WO=false, FU_ZM=-1, FU_SPAET={};
-function fuehrerWeg(){const a=$('#fuehrer'), d=$('#fdunkel'), k=$('#fkopf'); if(a) a.remove(); if(d) d.remove(); if(k) k.remove(); FU_AKT=null; FU_KLEIN=false; FU_WO=false}
+function fuehrerWeg(){const a=$('#fuehrer'), d=$('#fdunkel'), k=$('#fkopf'); if(a) a.remove(); if(d) d.remove(); if(k) k.remove(); FU_AKT=null; FU_KLEIN=false; FU_WO=false; fuPunkt()}
+// Seit 12.6.2 (Maik 20.11.2026): Ein grüner Punkt zeigt den Weg der offenen Blase, erst am Hauptreiter, dann am Unterreiter, am Ziel ist er weg.
+// Er sitzt links, damit Rot und Gelb aus "Das steht an" rechts daneben sichtbar bleiben. Gilt auch, solange die Blase als Kopf am Rand wartet.
+function fuPunkt(){
+  const d=$('#dock'); if(!d) return; d.querySelectorAll('.badge.gruen').forEach(x=>x.remove());
+  const z=FU_AKT&&FU_ZEIG[FU_AKT]; if(!z||!z.tab||!SUBS[TAB]) return;
+  const el=TAB!==z.tab?d.querySelector(`#tabs [data-id="${z.tab}"]`):z.sub&&SUB!==z.sub?d.querySelector(`#subs [data-id="${z.sub}"]`):null;
+  if(el) el.insertAdjacentHTML('beforeend','<span class="badge gruen"></span>');
+}
 // Seit 10.2.1 (Maik 19.11.2026): Die Blase klappt zum Kopf am rechten Rand zusammen, ein Tipp auf den Kopf holt sie zurück.
 function fuKlein(an){
   const f=$('#fuehrer'); if(!f) return; FU_KLEIN=an; f.classList.toggle('zu',an);
@@ -5620,7 +5630,7 @@ function fuehrerZeig(){
   FU_AKT=id; FU_ZM=monatNr();
   if(lang){const d=document.createElement('div'); d.id='fdunkel'; document.body.appendChild(d)}
   const el=document.createElement('div'); el.id='fuehrer'; el.setAttribute('role','dialog'); el.setAttribute('aria-label',P.name);
-  el.innerHTML=`<i class="fzipfel"></i>${P.bild?`<div class="fgesicht"><i style="background-image:url(bilder/${P.bild}.jpg)"></i></div>`:''}<div class="fkopf"><div><b class="fname">${P.name}</b><span class="frolle">${P.rolle}</span></div></div>
+  el.innerHTML=`<i class="fzipfel"></i>${P.bild?`<div class="fgesicht" data-a="fuZu" role="button" aria-label="Tipp zum Kopf zuklappen"><i style="background-image:url(bilder/${P.bild}.jpg)"></i></div>`:''}<div class="fkopf"><div><b class="fname">${P.name}</b><span class="frolle">${P.rolle}</span></div></div>
     <div class="ftext">${fuAbsaetze(text)}</div><div class="fschatten">▼ weiter unten mehr</div>
     <div class="fknopf">${FU_ZEIG[id]?`<button class="klein" data-a="fuWo">Zeig mir, wo</button>`:''}<button class="klein" data-a="fuOk">${id==='e1-0a'?'Bleib ruhig da':'Verstanden'}</button></div>
     ${b.b?`<span class="fbuch" data-a="fuBuch" data-id="${b.b}">📖 Mehr im Buch</span>`:''}`;
@@ -5628,7 +5638,7 @@ function fuehrerZeig(){
   const t=el.querySelector('.ftext'), sch=el.querySelector('.fschatten');
   const pruef=()=>{sch.style.display=t.scrollHeight>t.clientHeight+4?'':'none'; sch.style.opacity=t.scrollTop+t.clientHeight>=t.scrollHeight-4?0:1};
   t.addEventListener('scroll',pruef,{passive:true}); pruef();
-  fx('menue');
+  fuPunkt(); fx('menue');
 }
 // Abhaken: aus der Warteschlange in die Liste der gezeigten, danach kommt die nächste wartende.
 // Seit 10.3 (C3): Für Bremse und Kniff-Abstand zählt der Monat, in dem die Blase aufging, nicht der, in dem sie abgehakt wird.
@@ -5654,7 +5664,7 @@ function fuFenster(){
   const W=[['alle','💬 Alle Tipps'],['neu','🎓 Nur Neuheiten und Warnungen'],['aus','🔕 Aus']];
   return fenster('fuehrer','Spielführer',W.map(([k,x])=>`<button class="wahl schalter ${st===k?'an':''}" data-a="fuStell" data-id="${k}">${st===k?'✅':'⬜'} ${x}</button>`).join(''),{
     links:'Warnungen und Kniffe noch einmal',kn:pk('fuVorn','Tipps von vorn','',{sec:1,aus:!f.an}),buch:'fuehrer',
-    i:'Der alte Winzer und, sobald ihr Rang sie freischaltet, deine drei Manager melden sich in einer Sprechblase: wenn etwas zum ersten Mal ansteht, nach jedem Aufstieg, bei typischen Fehlern und ab dem dritten Jahr ab und zu mit einem Kniff. Der alte Winzer verabschiedet sich nach der ersten Übergabe an dein Kind, danach sprechen nur noch die Manager. Nach „Zeig mir, wo“ oder einem Tipp daneben klappt die Blase zum kleinen Kopf am Rand zusammen, ein Tipp auf den Kopf holt sie zurück. „Alle Tipps“ ist für Neulinge, „Nur Neuheiten und Warnungen“ für alle, die das Spiel kennen. Mit allen Tipps gibt es ⏩ „Weiter bis etwas ansteht“ erst ab dem zweiten Jahr. „Tipps von vorn“ holt Warnungen und Kniffe zurück, in den ersten zwei Jahren auch den Rest des Fahrplans.'});
+    i:'Der alte Winzer und, sobald ihr Rang sie freischaltet, deine drei Manager melden sich in einer Sprechblase: wenn etwas zum ersten Mal ansteht, nach jedem Aufstieg, bei typischen Fehlern und ab dem dritten Jahr ab und zu mit einem Kniff. Der alte Winzer verabschiedet sich nach der ersten Übergabe an dein Kind, danach sprechen nur noch die Manager. Nach „Zeig mir, wo“, einem Tipp aufs Gesicht oder einem Tipp daneben klappt die Blase zum kleinen Kopf am Rand zusammen, ein Tipp auf den Kopf holt sie zurück. „Alle Tipps“ ist für Neulinge, „Nur Neuheiten und Warnungen“ für alle, die das Spiel kennen. Mit allen Tipps gibt es ⏩ „Weiter bis etwas ansteht“ erst ab dem zweiten Jahr. „Tipps von vorn“ holt Warnungen und Kniffe zurück, in den ersten zwei Jahren auch den Rest des Fahrplans.'});
 }
 function fuLeuchte(z){
   const el=(typeof z.sel==='function'?z.sel():z.sel||[]).filter(Boolean).map(s=>document.querySelector(s)).find(Boolean); if(!el) return;
@@ -5685,7 +5695,7 @@ function render(){
   <main>${v}</main>
   <nav id="dock">${SUBS[TAB]?`<div id="subs">${SUBS[TAB].map(s=>`<button class="${SUB===s[0]?'an':''}" data-a="sub" data-id="${s[0]}"><i>${s[1]}</i><b>${SUB_NAME[s[0]]}</b>${SUB===s[0]?'':badge(B[TAB+'/'+s[0]])}</button>`).join('')}</div>`:''}<div id="tabs">${tabs.map(t=>`<button class="${TAB===t[0]?'an':''}" data-a="tab" data-id="${t[0]}"><span>${t[1]}</span>${t[2]}${badge(B[t[0]])}</button>`).join('')}<button id="weiter" class="${fehlt?'zu':''}" data-a="weiter"><span>${fehlt?'🔒':'▶'}</span>${fehlt?'Leute fehlen':'Nächster Monat'}</button></div></nav>`;
   panoStell(); wgStart();
-  fuehrerZeig();
+  fuehrerZeig(); fuPunkt();
   mgrVorstellen();
 }
 
@@ -5740,6 +5750,8 @@ const AKT={
   // Seit 10.2.1: "Zeig mir, wo" klappt die Blase zum Kopf zusammen, statt sie abzuhaken. Weg ist sie erst mit "Verstanden" oder wenn die Aufgabe erledigt ist.
   fuWo(){const id=FU_AKT, z=FU_ZEIG[id]; if(!z) return; fuKlein(true); FU_WO=true; FU_PAUSE=true; if(z.tab){geh(z.tab,z.sub); if(z.sub==='buch') ARCHIV='weine'; if(z.sub==='buero'){const m=/data-id="(\w+)"/.exec((z.sel||[])[0]||''); if(m&&BUERO_WO[m[1]]) BUERO=BUERO_WO[m[1]]} render(); window.scrollTo(0,0)} setTimeout(()=>fuLeuchte(z),z.tab?120:0)},
   fuAuf(){fuKlein(false)},
+  // Seit 12.6.1 (Maik 20.11.2026): Ein Tipp aufs Gesicht in der offenen Blase klappt sie zum Kopf am Rand.
+  fuZu(){fuKlein(true)},
   fuBuch(d){BUCH=d.id||''; buchZeig()},
   // Seit 8.0.1 "Dein Stand" statt "Deine Kasse": Kasse, Bis zum nächsten Rang (alle drei Bedingungen mit Balken wie in vRang) und die Rangleiter.
   geldInfo(){if(S.fu&&!S.fu.geld){S.fu.geld=1; save()} const K=kosten(), k=S.kredit, kv=(a,x,c)=>`<div class="kv"><span>${a}</span><span class="${c||''}">${x}</span></div>`, n=RAENGE[S.rang+1];
