@@ -804,7 +804,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='12.1';
+const VERSION='12.2';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 // Seit 11.5 (Teil C2, Maik 20.11.2026): realistische Löhne. Das Arbeitsamt bietet LOHN_MIN bis LOHN_MAX im Monat (bis 11.4: 200 bis 500 €, Startlohn 350, Vermittlung 300).
 // LOHN_F ist der gemeinsame Faktor auf alle Löhne (Angestellte und Manager), eingestellt über die Dosis-Reihe der Messung. lohnF rechnet einen Lohn damit um, auf 10 € gerundet.
@@ -1241,7 +1241,23 @@ function nimm(o){S=o;if(S.zf==null)S.zf=zfNeu();if(S.helfer==null)Object.assign(
 // Version 12.1 (Maik 20.11.2026): Alte Spielstände ab Winzer bekommen den Sektkeller geschenkt (Bestandsschutz), mit einer Zeile im Winzerboten (sektBote).
 // Der Kellermeister macht Sekt seit 12.1 schon auf Stufe 1. Wer ihn dort hat, bekommt die Aufgabe eingeschaltet dazu. Neue Spiele haben v121 von Anfang an.
 function altSekt(){if(S.v121) return; if(S.rang>=R_SEKT){S.sektkeller=1; S.sektkellerAlt=1} const m=(S.manager||{}).keller; if(m&&m.stufe===1){m.an=m.an||{}; if(!('sekt' in m.an)) m.an.sekt=1} S.v121=1}
-function sektBote(Z){if(!S.sektkellerAlt) return; delete S.sektkellerAlt; Z.push(`🍾 Neu im Keller: der Sektkeller. Sekt gibt es ab jetzt nur noch mit eigenem Sektkeller. Deiner steht schon, als Geschenk für alle, die schon ${anr('Winzer','Winzerin')} sind.${S.lots.some(l=>l.sekt)?' Dein Sekt im Keller reift weiter wie bisher.':''}`)}
+// Seit 12.2: Das Geschenk für alte Spielstände ist ein Artikel mit Timos Bild statt einer Zeile unter "Kurz gemeldet".
+function sektBote(Z){if(!S.sektkellerAlt) return; delete S.sektkellerAlt; schlag(60,'🍾 Neu im Keller: der Sektkeller',`Sekt gibt es ab jetzt nur noch mit eigenem Sektkeller. Deiner steht schon, als Geschenk für alle, die schon ${anr('Winzer','Winzerin')} sind.${S.lots.some(l=>l.sekt)?' Dein Sekt im Keller reift weiter wie bisher.':''}`,'sektkeller',{foto:1})}
+// Seit 12.2 (Maik 20.11.2026, Frage 4): Beim ersten Kauf jeder Maschinenart und beim Sektkeller schreibt der Winzerbote im nächsten Monat einmal einen Artikel mit Bild.
+// Die Käufe merkt sich S.boteKauf bis zur nächsten Ausgabe, S.maschBote welche Maschinenarten schon einen Artikel hatten.
+const MASCH_KAUF={duenger:'Der Düngerstreuer hängt am Schlepper und verteilt den Dünger ab jetzt gleichmäßig zwischen den Zeilen.',
+  klein:'Die Erntemaschine steht in der Scheune. Bei der nächsten Lese rüttelt sie die Beeren vom Stock.',
+  laub:'Der Laubschneider steht bereit. Im Juni stutzt er die Triebe, damit Licht und Luft an die Trauben kommen.',
+  gross:'Der Vollernter steht wie ein Tor in der Scheune und wartet auf die nächste Lese.',
+  abfuell:'Die Abfüllanlage steht im Keller. Spülen, füllen, verkorken, alles an einem Band.'};
+const MASCH_BOTE={duenger:'Im Dorf hat man es gleich gesehen: Hinter dem Schlepper hängt jetzt ein Düngerstreuer. Die Alten schwören noch auf den Eimer, die Jungen schauen neidisch.',
+  klein:'Ab der nächsten Lese rollt eine Erntemaschine durch die Zeilen. Die Erntehelfer sehen es mit gemischten Gefühlen, edelfaule Trauben bleiben aber ihre Sache.',
+  laub:'Wo früher im Juni Leute mit der Heckenschere durch die Zeilen liefen, fährt jetzt ein Laubschneider. Oben und an den Seiten, sauber wie beim Gärtner.',
+  gross:'Ein Vollernter ist im Dorf noch selten. Er fährt aus eigener Kraft über die Rebzeile, die Kinder laufen hinterher, wenn er zum ersten Mal aus der Scheune kommt.',
+  abfuell:'Im Keller läuft jetzt ein Band: spülen, füllen, verkorken, etikettieren. Kein Schluck geht mehr daneben, sagen die Lagerarbeiter, und sie klingen dabei erleichtert.'};
+// foto:1 zeigt das Bild auch dann, wenn schon ein anderer Artikel sein kleines Foto hat (zum Beispiel zwei Maschinen im selben Monat).
+function kaufBote(){for(const a of S.boteKauf||[]) schlag(60,a.t,a.text,a.bild,{foto:1}); delete S.boteKauf}
+const boteMerk=(t,text,bild)=>(S.boteKauf=S.boteKauf||[]).push({t,text,bild});
 function altKeller(){if(S.v83) return; const m=(S.manager||{}).keller; if(m&&m.stufe===1&&m.an&&m.an.flaschen) m.an.keltern=1; S.v83=1}
 // Seit 11.5 (Teil A): Alles Ansehen ist verdoppelt. Alte Spielstände verdoppeln einmal das Ansehen des Spielers und der Gegner, dazu die Zahlen in Chronik,
 // Übergabe und Spielende, damit alles im selben Maß steht. Die Texte der Ehrungen bleiben als Geschichte stehen. S.ansV merkt sich, dass das passiert ist.
@@ -2375,7 +2391,7 @@ function schaedBefall(b,Z){
     t=b.art==='wickler'?`Die Raupen des Traubenwicklers haben sich in deine Trauben gebohrt. Beim ${namen(F)} sind ${pz}\u00a0% der Trauben hin.`
       :`Der Falsche Mehltau hat Blätter und junge Trauben befallen. ${F.length>1?'Auf allen Feldern':`Beim ${namen(F)}`} sind ${pz}\u00a0% der Trauben hin.`;
   }
-  schlag(80,`${T.name} im Weinberg`,`${t} ${b.gespritzt?'Weil gespritzt war, ist es nur halb so schlimm gekommen.':'Mit Spritzen wäre es nur halb so schlimm gekommen.'}${erst?' '+SCHAED_FAMILIE[b.art]:''}`,'',{du:1});
+  schlag(80,`${T.name} im Weinberg`,`${t} ${b.gespritzt?'Weil gespritzt war, ist es nur halb so schlimm gekommen.':'Mit Spritzen wäre es nur halb so schlimm gekommen.'}${erst?' '+SCHAED_FAMILIE[b.art]:''}`,erst?b.art:'',{du:1,...(erst?{foto:1}:{})});
 }
 // Läuft jeden Monat nach dem Wachstum: freischalten, im April planen, warnen, Befall.
 function schaedMonat(Z){
@@ -2915,12 +2931,14 @@ function vLexikon(){
     <h4 class="gk">${K[1]} ${K[3]} · ${L.length} ${L.length===1?'Seite':'Seiten'}</h4><div class="fzl">${L.map(kompZeile).join('')}</div>`,{
     i:'Alles zum Nachlesen, ohne Siegel: deine Rebsorten, die Edelfäulnis und die Regeln zur Reifezeit, Gebiet und Lagen, Keller und Technik und die Gefahren. Oben wählst du ein Kapitel, ein Tipp auf eine Seite zeigt ihre Geschichte und was im Spiel gilt. Neue Seiten, zum Beispiel ein Schädling nach dem ersten Befall, tragen ein gelbes „Neu“, bis du sie einmal geöffnet hast.'});
 }
+// Seit 12.2: Schädlinge, Sektkeller und Maschinen zeigen oben Timos Bild, im Stil der Meldung (masch_laub wird masch-laub).
+const KOMP_BILD=id=>/^(wickler|mehltau|kirsch|sektkeller|masch_(duenger|klein|laub|gross|abfuell))$/.test(id)?id.replace('_','-'):'';
 // Eine Seite: Geschichte, die Zeile "Im Spiel" und bei Einträgen mit Siegeln die drei Bedingungen. Die Geschichte gibt es mit dem ersten Siegel, auf Wissens-Seiten sofort.
 function kompEintragHtml(id){
   const D=KOMP[id], w=D.wissen, e=(S.komp||{})[id]||{st:0}, st=w?0:e.st||0, K=KOMP_KAP.find(k=>k[0]===D.kap), aid=w?null:kompAlbumId(id), A=aid?Math.floor(+kompAlbumLies()[aid]||0):0;
   const bal=(a,b)=>`<div class="bar g"><i style="width:${Math.min(100,(a||0)/b*100)}%"></i></div>`;
   const bed=(i,extra)=>`<div class="kbed"><i class="ksg s${i}${st>=i?' an':''}"></i><div><b>${KOMP_ST[i]}, ${KOMP_ST_WORT[i]}</b><span>${esc(kompBed(D,e,i))}${extra||''}</span>${st===i-1&&(i<3||D.w[2])?bal(e.f,D.w[i-1]):''}</div></div>`;
-  return `<h3>${K[1]} ${esc(D.titel)}</h3><p class="mut" style="margin:-4px 0 8px">${w?K[3]:(KOMP_BRETT.find(b=>b[0]===D.rl)||[0,K[3]])[1]} · ${w?'zum Nachlesen':st?`${KOMP_ST[st]}, ${KOMP_ST_WORT[st]}`:'noch kein Siegel'}</p>
+  return `${KOMP_BILD(id)?sbild(KOMP_BILD(id)):''}<h3>${K[1]} ${esc(D.titel)}</h3><p class="mut" style="margin:-4px 0 8px">${w?K[3]:(KOMP_BRETT.find(b=>b[0]===D.rl)||[0,K[3]])[1]} · ${w?'zum Nachlesen':st?`${KOMP_ST[st]}, ${KOMP_ST_WORT[st]}`:'noch kein Siegel'}</p>
     <p>${st||w?kompGeschichte(id):'<span class="mut">Die Geschichte dazu gibt es mit dem ersten Siegel.</span>'}</p>
     <div class="hilfe kspiel"><b>📌 Im Spiel</b><br>${D.text()}</div>
     ${w?'':`<p class="mut">${esc(kompZaehlt(id))}</p>${bed(1)}${bed(2)}${bed(3,`${/\.$/.test(kompBed(D,e,3))?'':'.'} Dafür gibt es ${kompBocks(id)?'den Bocksbeutel':'das Gold-Etikett'}.`+(st<2?' Gold zählt erst, wenn du Silber hast.':'')+(e.gm&&!D.w[2]&&st<3?' ✔ Die Goldmedaille hast du schon.':''))}
@@ -3391,7 +3409,7 @@ function monatLauf(){
   if(!S.pleite){generationMonat(Z); if(!S.ende){geschichteMonat(); etappe3Monat(Z)}}
   // Die Zeitung zeigt den Bericht: kopf ist die Schlagzeile, art die Artikel, zeilen "Kurz gemeldet", wetter die Ereignisse im Weinberg, ehr die neuen Ehrungen.
   // k ist das, was zum Monatswechsel abgebucht wurde (steht bei der Bank).
-  kompBote(Z); rufBote(Z); sektBote(Z);
+  kompBote(Z); rufBote(Z); sektBote(Z); kaufBote();
   const ehr=(S.ehrungen||[]).slice(S.ehrZeig||0); S.ehrZeig=(S.ehrungen||[]).length;
   S.bericht=zeitung(Z,W,ehr,{basis:K.basis,loehne:K.loehne,rate:K.tilgung+K.zins,ueberz:uz,steuer});
   TAB='monat'; save(); render(); window.scrollTo(0,0);
@@ -6241,12 +6259,14 @@ const AKT={
   sektKeller(){
     if(!sektRang()||S.sektkeller) return;
     if(S.geld<SEKTKELLER_PREIS) return meldung('Zu wenig Geld',`Der Sektkeller kostet ${eur(SEKTKELLER_PREIS)}.`,'fassgang');
-    openSheet(`${sbild('fassgang')}<h3>🍾 Sektkeller kaufen?</h3><p>Ein Gewölbe mit Rüttelpulten für deinen Sekt, einmal ${eur(SEKTKELLER_PREIS)}.</p><p class="mut">Danach machst du im Keller aus Qualitätswein und Kabinett Sekt. Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button data-a="sektKellerJa">Kaufen</button></div>`);
+    openSheet(`${sbild('sektkeller')}<h3>🍾 Sektkeller kaufen?</h3><p>Ein Gewölbe mit Rüttelpulten für deinen Sekt, einmal ${eur(SEKTKELLER_PREIS)}.</p><p class="mut">Danach machst du im Keller aus Qualitätswein und Kabinett Sekt. Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button data-a="sektKellerJa">Kaufen</button></div>`);
   },
   sektKellerJa(){
     if(!sektRang()||S.sektkeller||S.geld<SEKTKELLER_PREIS) return;
-    zahle(SEKTKELLER_PREIS); S.sektkeller=1; fx('stempel'); closeSheet(); save(); render();
-    meldung('Der Sektkeller ist fertig',`Ab jetzt machst du im Keller Sekt aus Qualitätswein und Kabinett.${aufgabeAktiv('sekt')?` Dein ${MGR_BEREICHE.keller.name} macht beim Weiterblättern Sekt, bis die Sekt-Schwelle erreicht ist.`:''}`,'fassgang');
+    zahle(SEKTKELLER_PREIS); S.sektkeller=1; fx('stempel'); closeSheet();
+    boteMerk(`${S.name} baut einen Sektkeller`,'Unter dem Weingut ist ein Gewölbe mit Rüttelpulten entstanden. Dort liegt der Sekt bald auf der Hefe, und jede Flasche wird gedreht, bis die Hefe im Hals sitzt.','sektkeller');
+    save(); render();
+    meldung('Der Sektkeller ist fertig',`Ab jetzt machst du im Keller Sekt aus Qualitätswein und Kabinett.${aufgabeAktiv('sekt')?` Dein ${MGR_BEREICHE.keller.name} macht beim Weiterblättern Sekt, bis die Sekt-Schwelle erreicht ist.`:''}`,'sektkeller');
   },
   sektAnlage(){
     if(!S.sektkeller||S.sektAnlage||S.rang<R_SEKT_ANLAGE) return;
@@ -6282,7 +6302,12 @@ const AKT={
     if(S.monat>2||S.rang<T.rang) return;
     if(T.bonus&&S.maschinen.some(x=>x.typ===id)) return meldung('Schon da',`${T.f?'Eine':'Einen'} ${T.name} hast du schon, ein zweiter Bonus kommt nicht dazu.`);
     if(S.geld<T.preis) return meldung('Zu wenig Geld',`${T.f?'Eine':'Ein'} ${T.name} kostet ${eur(T.preis)}.`);
-    zahle(T.preis);S.maschinen.push({typ:id,zustand:100});fx('stempel');save();render();
+    // Seit 12.2: Meldung mit Timos Bild, beim ersten Gerät der Art dazu ein Artikel im nächsten Winzerboten.
+    const MB=S.maschBote=S.maschBote||{}, erst=!MB[id]&&!S.maschinen.some(x=>x.typ===id);
+    zahle(T.preis);S.maschinen.push({typ:id,zustand:100});fx('stempel');
+    if(erst){MB[id]=1; boteMerk(`Neue${T.f?'':'r'} ${T.name} bei ${S.name}`,MASCH_BOTE[id],'masch-'+id)}
+    save();render();
+    meldung(`${T.f?'Die':'Der'} ${T.name} ist da`,`${MASCH_KAUF[id]} ${T.f?'Sie':'Er'} braucht ${T.fahrer} ${T.leute==='helfer'?'Erntehelfer als Fahrer':'Lagerarbeiter'}.`,'masch-'+id);
   },
   maschVerkauf(d){if(S.monat>2)return;const ma=S.maschinen[+d.id];if(!ma)return;kassiere(Math.round(mTyp(ma).preis*.5*ma.zustand/100));S.maschinen.splice(+d.id,1);save();render()},
   maschWarten(d){
@@ -6344,7 +6369,8 @@ function ideeFertig(){try{localStorage.removeItem(IDEE_KEY)}catch(e){} meldung('
 const WAS_NEU=[
   {k:'🏁 12.0 Neue Bilder und Ideen',d:'in Arbeit',p:['Ideen von Timo und neue Bilder kommen ins Spiel'],v:[
     ['⏳','12.3','Reste aus 1 bis 10'],
-    ['▶️','12.2','Neue Bilder'],
+    ['▶️','12.5','Kleine Verbesserungen'],
+    ['✅','12.2','Neue Bilder','20.11.2026',['Neun neue Bilder von Timo','Jede Maschine zeigt beim Kauf ihr Bild, das erste Gerät jeder Art kommt in den Winzerboten','Traubenwickler, Mehltau und Kirschessigfliege mit Bild beim ersten Befall','Der Sektkeller mit eigenem Bild beim Kauf und im Winzerboten','Neun Lexikon-Seiten zeigen oben ihr Bild']],
     ['✅','12.1','Sektkeller','20.11.2026',['Sekt nur mit eigenem Sektkeller, zu kaufen ab Winzer','Sektflasche, Korken und Agraffe als Kosten je Flasche','Degorgier- und Abfüllanlage halbiert die Kosten','24 Monate Hefelager bringen mehr Geld','Der Kellermeister macht Sekt schon auf Stufe 1']]]},
   {k:'✅ 11 Weinkompendium',v:[
     ['','11.8','Weinarchiv','20.11.2026'],
