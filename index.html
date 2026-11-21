@@ -2960,7 +2960,7 @@ function vBrett(){
     h+=fenster('brett_'+rl,`${esc(alt?'Sekt':SORTEN[RL[rl]].name)}<small>${alt?'jede Sorte zählt':rn} · ${hab} von ${I.length*3} Siegeln</small>`,`<div class="fzl">${I.map(kompBrettZeile).join('')}</div>`,{buch:false});
   }
   const A=kompAlbumLies(), an=KOMP_ALBUM.filter(id=>A[id]).length, sg=KOMP_ALBUM.reduce((s,id)=>s+Math.min(3,Math.max(0,Math.floor(+A[id]||0))),0), alt=KOMP_ALBUM_ALT.filter(id=>A[id]).length;
-  return h+`<p class="fussnote">📚 Album über alle Partien: ${an} von ${KOMP_ALBUM.length} Weinen entdeckt, ${sg} von ${KOMP_ALBUM.length*3} Siegeln.${alt?`<br>Aus der Zeit vor Version 11.4: ${alt} von ${KOMP_ALBUM_ALT.length} Einträgen.`:''}</p>`;
+  return h+`<p class="fussnote album">📚 Album über alle Partien: ${an} von ${KOMP_ALBUM.length} Weinen entdeckt, ${sg} von ${KOMP_ALBUM.length*3} Siegeln.${alt?`<br>Aus der Zeit vor Version 11.4: ${alt} von ${KOMP_ALBUM_ALT.length} Einträgen.`:''}</p>`;
 }
 // Lexikon, Variante L1: die Wissens-Seiten ohne Siegel, ein Kapitel zum Antippen. Neue Seiten tragen ein gelbes "Neu", bis man sie einmal geöffnet hat.
 // S.lexK merkt die Seiten, die der Spieler kennt. Beim ersten Mal gilt alles, was es dann gibt, als bekannt. Neu sind also nur später dazugekommene Seiten (zum Beispiel die Schädlinge).
@@ -5347,13 +5347,16 @@ const FU_MON={'e1-07':2,'e1-11':6,'e1-10':6,'e1-08':15,'e1-09':16,'e1-12':7,'e1-
 const FU_MON_ALT={'e1-08':3,'e1-09':4,'e1-10':5};
 const fuMon=id=>!S.ein&&FU_MON_ALT[id]!=null?FU_MON_ALT[id]:FU_MON[id];
 const fuGes=id=>!!(S.fu&&S.fu.ges.includes(id));
+// Seit 12.8: echter Bedarf an Leuten für e1-02, also mehr als die Familie allein schafft, schon eingestellte Leute, eine Maschine (braucht einen Fahrer) oder fehlende Leute.
+function fuLeuteBedarf(){const f=leuteFehlen(); return S.ha>ALLEIN_HA||S.fassraum>ALLEIN_FASS||S.flaschen>ALLEIN_FL||S.helfer>0||S.lagerarb>0||S.maschinen.length>0||f.helfer>0||f.lagerarb>0}
 const FU_WANN={
   // Seit 10.2.1: Erst stellt sich der alte Winzer vor (e1-0a), dann erklärt er den Kopf (e1-0b), dann geht es los (Maik 19.11.2026).
   'e1-0a':()=>monatNr()===0,
   // Seit 10.3 (Frage 11): e1-0b steckt in e1-0a.
   'e1-01':()=>monatNr()===0&&fuGes('e1-0a'),
   // Seit 12.6: Bei neuen Partien erst, wenn im Arbeitsamt Erntehelfer oder Lagerarbeiter zu sehen sind.
-  'e1-02':()=>TAB==='stadt'&&SUB==='arbeit'&&(!S.ein||einFrei('helfer')||einFrei('lagerarb')),
+  // Seit 12.8 (Maik 21.11.2026): erst bei echtem Bedarf (fuLeuteBedarf), das Fenster geht weiter mit dem Jungwinzer auf.
+  'e1-02':()=>TAB==='stadt'&&SUB==='arbeit'&&(!S.ein||(einFrei('helfer')||einFrei('lagerarb'))&&fuLeuteBedarf()),
   'e1-03':()=>TAB==='gut'&&SUB==='berg',
   'e1-04':()=>monatNr()===0&&rebenGesamt()>0,
   // Seit 10.2.1: e1-05 erst, wenn wirklich ein roter oder gelber Punkt an einem Reiter leuchtet (Maik 19.11.2026), e1-06 hängt nicht mehr an e1-05.
@@ -5381,10 +5384,12 @@ FU_WANN['z2-05']=()=>monatNr()>=12&&Object.keys(S.laeden||{}).some(r=>S.laeden[r
 // Rang-Neuheiten: r3 ist der Jungwinzer (Index 1 in RAENGE), r4 der Winzer und so weiter. Die n-te Blase eines Rangs frühestens
 // im n-ten Monat nach der Feier, die Bremse verteilt sie ohnehin auf je einen Monat. S.fu.rm merkt den Monat der Feier je Rang.
 const fuRang=id=>{const m=/^r(\d+)-(\d+)$/.exec(id); return m?{r:+m[1]-2,n:+m[2]}:null};
-// Seit 10.3 (C31): Nach einer Feier von Oktober bis Februar rückt die Maschinen-Blase auf den zweiten Platz, damit sie ins Kauf-Fenster (Januar bis März) fällt.
+// Seit 10.3 (C31): Die Maschinen-Blase rückt auf den zweiten Platz, damit sie ins Kauf-Fenster (Januar bis März) fällt.
+// Seit 12.8 (Maik 21.11.2026): nur noch, wenn sie dadurch in Januar bis März fällt und auf ihrem normalen Platz nicht (Feier im Januar: Februar statt April).
 // Seit 10.3 (C32): Blasen zum Befördern warten, bis der Manager eingestellt ist.
 const FU_MASCH_VOR={'r4-4':1,'r5-4':1,'r6-3':1}, FU_BEFOERD={'r6-4':1,'r7-3':1,'r8-3':1,'r9-2':1,'r10-2':1,'r10-3':1};
-const fuFrueh=(id,rm)=>!!FU_MASCH_VOR[id]&&rm!=null&&[9,10,11,0,1].includes(rm%12);
+const fuKauf=m=>m%12<=2;
+const fuFrueh=(id,rm)=>!!FU_MASCH_VOR[id]&&rm!=null&&fuKauf(rm+1)&&!fuKauf(rm+fuRang(id).n-1);
 const fuPlatz=id=>{const x=fuRang(id); return fuFrueh(id,(S.fu.rm||{})[x.r])?1.5:x.n};
 if(typeof FUEHRER!=='undefined') for(const id in FUEHRER){const x=fuRang(id); if(x) FU_WANN[id]=()=>{const rm=(S.fu.rm||{})[x.r]; return rm!=null&&S.rang>=x.r&&monatNr()>=rm+Math.ceil(fuPlatz(id))-1&&(!FU_BEFOERD[id]||mgrSt(FUEHRER[id].s)>=1)}}
 // Warnungen (Paket B): jede nur beim ersten Mal, danach reichen die Punkte. Gesperrte Manager lässt fuSprecher den alten Winzer vertreten.
@@ -5405,7 +5410,21 @@ const fuLange=l=>l.status==='fass'&&l.stufe!=='feder'&&l.fassMonate>=5;
 function fuEhrNeu(f){const e=(S.ehrungen||[]).find(e=>!e.a&&f(e)); return !!e&&e.j!=null&&(S.jahr*12+S.monat)-(e.j*12+e.m)<=1}
 const fuNach=()=>genNr()>=2;
 const fuGenFrisch=()=>S.jahr-START_JAHR<GEN_JAHRE*(genNr()-1)+2;
+// Seit 12.8 (Maik 21.11.2026): r6-5 im fünften Monat nach der Feier zum Weingutsbesitzer, alte Spielstände ohne Monat der Feier sofort (die Bremse verteilt sie).
+const fuR65Zeit=()=>{const rm=(S.fu.rm||{})[R_SEKT_ANLAGE]; return S.rang>=R_SEKT_ANLAGE&&(rm==null||monatNr()>=rm+4)};
+// Seit 12.8: m5 beim ersten Siegel der Partie, nur wenn beim ersten Blick des Spielführers noch keins da war (S.fu.h0). m6 beim ersten Gold,
+// frühestens einen Monat, spätestens zwölf Monate nach m5 (S.fu.m5m, Monat, in dem m5 dran war).
+const fuGold=()=>KOMP_KAP.some(k=>kompIds(k[0]).some(id=>kompSt(id)>=3));
+const fuM6=()=>{const a=S.fu.m5m; if(a==null) return false; const m=monatNr(); return m>=a+1&&(fuGold()||m>=a+12)};
+// Seit 12.8: Blasen, die nicht mehr kommen, weil ihr Inhalt schon erledigt ist, stehen nur im Verlauf.
+const FU_STILL={
+  'r6-5':()=>fuR65Zeit()&&!!S.sektAnlage,
+  'm5':()=>S.fu.h0>0
+};
 Object.assign(FU_WANN,{
+  'r6-5':()=>fuR65Zeit()&&!!S.sektkeller&&!S.sektAnlage,
+  'm5':()=>S.fu.h0===0&&kompZahlen().hab>0,
+  'm6':fuM6,
   'w1':()=>TAB==='stadt'&&SUB==='amt'&&S.lots.some(fuKabFrueh),
   'w2':()=>TAB==='stadt'&&SUB==='amt'&&fuLandZuViel(),
   'w3':()=>S.fu.w3===monatNr(),
@@ -5496,6 +5515,7 @@ const FU_ZEIG={
   'r6-2':{tab:'gut',sub:'berg',sel:['[data-a="fi"][data-id^="feld_"]']},
   'r6-3':{tab:'gut',sub:'maschinen',sel:[fiSel('kauf_laub')]},
   'r6-4':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="handel"]',fiSel('mgr_amt')]},
+  'r6-5':{tab:'keller',sub:'start',sel:['[data-a="sektAnlage"]',fiSel('sekt')]},
   'r7-1':{tab:'stadt',sub:'amt',sel:[fiSel('wettb')]},
   'r7-2':{tab:'gut',sub:'maschinen',sel:[fiSel('kauf_gross')]},
   'r7-3':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="keller"]',fiSel('mgr_amt')]},
@@ -5514,6 +5534,9 @@ const FU_ZEIG={
   'm2':{tab:'stadt',sub:'amt',sel:[fiSel('makler'),fiSel('auktionen')]},
   'm3':{tab:'keller',sub:'buch',sel:['.bzeile[data-a="buchDetail"]','[data-a="archiv"][data-id="brett"]']},
   'm4':{tab:'stadt',sub:'amt',sel:[fiSel('wettb')]},
+  // Seit 12.8: archiv schlägt im Weinarchiv gleich das Siegelbrett auf.
+  'm5':{tab:'keller',sub:'buch',archiv:'brett',sel:[fiSel('brett')]},
+  'm6':{tab:'keller',sub:'buch',archiv:'brett',sel:['.album',fiSel('brett')]},
   'p2':{tab:'stadt',sub:'amt',sel:[fiSel('verband')]},
   'r10-2':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="weingut"]',fiSel('mgr_amt')]},
   'r10-3':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="keller"]',fiSel('mgr_amt')]},
@@ -5540,7 +5563,7 @@ const FU_ZEIG={
   'k11':{tab:'gut',sub:'buero',sel:[fiSel('chronik')]},
   'k12':{sel:['#top .wtr']}
 };
-function fuNeu(){return {an:1,nur:0,ges:[],q:[],mon:-1,rm:{},km:-99}}
+function fuNeu(){return {an:1,nur:0,ges:[],q:[],mon:-1,rm:{},km:-99,h0:0}}
 // Fahrplan der ersten zwei Jahre (Paket A), nur diese Blasen fallen bei alten Spielständen nach der Zeit weg.
 const FU_PLAN=['e1-0a','e1-01','e1-02','e1-03','e1-04','e1-05','e1-06','e1-13','e1-14','e1-15','e1-16','e1-19','k01',...Object.keys(FU_MON)];
 // Alte Spielstände (bis 8.0.1): Wer schon zwei Jahre oder länger spielt, bekommt den Einstieg nicht nachgeliefert.
@@ -5589,6 +5612,13 @@ function fuehrerPruef(){
   let neu=0;
   // Seit 10.3 (C4): Wartende Blasen, deren Anlass vorbei ist, fliegen raus, statt einen Monat zu spät zu kommen. Als gezeigt gelten sie nur,
   // wenn der Spieler sie schon gesehen (FU_SPAET) oder die Sache selbst erledigt hat (FU_ERL), sonst kommen sie beim nächsten Anlass.
+  // Seit 12.8: Siegel beim ersten Blick des Spielführers (alte Spielstände), Blasen nur für den Verlauf, Monat von m5 für m6.
+  if(S.fu.h0==null){S.fu.h0=kompZahlen().hab; neu=1}
+  for(const id in FU_STILL){
+    if(!FUEHRER[id]||id===FU_AKT||S.fu.ges.includes(id)||S.fu.q.includes(id)) continue;
+    let ja=false; try{ja=!!FU_STILL[id]()}catch(e){} if(ja){S.fu.ges.push(id); neu=1}
+  }
+  if(S.fu.m5m==null&&fuGes('m5')){S.fu.m5m=monatNr(); neu=1}
   const alt=S.fu.q.filter(id=>id!==FU_AKT&&FUEHRER[id]&&!fuNochDran(id));
   if(alt.length){
     S.fu.q=S.fu.q.filter(id=>!alt.includes(id)); neu=1;
@@ -5776,7 +5806,9 @@ const FU_ERL={
   'e1-09':()=>S.duengungen>0,
   'e1-13':()=>!S.lots.some(l=>l.status==='trauben'),
   'e1-14':()=>S.lots.some(l=>l.stufe),
-  'e1-15':()=>S.lots.some(l=>l.status==='flasche')
+  'e1-15':()=>S.lots.some(l=>l.status==='flasche'),
+  // Seit 12.8: Wer die Anlage kauft, ist mit r6-5 fertig.
+  'r6-5':()=>!!S.sektAnlage
 };
 function fuErlCheck(){const id=FU_AKT; if(!id||!FU_ERL[id]||!S||!S.fu) return; let ja=false; try{ja=!!FU_ERL[id]()}catch(e){} if(ja) fuFertig()}
 function fuehrerZeig(){
@@ -5902,11 +5934,13 @@ const AKT={
     if(d.id==='alle'&&monatNr()>=24){FU_PLAN.forEach(id=>{if(!f.ges.includes(id)) f.ges.push(id)}); f.q=f.q.filter(id=>!FU_PLAN.includes(id))}
     if(!f.an){FU_PAUSE=false; fuehrerWeg()} else if(FU_AKT&&!fuErlaubt(FU_AKT)) fuehrerWeg(); save(); const y=window.scrollY; render(); window.scrollTo(0,y)},
   // Seit 12.7.2: "Tipps von vorn" leert auch den Verlauf (vl), was fuAlt als erledigt einträgt, zählt nicht mit.
-  fuVorn(){const f=S.fu; if(!f||!f.an) return; const n=fuAlt(); n.an=f.an; n.nur=f.nur; n.geld=f.geld; n.rm=f.rm||{}; n.vl=n.ges.length; n.sp={}; S.fu=n; fuehrerWeg(); FU_PAUSE=false; save(); render();
+  fuVorn(){const f=S.fu; if(!f||!f.an) return; const n=fuAlt(); n.an=f.an; n.nur=f.nur; n.geld=f.geld; n.rm=f.rm||{};
+    // Seit 12.8: Die Siegel-Blasen sind Anlässe und kommen nicht noch einmal.
+    n.h0=f.h0; n.m5m=f.m5m; for(const id of ['m5','m6']) if(f.ges.includes(id)&&!n.ges.includes(id)) n.ges.push(id); n.vl=n.ges.length; n.sp={}; S.fu=n; fuehrerWeg(); FU_PAUSE=false; save(); render();
     meldung('Tipps von vorn','Warnungen und Kniffe kommen wieder, sobald sie passen. In den ersten zwei Jahren kommt auch der Rest des Fahrplans.')},
   // Seit 10.2.1: "Zeig mir, wo" klappt die Blase zum Kopf zusammen, statt sie abzuhaken. Weg ist sie erst mit "Verstanden" oder wenn die Aufgabe erledigt ist.
   // Seit 12.7: "Zeig mir, wo" geht auch bei älteren Tipps aus dem Verlauf. Beim neuen Tipp gilt er damit als gelesen (FU_WO).
-  fuWo(d){const id=d&&d.id||FU_AKT, z=FU_ZEIG[id]; if(!z) return; fuBlaseZu(); if(id===FU_AKT) FU_WO=true; FU_PAUSE=true; fuKopfStell(); if(z.tab){geh(z.tab,z.sub); if(z.sub==='buch') ARCHIV='weine'; if(z.sub==='buero'){const m=/data-id="(\w+)"/.exec((z.sel||[])[0]||''); if(m&&BUERO_WO[m[1]]) BUERO=BUERO_WO[m[1]]} render(); window.scrollTo(0,0)} setTimeout(()=>fuLeuchte(z),z.tab?120:0)},
+  fuWo(d){const id=d&&d.id||FU_AKT, z=FU_ZEIG[id]; if(!z) return; fuBlaseZu(); if(id===FU_AKT) FU_WO=true; FU_PAUSE=true; fuKopfStell(); if(z.tab){geh(z.tab,z.sub); if(z.sub==='buch') ARCHIV=z.archiv||'weine'; if(z.sub==='buero'){const m=/data-id="(\w+)"/.exec((z.sel||[])[0]||''); if(m&&BUERO_WO[m[1]]) BUERO=BUERO_WO[m[1]]} render(); window.scrollTo(0,0)} setTimeout(()=>fuLeuchte(z),z.tab?120:0)},
   // Seit 12.7 (Maik 20.11.2026): Ein Tipp auf den Kopf in der Statusleiste öffnet die Blase jederzeit, noch ein Tipp klappt sie zu.
   // Wie ein Tipp daneben: Wer zuklappt, bekommt den nächsten Tipp erst mit dem Tipp danach (FU_PAUSE).
   fuKopf(){if(FU_OFFEN){fuBlaseZu(); FU_PAUSE=true} else fuOeffne()},
