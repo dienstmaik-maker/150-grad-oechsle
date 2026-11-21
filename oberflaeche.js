@@ -1091,6 +1091,11 @@ function vBerg(){
     const f=S.felder[id], so=SORTEN[id], titel=dot(id)+so.name;
     if(!f.reben&&!sorteFrei(id)){zu+=fenster('feld_'+id,titel,'',{zu:`ab dem Rang ${RAENGE[sorteAb(id)].name}`,i:`${sorteSchild(id)}. ${feldI}`}); continue}
     let z=`<div class="kv"><span>Reben</span><span>${rbn(f.reben)}</span></div><div class="kv"><span>${rolleVon(id)?'Rolle':'Eignung'}</span><span>${rolleVon(id)?rolleVon(id).name:eigText(eignung(id))}</span></div>`;
+    // Seit 13.2.6: Pflegestufe mit Zähler, Deckel und Rebschnitt. Platzhalter-Texte, der Wortlaut kommt in 13.8.
+    if(f.reben) z+=`<div class="kv"><span>Pflege</span><span>${stufeSatz(f.pflSt||0,f.pflZ||0,PFLEGE_SCHWELLE,PFLEGE_STUFEN)}</span></div>
+      <div class="kv"><span>Gute Pflegejahre</span><span>${f.pflZ||0}</span></div>
+      <div class="kv"><span>Deckel</span><span>${deckel(id)}° Öchsle</span></div>
+      <div class="kv"><span>Rebschnitt ${S.jahr}</span><span${f.schnitt!==S.jahr&&m>SCHNITT_BIS?' class="rot"':''}>${f.schnitt===S.jahr?'✂️ geschnitten':m<=SCHNITT_BIS?'offen bis Ende April':'nicht geschnitten, zählt als Patzer'}</span></div>`;
     if(!f.reben) z+=`<div class="kv"><span>Preis je Rebe</span><span>${eur2(rebenPreis(id)/STOCK_F)}</span></div><div class="kv"><span>Ertrag je Rebe</span><span>rund ${String(Math.round(so.ertrag*(R().ertragF||1)/STOCK_F*10)/10).replace('.',',')} l</span></div><div class="fleer" style="margin-top:6px">Nicht angebaut.</div>`;
     else if(f.gelesen) z+=`<div class="mut">✂️ Für dieses Jahr gelesen.</div>${S.lots.some(l=>l.status==='trauben'&&l.sorte===id)?rot('Die Trauben müssen diesen Monat im Keller ins Fass.'):''}`;
     else if(f.teil&&f.menge<=0) z+=`<div class="mut">Ein Teil ist gelesen, der Rest ist verloren.</div>`;
@@ -1113,10 +1118,12 @@ function vBerg(){
       links:pflanz&&frei<10?'Auf deinem Land ist kein Platz mehr frei.':haengt?'Lese ab August.':schnitt?`✂️ Rebschnitt bis Ende April: ${eur(schnittKosten(id))}`:'',
       kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,schnitt&&`<button class="klein" data-a="schneiden" data-id="${id}" ${S.geld<schnittKosten(id)?'disabled':''}>Schneiden</button>`,pflanz&&`<button class="klein" data-a="pflanzen" data-id="${id}" ${frei<10?'disabled':''}>Pflanzen</button>`,pflanz&&f.reben&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
   }
-  h+=fenster('duengung','Düngung',`<div class="kv"><span>Boden</span><span>${S.boden} %</span></div><div class="bar"><i style="width:${S.boden}%"></i></div>
-    <div class="mut ${S.boden<80?'rot':''}">Für die Weinqualität: ${bodenText(S.boden)}</div>
+  h+=fenster('duengung','Düngung',`<div class="kv"><span>Boden-Stufe</span><span>${stufeSatz(S.bodenSt||0,S.bodenZ||0,BODEN_SCHWELLE,BODEN_STUFEN)}</span></div>
+    <div class="kv"><span>Gute Bodenjahre</span><span>${S.bodenZ||0}</span></div><div class="mut">Ein Jahresschnitt ab ${BODEN_GUT} % zählt als gutes Bodenjahr.</div>
+    <div class="kv"><span>Boden</span><span>${S.boden} %</span></div><div class="bar"><i style="width:${S.boden}%"></i></div>
+    <div class="mut ${S.boden<80?'rot':''}">Zustand: ${bodenText(S.boden)}</div>
     ${S.nass!=null?rot(`🌧️ Der Regen im ${MON[S.nass]} hat den Boden ausgewaschen.`):''}
-    <div class="kv"><span>Bodenschnitt dieses Jahr</span><span>${bodenSchnitt()} %</span></div>
+    <div class="kv"><span>Bodenschnitt dieses Jahr</span><span class="${bodenSchnitt()<BODEN_GUT?'rot':''}">${bodenSchnitt()} %</span></div>
     <div class="mut">Zum Jahreswechsel gehen voraussichtlich ${vs[1]+fp} bis ${vs[2]+fp} % der Reben ein${fp?' (mit Frost)':''}.</div>`,{
     hin:[md&&`${WM} düngt beim Weiterblättern, wenn der Boden mager wird.`,bonusMasch('duenger')&&`🚜 Mit dem Düngerstreuer: ${STREU_PLUS} statt ${DUENG_PLUS} Punkte Boden und ${Math.round(STREU_RABATT*100)} % billiger.`],
     links:`Gedüngt: ${S.duengungen} von 3 Mal`,kn:pk('duengen','Düngen',eur(duengKosten()),{aus:S.duengungen>=3||S.boden>=100,arm:S.geld<duengKosten()}),

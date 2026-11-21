@@ -38,8 +38,8 @@ const sternF=(id,r)=>[0,STERN_PREIS_1,STERN_PREIS_2,STERN_PREIS_3][sternZahl(id,
 const bodenText=b=>b>=BODEN_GUT?'sehr gut':b>=80?'gut':'zu mager, Nachdüngen hilft';
 // Stufe zu einem Zählerstand: die höchste Schwelle, die der Zähler erreicht hat (Boden und ab 13.2.2 Rebpflege).
 const stufeZu=(z,SW)=>{let s=0; for(let i=1;i<SW.length;i++) if(z>=SW[i]) s=i; return s};
-// Gute Jahre bis zur nächsten Stufe, null auf der höchsten.
-const stufeRest=(z,SW)=>{const s=stufeZu(z,SW); return s>=SW.length-1?null:SW[s+1]-z};
+// Seit 13.2.6: Satz für den Weinberg aus Stufe s und Zähler z, zum Beispiel "Rebstock, noch 3 gute Jahre bis Premier Cru". Platzhalter, der Wortlaut kommt in 13.8.
+const stufeSatz=(s,z,SW,N)=>{if(s>=N.length-1) return `${N[s]}, höchste Stufe`; const r=SW[s+1]-z; return `${N[s]}, noch ${r} ${r===1?'gutes Jahr':'gute Jahre'} bis ${N[s+1]}`};
 function rbn(n){return num(Math.round(n*STOCK_F))}
 const lohnF=n=>Math.round(n*LOHN_F/10)*10;
 // Seit 11.4: mit Rollen in der Reihenfolge der Liste (Menge, Sekt, Spitze), die Eignung ist dort für alle 1. neu wie bei REG.
