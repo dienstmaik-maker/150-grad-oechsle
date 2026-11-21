@@ -1198,7 +1198,7 @@ function vKellerStart(){
     leer:'Alle Fässer sind leer.',
     hin:[mf&&`🍷 Dein ${KM} kauft fehlende Flaschen dazu.`,lagerKann(2)&&'🍾 Deine Lagerarbeiter füllen angemeldete Weine beim Weiterblättern ab, sobald genug leere Flaschen da sind.',bonusMasch('abfuell')&&`🍾 Mit der Abfüllanlage kommen ${Math.round(abfPlus()*100)} % mehr Flaschen aus jedem Fass.`],
     i:`Der Wein bleibt mindestens einen Monat im Fass und höchstens sieben, danach verdirbt er. Abfüllen geht erst nach der Anmeldung im Rathaus. Abgefüllt wird immer das ganze Fass, ein Liter je Flasche. Mit der Abfüllanlage geht nichts daneben, dann kommen ${Math.round(ABF_PLUS*100)} % mehr Flaschen heraus, dafür brauchst du auch so viele leere.${mf?` Dein ${KM} kauft die Flaschen für angemeldete Fässer, anmelden musst du selbst.`:''}${lagerKann(2)?' Deine Lagerarbeiter füllen angemeldete Fässer von selbst ab.':''}`});
-  const sektI=`Die ${ROLLEN.sekt.name} macht nur Sekt. Nach der Lese geht alles in den Sektkeller, ohne Grundwein, die Lagerarbeiter stellen ihn her. Er reift ${SEKT_REIFE} Monate, mit ${HEFE_LANG} Monaten auf der Hefe bekommt er ${HEFE_LANG_QP} Qualitätspunkte mehr. Das Hefelager wählst du bei der Lese.`;
+  const sektI=`Die ${ROLLEN.sekt.name} macht nur Sekt. Nach der Lese legst du die Trauben noch im selben Monat in den Sektkeller, ohne Grundwein, und ist die Hefezeit um, füllst du ihn ab. Ab Lagerarbeiter Stufe 3 machen das deine Lagerarbeiter. Er reift ${SEKT_REIFE} Monate, mit ${HEFE_LANG} Monaten auf der Hefe bekommt er ${HEFE_LANG_QP} Qualitätspunkte mehr. Das Hefelager wählst du bei der Lese.`;
   const vorrat=fenster('vorrat','Vorrat',`<div class="kv"><span>Fassraum</span><span>${num(bel)} von ${num(S.fassraum)} l</span></div><div class="kv"><span>Leere Flaschen (1 l)</span><span>${num(S.flaschen)}</span></div>`,
     {buch:'lager',i:'Fassraum und leere Flaschen kaufst du im Lager, beides braucht Lagerarbeiter. Fassraum am besten vor der Lese kaufen, Flaschen vor dem Abfüllen.'});
   // Seit 12.1 (Maik 20.11.2026): eine Karte Sektkeller. Vor dem Kauf nur der Kaufknopf, danach die Weine für Sekt und, sobald der Rang reicht, der Ausbau-Knopf für die Anlage.
@@ -1207,10 +1207,17 @@ function vKellerStart(){
     links:'Ohne Sektkeller gibt es keinen Sekt.',
     kn:pk('sektKeller','Kaufen',eur(SEKTKELLER_PREIS),{klein:'einmal',arm:S.geld<SEKTKELLER_PREIS}),
     i:`Im Sektkeller gärt dein Wein ein zweites Mal, diesmal in der Flasche. Du kaufst ihn einmal für ${eur(SEKTKELLER_PREIS)}, danach machst du hier Sekt. ${sektI} Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche.`})+vorrat;
-  const an=!!S.sektAnlage, ak=!an&&frei('sekt_anlage');
-  h+=fenster('sekt','Sektkeller',sektAufHefe().map(l=>{const n=lager(l).min-l.flMonate; return fz(dot(l.sorte)+lotName(l),`${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte`,`Noch ${n} ${n===1?'Monat':'Monate'} auf der Hefe.`,'')}),{
+  const an=!!S.sektAnlage, ak=!an&&fuR65Zeit();   // 13.5.8: frei ist hier der freie Fassraum, deshalb über fuR65Zeit (Fehler seit 13.5.1)
+  // Seit 13.5.8: Sekt-Trauben in den Sektkeller legen und fertigen Sekt abfüllen, von Hand bis Lagerarbeiter Stufe 3.
+  const l3=lagerKann(3), sk=sektKosten();
+  h+=fenster('sekt','Sektkeller',[...sektTrauben().map(l=>fz(dot(l.sorte)+lotName(l),`${num(l.liter)} Flaschen · frisch gelesen · ${l.hefe||SEKT_REIFE} Monate auf der Hefe gewählt`,
+      l3?'Deine Lagerarbeiter legen ihn beim Weiterblättern in den Sektkeller.':`<span class="rot">Muss diesen Monat in den Sektkeller, sonst verdirbt alles.</span> Sektflasche, Korken und Agraffe kosten ${eur(Math.round(l.liter*sk))}.`,
+      `<button class="klein" data-a="sektUmlagern" data-id="${l.id}">In den Sektkeller</button>`)),
+    ...sektAufHefe().map(l=>{const n=lager(l).min-l.flMonate, fe=n<=0; return fz(dot(l.sorte)+lotName(l),`${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte`,
+      fe?(l3?'Die Hefezeit ist um, deine Lagerarbeiter füllen ihn beim Weiterblättern ab.':'Die Hefezeit ist um, jetzt abfüllen. Erst danach kannst du ihn verkaufen.'):`Noch ${n} ${n===1?'Monat':'Monate'} auf der Hefe.${l3&&n===1?' Deine Lagerarbeiter füllen ihn beim Weiterblättern ab.':''}`,
+      ...(fe?[`<button class="klein" data-a="sektAbfuellen" data-id="${l.id}">Abfüllen</button>`]:[]))})],{
     leer:'Gerade liegt kein Sekt auf der Hefe. Neuer Sekt kommt mit der Lese der Sekt-Sorte.',
-    hin:[an&&`🍾 Mit der ${SEKT_ANLAGE_NAME} kostet jede Flasche nur ${eur2(sektKosten())}.`],
+    hin:[l3&&'🥂 Deine Lagerarbeiter legen den Sekt in den Sektkeller und füllen ihn ab, wenn die Hefezeit um ist.',an&&`🍾 Mit der ${SEKT_ANLAGE_NAME} kostet jede Flasche nur ${eur2(sektKosten())}.`],
     stand:sektAnsText(),
     links:ak?`Ausbau: ${SEKT_ANLAGE_NAME}, jede Flasche kostet dann die Hälfte.`:'',
     kn:ak?pk('sektAnlage','Ausbauen',eur(SEKT_ANLAGE_PREIS),{klein:'Anlage',arm:S.geld<SEKT_ANLAGE_PREIS}):null,
@@ -2269,7 +2276,7 @@ const AKT={
     if(sektSorte(d.id)){
       const l=feldLiter(f,'alles'), k=Math.round(l*sektKosten());
       const opt=[[SEKT_REIFE,`${SEKT_REIFE} Monate reifen`],[HEFE_LANG,`${HEFE_LANG} Monate auf der Hefe`]].map(([h,t])=>`<button class="wahl" data-a="sektLeseJa" data-id="${d.id}" data-h="${h}" ${l<=0||!S.sektkeller?'disabled':''}><b>${t}</b><br><span class="mut">${num(l)} Flaschen Sekt${h>SEKT_REIFE?` · ${HEFE_LANG_QP} Qualitätspunkte mehr`:''} · verkaufsreif ${inMonaten(h)}</span></button>`).join('');
-      return openSheet(`${sbild('sektkeller')}<h3>${so.name} lesen</h3><p class="mut">Die ${ROLLEN.sekt.name} macht nur Sekt. Nach der Lese geht alles in deinen Sektkeller, die Lagerarbeiter stellen den Sekt her. Sektflasche, Korken und Agraffe kosten ${eur(k)}. Du wählst nur, wie lange er reift.</p>${S.sektkeller?'':'<p class="rot">Ohne Sektkeller gibt es keinen Sekt.</p>'}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0%. Den Rest liest keiner, er ist verloren.</p>`:''}${opt}${mib('lese')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
+      return openSheet(`${sbild('sektkeller')}<h3>${so.name} lesen</h3><p class="mut">Die ${ROLLEN.sekt.name} macht nur Sekt. Nach der Lese legst du die Trauben noch diesen Monat in den Sektkeller${lagerKann(3)?', das machen deine Lagerarbeiter':''}. Sektflasche, Korken und Agraffe kosten dann ${eur(k)}. Hier wählst du nur, wie lange er auf der Hefe liegt.</p>${S.sektkeller?'':'<p class="rot">Ohne Sektkeller gibt es keinen Sekt.</p>'}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0%. Den Rest liest keiner, er ist verloren.</p>`:''}${opt}${mib('lese')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
     }
     const opt=['reif','ueber','alles'].map(la=>{const b=besteStufe(feldQ(f,la)),l=feldLiter(f,la);
       return `<button class="wahl" data-a="leseFrage" data-id="${d.id}" data-la="${la}" ${l<=0?'disabled':''}><b>${LESE[la]}</b><br><span class="mut">${num(l)}\u00a0l mit ${feldQ(f,la).oe}° Öchsle · reicht für: ${b?stufeText(b,feldQ(f,la).oe):'nichts'}${b?`<br>💶 Wert rund ${eur(leseWert(d.id,la,b,l))}<br>${verkaufAb(d.id,b)}`:''}</span></button>`}).join('');
@@ -2283,7 +2290,10 @@ const AKT={
   // Eine Lese je Feld und Jahr: Die Leseart nimmt das ganze Feld. Alte Spielstände mit angefangener Teil-Lese lesen so den Rest.
   // Version 4.4: danach im Weinberg bleiben und neu zeichnen, damit der Lesen-Knopf sofort verschwindet.
   sektLeseJa(d){const f=S.felder[d.id]; closeSheet(); if(!sektSorte(d.id)||feldLiter(f,'alles')<=0) return; const t=TAB,s=SUB,y=window.scrollY, l=lese(d.id,'alles',1,+d.h); TAB=t; SUB=s; save(); render(); window.scrollTo(0,y);
-    if(l) meldung('Sekt im Keller',`${num(l.liter)} Flaschen ${lotName(l)} liegen jetzt auf der Hefe, verkaufsreif ${inMonaten(lager(l).min)}.${l.ans?` +${l.ans} Ansehen für den ersten Sekt des Jahres.`:''}`,'sektkeller')},
+    if(l) meldung('Sekt-Trauben im Keller',`${num(l.liter)} Flaschen ${lotName(l)} warten im Keller. ${lagerKann(3)?'Deine Lagerarbeiter legen sie beim Weiterblättern in den Sektkeller.':'Leg sie noch diesen Monat im Keller in den Sektkeller, sonst verderben sie.'} Nach ${lager(l).min} Monaten auf der Hefe wird abgefüllt.`,'sektkeller')},
+  // Seit 13.5.8: die zwei Handgriffe beim Sekt, bis Lagerarbeiter Stufe 3.
+  sektUmlagern(d){const l=lot(d.id); if(!sektUmlagern(l)) return; save(); render(); meldung('Sekt auf der Hefe',`${num(l.liter)} Flaschen ${lotName(l)} liegen jetzt im Sektkeller, abfüllen kannst du ${inMonaten(lager(l).min)}.${l.ans?` +${l.ans} Ansehen für den ersten Sekt des Jahres.`:''}`,'sektkeller')},
+  sektAbfuellen(d){const l=lot(d.id); if(!l||!sektFertig(l)) return; sektAbfuellen(l); save(); render()},
   leseJa(d){const f=S.felder[d.id]; closeSheet(); if(feldLiter(f,d.la)<=0) return; const t=TAB,s=SUB,y=window.scrollY; lese(d.id,d.la,1); TAB=t; SUB=s; save(); render(); window.scrollTo(0,y)},
   /* ---- Hintertür: Panschen ---- */
   zuckern(d){

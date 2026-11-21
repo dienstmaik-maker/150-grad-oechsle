@@ -124,7 +124,7 @@ const FREI={wein_feder:{r:0},wein_tafel:{r:1},wein_qba:{r:2},wein_kab:{r:0},wein
   // Seit 13.5.1 (Bauplan 13.5, Maik 21.11.2026): Stufen der Leute, Manager und Maschinen. pfl:[Rolle, Stufe] ist der zweite Auslöser neben Rang plus Abstand,
   // er gilt, sobald die Sorte dieser Rolle die Pflegestufe erreicht hat. Leute und Manager fallen nie zurück (S.leuteSt, S.manager), auch wenn die Pflege später fällt.
   // Eine höhere Stufe bringt die fehlenden mit, so bleibt die Reihenfolge immer gleich. Namen und Zeilen im Winzerboten sind Platzhalter bis 13.8.
-  helfer1:{r:2},helfer2:{pfl:['menge',3]},helfer3:{r:5},lagerarb1:{pfl:['menge',1]},lagerarb2:{r:3,ab:2,name:'Lagerarbeiter Stufe 2'},lagerarb3:{r:4},
+  helfer1:{r:2},helfer2:{pfl:['menge',3]},helfer3:{r:5},lagerarb1:{pfl:['menge',1]},lagerarb2:{r:3,ab:2,name:'Lagerarbeiter Stufe 2'},lagerarb3:{pfl:['sekt',1]},
   mgr_handel1:{r:2,ab:2,name:'die Handels-Managerin',bote:'🤝 Ab heute arbeitet eine Handels-Managerin für dich. Sie kümmert sich um den Verkauf.'},
   mgr_handel2:{r:4,ab:3,name:'Stufe 2 für die Handels-Managerin',bote:'🤝 Deine Handels-Managerin steigt auf Stufe 2.'},
   mgr_handel3:{r:6,ab:4,name:'Stufe 3 für die Handels-Managerin',bote:'🤝 Deine Handels-Managerin steigt auf Stufe 3.'},
@@ -143,9 +143,13 @@ const FREI={wein_feder:{r:0},wein_tafel:{r:1},wein_qba:{r:2},wein_kab:{r:0},wein
   masch_laub:{r:7,ab:7,name:'der Laubschneider',bote:'🚜 Beim Landhandel steht jetzt ein Laubschneider für dich. Kaufen kannst du ihn von Januar bis März.'}};
 // Seit 13.5.1: Stufen der Erntehelfer und Lagerarbeiter, was sie je Stufe können, die Zeile im Winzerboten je Stufe und die kleine Geschichte des ersten Menschen der Gruppe.
 // Sie steigen von selbst auf, ohne Kauf und ohne höheren Lohn. Platzhalter-Texte bis 13.8.
-const LEUTE_ST={helfer:{name:'Erntehelfer',kann:['düngen','auch der Rebschnitt','auch nachpflanzen']},lagerarb:{name:'Lagerarbeiter',kann:['keltern','auch abfüllen und Etiketten kleben','auch den Sekt herstellen']}};
+// Seit 13.5.8 (Maik 22.11.2026, Entscheidung 7): Die Erntehelfer düngen, sobald der Boden auf HELFER_DUENG Prozent fällt (vorher 70), damit der Jahresschnitt
+// sicher über BODEN_GUT bleibt und der Boden-Zähler wie bei einem guten Spieler steigt. Startwert, gemessen in 13.5.8 gegen den Test-Spieler.
+// Lagerarbeiter Stufe 3 kommt mit dem Rebstock der Sekt-Sorte (Entscheidung 6, Wunschwert Jahr 26), bis dahin macht der Spieler den Sekt von Hand.
+const HELFER_DUENG=80;
+const LEUTE_ST={helfer:{name:'Erntehelfer',kann:['düngen','auch der Rebschnitt','auch nachpflanzen']},lagerarb:{name:'Lagerarbeiter',kann:['keltern','auch abfüllen und Etiketten kleben','auch den Sekt in den Sektkeller legen und abfüllen']}};
 const LEUTE_BOTE={helfer:['🧑‍🌾 Deine Erntehelfer düngen ab jetzt selbst, sobald der Boden mager wird.','✂️ Deine Erntehelfer können jetzt auch den Rebschnitt. Bis Ende April ist jede Sorte geschnitten.','🌱 Deine Erntehelfer pflanzen jetzt auch nach. Du sagst nur, welche Sorte und wie viel.'],
-  lagerarb:['🛢️ Deine Lagerarbeiter keltern ab jetzt die Lese selbst, sobald Fassraum frei ist.','🍾 Deine Lagerarbeiter füllen jetzt auch ab und kleben die Etiketten, sobald ein Wein angemeldet ist und Flaschen da sind.','🥂 Deine Lagerarbeiter stellen jetzt auch den Sekt her. Ob 9 oder 24 Monate auf der Hefe, sagst weiter du.']};
+  lagerarb:['🛢️ Deine Lagerarbeiter keltern ab jetzt die Lese selbst, sobald Fassraum frei ist.','🍾 Deine Lagerarbeiter füllen jetzt auch ab und kleben die Etiketten, sobald ein Wein angemeldet ist und Flaschen da sind.','🥂 Deine Lagerarbeiter legen jetzt auch den Sekt in den Sektkeller und füllen ihn ab, wenn die Hefezeit um ist. Ob 9 oder 24 Monate auf der Hefe, sagst weiter du.']};
 const LEUTE_ERST={helfer:'🧑‍🌾 Ein Junge aus dem Dorf steht am Hoftor und fragt nach Arbeit im Weinberg. Er ist dein erster Erntehelfer.',
   lagerarb:'🛢️ Eine Frau aus dem Dorf hat früher in einer Kellerei gearbeitet und fragt nach Arbeit. Sie ist deine erste Lagerarbeiterin.'};
 const LESE={reif:'nur reife Trauben',ueber:'nur überreife Trauben',alles:'reife und überreife'};
