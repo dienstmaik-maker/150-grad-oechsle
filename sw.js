@@ -1,9 +1,11 @@
 // Helfer für die App: legt alle Dateien des Spiels aufs Gerät, damit es ohne Netz läuft.
 // Die Spielseite (index.html), das Buch (anleitung.js) und seit 8.1 die Sprechblasen (fuehrer.js) kommen immer zuerst frisch aus dem Netz, so kommen neue Fassungen von selbst an. Ohne Netz gilt die gespeicherte.
+// Seit 13.1 steht der Code in zahlen.js, kern.js und oberflaeche.js. Sie kommen wie die Seite zuerst frisch, sonst sähe ein Handy einen halben alten Stand.
 // Bilder und Töne kommen aus dem Speicher. Ändert sich eines davon, die Nummer in LAGER erhöhen, dann lädt das Gerät alles neu.
 const LAGER = 'oechsle-43';
+const FRISCH = ['anleitung.js', 'fuehrer.js', 'zahlen.js', 'kern.js', 'oberflaeche.js'];
 const DATEIEN = [
-  './', 'index.html', 'manifest.webmanifest', 'anleitung.js', 'fuehrer.js',
+  './', 'index.html', 'manifest.webmanifest', 'anleitung.js', 'fuehrer.js', 'zahlen.js', 'kern.js', 'oberflaeche.js',
   'bilder/amt.jpg',
   'bilder/arbeit.jpg',
   'bilder/aufstieg.jpg',
@@ -177,7 +179,8 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const r = e.request, u = new URL(r.url);
   if (r.method !== 'GET' || u.origin !== location.origin) return;
-  e.respondWith(r.mode === 'navigate' || u.pathname.endsWith('/index.html') ? seite('index.html') : u.pathname.endsWith('/anleitung.js') ? seite('anleitung.js') : u.pathname.endsWith('/fuehrer.js') ? seite('fuehrer.js') : datei(r, u));
+  const name = u.pathname.split('/').pop();
+  e.respondWith(r.mode === 'navigate' || u.pathname.endsWith('/index.html') ? seite('index.html') : FRISCH.includes(name) ? seite(name) : datei(r, u));
 });
 
 // Spielseite und Buch: erst das Netz (höchstens 3 Sekunden warten), sonst die gespeicherte Fassung.
