@@ -2343,6 +2343,9 @@ function lagerArbeit(L){
   if(st>=2) for(const l of S.lots.filter(l=>l.status==='fass'&&l.stufe)) if(S.flaschen>=abfFl(l)){const an=bonusMasch('abfuell'); fuelleAb(l); L.push(`${lotName(l)} abgefüllt${an?' mit der Abfüllanlage':''}`)}
 }
 const lagerKann=n=>!!S.lagerarb&&leuteSt('lagerarb')>=n;
+// Seit 13.5.7: was die Leute schon können und was als Nächstes kommt, für "Deine Leute" im Betrieb. Platzhalter bis 13.8.
+function leuteStufeText(k){const st=leuteSt(k), T=LEUTE_ST[k], n=st+1;
+  return (st?`Können schon: ${T.kann.slice(0,st).join(', ')}.`:'Noch machst du ihre Arbeit selbst.')+(n<=3?` Stufe ${n} (${T.kann[n-1]}) kommt ${freiText(k+n)}.`:'')}
 // Seit 12.6.4 (Maik 20.11.2026, Prüfliste Einstieg): ruhiger Einstieg. Nur neue Partien haben S.ein, darin S.ein.f mit den Fenstern, die schon frei sind.
 // Ein Fenster aus EIN_REGEL bleibt weg, bis seine Bedingung einmal stimmt, danach bleibt es für immer. Alte Spielstände ohne S.ein sehen alles wie vorher.
 // "Deine Weine" gibt es zweimal (Weinarchiv und Großhandel), im Großhandel heißt die Regel weine_gh.
