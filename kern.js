@@ -2290,7 +2290,8 @@ const fuR65Zeit=()=>{const rm=(S.fu.rm||{})[R_SEKT_ANLAGE]; return S.rang>=R_SEK
 const fuGold=()=>KOMP_KAP.some(k=>kompIds(k[0]).some(id=>kompSt(id)>=3));
 const fuM6=()=>{const a=S.fu.m5m; if(a==null) return false; const m=monatNr(); return m>=a+1&&(fuGold()||m>=a+12)};
 const fuGenAnk=()=>S.jahr-START_JAHR>=GEN_JAHRE*genNr()-GEN_VORAUS;
-function fuNeu(){return {an:1,nur:0,ges:[],q:[],mon:-1,rm:{},km:-99,h0:0}}
+// Seit 13.3.6: Neue Partien starten mit FU_START (im Umbau 0, also ohne Spielführer), einschalten geht im Fenster Spielführer.
+function fuNeu(){return {an:FU_START,nur:0,ges:[],q:[],mon:-1,rm:{},km:-99,h0:0}}
 // Alte Spielstände (bis 8.0.1): Wer schon zwei Jahre oder länger spielt, bekommt den Einstieg nicht nachgeliefert.
 // Darunter fällt weg, was schon vorbei ist, der Rest des Fahrplans kommt noch. Neuheiten schon erreichter Ränge kommen nicht nach,
 // Warnungen und Kniffe kommen alle (Paket B).
