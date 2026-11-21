@@ -1094,7 +1094,7 @@ function vBerg(){
     if(!f.reben) z+=`<div class="kv"><span>Preis je Rebe</span><span>${eur2(rebenPreis(id)/STOCK_F)}</span></div><div class="kv"><span>Ertrag je Rebe</span><span>rund ${String(Math.round(so.ertrag*(R().ertragF||1)/STOCK_F*10)/10).replace('.',',')} l</span></div><div class="fleer" style="margin-top:6px">Nicht angebaut.</div>`;
     else if(f.gelesen) z+=`<div class="mut">✂️ Für dieses Jahr gelesen.</div>${S.lots.some(l=>l.status==='trauben'&&l.sorte===id)?rot('Die Trauben müssen diesen Monat im Keller ins Fass.'):''}`;
     else if(f.teil&&f.menge<=0) z+=`<div class="mut">Ein Teil ist gelesen, der Rest ist verloren.</div>`;
-    else if(m<5) z+=`<div class="kv"><span>Stand</span><span>${phase[m]}${f.jung?`, ${rbn(f.jung)} junge Reben`:''}</span></div>`;
+    else if(m<5) z+=`<div class="kv"><span>Stand</span><span>${phase[m]}</span></div>`;
     else if(m===5) z+=`<div class="kv"><span>Fruchtansatz</span><span>rund ${num(f.menge)} l erwartet</span></div>`;
     else if(f.menge<=0) z+=`<div class="mut">Keine Trauben mehr am Stock.</div>`;
     else{
@@ -2194,15 +2194,15 @@ const AKT={
     const so=SORTEN[d.id], pr=rebenPreis(d.id), frei=S.ha*HA_REBEN-rebenGesamt(), kap=helferReben()-rebenGesamt(), max=Math.min(frei,kap,Math.floor(S.geld/pr/10)*10);
     if(frei>=10&&kap<10) return leuteSheet('Zu wenige Erntehelfer',`<p>${helferRegel()}. Deine Leute reichen für ${rbn(helferReben())} Reben, gepflanzt sind ${rbn(rebenGesamt())}.</p><p class="mut">Stell erst beim Arbeitsamt ein${S.rang>=MASCH.klein.rang?` oder kauf eine Erntemaschine, mit ${MASCH.klein.fahrer} Fahrer deckt sie ${MASCH_HELFER} Hektar ab`:''}.</p>`);
     if(max<10) return meldung('Geht gerade nicht',`Dir fehlt das Geld oder der Platz für ${rbn(10)} Reben.`);
-    mengeSheet({titel:`${so.name} pflanzen`,text:`${eur2(pr/STOCK_F)} je Rebe${pr!==so.preis?`, üblich sind ${eur2(so.preis/STOCK_F)}`:''}. Junge Reben tragen im ersten Jahr die Hälfte. Deine Erntehelfer reichen noch für ${rbn(kap)} Reben${kap<frei?', für mehr musst du erst einstellen':''}.`,max,step:10,start:Math.min(max,1000),okText:'Pflanzen',zahl:rbn,
+    mengeSheet({titel:`${so.name} pflanzen`,text:`${eur2(pr/STOCK_F)} je Rebe${pr!==so.preis?`, üblich sind ${eur2(so.preis/STOCK_F)}`:''}. Neue Reben übernehmen die Pflegestufe der Sorte. Deine Erntehelfer reichen noch für ${rbn(kap)} Reben${kap<frei?', für mehr musst du erst einstellen':''}.`,max,step:10,start:Math.min(max,1000),okText:'Pflanzen',zahl:rbn,
       info:n=>`<b>${rbn(n)} Reben</b>kostet ${eur(n*pr)}`,
-      ok:n=>{fx('stempel');zahle(Math.round(n*pr*100)/100);const f=S.felder[d.id];f.reben+=n;f.jung+=n;if(S.verlust&&S.verlust[d.id])S.verlust[d.id]=Math.max(0,S.verlust[d.id]-n)}});
+      ok:n=>{fx('stempel');zahle(Math.round(n*pr*100)/100);const f=S.felder[d.id];f.reben+=n;if(S.verlust&&S.verlust[d.id])S.verlust[d.id]=Math.max(0,S.verlust[d.id]-n)}});
   },
   roden(d){
     const f=S.felder[d.id];
     mengeSheet({titel:`${SORTEN[d.id].name} roden`,text:`Roden kostet ${eur2(.5/STOCK_F)} je Rebe. Die Fläche wird frei für andere Sorten.`,max:f.reben,step:10,start:0,okText:'Roden',zahl:rbn,
       info:n=>`<b>${rbn(n)} Reben</b>kostet ${eur(n*.5)}`,
-      ok:n=>{zahle(n*.5);f.reben-=n;f.jung=Math.min(f.jung,f.reben)}});
+      ok:n=>{zahle(n*.5);f.reben-=n}});
   },
   lesen(d){
     const f=S.felder[d.id], so=SORTEN[d.id];
@@ -2247,7 +2247,8 @@ const AKT={
     const x=lot(d.id), y=lot(d.b); if(!x||!y||!mischbar(x)||!mischbar(y)) return; const m=mischung(x,y), a=m.a;
     if(S.geld<m.schmier) return;
     closeSheet(); fx('stempel'); zahle(m.schmier);
-    Object.assign(a,{liter:m.liter,oe:m.oe,qp:m.qp,fassMonate:Math.max(a.fassMonate,m.b.fassMonate),pansch:true});
+    // Seit 13.2.2: Der Verschnitt trägt die niedrigere Pflege- und Boden-Stufe der beiden Weine, für Preisbonus und Namen.
+    Object.assign(a,{liter:m.liter,oe:m.oe,qp:m.qp,fassMonate:Math.max(a.fassMonate,m.b.fassMonate),pansch:true,pfl:Math.min(a.pfl||0,m.b.pfl||0),bst:Math.min(a.bst||0,m.b.bst||0)});
     S.lots=S.lots.filter(l=>l!==m.b); save();render();
     meldung('Verschnitten',`${lotName(a)}: ${num(a.liter)}\u00a0l mit ${a.qp} Qualitätspunkten. Bis er verkauft ist, darf ihn kein Prüfer finden.`,'fassgang');
   },

@@ -110,6 +110,14 @@ const STOCK_F=4; const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER
 // ihre Schwelle in BODEN_SCHWELLE erreicht. Je Stufe BODEN_ST_OE Grad mehr Deckel (ab 13.2.3), BODEN_ST_MENGE mehr Menge und BODEN_ST_QP Qualitätspunkte.
 // Startwerte, Stellschrauben für 14.2.
 const BODEN_STUFEN=['Rohboden','Fruchtboden','Gutsboden','Terroir'], BODEN_SCHWELLE=[0,10,37,85], BODEN_GUT=90, BODEN_ST_OE=4, BODEN_ST_MENGE=.05, BODEN_ST_QP=4;
+// Seit 13.2.2 (Bauplan 13.2): Rebpflege je Sorte (f.pflSt, Zähler f.pflZ), das Rebalter mit Jungreben ist weg. Am Jahresende zählt eine Sorte mit Reben,
+// die bis Ende April geschnitten wurde (f.schnitt), PFLEGE_GUT, sonst geht der Zähler um PFLEGE_PATZER zurück, höchstens bis 0. Die Stufe ist die höchste
+// Schwelle in PFLEGE_SCHWELLE, die der Zähler erreicht, sie fällt also erst, wenn er darunter rutscht. Neue Reben übernehmen die Stufe ihrer Sorte.
+// Menge: Der Setzling trägt SETZ_MENGE nach seinem Zählerstand (0 bis 4), ab Rebstock gilt PFLEGE_MENGE je Rolle für Rebstock, Premier Cru, Grand Cru.
+// Punkte PFLEGE_QP je Rolle und Stufe, Preisbonus PFLEGE_PREIS je Stufe nur bei der Spitzen-Sorte, je Stufe PFLEGE_ST_OE Grad mehr Deckel (ab 13.2.3).
+const PFLEGE_STUFEN=['Setzling','Rebstock','Premier Cru','Grand Cru'], PFLEGE_SCHWELLE=[0,5,12,20], PFLEGE_GUT=1, PFLEGE_PATZER=2, PFLEGE_ST_OE=4;
+const SETZ_MENGE=[.4,.48,.55,.63,.7], PFLEGE_MENGE={menge:[1,1,1],sekt:[1,1,1],spitze:[1,.9,.8]};
+const PFLEGE_QP={menge:[0,1,3,6],sekt:[0,1,3,6],spitze:[0,2,6,12]}, PFLEGE_PREIS={spitze:[0,0,.05,.15]};
 // Reben-Abnutzung: Zum Jahreswechsel geht je Sorte ein Teil der Reben ein. VERLUST nennt je Stufe [ab Bodenschnitt, von Prozent, bis Prozent].
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.

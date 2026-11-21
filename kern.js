@@ -15,6 +15,12 @@ const zuckerIm=(id,r)=>SORTEN[id].rolle?SORTEN[id].zucker:eignung(id,r)>=1?0:Mat
 const eigText=e=>e>=1?'★★★ sehr gut geeignet':e>=.85?'★★ gut geeignet':'★ geht noch';
 // Seit 11.4: das Schild einer Sorte. Mit Rolle steht dort die Rolle und was sie kann, sonst die Sterne im Gebiet.
 const rolleVon=id=>ROLLEN[(SORTEN[id]||{}).rolle];
+// Seit 13.2.2: Schlüssel der Rolle für die Tabellen der Rebpflege, Sorten ohne Rolle rechnen wie die Menge-Sorte.
+const rolleK=id=>(SORTEN[id]||{}).rolle||'menge';
+// Mengen-Faktor der Rebpflege: Setzling nach Zählerstand, ab Rebstock je Rolle.
+const pflegeMenge=(f,id)=>{const st=f.pflSt||0; return st?PFLEGE_MENGE[rolleK(id)][st-1]:SETZ_MENGE[Math.min(SETZ_MENGE.length-1,f.pflZ||0)]};
+const pflegeQP=(id,st)=>PFLEGE_QP[rolleK(id)][st||0];
+const pflegePreis=(id,st)=>((PFLEGE_PREIS[rolleK(id)]||[])[st||0])||0;
 const sorteSchild=(id,r)=>rolleVon(id)?`${rolleVon(id).name}: ${rolleVon(id).satz}`:eigText(eignung(id,r));
 const sternZahl=(id,r)=>{const e=eignung(id,r); return e>=1?3:e>=.85?2:1};
 const sternF=(id,r)=>[0,STERN_PREIS_1,STERN_PREIS_2,STERN_PREIS_3][sternZahl(id,r)];
@@ -485,7 +491,7 @@ function reifeFaktor(l){const L=lager(l);return l.status==='flasche'?Math.min(4,
 function lotWert(l){
   if(l.status==='trauben') return 0;
   if(!l.stufe) return l.liter*2;
-  return l.liter*STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*reifeFaktor(l)*sektF(l)*sternF(l.sorte)*(l.status==='fass'?.7:1);
+  return l.liter*STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*(1+pflegePreis(l.sorte,l.pfl))*reifeFaktor(l)*sektF(l)*sternF(l.sorte)*(l.status==='fass'?.7:1);
 }
 function vermoegen(){return Math.round(S.geld-(S.kredit?S.kredit.rest:0)+S.ha*LANDWERT+S.maschinen.reduce((a,m)=>a+mTyp(m).preis*.5*m.zustand/100,0)+Math.min(12*marktFrei(),WEIN_WERT*S.lots.reduce((a,l)=>a+lotWert(l),0)))}
 function gVerm(g){return Math.round(g.geld-g.kredit+g.ha*LANDWERT)}
@@ -848,7 +854,8 @@ function wachse(m){
   for(const [si,id] of reg.sorten.entries()){
     const f=S.felder[id], so=SORTEN[id]; if(!f.reben) continue;
     if((m===3||m===4)&&w==='frost'){f.frostF=.7; L.push(`Spätfrost schädigt die Blüte beim ${so.name}.`)}
-    if(m===5) f.menge=Math.round((f.reben-f.jung+f.jung*.5)*so.ertrag*(reg.ertragF||1)*(.6+.4*S.boden/100)*(1+BODEN_ST_MENGE*(S.bodenSt||0))*f.frostF*festR(.9,1.1,fest(6,si,S.jahr,m)));
+    // Seit 13.2.2: statt der Jungreben der Mengen-Faktor der Rebpflege (pflegeMenge).
+    if(m===5) f.menge=Math.round(f.reben*pflegeMenge(f,id)*so.ertrag*(reg.ertragF||1)*(.6+.4*S.boden/100)*(1+BODEN_ST_MENGE*(S.bodenSt||0))*f.frostF*festR(.9,1.1,fest(6,si,S.jahr,m)));
     if(m===6){f.oe=OE_START+zuckerIm(id)+reg.warm+wbonus(w)+festI(-2,2,fest(5,si,S.jahr,m))+(S.spitze?SPITZE_OE:0); f.reif=5; f.ueber=0; f.plus=0}
     if(m>=7&&f.menge>0&&!f.gelesen){
       // f.plus merkt den Öchsle-Zuwachs des Monats für die Infoseite.
@@ -1006,8 +1013,8 @@ function maschAbnutzung(reben,M){
   }
 }
 // Version 4.4: ungefährer Listenwert einer Lese als Flaschenwein der Stufe st, ohne Reife und Marktlage.
-function leseWert(id,la,st,liter){const q=feldQ(S.felder[id],la), qp=qpFuer({sorte:id,oe:q.oe,sonne:S.sonne,boden:S.boden,bst:S.bodenSt||0,laub:S.laubJahr===S.jahr},st);
-  return Math.round(liter*STUFEN[st].preis*(st==='eis'?EIS_WERT[eisStufe(q.oe)].f:1)*(1+qp/100)*sternF(id)*(R().preisF||1)/100)*100}
+function leseWert(id,la,st,liter){const q=feldQ(S.felder[id],la), pfl=S.felder[id].pflSt||0, qp=qpFuer({sorte:id,oe:q.oe,sonne:S.sonne,boden:S.boden,bst:S.bodenSt||0,pfl,laub:S.laubJahr===S.jahr},st);
+  return Math.round(liter*STUFEN[st].preis*(st==='eis'?EIS_WERT[eisStufe(q.oe)].f:1)*(1+qp/100)*(1+pflegePreis(id,pfl))*sternF(id)*(R().preisF||1)/100)*100}
 function feldLiter(f,la){const r=f.reif/100,u=f.ueber/100; return Math.round(f.menge*r*(la==='reif'?1-u:la==='ueber'?u*MOST_UEBER:1-u+u*MOST_UEBER)*leseFaktor())}
 // Ab wann ein Wein frühestens verkauft werden darf, wenn er jetzt gelesen wird.
 // Gekeltert wird im Lesemonat, nach einem Monat im Fass darf er angemeldet und abgefüllt werden, ab Kabinett und beim Eiswein erst im Januar.
@@ -1038,7 +1045,8 @@ function preis(l){
   if(l.status!=='flasche') return 0;
   const L=lager(l); if(l.flMonate<L.min) return 0;
   const alter=Math.min(4,1+(l.flMonate-L.min)/12*L.rate);
-  return Math.round(STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*alter*S.markt*lageF(l)*sektF(l)*sternF(l.sorte)*(R().preisF||1)*100)/100;
+  // Seit 13.2.2: Preisbonus der Rebpflege bei der Spitzen-Sorte (pflegePreis), sonst 0.
+  return Math.round(STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*(1+pflegePreis(l.sorte,l.pfl))*alter*S.markt*lageF(l)*sektF(l)*sternF(l.sorte)*(R().preisF||1)*100)/100;
 }
 
 // Die drei Sorten der Partie nach Rolle: {menge, sekt, spitze}.
@@ -1270,12 +1278,12 @@ function neuesSpiel(){
   S={v:1,v13:1,zf:zfNeu(),name:NEU.name.trim().slice(0,NAME_MAX)||'Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:startGeld(NEU.schwer),ha:3,boden:80,bodenSt:0,bodenZ:0,duengungen:0,
     felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',sonne:0,markt:1,ansehen:0,ansV:1,leuteV:1,
     jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:ALLEIN_HA?0:1,lagerarb:ALLEIN_FASS?0:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,meilen:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],komp:{},kompV:3,v121:1,ein:{f:[]},...(ROLLEN_NEU?{rollen:1}:{})};
-  for(const id of reg.sorten){S.felder[id]={reben:0,jung:0}; feldReset(S.felder[id])}
+  for(const id of reg.sorten){S.felder[id]={reben:0,pflSt:0,pflZ:0}; feldReset(S.felder[id])}
   etappe3(3,NEU.schwer);
   lohnAbgleich();
   neuePrognose();
   TOP=[]; FUSS=[];
-  schlag(100,'Willkommen auf deinem Weingut',`${S.ich?`${S.ich} übernimmt ${S.name} ${WO[S.region]}: 3 Hektar kahler Weinberg, leere Fässer und ${eur(S.geld)}.`:`${S.name} ${WO[S.region]} startet mit 3 Hektar kahlem Weinberg, leeren Fässern und ${eur(S.geld)}.`} Bis März ist Pflanzzeit, im Weinberg pflanzt du deinen ${SORTEN[sortenFolge()[0]].name}. Die zweite und dritte Rebsorte bringt der Aufstieg. Im ersten Jahr tragen junge Reben nur die Hälfte.`,'weingut-01-sommer',{du:1});
+  schlag(100,'Willkommen auf deinem Weingut',`${S.ich?`${S.ich} übernimmt ${S.name} ${WO[S.region]}: 3 Hektar kahler Weinberg, leere Fässer und ${eur(S.geld)}.`:`${S.name} ${WO[S.region]} startet mit 3 Hektar kahlem Weinberg, leeren Fässern und ${eur(S.geld)}.`} Bis März ist Pflanzzeit, im Weinberg pflanzt du deinen ${SORTEN[sortenFolge()[0]].name}. Die zweite und dritte Rebsorte bringt der Aufstieg. Neue Reben starten als Setzling und tragen erst wenig.`,'weingut-01-sommer',{du:1});
   // Seit 10.3 (Frage 11): Mit Spielführer fallen die zwei Artikel weg, die der alte Winzer im ersten Monat selbst sagt.
   if(!(S.fu&&S.fu.an)) schlag(50,'So kommst du herum','Unten wählst du Weingut, Kellerei oder Stadt, die Leiste darüber bringt dich zu den Orten. Wischen übers Bild geht auch. Ein Punkt am Reiter zeigt Neues oder Dringendes, ein Tipp aufs Geld öffnet deinen Stand mit Kasse und Rängen. Das kleine i oben rechts in jedem Fenster erklärt, was du dort tust. Spielstände, Ton und das Buch liegen im Büro.');
   if(!(S.fu&&S.fu.an)) schlag(40,'Leute für Weinberg und Keller',`${helferRegel()}. ${lagerRegel()}. Leute findest du beim Arbeitsamt in der Stadt, der Lohn dort schwankt jeden Monat, wer eingestellt ist, behält seinen. Fehlen dir Leute, geht es nicht in den nächsten Monat.`,'arbeit');
@@ -1498,7 +1506,13 @@ function monatLauf(){
     {const st=Math.max(S.bodenSt||0,stufeZu(S.bodenZ||0,BODEN_SCHWELLE)); if(st>(S.bodenSt||0)){S.bodenSt=st; Z.push(`🌱 Dein Boden ist jetzt ${BODEN_STUFEN[st]}.`)}}
     S.verlust={};
     for(const [si,id] of R().sorten.entries()){
-      const f=S.felder[id]; f.jung=0; feldReset(f);
+      const f=S.felder[id]; feldReset(f);
+      // Seit 13.2.2: Rebpflege-Zähler der Sorte. Bis Ende April des abgelaufenen Jahres geschnitten (f.schnitt) zählt PFLEGE_GUT, sonst PFLEGE_PATZER zurück.
+      if(f.reben){
+        const vor=f.pflSt||0; f.pflZ=f.schnitt===S.jahr-1?(f.pflZ||0)+PFLEGE_GUT:Math.max(0,(f.pflZ||0)-PFLEGE_PATZER); f.pflSt=stufeZu(f.pflZ,PFLEGE_SCHWELLE);
+        if(f.pflSt>vor) Z.push(`✂️ Dein ${SORTEN[id].name} ist jetzt ${PFLEGE_STUFEN[f.pflSt]}.`);
+        else if(f.pflSt<vor) Z.push(`✂️ Dein ${SORTEN[id].name} fällt auf ${PFLEGE_STUFEN[f.pflSt]} zurück, er wurde nicht rechtzeitig geschnitten.`);
+      }
       if(f.reben){const tot=Math.min(f.reben,Math.round(f.reben*(festR(sp[1],sp[2],fest(7,si))+fp)/1000)*10); if(tot){f.reben-=tot; S.verlust[id]=tot; totAlle+=tot}}
     }
     if(totAlle) Z.push(`Zum Jahreswechsel sind ${String(Math.round(totAlle/rebVor*1000)/10).replace('.',',')}\u00a0% deiner Reben eingegangen (${R().sorten.filter(id=>S.verlust[id]).map(id=>`${num(S.verlust[id])} ${SORTEN[id].name}`).join(', ')}). Der Boden lag im Jahresschnitt bei ${schnitt}\u00a0%${fp?', dazu kam der Frost':''}. Bis März kannst du nachpflanzen.`);
@@ -1694,7 +1708,8 @@ const maniLegal=(l,st)=>st==='tafel'&&(l.zucker||0)<=ZUCKER_ERLAUBT&&(l.wasser||
 const maniText=l=>[l.zucker?`gezuckert (+${l.zucker}\u00a0%)`:'',l.wasser?`gewässert (+${l.wasser}\u00a0%)`:''].filter(Boolean).join(' und ');
 // Seit 8.0 (Paket B): Trauben aus einem Jahr mit Sommerschnitt (l.laub) bekommen LAUB_QP Punkte obendrauf, nach der Eignung, damit es genau so viele sind.
 // Seit 13.2.1: Der Boden gibt BODEN_ST_QP Punkte je Stufe (l.bst, bei der Lese festgehalten) statt der Punkte aus dem Bodenzustand.
-function qpFuer(l,st){return Math.max(1,Math.round((STUFEN[st].qp+(st==='eis'?EIS_WERT[eisStufe(l.oe)].qp:0)+Math.min(8,Math.floor((l.oe-mindest(st))/3))+Math.round(SORTEN[l.sorte].q/2)+Math.min(4,l.sonne||0)+BODEN_ST_QP*(l.bst||0))*eignung(l.sorte)))+(l.laub?LAUB_QP:0)}
+// Seit 13.2.2: dazu die Punkte der Rebpflege (l.pfl, bei der Lese festgehalten, PFLEGE_QP).
+function qpFuer(l,st){return Math.max(1,Math.round((STUFEN[st].qp+(st==='eis'?EIS_WERT[eisStufe(l.oe)].qp:0)+Math.min(8,Math.floor((l.oe-mindest(st))/3))+Math.round(SORTEN[l.sorte].q/2)+Math.min(4,l.sonne||0)+BODEN_ST_QP*(l.bst||0)+pflegeQP(l.sorte,l.pfl))*eignung(l.sorte)))+(l.laub?LAUB_QP:0)}
 // Schmiergeld für den Beamten: ein Anteil vom Wert des Weins, mindestens SCHMIER_MIN.
 const schmierVon=w=>Math.max(SCHMIER_MIN,Math.round(w*SCHMIER_ANTEIL/100)*100);
 function schmier(l,st){return schmierVon(l.liter*STUFEN[st].preis*(1+qpFuer(l,st)/100))}
@@ -1723,7 +1738,7 @@ function sabSchaden(g,wahl){
     schlag(85,'Sabotage im Keller!',`Nachts war jemand in deinem Keller: ${num(l.liter)}\u00a0l ${lotName(l)} sind vergiftet und mussten weg. ${wer}`,'sabotage',{du:1});
   }else{
     let weg=0;
-    for(const id of B){const f=S.felder[id], tot=Math.round(f.reben*.15/100)*100; f.reben-=tot; f.jung=Math.min(f.jung,f.reben); weg+=tot; if(f.menge>0&&!f.gelesen) f.menge=Math.round(f.menge*.85)}
+    for(const id of B){const f=S.felder[id], tot=Math.round(f.reben*.15/100)*100; f.reben-=tot; weg+=tot; if(f.menge>0&&!f.gelesen) f.menge=Math.round(f.menge*.85)}
     schlag(85,'Sabotage im Weinberg!',`Nachts hat jemand in deinem Weinberg gewütet: ${rbn(weg)} Reben sind zerstört. ${wer}`,'sabotage',{du:1});
   }
   return true;
@@ -2027,7 +2042,7 @@ function mgrBetrieb(){
     const pr=rebenPreis(id), platz=()=>Math.min(S.verlust[id]||0,S.ha*HA_REBEN-rebenGesamt(),Math.floor(Math.max(0,S.geld-5000)/pr/10)*10);
     if(hf){let i=0; while(platz()>=10&&helferReben()<rebenGesamt()+platz()&&S.geld>5000+VERMITTLUNG&&i++<20) stell('helfer')}
     const n=Math.floor(Math.min(platz(),helferReben()-rebenGesamt())/10)*10;
-    if(n>0){zahle(Math.round(n*pr*100)/100); const f=S.felder[id]; f.reben+=n; f.jung+=n; S.verlust[id]-=n; LW.push(`${rbn(n)} ${SORTEN[id].name}-Reben nachgepflanzt`)}
+    if(n>0){zahle(Math.round(n*pr*100)/100); const f=S.felder[id]; f.reben+=n; S.verlust[id]-=n; LW.push(`${rbn(n)} ${SORTEN[id].name}-Reben nachgepflanzt`)}
   }
   if(aufgabeAktiv('duengen')&&S.duengungen<3&&S.boden<100&&(S.boden<=70||(m===7&&S.boden<90))&&S.geld>=duengKosten()){const st=bonusMasch('duenger'); duenge(); LW.push(st?'mit dem Düngerstreuer gedüngt':'gedüngt')}
   if(aufgabeAktiv('spritzen')){const b=schaedWarn(); if(b&&!b.gespritzt){if(S.geld-mgrPuffer('weingut')>=spritzKosten()){spritze(); LW.push(`gegen ${SCHAED[b.art].den} gespritzt`)} else LW.push(`fürs Spritzen gegen ${SCHAED[b.art].den} hat das Geld nicht gereicht`)}}
@@ -2409,7 +2424,7 @@ function lese(id,la,p){
   const f=S.felder[id], q=feldQ(f,la), l=Math.round(feldLiter(f,la)*p); if(l<=0) return;
   const L=leistung(), M=maschLeistung();
   if(M>0&&!handlese(f)) maschAbnutzung(f.reben*p*leseFaktor()*M/L,M);
-  S.lots.push({id:S.nextId++,sorte:id,jahrgang:S.jahr,liter:l,oe:q.oe,leseart:la,edel:f.edel,eis:f.gefroren,...(q.masch?{masch:1}:{}),status:'trauben',stufe:null,qp:0,fassMonate:0,flMonate:0,sonne:S.sonne,...(S.laubJahr===S.jahr?{laub:1}:{}),boden:S.boden+4*R().sorten.filter(x=>S.felder[x].gelesen||S.felder[x].teil).length,bst:S.bodenSt||0});
+  S.lots.push({id:S.nextId++,sorte:id,jahrgang:S.jahr,liter:l,oe:q.oe,leseart:la,edel:f.edel,eis:f.gefroren,...(q.masch?{masch:1}:{}),status:'trauben',stufe:null,qp:0,fassMonate:0,flMonate:0,sonne:S.sonne,...(S.laubJahr===S.jahr?{laub:1}:{}),boden:S.boden+4*R().sorten.filter(x=>S.felder[x].gelesen||S.felder[x].teil).length,bst:S.bodenSt||0,pfl:f.pflSt||0});
   if(!f.teil) S.boden=Math.max(0,S.boden-4);
   if(p>=1){f.gelesen=true;f.menge=0}else{f.teil=true;f.menge=Math.round(f.menge*(1-p))}
   kompLese(id,l); fx('schere'); geh('keller');
