@@ -1058,8 +1058,8 @@ function bueroErfolge(){
       leer:'Noch keine Ehrungen.',buch:'wettbewerb',links:`🏅 Siegelbrett: ${sz.hab} von ${sz.max} Siegeln`,kn:pk('archivGeh','Aufschlagen','',{sec:1,id:'brett'}),
       i:'Medaillen gibt es bei der Landesprämierung, beim Bundeswettbewerb und als Präsident bei der Weltweinschau. Sie bringen Ansehen und machen den Wein wertvoller. Darunter steht, wie viele Siegel du auf dem Siegelbrett gesammelt hast.'})
     +rufFenster()
-    +(S.rang>=R_LADEN?fenster('botschafter','Weinbotschafter',`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/weinbotschafter.jpg);height:150px"><b>🎗️ Weinbotschafter ${WO[S.region]}</b></div>
-      <div class="kv"><span>Jeden Januar</span><span>+${BOTSCHAFT_ANS} Ansehen</span></div>`,{buch:'ziel',i:`Seit dem Rang ${RAENGE[R_LADEN].name} bist du Weinbotschafter ${WO[S.region]}. Für deine Reisen bekommst du jeden Januar ${BOTSCHAFT_ANS} Ansehen.`}):'')
+    +(S.rang>=R_BOTSCHAFT?fenster('botschafter','Weinbotschafter',`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/weinbotschafter.jpg);height:150px"><b>🎗️ Weinbotschafter ${WO[S.region]}</b></div>
+      <div class="kv"><span>Jeden Januar</span><span>+${BOTSCHAFT_ANS} Ansehen</span></div>`,{buch:'ziel',i:`Seit dem Rang ${RAENGE[R_BOTSCHAFT].name} bist du Weinbotschafter ${WO[S.region]}. Für deine Reisen bekommst du jeden Januar ${BOTSCHAFT_ANS} Ansehen.`}):'')
     +fenster('urkunden','Deine Urkunden',urkWand(),{buch:'ziel',i:'Für jeden Aufstieg bekommst du eine Urkunde. Sie hängt hier an der Wand, die erste gibt es mit dem Aufstieg zum zweiten Rang. Darunter hängen die Schilder und Urkunden für deine Spenden im Rathaus.'});
 }
 function bueroWissen(){
@@ -1224,7 +1224,7 @@ function kellerAusHtml(){
 function vSabotage(){
   const tr=S.lots.filter(l=>l.status==='trauben'), mi=S.lots.filter(mischbar), paare=mi.some(a=>mi.some(b=>a!==b&&farbe(a)===farbe(b))), P=panschListe().length, sp=sabSperre(), scharf=S.kontr.scharf>0;
   const sabI=`Ein Mittelsmann erledigt bei einem Gegner die schmutzige Arbeit. Von Juli bis Dezember, höchstens einmal im Jahr. ${eur(SAB_KONTAKT)} für den Kontakt, dazu ${eur(SAB_MIN)} bis ${eur(SAB_MAX)} Handgeld. Je mehr Handgeld, desto eher klappt es. Jeder fünfte Versuch fliegt auf, das kostet ${eur(SAB_STRAFE)} und ${SAB_STRAFE_ANS} Ansehen.`;
-  if(['zuckern','verschneiden','pruefer'].every(einZu)&&S.rang<SAB_AB) return einKarte('hinter','Noch alles sauber','Hinter dieser Tür geht es nicht ganz sauber zu. Bis zur ersten Lese gibt es hier nichts zu tun.');
+  if(['zuckern','verschneiden','pruefer'].every(einZu)&&!frei('sabotage')&&S.rang<SAB_RANG) return einKarte('hinter','Noch alles sauber','Hinter dieser Tür geht es nicht ganz sauber zu. Bis zur ersten Lese gibt es hier nichts zu tun.');
   return fenster('zuckern','Most zuckern oder wässern',tr.map(l=>fz(dot(l.sorte)+SORTEN[l.sorte].name,
       `${num(l.liter)} l Trauben · ${l.oe}° Öchsle${mani(l)?' · 🤫 '+maniText(l):''}`,'',
       `<button class="klein wag" data-a="zuckern" data-id="${l.id}" data-k="wasser" ${(l.wasser||0)>=ZUCKER_MAX?'disabled':''}>Wässern</button>`,
@@ -1239,7 +1239,7 @@ function vSabotage(){
     <div class="kv"><span>Kontrolle</span><span${scharf?' class="rot"':''}>${scharf?'jedes Jahr':'etwa alle drei Jahre'}</span></div>
     ${scharf?'<div class="rot" style="font-size:14px;margin-top:4px">Der Prüfer hat dich auf dem Kieker.</div>':''}`,{
     i:'Hinter der unscheinbaren Tür geht es nicht ganz sauber zu. Der Weinprüfer kommt unangemeldet, im Schnitt alle drei Jahre, spätestens nach vier. Was bis dahin verkauft ist, findet er nicht mehr.'})
-  +(S.rang<SAB_AB?'':S.rang>=SAB_RANG?fenster('sabotage','Sabotage',[],{leer:sp,i:sabI})
+  +(S.rang<SAB_RANG&&!frei('sabotage')?'':S.rang>=SAB_RANG?fenster('sabotage','Sabotage',[],{leer:sp,i:sabI})
     :fenster('sabotage','Sabotage','',{links:sp,kn:`<button class="klein wag" data-a="sabZiel" ${sp?'disabled':''}>Sabotage planen</button>`,i:sabI}));
 }
 function vStadt(){
@@ -1284,14 +1284,14 @@ function vStadt(){
         {leer:`Gerade nichts, als Nächstes frühestens im ${aukNaechst()}.`,i:aI});
     }
     const mkI=`Der Makler kennt Winzer, die ihr Land lieber still verkaufen. Ein Hektar kostet bei ihm ${eur(MAKLER_PREIS)}, bei einer Auktion meist viel weniger. ${HA_NEU?`Mit dem Rang hat er mehr für dich: ${maklerStaffel()}. Er verkauft aber nur`:'Er verkauft dir höchstens einen Hektar im Jahr und nur'}, wenn dir für den nächsten Rang allein noch Land fehlt.${deckelSatz()?' '+deckelSatz():''}`;
-    if(S.rang<R_AUKTION) zu.push(fenster('makler','Makler','',{zu:`ab dem Rang ${RAENGE[R_AUKTION].name}`,i:mkI}));
+    if(S.rang<R_MAKLER) zu.push(fenster('makler','Makler','',{zu:`ab dem Rang ${RAENGE[R_MAKLER].name}`,i:mkI}));
     else if(S.rang<R_MAX){
       const g=maklerGrund(), n=RAENGE[S.rang+1];
       h+=fenster('makler','Makler',`<div class="kv"><span>Deine Fläche</span><span>${S.ha}${haDeckel()<Infinity?' von höchstens '+haDeckel():''} Hektar</span></div><div class="kv"><span>Für den nächsten Rang</span><span>${n.ha} Hektar bepflanzt</span></div>${maklerHa()>1?`<div class="kv"><span>Beim Makler dieses Jahr</span><span>${maklerDiesJahr()} von ${maklerHa()} Hektar</span></div>`:''}`,{
         links:g,kn:pk('makler','Kaufen',eur(MAKLER_PREIS),{klein:'1 Hektar',aus:!!g,arm:S.geld<MAKLER_PREIS}),i:mkI});
     }
     const anI=`Einmal im Jahr kannst du dem Prüfer einen Hinweis geben. Findet er bei einem Gegner gepanschten Wein, kostet ihn das ${ANREG_ANS} Ansehen und Strafe. Findet er nichts, kostet dich die falsche Verdächtigung ${ANREG_FEHL} Ansehen. Gerüchte im Winzerboten helfen beim Raten.`;
-    if(S.rang<R_HOFFEST) zu.push(fenster('anreg','Kontrolle anregen','',{zu:`ab dem Rang ${RAENGE[R_HOFFEST].name}`,i:anI}));
+    if(S.rang<R_KONTROLLE) zu.push(fenster('anreg','Kontrolle anregen','',{zu:`ab dem Rang ${RAENGE[R_KONTROLLE].name}`,i:anI}));
     else{
       const schon=S.anregJahr===S.jahr;
       h+=fenster('anreg','Kontrolle anregen',S.gegner.map(g=>fz(esc(g.name)+(g.geruecht?' 🗣️':''),`${GEGNER_TYP[g.typ].art}, ${WO[g.region]}`,g.geruecht?'Es gibt Gerüchte.':'',
@@ -1337,7 +1337,7 @@ function vStadt(){
       i:`Der Großhandel zahlt jeden Monat nur bis zu seinem Budget den vollen Preis. Was über das Budget geht, drückt den Preis, und was du an Weinhandlungen verkaufst, zählt nicht mit. Jeder Rang hebt das Budget um ${eur(MARKT_RANG)}, jeder bepflanzte Hektar über ${HA_FREI} um ${eur(MARKT_HA)}.
       ${exSt?`<div style="margin-top:6px">🌍 Der Exporthandel nimmt dir mit jedem Rang mehr ab, gerade hebt er das Budget um ${eur(MARKT_EXPORT*exSt)}${exSt<EXPORT_STUFEN?`, ab dem Rang ${RAENGE[S.rang+1].name} um ${eur(MARKT_EXPORT*(exSt+1))}`:''}. Er zahlt mehr als das Inland:</div>
       ${EXPORT_ZEILEN.map(([k,t])=>`<div class="kv"><span>${t}</span><span>${pzx(EXPORT_F[k])}</span></div>`).join('')}`
-      :`<div style="margin-top:6px">🌍 Den Exporthandel gibt es ab dem Rang ${RAENGE[R_EXPORT].name}. Er zahlt mehr als das Inland und nimmt dir mit jedem Rang mehr ab.</div>`}`});
+      :`<div style="margin-top:6px">🌍 Den Exporthandel gibt es ${freiText('export')}. Er zahlt mehr als das Inland und nimmt dir mit jedem Rang mehr ab.</div>`}`});
     // Ist noch nichts verkaufsreif, steht oben, wann der erste Wein so weit ist (seit 5.0).
     const erst=fl.length&&!fl.some(l=>preis(l))?fl.map(l=>({l,n:lager(l).min-l.flMonate})).sort((a,b)=>a.n-b.n)[0]:null;
     // Kurze Zeilen wie im Kellerbuch. Der Preis ist der beste Absatzweg mit der Marktlage nach den Verkäufen dieses Monats.
@@ -2166,11 +2166,11 @@ const AKT={
     meldung('Die Einladungen sind raus','Das Fest steigt Ende des Monats. Wie es war, steht im nächsten Winzerboten.','hoffest');
   },
   anreg(d){
-    const g=S.gegner[+d.id]; if(!g||S.rang<R_HOFFEST||S.anregJahr===S.jahr) return;
+    const g=S.gegner[+d.id]; if(!g||S.rang<R_KONTROLLE||S.anregJahr===S.jahr) return;
     openSheet(`${sbild('kontrolle')}<h3>🔍 Prüfer zu ${esc(g.name)} schicken?</h3><p>Du gibst dem Prüfer einen Hinweis auf ${esc(g.name)} ${WO[g.region]}. Er kommt im Lauf des Monats, das Ergebnis steht im nächsten Winzerboten.</p><p class="mut">Gepanschter Wein: ${esc(g.name)} verliert ${ANREG_ANS} Ansehen und zahlt Strafe. Nichts gefunden: Du verlierst ${ANREG_FEHL} Ansehen.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button class="wag" data-a="anregJa" data-id="${g.id}">Prüfer schicken</button></div>`);
   },
   anregJa(d){
-    const g=S.gegner[+d.id]; if(!g||S.rang<R_HOFFEST||S.anregJahr===S.jahr) return;
+    const g=S.gegner[+d.id]; if(!g||S.rang<R_KONTROLLE||S.anregJahr===S.jahr) return;
     g.angeregt=1; S.anregJahr=S.jahr; fx('stempel'); closeSheet(); save(); render();
     meldung('Der Hinweis ist raus','Der Prüfer kümmert sich darum. Das Ergebnis steht im nächsten Winzerboten.','kontrolle');
   },

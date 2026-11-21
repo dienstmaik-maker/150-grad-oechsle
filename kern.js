@@ -28,7 +28,18 @@ function oeGrenze(id){const f=S.felder[id]; return f&&f.edel&&rolleK(id)==='spit
 const feldId=f=>R().sorten.find(id=>S.felder[id]===f);
 // Seit 13.3.2: Freischaltung nach Rang (FREI) und welche Stufen eine Sorte nach ihrer Rolle machen darf (WEIN_ROLLE).
 const freiAb=k=>(FREI[k]||{r:0}).r;
-function frei(k){return !FREI[k]||S.rang>=freiAb(k)}
+// Seit 13.3.4 mit Abstand (ab Jahre nach dem Aufstieg in den Rang r, genau auf den Monat) und Ende (bis).
+function frei(k){const e=FREI[k]; if(!e) return true; if(S.rang<e.r||(e.bis!=null&&S.rang>=e.bis)) return false; if(!e.ab) return true;
+  const m=(S.rangMon||{})[e.r]; return m!=null&&S.jahr*12+S.monat>=m+12*e.ab}
+// "ab dem Rang Winzer" oder "4 Jahre nach dem Rang Winzermeister", für Texte.
+const freiText=k=>{const e=FREI[k]; return e.ab?`${e.ab} Jahre nach dem Rang ${rangN(e.r)}`:`ab dem Rang ${rangN(e.r)}`};
+// Monat jedes Aufstiegs (S.rangMon, Schlüssel ist der Rang). Springt jemand über einen Rang, gilt für beide derselbe Monat.
+function rangMonMerk(von,zu){const M=S.rangMon=S.rangMon||{0:START_JAHR*12}; for(let i=von+1;i<=zu;i++) if(M[i]==null) M[i]=S.jahr*12+S.monat}
+// Spielstände aus 13.1 und 13.2 ohne S.rangMon: aus S.zeitRang (Spieljahr des Aufstiegs) oder jetzt. Schon Freies kommt nicht noch einmal in den Winzerboten.
+function altFrei(){if(!S.rangMon){const M=S.rangMon={0:START_JAHR*12}; for(let i=1;i<=S.rang;i++){const z=(S.zeitRang||[]).find(x=>x.r===i); M[i]=z?(START_JAHR+z.j-1)*12:S.jahr*12+S.monat}}
+  if(!S.freiBote){S.freiBote={}; for(const k of Object.keys(FREI)) if(FREI[k].ab&&frei(k)) S.freiBote[k]=1}}
+// Was nach dem Abstand kommt, meldet der Winzerbote einmal.
+function freiBote(Z){const B=S.freiBote=S.freiBote||{}; for(const k of Object.keys(FREI)) if(FREI[k].ab&&FREI[k].bote&&!B[k]&&frei(k)){B[k]=1; Z.push(FREI[k].bote)}}
 const rolleDarf=(id,st)=>{const rl=id&&SORTEN[id]?SORTEN[id].rolle:null; return !rl||!WEIN_ROLLE[rl]||WEIN_ROLLE[rl].includes(st)};
 // Seit 13.2.4: Rebschnitt von Hand. Kosten nach den Hektar der Sorte, möglich von Januar bis April, einmal im Jahr.
 const schnittKosten=id=>Math.round(SCHNITT_HA*(S.felder[id].reben||0)/HA_REBEN);
@@ -89,7 +100,9 @@ function mgrBringt(i){
 // Was ein Aufstieg bringt: die Freischaltungen des Rangs, höchstens drei. Seit 5.1 (Paket 10) steht der Kreditrahmen als eigener Satz dahinter (rahmenSatz), nur wenn er wächst.
 // Seit 7.0 steht {sorte} für die Rebsorte, die mit dem Rang kommt, mit ihrem Namen im Gebiet. Die Manager hängt mgrBringt an.
 // Seit 7.2 liefert bringtTeile die einzelnen Punkte für die Urkunde, bringt fügt sie für Zeitung und Rang-Karte zusammen.
-function bringtTeile(i){const n=SORTE_RANG.indexOf(i), id=n>0&&S?sortenFolge()[n]:null; return [...RAENGE[i].neu.replace('{sorte}',`die ${n===1?'zweite':'dritte'} Rebsorte${id?' '+SORTEN[id].name:''}`).split(', '),...kellerBringt(i),...mgrBringt(i)]}
+// Seit 13.3.4 dazu, was mit Abstand kommt: "in 4 Jahren der Exporthandel".
+const abBringt=i=>Object.values(FREI).filter(e=>e.r===i&&e.ab&&e.name).map(e=>`in ${e.ab} Jahren ${e.name}`);
+function bringtTeile(i){const n=SORTE_RANG.indexOf(i), id=n>0&&S?sortenFolge()[n]:null; return [...RAENGE[i].neu.replace('{sorte}',`die ${n===1?'zweite':'dritte'} Rebsorte${id?' '+SORTEN[id].name:''}`).split(', '),...abBringt(i),...kellerBringt(i),...mgrBringt(i)]}
 // Seit 8.6: die zweite und dritte Stufe Kellerausbau als eigener Punkt beim Aufstieg. "Ausbaustufe" klein, damit FREI_SYM das Fass zeigt und nicht den Manager.
 function kellerBringt(i){return KELLER_RANG.map((r,k)=>k&&r===i?`die ${k===1?'zweite':'dritte'} Ausbaustufe im Keller`:'').filter(Boolean)}
 function bringt(i){return bringtTeile(i).join(', ')}
@@ -105,7 +118,7 @@ function genJahr(n){return START_JAHR+GEN_JAHRE*n}
 function erbRest(){const k=S.kredit; return k&&k.erb?Math.min(k.erb,k.rest):0}
 function erbSchaetzung(){return Math.max(0,Math.round(vermoegen()*ERB_STEUER/100)*100)}
 function exportArt(l){return l.sekt?'sekt':STUFEN[l.stufe].rang>=6?'edel':STUFEN[l.stufe].rang>=4?'spaet':'einfach'}
-function exportStufen(){return clamp(S.rang-R_EXPORT+1,0,EXPORT_STUFEN)}
+function exportStufen(){return frei('export')?clamp(S.rang-R_EXPORT+1,1,EXPORT_STUFEN):0}
 function mgrAbnutzF(){return MGR_ABNUTZ&&mgrSt('weingut')>=3?1-MGR_ABNUTZ:1}
 function mTyp(ma){return MASCH[ma&&MASCH[ma.typ]?ma.typ:ma&&ma.gross?'gross':'klein']}
 function pflegeF(z){return PFLEGE.find(p=>z>=p[0])[1]}
@@ -159,9 +172,9 @@ function aukDeckel(a){a=a||S.auktion; const d=haDeckel(); if(!a||a.spitze||S.ha+
 // S.maklerN zählt die Hektar im Jahr S.maklerJahr. Alte Spielstände kennen nur das Jahr, dort zählt es als ein Hektar.
 function maklerHa(){return HA_NEU?MAKLER_HA[S.rang]||1:1}
 function maklerDiesJahr(){return S.maklerJahr===S.jahr?S.maklerN||1:0}
-function maklerGrund(){if(S.rang<R_AUKTION) return `Der Makler arbeitet erst für dich ab dem Rang ${RAENGE[R_AUKTION].name}.`; const mh=maklerHa(); if(maklerDiesJahr()>=mh) return `Dieses Jahr hat er dir schon ${mh>1?mh+'\u00a0Hektar':'einen Hektar'} verkauft. Nächstes Jahr wieder.`; const n=RAENGE[S.rang+1]; if(!n||S.ha>=n.ha) return 'Für den nächsten Rang hast du genug Land, da verkauft er dir nichts.'; if(S.ha+1>haDeckel()) return `Als ${rangN(S.rang)} darfst du höchstens ${haDeckel()} Hektar besitzen. ${aufstiegFehlt()}`; if(S.ansehen<n.ans||vermoegen()<n.verm) return 'Dir fehlt für den nächsten Rang nicht nur Land. Erst wenn Ansehen und Vermögen reichen, verkauft er dir einen Hektar.'; return ''}
+function maklerGrund(){if(S.rang<R_MAKLER) return `Der Makler arbeitet erst für dich ab dem Rang ${RAENGE[R_MAKLER].name}.`; const mh=maklerHa(); if(maklerDiesJahr()>=mh) return `Dieses Jahr hat er dir schon ${mh>1?mh+'\u00a0Hektar':'einen Hektar'} verkauft. Nächstes Jahr wieder.`; const n=RAENGE[S.rang+1]; if(!n||S.ha>=n.ha) return 'Für den nächsten Rang hast du genug Land, da verkauft er dir nichts.'; if(S.ha+1>haDeckel()) return `Als ${rangN(S.rang)} darfst du höchstens ${haDeckel()} Hektar besitzen. ${aufstiegFehlt()}`; if(S.ansehen<n.ans||vermoegen()<n.verm) return 'Dir fehlt für den nächsten Rang nicht nur Land. Erst wenn Ansehen und Vermögen reichen, verkauft er dir einen Hektar.'; return ''}
 // Sein Angebot je Rang als Satzteil: "ab Jungwinzer 1 Hektar im Jahr, ab Weingutsbesitzer 2, ab Verbandsvorstand 3".
-function maklerStaffel(){const T=[]; for(let i=R_AUKTION;i<R_MAX;i++) if(i===R_AUKTION||MAKLER_HA[i]!==MAKLER_HA[i-1]) T.push(`ab ${RAENGE[i].name} ${MAKLER_HA[i]}${T.length?'':' Hektar im Jahr'}`); return T.join(', ')}
+function maklerStaffel(){const T=[]; for(let i=R_MAKLER;i<R_MAX;i++) if(i===R_MAKLER||MAKLER_HA[i]!==MAKLER_HA[i-1]) T.push(`ab ${RAENGE[i].name} ${MAKLER_HA[i]}${T.length?'':' Hektar im Jahr'}`); return T.join(', ')}
 
 const rnd=(a,b)=>a+Math.random()*(b-a), rint=(a,b)=>Math.floor(rnd(a,b+1)), clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 // Seit 11.6 "Schummeln verboten" (Maik 20.11.2026): festes Wetter je Partie. S.zf ist die Startzahl der Partie, fest() macht daraus mit Thema, Nummer, Jahr und Monat
@@ -220,7 +233,7 @@ function roh(i){try{const o=JSON.parse(localStorage.getItem(KEYS[i])||'null');re
 function lies(i){const o=roh(i);return o&&o.v13?o:null}
 function liesAlt(i){const o=roh(i);return o&&!o.v13?o:null}
 // Übernimmt einen gelesenen Spielstand und bringt alte Stände auf den heutigen Stand.
-function nimm(o){S=o;if(S.zf==null)S.zf=zfNeu();if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();altDoppelt();altSpende();altKeller();altZeit();altAmt();if(!S.fu)S.fu=fuAlt(); else fuPaketB(); altKomp(); altAns(); altLeute(); altRuf(); altSchaed(); altSekt()}
+function nimm(o){S=o;if(S.zf==null)S.zf=zfNeu();if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();altDoppelt();altSpende();altKeller();altZeit();altAmt();if(!S.fu)S.fu=fuAlt(); else fuPaketB(); altKomp(); altAns(); altLeute(); altRuf(); altSchaed(); altSekt(); altFrei()}
 // Seit 8.3: Spielstände ohne Uhr fangen bei 0 an und merken sich, dass sie erst seit 8.3 zählen.
 // Seit 8.5: Kellermeister Stufe 1 keltert statt abzufüllen. Hatte ein alter Spielstand auf Stufe 1 das Abfüllen an, ist jetzt das Keltern an.
 // Version 12.1 (Maik 20.11.2026): Alte Spielstände ab Winzer bekommen den Sektkeller geschenkt (Bestandsschutz), mit einer Zeile im Winzerboten (sektBote).
@@ -519,7 +532,7 @@ function wege(l){
   const p=preis(l); if(!p) return [];
   if(federHandel(l)) return [{name:'Weinhändler',flag:'🍂',p}];
   const W=[{name:'Inland',flag:'🇩🇪',p}];
-  if(S.rang>=R_EXPORT) W.push({name:'Exporthandel',flag:'🌍',p:Math.round(p*EXPORT_F[exportArt(l)]*S.exLage.ex*100)/100});
+  if(frei('export')) W.push({name:'Exporthandel',flag:'🌍',p:Math.round(p*EXPORT_F[exportArt(l)]*S.exLage.ex*100)/100});
   return W.sort((a,b)=>b.p-a.p);
 }
 const wunschName=w=>WUNSCH[w]||(SORTEN[w]?SORTEN[w].name:'Wein');
@@ -1298,7 +1311,7 @@ function neuesSpiel(){
   const reg=REG(NEU.region,!!ROLLEN_NEU);
   S={v:1,v13:1,zf:zfNeu(),name:NEU.name.trim().slice(0,NAME_MAX)||'Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:startGeld(NEU.schwer),ha:3,boden:80,bodenSt:0,bodenZ:0,duengungen:0,
     felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',sonne:0,markt:1,ansehen:0,ansV:1,leuteV:1,
-    jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:ALLEIN_HA?0:1,lagerarb:ALLEIN_FASS?0:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,meilen:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],komp:{},kompV:3,v121:1,ein:{f:[]},...(ROLLEN_NEU?{rollen:1}:{})};
+    jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:ALLEIN_HA?0:1,lagerarb:ALLEIN_FASS?0:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,meilen:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],rangMon:{0:START_JAHR*12},freiBote:{},komp:{},kompV:3,v121:1,ein:{f:[]},...(ROLLEN_NEU?{rollen:1}:{})};
   for(const id of reg.sorten){S.felder[id]={reben:0,pflSt:0,pflZ:0}; feldReset(S.felder[id])}
   etappe3(3,NEU.schwer);
   lohnAbgleich();
@@ -1655,7 +1668,7 @@ function etappe3Monat(Z){
     // Seit 11.5 (Teil C1): Die Manager des neuen Rangs kommen von selbst und stellen sich nach der Feier vor.
     if(MGR_GLEICH) mgrKommen();
     S.rangNeu=S.jahr*12+S.monat;
-    zeitAufstieg(alt,S.rang);
+    zeitAufstieg(alt,S.rang); rangMonMerk(alt,S.rang);
     S.feier={von:alt,zu:S.rang,platz:bestenEintrag()}; if(S.rang<R_MAX) S.aufBrief=S.rang;
     schlag(95,`Aufstieg: Du bist jetzt ${rangN(S.rang)}`,`Das ${bringtSatz(S.rang)}.${rahmenSatz(S.rang)}${r.weg?' '+anr(r.weg,r.wegW):''}`,wgBild(S.rang+1,'sommer'),{sonder:1,gold:1,du:1});   // Seit 12.4.3: Weingut-Bild der neuen Stufe statt 'aufstieg' (Maik 20.11.2026)
     if(S.rang===R_MAX&&!S.sieger) siegSpieler();
@@ -1663,8 +1676,8 @@ function etappe3Monat(Z){
     // Seit 10.0: Das Amt beginnt in dem Monat, in dem der Spieler Präsident wird, auch wenn ein Gegner vorher schon Präsident war.
     if(S.rang===R_MAX&&!S.amt) amtStart();
   }
-  kontrolleMonat(Z); sabotageGegenDich(Z);
-  if(S.monat===0&&S.rang>=R_LADEN) Z.push(`Als Weinbotschafter ${WO[S.region]} warst du auf Messen in aller Welt unterwegs. +${ruhm(BOTSCHAFT_ANS)} Ansehen.`);
+  freiBote(Z); kontrolleMonat(Z); sabotageGegenDich(Z);
+  if(S.monat===0&&S.rang>=R_BOTSCHAFT) Z.push(`Als Weinbotschafter ${WO[S.region]} warst du auf Messen in aller Welt unterwegs. +${ruhm(BOTSCHAFT_ANS)} Ansehen.`);
   Z.push(...gegnerMonat()); eisGeschichte();
   // Wettbewerbe: Ausschreibung im Februar (Land) und alle drei Jahre im Juni (Bund). Eingereicht wird im selben Monat, gewertet beim nächsten Monatswechsel.
   if(S.monat===1){
@@ -1745,7 +1758,7 @@ function mischung(a,b){
 /* ---- Sabotage ---- */
 const sabChance=n=>.3+.45*(n-SAB_MIN)/(SAB_MAX-SAB_MIN);
 function sabSperre(){
-  return S.rang<SAB_AB?`Sabotage geht erst ab dem Rang ${RAENGE[SAB_AB].name}.`:S.rang>=SAB_RANG?`Als ${duK()} machst du so etwas nicht mehr.`:S.monat<6?'Die Unterwelt ist nur von Juli bis Dezember zu sprechen.':S.sabJahr===S.jahr?'Für dieses Jahr hast du dein Glück schon versucht.'
+  return !frei('sabotage')&&S.rang<SAB_RANG?`Sabotage geht erst ${freiText('sabotage')}.`:S.rang>=SAB_RANG?`Als ${duK()} machst du so etwas nicht mehr.`:S.monat<6?'Die Unterwelt ist nur von Juli bis Dezember zu sprechen.':S.sabJahr===S.jahr?'Für dieses Jahr hast du dein Glück schon versucht.'
     :S.geld<SAB_KONTAKT+SAB_MIN?`Du brauchst mindestens ${eur(SAB_KONTAKT+SAB_MIN)}: ${eur(SAB_KONTAKT)} für den Kontakt und ${eur(SAB_MIN)} Handgeld.`:'';
 }
 // Sabotage gegen den Spieler: nur vom Zocker, frühestens ab dem fünften Jahr, höchstens alle fünf Jahre. Schaden: ein Fass oder rund 15 % der Reben.

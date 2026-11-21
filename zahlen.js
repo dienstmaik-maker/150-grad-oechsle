@@ -103,9 +103,16 @@ const EIS_WERT=[{name:'Auslese',f:1,qp:0},{name:'Beerenauslese',f:1.3,qp:4},{nam
 // WEIN_ROLLE: welche Stufen eine Rolle überhaupt machen darf. Die Menge-Sorte hat nie Edelfäulnis und keine Auslese, Auslese und höher gibt es nur von der Spitzen-Sorte.
 // Die Sekt-Sorte macht keinen Stillwein, nur Sekt (seit 13.3.3, sektSorte). Sorten ohne Rolle (Messläufe mit ROLLEN_NEU=0) dürfen alles.
 const WEIN_ROLLE={menge:['feder','tafel','qba','kab','spat'],sekt:[],spitze:['feder','tafel','qba','kab','spat','aus','ba','tba','eis']};
-// Freischaltungen nach Rang: r ist der Rang (Index in RAENGE), ab dem etwas geht. Beerenauslese und Eiswein ab R6, Trockenbeerenauslese ab R8 sind ein Übergang,
+// Seit 13.3.4 (Bauplan 13.3): eine Tabelle für alle Freischaltungen. r ist der Rang (Index in RAENGE), ab ist der Abstand in Jahren nach dem Aufstieg in diesen Rang
+// (S.rangMon merkt den Monat jedes Aufstiegs), bis der Rang, ab dem es wieder weg ist. Wer später aufsteigt, bekommt auch das später. name steht beim Aufstieg
+// unter "in 4 Jahren" und im Winzerboten, bote ist die Zeile, wenn es nach dem Abstand kommt (Platzhalter bis 13.8). 13.4 und 13.5 hängen hier ihre Einträge an.
+// Beerenauslese und Eiswein ab R6, Trockenbeerenauslese ab R8 sind ein Übergang,
 // bis der Weg des Gebiets in 13.4 sie ersetzt (Maik 21.11.2026). Feder-, Tafel- und Qualitätswein gelten für jede Rolle, die sie machen darf (Annahme von Claude).
-const FREI={wein_feder:{r:0},wein_tafel:{r:1},wein_qba:{r:2},wein_kab:{r:0},wein_spat:{r:0},wein_aus:{r:6},wein_ba:{r:6},wein_eis:{r:6},wein_tba:{r:8}};
+const FREI={wein_feder:{r:0},wein_tafel:{r:1},wein_qba:{r:2},wein_kab:{r:0},wein_spat:{r:0},wein_aus:{r:6},wein_ba:{r:6},wein_eis:{r:6},wein_tba:{r:8},
+  makler:{r:1},spende:{r:1},auktion:{r:2},land:{r:3},
+  export:{r:3,ab:4,name:'der Exporthandel',bote:'🚢 Der Exporthandel nimmt jetzt auch deinen Wein. Er zahlt mehr als das Inland und nimmt dir mit jedem Rang mehr ab.'},
+  sabotage:{r:3,ab:4,bis:5,name:'Sabotage hinter der Hintertür',bote:'💣 Hinter der Hintertür kennt man jetzt deinen Namen. Wer will, kann einem Gegner schaden lassen.'},
+  sorte_sekt:{r:4},sektkeller:{r:4},weinfest:{r:4},sorte_spitze:{r:5},laden:{r:6},botschafter:{r:6},bund:{r:7},hoffest:{r:7},kontrolle:{r:7},spitzenlage:{r:8}};
 const LESE={reif:'nur reife Trauben',ueber:'nur überreife Trauben',alles:'reife und überreife'};
 const WETTER={sonnig:['☀️','sonnig'],mild:['⛅','mild'],regen:['🌧️','Regen'],kalt:['🌥️','kalt'],frost:['❄️','Frost']};
 // Boden: verliert jeden Monat BODEN_MONAT Punkte (in einem Regenmonat BODEN_REGEN) und mit jeder Lese 4. Einmal Düngen bringt 30, erlaubt sind drei Mal im Jahr.
@@ -172,14 +179,14 @@ const WO={mosel:'an der Mosel',rheingau:'im Rheingau',rheinhessen:'in Rheinhesse
 // Gemessen mit l115_staffel (54 Partien, Mittel): Mosel, Rheingau, Rheinhessen und Pfalz im Median in Jahr 114, 31 von 36 Partien vor Jahr 120.
 const RAENGE=[
   {name:'Neuling',kurz:'Neuling',ans:0,ha:0,verm:0,rahmen:20000,haAlt:0,deckel:4},
-  {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:30,ha:3,verm:100000,rahmen:40000,haAlt:3,deckel:8,neu:'du darfst bei Auktionen mitbieten, der Makler im Rathaus, Spenden fürs Dorf, {sorte}, Kellerausbau'},
-  {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:6,verm:250000,rahmen:80000,haAlt:4,deckel:11,neu:'der Sektkeller, der Exporthandel, der Düngerstreuer, Sabotage hinter der Hintertür'},
-  {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:300,ha:9,verm:600000,rahmen:160000,haAlt:5,deckel:16,neu:'Landesprämierung, das Weinfest, Erntemaschinen'},
-  {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:13,verm:1500000,rahmen:300000,haAlt:6,deckel:20,neu:'{sorte}, der Laubschneider, die Degorgier- und Abfüllanlage im Sektkeller'},
-  {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:16,verm:3500000,rahmen:300000,haAlt:8,deckel:26,neu:'Bundeswettbewerb, der große Vollernter',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.',wegW:'Sabotage ist für dich ab jetzt tabu, eine Dame macht so etwas nicht.'},
-  {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:21,verm:6000000,rahmen:300000,haAlt:10,deckel:33,neu:'eine eigene Weinhandlung, das Amt des Weinbotschafters, die Abfüllanlage'},
-  {name:'Verbandsvorstand',kurz:'Vorstand',w:'Verbandsvorständin',kw:'Vorständin',ans:4000,ha:26,verm:12000000,rahmen:300000,haAlt:13,deckel:41,neu:'das Hoffest, du kannst Kontrollen anregen'},
-  {name:'Vizepräsident',kurz:'Vizepräsident',w:'Vizepräsidentin',kw:'Vizepräsidentin',ans:8000,ha:33,verm:16000000,rahmen:300000,haAlt:16,deckel:50,neu:'die Chance auf eine Spitzenlage'},
+  {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:30,ha:3,verm:100000,rahmen:40000,haAlt:3,deckel:8,neu:'Tafelwein, der Makler im Rathaus, Spenden fürs Dorf, Kellerausbau'},
+  {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:6,verm:250000,rahmen:80000,haAlt:4,deckel:11,neu:'Qualitätswein, Auktionen, der Düngerstreuer'},
+  {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:300,ha:9,verm:600000,rahmen:160000,haAlt:5,deckel:16,neu:'Landesprämierung, die Erntemaschine'},
+  {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:13,verm:1500000,rahmen:300000,haAlt:6,deckel:20,neu:'{sorte}, der Sektkeller, das Weinfest, der Laubschneider, die Degorgier- und Abfüllanlage im Sektkeller'},
+  {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:16,verm:3500000,rahmen:300000,haAlt:8,deckel:26,neu:'{sorte}, der große Vollernter',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.',wegW:'Sabotage ist für dich ab jetzt tabu, eine Dame macht so etwas nicht.'},
+  {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:21,verm:6000000,rahmen:300000,haAlt:10,deckel:33,neu:'Auslese, Beerenauslese und Eiswein, eine eigene Weinhandlung, das Amt des Weinbotschafters, die Abfüllanlage'},
+  {name:'Verbandsvorstand',kurz:'Vorstand',w:'Verbandsvorständin',kw:'Vorständin',ans:4000,ha:26,verm:12000000,rahmen:300000,haAlt:13,deckel:41,neu:'Bundeswettbewerb, das Hoffest, du kannst Kontrollen anregen'},
+  {name:'Vizepräsident',kurz:'Vizepräsident',w:'Vizepräsidentin',kw:'Vizepräsidentin',ans:8000,ha:33,verm:16000000,rahmen:300000,haAlt:16,deckel:50,neu:'Trockenbeerenauslese, die Chance auf eine Spitzenlage'},
   {name:'Präsident des Weinbauverbands',kurz:'Präsident',w:'Präsidentin des Weinbauverbands',kw:'Präsidentin',ans:12000,ha:40,verm:30000000,rahmen:300000,haAlt:20,deckel:50,neu:'der Stuhl im Festsaal, das Amt an der Spitze des Verbands, der Weg zur Weltweinschau'}
 ];
 // Seit 11.5 (Teil B): Fläche neu. Die Hürden (ha, bepflanzt) gehen bis 40 Hektar statt bis 20, haAlt sind die Werte bis 11.4.
@@ -189,10 +196,13 @@ const RAENGE=[
 const HA_NEU=1;
 for(const r of RAENGE){const neu=r.ha; Object.defineProperty(r,'ha',{get:()=>HA_NEU?neu:r.haAlt,enumerable:true})}
 // Ab welcher Stufe (Index in RAENGE) etwas geht. RANG_ALT rechnet die sechs Ränge alter Spielstände um.
-const R_MAX=RAENGE.length-1, R_AUKTION=1, R_LAND=3, R_BUND=5, R_LADEN=6, R_HOFFEST=7, R_SPITZE=8, RANG_ALT=[0,1,3,5,7,9];
+// Seit 13.3.4 kommen die Ränge aus FREI, dort stehen auch Makler, Weinbotschafter und Kontrollen.
+const R_MAX=RAENGE.length-1, R_AUKTION=FREI.auktion.r, R_MAKLER=FREI.makler.r, R_LAND=FREI.land.r, R_BUND=FREI.bund.r, R_LADEN=FREI.laden.r, R_BOTSCHAFT=FREI.botschafter.r,
+  R_HOFFEST=FREI.hoffest.r, R_KONTROLLE=FREI.kontrolle.r, R_SPITZE=FREI.spitzenlage.r, RANG_ALT=[0,1,3,5,7,9];
 // Version 7.0 (Schritt C): Freischalt-Plan aus Schritt A. Die Rebsorten kommen nacheinander nach ihren Sternen im Gebiet (sortenFolge):
-// die ★★★-Sorte von Anfang an, die ★★-Sorte ab R_SORTE2, die ★-Sorte ab R_SORTE3. Sekt ab R_SEKT, der Exporthandel ab R_EXPORT, Kellerausbau ab R_KELLER (weiter unten).
-const R_SORTE2=1, R_SORTE3=4, R_SEKT=2, R_EXPORT=2, SORTE_RANG=[0,R_SORTE2,R_SORTE3];
+// die ★★★-Sorte von Anfang an, die ★★-Sorte ab R_SORTE2, die ★-Sorte ab R_SORTE3. Seit 13.3.4 aus FREI: Sekt-Sorte und Sektkeller ab R4, Spitzen-Sorte ab R5,
+// der Exporthandel ab FREI.export (R_EXPORT ist nur noch sein Rang, der Abstand kommt dazu), Kellerausbau ab R_KELLER (weiter unten).
+const R_SORTE2=FREI.sorte_sekt.r, R_SORTE3=FREI.sorte_spitze.r, R_SEKT=FREI.sektkeller.r, R_EXPORT=FREI.export.r, SORTE_RANG=[0,R_SORTE2,R_SORTE3];
 // Version 7.0 (Schritt D): drei Manager statt Gutsverwalter, nach dem Plan aus Schritt A ("Fundament für 7.0" in der Projektnotiz).
 // MANAGER: je Stufe der Bereich, die Stufe, ab welchem Rang (Index in RAENGE) sie geht und welche Aufgaben (Schlüssel aus MGR_AUFGABEN) sie dazubringt.
 // kosten: Einstellen (Stufe 1) oder Befördern, aus MGR_KOSTEN. lohn: Monatslohn auf dieser Stufe, aus MGR_LOHN, läuft über die Löhne.
@@ -252,10 +262,9 @@ const MANAGER=[
 // Schummelei: Kälteeinbruch im November, Panschen, Weinkontrolle, Sabotage. Alle Zahlen an einer Stelle.
 const KAELTE=.25, ZUCKER_MAX=20, ZUCKER_ERLAUBT=10, SCHMIER_ANTEIL=.1, SCHMIER_MIN=2000;
 const STRAFE_MIN=10000, STRAFE_ANS=30, STRAFE_ANS_WEITER=10, BESTECH_MIN=5000, BESTECH_MAX=50000, BESTECH_NEIN_ANS=20;
-const SAB_KONTAKT=20000, SAB_MIN=5000, SAB_MAX=50000, SAB_AUFFLIEGEN=.2, SAB_STRAFE=30000, SAB_STRAFE_ANS=40, SAB_RANG=R_BUND;
-// Seit 10.6 (Maik 20.11.2026): Sabotage erst ab Winzer (SAB_AB), vorher ist das Fenster in der Hintertür nicht zu sehen. Ab SAB_RANG (Gutsherr) bleibt sie tabu.
-// Der Zocker sabotiert dich frühestens ab dem fünften Jahr, Winzer wird man etwa in Jahr 7, ab da kannst du zurückschlagen. Bis 10.5 ging sie vom Neuling an.
-const SAB_AB=2;
+const SAB_KONTAKT=20000, SAB_MIN=5000, SAB_MAX=50000, SAB_AUFFLIEGEN=.2, SAB_STRAFE=30000, SAB_STRAFE_ANS=40, SAB_RANG=FREI.sabotage.bis;
+// Seit 13.3.4: Sabotage erst FREI.sabotage.ab Jahre nach dem Winzermeister (frei('sabotage')), vorher ist das Fenster in der Hintertür nicht zu sehen. Ab SAB_RANG (Gutsherr) bleibt sie tabu.
+// Der Zocker sabotiert dich frühestens ab dem fünften Jahr. Bis 10.5 ging sie vom Neuling an, bis 12.9.5 ab Winzer.
 // Version 10.0 (Spielende, Paket 1): Amtszeit und Wahl. Als Präsident ist alle WAHL_JAHRE Jahre Wahl, gerechnet in Monaten ab dem Amtsantritt.
 // WAHL_UMFRAGE Monate vorher kommt die Umfrage, ab da läuft der Wahlkampf. Die Stimmung im Verband (0 bis 100) startet bei STIMM_START,
 // nach einer Abwahl bei STIMM_ALT. Der Herausforderer ist die Marke auf dem Balken: MARKE_START, je gewonnener Wahl MARKE_PLUS mehr, höchstens MARKE_MAX.
@@ -339,11 +348,13 @@ const ANREG_ANS=60, ANREG_FEHL=6, PANSCH={zocker:.4,vorsicht:.08,qualitaet:.04},
 // Weinfest: ab Winzermeister bis zum Hoffest, einmal im Jahr von Juni bis August, kostet WEINFEST_PREIS und bringt WEINFEST_ANS Ansehen mal Wetter-Faktor.
 // Kellerausbau: drei Stufen (KELLER_PREISE), seit 8.6 gestaffelt nach KELLER_RANG: Jungwinzer, Winzermeister, Gutsherr (Maik 18.11.2026, vorher alle ab Jungwinzer). Jede Stufe kürzt die Reifezeit von Prädikatswein und Eiswein in der Flasche um einen Monat, und jeder Wein gewinnt beim Reifen KELLER_REIFE schneller an Wert.
 // Seit 11.6: KELLER_NAMEN gibt den drei Stufen im Kellerausbau Namen, nur für die Anzeige. S.keller bleibt die Zahl der Stufen.
-const MAKLER_PREIS=45000, MAKLER_HA=[0,1,1,1,2,2,2,3,3,3], WEINFEST_PREIS=30000, WEINFEST_ANS=10, KELLER_PREISE=[50000,120000,250000], KELLER_NAMEN=['Edelstahltank','Großes Holzfass','Barrique-Keller'], KELLER_REIFE=.1, KELLER_RANG=[1,3,5], R_WEINFEST=R_LAND, R_KELLER=KELLER_RANG[0];
+const MAKLER_PREIS=45000, MAKLER_HA=[0,1,1,1,2,2,2,3,3,3], WEINFEST_PREIS=30000, WEINFEST_ANS=10, KELLER_PREISE=[50000,120000,250000], KELLER_NAMEN=['Edelstahltank','Großes Holzfass','Barrique-Keller'], KELLER_REIFE=.1, KELLER_RANG=[1,3,5], R_WEINFEST=FREI.weinfest.r, R_KELLER=KELLER_RANG[0];
 const FESTE={weinfest:{name:'Weinfest',preis:WEINFEST_PREIS,ans:WEINFEST_ANS,text:'Ein Weinfest im Hof mit Zelt, Musik und deinem Wein',kurz:'Musik, Zwiebelkuchen und dein Wein für Nachbarn und Gäste'},hoffest:{name:'Hoffest',preis:HOFFEST_PREIS,ans:HOFFEST_ANS,text:'Ein großes Fest für das ganze Dorf',kurz:'Musik, Flammkuchen und dein Wein für das ganze Dorf'}};
 // Erntemaschinen (Paket 4, Variante C): die kleine ab Winzermeister, der große Vollernter ab Gutsherr. Maschinen ohne Typ (alte Spielstände) sind klein und bleiben, auch vor Winzermeister.
 // Seit 11.5 (Teil C2): Der Vollernter deckt einen großen Betrieb allein ab, VOLL_HELFER Hektar (bis 11.4: 10 Hektar, 10.000 Reben, 120.000 €, Wartung 300 € je Punkt).
 const VOLL_PREIS=450000, VOLL_LEISTUNG=25000, VOLL_HELFER=25, VOLL_WARTUNG=1000;
+// Seit 13.3.4: Erntemaschine und Vollernter haben eigene Ränge, damit sie nicht mit Landesprämierung und Bundeswettbewerb wandern. Die Maschinen kommen in 13.5 neu.
+const R_ERNTE=3, R_VOLL=5;
 // Version 8.0 (Paket A, Maik 17.11.2026): Jede Maschine hat im Spielstand einen Typ (ma.typ, Schlüssel in MASCH) und braucht fahrer Leute aus leute (hier Erntehelfer).
 // Fahrer-Regel: Eine Maschine ist nur im Einsatz, wenn ihr Zustand mindestens MASCH_ROT ist und genug Fahrer frei sind. Die größten Maschinen bekommen zuerst ihre Fahrer.
 // Nur Maschinen im Einsatz zählen als Helfer und bei der Ernteleistung. Fahrer bleiben dabei Erntehelfer und zählen selbst mit (Annahme von Claude aus dem Auftrag).
@@ -359,9 +370,9 @@ const LAUB_PREIS=20000, LAUB_WARTUNG=60, LAUB_ABN=15, LAUB_QP=1, LAUB_ANS=4, R_L
 const ABF_PREIS=60000, ABF_WARTUNG=200, ABF_ABN=15, ABF_NORM=40000, ABF_PLUS=.05, ABF_FLASCHEN=75000, R_ABF=6;
 // Reihenfolge wie die Ränge, so stehen sie auch im Feld Maschinen. f:1 heißt "die" (Dein/Deine, er/sie), ernte:1 liest bei der Lese mit.
 const MASCH={duenger:{name:'Düngerstreuer',preis:STREU_PREIS,leist:0,helfer:0,wart:STREU_WARTUNG,rang:R_STREU,fahrer:1,leute:'helfer',bonus:1,text:'streut den Dünger gleichmäßig'},
-  klein:{name:'Erntemaschine',preis:MASCH_PREIS,leist:MASCH_LEISTUNG,helfer:MASCH_HELFER,wart:WARTUNG,rang:R_LAND,fahrer:1,leute:'helfer',ernte:1,f:1,text:'die kleine Maschine für den Anfang'},
+  klein:{name:'Erntemaschine',preis:MASCH_PREIS,leist:MASCH_LEISTUNG,helfer:MASCH_HELFER,wart:WARTUNG,rang:R_ERNTE,fahrer:1,leute:'helfer',ernte:1,f:1,text:'die kleine Maschine für den Anfang'},
   laub:{name:'Laubschneider',preis:LAUB_PREIS,leist:0,helfer:0,wart:LAUB_WARTUNG,rang:R_LAUB,fahrer:1,leute:'helfer',bonus:1,text:'macht im Juni den Sommerschnitt'},
-  gross:{name:'Vollernter',preis:VOLL_PREIS,leist:VOLL_LEISTUNG,helfer:VOLL_HELFER,wart:VOLL_WARTUNG,rang:R_BUND,fahrer:2,leute:'helfer',ernte:1,text:'die große Maschine für weite Lagen'},
+  gross:{name:'Vollernter',preis:VOLL_PREIS,leist:VOLL_LEISTUNG,helfer:VOLL_HELFER,wart:VOLL_WARTUNG,rang:R_VOLL,fahrer:2,leute:'helfer',ernte:1,text:'die große Maschine für weite Lagen'},
   abfuell:{name:'Abfüllanlage',preis:ABF_PREIS,leist:0,helfer:0,wart:ABF_WARTUNG,rang:R_ABF,fahrer:1,leute:'lagerarb',bonus:1,f:1,text:'füllt ab, ohne dass etwas danebengeht'}};
 // Bonus der drei neuen Maschinen, für Fenster und Infotafeln.
 const MASCH_BONUS={duenger:()=>`Düngen kostet ${Math.round(STREU_RABATT*100)} % weniger und bringt ${STREU_PLUS} statt ${DUENG_PLUS} Punkte Boden`,
