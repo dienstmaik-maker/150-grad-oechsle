@@ -258,7 +258,7 @@ function wagnisHinweis(id){
   const f=S.felder[id], m=S.monat, w=feldWeg(id), wm=Math.round((1-WARTEN_MENGE)*100);
   if(f.gefroren||!(f.menge>0)||f.gelesen) return '';
   if(f.wagnis==='frost') return `<br><b>🎲 Wagnis Eiswein:</b> Dein ${SORTEN[id].name} wartet auf Frost im Dezember. Klappt es nicht, ist die Ernte dieses Feldes weg.`;
-  if(f.wagnis==='edel') return m===10?'<br><span class="rot">Im Dezember verfault, was noch hängt.</span>':'';
+  if(f.wagnis==='edel') return m!==10?'':frei('weg_tba')?`<br><b>🎲 Wagnis Trockenbeerenauslese:</b> Lässt du die Beerenauslese bis Dezember hängen, kann daraus eine Trockenbeerenauslese werden. Klappt es nicht, ist alles weg, und der Monat kostet ${wm} % Menge.`:'<br><span class="rot">Im Dezember verfault, was noch hängt.</span>';
   const zwei=wegeOffen().length>1, wahl=zwei?` Dein Weg: ${w==='edel'?'bis November auf Edelfäulnis':'bis Dezember auf Frost'}, wählen kannst du bis Oktober.`:'', tend=R().weg==='beide'&&m>=8?` Tendenz im Winzerboten: ${herbstTend().name}.`:'';
   if(m<=9&&w) return `<br><b>🎲 Wagnis:</b>${tend}${wahl} ${w==='edel'?'Lässt du die Trauben bis November hängen, kann Edelfäulnis eine Beerenauslese bringen.':'Lässt du die Trauben bis Dezember hängen, kann Frost einen Eiswein bringen.'} Klappt es nicht, ist die Ernte dieses Feldes weg. Jeder Monat über Oktober kostet ${wm} % Menge.`;
   if(m>=9) return `<br><span class="rot">${m===9?`Ab November kostet jeder Monat ${wm} % Menge, im Dezember verfault, was noch hängt.`:'Im Dezember verfault, was noch hängt.'}</span>`;
@@ -1135,7 +1135,7 @@ function vBerg(){
       ${f.teil?'<div class="mut">Ein Teil ist schon gelesen, der Rest hängt noch.</div>':''}
       ${m>=7?`<div class="hilfe">${leseHilfe(f)}${wagnisHinweis(id)}</div>`:''}`;
     }
-    const sektOhne=sektSorte(id)&&!S.sektkeller, kannLesen=m>=7&&f.menge>0&&!f.gelesen&&(m<11||f.gefroren)&&!sektOhne, pflanz=m<=2&&sorteFrei(id)&&!sektOhne, schnitt=schnittOffen(id), haengt=f.reben&&f.menge>0&&!f.gelesen&&m>5&&m<7;
+    const sektOhne=sektSorte(id)&&!S.sektkeller, kannLesen=m>=7&&f.menge>0&&!f.gelesen&&(m<11||f.gefroren||f.edel)&&!sektOhne, pflanz=m<=2&&sorteFrei(id)&&!sektOhne, schnitt=schnittOffen(id), haengt=f.reben&&f.menge>0&&!f.gelesen&&m>5&&m<7;
     h+=fenster('feld_'+id,titel,z,{buch:m>=7?'lese':'berg',
       hin:[mr&&m<=2&&S.verlust&&S.verlust[id]>0&&`${WM} pflanzt beim Weiterblättern nach.`],
       links:sektOhne?'Die Sekt-Sorte macht nur Sekt, erst den Sektkeller kaufen.':pflanz&&frei<10?'Auf deinem Land ist kein Platz mehr frei.':haengt?'Lese ab August.':schnitt?`✂️ Rebschnitt bis Ende April: ${eur(schnittKosten(id))}`:'',

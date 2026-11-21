@@ -114,8 +114,8 @@ const WEIN_ROLLE={menge:['feder','tafel','qba','kab','spat'],sekt:[],spitze:['fe
 // (S.rangMon merkt den Monat jedes Aufstiegs), bis der Rang, ab dem es wieder weg ist. Wer später aufsteigt, bekommt auch das später. name steht beim Aufstieg
 // unter "in 4 Jahren" und im Winzerboten, bote ist die Zeile, wenn es nach dem Abstand kommt (Platzhalter bis 13.8). 13.4 und 13.5 hängen hier ihre Einträge an.
 // Seit 13.4.2: Beerenauslese und Eiswein haben kein eigenes Rang-Schloss mehr, sie kommen nur über den Weg des Gebiets im Herbst (weg_eigen ab R6).
-// Trockenbeerenauslese ab R8 bleibt als Übergang, bis 13.4.5 sie über weg_tba freigibt. Feder-, Tafel- und Qualitätswein gelten für jede Rolle, die sie machen darf (Annahme von Claude).
-const FREI={wein_feder:{r:0},wein_tafel:{r:1},wein_qba:{r:2},wein_kab:{r:0},wein_spat:{r:0},wein_aus:{r:6},wein_tba:{r:8},weg_eigen:{r:6},weg_fremd:{r:7},
+// Seit 13.4.5 kommt auch die Trockenbeerenauslese nur über das Wagnis, als zweite Stufe nach der Beerenauslese (weg_tba ab R8, der fremde Weg weg_fremd ab R7). Feder-, Tafel- und Qualitätswein gelten für jede Rolle, die sie machen darf (Annahme von Claude).
+const FREI={wein_feder:{r:0},wein_tafel:{r:1},wein_qba:{r:2},wein_kab:{r:0},wein_spat:{r:0},wein_aus:{r:6},weg_eigen:{r:6},weg_fremd:{r:7},weg_tba:{r:8},
   makler:{r:1},spende:{r:1},auktion:{r:2},land:{r:3},
   export:{r:3,ab:4,name:'der Exporthandel',bote:'🚢 Der Exporthandel nimmt jetzt auch deinen Wein. Er zahlt mehr als das Inland und nimmt dir mit jedem Rang mehr ab.'},
   sabotage:{r:3,ab:4,bis:5,name:'Sabotage hinter der Hintertür',bote:'💣 Hinter der Hintertür kennt man jetzt deinen Namen. Wer will, kann einem Gegner schaden lassen.'},
@@ -621,7 +621,8 @@ const OE_START=49, OE_PLUS=[14,14,12,15,4];
 // Seit 13.4.3: In der Mitte (weg beide) sind beide Wege eigene, die Chance hängt an der Tendenz: mit ihr WAGNIS.mitTend, dagegen oder bei unklar WAGNIS.gegenTend.
 // Seit 13.4.4: Ab R7 öffnet ein besonderes Jahr den fremden Weg (warm ein harter Winter für den Eiswein, kühl ein goldener Herbst für die Edelfäulnis)
 // mit WAGNIS.fremd. Ein Jahr ist mit FREMD_JAHR besonders (etwa alle acht Jahre), in der Mitte gibt es keinen fremden Weg.
-const WAGNIS={eigen:.7,mitTend:.55,gegenTend:.2,fremd:.5}, WARTEN_MENGE=.9, WAGNIS_F=1, FREMD_JAHR=1/8;
+// Seit 13.4.5: Ab R8 kann eine gelungene Beerenauslese einen Monat länger hängen, mit WAGNIS.tba wird sie Trockenbeerenauslese (MIN_NORMAL.tba), sonst ist alles weg.
+const WAGNIS={eigen:.7,mitTend:.55,gegenTend:.2,fremd:.5,tba:.5}, WARTEN_MENGE=.9, WAGNIS_F=1, FREMD_JAHR=1/8;
 // Seit 13.4.4: Meldung im Winzerboten vom September, wenn der fremde Weg offen ist, nach dem Weg, den sie öffnet. Platzhalter bis 13.8.
 const FREMD_TEXT={
   frost:['Ein harter Winter kündigt sich an','Die Alten {wo} spüren es in den Knochen: Dieser Winter wird hart. Wer seine Spitzen-Sorte bis Dezember hängen lässt, hat diesmal eine Chance auf Eiswein.'],
@@ -635,6 +636,7 @@ const TENDENZEN=[
 // Winzerbote, wenn das Wagnis nicht klappt: Titel, Text ({s} ist die Sorte), Bild. Platzhalter, der Wortlaut kommt in 13.8.
 const WAGNIS_AUS={
   edel:['Kälteeinbruch im November','Über Nacht ist es bitterkalt geworden. Dein {s} hing noch für die Edelfäulnis am Stock und ist erfroren.','frost'],
+  tba:['Die Trockenbeerenauslese ist dahin','Ein nasser Dezember: Die edelfaulen Beeren deines {s} sind am Stock verfault. Wer wartet, wagt eben alles.','frost'],
   frost:['Tauwetter statt Eiswein','Der Frost bleibt aus, der Dezember ist zu mild. Dein {s} ist am Stock verfault, aus dem Eiswein wird nichts.','frost']
 };
 const WAGNIS_FEUER='Die Frostfeuer der Feuerwehr haben ein Viertel gerettet.';

@@ -943,6 +943,12 @@ function herbstWagnis(id,f,so,m,L){
     else wagnisWeg(f,so,'frost',L);
     return;
   }
+  // Seit 13.4.5: Die Beerenauslese wagt ab R8 die zweite Stufe, ohne den Rang verfault sie wie alles andere.
+  if(f.wagnis==='edel'&&frei('weg_tba')){
+    if(H.uTba<Math.min(1,WAGNIS.tba*WAGNIS_F)){f.oe=Math.max(f.oe,R().min.tba); L.push(`Die edelfaulen Beeren vom ${so.name} sind zu Rosinen eingetrocknet: ${f.oe}° Öchsle, genug für eine Trockenbeerenauslese. Lies sie diesen Monat von Hand, nur überreife Trauben.`)}
+    else wagnisWeg(f,so,'tba',L);
+    return;
+  }
   f.menge=0; L.push(`Die hängenden ${so.name}-Trauben sind im Dezember verfault.`);
 }
 // Das Wagnis klappt nicht: Die Ernte des Feldes ist weg, der Winzerbote erklärt es. Beim Kälteeinbruch im November retten die Frostfeuer der Feuerwehr
@@ -1964,7 +1970,7 @@ function aufgaben(){
   }}
   // Seit 8.2: gelber Punkt im Rathaus im November und Dezember, solange die Spende des Rangs offen ist. Nie rot.
   {const s=spOffen(); if(s&&m>=10) A.push({t:`🤝 Spende für ${SPENDEN[s].z}: ${vonGeld(spBezahlt(),SPENDEN[s].b)}. Vor Silvester gespendet senkt sie die Steuer`,tab:'stadt',sub:'amt'})}
-  if(m>=7&&R().sorten.some(id=>{const f=S.felder[id];return f.menge>0&&!f.gelesen&&(m<11||f.gefroren)})) A.push({t:'Lese möglich',tab:'gut',sub:'berg',...(m===7?{ruhig:1}:{halt:1})});
+  if(m>=7&&R().sorten.some(id=>{const f=S.felder[id];return f.menge>0&&!f.gelesen&&(m<11||f.gefroren||f.edel)})) A.push({t:'Lese möglich',tab:'gut',sub:'berg',...(m===7?{ruhig:1}:{halt:1})});
   if(S.rang>=R_LADEN&&!aufgabeAktiv('regal')&&!regalWeine().length&&S.lots.some(l=>l.status==='flasche'&&preis(l)>0)) A.push({t:'🍷 Das Regal deiner Weinhandlung ist leer',tab:'stadt',sub:'laeden',ruhig:1});
   {const art=festArt(); if(art&&m>=5&&m<=7&&S.festJahr!==S.jahr&&S.geld>=FESTE[art].preis) A.push({t:`🎉 Das Geld reicht für ein ${FESTE[art].name}`,tab:'gut',sub:'betrieb',ruhig:1})}
   const vk=S.lots.filter(l=>preis(l)>0&&!l.regal).length;
