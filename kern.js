@@ -1994,7 +1994,7 @@ function aufgaben(){
   if(maschOhneFahrer().some(x=>mTyp(x).leute==='lagerarb')) A.push({t:'🍾 Die Abfüllanlage steht still, es fehlt ein Lagerarbeiter',tab:'stadt',sub:'arbeit'});
   if(of&&!fehlText()) A.push({t:`🚜 ${of===1?'Eine Maschine steht':of+' Maschinen stehen'} still, es ${fahrerFehlen()===1?'fehlt ein Fahrer':'fehlen '+fahrerFehlen()+' Fahrer'}`,tab:'stadt',sub:'arbeit'});
   for(const id of R().sorten){const f=S.felder[id]; if(f.menge>0&&!f.gelesen&&handFehlt(f)) A.push({t:`✋ ${SORTEN[id].name}: für die Handlese fehlen ${handBedarf(f)-S.helfer} Erntehelfer, sonst nur Qualitätswein`,tab:'stadt',sub:'arbeit'})}}
-  for(const l of S.lots) if(l.status==='trauben') A.push(aufgabeAktiv('keltern')?{t:`${SORTEN[l.sorte].name}-Trauben: dein ${MGR_BEREICHE.keller.name} keltert beim Weiterblättern`,tab:'keller',ruhig:1}:{t:`${SORTEN[l.sorte].name}-Trauben müssen diesen Monat gekeltert werden`,rot:1,tab:'keller'});
+  for(const l of S.lots) if(l.status==='trauben') A.push(lagerKann(1)&&l.liter<=S.fassraum-fassBelegt()+(aufgabeAktiv('fass')?Infinity:0)?{t:`${SORTEN[l.sorte].name}-Trauben: deine Lagerarbeiter keltern beim Weiterblättern`,tab:'keller',ruhig:1}:{t:`${SORTEN[l.sorte].name}-Trauben müssen diesen Monat gekeltert werden`,rot:1,tab:'keller'});
   for(const l of S.lots) if(l.status==='fass'){
     if(l.stufe==='feder') A.push({t:`Federweißer ${SORTEN[l.sorte].name} muss diesen Monat abgefüllt werden`,rot:1,tab:'keller'});
     else if(l.fassMonate>=5) A.push({t:`${lotName(l)}: verdirbt im Fass in ${8-l.fassMonate} Monaten`,rot:1,tab:l.stufe?'keller':'stadt',sub:l.stufe?'':'amt'});
@@ -2008,7 +2008,7 @@ function aufgaben(){
   if(m<=2&&S.verlust) for(const id of R().sorten) if(S.verlust[id]) A.push({t:`Über den Winter sind ${rbn(S.verlust[id])} ${SORTEN[id].name}-Reben eingegangen. Nachpflanzen`,tab:'gut',sub:'berg',ruhig:aufgabeAktiv('reben')||helferKann(3)?1:0});
   if(m<=2&&frei>0) A.push({t:`Pflanzzeit: Platz für ${rbn(frei)} Reben`,tab:'gut',sub:'berg',ruhig:1});
   // Version 7.3: Düngen steht an, sobald der Boden auf 70 % oder weniger fällt (Gelb), seit 7.9 Rot ab DUENG_ROT. Düngt der Weingut-Manager, nur ein ruhiger Hinweis.
-  if(S.boden<=70&&S.duengungen<3) A.push(aufgabeAktiv('duengen')?{t:`Boden bei ${S.boden}\u00a0%: dein ${MGR_BEREICHE.weingut.name} düngt beim Weiterblättern`,tab:'gut',sub:'berg',ruhig:1}:{t:`🌱 Boden bei ${S.boden}\u00a0%: Düngen ist ${S.boden<=DUENG_ROT?'überfällig':'dran'}`,tab:'gut',sub:'berg',rot:S.boden<=DUENG_ROT?1:0});
+  if(S.boden<=70&&S.duengungen<3) A.push(helferKann(1)?{t:`Boden bei ${S.boden}\u00a0%: deine Erntehelfer düngen beim Weiterblättern`,tab:'gut',sub:'berg',ruhig:1}:{t:`🌱 Boden bei ${S.boden}\u00a0%: Düngen ist ${S.boden<=DUENG_ROT?'überfällig':'dran'}`,tab:'gut',sub:'berg',rot:S.boden<=DUENG_ROT?1:0});
   // Seit 13.2.4: Rebschnitt bis Ende April, im April rot.
   {const sn=R().sorten.filter(schnittOffen); if(sn.length) A.push({t:`✂️ Rebschnitt bis Ende April: ${sn.map(id=>SORTEN[id].name).join(', ')}`,tab:'gut',sub:'berg',rot:S.monat===SCHNITT_BIS?1:0})}
   // Seit 13.4.6: Der Weingut-Manager warnt, wenn zu viel der Ernte im Wagnis hängt (wagnisWarnung), Rot.
@@ -2142,7 +2142,7 @@ function dauerAuftrag(){
     const p=ladenPreis(l,r), e=erloes(Math.round(n*p)); kassiere(e); la.rest-=n; l.liter-=n; nL+=n; eL+=e; kompVerkauf(l,n);
   }
   if(aH) for(const l of ls()){
-    const w=wege(l)[0]; if(!w) continue; const fw=federHandel(l), n=fw?l.liter:Math.min(frei(l),Math.floor(marktRest()/w.p)); if(n<=0) continue;
+    const w=wege(l).filter(x=>aufgabeAktiv('export')||x.name!=='Exporthandel')[0]; if(!w) continue; const fw=federHandel(l), n=fw?l.liter:Math.min(frei(l),Math.floor(marktRest()/w.p)); if(n<=0) continue;
     const e=erloes(Math.round(n*w.p)); kassiere(e); if(!fw) S.absatz=(S.absatz||0)+n*w.p; l.liter-=n; nH+=n; eH+=e; kompVerkauf(l,n);
   }
   S.lots=S.lots.filter(l=>l.liter>0);
@@ -2169,7 +2169,7 @@ function mgrWann(z){const j=Math.floor(z/12); return MON[z%12]+(j!==S.jahr?' '+j
 function mgrLogbuch(b,t){const m=S.manager[b], z=S.jahr*12+S.monat, L=m.log=m.log||[], e=L[L.length-1]; if(e&&e.z===z) e.t=t; else L.push({z,t}); if(L.length>MGR_LOG) L.splice(0,L.length-MGR_LOG)}
 // Manager im Betrieb: {h} für die, die der Rang schon erlaubt, {zu} für die gesperrten (seit 10.6 leer, bis 10.5 zugeklappt mit Schloss unten).
 function mgrHtml(){
-  const B=Object.keys(MGR_BEREICHE), da=b=>S.rang>=mgrEintrag(b,1).rang;
+  const B=Object.keys(MGR_BEREICHE), da=b=>mgrSt(b)>0||frei(mgrK(mgrEintrag(b,1)));
   return {h:B.filter(da).map(mgrPersonal).join(''),zu:B.filter(b=>!da(b)).map(mgrPersonal).join('')};
 }
 // Was eine Stufe ohne Schalter bringt: der Kellermeister auf Stufe 3 lässt Wein schneller reifen, aber erst, wenn Schritt H einen Wert setzt.
@@ -2211,29 +2211,30 @@ function mgrBetrieb(){
   // Schritt F: Kellermeister (seit 8.5 ab Stufe 1, vorher Stufe 2) keltert die Lese beim Weiterblättern und kauft fehlenden Fassraum in Schritten von 500 l wie von Hand.
   // Für den Kauf lässt er mgrPuffer auf dem Konto, fehlende Lagerarbeiter stellt er nur mit der Aufgabe 'lager' ein. Reicht es nicht, bleiben die Trauben liegen
   // und die "Letzte Warnung" nennt den Grund (l.mgrNot). Mit Verlust keltern ("Trotzdem keltern") entscheidet nur der Spieler.
-  if(aufgabeAktiv('keltern')){
-    const pu=mgrPuffer('keller'), fp=fassPreis(); let kauf=0;
+  // Seit 13.5.4: Stufe 1 kauft nur noch den Fassraum (fass), gekeltert wird danach von den Lagerarbeitern (leuteArbeit).
+  if(aufgabeAktiv('fass')){
+    const pu=mgrPuffer('keller'), fp=fassPreis(); let kauf=0, rest=S.fassraum-fassBelegt();
     for(const l of S.lots.filter(l=>l.status==='trauben')){
-      const fehlt=l.liter-(S.fassraum-fassBelegt());
+      const fehlt=l.liter-rest;
       if(fehlt>0){
         const n=Math.ceil(fehlt/500)*500, kost=Math.round(n*fp*100)/100;
         if(la){let i=0; while(fassKap()<S.fassraum+n&&S.geld-pu>=VERMITTLUNG+kost&&i++<20) stell('lagerarb')}
         if(fassKap()<S.fassraum+n){l.mgrNot='leute'; continue}
         if(S.geld-pu<kost){l.mgrNot='geld'; continue}
-        zahle(kost); S.fassraum+=n; kauf+=n;
+        zahle(kost); S.fassraum+=n; kauf+=n; rest+=n;
       }
-      delete l.mgrNot; l.status='fass'; l.fassMonate=0; LK.push(`${num(l.liter)}\u00a0l ${SORTEN[l.sorte].name} gekeltert`);
+      delete l.mgrNot; rest-=l.liter;
     }
     if(kauf) LK.push(`${num(kauf)}\u00a0l Fassraum gekauft`);
   }
-  if(aufgabeAktiv('flaschen')) for(const l of S.lots.filter(l=>l.status==='fass'&&l.stufe)){
-    const fehlt=abfFl(l)-S.flaschen, fp=flaschePreis();
+  // Seit 13.5.4: Stufe 2 kauft nur noch die Flaschen, für alle angemeldeten Fässer zusammen. Abgefüllt wird danach von den Lagerarbeitern (leuteArbeit).
+  if(aufgabeAktiv('flaschen')){let bed=0, kauf=0; for(const l of S.lots.filter(l=>l.status==='fass'&&l.stufe)){
+    bed+=abfFl(l); const fehlt=bed-S.flaschen, fp=flaschePreis();
     if(fehlt>0){
       if(la){let i=0; while(flKap()<S.flaschen+fehlt&&S.geld>VERMITTLUNG+fehlt*fp&&i++<20) stell('lagerarb')}
-      if(flKap()>=S.flaschen+fehlt&&S.geld>=fehlt*fp){zahle(Math.round(fehlt*fp*100)/100); S.flaschen+=fehlt}
-    }
-    if(S.flaschen>=abfFl(l)){const an=bonusMasch('abfuell'); fuelleAb(l); LK.push(`${lotName(l)} abgefüllt${an?' mit der Abfüllanlage':''}`)}
-  }
+      if(flKap()>=S.flaschen+fehlt&&S.geld>=fehlt*fp){zahle(Math.round(fehlt*fp*100)/100); S.flaschen+=fehlt; kauf+=fehlt} else bed-=abfFl(l);
+    }}
+    if(kauf) LK.push(`${num(kauf)} leere Flaschen gekauft`)}
   {const fe=leuteFehlen(); if(hf) for(let i=0;i<fe.helfer;i++) stell('helfer'); if(la) for(let i=0;i<fe.lagerarb;i++) stell('lagerarb')}
   // Seit Paket B: Fahrer für Düngerstreuer und Laubschneider (Stufe 3), den Bediener der Abfüllanlage stellt der Kellermeister mit 'lager' ein.
   if(hf){const n=fahrerFehlen(); for(let i=0;i<n;i++) stell('helfer')}

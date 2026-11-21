@@ -269,33 +269,32 @@ const MGR_BEREICHE={
 const MGR_G=[{Dein:'Dein',dein:'dein',Er:'Er',er:'er',ihn:'ihn',ein:'ein',den:'den'},{Dein:'Deine',dein:'deine',Er:'Sie',er:'sie',ihn:'sie',ein:'eine',den:'die'}];
 const MGR_AUFGABEN={
   laeden:{kurz:'Weinhandlungen beliefern',text:'Jeden Monat die Weinhandlungen mit passenden Weinen beliefern'},
-  handel:{kurz:'an den Großhandel verkaufen',text:'Jeden Monat an den Großhandel verkaufen, so viel er zum vollen Preis nimmt'},
-  flaschen:{kurz:'Fässer abfüllen',text:'Angemeldete Fässer abfüllen und die Flaschen dafür kaufen'},
+  handel:{kurz:'an den Großhandel verkaufen',text:'Jeden Monat an den Großhandel verkaufen, so viel er zum vollen Preis nimmt, auch den Federweißer an den Weinhändler'},
+  // Seit 13.5.4 (Bauplan 13.5): Die Manager machen nur noch Büro. Keltern und Abfüllen machen die Lagerarbeiter, Düngen und Nachpflanzen die Erntehelfer (13.5.2, 13.5.3),
+  // Wettbewerbswein und Hoffest wählt immer der Spieler. Weg sind keltern, reben, duengen, wett und fest, neu sind fass und export.
+  export:{kurz:'auch in den Export verkaufen',text:'Beim Verkauf auch den Exporthandel nutzen, wenn er mehr zahlt als das Inland'},
+  fass:{kurz:'Fassraum kaufen',text:'Nach der Lese fehlenden Fassraum kaufen, damit die Lagerarbeiter keltern können'},
+  flaschen:{kurz:'Flaschen kaufen',text:'Leere Flaschen für angemeldete Fässer kaufen, abfüllen tun die Lagerarbeiter'},
   lager:{kurz:'Lagerarbeiter einstellen',text:'Fehlende Lagerarbeiter einstellen'},
-  reben:{kurz:'Reben nachpflanzen',text:'Eingegangene Reben nachpflanzen'},
-  duengen:{kurz:'düngen',text:'Düngen, wenn der Boden mager wird'},
   // Seit 11.6 (Maik 20.11.2026): ab Stufe 2 spritzt er im Monat der Warnung selbst, wenn mgrPuffer('weingut') auf dem Konto bleibt. Nur auf Schwer (aufgabeDa, mgrAufg).
   spritzen:{kurz:'spritzen',text:'Spritzen, sobald das Weinbauamt vor einem Schädling warnt'},
   // Seit 8.0. Der Text liest MGR_WART_AB erst beim Zeichnen, die Zahl steht weiter unten bei den Maschinen.
   warten:{kurz:'Maschinen warten',get text(){return `Nach der Lese jede Maschine unter ${MGR_WART_AB} % auf 100 % warten, ausgefallene Erntemaschinen sofort`}},
   helfer:{kurz:'Erntehelfer einstellen',text:'Fehlende Erntehelfer einstellen, auch Fahrer für die Maschinen. Vor der Lese die Helfer für die Handlese, danach gehen sie wieder'},
-  keltern:{kurz:'keltern und Fassraum kaufen',text:'Die Lese keltern und fehlenden Fassraum kaufen'},
-  regal:{kurz:'Regal füllen',text:'Das Regal deiner Weinhandlung füllen'},
-  wett:{kurz:'Wettbewerbe',text:'Den besten Wein zu Landesprämierung und Bundeswettbewerb einreichen. Den Wein für die Weltweinschau wählst du selbst'},
-  fest:{kurz:'Fest ausrichten',text:'Jedes Jahr das Hoffest ausrichten, bei Sonne oder spätestens im August'}
+  regal:{kurz:'Regal füllen',text:'Das Regal deiner Weinhandlung füllen'}
 };
 // Reihenfolge je Rang wie im Freischalt-Plan, so stehen sie auch im Aufstiegstext.
 const MANAGER=[
-  {bereich:'handel',stufe:1,aufgaben:['laeden']},
+  {bereich:'handel',stufe:1,aufgaben:['handel']},
   // Seit 8.5 (Maik 18.11.2026): Stufe 1 keltert, Stufe 2 füllt ab. Vorher war es umgekehrt, Keltern fühlt sich mehr nach Kellermeister an.
   // Seit 13.3.3 macht niemand mehr Sekt von Hand oder als Manager, er entsteht bei der Lese der Sekt-Sorte.
-  {bereich:'keller',stufe:1,aufgaben:['keltern','lager']},
-  {bereich:'weingut',stufe:1,aufgaben:['reben','warten']},
-  {bereich:'handel',stufe:2,aufgaben:['handel']},
+  {bereich:'keller',stufe:1,aufgaben:['fass','lager']},
+  {bereich:'weingut',stufe:1,aufgaben:['helfer']},
+  {bereich:'handel',stufe:2,aufgaben:['laeden','export']},
   {bereich:'keller',stufe:2,aufgaben:['flaschen']},
-  {bereich:'weingut',stufe:2,aufgaben:['duengen','spritzen']},
-  {bereich:'handel',stufe:3,aufgaben:['regal','wett','fest']},
-  {bereich:'weingut',stufe:3,aufgaben:['helfer']},
+  {bereich:'weingut',stufe:2,aufgaben:['warten','spritzen']},
+  {bereich:'handel',stufe:3,aufgaben:['regal']},
+  {bereich:'weingut',stufe:3,aufgaben:[]},
   {bereich:'keller',stufe:3,aufgaben:[]}
 ].map(e=>Object.defineProperty(Object.defineProperty(Object.assign(e,{kosten:MGR_KOSTEN[e.stufe-1]}),'lohn',{get:()=>lohnF(MGR_LOHN[e.stufe-1]),enumerable:true}),'rang',{get:()=>FREI['mgr_'+e.bereich+e.stufe].r}));
 // Schummelei: Kälteeinbruch im November, Panschen, Weinkontrolle, Sabotage. Alle Zahlen an einer Stelle.
