@@ -438,7 +438,8 @@ function flaecheBep(){return Math.round(rebenGesamt()/HA_REBEN*10)/10}
 const verlustSpanne=b=>VERLUST.find(v=>b>=v[0]);
 // Bodenschnitt des laufenden Jahres: die Monatsenden bisher und der heutige Stand.
 function bodenSchnitt(){return Math.round(((S.bodenSum||0)+S.boden)/((S.bodenN||0)+1))}
-function frostPlus(){const w=S.winterFrost||0;return (w>=3?FROST_3:w>=2?FROST_2:0)+(S.spaetFrost?SPAETFROST:0)}
+// Seit 13.4.8: Mit der Spende an die Feuerwehr (spLohn(2)) zählt der Frost-Anteil nur mal SP_FROSTFEUER.
+function frostPlus(){const w=S.winterFrost||0;return ((w>=3?FROST_3:w>=2?FROST_2:0)+(S.spaetFrost?SPAETFROST:0))*(spLohn(2)?SP_FROSTFEUER:1)}
 function rebenPreis(id){return Math.round(SORTEN[id].preis*(S.rebenF||1)*(S.rebenAng===id?1-REBEN_ANGEBOT:1)*100)/100}
 // Fassraum und Flaschen schwanken jeden Monat ein wenig, höchstens um LAGER_SCHWANK.
 function fassPreis(){return Math.round(FASS_PREIS*(S.fassF||1)*100)/100}
@@ -974,13 +975,12 @@ function herbstWagnis(id,f,so,m,L){
   }
   f.menge=0; L.push(`Die hängenden ${so.name}-Trauben sind im Dezember verfault.`);
 }
-// Das Wagnis klappt nicht: Die Ernte des Feldes ist weg, der Winzerbote erklärt es. Beim Kälteeinbruch im November retten die Frostfeuer der Feuerwehr
-// (Spende, spLohn(2)) wie bisher ein Viertel (Annahme von Claude, damit ihr Dank weiter gilt), das Feld hängt dann ohne Wagnis weiter.
+// Das Wagnis klappt nicht: Die Ernte des Feldes ist weg, der Winzerbote erklärt es. Seit 13.4.8 auch mit der Spende an die Feuerwehr (Maik 21.11.2026).
 function wagnisWeg(f,so,art,L){
-  const T=WAGNIS_AUS[art], feuer=art==='edel'&&spLohn(2);
-  f.wagnis='aus'; f.menge=feuer?Math.round(f.menge*SP_FROST):0;
-  L.push(`${T[0]}: ${feuer?`Die Frostfeuer der Feuerwehr retten ein Viertel vom ${so.name}, der Rest ist hin.`:`Die Ernte vom ${so.name} ist hin.`}`);
-  schlag(70,T[0],T[1].replace(/\{s\}/g,so.name)+(feuer?' '+WAGNIS_FEUER:''),T[2],{du:1});
+  const T=WAGNIS_AUS[art];
+  f.wagnis='aus'; f.menge=0;
+  L.push(`${T[0]}: Die Ernte vom ${so.name} ist hin.`);
+  schlag(70,T[0],T[1].replace(/\{s\}/g,so.name),T[2],{du:1});
 }
 // Im Dezember: Wartet ein Feld auf Frost, ist es genau dann frostig, wenn das Wagnis klappt, sonst kommt Tauwetter.
 function wagnisWetter(){
@@ -1625,7 +1625,7 @@ function monatLauf(){
       }
       if(f.reben){const tot=Math.min(f.reben,Math.round(f.reben*(festR(sp[1],sp[2],fest(7,si))+fp)/1000)*10); if(tot){f.reben-=tot; S.verlust[id]=tot; totAlle+=tot}}
     }
-    if(totAlle) Z.push(`Zum Jahreswechsel sind ${String(Math.round(totAlle/rebVor*1000)/10).replace('.',',')}\u00a0% deiner Reben eingegangen (${R().sorten.filter(id=>S.verlust[id]).map(id=>`${num(S.verlust[id])} ${SORTEN[id].name}`).join(', ')}). Der Boden lag im Jahresschnitt bei ${schnitt}\u00a0%${fp?', dazu kam der Frost':''}. Bis März kannst du nachpflanzen.`);
+    if(totAlle) Z.push(`Zum Jahreswechsel sind ${String(Math.round(totAlle/rebVor*1000)/10).replace('.',',')}\u00a0% deiner Reben eingegangen (${R().sorten.filter(id=>S.verlust[id]).map(id=>`${num(S.verlust[id])} ${SORTEN[id].name}`).join(', ')}). Der Boden lag im Jahresschnitt bei ${schnitt}\u00a0%${fp?', dazu kam der Frost'+(spLohn(2)?'. '+FROST_FEUER:''):''}. Bis März kannst du nachpflanzen.`);
     S.bodenSum=0; S.bodenN=0; S.winterFrost=0; S.spaetFrost=false;
   }
   S.wetter=S.wetterNext; S.temp=tempFuer(S.monat,S.wetter,fest(8,0)); neuePrognose();
