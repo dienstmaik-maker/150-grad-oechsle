@@ -249,6 +249,8 @@ img.fass{height:1.1em;vertical-align:-.18em}
 #titel .tchz1{display:grid;grid-template-columns:auto 1fr auto;gap:0 8px;padding:7px 0;border-bottom:1px solid rgba(110,75,40,.25);font-size:14px;line-height:1.35}
 #titel .tchz1 b{color:#7b1e3a}#titel .tchz1 strong{font-weight:700}#titel .tchz1 small{color:var(--mut);align-self:center;justify-self:end;white-space:nowrap}#titel .tchz1 span{grid-column:1/-1}
 #titel .tchz1 ul,#titel .wnb>ul{grid-column:1/-1;margin:3px 0 0;padding-left:18px}#titel .tchz1 li,#titel .wnb>ul li{margin:1px 0}#titel .tchz1.kurz{padding:4px 0}
+#titel .tchz1[data-a]{cursor:pointer;-webkit-tap-highlight-color:transparent}#titel .tchz1[data-a]>ul{display:none}#titel .tchz1.auf>ul{display:block}
+#titel .tchz1 .wnz{display:inline-block;width:1em;margin-left:4px;font-size:17px;line-height:1;vertical-align:-1px;font-style:normal;color:#7b1e3a;text-align:center}#titel .tchz1 .wnz::before{content:'▸'}#titel .tchz1.auf .wnz::before{content:'▾'}
 #titel .wnk{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:14px 0 2px;padding-bottom:3px;border-bottom:2px solid rgba(123,30,58,.45);font-size:15px}#titel .wnk b{color:#7b1e3a}#titel .wnk small{color:var(--mut);white-space:nowrap}#titel .wnb>ul{font-size:14px;line-height:1.35;padding-bottom:4px}
 #titel .tkn .tdatei{width:auto;align-self:center;background:none;border:0;border-image:none;box-shadow:none;color:#fff;font:400 13px/1.3 system-ui,sans-serif;text-decoration:underline;opacity:.85;padding:2px 0;text-shadow:0 1px 4px #000;cursor:pointer}
 #titel .version span{white-space:nowrap}
@@ -825,7 +827,7 @@ const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MO
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='12.8';
+const VERSION='12.9';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 // Seit 11.5 (Teil C2, Maik 20.11.2026): realistische Löhne. Das Arbeitsamt bietet LOHN_MIN bis LOHN_MAX im Monat (bis 11.4: 200 bis 500 €, Startlohn 350, Vermittlung 300).
 // LOHN_F ist der gemeinsame Faktor auf alle Löhne (Angestellte und Manager), eingestellt über die Dosis-Reihe der Messung. lohnF rechnet einen Lohn damit um, auf 10 € gerundet.
@@ -6192,6 +6194,9 @@ const AKT={
   ausblick(){openSheet(`<h3>Was geplant ist</h3><p class="mut">Daran wird gearbeitet. Reihenfolge und Umfang können sich noch ändern.</p>${ausblickHtml()}<div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`)},
   titelChronik(){zeigeChronik()},
   titelChronikZu(){const c=document.querySelector('#titel .tchron'); if(c) c.remove()},
+  // Seit 12.9: klappt eine Etappe in der Chronik auf oder zu, die vorher offene klappt zu.
+  titelEtappe(d,e){const z=e.target.closest('.tchz1'); if(!z) return; const auf=!z.classList.contains('auf');
+    for(const x of z.parentNode.parentNode.querySelectorAll('.tchz1.auf')) x.classList.remove('auf'); if(auf) z.classList.add('auf')},
   titelLaden(){titelZu(); if(S)save(); S=null; START=null; render(); window.scrollTo(0,0)},
   weiter(){
     if(S.ende) return;
@@ -6607,10 +6612,13 @@ function ideeFertig(){try{localStorage.removeItem(IDEE_KEY)}catch(e){} meldung('
 // Seit 11.7.1 (Maik 20.11.2026): aufgebaut wie "Mein Stand", je Meilenstein ein Block, das Neueste oben.
 // Der laufende Meilenstein hat oben seine X.0 mit Punkten, darunter das Kommende (▶️ als Nächstes, ⏳ danach) nur mit Titel,
 // dann die fertigen Etappen mit ✅, Datum und den bis zu fünf wichtigsten Punkten, sortiert nach Bezug zur Überschrift.
-// Fertige Meilensteine zeigen ihre Versionen nur als Zeile mit Nummer, Titel und Datum. Unteretappen (dritte Stelle) kommen nicht hierher.
+// Seit 12.9 (Maik 21.11.2026): Die Punkte bleiben auch nach dem Abschluss stehen. Jede Etappe startet zugeklappt, ein Tipp auf die Zeile klappt
+// ihre Punkte mit ▸/▾ auf und zu, immer nur eine ist offen. Die Kopfzeile tut nichts, die Punkte zum Ganzen (p am Block) sind immer zu sehen.
+// Für 1.0 bis 10.5 gab es nie Punkte, dort steht der alte Satz aus der Liste vor 11.7.1 als ein Punkt. Unteretappen (dritte Stelle) kommen nicht hierher.
 // Je Version: [Zeichen, Nummer, Titel, Datum, Punkte]. Kommendes ohne Datum und Punkte.
 const WAS_NEU=[
-  {k:'🏁 12.0 Neue Bilder und Ideen',d:'in Arbeit',p:['Ideen von Timo und neue Bilder kommen ins Spiel','Seit 12.6 ein ruhigerer Start für neue Partien','Seit 12.7 geht kein Tipp mehr verloren','Seit 12.8 kommt jeder Tipp zur rechten Zeit'],v:[
+  {k:'🏁 12.0 Neue Bilder und Ideen',d:'in Arbeit',p:['Ideen von Timo und neue Bilder kommen ins Spiel','Seit 12.6 ein ruhigerer Start für neue Partien','Seit 12.7 geht kein Tipp mehr verloren','Seit 12.8 kommt jeder Tipp zur rechten Zeit','Seit 12.9 klappt hier jede Etappe auf'],v:[
+    ['✅','12.9','Klapp-Chronik','21.11.2026',['Ein Tipp auf eine Etappe zeigt ihre Punkte, nochmal Tippen klappt sie zu','Alle Etappen starten zugeklappt, offen ist immer nur eine','Auch die fertigen Meilensteine zeigen wieder ihre Punkte, von 1.0 bis 11.8']],
     ['✅','12.8','Logikprüfung','21.11.2026',['Jeder Tipp kommt zur rechten Zeit und verspricht nichts, was nicht kommt','Neu: Der Kellermeister meldet die Degorgier- und Abfüllanlage für deinen Sektkeller','Neu: Beim ersten Siegel zeigt dir der alte Winzer das Siegelbrett, beim ersten Gold das Album','Maschinen-Tipps kommen pünktlich zur Kaufzeit von Januar bis März','Das Arbeitsamt erklärt der alte Winzer erst, wenn du wirklich Leute brauchst']],
     ['✅','12.7','Spielführer-Update','21.11.2026',['Das Gesicht des Spielführers sitzt fest oben in der Mitte, ein Tipp darauf holt die Blase jederzeit zurück','Mit ‹ und › blätterst du durch alle Tipps, die schon dran waren, auch durch weggedrückte','Ab zwei Sprechern zeigen die Gesichter oben in der Blase nur die Tipps von einem','Aufgeräumte Statusleiste: Das Gebiet steht im Wetter-Fenster, das Ansehen in „Dein Stand“']],
     ['✅','12.6','Fehlerbehebung','21.11.2026',['Ruhiger Start: Jeder Ort zeigt nur, was du gerade brauchst, der Rest kommt, wenn es so weit ist','Jede neue Partie startet mit Spielführer, ausschalten geht im Büro','Der alte Winzer führt erst in den Weinberg, das Arbeitsamt kommt, wenn du Leute brauchst','Erstes Jahr in klarer Reihenfolge: pflanzen, ab April Ruhe mit „Weiter bis etwas ansteht“, im Juli die Erinnerung vor der Lese','Jeder Tipp nennt den Weg, ein grüner Punkt zeigt ihn, ein Tipp aufs Gesicht klappt die Blase zu']],
@@ -6619,54 +6627,54 @@ const WAS_NEU=[
     ['✅','12.5','Kleine Verbesserungen','20.11.2026',['Maschinen tragen nur noch eine Nummer, wenn du zwei gleiche hast','Die Plaketten im Büro trennen lange Namen an der richtigen Stelle','Das Spendenfenster zeigt, wie viel in diesem Jahr noch Steuer spart']],
     ['✅','12.2','Neue Bilder','20.11.2026',['Neun neue Bilder von Timo','Jede Maschine zeigt beim Kauf ihr Bild, das erste Gerät jeder Art kommt in den Winzerboten','Traubenwickler, Mehltau und Kirschessigfliege mit Bild beim ersten Befall','Der Sektkeller mit eigenem Bild beim Kauf und im Winzerboten','Neun Lexikon-Seiten zeigen oben ihr Bild']],
     ['✅','12.1','Sektkeller','20.11.2026',['Sekt nur mit eigenem Sektkeller, zu kaufen ab Winzer','Sektflasche, Korken und Agraffe als Kosten je Flasche','Degorgier- und Abfüllanlage halbiert die Kosten','24 Monate Hefelager bringen mehr Geld','Der Kellermeister macht Sekt schon auf Stufe 1']]]},
-  {k:'✅ 11 Weinkompendium',v:[
-    ['','11.8','Weinarchiv','20.11.2026'],
-    ['','11.7','Buch und Abschluss','20.11.2026'],
-    ['','10.6','Aufgeräumte Fenster','20.11.2026'],
-    ['','11.6','Schummelsperre','20.11.2026'],
-    ['','11.5','Echtes Weingut','20.11.2026'],
-    ['','11.4','Neue Rebsorten','20.11.2026'],
-    ['','11.3','Geschichten','19.11.2026'],
-    ['','11.2','Aufgeräumtes Büro','19.11.2026'],
-    ['','11.1','Ideenknopf','19.11.2026']]},
+  {k:'✅ 11 Weinkompendium',p:['Das Weinkompendium ersetzt das Weinlexikon','Siegel in Bronze, Silber und Gold'],v:[
+    ['','11.8','Weinarchiv','20.11.2026',['Das Kellerbuch heißt jetzt Weinarchiv, mit drei Kacheln','Siegelbrett mit einer Zeile je Wein und dem Ruf des Hauses','Gold-Etikett für alle drei Siegel, in Franken der Bocksbeutel','Deine Weine zeigen ihre drei Siegel','Lexikon zum Nachlesen, neue Seiten mit „Neu“']],
+    ['','11.7','Buch und Abschluss','20.11.2026',['Kapitel im Buch neu geordnet, wie die Orte im Spiel','Ein Aufstieg über zwei Ränge zeigt beide Kapitel','Die letzte Übergabe bekommt einen Nachfolger mit Namen','Die Pleite zeigt deine Generationen und steht in der Bestenliste','Neues Spiel nach der Pleite erst nach Nachfrage']],
+    ['','10.6','Aufgeräumte Fenster','20.11.2026',['Gesperrtes bleibt unsichtbar bis zum passenden Rang','Die Aufstiegsfeier nennt alles Neue','Fenster von unten auf Pergament, Überschriften dunkelbraun','Leiste für die Flaschen im Lager','Sabotage erst ab Winzer']],
+    ['','11.6','Schummelsperre','20.11.2026',['Festes Wetter je Partie, neu laden ändert nichts','Stufen heißen Lehrjahre, Gesellenjahre und Meisterprüfung','Schädlinge in der Meisterprüfung, Spritzen halbiert den Schaden','Kellerausbau mit Namen','Mehr Startgeld in den Lehrjahren']],
+    ['','11.5','Echtes Weingut','20.11.2026',['Ab 4 Hektar arbeiten Leute für echte Löhne','Manager kommen mit dem Rang von selbst','Jeder Rang verlangt mehr Land, bis 40 Hektar','Ruf des Hauses: mehr Siegel, bessere Preise','Präsident in drei Generationen']],
+    ['','11.4','Neue Rebsorten','20.11.2026',['Je Gebiet drei Sorten: für Menge, Sekt und Spitzenwein','Siegel hängen an den Sorten','Album mit 55 Weinen','Sortenwahl beim neuen Spiel']],
+    ['','11.3','Geschichten','19.11.2026',['Zu jedem Eintrag eine kurze Geschichte','Siegel nur noch für Rebsorten, Sekt und Stufen']],
+    ['','11.2','Aufgeräumtes Büro','19.11.2026',['Vier Bereiche statt einer langen Liste','Rangliste als Zeile bei deinem Rang']],
+    ['','11.1','Ideenknopf','19.11.2026',['Ideen per WhatsApp aus dem Büro schicken','„Was geplant ist“ zeigt, was kommt']]]},
   {k:'✅ 10 Spielende',v:[
-    ['','10.5','Optik 2.0','19.11.2026'],
-    ['','10.4','Titelbild','19.11.2026'],
-    ['','10.3','Spielprüfung','19.11.2026'],
-    ['','10.2','Große Bilder','19.11.2026'],
-    ['','10.1','Weltweinschau','19.11.2026'],
-    ['','10.0','Präsidentenwahl','18.11.2026']]},
+    ['','10.5','Optik 2.0','19.11.2026',['Neue Optik: Holz, Rahmen, Pergament und Knöpfe neu gezeichnet. Helle Knöpfe sind dein Weg, rote heißen „Überleg noch mal“, dunkle führen zurück.']],
+    ['','10.4','Titelbild','19.11.2026',['Neues Titelbild im Hochformat und elf Zeitungsbilder im Stil der Weingut-Reihe.']],
+    ['','10.3','Spielprüfung','19.11.2026',['Das ganze Spiel geprüft: Nach dem alten Winzer sprechen deine Manager, gewonnen ist erst mit der Chronik, dazu viele Regeln und Texte im Buch.']],
+    ['','10.2','Große Bilder','19.11.2026',['Weltweinschau, Sieg und Übergabe am Küchentisch als große Bilder, dazu neue Texte und Tipps.']],
+    ['','10.1','Weltweinschau','19.11.2026',['Als Präsident holst du die Weltweinschau ins Dorf, mit Stiftung und zwei Enden.']],
+    ['','10.0','Präsidentenwahl','18.11.2026',['Als Präsident verteidigst du dein Amt alle fünf Jahre in einer Wahl.']]]},
   {k:'✅ 9 Bilder',v:[
-    ['','9.2','Ortsbilder','19.11.2026'],
-    ['','9.1','Torbogen','18.11.2026'],
-    ['','9.0','Bildergalerie','18.11.2026']]},
+    ['','9.2','Ortsbilder','19.11.2026',['Kellerei und Stadt zeigen für jeden Ort ein eigenes Bild.']],
+    ['','9.1','Torbogen','18.11.2026',['Das Weingut zeigt fünf eigene Bilder, der Startbildschirm den Torbogen.']],
+    ['','9.0','Bildergalerie','18.11.2026',['Dein Weingut wächst mit jedem Rang, in 40 Bildern über alle Jahreszeiten.']]]},
   {k:'✅ 8 Spielinhalte',v:[
-    ['','8.6','Kellerausbau','18.11.2026'],
-    ['','8.5','Kellermeister','18.11.2026'],
-    ['','8.4','Titelseite','18.11.2026'],
-    ['','8.3','Spielzeit-Uhr','18.11.2026'],
-    ['','8.2','Spenden','17.11.2026'],
-    ['','8.1','Spielführer','17.11.2026'],
-    ['','8.0','Erntehelfer','17.11.2026']]},
+    ['','8.6','Kellerausbau','18.11.2026',['Den Keller baust du Stufe für Stufe aus.']],
+    ['','8.5','Kellermeister','18.11.2026',['Der Kellermeister keltert schon auf Stufe 1.']],
+    ['','8.4','Titelseite','18.11.2026',['Neue Titelseite mit Timo als Chef-Tester.']],
+    ['','8.3','Spielzeit-Uhr','18.11.2026',['Eine Spielzeit-Uhr zählt mit, wie lange du bis zu jedem Rang brauchst.']],
+    ['','8.2','Spenden','17.11.2026',['Spenden im Rathaus mit acht Stufen und eigenen Ehrungen.']],
+    ['','8.1','Spielführer','17.11.2026',['Der alte Winzer begleitet dich als Spielführer durch die ersten Jahre.']],
+    ['','8.0','Erntehelfer','17.11.2026',['Erntehelfer und neue Maschinen: Düngerstreuer, Laubschneider, Abfüllanlage.']]]},
   {k:'✅ 1 bis 7 Aufbau',v:[
-    ['','7.9','Rathaus','17.11.2026'],
-    ['','7.8','Musik','17.11.2026'],
-    ['','7.7','Kaufvertrag','17.11.2026'],
-    ['','7.6','Pinnwand','17.11.2026'],
-    ['','7.5','Manager','17.11.2026'],
-    ['','7.4','Einheitliche Fenster','17.11.2026'],
-    ['','7.3','Wachssiegel','17.11.2026'],
-    ['','7.2','Aufstiegsfeier','16.11.2026'],
-    ['','7.1','Holztisch','16.11.2026'],
-    ['','7.0','Generationswechsel','16.11.2026'],
-    ['','5.0','Feinschliff','15.11.2026'],
-    ['','4.1','Spielanleitung','15.11.2026'],
-    ['','4.0','Navigation','15.11.2026'],
-    ['','3.3','Edelfäulnis','15.11.2026'],
-    ['','3.0','Großer Umbau','15.11.2026'],
-    ['','1.0','Erste Fassung','14.11.2026']]}];
+    ['','7.9','Rathaus','17.11.2026',['Zwei Namen und Anrede beim Start, das Rathaus mit Wettbewerben und Auktionen.']],
+    ['','7.8','Musik','17.11.2026',['Kurze Musik, Musik und Geräusche getrennt einstellbar.']],
+    ['','7.7','Kaufvertrag','17.11.2026',['Feiern mit Geschichte, das Spiel beginnt mit dem Kaufvertrag.']],
+    ['','7.6','Pinnwand','17.11.2026',['Aktuelles aufgeräumt, der alte Winzer hängt an der Pinnwand.']],
+    ['','7.5','Manager','17.11.2026',['Manager und Leute im Betrieb.']],
+    ['','7.4','Einheitliche Fenster','17.11.2026',['Alle Orte in einheitlichen Fenstern mit dem i oben rechts.']],
+    ['','7.3','Wachssiegel','17.11.2026',['Fanfare, neuer Winzerbote und Urkunde mit Wachssiegel.']],
+    ['','7.2','Aufstiegsfeier','16.11.2026',['Aufstiegsfeier mit Bild und Urkunde.']],
+    ['','7.1','Holztisch','16.11.2026',['Neue Optik: Papier auf dem Holztisch.']],
+    ['','7.0','Generationswechsel','16.11.2026',['Generationswechsel, Freischaltungen je Rang und die Flasche als App-Symbol.']],
+    ['','5.0','Feinschliff','15.11.2026',['Feinschliff mit Makler, Weinfest, Weinlexikon, Daueraufträgen und Edelfäulnis je Gebiet.']],
+    ['','4.1','Spielanleitung','15.11.2026',['Das Buch mit der Spielanleitung und das Büro mit Spielständen und Ton.']],
+    ['','4.0','Navigation','15.11.2026',['Neue Navigation mit den Leisten unten.']],
+    ['','3.3','Edelfäulnis','15.11.2026',['Edelfäulnis, Spätherbst und ausgeglichene Gebiete.']],
+    ['','3.0','Großer Umbau','15.11.2026',['Großer Umbau: der Winzerbote, zehn Ränge, eigene Weinhandlung, Hoffest und Bestenliste.']],
+    ['','1.0','Erste Fassung','14.11.2026',['Die erste Fassung als App fürs Handy.']]]}];
 const wnPunkte=p=>p&&p.length?`<ul>${p.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'';
-function wasNeuHtml(){return WAS_NEU.map(b=>`<div class="wnb"><div class="wnk"><b>${b.k}</b>${b.d?`<small>${b.d}</small>`:''}</div>${wnPunkte(b.p)}${b.v.map(([z,n,t,d,p])=>`<div class="tchz1${p?'':' kurz'}"><b>${z?z+' ':''}${n}</b><strong>${esc(t)}</strong><small>${d?d.slice(0,6):''}</small>${wnPunkte(p)}</div>`).join('')}</div>`).join('')}
+function wasNeuHtml(){return WAS_NEU.map(b=>`<div class="wnb"><div class="wnk"><b>${b.k}</b>${b.d?`<small>${b.d}</small>`:''}</div>${wnPunkte(b.p)}${b.v.map(([z,n,t,d,p])=>`<div class="tchz1${p&&p.length?'" data-a="titelEtappe':' kurz'}"><b>${z?z+' ':''}${n}</b><strong>${esc(t)}</strong><small>${d?d.slice(0,6):''}${p&&p.length?'<i class="wnz"></i>':''}</small>${wnPunkte(p)}</div>`).join('')}</div>`).join('')}
 function zeigeChronik(){
   const t=$('#titel'); if(!t||t.querySelector('.tchron')) return;
   t.insertAdjacentHTML('beforeend',`<div class="tchron"><div class="tchz" data-a="titelChronikZu"></div><div class="card tchk">
