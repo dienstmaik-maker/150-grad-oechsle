@@ -105,6 +105,11 @@ const WETTER={sonnig:['☀️','sonnig'],mild:['⛅','mild'],regen:['🌧️','R
 // Seit 11.5 (Teil D, Maik 20.11.2026): Die Anzeige zeigt 4.000 Reben je Hektar statt 1.000. Im Spielstand und in der Rechnung bleibt alles, wie es ist,
 // nur Zahl, Preis und Ertrag je Rebe rechnen bei der Anzeige mit STOCK_F um. So ändert sich am Geld nichts, und alte Spielstände brauchen keinen Umbau.
 const STOCK_F=4; const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MONAT=3, BODEN_REGEN=5;
+// Seit 13.2.1 (Bauplan 13.2, Maik 21.11.2026): Boden-Stufen für das ganze Weingut, auch für neu gekauftes Land. Am Jahresende zählt ein Bodenschnitt
+// ab BODEN_GUT Prozent als gutes Jahr (S.bodenZ +1), ein schlechtes zählt 0, der Boden fällt nie. Die Stufe S.bodenSt steigt, sobald der Zähler
+// ihre Schwelle in BODEN_SCHWELLE erreicht. Je Stufe BODEN_ST_OE Grad mehr Deckel (ab 13.2.3), BODEN_ST_MENGE mehr Menge und BODEN_ST_QP Qualitätspunkte.
+// Startwerte, Stellschrauben für 14.2.
+const BODEN_STUFEN=['Rohboden','Fruchtboden','Gutsboden','Terroir'], BODEN_SCHWELLE=[0,10,37,85], BODEN_GUT=90, BODEN_ST_OE=4, BODEN_ST_MENGE=.05, BODEN_ST_QP=4;
 // Reben-Abnutzung: Zum Jahreswechsel geht je Sorte ein Teil der Reben ein. VERLUST nennt je Stufe [ab Bodenschnitt, von Prozent, bis Prozent].
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
