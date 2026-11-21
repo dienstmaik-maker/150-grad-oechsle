@@ -1609,6 +1609,8 @@ function monatLauf(){
   S.mgrLog=null;
   if(S.dauerLog&&S.dauerLog.length) Z.push(`📋 ${mgrG('handel').Dein} ${MGR_BEREICHE.handel.name}: ${S.dauerLog.join(', ')}.`);
   S.dauerLog=null;
+  if(S.leuteLog&&S.leuteLog.length) Z.push(`🧑‍🌾 Deine Leute: ${S.leuteLog.join(', ')}.`);
+  S.leuteLog=null;
   if(SPRUNG.length){Z.unshift(...SPRUNG); SPRUNG=[]}
   // Der Wettbewerb aus dem Vormonat wird jetzt gewertet, das Ergebnis steht in dieser Ausgabe.
   if(S.wett){if(!S.wett.fertig) wettAuswerten(); S.wett=null}
@@ -2294,7 +2296,20 @@ function mgrHandel(){
 function mgrMelde(b,L){if(!L.length) return; S.mgrLog=S.mgrLog||{}; S.mgrLog[b]=(S.mgrLog[b]||[]).concat(L); S.manager[b].zuletzt=L.join(', '); S.manager[b].zm=S.jahr*12+S.monat; mgrLogbuch(b,S.mgrLog[b].join(', '))}
 // Alles, was die Manager beim Weiterblättern erledigen (früher verwalter() und dauerAuftrag()).
 // Seit 11.1: Siegel aus der Arbeit der Manager melden sich nur im Winzerboten (KOMP_LEISE).
-function managerArbeit(){KOMP_LEISE++; try{mgrKommen(); mgrBetrieb(); mgrHandel(); dauerAuftrag()}finally{KOMP_LEISE--}}
+function managerArbeit(){KOMP_LEISE++; try{mgrKommen(); mgrBetrieb(); leuteArbeit(); mgrHandel(); dauerAuftrag()}finally{KOMP_LEISE--}}
+// Seit 13.5.2 (Bauplan 13.5): Arbeit der Leute nach ihrer Stufe (leuteSt), beim Weiterblättern nach den Managern, die vorher einkaufen und einstellen.
+// Gearbeitet wird nur, wenn mindestens einer der Gruppe angestellt ist. Was sie tun, steht im nächsten Winzerboten (S.leuteLog).
+function leuteMelde(L){if(L.length) S.leuteLog=(S.leuteLog||[]).concat(L)}
+function leuteArbeit(){const L=[]; lagerArbeit(L); leuteMelde(L)}
+// Lagerarbeiter: Stufe 1 keltert die Lese, sobald genug Fassraum frei ist, Stufe 2 füllt angemeldete Weine ab und klebt die Etiketten, sobald genug leere Flaschen da sind.
+// Fassraum und Flaschen kaufen sie nicht, das macht der Kellermeister oder der Spieler. Stufe 3 stellt den Sekt her, der seit 13.3.3 mit der Lese in den Sektkeller geht,
+// die Wahl 9 oder 24 Monate trifft weiter der Spieler. Was angemeldet wird, entscheidet nur er, deshalb füllen sie nur Angemeldetes ab.
+function lagerArbeit(L){
+  if(!S.lagerarb) return; const st=leuteSt('lagerarb');
+  if(st>=1) for(const l of S.lots.filter(l=>l.status==='trauben')) if(l.liter<=S.fassraum-fassBelegt()){delete l.mgrNot; l.status='fass'; l.fassMonate=0; L.push(`${num(l.liter)}\u00a0l ${SORTEN[l.sorte].name} gekeltert`)}
+  if(st>=2) for(const l of S.lots.filter(l=>l.status==='fass'&&l.stufe)) if(S.flaschen>=abfFl(l)){const an=bonusMasch('abfuell'); fuelleAb(l); L.push(`${lotName(l)} abgefüllt${an?' mit der Abfüllanlage':''}`)}
+}
+const lagerKann=n=>!!S.lagerarb&&leuteSt('lagerarb')>=n;
 // Seit 12.6.4 (Maik 20.11.2026, Prüfliste Einstieg): ruhiger Einstieg. Nur neue Partien haben S.ein, darin S.ein.f mit den Fenstern, die schon frei sind.
 // Ein Fenster aus EIN_REGEL bleibt weg, bis seine Bedingung einmal stimmt, danach bleibt es für immer. Alte Spielstände ohne S.ein sehen alles wie vorher.
 // "Deine Weine" gibt es zweimal (Weinarchiv und Großhandel), im Großhandel heißt die Regel weine_gh.

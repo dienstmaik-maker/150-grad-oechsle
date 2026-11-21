@@ -1181,14 +1181,14 @@ function vKellerStart(){
       `<span class="rot">Muss diesen Monat ins Fass, sonst verdirbt alles.${l.liter>frei?` Frei sind nur ${num(frei)} l Fassraum.`:''}</span>`,
       `<button class="klein" data-a="keltern" data-id="${l.id}">Keltern</button>`)),{
     leer:'Keine Trauben im Kelterhaus.',
-    hin:[mk&&`🍷 Dein ${KM} keltert beim Weiterblättern.`],
+    hin:[mk&&`🍷 Dein ${KM} keltert beim Weiterblättern.`,!mk&&lagerKann(1)&&'🛢️ Deine Lagerarbeiter keltern beim Weiterblättern, sobald genug Fassraum frei ist.'],
     i:`Frisch gelesene Trauben müssen im Monat der Lese ins Fass. Sie brauchen freien Fassraum, was nicht hineinpasst, geht verloren.${mk?` Dein ${KM} keltert von selbst und kauft fehlenden Fassraum dazu, von Hand keltern kannst du trotzdem jederzeit.`:''}`});
   h+=fenster('abfuellen','Wein abfüllen',fa.map(l=>{const rest=8-l.fassMonate; return fz(dot(l.sorte)+lotName(l),
       `${num(l.liter)} l · ${l.oe}° Öchsle · seit ${l.fassMonate} ${mon(l.fassMonate)} im Fass`,
       `${l.stufe?'':'Noch nicht angemeldet. '}<span class="${l.fassMonate>=5?'rot':''}">Verdirbt in ${rest} ${mon(rest)}.</span>${l.stufe&&abfFl(l)>l.liter?` Mit der Abfüllanlage ${num(abfFl(l))} Flaschen.`:''}${l.stufe&&S.flaschen<abfFl(l)?` <span class="rot">Es fehlen ${num(abfFl(l)-S.flaschen)} leere Flaschen.</span>`:''}`,
       l.stufe?`<button class="klein" data-a="abfuellen" data-id="${l.id}">Abfüllen</button>`:`<button class="klein" data-a="anmelden" data-id="${l.id}">Anmelden</button>`)}),{
     leer:'Alle Fässer sind leer.',
-    hin:[mf&&`🍷 Dein ${KM} füllt beim Weiterblättern ab.`,bonusMasch('abfuell')&&`🍾 Mit der Abfüllanlage kommen ${Math.round(ABF_PLUS*100)} % mehr Flaschen aus jedem Fass.`],
+    hin:[mf&&`🍷 Dein ${KM} füllt beim Weiterblättern ab.`,!mf&&lagerKann(2)&&'🍾 Deine Lagerarbeiter füllen angemeldete Weine beim Weiterblättern ab, sobald genug leere Flaschen da sind.',bonusMasch('abfuell')&&`🍾 Mit der Abfüllanlage kommen ${Math.round(ABF_PLUS*100)} % mehr Flaschen aus jedem Fass.`],
     i:`Der Wein bleibt mindestens einen Monat im Fass und höchstens sieben, danach verdirbt er. Abfüllen geht erst nach der Anmeldung im Rathaus. Abgefüllt wird immer das ganze Fass, ein Liter je Flasche. Mit der Abfüllanlage geht nichts daneben, dann kommen ${Math.round(ABF_PLUS*100)} % mehr Flaschen heraus, dafür brauchst du auch so viele leere.${mf?` Dein ${KM} füllt angemeldete Fässer von selbst ab und kauft die Flaschen dafür, anmelden musst du selbst.`:''}`});
   const sektI=`Die ${ROLLEN.sekt.name} macht nur Sekt. Nach der Lese geht alles in den Sektkeller, ohne Grundwein, die Lagerarbeiter stellen ihn her. Er reift ${SEKT_REIFE} Monate, mit ${HEFE_LANG} Monaten auf der Hefe bekommt er ${HEFE_LANG_QP} Qualitätspunkte mehr. Das Hefelager wählst du bei der Lese.`;
   const vorrat=fenster('vorrat','Vorrat',`<div class="kv"><span>Fassraum</span><span>${num(bel)} von ${num(S.fassraum)} l</span></div><div class="kv"><span>Leere Flaschen (1 l)</span><span>${num(S.flaschen)}</span></div>`,
