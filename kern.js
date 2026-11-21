@@ -737,8 +737,9 @@ function gegnerMonat(){
       else if(auf===1&&gew>g.ha*(t.eink[0]+(t.eink[1]-t.eink[0])*.9)*st) neu(1,`${g.name} meldet ein Rekordjahr.`);
       if(g.kredit>0&&g.geld>0){const r=Math.min(g.kredit,Math.round(g.geld*.5)); g.geld-=r; g.kredit-=r; if(!g.kredit) neu(2,`${g.name} ist bei der Bank wieder schuldenfrei.`)}
     }
-    // Kälteeinbruch im November: trifft, wer noch Trauben hängen hat. Die Vorsichtige hat meist schon gelesen. Hat die Vorhersage gewarnt, lesen fast alle vorher.
-    if(m===10&&S.kaelte===S.jahr&&auf>.2&&(g.poker||Math.random()<(g.typ==='vorsicht'?.2:.6)*(S.kaelteWarn===S.jahr?.3:1))){g.geld-=g.ha*(g.poker?2500:1500); g.poker=false; neu(3,`Kälteeinbruch ${wo}: Bei ${g.name} ist erfroren, was noch hing.`)}
+    // Seit 13.4.7: Der Kälteeinbruch der Gegner (warm und Mitte) kommt in den Jahren, in denen die Edelfäulnis im eigenen Weg nicht klappt (uEdel ab WAGNIS.eigen, 30 statt 25 Prozent,
+    // Annahme von Claude). Er trifft, wer noch Trauben hängen hat, die Vorsichtige meist nicht. Der Umbau der Gegner kommt in 13.5.
+    if(m===10&&REGIONEN[g.region].weg!=='frost'&&herbstJahr().uEdel>=WAGNIS.eigen&&auf>.2&&(g.poker||Math.random()<(g.typ==='vorsicht'?.2:.6))){g.geld-=g.ha*(g.poker?2500:1500); g.poker=false; neu(3,`Kälteeinbruch ${wo}: Bei ${g.name} ist erfroren, was noch hing.`)}
     // Gefälschtes Kellerbuch (Sabotage des Spielers): g.falsch zählt die Monate bis zur Kontrolle beim Gegner.
     if(g.falsch&&--g.falsch<=0){g.falsch=0; g.ansehen=Math.max(0,g.ansehen-40); g.geld-=Math.max(10000,Math.round(g.geld*.15)); neu(6,`Weinkontrolle bei ${g.name}: Im Kellerbuch steht gepanschter Wein. Das kostet Strafe und Ansehen.`)}
     if(m===1&&g.jahre){g.ansehen+=rnd(t.ans[0],t.ans[1])*st*auf; if(Math.random()<.5) neu(1,`${g.name} meldet im Rathaus ${t.weine[rint(0,t.weine.length-1)]} an.`)}
@@ -752,14 +753,15 @@ function gegnerMonat(){
       if(Math.random()<.35){g.ansehen=Math.max(0,g.ansehen-40); g.geld-=Math.round(Math.max(2000,g.geld*.1)); neu(5,`Weinkontrolle bei ${g.name}: gepanschter Wein gefunden. Das kostet Strafe und Ansehen.`)}
       else{g.geld+=g.ha*(g.typ==='zocker'?2500:1000); g.pansch=rint(6,14); if(Math.random()<.4){g.geruecht=true; neu(8,`Man munkelt, bei ${g.name} werde heimlich nachgezuckert.`)}}
     }
+    // Seit 13.4.7: Der Eiswein-Poker des Zockers hängt am Jahr und am Weg seines Gebiets (wegChance, Wurf aus herbstJahr) statt am alten Frost-Wert.
     if(g.typ==='zocker'){
       if(!g.kredit&&Math.random()<.04){const k=12000*(g.rang+1); g.geld+=k; g.kredit=Math.round(k*1.2); neu(2,`${g.name} nimmt einen Kredit über ${eur(k)} auf.`)}
       if(m===9){
-        if(S.kaelteWarn!==S.jahr&&Math.random()<.35*Math.min(1,REGIONEN[g.region].frost/.3)){g.poker=true; neu(2,`${g.name} pokert auf Eiswein und lässt alles hängen.`)}
+        if(wegChance('frost',g.region)>0&&Math.random()<.35){g.poker=true; neu(2,`${g.name} pokert auf Eiswein und lässt alles hängen.`)}
       }
       if(m===11&&g.poker){
         g.poker=false;
-        if(Math.random()<REGIONEN[g.region].frost){g.ansehen+=16*st; g.geld+=g.ha*3000; g.eisJ=S.jahr; neu(3,`Frost ${wo}: Der Eiswein-Poker von ${g.name} geht auf.`)}
+        if(herbstJahr().uFrost<wegChance('frost',g.region)){g.ansehen+=16*st; g.geld+=g.ha*3000; g.eisJ=S.jahr; neu(3,`Frost ${wo}: Der Eiswein-Poker von ${g.name} geht auf.`)}
         else{g.geld-=g.ha*2500; g.eisPl=S.jahr; neu(3,`Kein Frost ${wo}: ${g.name} verliert einen Teil der Ernte.`)}
       }
     }else if(m===8&&Math.random()<.3) neu(0,g.typ==='vorsicht'?`${g.name} liest früh und geht kein Risiko ein.`:`${g.name} lässt die Trauben für eine Auslese hängen.`);
@@ -1542,15 +1544,17 @@ function rubrikNeu(nr){
 }
 const eisEigen=()=>S.monat===11&&R().sorten.some(id=>S.felder[id].gefroren&&S.felder[id].menge>0);
 const eisT=(art,n,wo)=>{const L=EIS_TEXT[art], x=L[rint(0,L.length-1)], f=s=>s.replace(/\{n\}/g,n||'').replace(/\{wo\}/g,wo||''); return [f(x[0]),f(x[1])]};
+// Seit 13.4.7: Eiswein-Geschichten nur aus Gebieten, in denen der Frost in diesem Jahr gekommen ist (Jahr und Weg statt EIS_KUEHL).
 function eisGeschichte(){
   if(S.monat!==11||eisEigen()||S.eisZ===S.jahr-1||Math.random()>=EIS_Z) return;
-  const G=S.gegner||[], los=L=>L[rint(0,L.length-1)], kuehl=Object.keys(REGIONEN).filter(r=>REGIONEN[r].weg==='frost');
+  const G=S.gegner||[], los=L=>L[rint(0,L.length-1)], kuehl=Object.keys(REGIONEN).filter(r=>herbstJahr().uFrost<wegChance('frost',r));
   if(Math.random()<EIS_PLEITE&&G.length){
     const A=G.filter(x=>x.eisJ!==S.jahr), Zo=A.filter(x=>x.typ==='zocker');
     const g=G.find(x=>x.eisPl===S.jahr)||los(Zo.length?Zo:A.length?A:G);
     const [t,text]=eisT('pleite',g.name,WO[g.region]); S.eisZ=S.jahr; return schlag(40,t,text,'frost');
   }
   const g=G.find(x=>x.eisJ===S.jahr)||(()=>{const K=G.filter(x=>x.eisPl!==S.jahr&&kuehl.includes(x.region)); return K.length?los(K):null})();
+  if(!g&&!kuehl.length) return;
   const [t,text]=g?eisT('gegner',g.name,WO[g.region]):eisT('gebiet','',WO[los(kuehl)]);
   S.eisZ=S.jahr; schlag(40,t,text,'eiswein');
 }

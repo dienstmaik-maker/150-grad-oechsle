@@ -152,7 +152,7 @@ const NAME_PFLEGE_AB=2, NAME_BODEN_AB=3;
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='13.3';
+const VERSION='13.4';
 // Seit 13.3.6 (Maik 21.11.2026): Im Umbau starten neue Partien ohne Spielführer, sonst verspricht er Dinge nach den alten Rängen.
 // Mit neuen Texten muss er am Ende wieder an sein (14.4), dann FU_START=1.
 const FU_START=0;
@@ -873,7 +873,8 @@ const RUBRIK={
 // der Steuer-Tipp steht dann ohne Foto daneben. Sonst würfelt eisGeschichte(): In einem Jahr nach einer Geschichte nie (S.eisZ), sonst mit EIS_Z.
 // Das ergibt rund jedes dritte Jahr. Davon ist mit EIS_PLEITE der geplatzte Poker eines Gegners (Bild frost, rund alle 6 bis 7 Jahre), sonst Eiswein bei einem Gegner,
 // zuerst bei einem, dessen Poker in gegnerMonat aufging (g.eisJ), dann bei einem in einem kühlen Gebiet, sonst ohne Namen aus einem kühlen Gebiet.
-const EIS_Z=.5, EIS_PLEITE=.45, EIS_KUEHL=.4;
+// Seit 13.4.7 ist EIS_KUEHL weg, die Gebiete mit Frost kommen aus dem Wagnis des Jahres (wegChance).
+const EIS_Z=.5, EIS_PLEITE=.45;
 const EIS_TEXT={
   // Je Fall drei Fassungen im Wechsel (Maik 18.11.2026: "Alle als Abwechslung").
   eigen:[['Frost! Eiswein ist möglich','Die Trauben hängen gefroren am Stock. Wer jetzt liest, kann Eiswein keltern.'],
@@ -1129,11 +1130,11 @@ const IDEE_KEY='oechsle-idee', IDEE_MAX=1000;
 // Je Version: [Zeichen, Nummer, Titel, Datum, Punkte]. Kommendes ohne Datum und Punkte.
 const WAS_NEU=[
   {k:'🏁 13.0 Der Umbau',d:'in Arbeit',p:['Drei Generationen, drei Akte: Das Spiel wird von Grund auf neu gebaut'],v:[
-    ['▶️','13.4','Gebiete und Herbst'],
-    ['⏳','13.5','Leute, Manager, Maschinen'],
+    ['▶️','13.5','Leute, Manager, Maschinen'],
     ['⏳','13.6','Finale'],
     ['⏳','13.7','Spielstufen'],
     ['⏳','13.8','Geschichte'],
+    ['','13.4','Gebiete und Herbst','21.11.2026',['Jedes Gebiet hat eine Stärke und ein Problem, die Pfalz ist für die erste Partie','Bis Oktober ist dein Spitzenwein sicher, danach wagst du den Weg deines Gebiets','Edelfäulnis im November, Frost im Dezember, an Mosel und Rheingau mit Tendenz','Seltene Jahre öffnen den fremden Weg, die Beerenauslese kann zur Trockenbeerenauslese werden','Am Lese-Knopf steht die Chance, der Weingut-Manager warnt']],
     ['','13.3','Weine und Zeitleiste','21.11.2026',['Eine Öchsle-Tabelle für alle sechs Gebiete','Jeder Wein braucht den passenden Rang, und der Deckel muss reichen','Die Sekt-Sorte macht Sekt direkt bei der Lese, 9 oder 24 Monate auf der Hefe','Jeder Rang bringt Neues, Export und Sabotage 4 Jahre nach dem Winzermeister','Der Spielführer ist im Umbau aus, einschalten geht im Büro']],
     ['','13.2','Grundwerte','21.11.2026',['Dein Boden steigt mit guten Jahren vom Rohboden bis zum Terroir','Jede Sorte wächst mit dem Rebschnitt vom Setzling bis zum Grand Cru','Neu im Weinberg: Rebschnitt von Januar bis April','Ein Deckel je Weinberg begrenzt das Öchsle','Premier Cru, Grand Cru und vom Terroir stehen auf der Flasche']],
     ['','13.1','Werkbank','21.11.2026',['Alte Spielstände starten neu, Album und Bestenliste bleiben']]]},
