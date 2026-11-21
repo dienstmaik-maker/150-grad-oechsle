@@ -179,7 +179,8 @@ function maklerStaffel(){const T=[]; for(let i=R_MAKLER;i<R_MAX;i++) if(i===R_MA
 const rnd=(a,b)=>a+Math.random()*(b-a), rint=(a,b)=>Math.floor(rnd(a,b+1)), clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 // Seit 11.6 "Schummeln verboten" (Maik 20.11.2026): festes Wetter je Partie. S.zf ist die Startzahl der Partie, fest() macht daraus mit Thema, Nummer, Jahr und Monat
 // immer dieselbe Zahl zwischen 0 und 1 (Rechnung wie zufallH in _h.js). Neu laden ändert Wetter, Kälteeinbruch, Vorhersage und Weinberg also nicht.
-// Themen: 1 Wetter, 2 Kälteeinbruch, 3 Vorhersage, 4 Edelfäulnis, 5 Öchsle-Streuung, 6 Ertrag, 7 Reben-Sterben, 8 Temperatur, 9 Schädlinge (Plan), 10 Schädlinge (Schaden). nr trennt Sorten und Würfe im selben Monat.
+// Themen: 1 Wetter, 2 Kälteeinbruch (ruht seit 13.4.2), 3 Vorhersage, 4 Edelfäulnis (ruht seit 13.4.2), 5 Öchsle-Streuung, 6 Ertrag, 7 Reben-Sterben, 8 Temperatur,
+// 9 Schädlinge (Plan), 10 Schädlinge (Schaden), 11 Herbst-Wagnis (seit 13.4.2). nr trennt Sorten und Würfe im selben Monat.
 // Die Startzahl entsteht über Math.random, damit Messläufe mit festem Zufall wiederholbar bleiben. Ohne Startzahl würfelt fest() wie früher.
 const zfNeu=()=>Math.floor(Math.random()*4294967296)|0;
 function fest(thema,nr,jahr=S.jahr,monat=S.monat){
@@ -360,7 +361,6 @@ function nahBild(st){
   return L[k%L.length];
 }
 function monatBild(){
-  if(S.monat===10&&S.kaelte===S.jahr) return 'frost';
   return wgBild(wgStufe(),JZ[S.monat]);
 }
 function wgVorladen(){
@@ -854,17 +854,13 @@ function wuerfelWetter(m,u){
   let s=0; for(const [w,p] of t){s+=p; if(r<s) return w}
   return 'mild';
 }
-// Kälteeinbruch im November (KAELTE): wird schon mit der Vorhersage im Oktober ausgewürfelt, damit sie davor warnen kann. Sie trifft wie sonst in 75 % der Fälle.
-// S.kaelte merkt das Jahr des Kälteeinbruchs, S.kaelteVor das Jahr, in dem schon gewürfelt ist, S.kaelteWarn das Jahr mit Warnung in der Vorhersage.
 function neuePrognose(){
   // Seit 11.6: alles aus der Startzahl, gerechnet auf den Monat, für den es gilt (jn, n).
   const n=(S.monat+1)%12, jn=n===0?S.jahr+1:S.jahr; S.wetterNext=wuerfelWetter(n,fest(1,0,jn,n));
-  if(n===10){S.kaelte=fest(2,0,S.jahr,10)<KAELTE?S.jahr:0; S.kaelteVor=S.jahr; if(S.kaelte) S.wetterNext='frost'}
-  S.prognose=fest(3,0,jn,n)<.75?S.wetterNext:n===10&&fest(3,1,jn,n)<KAELTE?'frost':wuerfelWetter(n,fest(3,2,jn,n));
-  if(n===10) S.kaelteWarn=S.prognose==='frost'?S.jahr:0;
+  S.prognose=fest(3,0,jn,n)<.75?S.wetterNext:wuerfelWetter(n,fest(3,2,jn,n));
 }
-// Vorhersage als Text, Frost im November heißt Kälteeinbruch.
-const progText=()=>(S.monat+1)%12===10&&S.prognose==='frost'?'❄️ Kälteeinbruch':WETTER[S.prognose].join(' ');
+// Vorhersage als Text. Seit 13.4.2 gibt es den Kälteeinbruch als eigene Vorhersage nicht mehr.
+const progText=()=>WETTER[S.prognose].join(' ');
 const wbonus=w=>({sonnig:5,mild:0,regen:-4,kalt:-3,frost:-3}[w]);
 // Seit 11.6: streu darf eine feste Zahl zwischen 0 und 1 sein (fest), true würfelt wie früher.
 function tempFuer(m,w,streu){
@@ -874,14 +870,14 @@ function tempFuer(m,w,streu){
 }
 const wetterText=()=>`${WETTER[S.wetter].join(' ')}, ${S.temp!=null?S.temp:tempFuer(S.monat,S.wetter)} °C`;
 
-const edelBonus=()=>EDEL_PLUS[Math.min(5,S.sonne)]+(R().edelPlus||0);
+// Seit 13.4.2 (Bauplan 13.4, Maik 21.11.2026): Edelfäulnis kommt nicht mehr von selbst und schiebt das Öchsle nicht mehr an. Sie ist, wie der Frost
+// für den Eiswein, das Wagnis im Herbst der Spitzen-Sorte (herbstWagnis). Der Kälteeinbruch als eigener Wurf ist weg, er erklärt nur noch ein misslungenes Wagnis.
 function wachse(m){
   const reg=R(), L=[];
   // Seit 8.2: Erntedank-Segen nach der Spende fürs Kirchenfenster, einmal im September SP_SEGEN Öchsle mehr.
   const segen=m===8&&S.spSegen; if(segen){S.spSegen=0; if(reg.sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)) L.push(`Erntedank-Segen: Deine Trauben bekommen diesen Monat ${SP_SEGEN}° Öchsle extra.`)}
-  // Kälteeinbruch: In jedem vierten November (KAELTE) erfriert alles, was noch hängt. In allen Gebieten gleich, gewürfelt schon mit der Vorhersage im Oktober (neuePrognose).
-  // Alte Spielstände ohne S.kaelteVor würfeln hier. S.kaelte merkt das Jahr, damit es auch die Gegner trifft.
-  if(m===10){if(S.kaelteVor!==S.jahr) S.kaelte=fest(2,0,S.jahr,10)<KAELTE?S.jahr:0; if(S.kaelte===S.jahr&&S.wetter!=='frost'){S.wetter='frost'; S.temp=tempFuer(10,'frost',fest(8,0,S.jahr,10))}}
+  // Seit 13.4.2: Im Dezember richtet sich das Wetter nach dem Frost-Wagnis, wenn ein Feld darauf wartet (wagnisWetter).
+  if(m===11) wagnisWetter();
   const w=S.wetter;
   if(w==='sonnig'&&m>=5&&m<=9) S.sonne++;
   for(const [si,id] of reg.sorten.entries()){
@@ -894,31 +890,68 @@ function wachse(m){
     if(m>=7&&f.menge>0&&!f.gelesen){
       // f.plus merkt den Öchsle-Zuwachs des Monats für die Infoseite.
       const vor=f.oe;
-      f.oe=Math.min(oeGrenze(id),f.oe+OE_PLUS[m-7]+wbonus(w)+festI(-2,2,fest(5,si,S.jahr,m))+(f.edel?edelBonus():0)+(segen?SP_SEGEN:0)); f.plus=f.oe-vor;
-      if(f.edel) f.menge=Math.round(f.menge*.8);
+      f.oe=Math.min(oeGrenze(id),f.oe+OE_PLUS[m-7]+wbonus(w)+festI(-2,2,fest(5,si,S.jahr,m))+(segen?SP_SEGEN:0)); f.plus=f.oe-vor;
       f.reif=clamp([35,70,92,100,100][m-7]+(w==='sonnig'?5:w==='regen'?-5:0),0,100);
       f.ueber=clamp([0,5,20,45,70][m-7]+(w==='sonnig'?5:0)+(f.edel?EDEL_UEBER:0),0,100);
       if(m===9&&w==='regen') f.menge=Math.round(f.menge*.9);
-      if(m===10){
-        if(S.kaelte===S.jahr){if(spLohn(2)){f.menge=Math.round(f.menge*SP_FROST); L.push(`Kälteeinbruch! Die Frostfeuer der Feuerwehr retten ein Viertel vom ${so.name}, der Rest ist erfroren.`)} else{f.menge=0; L.push(`Kälteeinbruch! Die hängenden ${so.name}-Trauben sind erfroren.`)}}
-        else f.menge=Math.round(f.menge*(w==='regen'?.7:.85));
-      }
-      if(m===11){
-        if(w==='frost'){f.gefroren=true; f.menge=Math.round(f.menge*.6); L.push(`Frost! Der ${so.name} hängt gefroren am Stock. Eiswein ist möglich.`)}
-        else{f.menge=0; L.push(`Kein Frost: Die hängenden ${so.name}-Trauben sind verfault.`)}
-      }
-      // Seit 13.3.2: Menge- und Sekt-Sorte haben nie Edelfäulnis, die Ernte ist immer sicher.
-      const aus=f.oe>=reg.min.aus, edelDarf=!so.rolle||so.rolle==='spitze';
-      if(edelDarf&&f.menge>0&&!f.edel&&!f.edelGeprueft&&(aus||(!reg.edelAus&&m>=9&&f.oe>=reg.min.spat))){
-        f.edel=fest(4,si,S.jahr,m)<Math.min(.95,(aus?EDEL_CHANCE.aus:(w==='regen'||w==='mild'?EDEL_CHANCE.feucht:EDEL_CHANCE.spat)*(reg.edelSpatF||1))*(reg.edelF||1)*eignung(id)**2);
-        if(f.edel){f.ueber=clamp(f.ueber+EDEL_UEBER,0,100); L.push(`Edelfäulnis beim ${so.name} bei ${f.oe}° Öchsle! Der Zucker steigt jetzt ${S.sonne>=3?'kräftig':'schneller'}, die Menge schrumpft${EDEL_UEBER?', und mehr Trauben werden überreif':''}. Kabinett und Spätlese gibt es von diesem Feld nicht mehr.${aus?'':` Bis zur Auslese fehlen noch ${reg.min.aus-f.oe}°, lass die Trauben am besten noch einen Monat hängen.`}`)}
-        else if(aus){f.edelGeprueft=true; L.push(`Der ${so.name} hat den Auslese-Wert von ${reg.min.aus}° erreicht, aber die Edelfäulnis bleibt dieses Jahr aus.`)}
-      }
+      // Seit 13.4.2: Jeder Monat über Oktober hinaus kostet Menge (WARTEN_MENGE), danach entscheidet das Wagnis.
+      if(m>=10){f.menge=Math.round(f.menge*WARTEN_MENGE); herbstWagnis(id,f,so,m,L)}
     }
   }
   return L;
 }
-function feldReset(f){Object.assign(f,{oe:0,plus:0,menge:0,reif:0,ueber:0,edel:false,edelGeprueft:false,gelesen:false,teil:false,gefroren:false,frostF:1})}
+/* ================= Herbst der Spitzen-Sorte (seit 13.4) ================= */
+// Die Würfe des Jahres aus dem festen Wetter (Thema 11), für Spieler und Gegner gleich. Neu laden ändert nichts.
+function herbstJahr(j=S.jahr){return {uEdel:fest(11,0,j,0),uFrost:fest(11,1,j,0),uTend:fest(11,2,j,0),uFremd:fest(11,3,j,0),uTba:fest(11,4,j,0)}}
+// Chance des Wegs w (edel oder frost) im Gebiet r im Jahr j, 0 wenn der Weg dort zu ist. Das Rang-Schloss prüft wegeOffen.
+function wegChance(w,r=S.region,j=S.jahr){
+  const g=REGIONEN[r].weg; let p=0;
+  if(g===w) p=WAGNIS.eigen;
+  return Math.min(1,p*WAGNIS_F);
+}
+// Die Wege, die der Spieler in diesem Jahr wagen darf (frei: weg_eigen).
+function wegeOffen(){if(!frei('weg_eigen')) return []; const g=R().weg; return (g==='beide'?['edel','frost']:[g]).filter(w=>wegChance(w)>0)}
+// Nur die Spitzen-Sorte wagt (Sorten ohne Rolle in Messläufen auch).
+const wagnisFeld=id=>rolleDarf(id,'ba');
+// Der Weg eines Feldes: schon entschieden (f.wagnis), gewählt (f.weg) oder der mit der besten Chance.
+function feldWeg(id){
+  const f=S.felder[id], W=wegeOffen(); if(!wagnisFeld(id)) return null;
+  if(f.wagnis==='edel'||f.wagnis==='frost') return f.wagnis;
+  if(f.wagnis||!W.length) return null;
+  return f.weg&&W.includes(f.weg)?f.weg:W.slice().sort((a,b)=>wegChance(b)-wegChance(a))[0];
+}
+// f.wagnis: edel (Edelfäulnis ist da), frost (wartet auf Frost im Dezember), aus (vorbei, das Feld hängt wie jedes andere).
+function herbstWagnis(id,f,so,m,L){
+  const H=herbstJahr(), w=feldWeg(id);
+  if(m===10){
+    if(w==='edel'&&!f.wagnis){
+      if(H.uEdel<wegChance('edel')){f.wagnis='edel'; f.edel=true; f.oe=Math.min(150,Math.max(f.oe,R().min.ba)); f.ueber=clamp(f.ueber+EDEL_UEBER,0,100); L.push(`Edelfäulnis beim ${so.name}! Die Trauben haben jetzt ${f.oe}° Öchsle, genug für eine Beerenauslese. Lies sie von Hand, nur überreife Trauben.`)}
+      else wagnisWeg(f,so,'edel',L);
+    }else if(w==='frost'&&!f.wagnis){f.wagnis='frost'; L.push(`Der ${so.name} hängt weiter und wartet auf Frost im Dezember.`)}
+    return;
+  }
+  if(f.wagnis==='frost'){
+    if(H.uFrost<wegChance('frost')){f.gefroren=true; L.push(`Frost! Der ${so.name} hängt gefroren am Stock. Eiswein ist möglich, lies ihn diesen Monat.`)}
+    else wagnisWeg(f,so,'frost',L);
+    return;
+  }
+  f.menge=0; L.push(`Die hängenden ${so.name}-Trauben sind im Dezember verfault.`);
+}
+// Das Wagnis klappt nicht: Die Ernte des Feldes ist weg, der Winzerbote erklärt es. Beim Kälteeinbruch im November retten die Frostfeuer der Feuerwehr
+// (Spende, spLohn(2)) wie bisher ein Viertel (Annahme von Claude, damit ihr Dank weiter gilt), das Feld hängt dann ohne Wagnis weiter.
+function wagnisWeg(f,so,art,L){
+  const T=WAGNIS_AUS[art], feuer=art==='edel'&&spLohn(2);
+  f.wagnis='aus'; f.menge=feuer?Math.round(f.menge*SP_FROST):0;
+  L.push(`${T[0]}: ${feuer?`Die Frostfeuer der Feuerwehr retten ein Viertel vom ${so.name}, der Rest ist hin.`:`Die Ernte vom ${so.name} ist hin.`}`);
+  schlag(70,T[0],T[1].replace(/\{s\}/g,so.name)+(feuer?' '+WAGNIS_FEUER:''),T[2],{du:1});
+}
+// Im Dezember: Wartet ein Feld auf Frost, ist es genau dann frostig, wenn das Wagnis klappt, sonst kommt Tauwetter.
+function wagnisWetter(){
+  if(!R().sorten.some(id=>{const f=S.felder[id]; return f.reben&&f.menge>0&&!f.gelesen&&f.wagnis==='frost'})) return;
+  const w=herbstJahr().uFrost<wegChance('frost')?'frost':S.wetter==='frost'?'mild':S.wetter;
+  if(w!==S.wetter){S.wetter=w; S.temp=tempFuer(11,w,fest(8,0,S.jahr,11))}
+}
+function feldReset(f){Object.assign(f,{oe:0,plus:0,menge:0,reif:0,ueber:0,edel:false,edelGeprueft:false,gelesen:false,teil:false,gefroren:false,frostF:1,wagnis:0,weg:null})}
 
 const schaedSpaet=()=>SCHAED_SPAET_IN.includes(S.region)?SCHAED_SPAET:0;
 // Erstes Spieljahr je Schädling, gezählt ab 0 (40 heißt: mit der zweiten Generation).
@@ -1010,7 +1043,7 @@ function pruefeQualitaet(st,q){
   if(q.masch&&(st==='eis'||d.rang>STUFEN.qba.rang)) g.push('mit der Maschine gelesen gibt es höchstens Qualitätswein');
   if(st==='eis'){
     if(!q.eis) g.push('nur aus gefrorenen Trauben der Dezember-Lese');
-    if(!q.edel) g.push('Edelfäulnis fehlt');
+    // Seit 13.4.2 braucht Eiswein keine Edelfäulnis mehr, er behält das Öchsle der Trauben (Bauplan 13.4).
     // Wie im Handbuch: reife oder überreife Trauben, aber nicht beides zusammen.
     if(q.leseart==='alles') g.push(`Leseart muss „${LESE.reif}“ oder „${LESE.ueber}“ sein`);
   }else{
@@ -1035,7 +1068,8 @@ function eisStufe(oe){const m=R().min; return oe>=m.tba?2:oe>=m.ba?1:0}
 const eisF=l=>l.stufe==='eis'?EIS_WERT[l.eisW||0].f:1;
 // Name der Stufe für die Lese-Hilfe, beim Eiswein mit seiner Wertstufe.
 const stufeText=(st,oe)=>STUFEN[st].name+(st==='eis'?` (Öchsle einer ${EIS_WERT[eisStufe(oe)].name})`:'');
-const handFeld=f=>!!f.edel;
+// Seit 13.4.2: auch gefrorene Trauben liest die Hand, wie früher, als es Eiswein nur mit Edelfäulnis gab.
+const handFeld=f=>!!(f.edel||f.gefroren);
 const handBedarf=f=>Math.max(0,Math.ceil((f.reben-alleinReben())/HAND_REBEN));
 const handFehlt=f=>handFeld(f)&&S.helfer<handBedarf(f)&&maschEinsatz().length>0;
 const handlese=f=>handFeld(f)&&!handFehlt(f);
@@ -1059,14 +1093,12 @@ function feldLiter(f,la){const r=f.reif/100,u=f.ueber/100; return Math.round(f.m
 // Gekeltert wird im Lesemonat, nach einem Monat im Fass darf er angemeldet und abgefüllt werden, ab Kabinett und beim Eiswein erst im Januar.
 // Danach muss er die Mindestzeit aus lagerBasis in der Flasche liegen. n zählt die Monate ab jetzt.
 // Version 5.0: Edelfäulnis-Regel des Gebiets als kurzer Text (kühl erst ab Auslese, Mitte vorher selten).
-function edelRegel(){const r=R(), m=r.min; return r.edelAus?`Edelfäulnis kommt hier erst ab dem Auslese-Wert von ${m.aus}°, dann meist`:r.edelSpatF?`Edelfäulnis kann ab Oktober ab ${m.spat}° kommen, aber selten, ab ${m.aus}° meist`:`Edelfäulnis kann ab Oktober ab ${m.spat}° kommen, bei Regen oder mildem Wetter öfter, ab ${m.aus}° meist`}
+function edelRegel(){return 'Edelfäulnis kommt nur über das Wagnis im Herbst: Wer die Spitzen-Sorte über Oktober hängen lässt und Glück hat, bekommt sie im November'}
 const inMonaten=n=>{const t=S.monat+n; return `${MON[t%12]} ${S.jahr+Math.floor(t/12)}`};
 function verkaufAb(sorte,st){
   const abf=STUFEN[st].rang>=3?12:S.monat+1, t=abf+lagerBasis({sorte,stufe:st}).min, n=t-S.monat;
   return `⏳ verkaufsfertig frühestens ${MON[t%12]} ${S.jahr+Math.floor(t/12)} (in ${n} ${n===1?'Monat':'Monaten'})`;
 }
-// Wie oft es im eigenen Gebiet im Dezember friert, für Lese und Weinqualität.
-const frostText=()=>`❄️ Frost im Dezember gibt es im Gebiet ${R().name} in rund ${Math.round(WINTER_FROST*100)}\u00a0% der Jahre`;
 /* ================= Lagerung und Preis ================= */
 // Seit 12.1: Sekt mit langem Hefelager ruht länger und hält um genauso viele Monate länger.
 function lager(l){const b=lagerBasis(l), h=l.hefe||SEKT_REIFE;return l.sekt?{min:h,max:b.max+h-SEKT_REIFE,rate:b.rate}:b}
@@ -1127,7 +1159,7 @@ for(const id of Object.keys(MASCH)) kompWissen('masch_'+id,'technik',MASCH[id].n
   ()=>{const T=MASCH[id]; return `${T.bonus?MASCH_BONUS[id]():`Schafft ${rbn(T.leist)} Reben bei der Lese und deckt übers Jahr ${T.helfer} Hektar Reben ab`}. Zu kaufen ab dem Rang ${RAENGE[T.rang].name} für ${eur(T.preis)}.`});
 kompWissen('hagel','gefahr','Hagel',()=>'Zwischen Juni und September kann ein Unwetter einen Teil der Trauben zerschlagen, die noch am Stock hängen.');
 kompWissen('spaetfrost','gefahr','Spätfrost',()=>'Friert es im April oder Mai noch einmal, leidet die Blüte, und die Ernte des Jahres fällt kleiner aus.');
-kompWissen('kaelte','gefahr','Kälteeinbruch',()=>`In rund ${Math.round(KAELTE*100)} % der Jahre wird es im November über Nacht bitterkalt. Dann erfriert alles, was noch hängt. Die Vorhersage im Oktober warnt meist davor.`);
+kompWissen('kaelte','gefahr','Das Wagnis im Herbst',()=>`Wer die Spitzen-Sorte über Oktober hängen lässt, wagt den Weg seines Gebiets. Jeder Monat kostet ${Math.round((1-WARTEN_MENGE)*100)} % Menge, und klappt es nicht, ist die Ernte des Feldes weg, zum Beispiel durch einen Kälteeinbruch im November.`);
 kompWissen('skandal','gefahr','Weinskandal',()=>'Ein Skandal im Land drückt ein paar Monate lang alle Weinpreise. Danach ist erst einmal Ruhe.');
 kompWissen('kontrolle','gefahr','Weinkontrolle',()=>'Der Prüfer kommt unangemeldet, im Schnitt alle drei Jahre. Findet er gepanschten Wein, wird der vernichtet, es gibt Strafe, und fünf Jahre lang kommt er jedes Jahr wieder.');
 kompWissen('maschine','gefahr','Maschinenschaden',()=>`Ein Schaden kostet eine Maschine auf einen Schlag viel Zustand. Unter ${MASCH_ROT} % fällt sie aus, bis sie gewartet ist.`);
@@ -1141,12 +1173,12 @@ kompWissen('regeln','stufe','Reifezeit und Regeln',()=>{
     +`<br><br><b>📜 Gut zu wissen</b><br>Jeder Wein liegt mindestens einen Monat im Fass, höchstens sieben.<br>Ab Kabinett und beim Eiswein darfst du erst im Januar nach der Lese anmelden.<br>Überreife Trauben bringen 5° mehr Öchsle.<br>${edelRegel()}.${S.rollen?'':' Am häufigsten trifft sie die Sorte, die am besten ins Gebiet passt.'} Dann gibt es von dem Feld kein Kabinett und keine Spätlese mehr.<br>Kälteeinbruch im November: im Schnitt jedes vierte Jahr, die Vorhersage warnt meist davor.<br>${frostText()}, nur dann gibt es Eiswein.<br>Bei der Lese zeigt jede Leseart, ab wann der Wein verkaufsfertig ist.`;
 });
 // Die Edelfäulnis ist keine Gefahr, sie ist ein Gütezeichen (Maik 19.11.2026). Ihre Seite steht deshalb bei den Stufen.
-kompWissen('edel','stufe','Edelfäulnis',()=>`${edelRegel()}. Mit ihr steigt der Zucker schneller, die Menge schrumpft. Kabinett und Spätlese gibt es von dem Feld dann nicht mehr, dafür Auslese und mehr.`);
+kompWissen('edel','stufe','Edelfäulnis',()=>`${edelRegel()}. Dann reicht der Zucker für eine Beerenauslese. Kabinett und Spätlese gibt es von dem Feld dann nicht mehr.`)
 // Was eine Stufe braucht, mit den Hürden des eigenen Gebiets (früher die Zeilen im Weinlexikon).
 function kompStufeText(st){
   const m=R().min, d=STUFEN[st];
   if(st==='feder') return `Ab ${m.tafel}° Öchsle, jede Leseart. Nur im Monat nach der Lese anmelden und abfüllen, gleich verkaufbar, hält 3 Monate. Der Weinhändler nimmt ihn in jeder Menge zum vollen Preis, schnelles Geld für den Notfall. Reich wird damit keiner.`;
-  if(st==='eis') return `Ab ${m.tafel}° Öchsle, nur gefrorene Trauben der Dezember-Lese, mit Edelfäulnis, ${LESE.reif} oder ${LESE.ueber}, nicht gemischt. Nur im Januar anmelden. Die Öchsle bestimmen den Wert wie bei Auslese (ab ${m.aus}°), Beerenauslese (ab ${m.ba}°) oder Trockenbeerenauslese (ab ${m.tba}°).`;
+  if(st==='eis') return `Ab ${m.tafel}° Öchsle, nur gefrorene Trauben der Dezember-Lese, ${LESE.reif} oder ${LESE.ueber}, nicht gemischt. Nur im Januar anmelden. Die Öchsle bestimmen den Wert wie bei Auslese (ab ${m.aus}°), Beerenauslese (ab ${m.ba}°) oder Trockenbeerenauslese (ab ${m.tba}°).`;
   return `Ab ${mindest(st)}° Öchsle, ${d.lese?LESE[d.lese]:'jede Leseart'}${d.edel===true?', mit Edelfäulnis':d.edel===false?', ohne Edelfäulnis':''}.`;
 }
 // Die zehn Einträge mit Siegeln je Kapitel: der Sekt bei den Sorten, die neun Stufen bei den Stufen. Nur sie zählen.
@@ -1579,8 +1611,6 @@ function monatLauf(){
   {const n=mgrHandlese(), t=`${n===1?'einen Erntehelfer':n+' Erntehelfer'} für die Handlese eingestellt`;
     if(n){Z.push(`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name} hat ${t}.`); const mw=S.manager.weingut; mw.zuletzt=t; mw.zm=S.jahr*12+S.monat; mgrLogbuch('weingut',t)}}
   // Wetter als Thema für die Zeitung. Die Einzelheiten je Rebsorte stehen unter "Aus dem Weinberg".
-  if(S.monat===10&&S.kaelte===S.jahr) schlag(70,'Kälteeinbruch im November',`Über Nacht ist es bitterkalt geworden. Wer noch Trauben hängen hatte, hat sie verloren.${W.some(z=>z.startsWith('Kälteeinbruch'))?' '+(spLohn(2)?'Bei dir haben die Frostfeuer der Feuerwehr ein Viertel gerettet.':'Bei dir ist erfroren, was noch am Stock hing.'):' Deine Trauben hat es nicht erwischt.'}`,'frost',{du:W.some(z=>z.startsWith('Kälteeinbruch'))?1:0});
-  if(S.monat===9&&S.kaelteWarn===S.jahr) schlag(60,'Wetterdienst warnt vor Kälteeinbruch','Für November sagt der Wetterdienst bitterkalte Nächte voraus. Wer noch Trauben hängen hat, sollte jetzt lesen.','frost',{du:R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)?1:0});
   if(eisEigen()) schlag(66,...eisT('eigen'),'eiswein',{du:1});
   if((S.monat===3||S.monat===4)&&S.wetter==='frost'&&rebenGesamt()) schlag(62,'Spätfrost im Frühjahr','Eine Frostnacht hat die jungen Triebe geschädigt. Die Ernte fällt dieses Jahr kleiner aus.','spaetfrost',{du:1});
   if(S.monat===0) schlag(28,'Prädikatsweine anmelden','Die Weine vom letzten Jahrgang können jetzt im Rathaus als Prädikatswein angemeldet werden. Bis März ist außerdem Pflanzzeit.','kellerbuch',{archiv:1});

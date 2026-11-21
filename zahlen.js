@@ -113,9 +113,9 @@ const WEIN_ROLLE={menge:['feder','tafel','qba','kab','spat'],sekt:[],spitze:['fe
 // Seit 13.3.4 (Bauplan 13.3): eine Tabelle für alle Freischaltungen. r ist der Rang (Index in RAENGE), ab ist der Abstand in Jahren nach dem Aufstieg in diesen Rang
 // (S.rangMon merkt den Monat jedes Aufstiegs), bis der Rang, ab dem es wieder weg ist. Wer später aufsteigt, bekommt auch das später. name steht beim Aufstieg
 // unter "in 4 Jahren" und im Winzerboten, bote ist die Zeile, wenn es nach dem Abstand kommt (Platzhalter bis 13.8). 13.4 und 13.5 hängen hier ihre Einträge an.
-// Beerenauslese und Eiswein ab R6, Trockenbeerenauslese ab R8 sind ein Übergang,
-// bis der Weg des Gebiets in 13.4 sie ersetzt (Maik 21.11.2026). Feder-, Tafel- und Qualitätswein gelten für jede Rolle, die sie machen darf (Annahme von Claude).
-const FREI={wein_feder:{r:0},wein_tafel:{r:1},wein_qba:{r:2},wein_kab:{r:0},wein_spat:{r:0},wein_aus:{r:6},wein_ba:{r:6},wein_eis:{r:6},wein_tba:{r:8},
+// Seit 13.4.2: Beerenauslese und Eiswein haben kein eigenes Rang-Schloss mehr, sie kommen nur über den Weg des Gebiets im Herbst (weg_eigen ab R6).
+// Trockenbeerenauslese ab R8 bleibt als Übergang, bis 13.4.5 sie über weg_tba freigibt. Feder-, Tafel- und Qualitätswein gelten für jede Rolle, die sie machen darf (Annahme von Claude).
+const FREI={wein_feder:{r:0},wein_tafel:{r:1},wein_qba:{r:2},wein_kab:{r:0},wein_spat:{r:0},wein_aus:{r:6},wein_tba:{r:8},weg_eigen:{r:6},
   makler:{r:1},spende:{r:1},auktion:{r:2},land:{r:3},
   export:{r:3,ab:4,name:'der Exporthandel',bote:'🚢 Der Exporthandel nimmt jetzt auch deinen Wein. Er zahlt mehr als das Inland und nimmt dir mit jedem Rang mehr ab.'},
   sabotage:{r:3,ab:4,bis:5,name:'Sabotage hinter der Hintertür',bote:'💣 Hinter der Hintertür kennt man jetzt deinen Namen. Wer will, kann einem Gegner schaden lassen.'},
@@ -196,7 +196,7 @@ const RAENGE=[
   {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:300,ha:9,verm:600000,rahmen:160000,haAlt:5,deckel:16,neu:'Landesprämierung, die Erntemaschine'},
   {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:13,verm:1500000,rahmen:300000,haAlt:6,deckel:20,neu:'{sorte}, der Sektkeller, das Weinfest, der Laubschneider, die Degorgier- und Abfüllanlage im Sektkeller'},
   {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:16,verm:3500000,rahmen:300000,haAlt:8,deckel:26,neu:'{sorte}, der große Vollernter',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.',wegW:'Sabotage ist für dich ab jetzt tabu, eine Dame macht so etwas nicht.'},
-  {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:21,verm:6000000,rahmen:300000,haAlt:10,deckel:33,neu:'Auslese, Beerenauslese und Eiswein, eine eigene Weinhandlung, das Amt des Weinbotschafters, die Abfüllanlage'},
+  {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:21,verm:6000000,rahmen:300000,haAlt:10,deckel:33,neu:'Auslese und der Weg deines Gebiets im Herbst, eine eigene Weinhandlung, das Amt des Weinbotschafters, die Abfüllanlage'},
   {name:'Verbandsvorstand',kurz:'Vorstand',w:'Verbandsvorständin',kw:'Vorständin',ans:4000,ha:26,verm:12000000,rahmen:300000,haAlt:13,deckel:36,neu:'Bundeswettbewerb, das Hoffest, du kannst Kontrollen anregen'},
   {name:'Vizepräsident',kurz:'Vizepräsident',w:'Vizepräsidentin',kw:'Vizepräsidentin',ans:6000,ha:29,verm:16000000,rahmen:300000,haAlt:16,deckel:41,neu:'Trockenbeerenauslese, die Chance auf eine Spitzenlage'},
   {name:'Präsident des Weinbauverbands',kurz:'Präsident',w:'Präsidentin des Weinbauverbands',kw:'Präsidentin',ans:8500,ha:33,verm:30000000,rahmen:300000,haAlt:20,deckel:50,neu:'der Stuhl im Festsaal, das Amt an der Spitze des Verbands, der Weg zur Weltweinschau'}
@@ -274,7 +274,7 @@ const MANAGER=[
 // Schummelei: Kälteeinbruch im November, Panschen, Weinkontrolle, Sabotage. Alle Zahlen an einer Stelle.
 // Seit 13.4.1: Frost im Winterwetter (Dezember bis Februar) für alle Gebiete gleich, der alte Wert der Mitte (Annahme von Claude, frost je Gebiet ist weg).
 const WINTER_FROST=.25;
-const KAELTE=.25, ZUCKER_MAX=20, ZUCKER_ERLAUBT=10, SCHMIER_ANTEIL=.1, SCHMIER_MIN=2000;
+const ZUCKER_MAX=20, ZUCKER_ERLAUBT=10, SCHMIER_ANTEIL=.1, SCHMIER_MIN=2000;
 const STRAFE_MIN=10000, STRAFE_ANS=30, STRAFE_ANS_WEITER=10, BESTECH_MIN=5000, BESTECH_MAX=50000, BESTECH_NEIN_ANS=20;
 const SAB_KONTAKT=20000, SAB_MIN=5000, SAB_MAX=50000, SAB_AUFFLIEGEN=.2, SAB_STRAFE=30000, SAB_STRAFE_ANS=40, SAB_RANG=FREI.sabotage.bis;
 // Seit 13.3.4: Sabotage erst FREI.sabotage.ab Jahre nach dem Winzermeister (frei('sabotage')), vorher ist das Fenster in der Hintertür nicht zu sehen. Ab SAB_RANG (Gutsherr) bleibt sie tabu.
@@ -610,18 +610,21 @@ const GEGNER_SEKT=.1;
 // S.temp merkt die gewürfelte Zahl des Monats. Fehlt sie (alte Spielstände, Spielstart), gilt der Wert ohne Streuung.
 const TEMP_MONAT=[2,3,7,11,15,18,20,20,16,11,6,3], TEMP_WETTER={sonnig:4,mild:0,regen:-2,kalt:-5};
 /* ================= Wachstum ================= */
-// Öchsle: Startwert im Juli, Zuwachs August bis Dezember, Zuschlag je Monat mit Edelfäulnis.
+// Öchsle: Startwert im Juli, Zuwachs August bis Dezember, höchstens bis zur Grenze des Weinbergs (oeGrenze).
 // Im November trocknen die Beeren ein: Die Menge schrumpft, der Zucker steigt deshalb noch einmal kräftig.
-// Edelfäulnis (seit 3.3): Ab Oktober kann sie jeden Monat kommen, sobald ein Feld den Spätlese-Wert erreicht, mit EDEL_CHANCE.spat, bei Regen oder mildem Wetter mit .feucht.
-// Ab dem Auslese-Wert (auch schon im August und September) kommt sie mit .aus. Bleibt sie dort aus, kommt sie dieses Jahr nicht mehr (f.edelGeprueft).
-// Die Chance gilt für die Sorte, die am besten zum Gebiet passt. Die anderen bekommen sie mal Eignung hoch zwei, warme Gebiete mit edelF öfter.
-// Version 5.0 (Paket 8): In kühlen Gebieten (edelAus) kommt sie erst ab dem Auslese-Wert, in der Mitte (edelSpatF) unter dem Auslese-Wert nur mit halber Chance.
-// So bleiben dort Kabinett und Spätlese öfter heil. Warme Gebiete bleiben wie seit 3.3.
-// Ihr Zuschlag je Monat hängt an der Zahl der Sonnenmonate des Jahres (Juni bis Oktober), EDEL_PLUS[0] bis EDEL_PLUS[5].
-// Abgestimmt 15.11.2026 mit 4000 Jahrgängen je Gebiet: Edelfäulnis bis November bei der besten Sorte in rund 75 % der Jahre (warm 85 %, kühl 68 %), bei den anderen rund 50 und 38 %.
-// Beerenauslese aufwärts (beste Sorte, Lese im Oktober bei Kältewarnung, sonst im November): warm 37 %, Mitte 27 %, kühl 18 %. Eiswein möglich: warm 6 %, Mitte 16 %, kühl 27 %.
 // Beste Sorte im Oktober: normales Jahr um 89°, Sonnenjahr um 100°.
-const OE_START=49, OE_PLUS=[14,14,12,15,4], EDEL_PLUS=[8,11,14,19,25,30], EDEL_CHANCE={spat:.35,feucht:.5,aus:.82};
+const OE_START=49, OE_PLUS=[14,14,12,15,4];
+// Seit 13.4.2 (Bauplan 13.4, Maik 21.11.2026): der Herbst der Spitzen-Sorte als Wagnis. Bis Oktober ist sicher, was der Deckel erlaubt.
+// Wer länger hängen lässt, wagt den Weg seines Gebiets: warm bis November auf Edelfäulnis (Beerenauslese, mindestens MIN_NORMAL.ba),
+// kühl bis Dezember auf Frost (Eiswein mit dem Öchsle der Trauben). WAGNIS.eigen ist die Chance im eigenen Weg. Klappt es nicht, ist die Ernte des Feldes weg.
+// WARTEN_MENGE bleibt von der Menge je Monat über Oktober hinaus (für jedes Feld). WAGNIS_F ist der neutrale Haken für die Schwankung der Spielstufen (13.7).
+const WAGNIS={eigen:.7}, WARTEN_MENGE=.9, WAGNIS_F=1;
+// Winzerbote, wenn das Wagnis nicht klappt: Titel, Text ({s} ist die Sorte), Bild. Platzhalter, der Wortlaut kommt in 13.8.
+const WAGNIS_AUS={
+  edel:['Kälteeinbruch im November','Über Nacht ist es bitterkalt geworden. Dein {s} hing noch für die Edelfäulnis am Stock und ist erfroren.','frost'],
+  frost:['Tauwetter statt Eiswein','Der Frost bleibt aus, der Dezember ist zu mild. Dein {s} ist am Stock verfault, aus dem Eiswein wird nichts.','frost']
+};
+const WAGNIS_FEUER='Die Frostfeuer der Feuerwehr haben ein Viertel gerettet.';
 // Seit 11.5 (Teil C2, Maik 20.11.2026): Edelfäulnis macht schneller überreif. Auf einem Feld mit Edelfäulnis sind EDEL_UEBER Prozentpunkte mehr Trauben überreif,
 // ab dem Monat, in dem sie kommt. Dadurch gibt es weniger Auslese (nur reife Trauben) und mehr für die Beerenauslese.
 // Überreife Trauben sind fast Rosinen und geben weniger Most: 1 Liter überreife Trauben wird zu MOST_UEBER Litern (feldLiter). Bis 11.4: EDEL_UEBER 0, MOST_UEBER 1.
@@ -721,7 +724,7 @@ const KOMP_TEXT={
   masch_abfuell:'Spülen, füllen, verkorken, etikettieren, alles an einem Band. Von Hand geht bei jeder Flasche ein Schluck daneben, die Anlage füllt auf den Millimeter genau. Und sie arbeitet sauber, kein Keim kommt mit in die Flasche.',
   hagel:'Ein Sommergewitter reicht. In wenigen Minuten zerfetzt Hagel die Blätter und schlägt die Trauben vom Stock. Meist trifft es nur einen schmalen Streifen, der Nachbar bleibt verschont. Angeschlagene Beeren faulen schnell, was noch hängt, will gut beobachtet werden.',
   spaetfrost:'Im Frühjahr treiben die Reben aus, und die jungen Triebe vertragen keinen Frost. Gefürchtet sind die Eisheiligen Mitte Mai. Eine einzige klare Nacht kann einen großen Teil der Ernte kosten, lange bevor eine Traube da ist. Manche Winzer stellen dann Frostkerzen zwischen die Zeilen.',
-  kaelte:'Wer auf hohe Öchsle pokert, lässt seine Trauben bis in den Spätherbst hängen. Kommt dann über Nacht strenger Frost, erfriert alles, was noch am Stock ist. Kluge Winzer schauen im Oktober genau auf die Vorhersage.',
+  kaelte:'Wer seine Spitzen-Sorte über Oktober hängen lässt, wagt viel: Klappt der Weg seines Gebiets, gibt es Beerenauslese oder Eiswein. Sonst ist die Ernte des Feldes weg, zum Beispiel durch einen Kälteeinbruch im November oder Tauwetter im Dezember.',
   edel:'Der Pilz Botrytis ist Fluch und Segen. Auf unreifen Trauben ist er schlicht Fäule und verdirbt die Ernte. Auf reifen Beeren macht er bei Morgennebel und Nachmittagssonne die Schale durchlässig, das Wasser verdunstet, Zucker und Aroma bleiben. Ohne ihn gäbe es keine Beerenauslese.',
   skandal:'1985 flog auf, dass Weine mit Glykol gesüßt worden waren, einem Stoff, der sonst in Frostschutzmitteln steckt. Über Nacht kaufte kaum noch jemand Wein, auch nicht von den ehrlichen Winzern. Bis das Vertrauen zurück war, vergingen Jahre. Seitdem sind die Weingesetze deutlich strenger.',
   kontrolle:'Weinkontrolleure haben eine feine Nase und das Recht, jeden Keller zu betreten. Sie kommen ohne Anmeldung, ziehen Proben und lesen das Kellerbuch. Wer sauber arbeitet, hat nach einer Stunde wieder seine Ruhe.',
@@ -929,7 +932,7 @@ const WACHS_WECHSEL=2600, WACHS_WENDE=3900;   const WF_POS={
   'weltweinschau-sieg':'--p0:50% 35%;--p1:50% 60%;--o:50% 62%;--s:1.2', ehrenplatz:'--p0:44% 50%;--p1:50% 50%;--o:50% 25%;--s:1.03',
   'flasche-regal-zwei':'--p0:50% 40%;--p1:49% 55%;--o:49% 55%;--s:1.08', 'flasche-kueche-zwei':'--p0:46% 50%;--p1:51% 50%;--o:51% 65%;--s:1.06',
   'flasche-kueche-leer':'--p0:46% 50%;--p1:51% 50%;--o:51% 65%;--s:1.06'};
-// Version 4.1: Steckbrief eines Gebiets. Alle Zahlen kommen aus REGIONEN, EIGNUNG, den Hürden und KAELTE, damit die Karte nach dem Abstimmen von selbst stimmt.
+// Version 4.1: Steckbrief eines Gebiets. Alle Zahlen kommen aus REGIONEN, EIGNUNG und den Hürden, damit die Karte nach dem Abstimmen von selbst stimmt.
 // Spätfrost zur Blüte: April 10 %, Mai 3 % (wuerfelWetter), also in rund jedem achten Jahr, überall gleich.
 const SPAET_JAHR=8;
 const BUCH_ORT={berg:'berg',betrieb:'betrieb',aktuell:'aktuell',maschinen:'maschinen',buero:'buero',buch:'buch',sabotage:'hintertuer',start:'keller',lager:'lager',amt:'rathaus',handel:'handel',laeden:'weinhandel',bank:'bank',arbeit:'arbeit'};

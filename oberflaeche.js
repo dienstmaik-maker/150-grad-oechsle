@@ -249,9 +249,19 @@ function eisFehlt(f){const g=pruefeQualitaet('eis',feldQ(f,'reif')).filter(x=>!x
 // Seit 8.0: Satz zur Handlese für Felder mit Edelfäulnis, vor leer.
 function handText(f,vor){
   if(!handFeld(f)||!(f.menge>0)||f.gelesen) return '';
-  const n=handBedarf(f), w=f.gefroren?'Gefrorene Trauben mit Edelfäulnis':'Trauben mit Edelfäulnis';
+  const n=handBedarf(f), w=f.gefroren?'Gefrorene Trauben':'Trauben mit Edelfäulnis';
   if(handFehlt(f)) return `${vor}<b>✋ Handlese:</b> <span class="rot">${w} liest man von Hand, dafür brauchst du ${n} Erntehelfer, du hast ${S.helfer}. Liest du so, liest die Maschine, und es gibt höchstens Qualitätswein.</span>`;
   return `${vor}<b>✋ Handlese:</b> ${w} liest man von Hand. ${n?`Dafür brauchst du ${n} Erntehelfer, ${S.helfer>=n?`deine ${S.helfer} reichen`:`du hast ${S.helfer}, mehr Trauben bleiben hängen`}`:'Dieses Feld schafft deine Familie allein'}.`;
+}
+// Seit 13.4.2 (Bauplan 13.4): was das Hängenlassen bringt, im Weinberg unter der Lese-Hilfe. Platzhalter-Texte, der Wortlaut kommt in 13.8.
+function wagnisHinweis(id){
+  const f=S.felder[id], m=S.monat, w=feldWeg(id), wm=Math.round((1-WARTEN_MENGE)*100);
+  if(f.gefroren||!(f.menge>0)||f.gelesen) return '';
+  if(f.wagnis==='frost') return `<br><b>🎲 Wagnis Eiswein:</b> Dein ${SORTEN[id].name} wartet auf Frost im Dezember. Klappt es nicht, ist die Ernte dieses Feldes weg.`;
+  if(f.wagnis==='edel') return m===10?'<br><span class="rot">Im Dezember verfault, was noch hängt.</span>':'';
+  if(m<=9&&w) return `<br><b>🎲 Wagnis:</b> ${w==='edel'?'Lässt du die Trauben bis November hängen, kann Edelfäulnis eine Beerenauslese bringen.':'Lässt du die Trauben bis Dezember hängen, kann Frost einen Eiswein bringen.'} Klappt es nicht, ist die Ernte dieses Feldes weg. Jeder Monat über Oktober kostet ${wm} % Menge.`;
+  if(m>=9) return `<br><span class="rot">${m===9?`Ab November kostet jeder Monat ${wm} % Menge, im Dezember verfault, was noch hängt.`:'Im Dezember verfault, was noch hängt.'}</span>`;
+  return '';
 }
 function leseHilfe(f){
   if(sektSorte(feldId(f))) return S.sektkeller?`<b>Jetzt möglich:</b> Sekt, ${num(feldLiter(f,'alles'))} Flaschen. Bei der Lese wählst du ${SEKT_REIFE} oder ${HEFE_LANG} Monate auf der Hefe.`:'<b>Ohne Sektkeller kein Sekt.</b> Die Sekt-Sorte macht nur Sekt.';
@@ -261,7 +271,8 @@ function leseHilfe(f){
   if(f.gefroren){const e=best==='eis'?'':eisFehlt(f); return h+(e?'<br>'+e:'')+handText(f,'<br>')}
   h+=handText(f,'<br>');
   const rang=best?STUFEN[best].rang:0;
-  const ziel=['tafel','qba','kab','spat','aus','ba','tba'].find(st=>STUFEN[st].rang>rang&&rolleDarf(feldId(f),st));
+  // Seit 13.4.2: Beerenauslese, Trockenbeerenauslese und Eiswein kommen nur über das Wagnis (wagnisHinweis), sie stehen hier nicht mehr.
+  const ziel=['tafel','qba','kab','spat','aus'].find(st=>STUFEN[st].rang>rang&&rolleDarf(feldId(f),st));
   // Seit 8.0: Liest die Maschine, weil Helfer für die Handlese fehlen, sagt das handText schon, eine "Nächste Stufe" gibt es dann nicht.
   if(ziel&&!handFehlt(f)){
     const la=STUFEN[ziel].lese||'alles', g=pruefeQualitaet(ziel,feldQ(f,la)).filter(x=>!x.startsWith('Leseart'));
@@ -1113,10 +1124,10 @@ function vBerg(){
       <div class="kv"><span>Menge am Stock</span><span>${num(f.menge)} l</span></div>
       <div class="kv"><span>Reif</span><span>${f.reif} %</span></div><div class="bar"><i style="width:${f.reif}%"></i></div>
       <div class="kv"><span>davon überreif</span><span>${f.ueber} %</span></div><div class="bar w"><i style="width:${f.ueber}%"></i></div>
-      <div class="kv"><span>Edelfäulnis</span><span>${f.edel?'ja':SORTEN[id].rolle&&SORTEN[id].rolle!=='spitze'?'nie bei dieser Sorte':f.edelGeprueft?'bleibt dieses Jahr aus':R().edelAus?`nein, möglich ab ${R().min.aus}°`:`nein, ab Oktober möglich ab ${R().min.spat}°`}</span></div>
+      <div class="kv"><span>Edelfäulnis</span><span>${f.edel?'ja':!wagnisFeld(id)?'nie bei dieser Sorte':'nur über das Wagnis im Herbst'}</span></div>
       ${f.gefroren?'<div class="kv"><span>Zustand</span><span>❄️ gefroren</span></div>':''}
       ${f.teil?'<div class="mut">Ein Teil ist schon gelesen, der Rest hängt noch.</div>':''}
-      ${m>=7?`<div class="hilfe">${leseHilfe(f)}${m===9?`<br><span class="rot">${S.kaelteWarn===S.jahr?'Die Vorhersage meldet einen Kälteeinbruch im November! Dann erfriert alles, was noch hängt.':'Achtung: Im Schnitt jedes vierte Jahr kommt im November ein Kälteeinbruch, dann erfriert alles, was noch hängt. Die Vorhersage warnt meist davor.'}</span>`:''}${m===10?`<br><span class="rot">Achtung: Ohne Frost im Dezember verfault alles, was noch hängt.</span><br>${frostText()}.`:''}</div>`:''}`;
+      ${m>=7?`<div class="hilfe">${leseHilfe(f)}${wagnisHinweis(id)}</div>`:''}`;
     }
     const sektOhne=sektSorte(id)&&!S.sektkeller, kannLesen=m>=7&&f.menge>0&&!f.gelesen&&(m<11||f.gefroren)&&!sektOhne, pflanz=m<=2&&sorteFrei(id)&&!sektOhne, schnitt=schnittOffen(id), haengt=f.reben&&f.menge>0&&!f.gelesen&&m>5&&m<7;
     h+=fenster('feld_'+id,titel,z,{buch:m>=7?'lese':'berg',
@@ -2231,7 +2242,7 @@ const AKT={
     }
     const opt=['reif','ueber','alles'].map(la=>{const b=besteStufe(feldQ(f,la)),l=feldLiter(f,la);
       return `<button class="wahl" data-a="leseFrage" data-id="${d.id}" data-la="${la}" ${l<=0?'disabled':''}><b>${LESE[la]}</b><br><span class="mut">${num(l)}\u00a0l mit ${feldQ(f,la).oe}° Öchsle · reicht für: ${b?stufeText(b,feldQ(f,la).oe):'nichts'}${b?`<br>💶 Wert rund ${eur(leseWert(d.id,la,b,l))}<br>${verkaufAb(d.id,b)}`:''}</span></button>`}).join('');
-    openSheet(`${sbild(f.gefroren?'eiswein':'lese')}<h3>${so.name} lesen</h3><p class="mut">Jedes Feld liest du nur einmal im Jahr. Was die Leseart nicht mitnimmt, ist danach verloren. Die Trauben müssen noch diesen Monat gekeltert werden.${MOST_UEBER<1&&f.ueber>0?` Überreife Trauben sind schon eingetrocknet und geben nur ${Math.round(MOST_UEBER*100)} % Most.`:''}</p>${f.gefroren?`<p class="hilfe" style="margin:0 0 10px">${eisFehlt(f)?eisFehlt(f)+'. Es reicht nur für die Stufen oben.':'Eiswein gibt es nur aus reifen oder aus überreifen Trauben, nicht aus beiden zusammen.'}</p>`:S.monat===10?`<p class="hilfe" style="margin:0 0 10px">${frostText()}. Nur dann wird aus hängenden Trauben Eiswein, sonst verfaulen sie.</p>`:S.monat===9&&S.kaelteWarn===S.jahr?'<p class="rot">Die Vorhersage meldet einen Kälteeinbruch im November.</p>':''}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0%. Den Rest liest keiner, er ist verloren.</p>`:''}${handFeld(f)?`<p class="hilfe" style="margin:0 0 10px">${handText(f,'')}${handFehlt(f)?' Stell vorher beim Arbeitsamt ein, dann liest die Hand.':''}</p>`:''}${opt}${mib('lese')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
+    openSheet(`${sbild(f.gefroren?'eiswein':'lese')}<h3>${so.name} lesen</h3><p class="mut">Jedes Feld liest du nur einmal im Jahr. Was die Leseart nicht mitnimmt, ist danach verloren. Die Trauben müssen noch diesen Monat gekeltert werden.${MOST_UEBER<1&&f.ueber>0?` Überreife Trauben sind schon eingetrocknet und geben nur ${Math.round(MOST_UEBER*100)} % Most.`:''}</p>${f.gefroren?`<p class="hilfe" style="margin:0 0 10px">${eisFehlt(f)?eisFehlt(f)+'. Es reicht nur für die Stufen oben.':'Eiswein gibt es nur aus reifen oder aus überreifen Trauben, nicht aus beiden zusammen.'}</p>`:wagnisHinweis(d.id)?`<p class="hilfe" style="margin:0 0 10px">${wagnisHinweis(d.id).replace(/^<br>/,'')}</p>`:''}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0%. Den Rest liest keiner, er ist verloren.</p>`:''}${handFeld(f)?`<p class="hilfe" style="margin:0 0 10px">${handText(f,'')}${handFehlt(f)?' Stell vorher beim Arbeitsamt ein, dann liest die Hand.':''}</p>`:''}${opt}${mib('lese')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
   },
   // Version 5.1 (Paket 10): Sicherheitsabfrage, bevor gelesen wird. "Zurück" führt wieder zur Wahl der Leseart.
   leseFrage(d){
