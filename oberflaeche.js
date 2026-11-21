@@ -254,6 +254,7 @@ function handText(f,vor){
   return `${vor}<b>✋ Handlese:</b> ${w} liest man von Hand. ${n?`Dafür brauchst du ${n} Erntehelfer, ${S.helfer>=n?`deine ${S.helfer} reichen`:`du hast ${S.helfer}, mehr Trauben bleiben hängen`}`:'Dieses Feld schafft deine Familie allein'}.`;
 }
 function leseHilfe(f){
+  if(sektSorte(feldId(f))) return S.sektkeller?`<b>Jetzt möglich:</b> Sekt, ${num(feldLiter(f,'alles'))} Flaschen. Bei der Lese wählst du ${SEKT_REIFE} oder ${HEFE_LANG} Monate auf der Hefe.`:'<b>Ohne Sektkeller kein Sekt.</b> Die Sekt-Sorte macht nur Sekt.';
   let best=null,bla=null;
   for(const la of ['alles','reif','ueber']){const b=besteStufe(feldQ(f,la)); if(b&&(!best||STUFEN[b].rang>STUFEN[best].rang)){best=b;bla=la}}
   let h=best?`<b>Jetzt möglich:</b> ${stufeText(best,feldQ(f,bla).oe)}${STUFEN[best].lese||best==='eis'?'':' (jede Leseart)'}${STUFEN[best].lese?` (Leseart: ${LESE[bla]})`:''}${best==='eis'?' (Leseart: nur reife oder nur überreife Trauben, nicht beides zusammen)':''}`:'<b>Jetzt möglich:</b> noch nichts, der Zucker reicht nicht';
@@ -1107,15 +1108,15 @@ function vBerg(){
       <div class="kv"><span>Menge am Stock</span><span>${num(f.menge)} l</span></div>
       <div class="kv"><span>Reif</span><span>${f.reif} %</span></div><div class="bar"><i style="width:${f.reif}%"></i></div>
       <div class="kv"><span>davon überreif</span><span>${f.ueber} %</span></div><div class="bar w"><i style="width:${f.ueber}%"></i></div>
-      <div class="kv"><span>Edelfäulnis</span><span>${f.edel?'ja':f.edelGeprueft?'bleibt dieses Jahr aus':R().edelAus?`nein, möglich ab ${R().min.aus}°`:`nein, ab Oktober möglich ab ${R().min.spat}°`}</span></div>
+      <div class="kv"><span>Edelfäulnis</span><span>${f.edel?'ja':SORTEN[id].rolle&&SORTEN[id].rolle!=='spitze'?'nie bei dieser Sorte':f.edelGeprueft?'bleibt dieses Jahr aus':R().edelAus?`nein, möglich ab ${R().min.aus}°`:`nein, ab Oktober möglich ab ${R().min.spat}°`}</span></div>
       ${f.gefroren?'<div class="kv"><span>Zustand</span><span>❄️ gefroren</span></div>':''}
       ${f.teil?'<div class="mut">Ein Teil ist schon gelesen, der Rest hängt noch.</div>':''}
       ${m>=7?`<div class="hilfe">${leseHilfe(f)}${m===9?`<br><span class="rot">${S.kaelteWarn===S.jahr?'Die Vorhersage meldet einen Kälteeinbruch im November! Dann erfriert alles, was noch hängt.':'Achtung: Im Schnitt jedes vierte Jahr kommt im November ein Kälteeinbruch, dann erfriert alles, was noch hängt. Die Vorhersage warnt meist davor.'}</span>`:''}${m===10?`<br><span class="rot">Achtung: Ohne Frost im Dezember verfault alles, was noch hängt.</span><br>${frostText()}.`:''}</div>`:''}`;
     }
-    const kannLesen=m>=7&&f.menge>0&&!f.gelesen&&(m<11||f.gefroren), pflanz=m<=2&&sorteFrei(id), schnitt=schnittOffen(id), haengt=f.reben&&f.menge>0&&!f.gelesen&&m>5&&m<7;
+    const sektOhne=sektSorte(id)&&!S.sektkeller, kannLesen=m>=7&&f.menge>0&&!f.gelesen&&(m<11||f.gefroren)&&!sektOhne, pflanz=m<=2&&sorteFrei(id)&&!sektOhne, schnitt=schnittOffen(id), haengt=f.reben&&f.menge>0&&!f.gelesen&&m>5&&m<7;
     h+=fenster('feld_'+id,titel,z,{buch:m>=7?'lese':'berg',
       hin:[mr&&m<=2&&S.verlust&&S.verlust[id]>0&&`${WM} pflanzt beim Weiterblättern nach.`],
-      links:pflanz&&frei<10?'Auf deinem Land ist kein Platz mehr frei.':haengt?'Lese ab August.':schnitt?`✂️ Rebschnitt bis Ende April: ${eur(schnittKosten(id))}`:'',
+      links:sektOhne?'Die Sekt-Sorte macht nur Sekt, erst den Sektkeller kaufen.':pflanz&&frei<10?'Auf deinem Land ist kein Platz mehr frei.':haengt?'Lese ab August.':schnitt?`✂️ Rebschnitt bis Ende April: ${eur(schnittKosten(id))}`:'',
       kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,schnitt&&`<button class="klein" data-a="schneiden" data-id="${id}" ${S.geld<schnittKosten(id)?'disabled':''}>Schneiden</button>`,pflanz&&`<button class="klein" data-a="pflanzen" data-id="${id}" ${frei<10?'disabled':''}>Pflanzen</button>`,pflanz&&f.reben&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
   }
   h+=fenster('duengung','Düngung',`<div class="kv"><span>Boden-Stufe</span><span>${stufeSatz(S.bodenSt||0,S.bodenZ||0,BODEN_SCHWELLE,BODEN_STUFEN)}</span></div>
@@ -1151,7 +1152,7 @@ function vBerg(){
 // Solange Sekt gesperrt ist, steht sein Fenster zugeklappt ganz unten.
 function vKellerStart(){
   const tr=S.lots.filter(l=>l.status==='trauben'), fa=S.lots.filter(l=>l.status==='fass'), bel=fassBelegt(), frei=Math.max(0,S.fassraum-bel);
-  const KM=MGR_BEREICHE.keller.name, mon=n=>n===1?'Monat':'Monaten', mk=aufgabeAktiv('keltern'), mf=aufgabeAktiv('flaschen'), ms=aufgabeAktiv('sekt');
+  const KM=MGR_BEREICHE.keller.name, mon=n=>n===1?'Monat':'Monaten', mk=aufgabeAktiv('keltern'), mf=aufgabeAktiv('flaschen');
   let h=fenster('keltern','Wein keltern',tr.map(l=>fz(dot(l.sorte)+SORTEN[l.sorte].name,
       `${num(l.liter)} l Trauben · ${l.oe}° Öchsle · ${LESE[l.leseart]}${mani(l)?' · 🤫 '+maniText(l):''}`,
       `<span class="rot">Muss diesen Monat ins Fass, sonst verdirbt alles.${l.liter>frei?` Frei sind nur ${num(frei)} l Fassraum.`:''}</span>`,
@@ -1166,26 +1167,23 @@ function vKellerStart(){
     leer:'Alle Fässer sind leer.',
     hin:[mf&&`🍷 Dein ${KM} füllt beim Weiterblättern ab.`,bonusMasch('abfuell')&&`🍾 Mit der Abfüllanlage kommen ${Math.round(ABF_PLUS*100)} % mehr Flaschen aus jedem Fass.`],
     i:`Der Wein bleibt mindestens einen Monat im Fass und höchstens sieben, danach verdirbt er. Abfüllen geht erst nach der Anmeldung im Rathaus. Abgefüllt wird immer das ganze Fass, ein Liter je Flasche. Mit der Abfüllanlage geht nichts daneben, dann kommen ${Math.round(ABF_PLUS*100)} % mehr Flaschen heraus, dafür brauchst du auch so viele leere.${mf?` Dein ${KM} füllt angemeldete Fässer von selbst ab und kauft die Flaschen dafür, anmelden musst du selbst.`:''}`});
-  const sektI=`Sekt entsteht aus reifem Qualitätswein oder Kabinett in der Flasche, alles darüber ist zu wertvoll. Riesling und Spätburgunder bringen als Sekt ${Math.round((SEKT_STAR-1)*100)} % mehr.`;
+  const sektI=`Die ${ROLLEN.sekt.name} macht nur Sekt. Nach der Lese geht alles in den Sektkeller, ohne Grundwein, die Lagerarbeiter stellen ihn her. Er reift ${SEKT_REIFE} Monate, mit ${HEFE_LANG} Monaten auf der Hefe bekommt er ${HEFE_LANG_QP} Qualitätspunkte mehr. Das Hefelager wählst du bei der Lese.`;
   const vorrat=fenster('vorrat','Vorrat',`<div class="kv"><span>Fassraum</span><span>${num(bel)} von ${num(S.fassraum)} l</span></div><div class="kv"><span>Leere Flaschen (1 l)</span><span>${num(S.flaschen)}</span></div>`,
     {buch:'lager',i:'Fassraum und leere Flaschen kaufst du im Lager, beides braucht Lagerarbeiter. Fassraum am besten vor der Lese kaufen, Flaschen vor dem Abfüllen.'});
   // Seit 12.1 (Maik 20.11.2026): eine Karte Sektkeller. Vor dem Kauf nur der Kaufknopf, danach die Weine für Sekt und, sobald der Rang reicht, der Ausbau-Knopf für die Anlage.
   if(!sektRang()) return h||vorrat?h+vorrat:einKarte('keller','Noch keine Trauben','Nach der Lese kelterst du hier deine Trauben, später füllst du den Wein ab. Bis zur ersten Lese ab August ist es hier still.');
-  const hefeI=`Beim Versekten wählst du ${SEKT_REIFE} oder ${HEFE_LANG} Monate Hefelager. Mit ${HEFE_LANG} Monaten bringt der Sekt ${Math.round((HEFE_LANG_F-1)*100)} % mehr.`;
   if(!S.sektkeller) return h+fenster('sekt','Sektkeller','',{
-    hin:[aufgabeDa('sekt')&&`🍷 Dein ${KM} macht Sekt, sobald du einen Sektkeller hast.`],
     links:'Ohne Sektkeller gibt es keinen Sekt.',
     kn:pk('sektKeller','Kaufen',eur(SEKTKELLER_PREIS),{klein:'einmal',arm:S.geld<SEKTKELLER_PREIS}),
-    i:`Im Sektkeller gärt dein Wein ein zweites Mal, diesmal in der Flasche. Du kaufst ihn einmal für ${eur(SEKTKELLER_PREIS)}, danach machst du hier Sekt. ${sektI} Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche. ${hefeI}`})+vorrat;
+    i:`Im Sektkeller gärt dein Wein ein zweites Mal, diesmal in der Flasche. Du kaufst ihn einmal für ${eur(SEKTKELLER_PREIS)}, danach machst du hier Sekt. ${sektI} Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche.`})+vorrat;
   const an=!!S.sektAnlage, ak=!an&&S.rang>=R_SEKT_ANLAGE;
-  h+=fenster('sekt','Sektkeller',S.lots.filter(sektFaehig).map(l=>fz(dot(l.sorte)+lotName(l),`${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte`,'',
-      `<button class="klein" data-a="sekt" data-id="${l.id}">Zu Sekt machen</button>`)),{
-    leer:'Gerade ist kein Wein reif für Sekt.',
-    hin:[ms&&`🍷 Dein ${KM} macht beim Weiterblättern Sekt.`,an&&`🍾 Mit der ${SEKT_ANLAGE_NAME} kostet jede Flasche nur ${eur2(sektKosten())}.`],
+  h+=fenster('sekt','Sektkeller',sektAufHefe().map(l=>{const n=lager(l).min-l.flMonate; return fz(dot(l.sorte)+lotName(l),`${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte`,`Noch ${n} ${mon(n)} auf der Hefe.`,'')}),{
+    leer:'Gerade liegt kein Sekt auf der Hefe. Neuer Sekt kommt mit der Lese der Sekt-Sorte.',
+    hin:[an&&`🍾 Mit der ${SEKT_ANLAGE_NAME} kostet jede Flasche nur ${eur2(sektKosten())}.`],
     stand:sektAnsText(),
     links:ak?`Ausbau: ${SEKT_ANLAGE_NAME}, jede Flasche kostet dann die Hälfte.`:'',
     kn:ak?pk('sektAnlage','Ausbauen',eur(SEKT_ANLAGE_PREIS),{klein:'Anlage',arm:S.geld<SEKT_ANLAGE_PREIS}):null,
-    i:`${sektI} Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche${an?`, dank der ${SEKT_ANLAGE_NAME} nur die Hälfte`:ak?`. Mit der ${SEKT_ANLAGE_NAME} wird nicht mehr von Hand degorgiert und verkorkt, dann kostet jede Flasche die Hälfte`:''}. ${hefeI}`+(ms?` Dein ${KM} macht Sekt mit ${SEKT_REIFE} Monaten, bis die Sekt-Schwelle erreicht ist, mehr und langes Hefelager machst du von Hand.`:'')});
+    i:`${sektI} Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche${an?`, dank der ${SEKT_ANLAGE_NAME} nur die Hälfte`:ak?`. Mit der ${SEKT_ANLAGE_NAME} wird nicht mehr von Hand degorgiert und verkorkt, dann kostet jede Flasche die Hälfte`:''}.`});
   return h+vorrat;
 }
 // Lager (seit 7.4 auf dem Fenster-Baustein): Fässer, Flaschen, Kellerausbau. Der Zustand steht als Zeilen im Fenster, die Erklärungen im i.
@@ -2007,7 +2005,6 @@ const AKT={
     const fl=l.status==='flasche', L=l.stufe?lager(l):null, p=preis(l), W=wege(l), kn=[];
     if(!fl&&!l.stufe) kn.push(`<button data-a="anmelden" data-id="${l.id}">Im Rathaus anmelden</button>`);
     if(!fl&&l.stufe) kn.push(`<button data-a="abfuellen" data-id="${l.id}">Abfüllen (${num(l.liter)} Flaschen)</button>`);
-    if(sektFaehig(l)) kn.push(`<button data-a="sekt" data-id="${l.id}">Zu Sekt machen</button>`);
     if(fl&&S.rang>=R_LADEN) kn.push(l.regal?`<button data-a="regalRaus" data-id="${l.id}">Aus dem Regal nehmen</button>`:p?`<button data-a="regal" data-id="${l.id}">Ins Regal stellen</button>`:'');
     if(W.length&&!l.regal) kn.push(`<button data-a="verkaufen" data-id="${l.id}">Verkaufen ${W[0].flag} ${eur2(W[0].p)}</button>`);
     openSheet(`${sbild('kellerbuch')}<h3>${dot(l.sorte)}${esc(lotName(l))}</h3>${l.stufe?'':'<div class="mut">Noch nicht angemeldet</div>'}${l.pansch?'<div class="rot">🤫 gepanscht</div>':''}${l.regal?'<div class="mut">🏪 Steht im Regal deiner Weinhandlung</div>':''}${medHtml(l)}${kompLotZeile(l)}
@@ -2220,6 +2217,12 @@ const AKT={
   },
   lesen(d){
     const f=S.felder[d.id], so=SORTEN[d.id];
+    // Seit 13.3.3: Die Sekt-Sorte wählt nur das Hefelager, gelesen wird alles.
+    if(sektSorte(d.id)){
+      const l=feldLiter(f,'alles'), k=Math.round(l*sektKosten());
+      const opt=[[SEKT_REIFE,`${SEKT_REIFE} Monate reifen`],[HEFE_LANG,`${HEFE_LANG} Monate auf der Hefe`]].map(([h,t])=>`<button class="wahl" data-a="sektLeseJa" data-id="${d.id}" data-h="${h}" ${l<=0||!S.sektkeller?'disabled':''}><b>${t}</b><br><span class="mut">${num(l)} Flaschen Sekt${h>SEKT_REIFE?` · ${HEFE_LANG_QP} Qualitätspunkte mehr`:''} · verkaufsreif ${inMonaten(h)}</span></button>`).join('');
+      return openSheet(`${sbild('sektkeller')}<h3>${so.name} lesen</h3><p class="mut">Die ${ROLLEN.sekt.name} macht nur Sekt. Nach der Lese geht alles in deinen Sektkeller, die Lagerarbeiter stellen den Sekt her. Sektflasche, Korken und Agraffe kosten ${eur(k)}. Du wählst nur, wie lange er reift.</p>${S.sektkeller?'':'<p class="rot">Ohne Sektkeller gibt es keinen Sekt.</p>'}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0%. Den Rest liest keiner, er ist verloren.</p>`:''}${opt}${mib('lese')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
+    }
     const opt=['reif','ueber','alles'].map(la=>{const b=besteStufe(feldQ(f,la)),l=feldLiter(f,la);
       return `<button class="wahl" data-a="leseFrage" data-id="${d.id}" data-la="${la}" ${l<=0?'disabled':''}><b>${LESE[la]}</b><br><span class="mut">${num(l)}\u00a0l mit ${feldQ(f,la).oe}° Öchsle · reicht für: ${b?stufeText(b,feldQ(f,la).oe):'nichts'}${b?`<br>💶 Wert rund ${eur(leseWert(d.id,la,b,l))}<br>${verkaufAb(d.id,b)}`:''}</span></button>`}).join('');
     openSheet(`${sbild(f.gefroren?'eiswein':'lese')}<h3>${so.name} lesen</h3><p class="mut">Jedes Feld liest du nur einmal im Jahr. Was die Leseart nicht mitnimmt, ist danach verloren. Die Trauben müssen noch diesen Monat gekeltert werden.${MOST_UEBER<1&&f.ueber>0?` Überreife Trauben sind schon eingetrocknet und geben nur ${Math.round(MOST_UEBER*100)} % Most.`:''}</p>${f.gefroren?`<p class="hilfe" style="margin:0 0 10px">${eisFehlt(f)?eisFehlt(f)+'. Es reicht nur für die Stufen oben.':'Eiswein gibt es nur aus reifen oder aus überreifen Trauben, nicht aus beiden zusammen.'}</p>`:S.monat===10?`<p class="hilfe" style="margin:0 0 10px">${frostText()}. Nur dann wird aus hängenden Trauben Eiswein, sonst verfaulen sie.</p>`:S.monat===9&&S.kaelteWarn===S.jahr?'<p class="rot">Die Vorhersage meldet einen Kälteeinbruch im November.</p>':''}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0%. Den Rest liest keiner, er ist verloren.</p>`:''}${handFeld(f)?`<p class="hilfe" style="margin:0 0 10px">${handText(f,'')}${handFehlt(f)?' Stell vorher beim Arbeitsamt ein, dann liest die Hand.':''}</p>`:''}${opt}${mib('lese')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
@@ -2231,6 +2234,8 @@ const AKT={
   },
   // Eine Lese je Feld und Jahr: Die Leseart nimmt das ganze Feld. Alte Spielstände mit angefangener Teil-Lese lesen so den Rest.
   // Version 4.4: danach im Weinberg bleiben und neu zeichnen, damit der Lesen-Knopf sofort verschwindet.
+  sektLeseJa(d){const f=S.felder[d.id]; closeSheet(); if(!sektSorte(d.id)||feldLiter(f,'alles')<=0) return; const t=TAB,s=SUB,y=window.scrollY, l=lese(d.id,'alles',1,+d.h); TAB=t; SUB=s; save(); render(); window.scrollTo(0,y);
+    if(l) meldung('Sekt im Keller',`${num(l.liter)} Flaschen ${lotName(l)} liegen jetzt auf der Hefe, verkaufsreif ${inMonaten(lager(l).min)}.${l.ans?` +${l.ans} Ansehen für den ersten Sekt des Jahres.`:''}`,'sektkeller')},
   leseJa(d){const f=S.felder[d.id]; closeSheet(); if(feldLiter(f,d.la)<=0) return; const t=TAB,s=SUB,y=window.scrollY; lese(d.id,d.la,1); TAB=t; SUB=s; save(); render(); window.scrollTo(0,y)},
   /* ---- Hintertür: Panschen ---- */
   zuckern(d){
@@ -2385,28 +2390,17 @@ const AKT={
     if(S.flaschen<n) return meldung('Zu wenige Flaschen',`Abgefüllt wird immer das ganze Fass. Du brauchst ${num(n)} Flaschen${n>l.liter?' (mit der Abfüllanlage)':''} und hast ${num(S.flaschen)}. Es fehlen ${num(n-S.flaschen)}.`);
     fuelleAb(l);fx('korken');save();render();
   },
-  sekt(d){
-    const l=lot(d.id); if(!l||!sektFaehig(l)) return;
-    const k=sektKosten(), max=Math.min(l.liter,Math.floor(S.geld/k)), pz=Math.round((HEFE_LANG_F-1)*100);
-    if(max<1) return meldung('Zu wenig Geld',`Sektflasche, Korken und Agraffe kosten ${eur2(k)} je Flasche.`);
-    // Seit 12.1: zwei Knöpfe für das Hefelager, vorgewählt sind 9 Monate.
-    mengeSheet({titel:`${lotName(l)} zu Sekt machen`,text:`Sektflasche, Korken und Agraffe kosten ${eur2(k)} je Flasche${S.sektAnlage?`, dank der ${SEKT_ANLAGE_NAME} nur die Hälfte`:''}. Danach liegt der Sekt auf der Hefe und bringt deutlich mehr als der Grundwein${SORTEN[l.sorte].sektStar?`, als ${SORTEN[l.sorte].name} sogar noch ${Math.round((SEKT_STAR-1)*100)} % mehr`:''}. ${sektAnsText()}`,
-      wahl:[[SEKT_REIFE,`${SEKT_REIFE} Monate`],[HEFE_LANG,`${HEFE_LANG} Monate · +${pz} %`]],w:SEKT_REIFE,
-      max,rangeStep:1,step:l.liter>2000?100:l.liter>200?10:1,start:max,okText:'Versekten',
-      info:n=>`<b>${num(n)} Flaschen</b>kostet ${eur(n*k)}, verkaufsreif in ${SL.w} Monaten${SL.w>SEKT_REIFE?`, ${pz} % mehr wert`:''}`,
-      ok:(n,w)=>{fx('korken');versekten(l,n,w)}});
-  },
   sektKeller(){
     if(!sektRang()||S.sektkeller) return;
     if(S.geld<SEKTKELLER_PREIS) return meldung('Zu wenig Geld',`Der Sektkeller kostet ${eur(SEKTKELLER_PREIS)}.`,'fassgang');
-    openSheet(`${sbild('sektkeller')}<h3>🍾 Sektkeller kaufen?</h3><p>Ein Gewölbe mit Rüttelpulten für deinen Sekt, einmal ${eur(SEKTKELLER_PREIS)}.</p><p class="mut">Danach machst du im Keller aus Qualitätswein und Kabinett Sekt. Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button data-a="sektKellerJa">Kaufen</button></div>`);
+    openSheet(`${sbild('sektkeller')}<h3>🍾 Sektkeller kaufen?</h3><p>Ein Gewölbe mit Rüttelpulten für deinen Sekt, einmal ${eur(SEKTKELLER_PREIS)}.</p><p class="mut">Danach wird die Lese deiner Sekt-Sorte hier zu Sekt. Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button data-a="sektKellerJa">Kaufen</button></div>`);
   },
   sektKellerJa(){
     if(!sektRang()||S.sektkeller||S.geld<SEKTKELLER_PREIS) return;
     zahle(SEKTKELLER_PREIS); S.sektkeller=1; fx('stempel'); closeSheet();
     boteMerk(`${S.name} baut einen Sektkeller`,'Unter dem Weingut ist ein Gewölbe mit Rüttelpulten entstanden. Dort liegt der Sekt bald auf der Hefe, und jede Flasche wird gedreht, bis die Hefe im Hals sitzt.','sektkeller');
     save(); render();
-    meldung('Der Sektkeller ist fertig',`Ab jetzt machst du im Keller Sekt aus Qualitätswein und Kabinett.${aufgabeAktiv('sekt')?` Dein ${MGR_BEREICHE.keller.name} macht beim Weiterblättern Sekt, bis die Sekt-Schwelle erreicht ist.`:''}`,'sektkeller');
+    meldung('Der Sektkeller ist fertig',`Ab jetzt wird die Lese deiner ${ROLLEN.sekt.name} hier zu Sekt.`,'sektkeller');
   },
   sektAnlage(){
     if(!S.sektkeller||S.sektAnlage||S.rang<R_SEKT_ANLAGE) return;

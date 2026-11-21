@@ -101,8 +101,8 @@ const EIS_WERT=[{name:'Auslese',f:1,qp:0},{name:'Beerenauslese',f:1.3,qp:4},{nam
 // Seit 13.3.2 (Bauplan 13.3, Maik 21.11.2026): zwei Schlösser je Wein. Der Rang gibt ihn frei (FREI, Schlüssel wein_ und die Stufe), der Deckel muss reichen.
 // Der Deckel wirkt schon übers Öchsle (oeGrenze). Wer mehr Öchsle hat, als sein Rang erlaubt, meldet die höchste erlaubte Stufe an. Die Auslese geht seitdem mit und ohne Edelfäulnis.
 // WEIN_ROLLE: welche Stufen eine Rolle überhaupt machen darf. Die Menge-Sorte hat nie Edelfäulnis und keine Auslese, Auslese und höher gibt es nur von der Spitzen-Sorte.
-// Die Sekt-Sorte rechnet bis 13.3.3 wie die Menge-Sorte. Sorten ohne Rolle (Messläufe mit ROLLEN_NEU=0) dürfen alles.
-const WEIN_ROLLE={menge:['feder','tafel','qba','kab','spat'],sekt:['feder','tafel','qba','kab','spat'],spitze:['feder','tafel','qba','kab','spat','aus','ba','tba','eis']};
+// Die Sekt-Sorte macht keinen Stillwein, nur Sekt (seit 13.3.3, sektSorte). Sorten ohne Rolle (Messläufe mit ROLLEN_NEU=0) dürfen alles.
+const WEIN_ROLLE={menge:['feder','tafel','qba','kab','spat'],sekt:[],spitze:['feder','tafel','qba','kab','spat','aus','ba','tba','eis']};
 // Freischaltungen nach Rang: r ist der Rang (Index in RAENGE), ab dem etwas geht. Beerenauslese und Eiswein ab R6, Trockenbeerenauslese ab R8 sind ein Übergang,
 // bis der Weg des Gebiets in 13.4 sie ersetzt (Maik 21.11.2026). Feder-, Tafel- und Qualitätswein gelten für jede Rolle, die sie machen darf (Annahme von Claude).
 const FREI={wein_feder:{r:0},wein_tafel:{r:1},wein_qba:{r:2},wein_kab:{r:0},wein_spat:{r:0},wein_aus:{r:6},wein_ba:{r:6},wein_eis:{r:6},wein_tba:{r:8}};
@@ -230,7 +230,6 @@ const MGR_AUFGABEN={
   // Seit 8.0. Der Text liest MGR_WART_AB erst beim Zeichnen, die Zahl steht weiter unten bei den Maschinen.
   warten:{kurz:'Maschinen warten',get text(){return `Nach der Lese jede Maschine unter ${MGR_WART_AB} % auf 100 % warten, ausgefallene Erntemaschinen sofort`}},
   helfer:{kurz:'Erntehelfer einstellen',text:'Fehlende Erntehelfer einstellen, auch Fahrer für die Maschinen. Vor der Lese die Helfer für die Handlese, danach gehen sie wieder'},
-  sekt:{kurz:'Sekt herstellen',text:'Sekt herstellen, bis die Sekt-Schwelle des Jahres erreicht ist, aus Qualitätswein und Kabinett, immer mit 9 Monaten Hefelager und nur mit eigenem Sektkeller'},
   keltern:{kurz:'keltern und Fassraum kaufen',text:'Die Lese keltern und fehlenden Fassraum kaufen'},
   regal:{kurz:'Regal füllen',text:'Das Regal deiner Weinhandlung füllen'},
   wett:{kurz:'Wettbewerbe',text:'Den besten Wein zu Landesprämierung und Bundeswettbewerb einreichen. Den Wein für die Weltweinschau wählst du selbst'},
@@ -240,8 +239,8 @@ const MGR_AUFGABEN={
 const MANAGER=[
   {bereich:'handel',stufe:1,rang:2,aufgaben:['laeden']},
   // Seit 8.5 (Maik 18.11.2026): Stufe 1 keltert, Stufe 2 füllt ab. Vorher war es umgekehrt, Keltern fühlt sich mehr nach Kellermeister an.
-  // Seit 12.1 (Maik 20.11.2026): Sekt gehört zu Stufe 1, von Hand nur im Rang Winzer. Er nimmt immer SEKT_REIFE Monate Hefelager.
-  {bereich:'keller',stufe:1,rang:3,aufgaben:['keltern','lager','sekt']},
+  // Seit 13.3.3 macht niemand mehr Sekt von Hand oder als Manager, er entsteht bei der Lese der Sekt-Sorte.
+  {bereich:'keller',stufe:1,rang:3,aufgaben:['keltern','lager']},
   {bereich:'weingut',stufe:1,rang:4,aufgaben:['reben','warten']},
   {bereich:'handel',stufe:2,rang:4,aufgaben:['handel']},
   {bereich:'keller',stufe:2,rang:5,aufgaben:['flaschen']},
@@ -564,16 +563,18 @@ const EREIGNIS={
 // Löhne: Das Arbeitsamt bietet jeden Monat einen neuen Monatslohn zwischen LOHN_MIN und LOHN_MAX, getrennt für Erntehelfer und Lagerarbeiter.
 // Wer eingestellt ist, behält seinen Lohn. S.loehne merkt ihn je Kopf, aufsteigend sortiert. Entlassen wird immer der teuerste.
 const LOHN_ARTEN=['helfer','lagerarb'];
-// Version 5.1 (Paket 10): Die SEKT_ANS Ansehen gibt es einmal im Jahr, sobald zusammen SEKT_ANS_HA Flaschen je bepflanztem Hektar versektet sind, mindestens für HA_FREI Hektar.
-const SEKT_ANS=6, SEKT_ANS_HA=200;
-// Version 6.0: Sekt nur aus Qualitätswein und Kabinett. Sekt bringt das 1,6-fache, Sekt-Stars (sektStar in SORTEN) dazu SEKT_STAR.
-// Sekt aus höheren Stufen in alten Spielständen bleibt, wie er ist.
-const SEKT_F=1.6, SEKT_STAR=1.1, SEKT_STUFEN=['qba','kab'];
+// Seit 13.3.3 (Bauplan 13.3, Maik 21.11.2026): Die SEKT_ANS Ansehen gibt es einmal im Jahr, in dem mindestens ein Sekt angemeldet wird, egal wie viele Posten. Die Mindestmenge SEKT_ANS_HA ist weg.
+const SEKT_ANS=6;
+// Seit 13.3.3: Die Sekt-Sorte macht nur Sekt, direkt bei der Lese und ohne Grundwein, die Lagerarbeiter stellen ihn her. Sekt aus Qualitätswein oder Kabinett (SEKT_STUFEN) ist weg.
+// Preis und Punkte rechnet der Sekt auf SEKT_GRUND (Annahme von Claude, damit Preis, Reife und Qualitätspunkte wie bisher laufen), dazu SEKT_QP Punkte wie bisher beim Versekten.
+// Sekt bringt das SEKT_F-fache, die Sekt-Sorte (sektStar) dazu SEKT_STAR.
+const SEKT_F=1.6, SEKT_STAR=1.1, SEKT_GRUND='qba', SEKT_QP=5;
 // Version 12.1 (Maik 20.11.2026): Sekt nur mit eigenem Sektkeller, einmal zu kaufen ab R_SEKT für SEKTKELLER_PREIS. Sein Ausbau ist die Degorgier- und Abfüllanlage
 // ab R_SEKT_ANLAGE, sie halbiert die Kosten je Flasche (SEKT_ANLAGE_F), ohne Leute und ohne Wartung, deshalb nicht in der Maschinenliste.
-// SEKT_KOSTEN ist Sektflasche, Korken und Agraffe. Langes Hefelager: HEFE_LANG statt SEKT_REIFE Monate, dann bringt der Sekt HEFE_LANG_F mehr (Feld hefe am Wein).
+// SEKT_KOSTEN ist Sektflasche, Korken und Agraffe. Einzige Wahl des Spielers bei der Lese: SEKT_REIFE Monate reifen oder HEFE_LANG Monate auf der Hefe (Feld hefe am Wein).
+// Seit 13.3.3 bringt das lange Hefelager HEFE_LANG_QP Qualitätspunkte, der Preis folgt über die Punkte (Startwert, Annahme von Claude, bis 12.9.5 der Faktor 1,25).
 // Preise und Faktor sind Annahmen von Claude bis zum Messlauf 12.1.7. Die Gegner rechnen ihren Sekt weiter über regionF.
-const SEKTKELLER_PREIS=40000, SEKT_ANLAGE_PREIS=30000, R_SEKT_ANLAGE=4, SEKT_ANLAGE_F=.5, SEKT_ANLAGE_NAME='Degorgier- und Abfüllanlage', SEKT_REIFE=9, HEFE_LANG=24, HEFE_LANG_F=1.25;
+const SEKTKELLER_PREIS=40000, SEKT_ANLAGE_PREIS=30000, R_SEKT_ANLAGE=4, SEKT_ANLAGE_F=.5, SEKT_ANLAGE_NAME='Degorgier- und Abfüllanlage', SEKT_REIFE=9, HEFE_LANG=24, HEFE_LANG_QP=6;
 // Schritt 3: Faktor des Gebiets auf das Jahreseinkommen der Gegner. preisF und ertragF voll, Sterne mit ★★★ (ihre beste Sorte),
 // sektPreisF nur auf den Anteil GEGNER_SEKT, weil Sekt beim Test-Spieler rund 6 bis 14 % der Einnahmen bringt (Messung Schritt 2).
 const GEGNER_SEKT=.1;

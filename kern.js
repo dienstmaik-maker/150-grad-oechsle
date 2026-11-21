@@ -497,7 +497,7 @@ function spBote(s){
 function fassBelegt(){return S.lots.filter(l=>l.status==='fass').reduce((a,l)=>a+l.liter,0)}
 // Seit 13.2.5: Zusätze aus Pflege und Boden, zum Beispiel "Trockenbeerenauslese Grand Cru vom Terroir". Alle Namen von Weinen kommen aus lotName.
 const weinZusatz=l=>`${(l.pfl||0)>=NAME_PFLEGE_AB?' '+PFLEGE_STUFEN[l.pfl]:''}${(l.bst||0)>=NAME_BODEN_AB?' vom '+BODEN_STUFEN[l.bst]:''}`;
-function lotName(l){return `${l.jahrgang} ${SORTEN[l.sorte].name}${l.stufe?' '+STUFEN[l.stufe].name:''}${l.sekt?'-Sekt':''}${weinZusatz(l)}${l.sekt&&hefeLang(l)?` (${l.hefe} Monate Hefelager)`:''}`}
+function lotName(l){return `${l.jahrgang} ${SORTEN[l.sorte].name}${l.stufe&&!l.sekt?' '+STUFEN[l.stufe].name:''}${l.sekt?'-Sekt':''}${weinZusatz(l)}${l.sekt&&hefeLang(l)?` (${l.hefe} Monate Hefelager)`:''}`}
 function rahmen(){return RAENGE[S.rang].rahmen}
 // Für Anzeigen (seit Teil D): ein Tabellenwert mit dem Faktor seiner Quelle, so wie ihn ruhm auf Stufe mittel gutschreibt.
 function ansQ(n,q){return Math.max(1,Math.round(n*(ANS_F[q]||1)))}
@@ -814,15 +814,15 @@ function schulden(){return (S.kredit?S.kredit.rest:0)+Math.max(0,-S.geld)}
 function sektKosten(){return Math.round(SEKT_KOSTEN*(S.sektAnlage?SEKT_ANLAGE_F:1)*100)/100}
 const hefeLang=l=>(l.hefe||SEKT_REIFE)>SEKT_REIFE;
 // Schritt 3: dazu sektPreisF des Gebiets aus REGIONEN (ohne Eintrag 1). Der Name ist nicht sektF, weil es diese Funktion schon gibt.
-function sektF(l){return l.sekt?SEKT_F*(SORTEN[l.sorte].sektStar?SEKT_STAR:1)*(R().sektPreisF||1)*(hefeLang(l)?HEFE_LANG_F:1):1}
+function sektF(l){return l.sekt?SEKT_F*(SORTEN[l.sorte].sektStar?SEKT_STAR:1)*(R().sektPreisF||1):1}
 function regionF(id){const r=REGIONEN[id]; return (r.preisF||1)*(r.ertragF||1)*(1+GEGNER_SEKT*((r.sektPreisF||1)-1))*STERN_PREIS_3}
-function sektSchwelle(){return Math.round(SEKT_ANS_HA*Math.max(HA_FREI,flaecheBep()))}
-function sektMenge(){if(!S.sektMenge||S.sektMenge.j!==S.jahr) S.sektMenge={j:S.jahr,n:0}; return S.sektMenge}
-function sektAnsText(){if(S.sektJahr===S.jahr) return `Die ${ansQ(SEKT_ANS,'Weine')} Ansehen für Sekt hast du dieses Jahr schon.`; const r=sektSchwelle()-sektMenge().n; return `Ab ${num(sektSchwelle())} Flaschen Sekt im Jahr gibt es ${ansQ(SEKT_ANS,'Weine')} Ansehen, dieses Jahr fehlen noch ${num(Math.max(0,r))}.`}
-// n Flaschen aus l zu Sekt machen, von Hand (AKT.sekt) oder durch den Kellermeister (seit 7.0, Schritt E). Zählt zur Sekt-Schwelle, außer gepanscht.
-// Seit 12.1: hefe ist das Hefelager in Monaten, nur gespeichert, wenn es länger als SEKT_REIFE ist. So bleibt Sekt mit 9 Monaten wie vor 12.1.
-function versekten(l,n,hefe){zahle(n*sektKosten());S.lots.push({...l,id:S.nextId++,liter:n,sekt:true,...(hefe>SEKT_REIFE?{hefe}:{}),flMonate:0,qp:l.qp+5,med:(l.med||[]).slice(),bund:false});l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l);if(!l.pansch){const m=sektMenge(); m.n+=n; if(S.sektJahr!==S.jahr&&m.n>=sektSchwelle()){S.sektJahr=S.jahr;ruhm(SEKT_ANS,0,'Weine')}}}
-function sektFaehig(l){return sektFrei()&&l.status==='flasche'&&!l.regal&&!l.sekt&&SEKT_STUFEN.includes(l.stufe)&&l.flMonate>=lagerBasis(l).min}
+// Seit 13.3.3: Sekt-Ansehen einmal im Jahr, in dem mindestens ein Sekt angemeldet wird. Der Sekt gilt mit der Lese als angemeldet.
+function sektAnsText(){return S.sektJahr===S.jahr?`Die ${ansQ(SEKT_ANS,'Weine')} Ansehen für Sekt hast du dieses Jahr schon.`:`Der erste Sekt des Jahres bringt ${ansQ(SEKT_ANS,'Weine')} Ansehen.`}
+function sektAnmelden(l){if(l.pansch||S.sektJahr===S.jahr) return 0; S.sektJahr=S.jahr; return ruhm(SEKT_ANS,0,'Weine')}
+const sektSorte=id=>!!S.rollen&&(SORTEN[id]||{}).rolle==='sekt';
+// Sekt, der noch auf der Hefe liegt, für den Sektkeller.
+const sektAufHefe=()=>S.lots.filter(l=>l.sekt&&l.status==='flasche'&&l.flMonate<lager(l).min);
+// hefe ist das Hefelager in Monaten, nur gespeichert, wenn es länger als SEKT_REIFE ist.
 /* ================= Wetter ================= */
 function wuerfelWetter(m,u){
   const r=u!=null?u:Math.random(), fr=R().frost;
@@ -1094,7 +1094,7 @@ for(const id of Object.keys(SORTEN)) kompWissen('sorte_'+id,'sorte',SORTEN[id].n
   return `${so.farbe==='weiss'?'Weißwein':'Rotwein'}, ${rolleVon(id)?`die ${rolleVon(id).name} im Gebiet ${R().name}`:`im Gebiet ${R().name} ${eigText(eignung(id))}`}. Als Prädikatswein reift er mindestens ${Math.max(1,so.minL-(S.keller||0))} Monate in der Flasche und hält bis zu ${Math.round(so.maxL/12)} Jahre.${so.sektStar?` Als Sekt bringt er ${Math.round((SEKT_STAR-1)*100)} % mehr als andere Sorten.`:''}${sg}`});
 function kompSektText(){
   const so=kompRollen().sekt;
-  return `Sekt machst du ab dem Rang ${RAENGE[R_SEKT].name} im eigenen Sektkeller, aus Qualitätswein und Kabinett. Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche. Er ruht ${SEKT_REIFE} Monate auf der Hefe und bringt dann rund ${Math.round((SEKT_F-1)*100)} % mehr als der Grundwein, mit ${HEFE_LANG} Monaten noch einmal ${Math.round((HEFE_LANG_F-1)*100)} % mehr.${S.rollen?` Aus dem ${SORTEN[so].name} wird der Regional-Sekt, er bringt noch einmal ${Math.round((SEKT_STAR-1)*100)} % mehr.`:''} Bei Wettbewerben tritt Sekt erst ab dem Bundeswettbewerb an.`;
+  return `Sekt macht ab dem Rang ${RAENGE[R_SEKT].name} die ${ROLLEN.sekt.name}, direkt bei der Lese im eigenen Sektkeller, ohne Grundwein. Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche. Er ruht ${SEKT_REIFE} Monate auf der Hefe, mit ${HEFE_LANG} Monaten bekommt er ${HEFE_LANG_QP} Qualitätspunkte mehr.${S.rollen?` Aus dem ${SORTEN[so].name} wird der Regional-Sekt, er bringt noch einmal ${Math.round((SEKT_STAR-1)*100)} % mehr.`:''} Bei Wettbewerben tritt Sekt erst ab dem Bundeswettbewerb an.`;
 }
 // Wissens-Seiten: Geschichte und die Zeile "Im Spiel", ohne Siegel. Die Kennungen aus 11.1 bleiben, neu ist helferweg.
 for(const r of Object.keys(REGIONEN)) kompWissen('gebiet_'+r,'gebiet',REGIONEN[r].name,()=>`${REGIONEN[r].text} ${r===S.region?'Hier steht dein Weingut.':`So spielt es sich in einer Partie ${WO[r]}.`}`);
@@ -1102,7 +1102,7 @@ kompWissen('spitze','gebiet','Spitzenlage',()=>`Die beste Lage weit und breit: $
 for(let k=1;k<=KELLER_PREISE.length;k++) kompWissen('keller'+k,'technik',KELLER_NAMEN[k-1],
   ()=>`Stufe ${k} im Kellerausbau. Kostet ${eur(KELLER_PREISE[k-1])} und geht ab dem Rang ${RAENGE[KELLER_RANG[k-1]].name}. Prädikatsweine und Eiswein sind damit ${k} ${k===1?'Monat':'Monate'} früher verkaufsreif, und jeder Wein gewinnt beim Reifen schneller an Wert.`);
 // Seit 12.1: der Sektkeller mit der Flaschengärung als kleine Geschichte (KOMP_TEXT.sektkeller).
-kompWissen('sektkeller','technik','Sektkeller',()=>`Kostet einmal ${eur(SEKTKELLER_PREIS)} und geht ab dem Rang ${RAENGE[R_SEKT].name}. Ohne ihn gibt es keinen Sekt. Sektflasche, Korken und Agraffe kosten ${eur2(SEKT_KOSTEN)} je Flasche, mit der ${SEKT_ANLAGE_NAME} ab dem Rang ${RAENGE[R_SEKT_ANLAGE].name} (${eur(SEKT_ANLAGE_PREIS)}) die Hälfte. Beim Versekten wählst du ${SEKT_REIFE} oder ${HEFE_LANG} Monate Hefelager, lang bringt ${Math.round((HEFE_LANG_F-1)*100)} % mehr.${S.sektkeller?` Dein Sektkeller steht${S.sektAnlage?', mit Anlage':''}.`:''}`);
+kompWissen('sektkeller','technik','Sektkeller',()=>`Kostet einmal ${eur(SEKTKELLER_PREIS)} und geht ab dem Rang ${RAENGE[R_SEKT].name}. Ohne ihn gibt es keinen Sekt. Sektflasche, Korken und Agraffe kosten ${eur2(SEKT_KOSTEN)} je Flasche, mit der ${SEKT_ANLAGE_NAME} ab dem Rang ${RAENGE[R_SEKT_ANLAGE].name} (${eur(SEKT_ANLAGE_PREIS)}) die Hälfte. Bei der Lese der ${ROLLEN.sekt.name} wählst du ${SEKT_REIFE} oder ${HEFE_LANG} Monate auf der Hefe, lang bringt ${HEFE_LANG_QP} Qualitätspunkte mehr.${S.sektkeller?` Dein Sektkeller steht${S.sektAnlage?', mit Anlage':''}.`:''}`);
 kompWissen('reife','technik','Reife in der Flasche',()=>'In der Flasche gewinnt ein Wein mit jedem Jahr an Wert, höchstens bis zum Vierfachen. Wie schnell das geht und wie lange er hält, hängt an der Rebsorte und am Kellerausbau.');
 kompWissen('zuckern','technik','Zuckern und Wässern',()=>`Zucker hebt die Öchsle im Most, Wasser streckt die Menge, beides um höchstens ${ZUCKER_MAX} %. Bis ${ZUCKER_ERLAUBT} % ist das beim Tafelwein erlaubt. Alles andere ist Panscherei und ein Fall für den Weinprüfer.`);
 for(const id of Object.keys(MASCH)) kompWissen('masch_'+id,'technik',MASCH[id].name,
@@ -2115,15 +2115,6 @@ function mgrBetrieb(){
     }
     if(S.flaschen>=abfFl(l)){const an=bonusMasch('abfuell'); fuelleAb(l); LK.push(`${lotName(l)} abgefüllt${an?' mit der Abfüllanlage':''}`)}
   }
-  // Schritt E: Kellermeister (seit 12.1 ab Stufe 1, nur mit Sektkeller, immer 9 Monate Hefelager) macht Sekt bis zur Sekt-Schwelle des Jahres, was am ehesten verdirbt zuerst, und lässt mgrPuffer auf dem Konto.
-  if(aufgabeAktiv('sekt')&&S.sektJahr!==S.jahr){
-    const pu=mgrPuffer('keller'); let ns=0;
-    for(const l of S.lots.filter(l=>sektFaehig(l)&&!l.pansch).sort(BSORT_F.dringend)){
-      const n=Math.min(l.liter,sektSchwelle()-sektMenge().n,Math.floor((S.geld-pu)/sektKosten())); if(n<=0||S.sektJahr===S.jahr) break;
-      versekten(l,n); ns+=n;
-    }
-    if(ns) LK.push(`${num(ns)} Flaschen Sekt angesetzt${S.sektJahr===S.jahr?', die Sekt-Schwelle ist erreicht':''}`);
-  }
   {const fe=leuteFehlen(); if(hf) for(let i=0;i<fe.helfer;i++) stell('helfer'); if(la) for(let i=0;i<fe.lagerarb;i++) stell('lagerarb')}
   // Seit Paket B: Fahrer für Düngerstreuer und Laubschneider (Stufe 3), den Bediener der Abfüllanlage stellt der Kellermeister mit 'lager' ein.
   if(hf){const n=fahrerFehlen(); for(let i=0;i<n;i++) stell('helfer')}
@@ -2444,16 +2435,21 @@ function lot(id){return S.lots.find(l=>l.id===+id)}
 // Liest den Anteil p (0 bis 1) eines Feldes. Bei p<1 bleibt der Rest hängen. Der Boden verliert je Feld und Jahr nur einmal 4 Punkte.
 // Seit 8.0: Felder mit Edelfäulnis oder gefrorenen Trauben liest die Hand, wenn genug Erntehelfer da sind (handlese), sonst die Maschine mit q.masch (höchstens Qualitätswein).
 // Alle anderen Felder lesen Helfer und Maschinen zusammen, die Maschinen nach ihrem Anteil an der Ernteleistung. Das nutzt sie ab (maschAbnutzung).
-function lese(id,la,p){
+function lese(id,la,p,hefe){
   // Seit 13.3.2: Ein Feld wird immer ganz gelesen, Teilen geht nicht.
-  p=1;
+  // Seit 13.3.3: Die Sekt-Sorte liest alles (alles) und geht ohne Grundwein in den Sektkeller, hefe ist SEKT_REIFE oder HEFE_LANG.
+  p=1; const sk=sektSorte(id); if(sk){if(!S.sektkeller) return; la='alles'}
   const f=S.felder[id], q=feldQ(f,la), l=Math.round(feldLiter(f,la)*p); if(l<=0) return;
   const L=leistung(), M=maschLeistung();
   if(M>0&&!handlese(f)) maschAbnutzung(f.reben*p*leseFaktor()*M/L,M);
-  S.lots.push({id:S.nextId++,sorte:id,jahrgang:S.jahr,liter:l,oe:q.oe,leseart:la,edel:f.edel,eis:f.gefroren,...(q.masch?{masch:1}:{}),status:'trauben',stufe:null,qp:0,fassMonate:0,flMonate:0,sonne:S.sonne,...(S.laubJahr===S.jahr?{laub:1}:{}),boden:S.boden+4*R().sorten.filter(x=>S.felder[x].gelesen||S.felder[x].teil).length,bst:S.bodenSt||0,pfl:f.pflSt||0});
+  const neu={id:S.nextId++,sorte:id,jahrgang:S.jahr,liter:l,oe:q.oe,leseart:la,edel:f.edel,eis:f.gefroren,...(q.masch?{masch:1}:{}),status:'trauben',stufe:null,qp:0,fassMonate:0,flMonate:0,sonne:S.sonne,...(S.laubJahr===S.jahr?{laub:1}:{}),boden:S.boden+4*R().sorten.filter(x=>S.felder[x].gelesen||S.felder[x].teil).length,bst:S.bodenSt||0,pfl:f.pflSt||0};
+  if(sk){const h=hefe===HEFE_LANG?HEFE_LANG:SEKT_REIFE; Object.assign(neu,{status:'flasche',stufe:SEKT_GRUND,sekt:true,edel:false,eis:false,...(h>SEKT_REIFE?{hefe:h}:{}),med:[],bund:false});
+    neu.qp=qpFuer(neu,SEKT_GRUND)+SEKT_QP+(h>SEKT_REIFE?HEFE_LANG_QP:0); zahle(Math.round(l*sektKosten()*100)/100); neu.ans=sektAnmelden(neu)}
+  S.lots.push(neu);
   if(!f.teil) S.boden=Math.max(0,S.boden-4);
   if(p>=1){f.gelesen=true;f.menge=0}else{f.teil=true;f.menge=Math.round(f.menge*(1-p))}
   kompLese(id,l); fx('schere'); geh('keller');
+  return neu;
 }
 
 function neuHinweis(hat){let alt=null; try{alt=localStorage.getItem(NEU_KEY); localStorage.setItem(NEU_KEY,VERSION)}catch(e){return false} return hat&&alt!==VERSION}
