@@ -2005,7 +2005,7 @@ function aufgaben(){
   for(const l of abf) A.push({t:`${lotName(l)} kann abgefüllt werden`+(S.flaschen<abfFl(l)?` (es fehlen ${num(abfFl(l)-S.flaschen)} Flaschen)`:''),tab:'keller',ruhig:aufgabeAktiv('flaschen')?1:0});
   // Seit 8.2 führt die Warnung ins Kellerbuch (dort ist der Wein markiert und hat die passenden Knöpfe). Steht er im Regal, sagt sie das gleich dazu.
   for(const l of S.lots) if(l.status==='flasche'&&lager(l).max-l.flMonate<=2) A.push({t:`${lotName(l)}: nur noch ${lager(l).max-l.flMonate} Monate haltbar`+(l.regal?', steht im Regal, erst rausnehmen':''),rot:1,tab:'keller',sub:'buch'});
-  if(m<=2&&S.verlust) for(const id of R().sorten) if(S.verlust[id]) A.push({t:`Über den Winter sind ${rbn(S.verlust[id])} ${SORTEN[id].name}-Reben eingegangen. Nachpflanzen`,tab:'gut',sub:'berg',ruhig:aufgabeAktiv('reben')?1:0});
+  if(m<=2&&S.verlust) for(const id of R().sorten) if(S.verlust[id]) A.push({t:`Über den Winter sind ${rbn(S.verlust[id])} ${SORTEN[id].name}-Reben eingegangen. Nachpflanzen`,tab:'gut',sub:'berg',ruhig:aufgabeAktiv('reben')||helferKann(3)?1:0});
   if(m<=2&&frei>0) A.push({t:`Pflanzzeit: Platz für ${rbn(frei)} Reben`,tab:'gut',sub:'berg',ruhig:1});
   // Version 7.3: Düngen steht an, sobald der Boden auf 70 % oder weniger fällt (Gelb), seit 7.9 Rot ab DUENG_ROT. Düngt der Weingut-Manager, nur ein ruhiger Hinweis.
   if(S.boden<=70&&S.duengungen<3) A.push(aufgabeAktiv('duengen')?{t:`Boden bei ${S.boden}\u00a0%: dein ${MGR_BEREICHE.weingut.name} düngt beim Weiterblättern`,tab:'gut',sub:'berg',ruhig:1}:{t:`🌱 Boden bei ${S.boden}\u00a0%: Düngen ist ${S.boden<=DUENG_ROT?'überfällig':'dran'}`,tab:'gut',sub:'berg',rot:S.boden<=DUENG_ROT?1:0});
@@ -2300,7 +2300,25 @@ function managerArbeit(){KOMP_LEISE++; try{mgrKommen(); mgrBetrieb(); leuteArbei
 // Seit 13.5.2 (Bauplan 13.5): Arbeit der Leute nach ihrer Stufe (leuteSt), beim Weiterblättern nach den Managern, die vorher einkaufen und einstellen.
 // Gearbeitet wird nur, wenn mindestens einer der Gruppe angestellt ist. Was sie tun, steht im nächsten Winzerboten (S.leuteLog).
 function leuteMelde(L){if(L.length) S.leuteLog=(S.leuteLog||[]).concat(L)}
-function leuteArbeit(){const L=[]; lagerArbeit(L); leuteMelde(L)}
+function leuteArbeit(){const L=[]; helferArbeit(L); lagerArbeit(L); leuteMelde(L)}
+// Seit 13.5.3 (Bauplan 13.5): Erntehelfer. Stufe 1 düngt wie früher der Weingut-Manager, Stufe 2 schneidet dazu jede Sorte bis Ende April wie der Spieler (13.2.4),
+// Stufe 3 pflanzt von Januar bis März nach: eingegangene Reben (S.verlust) und den Auftrag des Spielers je Sorte (f.auftrag, Sorte und Menge).
+// Die Reben kauft der Weingut-Manager so günstig wie möglich aus den Angeboten von Januar bis März: zum üblichen Preis oder darunter, sonst im März.
+// Ohne ihn kaufen sie gleich zum Preis des Monats (Annahme von Claude). Auf dem Konto bleibt die Geldgrenze des Weingut-Managers.
+const helferKann=n=>!!S.helfer&&leuteSt('helfer')>=n;
+const pflanzSoll=id=>((S.verlust||{})[id]||0)+(S.felder[id].auftrag||0);
+function pflanzAb(id,n){const v=S.verlust||{}, a=Math.min(v[id]||0,n); if(a) v[id]-=a; const f=S.felder[id]; if(f.auftrag) f.auftrag=Math.max(0,f.auftrag-(n-a))}
+function helferArbeit(L){
+  if(!S.helfer) return; const st=leuteSt('helfer'), m=S.monat;
+  if(st>=1&&S.duengungen<3&&S.boden<100&&(S.boden<=70||(m===7&&S.boden<90))&&S.geld>=duengKosten()){const ma=bonusMasch('duenger'); duenge(); L.push(ma?'mit dem Düngerstreuer gedüngt':'gedüngt')}
+  if(st>=2) for(const id of R().sorten) if(schnittOffen(id)&&S.geld>=schnittKosten(id)){schneide(id); L.push(`${SORTEN[id].name} geschnitten`)}
+  if(st>=3&&m<=2) for(const id of R().sorten){
+    const f=S.felder[id], soll=pflanzSoll(id); if(soll<10||!sorteFrei(id)||(sektSorte(id)&&!S.sektkeller)) continue;
+    const wm=mgrSt('weingut')>0, pr=rebenPreis(id); if(wm&&m<2&&pr>SORTEN[id].preis) continue;
+    const pu=wm?mgrPuffer('weingut'):0, n=Math.floor(Math.min(soll,S.ha*HA_REBEN-rebenGesamt(),helferReben()-rebenGesamt(),Math.max(0,S.geld-pu)/pr)/10)*10;
+    if(n<10) continue; zahle(Math.round(n*pr*100)/100); f.reben+=n; pflanzAb(id,n); L.push(`${rbn(n)} ${SORTEN[id].name}-Reben gepflanzt`);
+  }
+}
 // Lagerarbeiter: Stufe 1 keltert die Lese, sobald genug Fassraum frei ist, Stufe 2 füllt angemeldete Weine ab und klebt die Etiketten, sobald genug leere Flaschen da sind.
 // Fassraum und Flaschen kaufen sie nicht, das macht der Kellermeister oder der Spieler. Stufe 3 stellt den Sekt her, der seit 13.3.3 mit der Lese in den Sektkeller geht,
 // die Wahl 9 oder 24 Monate trifft weiter der Spieler. Was angemeldet wird, entscheidet nur er, deshalb füllen sie nur Angemeldetes ab.

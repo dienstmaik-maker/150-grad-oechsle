@@ -1137,10 +1137,11 @@ function vBerg(){
     }
     const sektOhne=sektSorte(id)&&!S.sektkeller, kannLesen=m>=7&&f.menge>0&&!f.gelesen&&(m<11||f.gefroren||f.edel)&&!sektOhne, pflanz=m<=2&&sorteFrei(id)&&!sektOhne, schnitt=schnittOffen(id), haengt=f.reben&&f.menge>0&&!f.gelesen&&m>5&&m<7;
     h+=fenster('feld_'+id,titel,z,{buch:m>=7?'lese':'berg',
-      hin:[mr&&m<=2&&S.verlust&&S.verlust[id]>0&&`${WM} pflanzt beim Weiterblättern nach.`,(()=>{const ww=wagnisWarnung(); return ww&&ww.ids.includes(id)&&`${WM} warnt: ${Math.round(ww.anteil*100)} % deiner Ernte hängen im Wagnis.`})()],
+      hin:[mr&&m<=2&&S.verlust&&S.verlust[id]>0&&`${WM} pflanzt beim Weiterblättern nach.`,helferKann(3)&&pflanzSoll(id)>=10&&`🌱 Deine Erntehelfer pflanzen bis März ${rbn(pflanzSoll(id))} Reben nach.`,
+        helferKann(2)&&schnitt&&'✂️ Deine Erntehelfer schneiden beim Weiterblättern, sobald das Geld reicht.',(()=>{const ww=wagnisWarnung(); return ww&&ww.ids.includes(id)&&`${WM} warnt: ${Math.round(ww.anteil*100)} % deiner Ernte hängen im Wagnis.`})()],
       // Seit 13.4.6: Am Lese-Knopf steht die Chance des Wagnisses in Worten.
       links:kannLesen&&wagnisChance(id)!=null?`🎲 Warten: Chance ${chanceWort(wagnisChance(id))}`:sektOhne?'Die Sekt-Sorte macht nur Sekt, erst den Sektkeller kaufen.':pflanz&&frei<10?'Auf deinem Land ist kein Platz mehr frei.':haengt?'Lese ab August.':schnitt?`✂️ Rebschnitt bis Ende April: ${eur(schnittKosten(id))}`:'',
-      kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,...wagnisKnoepfe(id),schnitt&&`<button class="klein" data-a="schneiden" data-id="${id}" ${S.geld<schnittKosten(id)?'disabled':''}>Schneiden</button>`,pflanz&&`<button class="klein" data-a="pflanzen" data-id="${id}" ${frei<10?'disabled':''}>Pflanzen</button>`,pflanz&&f.reben&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
+      kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,...wagnisKnoepfe(id),schnitt&&`<button class="klein" data-a="schneiden" data-id="${id}" ${S.geld<schnittKosten(id)?'disabled':''}>Schneiden</button>`,pflanz&&(helferKann(3)?`<button class="klein" data-a="pflanzAuftrag" data-id="${id}">Auftrag</button>`:`<button class="klein" data-a="pflanzen" data-id="${id}" ${frei<10?'disabled':''}>Pflanzen</button>`),pflanz&&f.reben&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
   }
   h+=fenster('duengung','Düngung',`<div class="kv"><span>Boden-Stufe</span><span>${stufeSatz(S.bodenSt||0,S.bodenZ||0,BODEN_SCHWELLE,BODEN_STUFEN)}</span></div>
     <div class="kv"><span>Gute Bodenjahre</span><span>${S.bodenZ||0}</span></div><div class="mut">Ein Jahresschnitt ab ${BODEN_GUT} % zählt als gutes Bodenjahr.</div>
@@ -2237,6 +2238,17 @@ const AKT={
     mengeSheet({titel:`${so.name} pflanzen`,text:`${eur2(pr/STOCK_F)} je Rebe${pr!==so.preis?`, üblich sind ${eur2(so.preis/STOCK_F)}`:''}. Neue Reben übernehmen die Pflegestufe der Sorte. Deine Erntehelfer reichen noch für ${rbn(kap)} Reben${kap<frei?', für mehr musst du erst einstellen':''}.`,max,step:10,start:Math.min(max,1000),okText:'Pflanzen',zahl:rbn,
       info:n=>`<b>${rbn(n)} Reben</b>kostet ${eur(n*pr)}`,
       ok:n=>{fx('stempel');zahle(Math.round(n*pr*100)/100);const f=S.felder[d.id];f.reben+=n;if(S.verlust&&S.verlust[d.id])S.verlust[d.id]=Math.max(0,S.verlust[d.id]-n)}});
+  },
+  // Seit 13.5.3: Ab Erntehelfer Stufe 3 gibt der Spieler nur noch den Auftrag, Sorte und Menge. Gepflanzt wird beim Weiterblättern bis März.
+  pflanzAuftrag(d){
+    if(!sorteFrei(d.id)) return meldung('Noch nicht',`${SORTEN[d.id].name} kannst du ab dem Rang ${RAENGE[sorteAb(d.id)].name} pflanzen.`);
+    if(sektSorte(d.id)&&!S.sektkeller) return meldung('Erst der Sektkeller',`Die ${ROLLEN.sekt.name} macht nur Sekt. Kauf erst den Sektkeller im Keller.`);
+    const f=S.felder[d.id], andere=R().sorten.filter(x=>x!==d.id).reduce((a,x)=>a+pflanzSoll(x),0), v=(S.verlust||{})[d.id]||0, max=Math.max(0,S.ha*HA_REBEN-rebenGesamt()-andere-v);
+    if(max<10&&!f.auftrag) return meldung('Kein Platz',`Auf deinem Land ist kein Platz mehr frei${v?`, deine Erntehelfer pflanzen nur die ${rbn(v)} eingegangenen Reben nach`:''}.`);
+    mengeSheet({titel:`Auftrag: ${SORTEN[d.id].name}`,text:`Deine Erntehelfer pflanzen bis März, ${mgrSt('weingut')?`die Reben kauft ${mgrG('weingut').dein} ${MGR_BEREICHE.weingut.name} so günstig wie möglich`:'die Reben kaufen sie gleich zum Preis des Monats'}.${v?` Die ${rbn(v)} eingegangenen Reben pflanzen sie sowieso nach.`:''}`,
+      max,step:10,start:Math.min(max,f.auftrag||1000),okText:'Auftrag geben',zahl:rbn,
+      info:n=>`<b>${rbn(n)} Reben</b>${String(Math.round(n/HA_REBEN*10)/10).replace('.',',')}\u00a0Hektar, heute ${eur(n*rebenPreis(d.id))}`,
+      ok:n=>{fx('stempel');f.auftrag=n}});
   },
   roden(d){
     const f=S.felder[d.id];
