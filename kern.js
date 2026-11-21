@@ -26,6 +26,10 @@ function deckel(id){const f=S.felder[id]||{}; return DECKEL_BASIS[rolleK(id)]+BO
 // Obergrenze im Monatsmodell: der Deckel, mit Edelfäulnis bei der Spitzen-Sorte 150°.
 function oeGrenze(id){const f=S.felder[id]; return f&&f.edel&&rolleK(id)==='spitze'?150:deckel(id)}
 const feldId=f=>R().sorten.find(id=>S.felder[id]===f);
+// Seit 13.2.4: Rebschnitt von Hand. Kosten nach den Hektar der Sorte, möglich von Januar bis April, einmal im Jahr.
+const schnittKosten=id=>Math.round(SCHNITT_HA*(S.felder[id].reben||0)/HA_REBEN);
+const schnittOffen=id=>{const f=S.felder[id]; return !!f&&f.reben>0&&S.monat<=SCHNITT_BIS&&f.schnitt!==S.jahr};
+function schneide(id){zahle(schnittKosten(id)); S.felder[id].schnitt=S.jahr}
 const sorteSchild=(id,r)=>rolleVon(id)?`${rolleVon(id).name}: ${rolleVon(id).satz}`:eigText(eignung(id,r));
 const sternZahl=(id,r)=>{const e=eignung(id,r); return e>=1?3:e>=.85?2:1};
 const sternF=(id,r)=>[0,STERN_PREIS_1,STERN_PREIS_2,STERN_PREIS_3][sternZahl(id,r)];
@@ -1878,6 +1882,8 @@ function aufgaben(){
   if(m<=2&&frei>0) A.push({t:`Pflanzzeit: Platz für ${rbn(frei)} Reben`,tab:'gut',sub:'berg',ruhig:1});
   // Version 7.3: Düngen steht an, sobald der Boden auf 70 % oder weniger fällt (Gelb), seit 7.9 Rot ab DUENG_ROT. Düngt der Weingut-Manager, nur ein ruhiger Hinweis.
   if(S.boden<=70&&S.duengungen<3) A.push(aufgabeAktiv('duengen')?{t:`Boden bei ${S.boden}\u00a0%: dein ${MGR_BEREICHE.weingut.name} düngt beim Weiterblättern`,tab:'gut',sub:'berg',ruhig:1}:{t:`🌱 Boden bei ${S.boden}\u00a0%: Düngen ist ${S.boden<=DUENG_ROT?'überfällig':'dran'}`,tab:'gut',sub:'berg',rot:S.boden<=DUENG_ROT?1:0});
+  // Seit 13.2.4: Rebschnitt bis Ende April, im April rot.
+  {const sn=R().sorten.filter(schnittOffen); if(sn.length) A.push({t:`✂️ Rebschnitt bis Ende April: ${sn.map(id=>SORTEN[id].name).join(', ')}`,tab:'gut',sub:'berg',rot:S.monat===SCHNITT_BIS?1:0})}
   // Seit 11.6: Warnung vor einem Schädling, Gelb. Spritzt der Weingut-Manager, nur ein ruhiger Hinweis.
   {const b=schaedWarn(); if(b&&!b.gespritzt){const T=SCHAED[b.art]; A.push(aufgabeAktiv('spritzen')?{t:`${T.sym} Warnung vor ${T.dem}: dein ${MGR_BEREICHE.weingut.name} spritzt beim Weiterblättern`,tab:'gut',sub:'berg',ruhig:1}:{t:`${T.sym} Warnung vor ${T.dem}: Spritzen halbiert den Schaden, nur diesen Monat`,tab:'gut',sub:'berg'})}}
   if(m===11){const t=steuerSchau(); if(t.steuer>0){

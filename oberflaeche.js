@@ -1107,11 +1107,11 @@ function vBerg(){
       ${f.teil?'<div class="mut">Ein Teil ist schon gelesen, der Rest hängt noch.</div>':''}
       ${m>=7?`<div class="hilfe">${leseHilfe(f)}${m===9?`<br><span class="rot">${S.kaelteWarn===S.jahr?'Die Vorhersage meldet einen Kälteeinbruch im November! Dann erfriert alles, was noch hängt.':'Achtung: Im Schnitt jedes vierte Jahr kommt im November ein Kälteeinbruch, dann erfriert alles, was noch hängt. Die Vorhersage warnt meist davor.'}</span>`:''}${m===10?`<br><span class="rot">Achtung: Ohne Frost im Dezember verfault alles, was noch hängt.</span><br>${frostText()}.`:''}</div>`:''}`;
     }
-    const kannLesen=m>=7&&f.menge>0&&!f.gelesen&&(m<11||f.gefroren), pflanz=m<=2&&sorteFrei(id), haengt=f.reben&&f.menge>0&&!f.gelesen&&m>5&&m<7;
+    const kannLesen=m>=7&&f.menge>0&&!f.gelesen&&(m<11||f.gefroren), pflanz=m<=2&&sorteFrei(id), schnitt=schnittOffen(id), haengt=f.reben&&f.menge>0&&!f.gelesen&&m>5&&m<7;
     h+=fenster('feld_'+id,titel,z,{buch:m>=7?'lese':'berg',
       hin:[mr&&m<=2&&S.verlust&&S.verlust[id]>0&&`${WM} pflanzt beim Weiterblättern nach.`],
-      links:pflanz&&frei<10?'Auf deinem Land ist kein Platz mehr frei.':haengt?'Lese ab August.':'',
-      kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,pflanz&&`<button class="klein" data-a="pflanzen" data-id="${id}" ${frei<10?'disabled':''}>Pflanzen</button>`,pflanz&&f.reben&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
+      links:pflanz&&frei<10?'Auf deinem Land ist kein Platz mehr frei.':haengt?'Lese ab August.':schnitt?`✂️ Rebschnitt bis Ende April: ${eur(schnittKosten(id))}`:'',
+      kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,schnitt&&`<button class="klein" data-a="schneiden" data-id="${id}" ${S.geld<schnittKosten(id)?'disabled':''}>Schneiden</button>`,pflanz&&`<button class="klein" data-a="pflanzen" data-id="${id}" ${frei<10?'disabled':''}>Pflanzen</button>`,pflanz&&f.reben&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
   }
   h+=fenster('duengung','Düngung',`<div class="kv"><span>Boden</span><span>${S.boden} %</span></div><div class="bar"><i style="width:${S.boden}%"></i></div>
     <div class="mut ${S.boden<80?'rot':''}">Für die Weinqualität: ${bodenText(S.boden)}</div>
@@ -2188,6 +2188,13 @@ const AKT={
     const k=duengKosten();
     if(S.geld<k) return meldung('Zu wenig Geld',`Düngen kostet ${eur(k)}.`);
     duenge();fx('stempel');save();render();
+  },
+  // Seit 13.2.4: Rebschnitt von Hand, je Sorte einmal von Januar bis April.
+  schneiden(d){
+    if(!schnittOffen(d.id)) return; const k=schnittKosten(d.id);
+    if(S.geld<k) return meldung('Zu wenig Geld',`Der Rebschnitt kostet ${eur(k)}.`);
+    schneide(d.id);fx('schere');save();render();
+    meldung('Geschnitten',`Der ${SORTEN[d.id].name} ist für dieses Jahr geschnitten, für ${eur(k)}. Das zählt als gutes Pflegejahr.`);
   },
   pflanzen(d){
     if(!sorteFrei(d.id)) return meldung('Noch nicht',`${SORTEN[d.id].name} kannst du ab dem Rang ${RAENGE[sorteAb(d.id)].name} pflanzen.`);
