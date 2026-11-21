@@ -539,6 +539,8 @@ const SPENDEN=[null,
   {b:5000000,z:'das Dorf',                       kurz:'Ehrenbürger',   ans:400,ehre:'buerger',bild:'bogen',   lohn:'Der Holzbogen auf dem Dorfplatz, bei der nächsten Übergabe bleiben 85 statt 80 % Ansehen, und im Verband startet die Stimmung für dich bei 65 statt 60'}
 ];
 // Raten in Zwanzigsteln des Betrags. Belohnungen: Frostfeuer mal SP_FROSTFEUER auf den Frost-Anteil beim Reben-Sterben (seit 13.4.8, Startwert für 14.2), Lohn mal SP_LOHN, Segen +SP_SEGEN Öchsle, Großhandel mal SP_MARKT, Weinhandlung mal SP_LADEN, Hoffest-Ansehen mal SP_HOFFEST.
+// Seit 13.5.6 (Bauplan 13.5): worum es gegen die Gegner geht, je Akt (Generation 1 bis 3, aktNr). Platzhalter, der Wortlaut kommt in 13.8.
+const GEGNER_AKT=['⚔️ 1. Akt: Deine Rivalen sitzen im Dorf. Wer hat den besseren Wein, wer das schönere Fest?','🏅 2. Akt: Jetzt geht es um Medaillen und Ränge. Deine Rivalen wollen dieselben Preise wie du.','🗳️ 3. Akt: Im Verband wird gewählt. Deine Gegner treten als Gegenkandidaten um den Stuhl im Festsaal an.'];
 const SP_TEIL=20, SP_DECKEL=.2, SP_FROSTFEUER=.5, SP_LOHN=.95, SP_SEGEN=4, SP_MARKT=1.05, SP_LADEN=1.25, SP_HOFFEST=1.25, SP_ERBE=.85, SP_STIMM=5;
 // Maiks Bilder seit 17.11.2026: Holzbogen (Spruch steht im Bild) und die Bank als eigene Nahansicht am Wanderweg (sitzbank, nicht bank.jpg, das ist die Bank in der Stadt).
 // Das Spitzenlage-Bild bei den Auktionen bleibt, wie es ist.

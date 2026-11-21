@@ -137,6 +137,8 @@ const startGeld=s=>(DIFF[s]||{}).geld||START_GELD, bietF=()=>(DIFF[S.schwer]||{}
 // Gibt es in dieser Partie Schädlinge? Nur auf Stufen mit schaed:1. Daran hängen Befall, Warnung, Spritzen, der Schalter beim Weingut-Manager und die Seiten im Weinkompendium.
 const schaedAn=()=>!!(SCHAED_AN&&S&&(DIFF[S.schwer]||{}).schaed);
 function genNr(){return S.gen||1}
+// Seit 13.5.6: der Akt der Partie, eine Generation je Akt.
+const aktNr=()=>clamp(genNr(),1,GEGNER_AKT.length);
 function genJahr(n){return START_JAHR+GEN_JAHRE*n}
 function erbRest(){const k=S.kredit; return k&&k.erb?Math.min(k.erb,k.rest):0}
 function erbSchaetzung(){return Math.max(0,Math.round(vermoegen()*ERB_STEUER/100)*100)}
