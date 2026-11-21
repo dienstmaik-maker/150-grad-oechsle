@@ -639,6 +639,11 @@ const WAGNIS_AUS={
   tba:['Die Trockenbeerenauslese ist dahin','Ein nasser Dezember: Die edelfaulen Beeren deines {s} sind am Stock verfault. Wer wartet, wagt eben alles.','frost'],
   frost:['Tauwetter statt Eiswein','Der Frost bleibt aus, der Dezember ist zu mild. Dein {s} ist am Stock verfault, aus dem Eiswein wird nichts.','frost']
 };
+// Seit 13.4.6: die Chance in Worten am Lese-Knopf, ab 0,6 gut, ab 0,35 mittel, sonst gering (Annahme von Claude im Bauplan 13.4).
+const CHANCE_WORT=[[.6,'gut'],[.35,'mittel'],[0,'gering']];
+// Seit 13.4.6 (Maik 21.11.2026): Der Weingut-Manager warnt, sobald er eingestellt ist, wenn alle wartenden Felder zusammen mehr als MGR_WARN
+// vom erwarteten Erlös der Ernte des Jahres ausmachen. Erwartet heißt: sichere Lese jetzt, als Wein der höchsten erlaubten Stufe. 13.7 setzt für die Lehrjahre 0,3.
+const MGR_WARN=.4;
 const WAGNIS_FEUER='Die Frostfeuer der Feuerwehr haben ein Viertel gerettet.';
 // Seit 11.5 (Teil C2, Maik 20.11.2026): Edelfäulnis macht schneller überreif. Auf einem Feld mit Edelfäulnis sind EDEL_UEBER Prozentpunkte mehr Trauben überreif,
 // ab dem Monat, in dem sie kommt. Dadurch gibt es weniger Auslese (nur reife Trauben) und mehr für die Beerenauslese.
@@ -1040,8 +1045,9 @@ const FU_WANN={
 };
 for(const id in FU_MON) FU_WANN[id]=()=>monatNr()===fuMon(id);
 FU_WANN['e1-10']=()=>monatNr()===fuMon('e1-10')&&(!S.ein||fuMenge()>S.fassraum-fassBelegt());
-FU_WANN['e1-17']=()=>monatNr()===8&&(!S.ein||feldHaengt().length>0);
-FU_WANN['e1-18']=()=>monatNr()===10&&(!S.ein||feldHaengt().some(id=>S.felder[id].edel));
+// Seit 13.4.6 aus: e1-17 und e1-18 erklären die alte Edelfäulnis und den alten Eiswein, das Wagnis erklärt jetzt h1. Neue Texte in 14.4.
+FU_WANN['e1-17']=()=>false&&monatNr()===8&&(!S.ein||feldHaengt().length>0);
+FU_WANN['e1-18']=()=>false&&monatNr()===10&&(!S.ein||feldHaengt().some(id=>S.felder[id].edel));
 // Seit 10.3 (C15, C16): Pflanz-Blasen nur, wenn noch Boden frei ist. z2-05 kommt, sobald zum ersten Mal ein Wein zu einer Weinhandlung passt.
 FU_WANN['e1-07']=()=>monatNr()===2&&rebenGesamt()<S.ha*HA_REBEN;
 FU_WANN['z2-02']=()=>monatNr()===13&&rebenGesamt()<S.ha*HA_REBEN;

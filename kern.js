@@ -928,6 +928,27 @@ function feldWeg(id){
   if(f.wagnis||!W.length) return null;
   return f.weg&&W.includes(f.weg)?f.weg:W.slice().sort((a,b)=>wegChance(b)-wegChance(a))[0];
 }
+// Seit 13.4.6: die Chance in Worten und die Chance, um die es gerade geht (null, wenn das Feld nichts wagt).
+const chanceWort=p=>CHANCE_WORT.find(([g])=>p>=g)[1];
+function wagnisChance(id){
+  const f=S.felder[id], m=S.monat; if(!wagnisFeld(id)||!(f.menge>0)||f.gelesen||f.gefroren) return null;
+  if(f.wagnis==='edel') return m===10&&frei('weg_tba')?Math.min(1,WAGNIS.tba*WAGNIS_F):null;
+  if(f.wagnis==='frost') return m===10?wegChance('frost'):null;
+  if(f.wagnis||m<7||m>9) return null;
+  const w=feldWeg(id); return w?wegChance(w):null;
+}
+// Seit 13.4.6: Erlös, wenn das Feld jetzt sicher gelesen wird, als Wein der höchsten Stufe, die es gerade erreicht.
+function feldErloes(id){const f=S.felder[id]; if(!f||!(f.menge>0)||f.gelesen) return 0; let b=0;
+  for(const la of ['alles','reif','ueber']){const st=sektSorte(id)?SEKT_GRUND:besteStufe(feldQ(f,la)); if(st) b=Math.max(b,leseWert(id,la,st,feldLiter(f,la)))} return b}
+// Wartende Felder: im Oktober die im Wagnis, im November alles, was noch hängt (Frost, zweite Stufe oder Verfaulen im Dezember).
+function feldWartet(id){const f=S.felder[id], m=S.monat; if(!f||!(f.menge>0)||f.gelesen||f.gefroren) return false; return m===9?!!feldWeg(id):m===10}
+// Die Warnung des Weingut-Managers (Maiks Regel): alle wartenden Felder gegen den erwarteten Erlös der ganzen Ernte des Jahres, gelesene Felder mit f.leseW.
+function wagnisWarnung(){
+  if(mgrSt('weingut')<1||S.monat<9||S.monat>10) return null;
+  const I=R().sorten, W=I.filter(feldWartet); if(!W.length) return null;
+  const w=W.reduce((a,id)=>a+feldErloes(id),0), ges=I.reduce((a,id)=>a+feldErloes(id)+(S.felder[id].leseW||0),0);
+  return ges>0&&w>MGR_WARN*ges?{ids:W,anteil:w/ges}:null;
+}
 // f.wagnis: edel (Edelfäulnis ist da), frost (wartet auf Frost im Dezember), aus (vorbei, das Feld hängt wie jedes andere).
 function herbstWagnis(id,f,so,m,L){
   const H=herbstJahr(), w=feldWeg(id);
@@ -965,7 +986,7 @@ function wagnisWetter(){
   const w=herbstJahr().uFrost<wegChance('frost')?'frost':S.wetter==='frost'?'mild':S.wetter;
   if(w!==S.wetter){S.wetter=w; S.temp=tempFuer(11,w,fest(8,0,S.jahr,11))}
 }
-function feldReset(f){Object.assign(f,{oe:0,plus:0,menge:0,reif:0,ueber:0,edel:false,edelGeprueft:false,gelesen:false,teil:false,gefroren:false,frostF:1,wagnis:0,weg:null})}
+function feldReset(f){Object.assign(f,{oe:0,plus:0,menge:0,reif:0,ueber:0,edel:false,edelGeprueft:false,gelesen:false,teil:false,gefroren:false,frostF:1,wagnis:0,weg:null,leseW:0})}
 
 const schaedSpaet=()=>SCHAED_SPAET_IN.includes(S.region)?SCHAED_SPAET:0;
 // Erstes Spieljahr je Schädling, gezählt ab 0 (40 heißt: mit der zweiten Generation).
@@ -1961,6 +1982,8 @@ function aufgaben(){
   if(S.boden<=70&&S.duengungen<3) A.push(aufgabeAktiv('duengen')?{t:`Boden bei ${S.boden}\u00a0%: dein ${MGR_BEREICHE.weingut.name} düngt beim Weiterblättern`,tab:'gut',sub:'berg',ruhig:1}:{t:`🌱 Boden bei ${S.boden}\u00a0%: Düngen ist ${S.boden<=DUENG_ROT?'überfällig':'dran'}`,tab:'gut',sub:'berg',rot:S.boden<=DUENG_ROT?1:0});
   // Seit 13.2.4: Rebschnitt bis Ende April, im April rot.
   {const sn=R().sorten.filter(schnittOffen); if(sn.length) A.push({t:`✂️ Rebschnitt bis Ende April: ${sn.map(id=>SORTEN[id].name).join(', ')}`,tab:'gut',sub:'berg',rot:S.monat===SCHNITT_BIS?1:0})}
+  // Seit 13.4.6: Der Weingut-Manager warnt, wenn zu viel der Ernte im Wagnis hängt (wagnisWarnung), Rot.
+  {const ww=wagnisWarnung(); if(ww) A.push({t:`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name} warnt: ${Math.round(ww.anteil*100)} % deiner Ernte hängen im Wagnis (${ww.ids.map(id=>SORTEN[id].name).join(', ')})`,rot:1,tab:'gut',sub:'berg'})}
   // Seit 11.6: Warnung vor einem Schädling, Gelb. Spritzt der Weingut-Manager, nur ein ruhiger Hinweis.
   {const b=schaedWarn(); if(b&&!b.gespritzt){const T=SCHAED[b.art]; A.push(aufgabeAktiv('spritzen')?{t:`${T.sym} Warnung vor ${T.dem}: dein ${MGR_BEREICHE.weingut.name} spritzt beim Weiterblättern`,tab:'gut',sub:'berg',ruhig:1}:{t:`${T.sym} Warnung vor ${T.dem}: Spritzen halbiert den Schaden, nur diesen Monat`,tab:'gut',sub:'berg'})}}
   if(m===11){const t=steuerSchau(); if(t.steuer>0){
@@ -2513,6 +2536,8 @@ function lese(id,la,p,hefe){
   const neu={id:S.nextId++,sorte:id,jahrgang:S.jahr,liter:l,oe:q.oe,leseart:la,edel:f.edel,eis:f.gefroren,...(q.masch?{masch:1}:{}),status:'trauben',stufe:null,qp:0,fassMonate:0,flMonate:0,sonne:S.sonne,...(S.laubJahr===S.jahr?{laub:1}:{}),boden:S.boden+4*R().sorten.filter(x=>S.felder[x].gelesen||S.felder[x].teil).length,bst:S.bodenSt||0,pfl:f.pflSt||0};
   if(sk){const h=hefe===HEFE_LANG?HEFE_LANG:SEKT_REIFE; Object.assign(neu,{status:'flasche',stufe:SEKT_GRUND,sekt:true,edel:false,eis:false,...(h>SEKT_REIFE?{hefe:h}:{}),med:[],bund:false});
     neu.qp=qpFuer(neu,SEKT_GRUND)+SEKT_QP+(h>SEKT_REIFE?HEFE_LANG_QP:0); zahle(Math.round(l*sektKosten()*100)/100); neu.ans=sektAnmelden(neu)}
+  // Seit 13.4.6: Erlös der Lese für die Warnung des Weingut-Managers.
+  {const st=sk?SEKT_GRUND:besteStufe(q); f.leseW=(f.leseW||0)+(st?leseWert(id,la,st,l):0)}
   S.lots.push(neu);
   if(!f.teil) S.boden=Math.max(0,S.boden-4);
   if(p>=1){f.gelesen=true;f.menge=0}else{f.teil=true;f.menge=Math.round(f.menge*(1-p))}

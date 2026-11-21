@@ -257,10 +257,11 @@ function handText(f,vor){
 function wagnisHinweis(id){
   const f=S.felder[id], m=S.monat, w=feldWeg(id), wm=Math.round((1-WARTEN_MENGE)*100);
   if(f.gefroren||!(f.menge>0)||f.gelesen) return '';
-  if(f.wagnis==='frost') return `<br><b>🎲 Wagnis Eiswein:</b> Dein ${SORTEN[id].name} wartet auf Frost im Dezember. Klappt es nicht, ist die Ernte dieses Feldes weg.`;
-  if(f.wagnis==='edel') return m!==10?'':frei('weg_tba')?`<br><b>🎲 Wagnis Trockenbeerenauslese:</b> Lässt du die Beerenauslese bis Dezember hängen, kann daraus eine Trockenbeerenauslese werden. Klappt es nicht, ist alles weg, und der Monat kostet ${wm} % Menge.`:'<br><span class="rot">Im Dezember verfault, was noch hängt.</span>';
+  if(f.wagnis==='frost') return `<br><b>🎲 Wagnis Eiswein:</b> Dein ${SORTEN[id].name} wartet auf Frost im Dezember. Klappt es nicht, ist die Ernte dieses Feldes weg.${ch}`;
+  if(f.wagnis==='edel') return m!==10?'':frei('weg_tba')?`<br><b>🎲 Wagnis Trockenbeerenauslese:</b> Lässt du die Beerenauslese bis Dezember hängen, kann daraus eine Trockenbeerenauslese werden. Klappt es nicht, ist alles weg, und der Monat kostet ${wm} % Menge.${ch}`:'<br><span class="rot">Im Dezember verfault, was noch hängt.</span>';
+  const p=wagnisChance(id), ch=p!=null?` Chance: <b>${chanceWort(p)}</b>.`:'';
   const zwei=wegeOffen().length>1, wahl=zwei?` Dein Weg: ${w==='edel'?'bis November auf Edelfäulnis':'bis Dezember auf Frost'}, wählen kannst du bis Oktober.`:'', tend=R().weg==='beide'&&m>=8?` Tendenz im Winzerboten: ${herbstTend().name}.`:'';
-  if(m<=9&&w) return `<br><b>🎲 Wagnis:</b>${tend}${wahl} ${w==='edel'?'Lässt du die Trauben bis November hängen, kann Edelfäulnis eine Beerenauslese bringen.':'Lässt du die Trauben bis Dezember hängen, kann Frost einen Eiswein bringen.'} Klappt es nicht, ist die Ernte dieses Feldes weg. Jeder Monat über Oktober kostet ${wm} % Menge.`;
+  if(m<=9&&w) return `<br><b>🎲 Wagnis:</b>${tend}${wahl} ${w==='edel'?'Lässt du die Trauben bis November hängen, kann Edelfäulnis eine Beerenauslese bringen.':'Lässt du die Trauben bis Dezember hängen, kann Frost einen Eiswein bringen.'} Klappt es nicht, ist die Ernte dieses Feldes weg. Jeder Monat über Oktober kostet ${wm} % Menge.${ch}`;
   if(m>=9) return `<br><span class="rot">${m===9?`Ab November kostet jeder Monat ${wm} % Menge, im Dezember verfault, was noch hängt.`:'Im Dezember verfault, was noch hängt.'}</span>`;
   return '';
 }
@@ -1137,8 +1138,9 @@ function vBerg(){
     }
     const sektOhne=sektSorte(id)&&!S.sektkeller, kannLesen=m>=7&&f.menge>0&&!f.gelesen&&(m<11||f.gefroren||f.edel)&&!sektOhne, pflanz=m<=2&&sorteFrei(id)&&!sektOhne, schnitt=schnittOffen(id), haengt=f.reben&&f.menge>0&&!f.gelesen&&m>5&&m<7;
     h+=fenster('feld_'+id,titel,z,{buch:m>=7?'lese':'berg',
-      hin:[mr&&m<=2&&S.verlust&&S.verlust[id]>0&&`${WM} pflanzt beim Weiterblättern nach.`],
-      links:sektOhne?'Die Sekt-Sorte macht nur Sekt, erst den Sektkeller kaufen.':pflanz&&frei<10?'Auf deinem Land ist kein Platz mehr frei.':haengt?'Lese ab August.':schnitt?`✂️ Rebschnitt bis Ende April: ${eur(schnittKosten(id))}`:'',
+      hin:[mr&&m<=2&&S.verlust&&S.verlust[id]>0&&`${WM} pflanzt beim Weiterblättern nach.`,(()=>{const ww=wagnisWarnung(); return ww&&ww.ids.includes(id)&&`${WM} warnt: ${Math.round(ww.anteil*100)} % deiner Ernte hängen im Wagnis.`})()],
+      // Seit 13.4.6: Am Lese-Knopf steht die Chance des Wagnisses in Worten.
+      links:kannLesen&&wagnisChance(id)!=null?`🎲 Warten: Chance ${chanceWort(wagnisChance(id))}`:sektOhne?'Die Sekt-Sorte macht nur Sekt, erst den Sektkeller kaufen.':pflanz&&frei<10?'Auf deinem Land ist kein Platz mehr frei.':haengt?'Lese ab August.':schnitt?`✂️ Rebschnitt bis Ende April: ${eur(schnittKosten(id))}`:'',
       kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,...wagnisKnoepfe(id),schnitt&&`<button class="klein" data-a="schneiden" data-id="${id}" ${S.geld<schnittKosten(id)?'disabled':''}>Schneiden</button>`,pflanz&&`<button class="klein" data-a="pflanzen" data-id="${id}" ${frei<10?'disabled':''}>Pflanzen</button>`,pflanz&&f.reben&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
   }
   h+=fenster('duengung','Düngung',`<div class="kv"><span>Boden-Stufe</span><span>${stufeSatz(S.bodenSt||0,S.bodenZ||0,BODEN_SCHWELLE,BODEN_STUFEN)}</span></div>
@@ -1549,7 +1551,9 @@ Object.assign(FU_WANN,{
   'w6':()=>S.lots.some(fuLange),
   'w7':()=>S.geld<0,
   'w8':()=>S.monat===5&&monatNr()>=12&&R().sorten.reduce((a,id)=>a+(S.felder[id].reben?S.felder[id].menge||0:0),0)>S.fassraum-fassBelegt(),
-  'w9':()=>S.monat===9&&S.kaelteWarn===S.jahr&&feldHaengt().length>0,
+  // Seit 13.4.6: w9 warnt nach Maiks Regel, wenn zu viel der Ernte im Wagnis hängt (wagnisWarnung), h1 erklärt das Wagnis beim ersten Mal.
+  'w9':()=>!!wagnisWarnung(),
+  'h1':()=>S.monat>=7&&S.monat<=9&&R().sorten.some(id=>wagnisChance(id)!=null),
   // Version 8.2: r3-4 kommt nicht nach Monaten, sondern sobald der gelbe Punkt der Spende im Rathaus zum ersten Mal leuchtet (November oder Dezember).
   'r3-4':()=>S.monat>=10&&spOffen()>0,
   // Seit 10.2: p1 im Monat nach dem Brief der Weltweinschau (solange sie nicht gewonnen ist), p2 im Monat nach dem Sieg.
@@ -1648,6 +1652,7 @@ const FU_ZEIG={
   'w7':{tab:'stadt',sub:'bank',sel:[fiSel('kredit')]},
   'w8':{tab:'keller',sub:'lager',sel:[fiSel('faesser')]},
   'w9':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
+  'h1':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
   // Kniffe
   'k02':{tab:'keller',sub:'lager',sel:[fiSel('faesser')]},
   'k03':{tab:'keller',sub:'buch',sel:['[data-a="archiv"][data-id="brett"]']},
