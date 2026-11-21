@@ -109,7 +109,7 @@ const STOCK_F=4; const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='12.9.5';
+const VERSION='13.1';
 const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-slot', TON_KEY='rebenreich-ton';
 // Seit 11.5 (Teil C2, Maik 20.11.2026): realistische Löhne. Das Arbeitsamt bietet LOHN_MIN bis LOHN_MAX im Monat (bis 11.4: 200 bis 500 €, Startlohn 350, Vermittlung 300).
 // LOHN_F ist der gemeinsame Faktor auf alle Löhne (Angestellte und Manager), eingestellt über die Dosis-Reihe der Messung. lohnF rechnet einen Lohn damit um, auf 10 € gerundet.
@@ -359,9 +359,10 @@ const SUBS={
 const START_SUB={gut:'betrieb',keller:'start',stadt:'amt'};
 // Kurze Namen für die Unterreiter-Leiste unten.
 const SUB_NAME={berg:'Weinberg',betrieb:'Betrieb',aktuell:'Aktuelles',maschinen:'Maschinen',buero:'Büro',buch:'Weinarchiv',sabotage:'Hintertür',start:'Keller',lager:'Lager',amt:'Rathaus',handel:'Großhandel',laeden:'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'};
-// Seit 7.0 (Schritt C): Spielstände aus 5.1 und älter laufen nicht weiter (Maik 16.11.2026). Neue tragen v7, lies gibt nur diese zurück.
-// liesAlt findet die alten. Sie bleiben liegen, bis ein neues Spiel den Platz überschreibt oder der Spieler sie löscht, die Bestenliste bleibt.
-const ALT_SATZ='Dieser Spielstand stammt aus einer älteren Version und läuft hier nicht weiter. Die Bestenliste bleibt, die Ehrungen gehen mit dem alten Spielstand. Hier fängst du neu an.';
+// Seit 13.1 (Maik 21.11.2026): Spielstände von vor dem großen Umbau (bis 12.9.5, Marke v7) laufen nicht weiter. Neue tragen v13, lies gibt nur diese zurück.
+// liesAlt findet alle älteren. Sie bleiben liegen, bis ein neues Spiel den Platz überschreibt oder der Spieler sie löscht. Album und Bestenliste liegen getrennt und bleiben.
+// Davor (seit 7.0, Maik 16.11.2026) galt dasselbe mit der Marke v7 für Stände aus 5.1 und älter.
+const ALT_SATZ='Dieser Spielstand stammt aus der Zeit vor dem großen Umbau und läuft hier nicht weiter. Album und Bestenliste bleiben, hier fängt eine neue Familie an.';
 // Seit 12.2 (Maik 20.11.2026, Frage 4): Beim ersten Kauf jeder Maschinenart und beim Sektkeller schreibt der Winzerbote im nächsten Monat einmal einen Artikel mit Bild.
 // Die Käufe merkt sich S.boteKauf bis zur nächsten Ausgabe, S.maschBote welche Maschinenarten schon einen Artikel hatten.
 const MASCH_KAUF={duenger:'Der Düngerstreuer hängt am Schlepper und verteilt den Dünger ab jetzt gleichmäßig zwischen den Zeilen.',
@@ -1692,6 +1693,15 @@ const IDEE_KEY='oechsle-idee', IDEE_MAX=1000;
 // Für 1.0 bis 10.5 gab es nie Punkte, dort steht der alte Satz aus der Liste vor 11.7.1 als ein Punkt. Unteretappen (dritte Stelle) kommen nicht hierher.
 // Je Version: [Zeichen, Nummer, Titel, Datum, Punkte]. Kommendes ohne Datum und Punkte.
 const WAS_NEU=[
+  {k:'🏁 13.0 Der Umbau',d:'in Arbeit',p:['Drei Generationen, drei Akte: Das Spiel wird von Grund auf neu gebaut'],v:[
+    ['▶️','13.2','Grundwerte'],
+    ['⏳','13.3','Weine und Zeitleiste'],
+    ['⏳','13.4','Gebiete und Herbst'],
+    ['⏳','13.5','Leute, Manager, Maschinen'],
+    ['⏳','13.6','Finale'],
+    ['⏳','13.7','Spielstufen'],
+    ['⏳','13.8','Geschichte'],
+    ['','13.1','Werkbank','21.11.2026',['Alte Spielstände starten neu, Album und Bestenliste bleiben']]]},
   {k:'✅ 12.0 Neue Bilder und Ideen',d:'fertig 21.11.2026',p:['Ideen von Timo und neue Bilder kommen ins Spiel','Seit 12.6 ein ruhigerer Start für neue Partien','Seit 12.7 geht kein Tipp mehr verloren','Seit 12.8 kommt jeder Tipp zur rechten Zeit','Seit 12.9 klappt hier jede Etappe auf'],v:[
     ['','12.9','Klapp-Chronik','21.11.2026',['Ein Tipp auf eine Etappe zeigt ihre Punkte, nochmal Tippen klappt sie zu','Alle Etappen starten zugeklappt, offen ist immer nur eine','Auch die fertigen Meilensteine zeigen wieder ihre Punkte, von 1.0 bis 11.8']],
     ['','12.8','Logikprüfung','21.11.2026',['Jeder Tipp kommt zur rechten Zeit und verspricht nichts, was nicht kommt','Neu: Der Kellermeister meldet die Degorgier- und Abfüllanlage für deinen Sektkeller','Neu: Beim ersten Siegel zeigt dir der alte Winzer das Siegelbrett, beim ersten Gold das Album','Maschinen-Tipps kommen pünktlich zur Kaufzeit von Januar bis März','Das Arbeitsamt erklärt der alte Winzer erst, wenn du wirklich Leute brauchst']],
