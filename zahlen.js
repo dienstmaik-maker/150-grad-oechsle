@@ -37,9 +37,10 @@ const MIN_NORMAL={tafel:50,qba:60,kab:75,spat:85,aus:95,ba:125,tba:150};
 // weg ist der eigene Weg im Herbst der Spitzen-Sorte: edel (warm, Edelfäulnis bis November), frost (kühl, Eiswein bis Dezember), beide (Mitte, mit Tendenz).
 // Neu dazu: aukPreisF (Faktor auf Startgebot und Gebote bei Auktionen), reifeF (Faktor auf den Wertzuwachs in der Flasche), festF (Faktor auf das Ansehen
 // aus Festen), handLohnF (Faktor auf den Lohn der Erntehelfer, die von Hand lesen), aukF (Faktor auf die Chance einer Auktion).
-// Dass Erntemaschine und Vollernter in der Mosel-Steillage nicht fahren, kommt in 13.5. spiel ist der Satz zur Spielweise, erst der Hinweis für die erste Partie.
+// Seit 13.5.5 (Bauplan 13.5, Maik 21.11.2026): steil:1 heißt, Erntemaschine und Vollernter fahren dort nicht (Mosel). Düngerstreuer, Laubschneider und Abfüllanlage gehen überall.
+// Der Aufschlag auf den Lohn der Handlese (handLohnF) steht an der Mosel seitdem neutral auf 1, sonst wäre sie doppelt bestraft. Die Konstante bleibt als Stellschraube für 14.2. spiel ist der Satz zur Spielweise, erst der Hinweis für die erste Partie.
 const REGIONEN={
-  mosel:{name:'Mosel',sorten:['riesling','mueller','spaetb'],warm:0,weg:'beide',wettPlus:3,handLohnF:1.2,text:'Steile Schieferhänge, Riesling-Land. Steillagen-Ruf: Bei Wettbewerben zählt jeder Wein 3 Punkte mehr.',min:MIN_NORMAL},
+  mosel:{name:'Mosel',sorten:['riesling','mueller','spaetb'],warm:0,weg:'beide',wettPlus:3,handLohnF:1,steil:1,text:'Steile Schieferhänge, Riesling-Land. Steillagen-Ruf: Bei Wettbewerben zählt jeder Wein 3 Punkte mehr.',min:MIN_NORMAL},
   rheingau:{name:'Rheingau',sorten:['riesling','spaetb','silvaner'],warm:0,weg:'beide',preisF:1.1,aukF:.7,text:'Berühmtes Riesling-Land: Jeder Wein bringt 10 % mehr Geld.',min:MIN_NORMAL},
   rheinhessen:{name:'Rheinhessen',sorten:['mueller','silvaner','portug'],warm:3,weg:'edel',aukPreisF:.8,text:'Warmes Silvaner-Land: Land ist hier günstig, Eiswein selten.',min:MIN_NORMAL},
   pfalz:{name:'Pfalz',sorten:['riesling','mueller','portug'],warm:3,weg:'edel',ertragF:1.1,text:'Warm mit milden Wintern: Die Reben tragen mehr, Eiswein gibt es selten.',min:MIN_NORMAL},
@@ -406,8 +407,12 @@ const R_ERNTE=FREI.masch_klein.r, R_VOLL=FREI.masch_gross.r;
 // Abfüllanlage: ABF_PLUS mehr Flaschen aus jedem Fass, ein Lagerarbeiter betreut ABF_FLASCHEN statt FLASCHEN_JE_LAGERARB leere Flaschen.
 // Abnutzung ABF_ABN je ABF_NORM abgefüllte Flaschen (rund ein Jahr auf 10 Hektar). Bedient wird sie von einem Lagerarbeiter.
 const STREU_PREIS=8000, STREU_WARTUNG=30, STREU_ABN=5, DUENG_PLUS=30, STREU_PLUS=40, STREU_RABATT=.3, R_STREU=FREI.masch_duenger.r;
-const LAUB_PREIS=20000, LAUB_WARTUNG=60, LAUB_ABN=15, LAUB_QP=1, LAUB_ANS=4, R_LAUB=FREI.masch_laub.r;
+// Seit 13.5.5: Der Laubschneider bringt LAUB_QP Punkte und LAUB_MENGE mehr Menge bei allen Sorten (bis 13.4: 1 Punkt), kein Öchsle. Die LAUB_ANS Ansehen bleiben.
+const LAUB_PREIS=20000, LAUB_WARTUNG=60, LAUB_ABN=15, LAUB_QP=4, LAUB_MENGE=.05, LAUB_ANS=4, R_LAUB=FREI.masch_laub.r;
 const ABF_PREIS=60000, ABF_WARTUNG=200, ABF_ABN=15, ABF_NORM=40000, ABF_PLUS=.05, ABF_FLASCHEN=75000, R_ABF=FREI.masch_abfuell.r;
+// Seit 13.5.5 (Maik 21.11.2026): Stufe 2 der Abfüllanlage ist ein Ausbau der vorhandenen (ma.stufe 2, frei über masch_abfuell2): ABF_PLUS2 mehr Flaschen,
+// ein Lagerarbeiter betreut ABF_FLASCHEN2 leere Flaschen. Der Preis ist noch einmal der der Stufe 1, ein Startwert für 14.2.
+const ABF_PLUS2=.1, ABF_FLASCHEN2=90000, ABF_PREIS2=ABF_PREIS;
 // Reihenfolge wie die Ränge, so stehen sie auch im Feld Maschinen. f:1 heißt "die" (Dein/Deine, er/sie), ernte:1 liest bei der Lese mit.
 const MASCH={duenger:{name:'Düngerstreuer',preis:STREU_PREIS,leist:0,helfer:0,wart:STREU_WARTUNG,rang:R_STREU,fahrer:1,leute:'helfer',bonus:1,text:'streut den Dünger gleichmäßig'},
   klein:{name:'Erntemaschine',preis:MASCH_PREIS,leist:MASCH_LEISTUNG,helfer:MASCH_HELFER,wart:WARTUNG,rang:R_ERNTE,fahrer:1,leute:'helfer',ernte:1,f:1,text:'die kleine Maschine für den Anfang'},
@@ -416,8 +421,8 @@ const MASCH={duenger:{name:'Düngerstreuer',preis:STREU_PREIS,leist:0,helfer:0,w
   abfuell:{name:'Abfüllanlage',preis:ABF_PREIS,leist:0,helfer:0,wart:ABF_WARTUNG,rang:R_ABF,fahrer:1,leute:'lagerarb',bonus:1,f:1,text:'füllt ab, ohne dass etwas danebengeht'}};
 // Bonus der drei neuen Maschinen, für Fenster und Infotafeln.
 const MASCH_BONUS={duenger:()=>`Düngen kostet ${Math.round(STREU_RABATT*100)} % weniger und bringt ${STREU_PLUS} statt ${DUENG_PLUS} Punkte Boden`,
-  laub:()=>`Sommerschnitt im Juni: Jede Lese des Jahres bekommt ${LAUB_QP} Qualitätspunkt mehr, dazu ${LAUB_ANS} Ansehen`,
-  abfuell:()=>`${Math.round(ABF_PLUS*100)} % mehr Flaschen aus jedem Fass, ein Lagerarbeiter betreut ${num(ABF_FLASCHEN)} statt ${num(FLASCHEN_JE_LAGERARB)} leere Flaschen`};
+  laub:()=>`Sommerschnitt im Juni: Jede Lese des Jahres bekommt ${LAUB_QP} Qualitätspunkte und ${Math.round(LAUB_MENGE*100)} % mehr Menge, dazu ${LAUB_ANS} Ansehen`,
+  abfuell:()=>{const z=S&&S.maschinen.some(x=>x.typ==='abfuell'&&x.stufe>=2); return `${Math.round((z?ABF_PLUS2:ABF_PLUS)*100)} % mehr Flaschen aus jedem Fass, ein Lagerarbeiter betreut ${num(z?ABF_FLASCHEN2:ABF_FLASCHEN)} statt ${num(FLASCHEN_JE_LAGERARB)} leere Flaschen`}};
 // Abnutzung je Lese: ABNUTZ_VOLL Prozentpunkte bei voller Auslastung im Jahr, anteilig darunter, mal Pflege-Faktor aus PFLEGE nach dem Zustand vor der ersten Lese des Jahres.
 // Nie unter MASCH_MIN. Der Weingut-Manager wartet ab Stufe 1 (seit Paket B, vorher 2) nach der Lese jede Maschine unter MGR_WART_AB auf 100 %.
 const MASCH_GELB=60, MASCH_ROT=30, MASCH_MIN=10, ABNUTZ_VOLL=35, PFLEGE=[[80,.8],[60,1],[0,1.4]], MGR_WART_AB=80;

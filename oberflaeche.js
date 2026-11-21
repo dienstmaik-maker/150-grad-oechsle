@@ -845,7 +845,7 @@ function steckbrief(id,o={}){
     r.reifeF>1?`Wein gewinnt in der Flasche ${pz(r.reifeF-1)} schneller an Wert.`:'',r.festF>1?`Feste bringen ${pz(r.festF-1)} mehr Ansehen.`:'',
     r.wettPlus?`Bei Wettbewerben zählt jeder Wein ${r.wettPlus} Punkte mehr.`:'',r.preisF?`Jeder Wein bringt ${pz(r.preisF-1)} mehr Geld.`:'',r.sektPreisF>1?`Sekt bringt ${pz(r.sektPreisF-1)} mehr Geld.`:''].join(' ').trim();
   const schwach=[r.weg==='edel'?'Eiswein gibt es nur in einem harten Winter, den der Winzerbote ankündigt.':r.weg==='frost'?'Trockenbeerenauslese ist schwer: Edelfäulnis gibt es nur in einem goldenen Herbst, den der Winzerbote ankündigt.':'',
-    r.handLohnF>1?`Die Lese von Hand kostet ${pz(r.handLohnF-1)} mehr Lohn.`:'',r.aukF<1?`Es gibt ${pz(1-r.aukF)} weniger Auktionen.`:'',
+    r.handLohnF>1?`Die Lese von Hand kostet ${pz(r.handLohnF-1)} mehr Lohn.`:'',r.steil?'In der Steillage fahren weder Erntemaschine noch Vollernter, gelesen wird von Hand.':'',r.aukF<1?`Es gibt ${pz(1-r.aukF)} weniger Auktionen.`:'',
     r.ertragF<1?`Die Reben tragen ${pz(1-r.ertragF)} weniger.`:'',r.sektPreisF<1?`Sekt bringt ${pz(1-r.sektPreisF)} weniger Geld.`:''].join(' ').trim();
   const wegT={edel:'Edelfäulnis, wer bis November wartet',frost:'Eiswein, wer bis Dezember wartet',beide:'Edelfäulnis und Eiswein, mit der Tendenz im Winzerboten'}[r.weg];
   const G=gebietText(id,neu), lohnt=G.lohnt, SF=sortenFolge(id,neu);
@@ -1046,6 +1046,7 @@ function vMaschinen(){
     hin:[aufgabeAktiv('warten')&&`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name} wartet nach der Lese jede Maschine unter ${MGR_WART_AB} % auf 100 %.`],
     leer:'Du hast noch keine Maschine.',i:`${mI}<br><br>Warten bringt den Zustand wieder hoch, verkaufen bringt die Hälfte vom Neupreis, je nach Zustand.`});
   for(const [id,T] of Object.entries(MASCH)){
+    if(R().steil&&T.ernte) continue;
     const titel=`Neue${T.f?' ':'r '}${T.name}`, lw=T.leute==='lagerarb'?'Lagerarbeiter':'Fahrer', fa=`braucht ${T.fahrer} ${lw}`, hat=T.bonus&&S.maschinen.some(x=>x.typ===id);
     const was=(T.bonus?`${MASCH_BONUS[id]()}. ${wie[id]} Mehr als ${T.f?'eine':'einen'} brauchst du nicht`:`Schafft ${rbn(T.leist)} Reben bei der Lese und deckt übers Jahr ${T.helfer} Hektar Reben ab`)+`, ${fa}. Die Wartung kostet ${eur(T.wart)} je Prozentpunkt.<br><br>${mI}`;
     if(!maschFrei(id)){zu.push(fenster('kauf_'+id,titel,'',{zu:maschFreiText(id),i:was})); continue}
@@ -1053,6 +1054,11 @@ function vMaschinen(){
       <div class="kv"><span>Deckt übers Jahr ab</span><span>${T.helfer} Hektar Reben</span></div>`)+`<div class="kv"><span>${lw}</span><span>${fa}</span></div><div class="kv"><span>Wartung</span><span>${eur(T.wart)} je %</span></div>`,{
       links:hat?`Du hast schon ${T.f?'eine':'einen'}.`:saison?'':'Zu kaufen von Januar bis März.',kn:pk('maschKauf','Kaufen',eur(T.preis),{id,aus:!saison||hat,arm:S.geld<T.preis}),i:was});
   }
+  // Seit 13.5.5: Ausbau der Abfüllanlage auf Stufe 2, für jede Anlage, die noch auf Stufe 1 ist. Wie der Kauf von Januar bis März.
+  {const A=S.maschinen.filter(x=>x.typ==='abfuell'), ein=A.find(x=>abfStufe(x)<2), was=`Stufe 2: ${Math.round(ABF_PLUS2*100)} statt ${Math.round(ABF_PLUS*100)} % mehr Flaschen aus jedem Fass, ein Lagerarbeiter betreut ${num(ABF_FLASCHEN2)} statt ${num(ABF_FLASCHEN)} leere Flaschen.`;
+  if(A.length&&!frei('masch_abfuell2')) zu.push(fenster('ausbau_abfuell','Abfüllanlage ausbauen','',{zu:freiText('masch_abfuell2'),i:was}));
+  else if(A.length) h+=fenster('ausbau_abfuell','Abfüllanlage ausbauen',`<div class="mut" style="margin-bottom:4px">${was}</div>`,{
+    links:!ein?'Deine Abfüllanlage ist schon auf Stufe 2.':saison?'':'Ausbauen geht von Januar bis März.',kn:pk('abfAusbau','Ausbauen',eur(ABF_PREIS2),{aus:!saison||!ein,arm:S.geld<ABF_PREIS2}),i:was})}
   if(einZu('maschinen')) return einKarte('maschinen','Noch alles von Hand',`Am Anfang machst du alles von Hand. Maschinen kommen nach und nach, der Düngerstreuer ${maschFreiText('duenger')}.`);
   return h+zu.join('');
 }
@@ -1189,7 +1195,7 @@ function vKellerStart(){
       `${l.stufe?'':'Noch nicht angemeldet. '}<span class="${l.fassMonate>=5?'rot':''}">Verdirbt in ${rest} ${mon(rest)}.</span>${l.stufe&&abfFl(l)>l.liter?` Mit der Abfüllanlage ${num(abfFl(l))} Flaschen.`:''}${l.stufe&&S.flaschen<abfFl(l)?` <span class="rot">Es fehlen ${num(abfFl(l)-S.flaschen)} leere Flaschen.</span>`:''}`,
       l.stufe?`<button class="klein" data-a="abfuellen" data-id="${l.id}">Abfüllen</button>`:`<button class="klein" data-a="anmelden" data-id="${l.id}">Anmelden</button>`)}),{
     leer:'Alle Fässer sind leer.',
-    hin:[mf&&`🍷 Dein ${KM} kauft fehlende Flaschen dazu.`,lagerKann(2)&&'🍾 Deine Lagerarbeiter füllen angemeldete Weine beim Weiterblättern ab, sobald genug leere Flaschen da sind.',bonusMasch('abfuell')&&`🍾 Mit der Abfüllanlage kommen ${Math.round(ABF_PLUS*100)} % mehr Flaschen aus jedem Fass.`],
+    hin:[mf&&`🍷 Dein ${KM} kauft fehlende Flaschen dazu.`,lagerKann(2)&&'🍾 Deine Lagerarbeiter füllen angemeldete Weine beim Weiterblättern ab, sobald genug leere Flaschen da sind.',bonusMasch('abfuell')&&`🍾 Mit der Abfüllanlage kommen ${Math.round(abfPlus()*100)} % mehr Flaschen aus jedem Fass.`],
     i:`Der Wein bleibt mindestens einen Monat im Fass und höchstens sieben, danach verdirbt er. Abfüllen geht erst nach der Anmeldung im Rathaus. Abgefüllt wird immer das ganze Fass, ein Liter je Flasche. Mit der Abfüllanlage geht nichts daneben, dann kommen ${Math.round(ABF_PLUS*100)} % mehr Flaschen heraus, dafür brauchst du auch so viele leere.${mf?` Dein ${KM} kauft die Flaschen für angemeldete Fässer, anmelden musst du selbst.`:''}${lagerKann(2)?' Deine Lagerarbeiter füllen angemeldete Fässer von selbst ab.':''}`});
   const sektI=`Die ${ROLLEN.sekt.name} macht nur Sekt. Nach der Lese geht alles in den Sektkeller, ohne Grundwein, die Lagerarbeiter stellen ihn her. Er reift ${SEKT_REIFE} Monate, mit ${HEFE_LANG} Monaten auf der Hefe bekommt er ${HEFE_LANG_QP} Qualitätspunkte mehr. Das Hefelager wählst du bei der Lese.`;
   const vorrat=fenster('vorrat','Vorrat',`<div class="kv"><span>Fassraum</span><span>${num(bel)} von ${num(S.fassraum)} l</span></div><div class="kv"><span>Leere Flaschen (1 l)</span><span>${num(S.flaschen)}</span></div>`,
@@ -2233,7 +2239,7 @@ const AKT={
     if(!sorteFrei(d.id)) return meldung('Noch nicht',`${SORTEN[d.id].name} kannst du ab dem Rang ${RAENGE[sorteAb(d.id)].name} pflanzen.`);
     if(sektSorte(d.id)&&!S.sektkeller) return meldung('Erst der Sektkeller',`Die ${ROLLEN.sekt.name} macht nur Sekt. Kauf erst den Sektkeller im Keller.`);
     const so=SORTEN[d.id], pr=rebenPreis(d.id), frei=S.ha*HA_REBEN-rebenGesamt(), kap=helferReben()-rebenGesamt(), max=Math.min(frei,kap,Math.floor(S.geld/pr/10)*10);
-    if(frei>=10&&kap<10) return leuteSheet('Zu wenige Erntehelfer',`<p>${helferRegel()}. Deine Leute reichen für ${rbn(helferReben())} Reben, gepflanzt sind ${rbn(rebenGesamt())}.</p><p class="mut">Stell erst beim Arbeitsamt ein${S.rang>=MASCH.klein.rang?` oder kauf eine Erntemaschine, mit ${MASCH.klein.fahrer} Fahrer deckt sie ${MASCH_HELFER} Hektar ab`:''}.</p>`);
+    if(frei>=10&&kap<10) return leuteSheet('Zu wenige Erntehelfer',`<p>${helferRegel()}. Deine Leute reichen für ${rbn(helferReben())} Reben, gepflanzt sind ${rbn(rebenGesamt())}.</p><p class="mut">Stell erst beim Arbeitsamt ein${maschFrei('klein')?` oder kauf eine Erntemaschine, mit ${MASCH.klein.fahrer} Fahrer deckt sie ${MASCH_HELFER} Hektar ab`:''}.</p>`);
     if(max<10) return meldung('Geht gerade nicht',`Dir fehlt das Geld oder der Platz für ${rbn(10)} Reben.`);
     mengeSheet({titel:`${so.name} pflanzen`,text:`${eur2(pr/STOCK_F)} je Rebe${pr!==so.preis?`, üblich sind ${eur2(so.preis/STOCK_F)}`:''}. Neue Reben übernehmen die Pflegestufe der Sorte. Deine Erntehelfer reichen noch für ${rbn(kap)} Reben${kap<frei?', für mehr musst du erst einstellen':''}.`,max,step:10,start:Math.min(max,1000),okText:'Pflanzen',zahl:rbn,
       info:n=>`<b>${rbn(n)} Reben</b>kostet ${eur(n*pr)}`,
@@ -2483,6 +2489,12 @@ const AKT={
     if(erst){MB[id]=1; boteMerk(`Neue${T.f?'':'r'} ${T.name} bei ${S.name}`,MASCH_BOTE[id],'masch-'+id)}
     save();render();
     meldung(`${T.f?'Die':'Der'} ${T.name} ist da`,`${MASCH_KAUF[id]} ${T.f?'Sie':'Er'} braucht ${T.fahrer} ${T.leute==='helfer'?'Erntehelfer als Fahrer':'Lagerarbeiter'}.`,'masch-'+id);
+  },
+  abfAusbau(){
+    const ma=S.maschinen.find(x=>x.typ==='abfuell'&&abfStufe(x)<2); if(!ma||S.monat>2||!frei('masch_abfuell2')) return;
+    if(S.geld<ABF_PREIS2) return meldung('Zu wenig Geld',`Der Ausbau kostet ${eur(ABF_PREIS2)}.`);
+    zahle(ABF_PREIS2); ma.stufe=2; fx('stempel'); save(); render();
+    meldung('Die Abfüllanlage ist ausgebaut',`Stufe 2: ${Math.round(ABF_PLUS2*100)} % mehr Flaschen aus jedem Fass, ein Lagerarbeiter betreut jetzt ${num(ABF_FLASCHEN2)} leere Flaschen.`,'masch-abfuell');
   },
   maschVerkauf(d){if(S.monat>2)return;const ma=S.maschinen[+d.id];if(!ma)return;kassiere(Math.round(mTyp(ma).preis*.5*ma.zustand/100));S.maschinen.splice(+d.id,1);save();render()},
   maschWarten(d){

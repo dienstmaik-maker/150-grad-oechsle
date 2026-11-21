@@ -59,7 +59,7 @@ function leuteKommen(Z){
 // Für den Aufstiegstext: Stufen der Leute, die mit dem Rang i kommen (ohne Abstand, die anderen nennt abBringt).
 const leuteBringt=i=>LEUTE_K.flatMap(k=>[1,2,3].filter(n=>FREI[k+n].r===i&&!FREI[k+n].ab).map(n=>`${LEUTE_ST[k].name} Stufe ${n}: ${LEUTE_ST[k].kann[n-1]}`));
 // Seit 13.5.1: Maschinen kommen über FREI (Schlüssel masch_ und der Typ).
-const maschFrei=id=>frei('masch_'+id), maschFreiText=id=>freiText('masch_'+id);
+const maschFrei=id=>frei('masch_'+id)&&!(R().steil&&MASCH[id]&&MASCH[id].ernte), maschFreiText=id=>R().steil&&MASCH[id]&&MASCH[id].ernte?'nie in der Steillage':freiText('masch_'+id);
 const rolleDarf=(id,st)=>{const rl=id&&SORTEN[id]?SORTEN[id].rolle:null; return !rl||!WEIN_ROLLE[rl]||WEIN_ROLLE[rl].includes(st)};
 // Seit 13.2.4: Rebschnitt von Hand. Kosten nach den Hektar der Sorte, möglich von Januar bis April, einmal im Jahr.
 const schnittKosten=id=>Math.round(SCHNITT_HA*(S.felder[id].reben||0)/HA_REBEN);
@@ -805,16 +805,27 @@ function gegnerMonat(){
 function maschLeistung(){return maschEinsatz().reduce((a,m)=>a+Math.round(mTyp(m).leist*m.zustand/100),0)}
 function alleinReben(){return ALLEIN_HA*HA_REBEN}
 function leistung(){return alleinReben()+S.helfer*HELFER_LEISTUNG+maschLeistung()}
-function leseFaktor(){const b=rebenGesamt();return b?Math.min(1,leistung()/b):1}
+function leseFaktor(id){const t=leseTeile(); if(id!=null) return spitzeId(id)?t.hand:t.masch; const b=t.sp+t.rest; return b?(t.sp*t.hand+t.rest*t.masch)/b:1}
 // Leute-Regel: Gezählt werden Köpfe. Seit 8.0 zählt eine Maschine nur im Einsatz (Fahrer da, Zustand ab MASCH_ROT), darüber bremst der Zustand nur die Ernteleistung.
 // Seit 11.5 (Teil C1) wird in Reben gerechnet: helferReben sagt, für wie viele Reben die Familie, h Erntehelfer und die Maschinen im Einsatz übers Jahr reichen.
-function helferReben(h){h=h==null?S.helfer:h; return alleinReben()+h*REBEN_JE_HELFER+maschHelfer(h)*HA_REBEN}
+// Seit 13.5.5 decken die Erntemaschinen nur Reben der Menge- und Sekt-Sorte ab, die Spitzen-Sorte braucht immer Erntehelfer.
+function helferReben(h){h=h==null?S.helfer:h; return alleinReben()+h*REBEN_JE_HELFER+Math.min(maschHelfer(h)*HA_REBEN,rebenGesamt()-handReben())}
+// Seit 13.5.5 (Maik 21.11.2026, Leitsatz: die Maschine für die Menge, die Hand für die Qualität): Erntemaschine und Vollernter lesen nur Menge- und Sekt-Sorte,
+// die Spitzen-Sorte lesen Familie und Erntehelfer immer von Hand, auch Kabinett und Spätlese. leseTeile rechnet, welcher Anteil je Gruppe gelesen wird:
+// Die Maschinen nehmen von Menge und Sekt, was sie schaffen, den Rest und die ganze Spitzen-Sorte lesen die Hände.
+const spitzeId=id=>(SORTEN[id]||{}).rolle==='spitze';
+function handReben(){return R().sorten.filter(spitzeId).reduce((a,id)=>a+S.felder[id].reben,0)}
+function leseTeile(){const sp=handReben(), rest=rebenGesamt()-sp, mT=Math.min(maschLeistung(),rest), need=sp+rest-mT, H=alleinReben()+S.helfer*HELFER_LEISTUNG, hf=need?Math.min(1,H/need):1;
+  return {hand:hf,masch:rest?(mT+(rest-mT)*hf)/rest:1,sp,rest}}
 // Erntehelfer, die es ohne Maschinen braucht (nur für die Anzeige).
 function helferBedarf(){return Math.max(0,Math.ceil((rebenGesamt()-alleinReben())/REBEN_JE_HELFER))}
 // Seit 8.0 (Paket B): Mit der Abfüllanlage im Einsatz betreut ein Lagerarbeiter ABF_FLASCHEN leere Flaschen, sonst FLASCHEN_JE_LAGERARB.
-function flJeLager(){return bonusMasch('abfuell')?ABF_FLASCHEN:FLASCHEN_JE_LAGERARB}
+const abfStufe=ma=>ma&&ma.stufe>=2?2:1;
+function abfPlus(){const ma=bonusMasch('abfuell'); return ma?(abfStufe(ma)>1?ABF_PLUS2:ABF_PLUS):0}
+const abfJe=ma=>abfStufe(ma)>1?ABF_FLASCHEN2:ABF_FLASCHEN;
+function flJeLager(){const ma=bonusMasch('abfuell'); return ma?abfJe(ma):FLASCHEN_JE_LAGERARB}
 // Seit 10.3 (B9): Für die Leute-Sperre zählt ABF_FLASCHEN auch, wenn die Anlage ausgefallen ist. Bei Rot fällt nur der Bonus beim Abfüllen weg.
-function flSperre(){return S.maschinen.some(m=>m.typ==='abfuell'&&m.zustand<MASCH_ROT)?ABF_FLASCHEN:flJeLager()}
+function flSperre(){const r=S.maschinen.find(m=>m.typ==='abfuell'&&m.zustand<MASCH_ROT); return r?abfJe(r):flJeLager()}
 // Seit 11.5 (Teil C1): so viel Fassraum und so viele leere Flaschen betreuen die Familie und n Lagerarbeiter.
 function fassKap(n){return ALLEIN_FASS+(n==null?S.lagerarb:n)*FASS_JE_LAGERARB}
 function flKap(n){return ALLEIN_FL+(n==null?S.lagerarb:n)*flJeLager()}
@@ -825,7 +836,7 @@ function helferRegel(){const je=`einen Erntehelfer je ${haWort(REBEN_JE_HELFER/H
 function lagerRegel(fl){const was=`${num(FASS_JE_LAGERARB)}\u00a0l Fassraum und ${num(fl||FLASCHEN_JE_LAGERARB)} leere Flaschen`; return ALLEIN_FASS||ALLEIN_FL?`${num(ALLEIN_FASS)}\u00a0l Fassraum und ${num(ALLEIN_FL)} leere Flaschen betreust du selbst, jeder Lagerarbeiter schafft ${was} dazu`:`Ein Lagerarbeiter betreut ${was}`}
 // Abfüllen (von Hand und beim Kellermeister): mit der Abfüllanlage ABF_PLUS mehr Flaschen aus dem Fass, dafür so viele leere Flaschen.
 // Die Anlage nutzt sich je ABF_NORM Flaschen um ABF_ABN Prozentpunkte ab, mal Pflege-Faktor.
-function abfFl(l){return bonusMasch('abfuell')?Math.round(l.liter*(1+ABF_PLUS)):l.liter}
+function abfFl(l){const p=abfPlus(); return p?Math.round(l.liter*(1+p)):l.liter}
 function fuelleAb(l){const ma=bonusMasch('abfuell'), n=abfFl(l); S.flaschen-=n; l.liter=n; l.status='flasche'; l.flMonate=0; if(ma) abnutz(ma,ABF_ABN*n/ABF_NORM); return n}
 // Düngen (von Hand und beim Weingut-Manager): mit dem Düngerstreuer im Einsatz billiger und mehr Boden, er nutzt sich je Düngung um STREU_ABN ab.
 function duengKosten(){return Math.round(DUENGER_HA*S.ha*(bonusMasch('duenger')?1-STREU_RABATT:1))}
@@ -1129,9 +1140,10 @@ const eisF=l=>l.stufe==='eis'?EIS_WERT[l.eisW||0].f:1;
 // Name der Stufe für die Lese-Hilfe, beim Eiswein mit seiner Wertstufe.
 const stufeText=(st,oe)=>STUFEN[st].name+(st==='eis'?` (Öchsle einer ${EIS_WERT[eisStufe(oe)].name})`:'');
 // Seit 13.4.2: auch gefrorene Trauben liest die Hand, wie früher, als es Eiswein nur mit Edelfäulnis gab.
-const handFeld=f=>!!(f.edel||f.gefroren);
+// Seit 13.5.5 liest die Hand jedes Feld der Spitzen-Sorte, eine Maschine springt dort nie mehr ein (handFehlt bleibt leer, q.masch kommt nicht mehr vor).
+const handFeld=f=>!!(f.edel||f.gefroren)||spitzeId(feldId(f));
 const handBedarf=f=>Math.max(0,Math.ceil((f.reben-alleinReben())/HAND_REBEN));
-const handFehlt=f=>handFeld(f)&&S.helfer<handBedarf(f)&&maschEinsatz().length>0;
+const handFehlt=f=>false;
 const handlese=f=>handFeld(f)&&!handFehlt(f);
 // Seit 13.2.3: Auch die überreife Lese (+5°) bleibt unter der Grenze des Weinbergs.
 function feldQ(f,la){const id=feldId(f); return {oe:Math.min(id?oeGrenze(id):150,f.oe+(la==='ueber'?5:0)),leseart:la,edel:f.edel,eis:f.gefroren,masch:handFehlt(f)?1:0,sorte:id}}
@@ -1148,7 +1160,7 @@ function maschAbnutzung(reben,M){
 // Version 4.4: ungefährer Listenwert einer Lese als Flaschenwein der Stufe st, ohne Reife und Marktlage.
 function leseWert(id,la,st,liter){const q=feldQ(S.felder[id],la), pfl=S.felder[id].pflSt||0, qp=qpFuer({sorte:id,oe:q.oe,sonne:S.sonne,boden:S.boden,bst:S.bodenSt||0,pfl,laub:S.laubJahr===S.jahr},st);
   return Math.round(liter*STUFEN[st].preis*(st==='eis'?EIS_WERT[eisStufe(q.oe)].f:1)*(1+qp/100)*(1+pflegePreis(id,pfl))*sternF(id)*(R().preisF||1)/100)*100}
-function feldLiter(f,la){const r=f.reif/100,u=f.ueber/100; return Math.round(f.menge*r*(la==='reif'?1-u:la==='ueber'?u*MOST_UEBER:1-u+u*MOST_UEBER)*leseFaktor())}
+function feldLiter(f,la){const r=f.reif/100,u=f.ueber/100; return Math.round(f.menge*r*(la==='reif'?1-u:la==='ueber'?u*MOST_UEBER:1-u+u*MOST_UEBER)*leseFaktor(feldId(f)))}
 // Ab wann ein Wein frühestens verkauft werden darf, wenn er jetzt gelesen wird.
 // Gekeltert wird im Lesemonat, nach einem Monat im Fass darf er angemeldet und abgefüllt werden, ab Kabinett und beim Eiswein erst im Januar.
 // Danach muss er die Mindestzeit aus lagerBasis in der Flasche liegen. n zählt die Monate ab jetzt.
@@ -1668,7 +1680,7 @@ function monatLauf(){
   // Seit 8.0 (Paket B): Der Laubschneider macht im Juni den Sommerschnitt, wenn er im Einsatz ist. Gemeldet wird im Winzerboten vom Juli.
   if(S.monat===6){const lb=S.maschinen.find(x=>x.typ==='laub');
     if(lb){const an=bonusMasch('laub');
-      if(an){S.laubJahr=S.jahr; abnutz(an,LAUB_ABN); const a=ruhm(LAUB_ANS); Z.push(`✂️ Dein Laubschneider hat im Juni den Sommerschnitt gemacht: Die Lese ${S.jahr} bekommt ${LAUB_QP} Qualitätspunkt mehr, dazu +${a} Ansehen. Zustand jetzt ${an.zustand} %.`)}
+      if(an){S.laubJahr=S.jahr; for(const id of R().sorten){const f=S.felder[id]; if(f.menge>0&&!f.gelesen) f.menge=Math.round(f.menge*(1+LAUB_MENGE))} abnutz(an,LAUB_ABN); const a=ruhm(LAUB_ANS); Z.push(`✂️ Dein Laubschneider hat im Juni den Sommerschnitt gemacht: Die Lese ${S.jahr} bekommt ${LAUB_QP} Qualitätspunkte und ${Math.round(LAUB_MENGE*100)} % mehr Menge, dazu +${a} Ansehen. Zustand jetzt ${an.zustand} %.`)}
       else Z.push(`✂️ Dein Laubschneider ${lb.zustand<MASCH_ROT?'ist ausgefallen':'hatte keinen Fahrer'}, einen Sommerschnitt gab es dieses Jahr nicht.`)}}
   // Seit 8.0 nutzen sich Maschinen nur noch bei der Lese ab (maschAbnutzung), die feste Abnutzung je Herbstmonat ist weg.
   // Der Weingut-Manager stellt nach dem Monatswechsel die Helfer für die Handlese ein, sobald Edelfäulnis da ist.
@@ -2593,7 +2605,7 @@ function lese(id,la,p,hefe){
   p=1; const sk=sektSorte(id); if(sk){if(!S.sektkeller) return; la='alles'}
   const f=S.felder[id], q=feldQ(f,la), l=Math.round(feldLiter(f,la)*p); if(l<=0) return;
   const L=leistung(), M=maschLeistung();
-  if(M>0&&!handlese(f)) maschAbnutzung(f.reben*p*leseFaktor()*M/L,M);
+  if(M>0&&!spitzeId(id)) maschAbnutzung(f.reben*Math.min(1,M/Math.max(1,rebenGesamt()-handReben())),M);
   const neu={id:S.nextId++,sorte:id,jahrgang:S.jahr,liter:l,oe:q.oe,leseart:la,edel:f.edel,eis:f.gefroren,...(q.masch?{masch:1}:{}),status:'trauben',stufe:null,qp:0,fassMonate:0,flMonate:0,sonne:S.sonne,...(S.laubJahr===S.jahr?{laub:1}:{}),boden:S.boden+4*R().sorten.filter(x=>S.felder[x].gelesen||S.felder[x].teil).length,bst:S.bodenSt||0,pfl:f.pflSt||0};
   if(sk){const h=hefe===HEFE_LANG?HEFE_LANG:SEKT_REIFE; Object.assign(neu,{status:'flasche',stufe:SEKT_GRUND,sekt:true,edel:false,eis:false,...(h>SEKT_REIFE?{hefe:h}:{}),med:[],bund:false});
     neu.qp=qpFuer(neu,SEKT_GRUND)+SEKT_QP+(h>SEKT_REIFE?HEFE_LANG_QP:0); zahle(Math.round(l*sektKosten()*100)/100); neu.ans=sektAnmelden(neu)}
