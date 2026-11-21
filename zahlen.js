@@ -118,6 +118,9 @@ const BODEN_STUFEN=['Rohboden','Fruchtboden','Gutsboden','Terroir'], BODEN_SCHWE
 const PFLEGE_STUFEN=['Setzling','Rebstock','Premier Cru','Grand Cru'], PFLEGE_SCHWELLE=[0,5,12,20], PFLEGE_GUT=1, PFLEGE_PATZER=2, PFLEGE_ST_OE=4;
 const SETZ_MENGE=[.4,.48,.55,.63,.7], PFLEGE_MENGE={menge:[1,1,1],sekt:[1,1,1],spitze:[1,.9,.8]};
 const PFLEGE_QP={menge:[0,1,3,6],sekt:[0,1,3,6],spitze:[0,2,6,12]}, PFLEGE_PREIS={spitze:[0,0,.05,.15]};
+// Seit 13.2.3 (Bauplan 13.2): Deckel je Weinberg = DECKEL_BASIS der Rolle + BODEN_ST_OE je Boden-Stufe + PFLEGE_ST_OE je Pflegestufe, also höchstens 90° und 104°.
+// Das Monatsmodell bleibt, es zählt der kleinere Wert aus Wetter und Deckel. Nur die Edelfäulnis der Spitzen-Sorte darf darüber, bis 150°.
+const DECKEL_BASIS={menge:66,spitze:80,sekt:66};
 // Reben-Abnutzung: Zum Jahreswechsel geht je Sorte ein Teil der Reben ein. VERLUST nennt je Stufe [ab Bodenschnitt, von Prozent, bis Prozent].
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.

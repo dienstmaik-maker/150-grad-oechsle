@@ -21,6 +21,11 @@ const rolleK=id=>(SORTEN[id]||{}).rolle||'menge';
 const pflegeMenge=(f,id)=>{const st=f.pflSt||0; return st?PFLEGE_MENGE[rolleK(id)][st-1]:SETZ_MENGE[Math.min(SETZ_MENGE.length-1,f.pflZ||0)]};
 const pflegeQP=(id,st)=>PFLEGE_QP[rolleK(id)][st||0];
 const pflegePreis=(id,st)=>((PFLEGE_PREIS[rolleK(id)]||[])[st||0])||0;
+// Seit 13.2.3: Deckel fürs Öchsle eines Weinbergs aus Rolle, Boden-Stufe und Pflegestufe.
+function deckel(id){const f=S.felder[id]||{}; return DECKEL_BASIS[rolleK(id)]+BODEN_ST_OE*(S.bodenSt||0)+PFLEGE_ST_OE*(f.pflSt||0)}
+// Obergrenze im Monatsmodell: der Deckel, mit Edelfäulnis bei der Spitzen-Sorte 150°.
+function oeGrenze(id){const f=S.felder[id]; return f&&f.edel&&rolleK(id)==='spitze'?150:deckel(id)}
+const feldId=f=>R().sorten.find(id=>S.felder[id]===f);
 const sorteSchild=(id,r)=>rolleVon(id)?`${rolleVon(id).name}: ${rolleVon(id).satz}`:eigText(eignung(id,r));
 const sternZahl=(id,r)=>{const e=eignung(id,r); return e>=1?3:e>=.85?2:1};
 const sternF=(id,r)=>[0,STERN_PREIS_1,STERN_PREIS_2,STERN_PREIS_3][sternZahl(id,r)];
@@ -856,11 +861,12 @@ function wachse(m){
     if((m===3||m===4)&&w==='frost'){f.frostF=.7; L.push(`Spätfrost schädigt die Blüte beim ${so.name}.`)}
     // Seit 13.2.2: statt der Jungreben der Mengen-Faktor der Rebpflege (pflegeMenge).
     if(m===5) f.menge=Math.round(f.reben*pflegeMenge(f,id)*so.ertrag*(reg.ertragF||1)*(.6+.4*S.boden/100)*(1+BODEN_ST_MENGE*(S.bodenSt||0))*f.frostF*festR(.9,1.1,fest(6,si,S.jahr,m)));
-    if(m===6){f.oe=OE_START+zuckerIm(id)+reg.warm+wbonus(w)+festI(-2,2,fest(5,si,S.jahr,m))+(S.spitze?SPITZE_OE:0); f.reif=5; f.ueber=0; f.plus=0}
+    // Seit 13.2.3: Das Wetter-Öchsle zählt höchstens bis zur Grenze des Weinbergs (oeGrenze: Deckel, Edelfäulnis der Spitzen-Sorte bis 150°).
+    if(m===6){f.oe=Math.min(oeGrenze(id),OE_START+zuckerIm(id)+reg.warm+wbonus(w)+festI(-2,2,fest(5,si,S.jahr,m))+(S.spitze?SPITZE_OE:0)); f.reif=5; f.ueber=0; f.plus=0}
     if(m>=7&&f.menge>0&&!f.gelesen){
       // f.plus merkt den Öchsle-Zuwachs des Monats für die Infoseite.
       const vor=f.oe;
-      f.oe=Math.min(150,f.oe+OE_PLUS[m-7]+wbonus(w)+festI(-2,2,fest(5,si,S.jahr,m))+(f.edel?edelBonus():0)+(segen?SP_SEGEN:0)); f.plus=f.oe-vor;
+      f.oe=Math.min(oeGrenze(id),f.oe+OE_PLUS[m-7]+wbonus(w)+festI(-2,2,fest(5,si,S.jahr,m))+(f.edel?edelBonus():0)+(segen?SP_SEGEN:0)); f.plus=f.oe-vor;
       if(f.edel) f.menge=Math.round(f.menge*.8);
       f.reif=clamp([35,70,92,100,100][m-7]+(w==='sonnig'?5:w==='regen'?-5:0),0,100);
       f.ueber=clamp([0,5,20,45,70][m-7]+(w==='sonnig'?5:0)+(f.edel?EDEL_UEBER:0),0,100);
@@ -1001,7 +1007,8 @@ const handFeld=f=>!!f.edel;
 const handBedarf=f=>Math.max(0,Math.ceil((f.reben-alleinReben())/HAND_REBEN));
 const handFehlt=f=>handFeld(f)&&S.helfer<handBedarf(f)&&maschEinsatz().length>0;
 const handlese=f=>handFeld(f)&&!handFehlt(f);
-function feldQ(f,la){return {oe:Math.min(150,f.oe+(la==='ueber'?5:0)),leseart:la,edel:f.edel,eis:f.gefroren,masch:handFehlt(f)?1:0}}
+// Seit 13.2.3: Auch die überreife Lese (+5°) bleibt unter der Grenze des Weinbergs.
+function feldQ(f,la){const id=feldId(f); return {oe:Math.min(id?oeGrenze(id):150,f.oe+(la==='ueber'?5:0)),leseart:la,edel:f.edel,eis:f.gefroren,masch:handFehlt(f)?1:0}}
 // Abnutzung bei der Lese (8.0): reben ist der Teil der Lese, den die Maschinen schaffen, M ihre Ernteleistung zusammen. Auslastung reben/M (höchstens 1),
 // je Maschine ABNUTZ_VOLL mal Auslastung mal Pflege-Faktor nach dem Zustand vor der ersten Lese des Jahres (ma.lj, ma.lz). Bruchteile sammelt ma.abn.
 function maschAbnutzung(reben,M){
