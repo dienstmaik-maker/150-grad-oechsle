@@ -33,30 +33,37 @@ const ROLLEN_NEU=1;
 const MIN_NORMAL={tafel:50,qba:60,kab:75,spat:85,aus:95,ba:125,tba:150};
 // Boni je Gebiet, ohne Eintrag gilt 1 oder 0: preisF (Faktor auf jeden Preis), wettPlus (Punkte bei Wettbewerben),
 // seit 6.0 (Schritt 3) ertragF (Faktor auf die Lese-Menge) und sektPreisF (Faktor auf den Sekt-Preis). Steckbrief und Gegner rechnen sie mit (regionF).
+// Seit 13.4.1 (Bauplan 13.4, Maik 21.11.2026): jedes Gebiet hat einen Weg und genau eine Stärke und ein Problem. edelF, edelSpatF, edelAus und frost sind weg.
+// weg ist der eigene Weg im Herbst der Spitzen-Sorte: edel (warm, Edelfäulnis bis November), frost (kühl, Eiswein bis Dezember), beide (Mitte, mit Tendenz).
+// Neu dazu: aukPreisF (Faktor auf Startgebot und Gebote bei Auktionen), reifeF (Faktor auf den Wertzuwachs in der Flasche), festF (Faktor auf das Ansehen
+// aus Festen), handLohnF (Faktor auf den Lohn der Erntehelfer, die von Hand lesen), aukF (Faktor auf die Chance einer Auktion).
+// Dass Erntemaschine und Vollernter in der Mosel-Steillage nicht fahren, kommt in 13.5. spiel ist der Satz zur Spielweise, erst der Hinweis für die erste Partie.
 const REGIONEN={
-  mosel:{name:'Mosel',sorten:['riesling','mueller','spaetb'],warm:0,edelSpatF:.5,frost:.25,wettPlus:3,text:'Steile Schieferhänge, Riesling-Land. Steillagen-Ruf: Bei Wettbewerben zählt jeder Wein 3 Punkte mehr.',min:MIN_NORMAL},
-  rheingau:{name:'Rheingau',sorten:['riesling','spaetb','silvaner'],warm:0,edelSpatF:.5,frost:.25,preisF:1.1,text:'Berühmtes Riesling-Land: Jeder Wein bringt 10 % mehr Geld.',min:MIN_NORMAL},
-  rheinhessen:{name:'Rheinhessen',sorten:['mueller','silvaner','portug'],warm:3,edelF:1.1,frost:.12,text:'Warmes Silvaner-Land: öfter Edelfäulnis, dafür selten Frost für Eiswein.',min:MIN_NORMAL},
-  pfalz:{name:'Pfalz',sorten:['riesling','mueller','portug'],warm:3,edelF:1.1,frost:.10,text:'Warm mit milden Wintern: öfter Edelfäulnis, dafür kaum Frost für Eiswein.',min:MIN_NORMAL},
-  franken:{name:'Franken',sorten:['silvaner','mueller','spaetb'],warm:-10,edelAus:true,frost:.45,text:'Kühle Silvaner-Heimat mit kalten Wintern, Eiswein-Land. Edelfäulnis kommt erst ab dem Auslese-Wert.',min:MIN_NORMAL},
-  wuerttemberg:{name:'Württemberg',sorten:['troll','riesling','spaetb'],warm:-10,edelAus:true,frost:.43,text:'Kühles Rotwein-Land mit Trollinger und kalten Wintern, Eiswein-Land. Edelfäulnis kommt erst ab dem Auslese-Wert.',min:MIN_NORMAL}
+  mosel:{name:'Mosel',sorten:['riesling','mueller','spaetb'],warm:0,weg:'beide',wettPlus:3,handLohnF:1.2,text:'Steile Schieferhänge, Riesling-Land. Steillagen-Ruf: Bei Wettbewerben zählt jeder Wein 3 Punkte mehr.',min:MIN_NORMAL},
+  rheingau:{name:'Rheingau',sorten:['riesling','spaetb','silvaner'],warm:0,weg:'beide',preisF:1.1,aukF:.7,text:'Berühmtes Riesling-Land: Jeder Wein bringt 10 % mehr Geld.',min:MIN_NORMAL},
+  rheinhessen:{name:'Rheinhessen',sorten:['mueller','silvaner','portug'],warm:3,weg:'edel',aukPreisF:.8,text:'Warmes Silvaner-Land: Land ist hier günstig, Eiswein selten.',min:MIN_NORMAL},
+  pfalz:{name:'Pfalz',sorten:['riesling','mueller','portug'],warm:3,weg:'edel',ertragF:1.1,text:'Warm mit milden Wintern: Die Reben tragen mehr, Eiswein gibt es selten.',min:MIN_NORMAL},
+  franken:{name:'Franken',sorten:['silvaner','mueller','spaetb'],warm:-10,weg:'frost',reifeF:1.25,text:'Kühle Silvaner-Heimat mit kalten Wintern, Eiswein-Land. Der Wein gewinnt in der Flasche schneller an Wert.',min:MIN_NORMAL},
+  wuerttemberg:{name:'Württemberg',sorten:['troll','riesling','spaetb'],warm:-10,weg:'frost',festF:1.5,text:'Kühles Rotwein-Land mit Trollinger und kalten Wintern, Eiswein-Land. Feste bringen hier mehr Ansehen.',min:MIN_NORMAL}
 };
 // Version 7.0 (Schritt I): Texte für den Steckbrief. stufe aus den Messungen von Schritt H (Präsident auf Mittel in der Mitte: Rheinhessen und Pfalz
 // um Jahr 100, Rheingau und Mosel 108 bis 122, Franken und Württemberg 116 bis 117 mit großer Streuung und weniger Geld). Franken und Württemberg
 // sind nach Maiks Wunsch die riskanten Eiswein-Gebiete für Könner. stil ist das Spielstil-Schild, sekt das Sekt-Potenzial (1 bis 3 Flaschen),
 // lohnt und strat (zwei bis drei Schritte) stehen im Steckbrief bei "Neues Spiel" und unter "Dein Gebiet".
+// Seit 13.4.1: Die Schilder leicht, mittel, riskant (stufe, stil, GEBIET_STUFE) sind weg. spiel ist der Satz zur Spielweise aus dem Bauauftrag,
+// erst der Hinweis bei der Gebietswahl. Platzhalter, der Wortlaut kommt in 13.8, ebenso lohnt und strat.
 const GEBIET_TEXT={
-  mosel:{stufe:'mittel',stil:'Gut planbar',sekt:3,lohnt:'Auf Wettbewerbe und Riesling-Auslese setzen, Sekt in kühlen Jahren',
+  mosel:{spiel:'Über Wettbewerbe gewinnen',sekt:3,lohnt:'Auf Wettbewerbe und Riesling-Auslese setzen, Sekt in kühlen Jahren',
     strat:['Riesling braucht lange im Keller, die ersten Jahre sind knapp. Federweißer bringt im Herbst schnelles Geld für den Notfall.','Gute Weine zum Wettbewerb: Der Steillagen-Ruf bringt jedem Wein 3 Punkte mehr.','Ab Winzer Sekt aus Riesling machen, er ist ein Sekt-Star.']},
-  rheingau:{stufe:'mittel',stil:'Sehr verlässlich',sekt:3,lohnt:'Auf den Verkauf setzen, Riesling darf lange reifen',
+  rheingau:{spiel:'Teuer verkaufen',sekt:3,lohnt:'Auf den Verkauf setzen, Riesling darf lange reifen',
     strat:['Riesling braucht lange im Keller, die ersten Jahre sind knapp. Nicht zu viel Land auf einmal kaufen.','Jeder Wein bringt 10 % mehr, lange Reife lohnt sich hier besonders.','Spätburgunder kommt schon als Jungwinzer, mit dem Riesling hast du zwei Sekt-Stars.']},
-  rheinhessen:{stufe:'leicht',stil:'Kalkulierbar',sekt:1,lohnt:'Auf Edelfäulnis und große Mengen setzen',
+  rheinhessen:{spiel:'Schnell wachsen',sekt:1,lohnt:'Auf Edelfäulnis und große Mengen setzen',
     strat:['Silvaner bringt schon nach 6 Monaten Geld, der Start ist entspannt.','Im Herbst ruhig länger hängen lassen: mehr Zucker und öfter Edelfäulnis machen Auslese und Beerenauslese leicht.','Sekt nur nebenbei, hier wächst keine Sekt-Star-Sorte.']},
-  pfalz:{stufe:'leicht',stil:'Flexibel',sekt:2,lohnt:'Auf Edelfäulnis pokern, Riesling als Sekt',
+  pfalz:{spiel:'Viel ernten und verkaufen',erst:'Empfohlen für die erste Partie',sekt:2,lohnt:'Auf Edelfäulnis pokern, Riesling als Sekt',
     strat:['Riesling braucht lange im Keller, die ersten Jahre sind knapp. Federweißer hilft im Herbst über die Runden.','Warm und sonnig: Edelfäulnis kommt oft, edelsüße Weine gelingen hier am leichtesten.','Eiswein gibt es fast nie, dafür verzeiht die Pfalz viele Wege.']},
-  franken:{stufe:'riskant',stil:'Hohes Risiko',sekt:1,lohnt:'Auf Eiswein pokern',
+  franken:{spiel:'Flaschen liegen lassen',sekt:1,lohnt:'Auf Eiswein pokern',
     strat:['Kalte Winter: Im Dezember friert es hier oft, das ist die Chance auf Eiswein.','Bei Edelfäulnis im Herbst ein Feld hängen lassen und auf Frost im Dezember hoffen. Eiswein bringt hier am meisten.','Für Könner: Franken bringt weniger Geld als die anderen Gebiete, jeder Fehler wiegt schwerer.']},
-  wuerttemberg:{stufe:'riskant',stil:'Kalkuliertes Risiko',sekt:2,lohnt:'Auf Rotwein setzen, Eiswein nur gezielt',
+  wuerttemberg:{spiel:'Feste feiern',sekt:2,lohnt:'Auf Rotwein setzen, Eiswein nur gezielt',
     strat:['Trollinger trägt viel und ist nach 6 Monaten verkaufsreif, damit kommt am Anfang Geld rein.','Eiswein nur mit Riesling oder Spätburgunder versuchen, den Trollinger lieber rechtzeitig lesen.','Für Könner: Württemberg bringt weniger Geld als die warmen Gebiete, jeder Fehler wiegt schwerer.']}
 };
 // Version 11.4: Sorten nach Rollen je Gebiet (Menge, Sekt, Spitze, in dieser Reihenfolge kommen sie auch) und die zweite Fassung von lohnt und strat.
@@ -77,7 +84,6 @@ const GEBIET_ROLLEN={
 };
 const REGIONEN_ROLLEN={};
 for(const r of Object.keys(REGIONEN)) REGIONEN_ROLLEN[r]=Object.assign(Object.create(REGIONEN[r]),{sorten:GEBIET_ROLLEN[r].sorten});
-const GEBIET_STUFE={leicht:['🟢','Leicht'],mittel:['🟡','Mittel'],riskant:['🔴','Riskant']};
 // Eignung der Rebsorte im Gebiet: 1 = sehr gut, .85 = gut, .7 = geht noch. Wirkt als Faktor auf die Qualitätspunkte.
 const EIGNUNG={mosel:{riesling:1,mueller:.85,spaetb:.7},rheingau:{riesling:1,spaetb:.85,silvaner:.7},rheinhessen:{silvaner:1,mueller:.85,portug:.7},
   pfalz:{riesling:1,portug:.85,mueller:.7},franken:{silvaner:1,mueller:.85,spaetb:.7},wuerttemberg:{troll:1,riesling:.85,spaetb:.7}};
@@ -266,6 +272,8 @@ const MANAGER=[
   {bereich:'keller',stufe:3,rang:8,aufgaben:[]}
 ].map(e=>Object.defineProperty(Object.assign(e,{kosten:MGR_KOSTEN[e.stufe-1]}),'lohn',{get:()=>lohnF(MGR_LOHN[e.stufe-1]),enumerable:true}));
 // Schummelei: Kälteeinbruch im November, Panschen, Weinkontrolle, Sabotage. Alle Zahlen an einer Stelle.
+// Seit 13.4.1: Frost im Winterwetter (Dezember bis Februar) für alle Gebiete gleich, der alte Wert der Mitte (Annahme von Claude, frost je Gebiet ist weg).
+const WINTER_FROST=.25;
 const KAELTE=.25, ZUCKER_MAX=20, ZUCKER_ERLAUBT=10, SCHMIER_ANTEIL=.1, SCHMIER_MIN=2000;
 const STRAFE_MIN=10000, STRAFE_ANS=30, STRAFE_ANS_WEITER=10, BESTECH_MIN=5000, BESTECH_MAX=50000, BESTECH_NEIN_ANS=20;
 const SAB_KONTAKT=20000, SAB_MIN=5000, SAB_MAX=50000, SAB_AUFFLIEGEN=.2, SAB_STRAFE=30000, SAB_STRAFE_ANS=40, SAB_RANG=FREI.sabotage.bis;

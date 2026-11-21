@@ -485,7 +485,8 @@ function erbAnsehen(){return spBuerger(genNr())&&spLohn(8)?SP_ERBE:ERB_ANSEHEN}
 // Seit 10.3 (A21): Wer die achte Spende selbst gemacht hat, startet im Verband mit SP_STIMM mehr Stimmung, beim Amtsantritt, nach jeder Wahl und nach einer Abwahl.
 const spStimm=()=>spLohn(8)?SP_STIMM:0;
 function ladenEigen(){return Math.round(LADEN_EIGEN*(spLohn(6)?SP_LADEN:1))}
-function festAns(F){return F.ans*(F===FESTE.hoffest&&spLohn(7)?SP_HOFFEST:1)}
+// Seit 13.4.1: festF des Gebiets (Württemberg) auf das Ansehen aus Festen.
+function festAns(F){return F.ans*(F===FESTE.hoffest&&spLohn(7)?SP_HOFFEST:1)*(R().festF||1)}
 function spDorfLohn(){const a=S.loehne&&S.loehne.helfer; return S.spDorf===S.jahr&&S.monat>=SP_DORF_VON&&S.monat<=SP_DORF_BIS&&a&&a.length?a[a.length-1]:0}
 function altSpende(){if(!S.spenden) S.spenden=[]; if(S.spJahr==null) S.spJahr=0}
 // Eine Rate zahlen. Ist der Betrag voll, kommen Ansehen, Ehrung, Belohnung, die kleine Feier und der Artikel im nächsten Winzerboten.
@@ -638,11 +639,12 @@ function weltSieg(e,was,F){
 function auktionHa(){const r=Math.random();return r<.4?1:r<.73?2:r<.95?3:r<.995?5:10}
 function neueAuktion(spitze){
   if(spitze){const B=misch(NACHBARN).slice(0,3).map(n=>({name:n,limit:rint(64,144)*5000})); S.auktion={ha:SPITZE_HA,start:SPITZE_START,schritt:10000,gebot:SPITZE_START,fuehrer:B[rint(0,2)].name,bieter:B,ende:null,text:'',phase:0,spitze:1}; return}
-  const ha=auktionHa(), start=ha*8000, B=misch(NACHBARN).slice(0,rint(2,3)).map(n=>({name:n,limit:Math.round(ha*rnd(11000,30000)/500)*500}));
+  // Seit 13.4.1: aukPreisF des Gebiets (Rheinhessen) auf Startgebot und alle Gebote, so wird das Land günstiger.
+  const pf=R().aukPreisF||1, ha=auktionHa(), start=Math.round(ha*8000*pf/500)*500, B=misch(NACHBARN).slice(0,rint(2,3)).map(n=>({name:n,limit:Math.round(ha*rnd(11000,30000)*pf/500)*500}));
   for(const g of S.gegner) if(g.region===S.region){
     const t=GEGNER_TYP[g.typ];
     // Der Zufall wird immer gezogen, auch wenn der Gegner am Deckel ist und nicht mitbietet.
-    const lim=Math.round(Math.min(g.geld+(g.typ==='zocker'?30000:0),ha*rnd(14000,26000)*(1+t.biet*bietF()*.6))/500)*500;
+    const lim=Math.round(Math.min(g.geld+(g.typ==='zocker'?30000:0),ha*rnd(14000,26000)*pf*(1+t.biet*bietF()*.6))/500)*500;
     if(g.ha+ha<=gegnerDeckel(g)) B.push({name:g.name,ki:g.id,limit:lim});
   }
   const offen=B.filter(b=>b.limit>=start);
@@ -811,7 +813,8 @@ function fehlText(){
   if(f.lagerarb) t.push(`${f.lagerarb} Lagerarbeiter`);
   return t.length?`${f.helfer+f.lagerarb===1?'Es fehlt':'Es fehlen'} ${t.join(' und ')}`:'';
 }
-function neuesLohnAngebot(){S.angebot={};for(const k of LOHN_ARTEN) S.angebot[k]=Math.round(rint(LOHN_MIN/10,LOHN_MAX/10)*LOHN_F*(spLohn(3)?SP_LOHN:1))*10}
+// Seit 13.4.1: handLohnF des Gebiets (Mosel) auf den Lohn der Erntehelfer, sie lesen von Hand.
+function neuesLohnAngebot(){S.angebot={};for(const k of LOHN_ARTEN) S.angebot[k]=Math.round(rint(LOHN_MIN/10,LOHN_MAX/10)*LOHN_F*(spLohn(3)?SP_LOHN:1)*(k==='helfer'?R().handLohnF||1:1))*10}
 function lohnSumme(k){return S.loehne[k].reduce((a,b)=>a+b,0)}
 function lohnListe(k){const z=new Map();for(const n of S.loehne[k]) z.set(n,(z.get(n)||0)+1);return [...z].map(([n,c])=>`${c} × ${eur(n)}`).join(', ')}
 // Günstig ist das untere Sechstel der Spanne, teuer das obere (bis 11.4: bis 250 und ab 450 €).
@@ -840,7 +843,7 @@ const sektAufHefe=()=>S.lots.filter(l=>l.sekt&&l.status==='flasche'&&l.flMonate<
 // hefe ist das Hefelager in Monaten, nur gespeichert, wenn es länger als SEKT_REIFE ist.
 /* ================= Wetter ================= */
 function wuerfelWetter(m,u){
-  const r=u!=null?u:Math.random(), fr=R().frost;
+  const r=u!=null?u:Math.random(), fr=WINTER_FROST;
   let t;
   if(m===11||m<=1) t=[['frost',fr],['kalt',.4],['regen',.2],['mild',1]];
   else if(m===10) t=[['kalt',.45],['regen',.3],['mild',1]];
@@ -1063,13 +1066,13 @@ function verkaufAb(sorte,st){
   return `⏳ verkaufsfertig frühestens ${MON[t%12]} ${S.jahr+Math.floor(t/12)} (in ${n} ${n===1?'Monat':'Monaten'})`;
 }
 // Wie oft es im eigenen Gebiet im Dezember friert, für Lese und Weinqualität.
-const frostText=()=>`❄️ Frost im Dezember gibt es im Gebiet ${R().name} in rund ${Math.round(R().frost*100)}\u00a0% der Jahre`;
+const frostText=()=>`❄️ Frost im Dezember gibt es im Gebiet ${R().name} in rund ${Math.round(WINTER_FROST*100)}\u00a0% der Jahre`;
 /* ================= Lagerung und Preis ================= */
 // Seit 12.1: Sekt mit langem Hefelager ruht länger und hält um genauso viele Monate länger.
 function lager(l){const b=lagerBasis(l), h=l.hefe||SEKT_REIFE;return l.sekt?{min:h,max:b.max+h-SEKT_REIFE,rate:b.rate}:b}
 function lagerBasis(l){
   // Seit 7.0 (Schritt E) zählt der Kellermeister auf Stufe 3 wie ein Stück Kellerausbau dazu (mgrReife, bis Schritt H neutral).
-  const so=SORTEN[l.sorte], mr=mgrReife(), K=(S.keller||0)+mr.min, rf=so.reife*(1+KELLER_REIFE*(S.keller||0)+mr.rate);
+  const so=SORTEN[l.sorte], mr=mgrReife(), K=(S.keller||0)+mr.min, rf=so.reife*(1+KELLER_REIFE*(S.keller||0)+mr.rate)*(R().reifeF||1);
   if(l.stufe==='feder') return {min:0,max:3,rate:0};
   if(l.stufe==='tafel'||l.stufe==='qba') return {min:2,max:Math.max(24,Math.round(so.maxL/3)),rate:rf/2};
   if(l.stufe==='eis') return {min:Math.max(1,Math.round(so.minL*1.5)-K),max:Infinity,rate:rf};
@@ -1474,7 +1477,7 @@ const eisEigen=()=>S.monat===11&&R().sorten.some(id=>S.felder[id].gefroren&&S.fe
 const eisT=(art,n,wo)=>{const L=EIS_TEXT[art], x=L[rint(0,L.length-1)], f=s=>s.replace(/\{n\}/g,n||'').replace(/\{wo\}/g,wo||''); return [f(x[0]),f(x[1])]};
 function eisGeschichte(){
   if(S.monat!==11||eisEigen()||S.eisZ===S.jahr-1||Math.random()>=EIS_Z) return;
-  const G=S.gegner||[], los=L=>L[rint(0,L.length-1)], kuehl=Object.keys(REGIONEN).filter(r=>REGIONEN[r].frost>=EIS_KUEHL);
+  const G=S.gegner||[], los=L=>L[rint(0,L.length-1)], kuehl=Object.keys(REGIONEN).filter(r=>REGIONEN[r].weg==='frost');
   if(Math.random()<EIS_PLEITE&&G.length){
     const A=G.filter(x=>x.eisJ!==S.jahr), Zo=A.filter(x=>x.typ==='zocker');
     const g=G.find(x=>x.eisPl===S.jahr)||los(Zo.length?Zo:A.length?A:G);
@@ -1709,7 +1712,8 @@ function etappe3Monat(Z){
     neueAuktion(1); S.spitzeVers=S.jahr;
     schlag(57,`Die Spitzenlage ${wo} kommt unter den Hammer`,`Die beste Lage weit und breit: ${SPITZE_HA}\u00a0Hektar Steilhang in voller Südsonne. Nächsten Monat wird versteigert, das Startgebot liegt bei ${eur(SPITZE_START)}. Wer sie bekommt, erntet jedes Jahr süßere Trauben.`,'spitzenlage');
   }
-  if(!S.auktion&&AUK_MONATE.includes(S.monat)&&(S.jahr-START_JAHR)*12+S.monat>=6&&Math.random()<AUK_CHANCE){
+  // Seit 13.4.1: aukF des Gebiets (Rheingau) auf die Chance einer Auktion.
+  if(!S.auktion&&AUK_MONATE.includes(S.monat)&&(S.jahr-START_JAHR)*12+S.monat>=6&&Math.random()<AUK_CHANCE*(R().aukF||1)){
     neueAuktion();
     schlag(55,`Weinberg ${wo} zu versteigern`,`Nächsten Monat kommen ${S.auktion.ha}\u00a0Hektar unter den Hammer, das Startgebot liegt bei ${eur(S.auktion.start)}.${!ab?nichtDu:aukDeckel()?' '+AUK_ZU_GROSS:' Halte Geld oder Kreditrahmen bereit.'}`,'auktion',{archiv:1});
   }
@@ -2404,7 +2408,7 @@ function fuVerlauf(){
 const fuStandSp=()=>fuNach()?['handel','keller','weingut'].find(fuDa)||'gut':'winzer';
 // Seit 10.3 (C11, C38, C6): Platzhalter für die Startsorte des Gebiets, den Wertzuwachs aller Sorten und die Frost-Häufigkeit.
 const fuPz=s=>Math.round(s.reife*100)+'\u00a0%';
-function fuFrostJahre(){const f=R().frost; return f>=.4?'fast jedes zweite Jahr':f>=.2?'etwa jedes vierte Jahr':'nur etwa jedes zehnte Jahr'}
+function fuFrostJahre(){const f=WINTER_FROST; return f>=.4?'fast jedes zweite Jahr':f>=.2?'etwa jedes vierte Jahr':'nur etwa jedes zehnte Jahr'}
 function fuText(t,chef){
   return t.replace(/\{(Mein Lieber|mein Lieber|Nachbar|Sorte|Reife|Zuwachs|Haltbar|Sortenzuwachs|Frostjahre|Sektstar|Dritte Sorte|Langsorte|Startgeld|Hürde ([^}]+))\}/g,(x,a,h)=>{
     if(h) return R().min[FU_HUERDE[h]]+'°';

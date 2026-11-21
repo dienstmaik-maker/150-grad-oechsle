@@ -480,8 +480,9 @@ function vStart(){
     <label class="feld">Name des Weinguts<input type="text" id="nm" maxlength="${NAME_MAX}" placeholder="Rebenreich" autocomplete="off" value="${esc(NEU.name)}"></label>
     <div class="feld">Anrede</div><div class="zwei">${[['m','Herr'],['w','Frau']].map(([k,x])=>`<button class="wahl neuwahl ${NEU.anrede===k?'an':''}" data-a="neuOpt" data-k="anrede" data-v="${k}"><b>${x}</b></button>`).join('')}</div>`;
   const gebiete=Object.entries(REGIONEN).map(([id,r])=>{
-    const G=GEBIET_TEXT[id], [ssym,stufe]=GEBIET_STUFE[G.stufe], an=NEU.region===id, sb=steckbrief(id,{fen:1,neu:!!ROLLEN_NEU});
-    return fenster('g_'+id,r.name,`<button class="wahl gwahl" data-a="region" data-id="${id}" aria-pressed="${an}"><img class="gs" src="bilder/gebiet-${id}.webp" alt=""><span><b>${ssym} ${stufe} · ${G.stil}</b><small>${an?'✓ Gewählt':'Tippen zum Wählen'}</small></span></button>`,
+    // Seit 13.4.1: statt der Schilder leicht, mittel, riskant der Satz zur Spielweise und bei der Pfalz der Hinweis für die erste Partie.
+    const G=GEBIET_TEXT[id], an=NEU.region===id, sb=steckbrief(id,{fen:1,neu:!!ROLLEN_NEU});
+    return fenster('g_'+id,r.name,`<button class="wahl gwahl" data-a="region" data-id="${id}" aria-pressed="${an}"><img class="gs" src="bilder/gebiet-${id}.webp" alt=""><span><b>🎯 ${G.spiel}</b>${G.erst?`<small>⭐ ${G.erst}</small>`:''}<small>${an?'✓ Gewählt':'Tippen zum Wählen'}</small></span></button>`,
       {kl:an?'gan':'',buch:'',i:`<div class="sb"><b>${sb.name}</b> <span class="mut">${sb.art}</span>${sb.rumpf}</div>`})}).join('');
   return `<div id="top"><div><b>150 Grad Öchsle</b><small>Neues Spiel auf Spielstand ${SLOT+1}</small></div></div><main>
   ${[0,1,2].some(i=>roh(i))?'<div class="btns" style="margin:0 0 12px"><button class="sec klein" data-a="menue">◀ Zu den Spielständen</button></div>':''}
@@ -820,27 +821,31 @@ const sterne=n=>`<span class="sterne">${'★'.repeat(n)}<i>${'★'.repeat(3-n)}<
 // Seit 11.4: o.neu wählt die Fassung (Rollen oder alte Sorten), ohne Angabe gilt die der laufenden Partie (rollenAn).
 function steckbrief(id,o={}){
   const neu=o.neu??rollenAn(), r=REG(id,neu), [sym,art]=gebietArt(r), mi=r.min, pz=x=>Math.round(x*100)+'\u00a0%';
-  const bonus=r.wettPlus?'Steillagen-Ruf':r.preisF?'berühmte Lage':r.warm>0?'viel Sonne':'kalte Winter';
-  const stark=[r.edelF?`${pz(r.edelF-1)} öfter Edelfäulnis.`:'',r.warm<0?`Oft Frost für Eiswein. Edelfäulnis erst ab dem Auslese-Wert, das schont Kabinett und Spätlese.`:'',
-    r.wettPlus?`Bei Wettbewerben zählt jeder Wein ${r.wettPlus} Punkte mehr.`:'',r.preisF?`Jeder Wein bringt ${pz(r.preisF-1)} mehr Geld.`:'',r.ertragF>1?`Die Reben tragen ${pz(r.ertragF-1)} mehr.`:'',r.sektPreisF>1?`Sekt bringt ${pz(r.sektPreisF-1)} mehr Geld.`:'',r.edelSpatF?'Edelfäulnis kommt vor dem Auslese-Wert nur selten, Kabinett und Spätlese bleiben öfter heil.':''].join(' ').trim();
-  const schwach=[r.warm>0?'Kaum Frost im Dezember, Eiswein ist selten.':r.warm<0?'Edelsüße Weine sind schwer.':'Weder oft Frost noch öfter Edelfäulnis.',
+  // Seit 13.4.1: Stärke und Problem aus den Konstanten in REGIONEN, dazu der Weg im Herbst. Platzhalter-Texte, der Wortlaut kommt in 13.8.
+  const bonus=r.wettPlus?'Steillagen-Ruf':r.preisF?'berühmte Lage':r.ertragF>1?'volle Trauben':r.aukPreisF<1?'günstiges Land':r.reifeF>1?'Flaschenreife':r.festF>1?'Feste':'';
+  const stark=[r.ertragF>1?`Die Reben tragen ${pz(r.ertragF-1)} mehr.`:'',r.aukPreisF<1?`Land ist bei Auktionen ${pz(1-r.aukPreisF)} günstiger.`:'',
+    r.reifeF>1?`Wein gewinnt in der Flasche ${pz(r.reifeF-1)} schneller an Wert.`:'',r.festF>1?`Feste bringen ${pz(r.festF-1)} mehr Ansehen.`:'',
+    r.wettPlus?`Bei Wettbewerben zählt jeder Wein ${r.wettPlus} Punkte mehr.`:'',r.preisF?`Jeder Wein bringt ${pz(r.preisF-1)} mehr Geld.`:'',r.sektPreisF>1?`Sekt bringt ${pz(r.sektPreisF-1)} mehr Geld.`:''].join(' ').trim();
+  const schwach=[r.weg==='edel'?'Eiswein gibt es nur in einem harten Winter, den der Winzerbote ankündigt.':r.weg==='frost'?'Trockenbeerenauslese ist schwer: Edelfäulnis gibt es nur in einem goldenen Herbst, den der Winzerbote ankündigt.':'',
+    r.handLohnF>1?`Die Lese von Hand kostet ${pz(r.handLohnF-1)} mehr Lohn.`:'',r.aukF<1?`Es gibt ${pz(1-r.aukF)} weniger Auktionen.`:'',
     r.ertragF<1?`Die Reben tragen ${pz(1-r.ertragF)} weniger.`:'',r.sektPreisF<1?`Sekt bringt ${pz(1-r.sektPreisF)} weniger Geld.`:''].join(' ').trim();
-  const G=gebietText(id,neu), [ssym,stufe]=GEBIET_STUFE[G.stufe], lohnt=G.lohnt, SF=sortenFolge(id,neu);
+  const wegT={edel:'Edelfäulnis, wer bis November wartet',frost:'Eiswein, wer bis Dezember wartet',beide:'Edelfäulnis und Eiswein, mit der Tendenz im Winzerboten'}[r.weg];
+  const G=gebietText(id,neu), lohnt=G.lohnt, SF=sortenFolge(id,neu);
   const stars=SF.filter(s=>SORTEN[s].sektStar).map(s=>SORTEN[s].name);
   const sekt=`<span class="sterne">${'🍾'.repeat(G.sekt)}<i>${'🍾'.repeat(3-G.sekt)}</i></span>`;
   // Seit 7.0: dazu, ab wann die Sorte kommt (sortenFolge, SORTE_RANG).
   const so=SF.map((s,i)=>{const e=eignung(s,id); return `${dot(s)}${SORTEN[s].name} ${rolleVon(s)?`<span class="rolle">${rolleVon(s).name}</span>`:sterne(e>=1?3:e>=.85?2:1)} <span class="mut">${i?`ab ${RAENGE[SORTE_RANG[i]].name}`:'zum Start'}</span>`}).join('<br>');
   const kv=(a,x)=>`<div class="kv"><span>${a}</span><span>${x}</span></div>`;
   // o.fen (seit 7.4): ohne eigene Karte, für das zugeklappte Fenster "Dein Gebiet" im Weinberg. Kopf und Rumpf kommen einzeln zurück.
-  const rumpf=`<div class="schild ${G.stufe}">${ssym} ${stufe} · ${G.stil}</div><div class="sbz">${so}</div>
+  const rumpf=`<div class="schild">🎯 ${G.spiel}${G.erst?` · ⭐ ${G.erst}`:''}</div><div class="sbz">${so}</div>
     ${kv('💶 Geld',sterne(r.preisF?3:2))}${kv('🎖️ Ansehen',sterne(r.wettPlus?3:2))}${neu?kv('🍾 Regional-Sekt',`vom ${stars[0]}`):kv('🍾 Sekt-Potenzial',sekt)}
     <div class="mut" style="font-size:13px">${neu?`Sekt vom ${stars[0]} bringt ${Math.round((SEKT_STAR-1)*100)} % mehr als Sekt aus den anderen Sorten.`:stars.length?`Sekt-Stars hier: ${stars.join(' und ')}, sie bringen als Sekt ${Math.round((SEKT_STAR-1)*100)} % mehr.`:'Hier wächst keine Sekt-Star-Sorte.'} Sekt gibt es ab ${RAENGE[R_SEKT].name}.</div>
     <div class="sbz">💪 ${stark}<br>⚠️ ${schwach}</div>
     <div class="sbz">📏 Hürden: Spätlese ${mi.spat}°, Auslese ${mi.aus}°, Beerenauslese ${mi.ba}°</div>
-    ${kv('❄️ Frost im Dezember',`${pz(r.frost)} der Jahre`)}${kv('🌨️ Kälteeinbruch im November',`im Schnitt jedes ${Math.round(1/KAELTE)}. Jahr`)}${kv('🌸 Spätfrost im Frühjahr',`rund jedes ${SPAET_JAHR}. Jahr`)}
+    ${kv('🍂 Herbst der Spitzen-Sorte',wegT)}${kv('🌸 Spätfrost im Frühjahr',`rund jedes ${SPAET_JAHR}. Jahr`)}
     <div class="lohnt">🎯 Lohnt sich hier: ${lohnt}</div>
     <div class="sbz"><b>So gehst du vor</b><ol class="strat">${G.strat.map(x=>`<li>${x}</li>`).join('')}</ol></div>`;
-  return o.fen?{name:`${sym} ${r.name}`,art:`${art}, ${bonus}`,rumpf}:`<div class="card sb"><h3>${sym} ${r.name}<small>${art}, ${bonus}</small></h3>${rumpf}${o.buch?mib('gebiete'):''}</div>`;
+  return o.fen?{name:`${sym} ${r.name}`,art:`${art}${bonus?', '+bonus:''}`,rumpf}:`<div class="card sb"><h3>${sym} ${r.name}<small>${art}${bonus?', '+bonus:''}</small></h3>${rumpf}${o.buch?mib('gebiete'):''}</div>`;
 }
 // Version 4.1: Buch mit der Spielanleitung, Texte in anleitung.js. BUCH: null = zu, '' = Inhaltsverzeichnis, sonst die Kennung des Kapitels.
 // "📖 Mehr im Buch" hinter dem i eines Fensters schlägt das Kapitel des Ortes auf (BUCH_ORT), Fenster von unten haben eigene Links (Kasse, Lese, Anmelden, Weinlexikon).
