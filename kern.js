@@ -491,7 +491,9 @@ function spBote(s){
   schlag(66,f(SP_BOTE[s][0]),f(SP_BOTE[s][1]),spFoto(s),{du:1,archiv:1,...(s===8?{gold:1}:{})});
 }
 function fassBelegt(){return S.lots.filter(l=>l.status==='fass').reduce((a,l)=>a+l.liter,0)}
-function lotName(l){return `${l.jahrgang} ${SORTEN[l.sorte].name}${l.stufe?' '+STUFEN[l.stufe].name:''}${l.sekt?'-Sekt':''}${l.sekt&&hefeLang(l)?` (${l.hefe} Monate Hefelager)`:''}`}
+// Seit 13.2.5: Zusätze aus Pflege und Boden, zum Beispiel "Trockenbeerenauslese Grand Cru vom Terroir". Alle Namen von Weinen kommen aus lotName.
+const weinZusatz=l=>`${(l.pfl||0)>=NAME_PFLEGE_AB?' '+PFLEGE_STUFEN[l.pfl]:''}${(l.bst||0)>=NAME_BODEN_AB?' vom '+BODEN_STUFEN[l.bst]:''}`;
+function lotName(l){return `${l.jahrgang} ${SORTEN[l.sorte].name}${l.stufe?' '+STUFEN[l.stufe].name:''}${l.sekt?'-Sekt':''}${weinZusatz(l)}${l.sekt&&hefeLang(l)?` (${l.hefe} Monate Hefelager)`:''}`}
 function rahmen(){return RAENGE[S.rang].rahmen}
 // Für Anzeigen (seit Teil D): ein Tabellenwert mit dem Faktor seiner Quelle, so wie ihn ruhm auf Stufe mittel gutschreibt.
 function ansQ(n,q){return Math.max(1,Math.round(n*(ANS_F[q]||1)))}

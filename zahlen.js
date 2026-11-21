@@ -124,6 +124,9 @@ const DECKEL_BASIS={menge:66,spitze:80,sekt:66};
 // Seit 13.2.4 (Bauplan 13.2): Rebschnitt von Hand je Sorte von Januar bis SCHNITT_BIS (3 = April), SCHNITT_HA Euro je Hektar der Sorte, so viel wie das Düngen.
 // Wer bis Ende April schneidet, hat ein gutes Pflegejahr (13.2.2). Die Abgabe an die Erntehelfer kommt in 13.5.
 const SCHNITT_HA=DUENGER_HA, SCHNITT_BIS=3;
+// Seit 13.2.5 (Bauplan 13.2): Stufen auf der Flasche. Ab Pflegestufe NAME_PFLEGE_AB (Premier Cru) steht sie im Weinnamen, ab Boden-Stufe NAME_BODEN_AB (Terroir)
+// der Zusatz "vom Terroir", höchstens diese zwei Zusätze. Festgehalten bei der Lese (l.pfl, l.bst), keine neuen Felder auf dem Siegelbrett, keine neuen Klassen.
+const NAME_PFLEGE_AB=2, NAME_BODEN_AB=3;
 // Reben-Abnutzung: Zum Jahreswechsel geht je Sorte ein Teil der Reben ein. VERLUST nennt je Stufe [ab Bodenschnitt, von Prozent, bis Prozent].
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
