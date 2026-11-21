@@ -28,19 +28,18 @@ const SORTEN_ROLLEN={
 };
 // Schalter für die Messung: 1 = neue Partien bekommen die Rollen. Mit 0 startet auch ein neues Spiel mit den alten Sorten (Lauf s114_alt).
 const ROLLEN_NEU=1;
-// Hürden in zwei Stufen: vier Gebiete mit normalen Mindestwerten, Franken und Württemberg mit niedrigeren.
-// Die beiden sind dafür 10° kühler (warm), unter dem Strich also 3° hinter Mosel und Rheingau. Seit 7.0 (Schritt H) -10 statt -11:
-// Mit -11 schaffte der Test-Spieler in Franken den Präsidenten nur in 4 von 9 Partien, mit -10 in 9 von 9 (Mitte Jahr 116). Sie bleiben die riskanten Gebiete.
-const MIN_NORMAL={tafel:50,qba:60,kab:75,spat:85,aus:95,ba:125,tba:150}, MIN_KUEHL={tafel:45,qba:53,kab:68,spat:78,aus:88,ba:118,tba:150};
+// Seit 13.3.1 (Bauplan 13.3, Maik 21.11.2026): eine Öchsle-Tabelle für alle sechs Gebiete. Der feste Wärme-Zuschlag warm wirkt nicht mehr,
+// weder auf das Öchsle im Juni noch auf die Temperatur. warm bleibt nur als Schild (gebietArt: Warm, Mitte, Kühl). Das Wetter von Jahr zu Jahr bleibt.
+const MIN_NORMAL={tafel:50,qba:60,kab:75,spat:85,aus:95,ba:125,tba:150};
 // Boni je Gebiet, ohne Eintrag gilt 1 oder 0: preisF (Faktor auf jeden Preis), wettPlus (Punkte bei Wettbewerben),
 // seit 6.0 (Schritt 3) ertragF (Faktor auf die Lese-Menge) und sektPreisF (Faktor auf den Sekt-Preis). Steckbrief und Gegner rechnen sie mit (regionF).
 const REGIONEN={
-  mosel:{name:'Mosel',sorten:['riesling','mueller','spaetb'],warm:0,edelSpatF:.5,frost:.25,wettPlus:3,text:'Steile Schieferhänge, Riesling-Land. Steillagen-Ruf: Bei Wettbewerben zählt jeder Wein 3 Punkte mehr. Normale Hürden, Auslese ab 95°.',min:MIN_NORMAL},
-  rheingau:{name:'Rheingau',sorten:['riesling','spaetb','silvaner'],warm:0,edelSpatF:.5,frost:.25,preisF:1.1,text:'Berühmtes Riesling-Land: Jeder Wein bringt 10 % mehr Geld. Normale Hürden, Auslese ab 95°.',min:MIN_NORMAL},
-  rheinhessen:{name:'Rheinhessen',sorten:['mueller','silvaner','portug'],warm:3,edelF:1.1,frost:.12,text:'Warmes Silvaner-Land: mehr Zucker und öfter Edelfäulnis, dafür selten Frost für Eiswein. Normale Hürden, Auslese ab 95°.',min:MIN_NORMAL},
-  pfalz:{name:'Pfalz',sorten:['riesling','mueller','portug'],warm:3,edelF:1.1,frost:.10,text:'Warm mit milden Wintern: mehr Zucker und öfter Edelfäulnis, dafür kaum Frost für Eiswein. Normale Hürden, Auslese ab 95°.',min:MIN_NORMAL},
-  franken:{name:'Franken',sorten:['silvaner','mueller','spaetb'],warm:-10,edelAus:true,frost:.45,text:'Kühle Silvaner-Heimat mit kalten Wintern, Eiswein-Land. Weniger Zucker, niedrigere Hürden, Auslese ab 88°.',min:MIN_KUEHL},
-  wuerttemberg:{name:'Württemberg',sorten:['troll','riesling','spaetb'],warm:-10,edelAus:true,frost:.43,text:'Kühles Rotwein-Land mit Trollinger und kalten Wintern, Eiswein-Land. Weniger Zucker, niedrigere Hürden, Auslese ab 88°.',min:MIN_KUEHL}
+  mosel:{name:'Mosel',sorten:['riesling','mueller','spaetb'],warm:0,edelSpatF:.5,frost:.25,wettPlus:3,text:'Steile Schieferhänge, Riesling-Land. Steillagen-Ruf: Bei Wettbewerben zählt jeder Wein 3 Punkte mehr.',min:MIN_NORMAL},
+  rheingau:{name:'Rheingau',sorten:['riesling','spaetb','silvaner'],warm:0,edelSpatF:.5,frost:.25,preisF:1.1,text:'Berühmtes Riesling-Land: Jeder Wein bringt 10 % mehr Geld.',min:MIN_NORMAL},
+  rheinhessen:{name:'Rheinhessen',sorten:['mueller','silvaner','portug'],warm:3,edelF:1.1,frost:.12,text:'Warmes Silvaner-Land: öfter Edelfäulnis, dafür selten Frost für Eiswein.',min:MIN_NORMAL},
+  pfalz:{name:'Pfalz',sorten:['riesling','mueller','portug'],warm:3,edelF:1.1,frost:.10,text:'Warm mit milden Wintern: öfter Edelfäulnis, dafür kaum Frost für Eiswein.',min:MIN_NORMAL},
+  franken:{name:'Franken',sorten:['silvaner','mueller','spaetb'],warm:-10,edelAus:true,frost:.45,text:'Kühle Silvaner-Heimat mit kalten Wintern, Eiswein-Land. Edelfäulnis kommt erst ab dem Auslese-Wert.',min:MIN_NORMAL},
+  wuerttemberg:{name:'Württemberg',sorten:['troll','riesling','spaetb'],warm:-10,edelAus:true,frost:.43,text:'Kühles Rotwein-Land mit Trollinger und kalten Wintern, Eiswein-Land. Edelfäulnis kommt erst ab dem Auslese-Wert.',min:MIN_NORMAL}
 };
 // Version 7.0 (Schritt I): Texte für den Steckbrief. stufe aus den Messungen von Schritt H (Präsident auf Mittel in der Mitte: Rheinhessen und Pfalz
 // um Jahr 100, Rheingau und Mosel 108 bis 122, Franken und Württemberg 116 bis 117 mit großer Streuung und weniger Geld). Franken und Württemberg
@@ -56,7 +55,7 @@ const GEBIET_TEXT={
   pfalz:{stufe:'leicht',stil:'Flexibel',sekt:2,lohnt:'Auf Edelfäulnis pokern, Riesling als Sekt',
     strat:['Riesling braucht lange im Keller, die ersten Jahre sind knapp. Federweißer hilft im Herbst über die Runden.','Warm und sonnig: Edelfäulnis kommt oft, edelsüße Weine gelingen hier am leichtesten.','Eiswein gibt es fast nie, dafür verzeiht die Pfalz viele Wege.']},
   franken:{stufe:'riskant',stil:'Hohes Risiko',sekt:1,lohnt:'Auf Eiswein pokern',
-    strat:['Die Hürden sind niedriger: Schon mit wenig Zucker wird aus Silvaner Kabinett und Spätlese.','Bei Edelfäulnis im Herbst ein Feld hängen lassen und auf Frost im Dezember hoffen. Eiswein bringt hier am meisten.','Für Könner: Franken bringt weniger Geld als die anderen Gebiete, jeder Fehler wiegt schwerer.']},
+    strat:['Kalte Winter: Im Dezember friert es hier oft, das ist die Chance auf Eiswein.','Bei Edelfäulnis im Herbst ein Feld hängen lassen und auf Frost im Dezember hoffen. Eiswein bringt hier am meisten.','Für Könner: Franken bringt weniger Geld als die anderen Gebiete, jeder Fehler wiegt schwerer.']},
   wuerttemberg:{stufe:'riskant',stil:'Kalkuliertes Risiko',sekt:2,lohnt:'Auf Rotwein setzen, Eiswein nur gezielt',
     strat:['Trollinger trägt viel und ist nach 6 Monaten verkaufsreif, damit kommt am Anfang Geld rein.','Eiswein nur mit Riesling oder Spätburgunder versuchen, den Trollinger lieber rechtzeitig lesen.','Für Könner: Württemberg bringt weniger Geld als die warmen Gebiete, jeder Fehler wiegt schwerer.']}
 };
@@ -72,7 +71,7 @@ const GEBIET_ROLLEN={
   pfalz:{sorten:['me_dornf','se_chard','sp_gewuerz'],lohnt:'Auf Edelfäulnis pokern, Chardonnay als Sekt',
     strat:['Dornfelder trägt viel und ist nach 6 Monaten verkaufsreif, damit kommt am Anfang Geld rein.','Warm und sonnig: Edelfäulnis kommt oft, edelsüße Weine gelingen hier am leichtesten. Der Gewürztraminer dafür kommt als Weingutsbesitzer.','Eiswein gibt es fast nie, dafür verzeiht die Pfalz viele Wege.']},
   franken:{sorten:['me_mueller','se_bacchus','sp_silvaner'],lohnt:'Auf Eiswein pokern',
-    strat:['Die Hürden sind niedriger: Schon mit wenig Zucker wird aus Müller-Thurgau Kabinett und Spätlese.','Bei Edelfäulnis im Herbst ein Feld hängen lassen und auf Frost im Dezember hoffen. Eiswein bringt hier am meisten, am besten vom Silvaner.','Für Könner: Franken bringt weniger Geld als die anderen Gebiete, jeder Fehler wiegt schwerer.']},
+    strat:['Kalte Winter: Im Dezember friert es hier oft, das ist die Chance auf Eiswein.','Bei Edelfäulnis im Herbst ein Feld hängen lassen und auf Frost im Dezember hoffen. Eiswein bringt hier am meisten, am besten vom Silvaner.','Für Könner: Franken bringt weniger Geld als die anderen Gebiete, jeder Fehler wiegt schwerer.']},
   wuerttemberg:{sorten:['me_troll','se_schwarzr','sp_lemb'],lohnt:'Auf Rotwein setzen, Eiswein nur gezielt',
     strat:['Trollinger trägt viel und ist nach 6 Monaten verkaufsreif, damit kommt am Anfang Geld rein.','Eiswein nur mit Schwarzriesling oder Lemberger versuchen, den Trollinger lieber rechtzeitig lesen.','Für Könner: Württemberg bringt weniger Geld als die warmen Gebiete, jeder Fehler wiegt schwerer.']}
 };

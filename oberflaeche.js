@@ -820,9 +820,9 @@ const sterne=n=>`<span class="sterne">${'★'.repeat(n)}<i>${'★'.repeat(3-n)}<
 function steckbrief(id,o={}){
   const neu=o.neu??rollenAn(), r=REG(id,neu), [sym,art]=gebietArt(r), mi=r.min, pz=x=>Math.round(x*100)+'\u00a0%';
   const bonus=r.wettPlus?'Steillagen-Ruf':r.preisF?'berühmte Lage':r.warm>0?'viel Sonne':'kalte Winter';
-  const stark=[r.warm>0?`${r.warm}° mehr Zucker${r.edelF?` und ${pz(r.edelF-1)} öfter Edelfäulnis`:''}.`:'',r.warm<0?`Niedrigere Hürden (Auslese ab ${mi.aus}°) und oft Frost für Eiswein. Edelfäulnis erst ab dem Auslese-Wert, das schont Kabinett und Spätlese.`:'',
+  const stark=[r.edelF?`${pz(r.edelF-1)} öfter Edelfäulnis.`:'',r.warm<0?`Oft Frost für Eiswein. Edelfäulnis erst ab dem Auslese-Wert, das schont Kabinett und Spätlese.`:'',
     r.wettPlus?`Bei Wettbewerben zählt jeder Wein ${r.wettPlus} Punkte mehr.`:'',r.preisF?`Jeder Wein bringt ${pz(r.preisF-1)} mehr Geld.`:'',r.ertragF>1?`Die Reben tragen ${pz(r.ertragF-1)} mehr.`:'',r.sektPreisF>1?`Sekt bringt ${pz(r.sektPreisF-1)} mehr Geld.`:'',r.edelSpatF?'Edelfäulnis kommt vor dem Auslese-Wert nur selten, Kabinett und Spätlese bleiben öfter heil.':''].join(' ').trim();
-  const schwach=[r.warm>0?'Kaum Frost im Dezember, Eiswein ist selten.':r.warm<0?`${-r.warm}° weniger Zucker, edelsüße Weine sind schwer.`:'Kein Zuckervorteil und normale Hürden.',
+  const schwach=[r.warm>0?'Kaum Frost im Dezember, Eiswein ist selten.':r.warm<0?'Edelsüße Weine sind schwer.':'Weder oft Frost noch öfter Edelfäulnis.',
     r.ertragF<1?`Die Reben tragen ${pz(1-r.ertragF)} weniger.`:'',r.sektPreisF<1?`Sekt bringt ${pz(1-r.sektPreisF)} weniger Geld.`:''].join(' ').trim();
   const G=gebietText(id,neu), [ssym,stufe]=GEBIET_STUFE[G.stufe], lohnt=G.lohnt, SF=sortenFolge(id,neu);
   const stars=SF.filter(s=>SORTEN[s].sektStar).map(s=>SORTEN[s].name);
@@ -848,7 +848,7 @@ const mib=id=>`<span class="mib" data-a="buch" data-id="${id}">📖 Mehr im Buch
 // Im Kapitel Gebiete stehen statt fester Zahlen die sechs Steckbriefe aus dem Code.
 function gebieteGenauer(){
   const h=m=>REIHE.filter(st=>m[st]).map(st=>`${STUFEN[st].name} ${m[st]}°`).join(', ');
-  return `<details open><summary>Genauer</summary><ul><li>Hürden in Mosel, Rheingau, Rheinhessen und Pfalz: ${h(MIN_NORMAL)}.</li><li>Hürden in Franken und Württemberg: ${h(MIN_KUEHL)}.</li>
+  return `<details open><summary>Genauer</summary><ul><li>Hürden in allen Gebieten: ${h(MIN_NORMAL)}.</li>
     <li>${rollenAn()?`Jedes Gebiet hat drei Rebsorten mit festen Rollen. Die ${ROLLEN.spitze.name} startet mit dem vollen Zucker, die ${ROLLEN.sekt.name} ${-ROLLEN.sekt.zucker}° und die ${ROLLEN.menge.name} ${-ROLLEN.menge.zucker}° darunter. Spielstände von vor Version 11.4 behalten ihre alten Sorten mit Sternen.`:`Die Sorte mit ★★★ startet mit dem vollen Zucker, die anderen mindestens 1° darunter. Die Qualitätspunkte zählen bei ★★ zu 85\u00a0%, bei ★ zu 70\u00a0%.${sternPreisText()}`}</li></ul>${Object.keys(REGIONEN).map(id=>steckbrief(id)).join('')}</details>`;
 }
 function buchZeig(){

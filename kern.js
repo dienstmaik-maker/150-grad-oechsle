@@ -848,7 +848,7 @@ const wbonus=w=>({sonnig:5,mild:0,regen:-4,kalt:-3,frost:-3}[w]);
 function tempFuer(m,w,streu){
   const st=(a,b)=>typeof streu==='number'?festI(a,b,streu):rint(a,b);
   if(w==='frost') return (m>=2&&m<=4?-2:-4)+(streu!=null&&streu!==false?st(-2,1):0);
-  return Math.max(1,TEMP_MONAT[m]+TEMP_WETTER[w]+Math.round((R().warm||0)/7)+(streu!=null&&streu!==false?st(-1,1):0));
+  return Math.max(1,TEMP_MONAT[m]+TEMP_WETTER[w]+(streu!=null&&streu!==false?st(-1,1):0));
 }
 const wetterText=()=>`${WETTER[S.wetter].join(' ')}, ${S.temp!=null?S.temp:tempFuer(S.monat,S.wetter)} °C`;
 
@@ -868,7 +868,7 @@ function wachse(m){
     // Seit 13.2.2: statt der Jungreben der Mengen-Faktor der Rebpflege (pflegeMenge).
     if(m===5) f.menge=Math.round(f.reben*pflegeMenge(f,id)*so.ertrag*(reg.ertragF||1)*(.6+.4*S.boden/100)*(1+BODEN_ST_MENGE*(S.bodenSt||0))*f.frostF*festR(.9,1.1,fest(6,si,S.jahr,m)));
     // Seit 13.2.3: Das Wetter-Öchsle zählt höchstens bis zur Grenze des Weinbergs (oeGrenze: Deckel, Edelfäulnis der Spitzen-Sorte bis 150°).
-    if(m===6){f.oe=Math.min(oeGrenze(id),OE_START+zuckerIm(id)+reg.warm+wbonus(w)+festI(-2,2,fest(5,si,S.jahr,m))+(S.spitze?SPITZE_OE:0)); f.reif=5; f.ueber=0; f.plus=0}
+    if(m===6){f.oe=Math.min(oeGrenze(id),OE_START+zuckerIm(id)+wbonus(w)+festI(-2,2,fest(5,si,S.jahr,m))+(S.spitze?SPITZE_OE:0)); f.reif=5; f.ueber=0; f.plus=0}
     if(m>=7&&f.menge>0&&!f.gelesen){
       // f.plus merkt den Öchsle-Zuwachs des Monats für die Infoseite.
       const vor=f.oe;
@@ -1997,6 +1997,7 @@ function vGut(){
   const T={berg:'Weinberg',betrieb:S.name,aktuell:'Aktuelles',maschinen:'Maschinen',buero:'Büro'};
   return kopf(T[SUB])+{berg:vBerg,betrieb:vBetrieb,aktuell:vAktuell,maschinen:vMaschinen,buero:vBuero}[SUB]();
 }
+// Seit 13.3.1 nur noch ein Schild, warm wirkt nicht mehr.
 const gebietArt=r=>r.warm>0?['🔥','Warm']:r.warm<0?['🧊','Kühl']:['⛰️','Mitte'];
 const buchKap=()=>typeof ANLEITUNG==='undefined'?[]:ANLEITUNG.flatMap(t=>t.kap);
 // Schritt 3 (6.0): Satz zu den Sternen am Preis aus STERN_PREIS_3 bis _1. Stehen alle auf 1, erscheint nichts.
