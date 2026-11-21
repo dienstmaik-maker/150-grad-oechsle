@@ -90,7 +90,7 @@ const STUFEN={
   qba:{name:'Qualitätswein',rang:2,preis:4.5,qp:6,geb:0,ans:2},
   kab:{name:'Kabinett',rang:3,preis:7,qp:10,geb:60,ans:4,lese:'reif',edel:false},
   spat:{name:'Spätlese',rang:4,preis:10.5,qp:14,geb:90,ans:6,lese:'reif',edel:false},
-  aus:{name:'Auslese',rang:5,preis:17,qp:18,geb:130,ans:10,lese:'reif',edel:true},
+  aus:{name:'Auslese',rang:5,preis:17,qp:18,geb:130,ans:10,lese:'reif'},
   ba:{name:'Beerenauslese',rang:6,preis:38,qp:24,geb:200,ans:16,lese:'ueber',edel:true},
   tba:{name:'Trockenbeerenauslese',rang:7,preis:75,qp:30,geb:300,ans:24,lese:'ueber',edel:true},
   eis:{name:'Eiswein',rang:8,preis:60,qp:28,geb:300,ans:20}
@@ -98,6 +98,14 @@ const STUFEN={
 // Eiswein in drei Wertstufen nach den Öchsle bei der Lese: wie Auslese, Beerenauslese oder Trockenbeerenauslese des Gebiets.
 // Angemeldet wird immer als Eiswein, f ist der Faktor auf den Preis, qp der Zuschlag auf die Qualitätspunkte.
 const EIS_WERT=[{name:'Auslese',f:1,qp:0},{name:'Beerenauslese',f:1.3,qp:4},{name:'Trockenbeerenauslese',f:1.7,qp:8}];
+// Seit 13.3.2 (Bauplan 13.3, Maik 21.11.2026): zwei Schlösser je Wein. Der Rang gibt ihn frei (FREI, Schlüssel wein_ und die Stufe), der Deckel muss reichen.
+// Der Deckel wirkt schon übers Öchsle (oeGrenze). Wer mehr Öchsle hat, als sein Rang erlaubt, meldet die höchste erlaubte Stufe an. Die Auslese geht seitdem mit und ohne Edelfäulnis.
+// WEIN_ROLLE: welche Stufen eine Rolle überhaupt machen darf. Die Menge-Sorte hat nie Edelfäulnis und keine Auslese, Auslese und höher gibt es nur von der Spitzen-Sorte.
+// Die Sekt-Sorte rechnet bis 13.3.3 wie die Menge-Sorte. Sorten ohne Rolle (Messläufe mit ROLLEN_NEU=0) dürfen alles.
+const WEIN_ROLLE={menge:['feder','tafel','qba','kab','spat'],sekt:['feder','tafel','qba','kab','spat'],spitze:['feder','tafel','qba','kab','spat','aus','ba','tba','eis']};
+// Freischaltungen nach Rang: r ist der Rang (Index in RAENGE), ab dem etwas geht. Beerenauslese und Eiswein ab R6, Trockenbeerenauslese ab R8 sind ein Übergang,
+// bis der Weg des Gebiets in 13.4 sie ersetzt (Maik 21.11.2026). Feder-, Tafel- und Qualitätswein gelten für jede Rolle, die sie machen darf (Annahme von Claude).
+const FREI={wein_feder:{r:0},wein_tafel:{r:1},wein_qba:{r:2},wein_kab:{r:0},wein_spat:{r:0},wein_aus:{r:6},wein_ba:{r:6},wein_eis:{r:6},wein_tba:{r:8}};
 const LESE={reif:'nur reife Trauben',ueber:'nur überreife Trauben',alles:'reife und überreife'};
 const WETTER={sonnig:['☀️','sonnig'],mild:['⛅','mild'],regen:['🌧️','Regen'],kalt:['🌥️','kalt'],frost:['❄️','Frost']};
 // Boden: verliert jeden Monat BODEN_MONAT Punkte (in einem Regenmonat BODEN_REGEN) und mit jeder Lese 4. Einmal Düngen bringt 30, erlaubt sind drei Mal im Jahr.

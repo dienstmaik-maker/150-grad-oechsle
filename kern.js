@@ -26,6 +26,10 @@ function deckel(id){const f=S.felder[id]||{}; return DECKEL_BASIS[rolleK(id)]+BO
 // Obergrenze im Monatsmodell: der Deckel, mit Edelfäulnis bei der Spitzen-Sorte 150°.
 function oeGrenze(id){const f=S.felder[id]; return f&&f.edel&&rolleK(id)==='spitze'?150:deckel(id)}
 const feldId=f=>R().sorten.find(id=>S.felder[id]===f);
+// Seit 13.3.2: Freischaltung nach Rang (FREI) und welche Stufen eine Sorte nach ihrer Rolle machen darf (WEIN_ROLLE).
+const freiAb=k=>(FREI[k]||{r:0}).r;
+function frei(k){return !FREI[k]||S.rang>=freiAb(k)}
+const rolleDarf=(id,st)=>{const rl=id&&SORTEN[id]?SORTEN[id].rolle:null; return !rl||!WEIN_ROLLE[rl]||WEIN_ROLLE[rl].includes(st)};
 // Seit 13.2.4: Rebschnitt von Hand. Kosten nach den Hektar der Sorte, möglich von Januar bis April, einmal im Jahr.
 const schnittKosten=id=>Math.round(SCHNITT_HA*(S.felder[id].reben||0)/HA_REBEN);
 const schnittOffen=id=>{const f=S.felder[id]; return !!f&&f.reben>0&&S.monat<=SCHNITT_BIS&&f.schnitt!==S.jahr};
@@ -885,8 +889,9 @@ function wachse(m){
         if(w==='frost'){f.gefroren=true; f.menge=Math.round(f.menge*.6); L.push(`Frost! Der ${so.name} hängt gefroren am Stock. Eiswein ist möglich.`)}
         else{f.menge=0; L.push(`Kein Frost: Die hängenden ${so.name}-Trauben sind verfault.`)}
       }
-      const aus=f.oe>=reg.min.aus;
-      if(f.menge>0&&!f.edel&&!f.edelGeprueft&&(aus||(!reg.edelAus&&m>=9&&f.oe>=reg.min.spat))){
+      // Seit 13.3.2: Menge- und Sekt-Sorte haben nie Edelfäulnis, die Ernte ist immer sicher.
+      const aus=f.oe>=reg.min.aus, edelDarf=!so.rolle||so.rolle==='spitze';
+      if(edelDarf&&f.menge>0&&!f.edel&&!f.edelGeprueft&&(aus||(!reg.edelAus&&m>=9&&f.oe>=reg.min.spat))){
         f.edel=fest(4,si,S.jahr,m)<Math.min(.95,(aus?EDEL_CHANCE.aus:(w==='regen'||w==='mild'?EDEL_CHANCE.feucht:EDEL_CHANCE.spat)*(reg.edelSpatF||1))*(reg.edelF||1)*eignung(id)**2);
         if(f.edel){f.ueber=clamp(f.ueber+EDEL_UEBER,0,100); L.push(`Edelfäulnis beim ${so.name} bei ${f.oe}° Öchsle! Der Zucker steigt jetzt ${S.sonne>=3?'kräftig':'schneller'}, die Menge schrumpft${EDEL_UEBER?', und mehr Trauben werden überreif':''}. Kabinett und Spätlese gibt es von diesem Feld nicht mehr.${aus?'':` Bis zur Auslese fehlen noch ${reg.min.aus-f.oe}°, lass die Trauben am besten noch einen Monat hängen.`}`)}
         else if(aus){f.edelGeprueft=true; L.push(`Der ${so.name} hat den Auslese-Wert von ${reg.min.aus}° erreicht, aber die Edelfäulnis bleibt dieses Jahr aus.`)}
@@ -980,6 +985,9 @@ function mindest(st){const m=R().min; return (st==='feder'||st==='eis')?m.tafel:
 // q = {oe, leseart, edel, eis}
 function pruefeQualitaet(st,q){
   const g=[], d=STUFEN[st], min=mindest(st);
+  // Seit 13.3.2: die zwei Schlösser. Die Rolle muss die Stufe machen dürfen und der Rang muss reichen, der Deckel wirkt schon übers Öchsle.
+  if(!rolleDarf(q.sorte,st)) g.push(`${d.name} gibt es nicht von der ${ROLLEN[SORTEN[q.sorte].rolle].name}`);
+  else if(!frei('wein_'+st)) g.push(`${d.name} erst ab dem Rang ${rangN(freiAb('wein_'+st))}`);
   if(q.oe<min) g.push(`es fehlen ${min-q.oe}° Öchsle (Minimum ${min}°)`);
   if(q.masch&&(st==='eis'||d.rang>STUFEN.qba.rang)) g.push('mit der Maschine gelesen gibt es höchstens Qualitätswein');
   if(st==='eis'){
@@ -1014,7 +1022,7 @@ const handBedarf=f=>Math.max(0,Math.ceil((f.reben-alleinReben())/HAND_REBEN));
 const handFehlt=f=>handFeld(f)&&S.helfer<handBedarf(f)&&maschEinsatz().length>0;
 const handlese=f=>handFeld(f)&&!handFehlt(f);
 // Seit 13.2.3: Auch die überreife Lese (+5°) bleibt unter der Grenze des Weinbergs.
-function feldQ(f,la){const id=feldId(f); return {oe:Math.min(id?oeGrenze(id):150,f.oe+(la==='ueber'?5:0)),leseart:la,edel:f.edel,eis:f.gefroren,masch:handFehlt(f)?1:0}}
+function feldQ(f,la){const id=feldId(f); return {oe:Math.min(id?oeGrenze(id):150,f.oe+(la==='ueber'?5:0)),leseart:la,edel:f.edel,eis:f.gefroren,masch:handFehlt(f)?1:0,sorte:id}}
 // Abnutzung bei der Lese (8.0): reben ist der Teil der Lese, den die Maschinen schaffen, M ihre Ernteleistung zusammen. Auslastung reben/M (höchstens 1),
 // je Maschine ABNUTZ_VOLL mal Auslastung mal Pflege-Faktor nach dem Zustand vor der ersten Lese des Jahres (ma.lj, ma.lz). Bruchteile sammelt ma.abn.
 function maschAbnutzung(reben,M){
@@ -2437,6 +2445,8 @@ function lot(id){return S.lots.find(l=>l.id===+id)}
 // Seit 8.0: Felder mit Edelfäulnis oder gefrorenen Trauben liest die Hand, wenn genug Erntehelfer da sind (handlese), sonst die Maschine mit q.masch (höchstens Qualitätswein).
 // Alle anderen Felder lesen Helfer und Maschinen zusammen, die Maschinen nach ihrem Anteil an der Ernteleistung. Das nutzt sie ab (maschAbnutzung).
 function lese(id,la,p){
+  // Seit 13.3.2: Ein Feld wird immer ganz gelesen, Teilen geht nicht.
+  p=1;
   const f=S.felder[id], q=feldQ(f,la), l=Math.round(feldLiter(f,la)*p); if(l<=0) return;
   const L=leistung(), M=maschLeistung();
   if(M>0&&!handlese(f)) maschAbnutzung(f.reben*p*leseFaktor()*M/L,M);

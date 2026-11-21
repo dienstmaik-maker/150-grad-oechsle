@@ -260,7 +260,7 @@ function leseHilfe(f){
   if(f.gefroren){const e=best==='eis'?'':eisFehlt(f); return h+(e?'<br>'+e:'')+handText(f,'<br>')}
   h+=handText(f,'<br>');
   const rang=best?STUFEN[best].rang:0;
-  const ziel=['tafel','qba','kab','spat','aus','ba','tba'].find(st=>STUFEN[st].rang>rang);
+  const ziel=['tafel','qba','kab','spat','aus','ba','tba'].find(st=>STUFEN[st].rang>rang&&rolleDarf(feldId(f),st));
   // Seit 8.0: Liest die Maschine, weil Helfer für die Handlese fehlen, sagt das handText schon, eine "Nächste Stufe" gibt es dann nicht.
   if(ziel&&!handFehlt(f)){
     const la=STUFEN[ziel].lese||'alles', g=pruefeQualitaet(ziel,feldQ(f,la)).filter(x=>!x.startsWith('Leseart'));
@@ -2353,7 +2353,7 @@ const AKT={
     const l=lot(d.id);
     const M=mani(l);
     // Oben die Stufen, die jetzt gehen. Darunter der Hinweis auf Stufen, die nur am Januar scheitern. Der Rest ist zugeklappt.
-    const A=[...REIHE].reverse().concat('feder').map(st=>({st,g:pruefeAnmeldung(l,st)}));
+    const A=[...REIHE].reverse().concat('feder').filter(st=>rolleDarf(l.sorte,st)).map(st=>({st,g:pruefeAnmeldung(l,st)}));
     const jan=a=>a.g.length&&S.jahr===l.jahrgang&&a.g.every(x=>/Januar/.test(x));
     const ok=A.filter(a=>!a.g.length), spaeter=A.filter(jan), nein=A.filter(a=>a.g.length);
     const zeile=({st,g})=>{const s=STUFEN[st],ill=M&&!maniLegal(l,st);
