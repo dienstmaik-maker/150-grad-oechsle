@@ -831,7 +831,9 @@ function sektF(l){return l.sekt?SEKT_F*(SORTEN[l.sorte].sektStar?SEKT_STAR:1)*(R
 function regionF(id){const r=REGIONEN[id]; return (r.preisF||1)*(r.ertragF||1)*(1+GEGNER_SEKT*((r.sektPreisF||1)-1))*STERN_PREIS_3}
 // Seit 13.3.3: Sekt-Ansehen einmal im Jahr, in dem mindestens ein Sekt angemeldet wird. Der Sekt gilt mit der Lese als angemeldet.
 function sektAnsText(){return S.sektJahr===S.jahr?`Die ${ansQ(SEKT_ANS,'Weine')} Ansehen für Sekt hast du dieses Jahr schon.`:`Der erste Sekt des Jahres bringt ${ansQ(SEKT_ANS,'Weine')} Ansehen.`}
-function sektAnmelden(l){if(l.pansch||S.sektJahr===S.jahr) return 0; S.sektJahr=S.jahr; return ruhm(SEKT_ANS,0,'Weine')}
+// Seit 13.3.5: Zuschlag für Pflegestufe und Terroir aufs Ansehen bei der Anmeldung.
+const ansZuschlag=l=>(ANS_PFLEGE[l.pfl||0]||0)+((l.bst||0)>=NAME_BODEN_AB?ANS_TERROIR:0);
+function sektAnmelden(l){if(l.pansch||S.sektJahr===S.jahr) return 0; S.sektJahr=S.jahr; return ruhm(SEKT_ANS+ansZuschlag(l),0,'Weine')}
 const sektSorte=id=>!!S.rollen&&(SORTEN[id]||{}).rolle==='sekt';
 // Sekt, der noch auf der Hefe liegt, für den Sektkeller.
 const sektAufHefe=()=>S.lots.filter(l=>l.sekt&&l.status==='flasche'&&l.flMonate<lager(l).min);

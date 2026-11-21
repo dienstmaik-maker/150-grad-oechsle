@@ -84,16 +84,17 @@ const EIGNUNG={mosel:{riesling:1,mueller:.85,spaetb:.7},rheingau:{riesling:1,spa
 // Version 6.0 (Schritt 3): Sterne am Preis. Faktor je Stern der Sorte im Gebiet, zusätzlich zu den Qualitätspunkten, in preis, lotWert und leseWert.
 // Die Gegner bekommen den Faktor für ★★★, weil sie mit ihrer besten Sorte rechnen. Neutral gestellt (1), abgestimmt wird in Schritt 4.
 const STERN_PREIS_3=1, STERN_PREIS_2=1, STERN_PREIS_1=1;
+// Seit 13.3.5 (Bauplan 13.3): ans ist das Ansehen bei der Anmeldung, einmal je Wein (Sorte, Jahrgang, Stufe), dazu ANS_PFLEGE und ANS_TERROIR.
 const STUFEN={
-  feder:{name:'Federweißer',rang:0,preis:3,qp:2,geb:0,ans:2},
-  tafel:{name:'Tafelwein',rang:1,preis:2.5,qp:3,geb:0,ans:0},
-  qba:{name:'Qualitätswein',rang:2,preis:4.5,qp:6,geb:0,ans:2},
-  kab:{name:'Kabinett',rang:3,preis:7,qp:10,geb:60,ans:4,lese:'reif',edel:false},
-  spat:{name:'Spätlese',rang:4,preis:10.5,qp:14,geb:90,ans:6,lese:'reif',edel:false},
-  aus:{name:'Auslese',rang:5,preis:17,qp:18,geb:130,ans:10,lese:'reif'},
-  ba:{name:'Beerenauslese',rang:6,preis:38,qp:24,geb:200,ans:16,lese:'ueber',edel:true},
-  tba:{name:'Trockenbeerenauslese',rang:7,preis:75,qp:30,geb:300,ans:24,lese:'ueber',edel:true},
-  eis:{name:'Eiswein',rang:8,preis:60,qp:28,geb:300,ans:20}
+  feder:{name:'Federweißer',rang:0,preis:3,qp:2,geb:0,ans:3},
+  tafel:{name:'Tafelwein',rang:1,preis:2.5,qp:3,geb:0,ans:3},
+  qba:{name:'Qualitätswein',rang:2,preis:4.5,qp:6,geb:0,ans:5},
+  kab:{name:'Kabinett',rang:3,preis:7,qp:10,geb:60,ans:6,lese:'reif',edel:false},
+  spat:{name:'Spätlese',rang:4,preis:10.5,qp:14,geb:90,ans:8,lese:'reif',edel:false},
+  aus:{name:'Auslese',rang:5,preis:17,qp:18,geb:130,ans:14,lese:'reif'},
+  ba:{name:'Beerenauslese',rang:6,preis:38,qp:24,geb:200,ans:22,lese:'ueber',edel:true},
+  tba:{name:'Trockenbeerenauslese',rang:7,preis:75,qp:30,geb:300,ans:34,lese:'ueber',edel:true},
+  eis:{name:'Eiswein',rang:8,preis:60,qp:28,geb:300,ans:28}
 };
 // Eiswein in drei Wertstufen nach den Öchsle bei der Lese: wie Auslese, Beerenauslese oder Trockenbeerenauslese des Gebiets.
 // Angemeldet wird immer als Eiswein, f ist der Faktor auf den Preis, qp der Zuschlag auf die Qualitätspunkte.
@@ -177,6 +178,8 @@ const WO={mosel:'an der Mosel',rheingau:'im Rheingau',rheinhessen:'in Rheinhesse
 // Seit 11.5 (Teil C2, Maik 20.11.2026): "Präsident in drei Generationen". Die oberen Ansehenshürden sind der Schlussregler fürs Tempo: Weinbaurat 1.500 statt 1.400,
 // Verbandsvorstand 4.000 statt 2.500, Vizepräsident 8.000 statt 5.600, Präsident 12.000 statt 10.000, dazu 30 Mio. € Vermögen statt 24,5. Ziel ist der Präsident vor der Übergabe in Jahr 120.
 // Gemessen mit l115_staffel (54 Partien, Mittel): Mosel, Rheingau, Rheinhessen und Pfalz im Median in Jahr 114, 31 von 36 Partien vor Jahr 120.
+// Seit 13.3.5 (Bauplan 13.3, Startwerte aus dem Bauauftrag): Vizepräsident 6.000 Ansehen und 29 Hektar (bis 13.2: 8.000 und 33), Präsident 8.500 und 33 (bis 13.2: 12.000 und 40).
+// Der höchste Besitz deckel ist nach der Regel neu gerechnet: Verbandsvorstand 36 statt 41, Vizepräsident 41 statt 50. R0 bis R7 bleiben.
 const RAENGE=[
   {name:'Neuling',kurz:'Neuling',ans:0,ha:0,verm:0,rahmen:20000,haAlt:0,deckel:4},
   {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:30,ha:3,verm:100000,rahmen:40000,haAlt:3,deckel:8,neu:'Tafelwein, der Makler im Rathaus, Spenden fürs Dorf, Kellerausbau'},
@@ -185,9 +188,9 @@ const RAENGE=[
   {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:13,verm:1500000,rahmen:300000,haAlt:6,deckel:20,neu:'{sorte}, der Sektkeller, das Weinfest, der Laubschneider, die Degorgier- und Abfüllanlage im Sektkeller'},
   {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:16,verm:3500000,rahmen:300000,haAlt:8,deckel:26,neu:'{sorte}, der große Vollernter',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.',wegW:'Sabotage ist für dich ab jetzt tabu, eine Dame macht so etwas nicht.'},
   {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:21,verm:6000000,rahmen:300000,haAlt:10,deckel:33,neu:'Auslese, Beerenauslese und Eiswein, eine eigene Weinhandlung, das Amt des Weinbotschafters, die Abfüllanlage'},
-  {name:'Verbandsvorstand',kurz:'Vorstand',w:'Verbandsvorständin',kw:'Vorständin',ans:4000,ha:26,verm:12000000,rahmen:300000,haAlt:13,deckel:41,neu:'Bundeswettbewerb, das Hoffest, du kannst Kontrollen anregen'},
-  {name:'Vizepräsident',kurz:'Vizepräsident',w:'Vizepräsidentin',kw:'Vizepräsidentin',ans:8000,ha:33,verm:16000000,rahmen:300000,haAlt:16,deckel:50,neu:'Trockenbeerenauslese, die Chance auf eine Spitzenlage'},
-  {name:'Präsident des Weinbauverbands',kurz:'Präsident',w:'Präsidentin des Weinbauverbands',kw:'Präsidentin',ans:12000,ha:40,verm:30000000,rahmen:300000,haAlt:20,deckel:50,neu:'der Stuhl im Festsaal, das Amt an der Spitze des Verbands, der Weg zur Weltweinschau'}
+  {name:'Verbandsvorstand',kurz:'Vorstand',w:'Verbandsvorständin',kw:'Vorständin',ans:4000,ha:26,verm:12000000,rahmen:300000,haAlt:13,deckel:36,neu:'Bundeswettbewerb, das Hoffest, du kannst Kontrollen anregen'},
+  {name:'Vizepräsident',kurz:'Vizepräsident',w:'Vizepräsidentin',kw:'Vizepräsidentin',ans:6000,ha:29,verm:16000000,rahmen:300000,haAlt:16,deckel:41,neu:'Trockenbeerenauslese, die Chance auf eine Spitzenlage'},
+  {name:'Präsident des Weinbauverbands',kurz:'Präsident',w:'Präsidentin des Weinbauverbands',kw:'Präsidentin',ans:8500,ha:33,verm:30000000,rahmen:300000,haAlt:20,deckel:50,neu:'der Stuhl im Festsaal, das Amt an der Spitze des Verbands, der Weg zur Weltweinschau'}
 ];
 // Seit 11.5 (Teil B): Fläche neu. Die Hürden (ha, bepflanzt) gehen bis 40 Hektar statt bis 20, haAlt sind die Werte bis 11.4.
 // deckel ist der höchste Besitz je Rang: immer ein Viertel mehr, als der nächste Rang verlangt, gerundet, und für niemanden mehr als 50 (Maik 20.11.2026).
@@ -575,7 +578,10 @@ const EREIGNIS={
 // Wer eingestellt ist, behält seinen Lohn. S.loehne merkt ihn je Kopf, aufsteigend sortiert. Entlassen wird immer der teuerste.
 const LOHN_ARTEN=['helfer','lagerarb'];
 // Seit 13.3.3 (Bauplan 13.3, Maik 21.11.2026): Die SEKT_ANS Ansehen gibt es einmal im Jahr, in dem mindestens ein Sekt angemeldet wird, egal wie viele Posten. Die Mindestmenge SEKT_ANS_HA ist weg.
-const SEKT_ANS=6;
+const SEKT_ANS=8;
+// Seit 13.3.5: fester Zuschlag aufs Ansehen bei der Anmeldung nach der Pflegestufe des Weins (l.pfl: Setzling, Rebstock, Premier Cru, Grand Cru),
+// vom Terroir (l.bst ab NAME_BODEN_AB) noch einmal ANS_TERROIR. Gilt für jeden Wein und den Sekt, nicht für gepanschten (Annahme von Claude: auch beim Sekt).
+const ANS_PFLEGE=[0,0,2,4], ANS_TERROIR=4;
 // Seit 13.3.3: Die Sekt-Sorte macht nur Sekt, direkt bei der Lese und ohne Grundwein, die Lagerarbeiter stellen ihn her. Sekt aus Qualitätswein oder Kabinett (SEKT_STUFEN) ist weg.
 // Preis und Punkte rechnet der Sekt auf SEKT_GRUND (Annahme von Claude, damit Preis, Reife und Qualitätspunkte wie bisher laufen), dazu SEKT_QP Punkte wie bisher beim Versekten.
 // Sekt bringt das SEKT_F-fache, die Sekt-Sorte (sektStar) dazu SEKT_STAR.

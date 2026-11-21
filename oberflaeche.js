@@ -2380,7 +2380,7 @@ const AKT={
     // Ansehen gibt es je Sorte, Jahrgang und Stufe nur einmal, auch wenn die Lese auf mehrere Fässer verteilt ist. S.ansGeb merkt sich das.
     const ak=l.sorte+'|'+l.jahrgang+'|'+st, AG=S.ansGeb=(S.ansGeb||[]).filter(k=>+k.split('|')[1]>=S.jahr-2), erst=!AG.includes(ak);
     if(s.ans&&!ill&&erst) AG.push(ak);
-    const ans=s.ans&&!ill&&erst?ruhm(s.ans,0,'Weine'):0;closeSheet();save();render();fx('stempel');
+    const ans=s.ans&&!ill&&erst?ruhm(s.ans+ansZuschlag(l),0,'Weine'):0;closeSheet();save();render();fx('stempel');
     meldung('Angemeldet',`${lotName(l)} steht jetzt mit ${l.qp} Qualitätspunkten im Kellerbuch.`+(ill?` Der Beamte hat ${eur(sg)} eingesteckt. Bis der Wein verkauft ist, darf ihn kein Prüfer finden.`:'')+(ans?` +${ans} Ansehen.`:s.ans&&!ill?' Ansehen gab es für diesen Jahrgang und diese Stufe schon.':'')+(st==='feder'?' Federweißer muss noch diesen Monat in die Flasche.':' Jetzt darf er abgefüllt werden.'),'kellerbuch');
   },
   abfuellen(d){
