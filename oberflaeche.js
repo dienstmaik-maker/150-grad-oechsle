@@ -926,28 +926,27 @@ function mgrPersonal(b){
   const M=MGR_BEREICHE[b], st=mgrSt(b), E=MANAGER.filter(e=>e.bereich===b), G=mgrG(b), n=mgrNaechste(b), id='p_'+b;
   const mI=`${G.Er} erledigt beim Weiterblättern, was du hier einschaltest, und berichtet im Winzerboten. Einkäufe zahlt ${G.er} aus deiner Kasse. ${G.Er} gehört fest zum Gut und steigt mit deinem Rang von selbst auf.`;
   const stufen=`<div class="fstand" style="margin:6px 0 0">${E.map(e=>mgrStufenText(e,st)).join('<br>')}</div>`;
-  if(S.rang<E[0].rang) return fenster(id,M.name,'',{zu:`ab dem Rang ${RAENGE[E[0].rang].name}`,buch:'manager',i:mI+stufen});
+  if(!st&&!frei(mgrK(E[0]))) return fenster(id,M.name,'',{zu:freiText(mgrK(E[0])),buch:'manager',i:mI+stufen});
   if(!st) return fenster(id,M.name,`<div class="kv"><span>Stufe</span><span>kommt mit dem nächsten Monat</span></div>${stufen}`,{
     buch:'manager',i:mI});
-  const frei=n&&S.rang>=n.rang;
   return fenster(id,M.name,`<div class="pkopf">${M.bild?`<div class="mgrbild" style="background-image:url(bilder/${M.bild})"></div>`:''}<div>
     <div class="kv"><span>Stufe</span><span>${st} von ${E.length}</span></div><div class="kv"><span>Lohn im Monat</span><span>${eur(mgrEintrag(b,st).lohn)}</span></div></div></div>
     ${mgrSchalter(b)}`,{
-    links:n?`Stufe ${n.stufe} kommt mit dem Rang ${RAENGE[n.rang].name}.`:'',buch:'manager',i:mI+mgrLogHtml(b)});
+    links:n?`Stufe ${n.stufe} kommt ${freiText(mgrK(n))}.`:'',buch:'manager',i:mI+mgrLogHtml(b)});
 }
 function pufferChips(b){const p=mgrPuffer(b); return `<div class="chips" style="flex-wrap:wrap">${MGR_PUFFER.map(n=>`<button class="chip ${p===n?'an':''}" data-a="mgrPuffer" data-b="${b}" data-id="${n}">${n?eur(n):'nichts'}</button>`).join('')}</div>`}
 // Seit 7.5 ein Fenster "Manager" im Arbeitsamt: je Manager eine Zeile mit Stufe und Lohn. Seit 11.5 (Teil C1) ohne Knopf, die Manager kommen von selbst.
 // Die Schalter der Aufgaben stehen im Betrieb. Vor dem Rang des ersten Managers ist das Fenster seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten).
 function mgrAmt(){
   // Seit 10.6: nur die Manager, die der Rang schon freigibt, die anderen tauchen erst mit ihrem Rang auf.
-  const B=Object.keys(MGR_BEREICHE).filter(b=>S.rang>=mgrEintrag(b,1).rang), ab=Math.min(...MANAGER.map(e=>e.rang));
+  const B=Object.keys(MGR_BEREICHE).filter(b=>mgrSt(b)>0);
   const mgI='Manager nehmen dir Arbeit ab. Jeder kommt mit seinem Rang von selbst dazu und steigt mit späteren Rängen auf, einstellen und befördern musst du niemanden. Jede Stufe bringt neue Aufgaben, sie sind gleich eingeschaltet. Was du lieber selbst machst, schaltest du im Betrieb ab. Manager gehören fest zum Gut, entlassen kannst du sie nicht. Ihr Lohn hängt nur an der Stufe und läuft weiter, auch wenn du alle Schalter ausschaltest.';
   const stufen=B.map(b=>`<div style="margin-top:6px"><b>${MGR_BEREICHE[b].name}</b><br>${MANAGER.filter(e=>e.bereich===b).map(e=>mgrStufenText(e,mgrSt(b))).join('<br>')}</div>`).join('');
-  if(S.rang<ab) return fenster('mgr_amt','Manager','',{zu:`ab dem Rang ${RAENGE[ab].name}`,buch:'manager',i:mgI+stufen});
+  if(!B.length) return fenster('mgr_amt','Manager','',{zu:freiText(mgrK(MANAGER[0])),buch:'manager',i:mgI+stufen});
   return fenster('mgr_amt','Manager',B.map(b=>{
     const st=mgrSt(b), n=mgrNaechste(b), E=MANAGER.filter(e=>e.bereich===b), neu=n?[...mgrAufg(n).map(k=>MGR_AUFGABEN[k].kurz),...mgrExtra(n)]:[];
     return fz(MGR_BEREICHE[b].name,st?`Stufe ${st} von ${E.length}, ${eur(mgrEintrag(b,st).lohn)} Lohn im Monat`:'Kommt mit dem nächsten Monat',
-      n?`Stufe ${n.stufe} ab ${RAENGE[n.rang].name}${neu.length?': '+neu.join(', '):''}, dann ${eur(n.lohn)} Lohn`:'Höchste Stufe erreicht')}),{buch:'manager',i:mgI+stufen});
+      n?`Stufe ${n.stufe} ${freiText(mgrK(n))}${neu.length?': '+neu.join(', '):''}, dann ${eur(n.lohn)} Lohn`:'Höchste Stufe erreicht')}),{buch:'manager',i:mgI+stufen});
 }
 // Schalter je Aufgabe der erreichten Stufen, darunter die noch fehlenden Stufen und die Auswahl für Reserve und Geldgrenze.
 // Steht seit 7.5 im Fenster des Managers im Betrieb und im Fenster von unten, beide zeigen dasselbe.
@@ -976,7 +975,7 @@ function mgrFenster(b){
   ${st?`<div class="kv"><span>Lohn im Monat</span><span>${lohn}</span></div>`:''}
   ${m.zuletzt?`<div class="kv"><span>Zuletzt</span><span>${esc(m.zuletzt)}</span></div>`:''}
   ${mgrSchalter(b)}
-  ${n&&st&&!neu?`<div class="mut" style="margin:8px 0">Stufe ${n.stufe} kommt mit dem Rang ${RAENGE[n.rang].name}.</div>`:''}${mib('manager')}
+  ${n&&st&&!neu?`<div class="mut" style="margin:8px 0">Stufe ${n.stufe} kommt ${freiText(mgrK(n))}.</div>`:''}${mib('manager')}
   ${neu?`<div class="mitte"><button class="siegel" data-a="mgrDa">Okay</button></div>`:`<div class="btns"><button class="sec" data-a="close">Zurück</button></div>`}`;
 }
 // Stellt den nächsten Manager aus S.mgrNeu vor, sobald Zeitung und Feier vorbei sind und kein Fenster offen ist. Läuft am Ende von render.
@@ -1049,12 +1048,12 @@ function vMaschinen(){
   for(const [id,T] of Object.entries(MASCH)){
     const titel=`Neue${T.f?' ':'r '}${T.name}`, lw=T.leute==='lagerarb'?'Lagerarbeiter':'Fahrer', fa=`braucht ${T.fahrer} ${lw}`, hat=T.bonus&&S.maschinen.some(x=>x.typ===id);
     const was=(T.bonus?`${MASCH_BONUS[id]()}. ${wie[id]} Mehr als ${T.f?'eine':'einen'} brauchst du nicht`:`Schafft ${rbn(T.leist)} Reben bei der Lese und deckt übers Jahr ${T.helfer} Hektar Reben ab`)+`, ${fa}. Die Wartung kostet ${eur(T.wart)} je Prozentpunkt.<br><br>${mI}`;
-    if(S.rang<T.rang){zu.push(fenster('kauf_'+id,titel,'',{zu:`ab dem Rang ${RAENGE[T.rang].name}`,i:was})); continue}
+    if(!maschFrei(id)){zu.push(fenster('kauf_'+id,titel,'',{zu:maschFreiText(id),i:was})); continue}
     h+=fenster('kauf_'+id,titel,(T.bonus?`<div class="mut" style="margin-bottom:4px">${MASCH_BONUS[id]()}.</div>`:`<div class="kv"><span>Leistung bei der Lese</span><span>${rbn(T.leist)} Reben</span></div>
       <div class="kv"><span>Deckt übers Jahr ab</span><span>${T.helfer} Hektar Reben</span></div>`)+`<div class="kv"><span>${lw}</span><span>${fa}</span></div><div class="kv"><span>Wartung</span><span>${eur(T.wart)} je %</span></div>`,{
       links:hat?`Du hast schon ${T.f?'eine':'einen'}.`:saison?'':'Zu kaufen von Januar bis März.',kn:pk('maschKauf','Kaufen',eur(T.preis),{id,aus:!saison||hat,arm:S.geld<T.preis}),i:was});
   }
-  if(einZu('maschinen')) return einKarte('maschinen','Noch alles von Hand',`Am Anfang machst du alles von Hand. Die erste Maschine gibt es ab dem Rang ${RAENGE[Math.min(...Object.values(MASCH).map(T=>T.rang))].name}.`);
+  if(einZu('maschinen')) return einKarte('maschinen','Noch alles von Hand',`Am Anfang machst du alles von Hand. Maschinen kommen nach und nach, der Düngerstreuer ${maschFreiText('duenger')}.`);
   return h+zu.join('');
 }
 function ehrSumme(wein){
@@ -1200,7 +1199,7 @@ function vKellerStart(){
     links:'Ohne Sektkeller gibt es keinen Sekt.',
     kn:pk('sektKeller','Kaufen',eur(SEKTKELLER_PREIS),{klein:'einmal',arm:S.geld<SEKTKELLER_PREIS}),
     i:`Im Sektkeller gärt dein Wein ein zweites Mal, diesmal in der Flasche. Du kaufst ihn einmal für ${eur(SEKTKELLER_PREIS)}, danach machst du hier Sekt. ${sektI} Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche.`})+vorrat;
-  const an=!!S.sektAnlage, ak=!an&&S.rang>=R_SEKT_ANLAGE;
+  const an=!!S.sektAnlage, ak=!an&&frei('sekt_anlage');
   h+=fenster('sekt','Sektkeller',sektAufHefe().map(l=>{const n=lager(l).min-l.flMonate; return fz(dot(l.sorte)+lotName(l),`${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte`,`Noch ${n} ${n===1?'Monat':'Monate'} auf der Hefe.`,'')}),{
     leer:'Gerade liegt kein Sekt auf der Hefe. Neuer Sekt kommt mit der Lese der Sekt-Sorte.',
     hin:[an&&`🍾 Mit der ${SEKT_ANLAGE_NAME} kostet jede Flasche nur ${eur2(sektKosten())}.`],
@@ -2433,12 +2432,12 @@ const AKT={
     meldung('Der Sektkeller ist fertig',`Ab jetzt wird die Lese deiner ${ROLLEN.sekt.name} hier zu Sekt.`,'sektkeller');
   },
   sektAnlage(){
-    if(!S.sektkeller||S.sektAnlage||S.rang<R_SEKT_ANLAGE) return;
+    if(!S.sektkeller||S.sektAnlage||!frei('sekt_anlage')) return;
     if(S.geld<SEKT_ANLAGE_PREIS) return meldung('Zu wenig Geld',`Die ${SEKT_ANLAGE_NAME} kostet ${eur(SEKT_ANLAGE_PREIS)}.`,'fassgang');
     openSheet(`${sbild('fassgang')}<h3>🍾 Sektkeller ausbauen?</h3><p>Die ${SEKT_ANLAGE_NAME} kostet einmal ${eur(SEKT_ANLAGE_PREIS)}.</p><p class="mut">Degorgieren und Verkorken laufen dann nicht mehr von Hand. Jede Flasche Sekt kostet die Hälfte, ${eur2(Math.round(SEKT_KOSTEN*SEKT_ANLAGE_F*100)/100)} statt ${eur2(SEKT_KOSTEN)}. Sie braucht keine Leute und keine Wartung.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button data-a="sektAnlageJa">Ausbauen</button></div>`);
   },
   sektAnlageJa(){
-    if(!S.sektkeller||S.sektAnlage||S.rang<R_SEKT_ANLAGE||S.geld<SEKT_ANLAGE_PREIS) return;
+    if(!S.sektkeller||S.sektAnlage||!frei('sekt_anlage')||S.geld<SEKT_ANLAGE_PREIS) return;
     zahle(SEKT_ANLAGE_PREIS); S.sektAnlage=1; fx('stempel'); closeSheet(); save(); render();
     meldung('Die Anlage läuft',`Mit der ${SEKT_ANLAGE_NAME} kostet jede Flasche Sekt nur noch ${eur2(sektKosten())}.`,'fassgang');
   },
@@ -2463,7 +2462,7 @@ const AKT={
   },
   maschKauf(d){
     const id=d&&MASCH[d.id]?d.id:'klein', T=MASCH[id];
-    if(S.monat>2||S.rang<T.rang) return;
+    if(S.monat>2||!maschFrei(id)) return;
     if(T.bonus&&S.maschinen.some(x=>x.typ===id)) return meldung('Schon da',`${T.f?'Eine':'Einen'} ${T.name} hast du schon, ein zweiter Bonus kommt nicht dazu.`);
     if(S.geld<T.preis) return meldung('Zu wenig Geld',`${T.f?'Eine':'Ein'} ${T.name} kostet ${eur(T.preis)}.`);
     // Seit 12.2: Meldung mit Timos Bild, beim ersten Gerät der Art dazu ein Artikel im nächsten Winzerboten.

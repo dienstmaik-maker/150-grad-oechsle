@@ -29,10 +29,13 @@ const feldId=f=>R().sorten.find(id=>S.felder[id]===f);
 // Seit 13.3.2: Freischaltung nach Rang (FREI) und welche Stufen eine Sorte nach ihrer Rolle machen darf (WEIN_ROLLE).
 const freiAb=k=>(FREI[k]||{r:0}).r;
 // Seit 13.3.4 mit Abstand (ab Jahre nach dem Aufstieg in den Rang r, genau auf den Monat) und Ende (bis).
-function frei(k){const e=FREI[k]; if(!e) return true; if(S.rang<e.r||(e.bis!=null&&S.rang>=e.bis)) return false; if(!e.ab) return true;
+// Seit 13.5.1 dazu die Pflegestufe der Sorte einer Rolle (pfl), für die Stufen der Leute.
+const rolleSorte=rl=>R().sorten.find(id=>(SORTEN[id]||{}).rolle===rl);
+function pflFrei(p){const id=rolleSorte(p[0]); return !!id&&((S.felder[id]||{}).pflSt||0)>=p[1]}
+function frei(k){const e=FREI[k]; if(!e) return true; if(e.pfl) return pflFrei(e.pfl); if(S.rang<e.r||(e.bis!=null&&S.rang>=e.bis)) return false; if(!e.ab) return true;
   const m=(S.rangMon||{})[e.r]; return m!=null&&S.jahr*12+S.monat>=m+12*e.ab}
 // "ab dem Rang Winzer" oder "4 Jahre nach dem Rang Winzermeister", für Texte.
-const freiText=k=>{const e=FREI[k]; return e.ab?`${e.ab} Jahre nach dem Rang ${rangN(e.r)}`:`ab dem Rang ${rangN(e.r)}`};
+const freiText=k=>{const e=FREI[k]; return e.pfl?`mit der Stufe ${PFLEGE_STUFEN[e.pfl[1]]} der ${ROLLEN[e.pfl[0]].name}`:e.ab?`${e.ab} Jahre nach dem Rang ${rangN(e.r)}`:`ab dem Rang ${rangN(e.r)}`};
 // Monat jedes Aufstiegs (S.rangMon, Schlüssel ist der Rang). Springt jemand über einen Rang, gilt für beide derselbe Monat.
 function rangMonMerk(von,zu){const M=S.rangMon=S.rangMon||{0:START_JAHR*12}; for(let i=von+1;i<=zu;i++) if(M[i]==null) M[i]=S.jahr*12+S.monat}
 // Spielstände aus 13.1 und 13.2 ohne S.rangMon: aus S.zeitRang (Spieljahr des Aufstiegs) oder jetzt. Schon Freies kommt nicht noch einmal in den Winzerboten.
@@ -40,6 +43,23 @@ function altFrei(){if(!S.rangMon){const M=S.rangMon={0:START_JAHR*12}; for(let i
   if(!S.freiBote){S.freiBote={}; for(const k of Object.keys(FREI)) if(FREI[k].ab&&frei(k)) S.freiBote[k]=1}}
 // Was nach dem Abstand kommt, meldet der Winzerbote einmal.
 function freiBote(Z){const B=S.freiBote=S.freiBote||{}; for(const k of Object.keys(FREI)) if(FREI[k].ab&&FREI[k].bote&&!B[k]&&frei(k)){B[k]=1; Z.push(FREI[k].bote)}}
+// Seit 13.5.1: Stufen der Erntehelfer und Lagerarbeiter (S.leuteSt). Die höchste freie Stufe zählt, sie bringt die fehlenden mit und fällt nie zurück.
+// Mit Stufe 1 kommt der erste Mensch der Gruppe, wenn noch keiner da ist: eingestellt ohne Vermittlung, Lohn wie das Angebot des Monats.
+const LEUTE_K=['helfer','lagerarb'];
+function leuteSt(k){return (S.leuteSt||{})[k]||0}
+function leuteKommen(Z){
+  const L=S.leuteSt=S.leuteSt||{helfer:0,lagerarb:0};
+  for(const k of LEUTE_K){
+    let hoch=0; for(let n=1;n<=3;n++) if(frei(k+n)) hoch=n;
+    while((L[k]||0)<hoch){const n=L[k]=(L[k]||0)+1;
+      if(n===1&&!S[k]){S[k]=1; S.loehne[k].push(S.angebot[k]); S.loehne[k].sort((x,y)=>x-y); Z.push(LEUTE_ERST[k])}
+      Z.push(LEUTE_BOTE[k][n-1])}
+  }
+}
+// Für den Aufstiegstext: Stufen der Leute, die mit dem Rang i kommen (ohne Abstand, die anderen nennt abBringt).
+const leuteBringt=i=>LEUTE_K.flatMap(k=>[1,2,3].filter(n=>FREI[k+n].r===i&&!FREI[k+n].ab).map(n=>`${LEUTE_ST[k].name} Stufe ${n}: ${LEUTE_ST[k].kann[n-1]}`));
+// Seit 13.5.1: Maschinen kommen über FREI (Schlüssel masch_ und der Typ).
+const maschFrei=id=>frei('masch_'+id), maschFreiText=id=>freiText('masch_'+id);
 const rolleDarf=(id,st)=>{const rl=id&&SORTEN[id]?SORTEN[id].rolle:null; return !rl||!WEIN_ROLLE[rl]||WEIN_ROLLE[rl].includes(st)};
 // Seit 13.2.4: Rebschnitt von Hand. Kosten nach den Hektar der Sorte, möglich von Januar bis April, einmal im Jahr.
 const schnittKosten=id=>Math.round(SCHNITT_HA*(S.felder[id].reben||0)/HA_REBEN);
@@ -78,21 +98,24 @@ function aufgabeAktiv(k){return aufgabeDa(k)&&!!(S.manager[mgrAufgabe(k).bereich
 function mgrLohn(){let s=0; for(const b in S.manager||{}) s+=(mgrEintrag(b,mgrSt(b))||{}).lohn||0; return s}
 // Seit 11.5 (Teil C1): Bringt jeden Manager auf die Stufe, die der Rang erlaubt. Neue Aufgaben sind eingeschaltet, was die Stufe kostet, steht in e.kosten (im Spiel 0).
 // Läuft beim Aufstieg, beim Laden alter Spielstände und zur Sicherheit vor der Arbeit der Manager. S.mgrNeu merkt je Bereich, wer sich noch vorstellen muss ({b, von, st}).
+// Seit 13.5.1 über FREI (mgrK): Die höchste freie Stufe zählt, sie bringt die fehlenden mit, Manager fallen nie zurück.
+const mgrK=e=>'mgr_'+e.bereich+e.stufe;
 function mgrKommen(){
   const neu=[];
-  for(const e of MANAGER.slice().sort((a,b)=>a.rang-b.rang||a.stufe-b.stufe)){
-    if(S.rang<e.rang||mgrSt(e.bereich)!==e.stufe-1) continue;
+  for(const b of Object.keys(MGR_BEREICHE)){const E=MANAGER.filter(e=>e.bereich===b).sort((x,y)=>x.stufe-y.stufe), hoch=Math.max(0,...E.filter(e=>frei(mgrK(e))).map(e=>e.stufe));
+  for(const e of E){
+    if(e.stufe>hoch||mgrSt(b)>=e.stufe) continue;
     S.manager=S.manager||{}; const m=S.manager[e.bereich]=S.manager[e.bereich]||{stufe:0,an:{}};
     if(e.kosten) zahle(e.kosten);
     m.stufe=e.stufe; m.an=m.an||{}; for(const k of e.aufgaben) m.an[k]=1;
     neu.push(e);
     const q=S.mgrNeu=S.mgrNeu||[], x=q.find(x=>x.b===e.bereich); if(x) x.st=e.stufe; else q.push({b:e.bereich,von:e.stufe-1,st:e.stufe});
-  }
+  }}
   return neu;
 }
 // Für den Aufstiegstext: neue Manager und Beförderungen des Rangs i, gleiche Stufen zusammengefasst.
 function mgrBringt(i){
-  const E=MANAGER.filter(e=>e.rang===i), g={};
+  const E=MANAGER.filter(e=>e.rang===i&&!FREI[mgrK(e)].ab), g={};
   for(const e of E.filter(e=>e.stufe>1)) (g[e.stufe]=g[e.stufe]||[]).push(e.bereich);
   const N=b=>MGR_BEREICHE[b].name;
   return [...E.filter(e=>e.stufe===1).map(e=>`${mgrG(e.bereich).ein} ${N(e.bereich)}`),...Object.entries(g).map(([s,n])=>n.length>1?`Stufe ${s} für ${n.map(N).join(' und ')}`:`Stufe ${s} für ${mgrG(n[0]).den} ${N(n[0])}`)];
@@ -102,7 +125,7 @@ function mgrBringt(i){
 // Seit 7.2 liefert bringtTeile die einzelnen Punkte für die Urkunde, bringt fügt sie für Zeitung und Rang-Karte zusammen.
 // Seit 13.3.4 dazu, was mit Abstand kommt: "in 4 Jahren der Exporthandel".
 const abBringt=i=>Object.values(FREI).filter(e=>e.r===i&&e.ab&&e.name).map(e=>`in ${e.ab} Jahren ${e.name}`);
-function bringtTeile(i){const n=SORTE_RANG.indexOf(i), id=n>0&&S?sortenFolge()[n]:null; return [...RAENGE[i].neu.replace('{sorte}',`die ${n===1?'zweite':'dritte'} Rebsorte${id?' '+SORTEN[id].name:''}`).split(', '),...abBringt(i),...kellerBringt(i),...mgrBringt(i)]}
+function bringtTeile(i){const n=SORTE_RANG.indexOf(i), id=n>0&&S?sortenFolge()[n]:null; return [...RAENGE[i].neu.replace('{sorte}',`die ${n===1?'zweite':'dritte'} Rebsorte${id?' '+SORTEN[id].name:''}`).split(', '),...abBringt(i),...leuteBringt(i),...kellerBringt(i),...mgrBringt(i)]}
 // Seit 8.6: die zweite und dritte Stufe Kellerausbau als eigener Punkt beim Aufstieg. "Ausbaustufe" klein, damit FREI_SYM das Fass zeigt und nicht den Manager.
 function kellerBringt(i){return KELLER_RANG.map((r,k)=>k&&r===i?`die ${k===1?'zweite':'dritte'} Ausbaustufe im Keller`:'').filter(Boolean)}
 function bringt(i){return bringtTeile(i).join(', ')}
@@ -1193,7 +1216,7 @@ kompWissen('sektkeller','technik','Sektkeller',()=>`Kostet einmal ${eur(SEKTKELL
 kompWissen('reife','technik','Reife in der Flasche',()=>'In der Flasche gewinnt ein Wein mit jedem Jahr an Wert, höchstens bis zum Vierfachen. Wie schnell das geht und wie lange er hält, hängt an der Rebsorte und am Kellerausbau.');
 kompWissen('zuckern','technik','Zuckern und Wässern',()=>`Zucker hebt die Öchsle im Most, Wasser streckt die Menge, beides um höchstens ${ZUCKER_MAX} %. Bis ${ZUCKER_ERLAUBT} % ist das beim Tafelwein erlaubt. Alles andere ist Panscherei und ein Fall für den Weinprüfer.`);
 for(const id of Object.keys(MASCH)) kompWissen('masch_'+id,'technik',MASCH[id].name,
-  ()=>{const T=MASCH[id]; return `${T.bonus?MASCH_BONUS[id]():`Schafft ${rbn(T.leist)} Reben bei der Lese und deckt übers Jahr ${T.helfer} Hektar Reben ab`}. Zu kaufen ab dem Rang ${RAENGE[T.rang].name} für ${eur(T.preis)}.`});
+  ()=>{const T=MASCH[id]; return `${T.bonus?MASCH_BONUS[id]():`Schafft ${rbn(T.leist)} Reben bei der Lese und deckt übers Jahr ${T.helfer} Hektar Reben ab`}. Zu kaufen ${maschFreiText(id)} für ${eur(T.preis)}.`});
 kompWissen('hagel','gefahr','Hagel',()=>'Zwischen Juni und September kann ein Unwetter einen Teil der Trauben zerschlagen, die noch am Stock hängen.');
 kompWissen('spaetfrost','gefahr','Spätfrost',()=>'Friert es im April oder Mai noch einmal, leidet die Blüte, und die Ernte des Jahres fällt kleiner aus.');
 kompWissen('kaelte','gefahr','Das Wagnis im Herbst',()=>`Wer die Spitzen-Sorte über Oktober hängen lässt, wagt den Weg seines Gebiets. Jeder Monat kostet ${Math.round((1-WARTEN_MENGE)*100)} % Menge, und klappt es nicht, ist die Ernte des Feldes weg, zum Beispiel durch einen Kälteeinbruch im November.`);
@@ -1754,7 +1777,7 @@ function etappe3Monat(Z){
     // Seit 10.0: Das Amt beginnt in dem Monat, in dem der Spieler Präsident wird, auch wenn ein Gegner vorher schon Präsident war.
     if(S.rang===R_MAX&&!S.amt) amtStart();
   }
-  freiBote(Z); kontrolleMonat(Z); sabotageGegenDich(Z);
+  freiBote(Z); leuteKommen(Z); mgrKommen(); kontrolleMonat(Z); sabotageGegenDich(Z);
   if(S.monat===0&&S.rang>=R_BOTSCHAFT) Z.push(`Als Weinbotschafter ${WO[S.region]} warst du auf Messen in aller Welt unterwegs. +${ruhm(BOTSCHAFT_ANS)} Ansehen.`);
   Z.push(...gegnerMonat()); eisGeschichte();
   // Wettbewerbe: Ausschreibung im Februar (Land) und alle drei Jahre im Juni (Bund). Eingereicht wird im selben Monat, gewertet beim nächsten Monatswechsel.
@@ -2129,7 +2152,7 @@ function dauerAuftrag(){
 // Am Ort bleibt eine Zeile: hin, solange der Auftrag läuft, stand, wenn er aus ist. text hängt am i des Fensters.
 function dauerInfo(k){
   const e=mgrAufgabe(k), M=MGR_BEREICHE[e.bereich], G=mgrG(e.bereich), st=mgrSt(e.bereich), wer=`${G.Dein} ${M.name}`, lae=k==='laeden';
-  if(!aufgabeDa(k)) return {text:` Den Dauerauftrag ${lae?'für die Weinhandlungen':'für den Großhandel'} übernimmt `+(S.rang<e.rang?`ab dem Rang ${RAENGE[e.rang].name} ${G.dein} ${M.name}${e.stufe>1?` auf Stufe ${e.stufe}`:''}. Bis dahin verkaufst du selbst.`
+  if(!aufgabeDa(k)) return {text:` Den Dauerauftrag ${lae?'für die Weinhandlungen':'für den Großhandel'} übernimmt `+(!frei(mgrK(e))?`${freiText(mgrK(e))} ${G.dein} ${M.name}${e.stufe>1?` auf Stufe ${e.stufe}`:''}. Bis dahin verkaufst du selbst.`
     :`${G.dein} ${M.name}${e.stufe>1?` auf Stufe ${e.stufe}`:''}, sobald ${G.er} beim nächsten Weiterblättern dazukommt.`)};
   if(!aufgabeAktiv(k)) return {stand:'📋 Der Dauerauftrag ist aus. Einschalten kannst du ihn im Betrieb bei deinen Managern.',
     text:` ${wer} kann den Verkauf ${lae?'an die Weinhandlungen':'an den Großhandel'} als Dauerauftrag übernehmen.`};
@@ -2149,7 +2172,7 @@ function mgrHtml(){
 }
 // Was eine Stufe ohne Schalter bringt: der Kellermeister auf Stufe 3 lässt Wein schneller reifen, aber erst, wenn Schritt H einen Wert setzt.
 function mgrExtra(e){return e.bereich==='keller'&&e.stufe===3&&(MGR_REIFE||MGR_REIFE_MIN)?['Wein reift schneller']:e.bereich==='weingut'&&e.stufe===3&&MGR_ABNUTZ?[`Maschinen nutzen sich ${Math.round(MGR_ABNUTZ*100)} % weniger ab`]:[]}
-function mgrStufenText(e,st){const t=[...mgrAufg(e).map(k=>MGR_AUFGABEN[k].kurz),...mgrExtra(e)]; return `${e.stufe<=st?'✅':S.rang>=e.rang?'⬜':'🔒'} Stufe ${e.stufe} ab ${RAENGE[e.rang].name}${t.length?': '+t.join(', '):''}`}
+function mgrStufenText(e,st){const t=[...mgrAufg(e).map(k=>MGR_AUFGABEN[k].kurz),...mgrExtra(e)]; return `${e.stufe<=st?'✅':frei(mgrK(e))?'⬜':'🔒'} Stufe ${e.stufe} (${freiText(mgrK(e))})${t.length?': '+t.join(', '):''}`}
 // Was früher der Gutsverwalter tat, seit 7.0 (Schritt D) aufgeteilt: Weingut-Manager (Reben, Düngen, Erntehelfer) und Kellermeister (Keltern, Lagerarbeiter, ab Stufe 2 Abfüllen und Sekt).
 // Läuft beim Weiterblättern vor der Leute-Sperre, in derselben Reihenfolge wie beim Verwalter. Berichte stehen in S.mgrLog für die nächste Zeitung.
 function mgrBetrieb(){
@@ -2283,7 +2306,7 @@ const EIN_REGEL={
   helfer:()=>S.ha>ALLEIN_HA||S.rang>=R_AUKTION||S.helfer>0||S.maschinen.length>0||!!leuteFehlen().helfer,
   lagerarb:()=>S.fassraum>ALLEIN_FASS||S.flaschen>ALLEIN_FL||S.lagerarb>0||!!leuteFehlen().lagerarb||fassKap()-S.fassraum<500||flKap()-S.flaschen<100,
   leute:()=>einFrei('helfer')||einFrei('lagerarb'),
-  maschinen:()=>S.maschinen.length>0||Object.values(MASCH).some(T=>S.rang>=T.rang),
+  maschinen:()=>S.maschinen.length>0||Object.keys(MASCH).some(maschFrei),
   rangliste:()=>monatNr()>=12,
   ehrungen:()=>(S.ehrungen||[]).some(e=>!e.a)||kompZahlen().hab>0,
   ruf:()=>kompZahlen().hab>0,
@@ -2363,7 +2386,7 @@ function fuEhrNeu(f){const e=(S.ehrungen||[]).find(e=>!e.a&&f(e)); return !!e&&e
 const fuNach=()=>genNr()>=2;
 const fuGenFrisch=()=>S.jahr-START_JAHR<GEN_JAHRE*(genNr()-1)+2;
 // Seit 12.8 (Maik 21.11.2026): r6-5 im fünften Monat nach der Feier zum Weingutsbesitzer, alte Spielstände ohne Monat der Feier sofort (die Bremse verteilt sie).
-const fuR65Zeit=()=>{const rm=(S.fu.rm||{})[R_SEKT_ANLAGE]; return S.rang>=R_SEKT_ANLAGE&&(rm==null||monatNr()>=rm+4)};
+const fuR65Zeit=()=>frei('sekt_anlage');
 // Seit 12.8: m5 beim ersten Siegel der Partie, nur wenn beim ersten Blick des Spielführers noch keins da war (S.fu.h0). m6 beim ersten Gold,
 // frühestens einen Monat, spätestens zwölf Monate nach m5 (S.fu.m5m, Monat, in dem m5 dran war).
 const fuGold=()=>KOMP_KAP.some(k=>kompIds(k[0]).some(id=>kompSt(id)>=3));

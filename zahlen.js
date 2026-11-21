@@ -119,7 +119,34 @@ const FREI={wein_feder:{r:0},wein_tafel:{r:1},wein_qba:{r:2},wein_kab:{r:0},wein
   makler:{r:1},spende:{r:1},auktion:{r:2},land:{r:3},
   export:{r:3,ab:4,name:'der Exporthandel',bote:'🚢 Der Exporthandel nimmt jetzt auch deinen Wein. Er zahlt mehr als das Inland und nimmt dir mit jedem Rang mehr ab.'},
   sabotage:{r:3,ab:4,bis:5,name:'Sabotage hinter der Hintertür',bote:'💣 Hinter der Hintertür kennt man jetzt deinen Namen. Wer will, kann einem Gegner schaden lassen.'},
-  sorte_sekt:{r:4},sektkeller:{r:4},weinfest:{r:4},sorte_spitze:{r:5},laden:{r:6},botschafter:{r:6},bund:{r:7},hoffest:{r:7},kontrolle:{r:7},spitzenlage:{r:8}};
+  sorte_sekt:{r:4},sektkeller:{r:4},weinfest:{r:4},sorte_spitze:{r:5},laden:{r:6},botschafter:{r:6},bund:{r:7},hoffest:{r:7},kontrolle:{r:7},spitzenlage:{r:8},
+  // Seit 13.5.1 (Bauplan 13.5, Maik 21.11.2026): Stufen der Leute, Manager und Maschinen. pfl:[Rolle, Stufe] ist der zweite Auslöser neben Rang plus Abstand,
+  // er gilt, sobald die Sorte dieser Rolle die Pflegestufe erreicht hat. Leute und Manager fallen nie zurück (S.leuteSt, S.manager), auch wenn die Pflege später fällt.
+  // Eine höhere Stufe bringt die fehlenden mit, so bleibt die Reihenfolge immer gleich. Namen und Zeilen im Winzerboten sind Platzhalter bis 13.8.
+  helfer1:{r:2},helfer2:{pfl:['menge',3]},helfer3:{r:5},lagerarb1:{pfl:['menge',1]},lagerarb2:{r:3,ab:2,name:'Lagerarbeiter Stufe 2'},lagerarb3:{r:4},
+  mgr_handel1:{r:2,ab:2,name:'die Handels-Managerin',bote:'🤝 Ab heute arbeitet eine Handels-Managerin für dich. Sie kümmert sich um den Verkauf.'},
+  mgr_handel2:{r:4,ab:3,name:'Stufe 2 für die Handels-Managerin',bote:'🤝 Deine Handels-Managerin steigt auf Stufe 2.'},
+  mgr_handel3:{r:6,ab:4,name:'Stufe 3 für die Handels-Managerin',bote:'🤝 Deine Handels-Managerin steigt auf Stufe 3.'},
+  mgr_keller1:{r:3,ab:2,name:'der Kellermeister',bote:'🍷 Ab heute arbeitet ein Kellermeister für dich. Er kauft Fassraum und stellt Lagerarbeiter ein.'},
+  mgr_keller2:{r:4,ab:9,name:'Stufe 2 für den Kellermeister',bote:'🍷 Dein Kellermeister steigt auf Stufe 2.'},
+  mgr_keller3:{r:7,ab:3,name:'Stufe 3 für den Kellermeister',bote:'🍷 Dein Kellermeister steigt auf Stufe 3.'},
+  mgr_weingut1:{r:3,ab:6,name:'der Weingut-Manager',bote:'🌿 Ab heute arbeitet ein Weingut-Manager für dich. Er stellt Erntehelfer und Fahrer ein.'},
+  mgr_weingut2:{r:5,ab:9,name:'Stufe 2 für den Weingut-Manager',bote:'🌿 Dein Weingut-Manager steigt auf Stufe 2.'},
+  mgr_weingut3:{r:7,ab:11,name:'Stufe 3 für den Weingut-Manager',bote:'🌿 Dein Weingut-Manager steigt auf Stufe 3.'},
+  masch_duenger:{r:2,ab:3,name:'der Düngerstreuer',bote:'🚜 Beim Landhandel steht jetzt ein Düngerstreuer für dich. Kaufen kannst du ihn von Januar bis März.'},
+  masch_klein:{r:3},
+  masch_abfuell:{r:3,ab:4,name:'die Abfüllanlage',bote:'🍾 Für deinen Keller gibt es jetzt eine Abfüllanlage. Kaufen kannst du sie von Januar bis März.'},
+  sekt_anlage:{r:4,ab:5,name:'die Degorgier- und Abfüllanlage im Sektkeller',bote:'🍾 Für den Sektkeller gibt es jetzt eine Degorgier- und Abfüllanlage.'},
+  masch_gross:{r:5},
+  masch_abfuell2:{r:6,ab:12,name:'der Ausbau der Abfüllanlage',bote:'🍾 Deine Abfüllanlage lässt sich jetzt ausbauen, auf Stufe 2.'},
+  masch_laub:{r:7,ab:7,name:'der Laubschneider',bote:'🚜 Beim Landhandel steht jetzt ein Laubschneider für dich. Kaufen kannst du ihn von Januar bis März.'}};
+// Seit 13.5.1: Stufen der Erntehelfer und Lagerarbeiter, was sie je Stufe können, die Zeile im Winzerboten je Stufe und die kleine Geschichte des ersten Menschen der Gruppe.
+// Sie steigen von selbst auf, ohne Kauf und ohne höheren Lohn. Platzhalter-Texte bis 13.8.
+const LEUTE_ST={helfer:{name:'Erntehelfer',kann:['düngen','auch der Rebschnitt','auch nachpflanzen']},lagerarb:{name:'Lagerarbeiter',kann:['keltern','auch abfüllen und Etiketten kleben','auch den Sekt herstellen']}};
+const LEUTE_BOTE={helfer:['🧑‍🌾 Deine Erntehelfer düngen ab jetzt selbst, sobald der Boden mager wird.','✂️ Deine Erntehelfer können jetzt auch den Rebschnitt. Bis Ende April ist jede Sorte geschnitten.','🌱 Deine Erntehelfer pflanzen jetzt auch nach. Du sagst nur, welche Sorte und wie viel.'],
+  lagerarb:['🛢️ Deine Lagerarbeiter keltern ab jetzt die Lese selbst, sobald Fassraum frei ist.','🍾 Deine Lagerarbeiter füllen jetzt auch ab und kleben die Etiketten, sobald ein Wein angemeldet ist und Flaschen da sind.','🥂 Deine Lagerarbeiter stellen jetzt auch den Sekt her. Ob 9 oder 24 Monate auf der Hefe, sagst weiter du.']};
+const LEUTE_ERST={helfer:'🧑‍🌾 Ein Junge aus dem Dorf steht am Hoftor und fragt nach Arbeit im Weinberg. Er ist dein erster Erntehelfer.',
+  lagerarb:'🛢️ Eine Frau aus dem Dorf hat früher in einer Kellerei gearbeitet und fragt nach Arbeit. Sie ist deine erste Lagerarbeiterin.'};
 const LESE={reif:'nur reife Trauben',ueber:'nur überreife Trauben',alles:'reife und überreife'};
 const WETTER={sonnig:['☀️','sonnig'],mild:['⛅','mild'],regen:['🌧️','Regen'],kalt:['🌥️','kalt'],frost:['❄️','Frost']};
 // Boden: verliert jeden Monat BODEN_MONAT Punkte (in einem Regenmonat BODEN_REGEN) und mit jeder Lese 4. Einmal Düngen bringt 30, erlaubt sind drei Mal im Jahr.
@@ -192,11 +219,11 @@ const WO={mosel:'an der Mosel',rheingau:'im Rheingau',rheinhessen:'in Rheinhesse
 const RAENGE=[
   {name:'Neuling',kurz:'Neuling',ans:0,ha:0,verm:0,rahmen:20000,haAlt:0,deckel:4},
   {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:30,ha:3,verm:100000,rahmen:40000,haAlt:3,deckel:8,neu:'Tafelwein, der Makler im Rathaus, Spenden fürs Dorf, Kellerausbau'},
-  {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:6,verm:250000,rahmen:80000,haAlt:4,deckel:11,neu:'Qualitätswein, Auktionen, der Düngerstreuer'},
+  {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:6,verm:250000,rahmen:80000,haAlt:4,deckel:11,neu:'Qualitätswein, Auktionen'},
   {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:300,ha:9,verm:600000,rahmen:160000,haAlt:5,deckel:16,neu:'Landesprämierung, die Erntemaschine'},
-  {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:13,verm:1500000,rahmen:300000,haAlt:6,deckel:20,neu:'{sorte}, der Sektkeller, das Weinfest, der Laubschneider, die Degorgier- und Abfüllanlage im Sektkeller'},
+  {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:13,verm:1500000,rahmen:300000,haAlt:6,deckel:20,neu:'{sorte}, der Sektkeller, das Weinfest'},
   {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:16,verm:3500000,rahmen:300000,haAlt:8,deckel:26,neu:'{sorte}, der große Vollernter',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.',wegW:'Sabotage ist für dich ab jetzt tabu, eine Dame macht so etwas nicht.'},
-  {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:21,verm:6000000,rahmen:300000,haAlt:10,deckel:33,neu:'Auslese und der Weg deines Gebiets im Herbst, eine eigene Weinhandlung, das Amt des Weinbotschafters, die Abfüllanlage'},
+  {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:21,verm:6000000,rahmen:300000,haAlt:10,deckel:33,neu:'Auslese und der Weg deines Gebiets im Herbst, eine eigene Weinhandlung, das Amt des Weinbotschafters'},
   {name:'Verbandsvorstand',kurz:'Vorstand',w:'Verbandsvorständin',kw:'Vorständin',ans:4000,ha:26,verm:12000000,rahmen:300000,haAlt:13,deckel:36,neu:'Bundeswettbewerb, das Hoffest, du kannst Kontrollen anregen, in besonderen Jahren der fremde Weg im Herbst'},
   {name:'Vizepräsident',kurz:'Vizepräsident',w:'Vizepräsidentin',kw:'Vizepräsidentin',ans:6000,ha:29,verm:16000000,rahmen:300000,haAlt:16,deckel:41,neu:'Trockenbeerenauslese, die Chance auf eine Spitzenlage'},
   {name:'Präsident des Weinbauverbands',kurz:'Präsident',w:'Präsidentin des Weinbauverbands',kw:'Präsidentin',ans:8500,ha:33,verm:30000000,rahmen:300000,haAlt:20,deckel:50,neu:'der Stuhl im Festsaal, das Amt an der Spitze des Verbands, der Weg zur Weltweinschau'}
@@ -216,7 +243,7 @@ const R_MAX=RAENGE.length-1, R_AUKTION=FREI.auktion.r, R_MAKLER=FREI.makler.r, R
 // der Exporthandel ab FREI.export (R_EXPORT ist nur noch sein Rang, der Abstand kommt dazu), Kellerausbau ab R_KELLER (weiter unten).
 const R_SORTE2=FREI.sorte_sekt.r, R_SORTE3=FREI.sorte_spitze.r, R_SEKT=FREI.sektkeller.r, R_EXPORT=FREI.export.r, SORTE_RANG=[0,R_SORTE2,R_SORTE3];
 // Version 7.0 (Schritt D): drei Manager statt Gutsverwalter, nach dem Plan aus Schritt A ("Fundament für 7.0" in der Projektnotiz).
-// MANAGER: je Stufe der Bereich, die Stufe, ab welchem Rang (Index in RAENGE) sie geht und welche Aufgaben (Schlüssel aus MGR_AUFGABEN) sie dazubringt.
+// MANAGER: je Stufe der Bereich, die Stufe und welche Aufgaben (seit 13.5.1 kommt die Stufe über FREI, Schlüssel mgr_ mit Bereich und Stufe, rang liest dort nach) (Schlüssel aus MGR_AUFGABEN) sie dazubringt.
 // kosten: Einstellen (Stufe 1) oder Befördern, aus MGR_KOSTEN. lohn: Monatslohn auf dieser Stufe, aus MGR_LOHN, läuft über die Löhne.
 // Kosten und Lohn stehen bis Schritt H auf 0 (neutral, wie der frühere Verwalter). Startwerte für Schritt H: 5.000 / 20.000 / 60.000 € und 500 / 1.000 / 2.000 € im Monat.
 // Schritt E: Handel 3 (Regal, Wettbewerb, Fest), Keller 2 (Sekt, seit 8.5 dazu Abfüllen, Keltern ist seit 8.5 Stufe 1), Keller 3 (schnellere Reife, über MGR_REIFE und MGR_REIFE_MIN, kein Schalter).
@@ -259,18 +286,18 @@ const MGR_AUFGABEN={
 };
 // Reihenfolge je Rang wie im Freischalt-Plan, so stehen sie auch im Aufstiegstext.
 const MANAGER=[
-  {bereich:'handel',stufe:1,rang:2,aufgaben:['laeden']},
+  {bereich:'handel',stufe:1,aufgaben:['laeden']},
   // Seit 8.5 (Maik 18.11.2026): Stufe 1 keltert, Stufe 2 füllt ab. Vorher war es umgekehrt, Keltern fühlt sich mehr nach Kellermeister an.
   // Seit 13.3.3 macht niemand mehr Sekt von Hand oder als Manager, er entsteht bei der Lese der Sekt-Sorte.
-  {bereich:'keller',stufe:1,rang:3,aufgaben:['keltern','lager']},
-  {bereich:'weingut',stufe:1,rang:4,aufgaben:['reben','warten']},
-  {bereich:'handel',stufe:2,rang:4,aufgaben:['handel']},
-  {bereich:'keller',stufe:2,rang:5,aufgaben:['flaschen']},
-  {bereich:'weingut',stufe:2,rang:6,aufgaben:['duengen','spritzen']},
-  {bereich:'handel',stufe:3,rang:7,aufgaben:['regal','wett','fest']},
-  {bereich:'weingut',stufe:3,rang:8,aufgaben:['helfer']},
-  {bereich:'keller',stufe:3,rang:8,aufgaben:[]}
-].map(e=>Object.defineProperty(Object.assign(e,{kosten:MGR_KOSTEN[e.stufe-1]}),'lohn',{get:()=>lohnF(MGR_LOHN[e.stufe-1]),enumerable:true}));
+  {bereich:'keller',stufe:1,aufgaben:['keltern','lager']},
+  {bereich:'weingut',stufe:1,aufgaben:['reben','warten']},
+  {bereich:'handel',stufe:2,aufgaben:['handel']},
+  {bereich:'keller',stufe:2,aufgaben:['flaschen']},
+  {bereich:'weingut',stufe:2,aufgaben:['duengen','spritzen']},
+  {bereich:'handel',stufe:3,aufgaben:['regal','wett','fest']},
+  {bereich:'weingut',stufe:3,aufgaben:['helfer']},
+  {bereich:'keller',stufe:3,aufgaben:[]}
+].map(e=>Object.defineProperty(Object.defineProperty(Object.assign(e,{kosten:MGR_KOSTEN[e.stufe-1]}),'lohn',{get:()=>lohnF(MGR_LOHN[e.stufe-1]),enumerable:true}),'rang',{get:()=>FREI['mgr_'+e.bereich+e.stufe].r}));
 // Schummelei: Kälteeinbruch im November, Panschen, Weinkontrolle, Sabotage. Alle Zahlen an einer Stelle.
 // Seit 13.4.1: Frost im Winterwetter (Dezember bis Februar) für alle Gebiete gleich, der alte Wert der Mitte (Annahme von Claude, frost je Gebiet ist weg).
 const WINTER_FROST=.25;
@@ -368,7 +395,7 @@ const FESTE={weinfest:{name:'Weinfest',preis:WEINFEST_PREIS,ans:WEINFEST_ANS,tex
 // Seit 11.5 (Teil C2): Der Vollernter deckt einen großen Betrieb allein ab, VOLL_HELFER Hektar (bis 11.4: 10 Hektar, 10.000 Reben, 120.000 €, Wartung 300 € je Punkt).
 const VOLL_PREIS=450000, VOLL_LEISTUNG=25000, VOLL_HELFER=25, VOLL_WARTUNG=1000;
 // Seit 13.3.4: Erntemaschine und Vollernter haben eigene Ränge, damit sie nicht mit Landesprämierung und Bundeswettbewerb wandern. Die Maschinen kommen in 13.5 neu.
-const R_ERNTE=3, R_VOLL=5;
+const R_ERNTE=FREI.masch_klein.r, R_VOLL=FREI.masch_gross.r;
 // Version 8.0 (Paket A, Maik 17.11.2026): Jede Maschine hat im Spielstand einen Typ (ma.typ, Schlüssel in MASCH) und braucht fahrer Leute aus leute (hier Erntehelfer).
 // Fahrer-Regel: Eine Maschine ist nur im Einsatz, wenn ihr Zustand mindestens MASCH_ROT ist und genug Fahrer frei sind. Die größten Maschinen bekommen zuerst ihre Fahrer.
 // Nur Maschinen im Einsatz zählen als Helfer und bei der Ernteleistung. Fahrer bleiben dabei Erntehelfer und zählen selbst mit (Annahme von Claude aus dem Auftrag).
@@ -379,9 +406,9 @@ const R_ERNTE=3, R_VOLL=5;
 // Laubschneider: Sommerschnitt im Juni, jede Lese des Jahres bekommt LAUB_QP Qualitätspunkte mehr, dazu LAUB_ANS Ansehen. Abnutzung LAUB_ABN je Sommer.
 // Abfüllanlage: ABF_PLUS mehr Flaschen aus jedem Fass, ein Lagerarbeiter betreut ABF_FLASCHEN statt FLASCHEN_JE_LAGERARB leere Flaschen.
 // Abnutzung ABF_ABN je ABF_NORM abgefüllte Flaschen (rund ein Jahr auf 10 Hektar). Bedient wird sie von einem Lagerarbeiter.
-const STREU_PREIS=8000, STREU_WARTUNG=30, STREU_ABN=5, DUENG_PLUS=30, STREU_PLUS=40, STREU_RABATT=.3, R_STREU=2;
-const LAUB_PREIS=20000, LAUB_WARTUNG=60, LAUB_ABN=15, LAUB_QP=1, LAUB_ANS=4, R_LAUB=4;
-const ABF_PREIS=60000, ABF_WARTUNG=200, ABF_ABN=15, ABF_NORM=40000, ABF_PLUS=.05, ABF_FLASCHEN=75000, R_ABF=6;
+const STREU_PREIS=8000, STREU_WARTUNG=30, STREU_ABN=5, DUENG_PLUS=30, STREU_PLUS=40, STREU_RABATT=.3, R_STREU=FREI.masch_duenger.r;
+const LAUB_PREIS=20000, LAUB_WARTUNG=60, LAUB_ABN=15, LAUB_QP=1, LAUB_ANS=4, R_LAUB=FREI.masch_laub.r;
+const ABF_PREIS=60000, ABF_WARTUNG=200, ABF_ABN=15, ABF_NORM=40000, ABF_PLUS=.05, ABF_FLASCHEN=75000, R_ABF=FREI.masch_abfuell.r;
 // Reihenfolge wie die Ränge, so stehen sie auch im Feld Maschinen. f:1 heißt "die" (Dein/Deine, er/sie), ernte:1 liest bei der Lese mit.
 const MASCH={duenger:{name:'Düngerstreuer',preis:STREU_PREIS,leist:0,helfer:0,wart:STREU_WARTUNG,rang:R_STREU,fahrer:1,leute:'helfer',bonus:1,text:'streut den Dünger gleichmäßig'},
   klein:{name:'Erntemaschine',preis:MASCH_PREIS,leist:MASCH_LEISTUNG,helfer:MASCH_HELFER,wart:WARTUNG,rang:R_ERNTE,fahrer:1,leute:'helfer',ernte:1,f:1,text:'die kleine Maschine für den Anfang'},
@@ -602,7 +629,7 @@ const SEKT_F=1.6, SEKT_STAR=1.1, SEKT_GRUND='qba', SEKT_QP=5;
 // SEKT_KOSTEN ist Sektflasche, Korken und Agraffe. Einzige Wahl des Spielers bei der Lese: SEKT_REIFE Monate reifen oder HEFE_LANG Monate auf der Hefe (Feld hefe am Wein).
 // Seit 13.3.3 bringt das lange Hefelager HEFE_LANG_QP Qualitätspunkte, der Preis folgt über die Punkte (Startwert, Annahme von Claude, bis 12.9.5 der Faktor 1,25).
 // Preise und Faktor sind Annahmen von Claude bis zum Messlauf 12.1.7. Die Gegner rechnen ihren Sekt weiter über regionF.
-const SEKTKELLER_PREIS=40000, SEKT_ANLAGE_PREIS=30000, R_SEKT_ANLAGE=4, SEKT_ANLAGE_F=.5, SEKT_ANLAGE_NAME='Degorgier- und Abfüllanlage', SEKT_REIFE=9, HEFE_LANG=24, HEFE_LANG_QP=6;
+const SEKTKELLER_PREIS=40000, SEKT_ANLAGE_PREIS=30000, R_SEKT_ANLAGE=FREI.sekt_anlage.r, SEKT_ANLAGE_F=.5, SEKT_ANLAGE_NAME='Degorgier- und Abfüllanlage', SEKT_REIFE=9, HEFE_LANG=24, HEFE_LANG_QP=6;
 // Schritt 3: Faktor des Gebiets auf das Jahreseinkommen der Gegner. preisF und ertragF voll, Sterne mit ★★★ (ihre beste Sorte),
 // sektPreisF nur auf den Anteil GEGNER_SEKT, weil Sekt beim Test-Spieler rund 6 bis 14 % der Einnahmen bringt (Messung Schritt 2).
 const GEGNER_SEKT=.1;
@@ -946,7 +973,7 @@ const KAPITEL=[null,
 // 7.8: Wer die Anzeige gelesen hat, je Generation. Neutral, weil das Spiel das Geschlecht der ersten Generation nicht kennt.
 const VORFAHREN=['Deine Eltern','Deine Großeltern','Deine Urgroßeltern','Deine Vorfahren'];
 // Seit 10.6 nennt die Feier alles, was mit dem Rang auftaucht (gesperrte Fenster sind unsichtbar), dazu Makler, Spenden, Weinfest und Sabotage.
-const FREI_SYM=[[/Sabotage/,'💣'],[/Makler/,'🤝'],[/Spenden/,'💝'],[/Manager|Stufe/,'👔'],[/Rebsorte/,'🍇'],[/Auktion/,'🔨'],[/Sekt/,'🍾'],[/Export/,'🚢'],[/Keller/i,'🛢️'],[/prämierung|wettbewerb/i,'🏅'],[/ernte|vollernter/i,'🚜'],
+const FREI_SYM=[[/Erntehelfer|Lagerarbeiter/,'🧑‍🌾'],[/Sabotage/,'💣'],[/Makler/,'🤝'],[/Spenden/,'💝'],[/Manager|Stufe/,'👔'],[/Rebsorte/,'🍇'],[/Auktion/,'🔨'],[/Sekt/,'🍾'],[/Export/,'🚢'],[/Keller/i,'🛢️'],[/prämierung|wettbewerb/i,'🏅'],[/ernte|vollernter/i,'🚜'],
   [/Weinhandlung/,'🏪'],[/botschafter/i,'🎗️'],[/Hoffest|Weinfest/,'🎉'],[/Kontrolle/,'🔍'],[/Spitzenlage/,'⛰️'],[/Sieg/,'👑']];
 // Version 9.0: Aufstiegs-Szene (FSTUFE -1) vor der Bild-Bühne. Erst das Sommerbild der alten Stufe mit dem alten Rang, dann wechselt der Titel
 // und das Sommerbild der neuen Stufe blendet über, egal welcher Monat ist (Sommer-Regel, Maik 18.11.2026). Ein Tipp zeigt gleich das Ende.
