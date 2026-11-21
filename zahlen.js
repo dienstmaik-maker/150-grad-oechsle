@@ -115,7 +115,7 @@ const WEIN_ROLLE={menge:['feder','tafel','qba','kab','spat'],sekt:[],spitze:['fe
 // unter "in 4 Jahren" und im Winzerboten, bote ist die Zeile, wenn es nach dem Abstand kommt (Platzhalter bis 13.8). 13.4 und 13.5 hängen hier ihre Einträge an.
 // Seit 13.4.2: Beerenauslese und Eiswein haben kein eigenes Rang-Schloss mehr, sie kommen nur über den Weg des Gebiets im Herbst (weg_eigen ab R6).
 // Trockenbeerenauslese ab R8 bleibt als Übergang, bis 13.4.5 sie über weg_tba freigibt. Feder-, Tafel- und Qualitätswein gelten für jede Rolle, die sie machen darf (Annahme von Claude).
-const FREI={wein_feder:{r:0},wein_tafel:{r:1},wein_qba:{r:2},wein_kab:{r:0},wein_spat:{r:0},wein_aus:{r:6},wein_tba:{r:8},weg_eigen:{r:6},
+const FREI={wein_feder:{r:0},wein_tafel:{r:1},wein_qba:{r:2},wein_kab:{r:0},wein_spat:{r:0},wein_aus:{r:6},wein_tba:{r:8},weg_eigen:{r:6},weg_fremd:{r:7},
   makler:{r:1},spende:{r:1},auktion:{r:2},land:{r:3},
   export:{r:3,ab:4,name:'der Exporthandel',bote:'🚢 Der Exporthandel nimmt jetzt auch deinen Wein. Er zahlt mehr als das Inland und nimmt dir mit jedem Rang mehr ab.'},
   sabotage:{r:3,ab:4,bis:5,name:'Sabotage hinter der Hintertür',bote:'💣 Hinter der Hintertür kennt man jetzt deinen Namen. Wer will, kann einem Gegner schaden lassen.'},
@@ -197,7 +197,7 @@ const RAENGE=[
   {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:13,verm:1500000,rahmen:300000,haAlt:6,deckel:20,neu:'{sorte}, der Sektkeller, das Weinfest, der Laubschneider, die Degorgier- und Abfüllanlage im Sektkeller'},
   {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:16,verm:3500000,rahmen:300000,haAlt:8,deckel:26,neu:'{sorte}, der große Vollernter',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.',wegW:'Sabotage ist für dich ab jetzt tabu, eine Dame macht so etwas nicht.'},
   {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:21,verm:6000000,rahmen:300000,haAlt:10,deckel:33,neu:'Auslese und der Weg deines Gebiets im Herbst, eine eigene Weinhandlung, das Amt des Weinbotschafters, die Abfüllanlage'},
-  {name:'Verbandsvorstand',kurz:'Vorstand',w:'Verbandsvorständin',kw:'Vorständin',ans:4000,ha:26,verm:12000000,rahmen:300000,haAlt:13,deckel:36,neu:'Bundeswettbewerb, das Hoffest, du kannst Kontrollen anregen'},
+  {name:'Verbandsvorstand',kurz:'Vorstand',w:'Verbandsvorständin',kw:'Vorständin',ans:4000,ha:26,verm:12000000,rahmen:300000,haAlt:13,deckel:36,neu:'Bundeswettbewerb, das Hoffest, du kannst Kontrollen anregen, in besonderen Jahren der fremde Weg im Herbst'},
   {name:'Vizepräsident',kurz:'Vizepräsident',w:'Vizepräsidentin',kw:'Vizepräsidentin',ans:6000,ha:29,verm:16000000,rahmen:300000,haAlt:16,deckel:41,neu:'Trockenbeerenauslese, die Chance auf eine Spitzenlage'},
   {name:'Präsident des Weinbauverbands',kurz:'Präsident',w:'Präsidentin des Weinbauverbands',kw:'Präsidentin',ans:8500,ha:33,verm:30000000,rahmen:300000,haAlt:20,deckel:50,neu:'der Stuhl im Festsaal, das Amt an der Spitze des Verbands, der Weg zur Weltweinschau'}
 ];
@@ -619,7 +619,13 @@ const OE_START=49, OE_PLUS=[14,14,12,15,4];
 // kühl bis Dezember auf Frost (Eiswein mit dem Öchsle der Trauben). WAGNIS.eigen ist die Chance im eigenen Weg. Klappt es nicht, ist die Ernte des Feldes weg.
 // WARTEN_MENGE bleibt von der Menge je Monat über Oktober hinaus (für jedes Feld). WAGNIS_F ist der neutrale Haken für die Schwankung der Spielstufen (13.7).
 // Seit 13.4.3: In der Mitte (weg beide) sind beide Wege eigene, die Chance hängt an der Tendenz: mit ihr WAGNIS.mitTend, dagegen oder bei unklar WAGNIS.gegenTend.
-const WAGNIS={eigen:.7,mitTend:.55,gegenTend:.2}, WARTEN_MENGE=.9, WAGNIS_F=1;
+// Seit 13.4.4: Ab R7 öffnet ein besonderes Jahr den fremden Weg (warm ein harter Winter für den Eiswein, kühl ein goldener Herbst für die Edelfäulnis)
+// mit WAGNIS.fremd. Ein Jahr ist mit FREMD_JAHR besonders (etwa alle acht Jahre), in der Mitte gibt es keinen fremden Weg.
+const WAGNIS={eigen:.7,mitTend:.55,gegenTend:.2,fremd:.5}, WARTEN_MENGE=.9, WAGNIS_F=1, FREMD_JAHR=1/8;
+// Seit 13.4.4: Meldung im Winzerboten vom September, wenn der fremde Weg offen ist, nach dem Weg, den sie öffnet. Platzhalter bis 13.8.
+const FREMD_TEXT={
+  frost:['Ein harter Winter kündigt sich an','Die Alten {wo} spüren es in den Knochen: Dieser Winter wird hart. Wer seine Spitzen-Sorte bis Dezember hängen lässt, hat diesmal eine Chance auf Eiswein.'],
+  edel:['Ein goldener Herbst kündigt sich an','Warme Tage, feuchte Nächte: {wo} rechnen die Alten in diesem Jahr mit Edelfäulnis. Wer seine Spitzen-Sorte bis November hängen lässt, hat diesmal eine Chance auf Beerenauslese.']};
 // Seit 13.4.3: die Tendenz des Herbstes in der Mitte, je zu einem Drittel (Annahme von Claude), gemeldet im Winzerboten vom September ab R6.
 // weg ist der Weg, zu dem sie passt. text ist die Meldung ({wo} ist der Ort), Platzhalter bis 13.8.
 const TENDENZEN=[

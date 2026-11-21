@@ -904,16 +904,21 @@ function wachse(m){
 // Die Würfe des Jahres aus dem festen Wetter (Thema 11), für Spieler und Gegner gleich. Neu laden ändert nichts.
 function herbstJahr(j=S.jahr){return {uEdel:fest(11,0,j,0),uFrost:fest(11,1,j,0),uTend:fest(11,2,j,0),uFremd:fest(11,3,j,0),uTba:fest(11,4,j,0)}}
 // Die Tendenz des Herbstes in der Mitte (seit 13.4.3).
+// Seit 13.4.4: ein besonderes Jahr, das in warmen und kühlen Gebieten den fremden Weg öffnet.
+const herbstFremd=(j=S.jahr)=>herbstJahr(j).uFremd<FREMD_JAHR;
 const herbstTend=(j=S.jahr)=>TENDENZEN[Math.min(TENDENZEN.length-1,Math.floor(herbstJahr(j).uTend*TENDENZEN.length))];
 // Chance des Wegs w (edel oder frost) im Gebiet r im Jahr j, 0 wenn der Weg dort zu ist. Das Rang-Schloss prüft wegeOffen.
 function wegChance(w,r=S.region,j=S.jahr){
   const g=REGIONEN[r].weg; let p=0;
   if(g==='beide') p=herbstTend(j).weg===w?WAGNIS.mitTend:WAGNIS.gegenTend;
   else if(g===w) p=WAGNIS.eigen;
+  else if(herbstFremd(j)) p=WAGNIS.fremd;
   return Math.min(1,p*WAGNIS_F);
 }
 // Die Wege, die der Spieler in diesem Jahr wagen darf (frei: weg_eigen).
-function wegeOffen(){if(!frei('weg_eigen')) return []; const g=R().weg; return (g==='beide'?['edel','frost']:[g]).filter(w=>wegChance(w)>0)}
+// Seit 13.4.4 dazu der fremde Weg (frei: weg_fremd) in einem besonderen Jahr.
+const wegFremd=g=>g==='edel'?'frost':g==='frost'?'edel':null;
+function wegeOffen(){if(!frei('weg_eigen')) return []; const g=R().weg; return (g==='beide'?['edel','frost']:[g,...(frei('weg_fremd')&&herbstFremd()?[wegFremd(g)]:[])]).filter(w=>wegChance(w)>0)}
 // Nur die Spitzen-Sorte wagt (Sorten ohne Rolle in Messläufen auch).
 const wagnisFeld=id=>rolleDarf(id,'ba');
 // Der Weg eines Feldes: schon entschieden (f.wagnis), gewählt (f.weg) oder der mit der besten Chance.
@@ -1625,6 +1630,8 @@ function monatLauf(){
   if(S.monat===7) schlag(30,'Die Lese beginnt','Ab jetzt kannst du lesen. Wer länger hängen lässt, bekommt mehr Öchsle, riskiert aber Regen, Fäulnis und Frost.','lese',{archiv:1});
   // Seit 13.4.3: In der Mitte meldet der Winzerbote im September die Tendenz des Herbstes, sobald der Weg offen ist.
   if(S.monat===8&&R().weg==='beide'&&frei('weg_eigen')) schlag(45,'Der Herbst kündigt sich an',herbstTend().text.replace('{wo}',WO[S.region]),'lese',{du:feldHaengt().length?1:0});
+  // Seit 13.4.4: Der Winzerbote sagt an, wenn der fremde Weg offen ist, und nur dann.
+  if(S.monat===8&&wegeOffen().includes(wegFremd(R().weg))){const T=FREMD_TEXT[wegFremd(R().weg)]; schlag(46,T[0],T[1].replace('{wo}',WO[S.region]),'lese',{du:1})}
   // Schritt G 7.0: Der Kredit für die Erbschaftssteuer (erbRest) zählt nicht gegen den Kreditrahmen.
   if(schulden()-erbRest()>rahmen()){
     S.mahnung++;
