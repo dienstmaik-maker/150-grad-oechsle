@@ -259,9 +259,15 @@ function wagnisHinweis(id){
   if(f.gefroren||!(f.menge>0)||f.gelesen) return '';
   if(f.wagnis==='frost') return `<br><b>🎲 Wagnis Eiswein:</b> Dein ${SORTEN[id].name} wartet auf Frost im Dezember. Klappt es nicht, ist die Ernte dieses Feldes weg.`;
   if(f.wagnis==='edel') return m===10?'<br><span class="rot">Im Dezember verfault, was noch hängt.</span>':'';
-  if(m<=9&&w) return `<br><b>🎲 Wagnis:</b> ${w==='edel'?'Lässt du die Trauben bis November hängen, kann Edelfäulnis eine Beerenauslese bringen.':'Lässt du die Trauben bis Dezember hängen, kann Frost einen Eiswein bringen.'} Klappt es nicht, ist die Ernte dieses Feldes weg. Jeder Monat über Oktober kostet ${wm} % Menge.`;
+  const zwei=wegeOffen().length>1, wahl=zwei?` Dein Weg: ${w==='edel'?'bis November auf Edelfäulnis':'bis Dezember auf Frost'}, wählen kannst du bis Oktober.`:'', tend=R().weg==='beide'&&m>=8?` Tendenz im Winzerboten: ${herbstTend().name}.`:'';
+  if(m<=9&&w) return `<br><b>🎲 Wagnis:</b>${tend}${wahl} ${w==='edel'?'Lässt du die Trauben bis November hängen, kann Edelfäulnis eine Beerenauslese bringen.':'Lässt du die Trauben bis Dezember hängen, kann Frost einen Eiswein bringen.'} Klappt es nicht, ist die Ernte dieses Feldes weg. Jeder Monat über Oktober kostet ${wm} % Menge.`;
   if(m>=9) return `<br><span class="rot">${m===9?`Ab November kostet jeder Monat ${wm} % Menge, im Dezember verfault, was noch hängt.`:'Im Dezember verfault, was noch hängt.'}</span>`;
   return '';
+}
+// Seit 13.4.3: Sind zwei Wege offen, wählt der Spieler bis Oktober, wie lange er wartet. Der gewählte Weg ist der volle Knopf.
+function wagnisKnoepfe(id){
+  const f=S.felder[id], m=S.monat; if(m<7||m>9||f.gelesen||!(f.menge>0)||f.wagnis||!wagnisFeld(id)||wegeOffen().length<2) return [];
+  const w=feldWeg(id); return [['edel','🍯 Bis Nov.'],['frost','❄️ Bis Dez.']].map(([k,t])=>`<button class="klein${w===k?'':' sec'}" data-a="wagnisWahl" data-id="${id}" data-w="${k}">${t}</button>`);
 }
 function leseHilfe(f){
   if(sektSorte(feldId(f))) return S.sektkeller?`<b>Jetzt möglich:</b> Sekt, ${num(feldLiter(f,'alles'))} Flaschen. Bei der Lese wählst du ${SEKT_REIFE} oder ${HEFE_LANG} Monate auf der Hefe.`:'<b>Ohne Sektkeller kein Sekt.</b> Die Sekt-Sorte macht nur Sekt.';
@@ -1133,7 +1139,7 @@ function vBerg(){
     h+=fenster('feld_'+id,titel,z,{buch:m>=7?'lese':'berg',
       hin:[mr&&m<=2&&S.verlust&&S.verlust[id]>0&&`${WM} pflanzt beim Weiterblättern nach.`],
       links:sektOhne?'Die Sekt-Sorte macht nur Sekt, erst den Sektkeller kaufen.':pflanz&&frei<10?'Auf deinem Land ist kein Platz mehr frei.':haengt?'Lese ab August.':schnitt?`✂️ Rebschnitt bis Ende April: ${eur(schnittKosten(id))}`:'',
-      kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,schnitt&&`<button class="klein" data-a="schneiden" data-id="${id}" ${S.geld<schnittKosten(id)?'disabled':''}>Schneiden</button>`,pflanz&&`<button class="klein" data-a="pflanzen" data-id="${id}" ${frei<10?'disabled':''}>Pflanzen</button>`,pflanz&&f.reben&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
+      kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,...wagnisKnoepfe(id),schnitt&&`<button class="klein" data-a="schneiden" data-id="${id}" ${S.geld<schnittKosten(id)?'disabled':''}>Schneiden</button>`,pflanz&&`<button class="klein" data-a="pflanzen" data-id="${id}" ${frei<10?'disabled':''}>Pflanzen</button>`,pflanz&&f.reben&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
   }
   h+=fenster('duengung','Düngung',`<div class="kv"><span>Boden-Stufe</span><span>${stufeSatz(S.bodenSt||0,S.bodenZ||0,BODEN_SCHWELLE,BODEN_STUFEN)}</span></div>
     <div class="kv"><span>Gute Bodenjahre</span><span>${S.bodenZ||0}</span></div><div class="mut">Ein Jahresschnitt ab ${BODEN_GUT} % zählt als gutes Bodenjahr.</div>
@@ -2210,6 +2216,8 @@ const AKT={
     duenge();fx('stempel');save();render();
   },
   // Seit 13.2.4: Rebschnitt von Hand, je Sorte einmal von Januar bis April.
+  // Seit 13.4.3: Weg des Wagnisses wählen, solange es noch nicht entschieden ist.
+  wagnisWahl(d){const f=S.felder[d.id]; if(!f||f.wagnis||!wegeOffen().includes(d.w)) return; f.weg=d.w; save(); render()},
   schneiden(d){
     if(!schnittOffen(d.id)) return; const k=schnittKosten(d.id);
     if(S.geld<k) return meldung('Zu wenig Geld',`Der Rebschnitt kostet ${eur(k)}.`);

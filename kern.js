@@ -903,10 +903,13 @@ function wachse(m){
 /* ================= Herbst der Spitzen-Sorte (seit 13.4) ================= */
 // Die Würfe des Jahres aus dem festen Wetter (Thema 11), für Spieler und Gegner gleich. Neu laden ändert nichts.
 function herbstJahr(j=S.jahr){return {uEdel:fest(11,0,j,0),uFrost:fest(11,1,j,0),uTend:fest(11,2,j,0),uFremd:fest(11,3,j,0),uTba:fest(11,4,j,0)}}
+// Die Tendenz des Herbstes in der Mitte (seit 13.4.3).
+const herbstTend=(j=S.jahr)=>TENDENZEN[Math.min(TENDENZEN.length-1,Math.floor(herbstJahr(j).uTend*TENDENZEN.length))];
 // Chance des Wegs w (edel oder frost) im Gebiet r im Jahr j, 0 wenn der Weg dort zu ist. Das Rang-Schloss prüft wegeOffen.
 function wegChance(w,r=S.region,j=S.jahr){
   const g=REGIONEN[r].weg; let p=0;
-  if(g===w) p=WAGNIS.eigen;
+  if(g==='beide') p=herbstTend(j).weg===w?WAGNIS.mitTend:WAGNIS.gegenTend;
+  else if(g===w) p=WAGNIS.eigen;
   return Math.min(1,p*WAGNIS_F);
 }
 // Die Wege, die der Spieler in diesem Jahr wagen darf (frei: weg_eigen).
@@ -1620,6 +1623,8 @@ function monatLauf(){
   if(S.spBote&&S.spBote.length){for(const s of S.spBote) spBote(s); S.spBote=[]}
   if(S.stBote&&S.stBote.length){stBote(S.stBote); S.stBote=[]}
   if(S.monat===7) schlag(30,'Die Lese beginnt','Ab jetzt kannst du lesen. Wer länger hängen lässt, bekommt mehr Öchsle, riskiert aber Regen, Fäulnis und Frost.','lese',{archiv:1});
+  // Seit 13.4.3: In der Mitte meldet der Winzerbote im September die Tendenz des Herbstes, sobald der Weg offen ist.
+  if(S.monat===8&&R().weg==='beide'&&frei('weg_eigen')) schlag(45,'Der Herbst kündigt sich an',herbstTend().text.replace('{wo}',WO[S.region]),'lese',{du:feldHaengt().length?1:0});
   // Schritt G 7.0: Der Kredit für die Erbschaftssteuer (erbRest) zählt nicht gegen den Kreditrahmen.
   if(schulden()-erbRest()>rahmen()){
     S.mahnung++;

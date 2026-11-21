@@ -618,7 +618,14 @@ const OE_START=49, OE_PLUS=[14,14,12,15,4];
 // Wer länger hängen lässt, wagt den Weg seines Gebiets: warm bis November auf Edelfäulnis (Beerenauslese, mindestens MIN_NORMAL.ba),
 // kühl bis Dezember auf Frost (Eiswein mit dem Öchsle der Trauben). WAGNIS.eigen ist die Chance im eigenen Weg. Klappt es nicht, ist die Ernte des Feldes weg.
 // WARTEN_MENGE bleibt von der Menge je Monat über Oktober hinaus (für jedes Feld). WAGNIS_F ist der neutrale Haken für die Schwankung der Spielstufen (13.7).
-const WAGNIS={eigen:.7}, WARTEN_MENGE=.9, WAGNIS_F=1;
+// Seit 13.4.3: In der Mitte (weg beide) sind beide Wege eigene, die Chance hängt an der Tendenz: mit ihr WAGNIS.mitTend, dagegen oder bei unklar WAGNIS.gegenTend.
+const WAGNIS={eigen:.7,mitTend:.55,gegenTend:.2}, WARTEN_MENGE=.9, WAGNIS_F=1;
+// Seit 13.4.3: die Tendenz des Herbstes in der Mitte, je zu einem Drittel (Annahme von Claude), gemeldet im Winzerboten vom September ab R6.
+// weg ist der Weg, zu dem sie passt. text ist die Meldung ({wo} ist der Ort), Platzhalter bis 13.8.
+const TENDENZEN=[
+  {k:'feucht',name:'feuchter, milder Herbst',weg:'edel',text:'Die Wetterkundigen {wo} erwarten einen feuchten, milden Herbst. Das mag die Edelfäulnis, wer bis November wartet.'},
+  {k:'klar',name:'klare, kalte Nächte',weg:'frost',text:'Die Wetterkundigen {wo} erwarten klare, kalte Nächte. Das mag der Frost, wer bis Dezember auf Eiswein wartet.'},
+  {k:'unklar',name:'unklar',weg:null,text:'Die Wetterkundigen {wo} sind sich uneins, wie der Herbst wird. Wer jetzt noch wartet, wagt viel.'}];
 // Winzerbote, wenn das Wagnis nicht klappt: Titel, Text ({s} ist die Sorte), Bild. Platzhalter, der Wortlaut kommt in 13.8.
 const WAGNIS_AUS={
   edel:['Kälteeinbruch im November','Über Nacht ist es bitterkalt geworden. Dein {s} hing noch für die Edelfäulnis am Stock und ist erfroren.','frost'],
