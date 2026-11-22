@@ -1337,6 +1337,17 @@ kompWissen('regeln','stufe','Reifezeit und Regeln',()=>{
 });
 // Die Edelfäulnis ist keine Gefahr, sie ist ein Gütezeichen (Maik 19.11.2026). Ihre Seite steht deshalb bei den Stufen.
 kompWissen('edel','stufe','Edelfäulnis',()=>`${edelRegel()}. Dann reicht der Zucker für eine Beerenauslese. Kabinett und Spätlese gibt es von dem Feld dann nicht mehr.`)
+// Seit 13.7.4 (Bauplan 13.7, Entscheidung 3): Was die Zeichen fürs Warten im Herbst bedeuten, damit niemand raten muss. Die Zahlen kommen aus den Konstanten,
+// der Abschnitt zur Spielstufe sagt, welche Zeichen in dieser Partie zählen. Platzhalter-Texte, der Wortlaut kommt in 13.8.
+kompWissen('zeichen','stufe','Zeichen fürs Warten',()=>{
+  const T=WAG_TEILE[S.schwer]||[], [u,o]=wagSpanne(), W=SOMMER_W, mitte=Object.keys(REGIONEN).filter(r=>REGIONEN[r].weg==='beide').map(r=>REGIONEN[r].name).join(' und ');
+  const stufe=!T.length?`In den ${DIFF[S.schwer].name}n ist die Chance jedes Jahr gleich und steht als Zahl am Lese-Knopf. Die Zeichen gibt es trotzdem, ab den Gesellenjahren zählen sie.`
+    :`In dieser Partie verschieben die Zeichen die Chance um ${u} bis +${o} Punkte, für alle Felder und Wege im selben Jahr gleich. Sie liegt nie unter ${pz(WAG_MIN)} und nie über ${pz(WAG_MAX)}.${CHANCE_ZEIGE[S.schwer]?'':' Am Lese-Knopf steht hier nichts, du liest die Chance nur aus den Zeichen.'}`;
+  return `${stufe}<br><br><b>☀️ Der Sommer</b><br>Das Wetter von ${MON[SOMMER_MON[0]]} bis ${MON[SOMMER_MON[1]]} zählt fürs Warten: jeder sonnige Monat ${W.sonnig>0?'+':''}${W.sonnig} Punkte, jeder verregnete ${W.regen}, kalt ${W.kalt}, Frost ${W.frost}. Ein feuchter September heißt also: lieber lesen.${T.includes('sommer')?'':' (zählt erst ab den Gesellenjahren)'}`
+    +`<br><br><b>🐛 Das Schädlingsjahr</b><br>Alle ${SCHAEDJ_PAUSE[0]} bis ${SCHAEDJ_PAUSE[1]} Jahre meldet das Weinbauamt im ${MON[SCHAEDJ_MON]} ein Schädlingsjahr. Es nimmt der Ernte nichts, die Menge-Sorte bleibt sicher, aber das Warten kostet ${SCHAEDJ_MINUS} Punkte Chance.${T.includes('schaed')?'':' (nur in der Meisterprüfung)'}`
+    +`<br><br><b>👴 Die Alten im Winzerboten</b><br>Im September sagen die Alten auf der Bank vor der Kirche, was sie vom Jahr halten: zuversichtlich, bedeckt oder besorgt. Sie wissen ein bisschen mehr als der Sommer allein.${T.includes('rest')?'':' (nur in der Meisterprüfung)'}`
+    +`<br><br><b>🍂 Die Tendenz</b><br>In ${mitte} meldet der Winzerbote im September dazu die Tendenz des Herbstes. Sie sagt nur, welcher Weg besser ist, Edelfäulnis oder Frost. Wie gut das Jahr fürs Warten ist, sagen die anderen Zeichen.`;
+});
 // Was eine Stufe braucht, mit den Hürden des eigenen Gebiets (früher die Zeilen im Weinlexikon).
 function kompStufeText(st){
   const m=R().min, d=STUFEN[st];
@@ -1353,7 +1364,7 @@ function kompIds(kap){
 // Alles, was ein Kapitel zeigt: erst die Einträge mit Siegeln, dann die Wissens-Seiten. Bei den Gebieten steht das eigene oben.
 function kompSeiten(kap){
   if(kap==='sorte') return [...kompIds(kap),...sortenFolge().map(id=>'sorte_'+id)];
-  if(kap==='stufe') return [...kompIds(kap),'edel','regeln'];
+  if(kap==='stufe') return [...kompIds(kap),'edel','zeichen','regeln'];
   if(kap==='gebiet') return ['gebiet_'+S.region,'spitze',...Object.keys(REGIONEN).filter(r=>r!==S.region).map(r=>'gebiet_'+r)];
   if(kap==='technik') return [...KELLER_PREISE.map((p,i)=>'keller'+(i+1)),'sektkeller','reife','zuckern',...Object.keys(MASCH).map(id=>'masch_'+id)];
   if(kap==='gefahr') return ['hagel','spaetfrost','kaelte','skandal','kontrolle','maschine','helferweg',...Object.keys(SCHAED).filter(a=>schaedAn()&&(S.schaedGes||{})[a])];
