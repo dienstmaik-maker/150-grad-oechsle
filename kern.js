@@ -1028,7 +1028,8 @@ function wegChance(w,r=S.region,j=S.jahr){
 }
 // Seit 13.6.2: Chance der Trockenbeerenauslese, im Jahrhundertsommer JH_CHANCE. tbaOffen ist das Rang-Schloss der zweiten Stufe.
 const tbaChance=(j=S.jahr)=>Math.min(1,(jhArt(j)==='sommer'?JH_CHANCE:WAGNIS.tba)*WAGNIS_F);
-const tbaOffen=()=>frei('weg_tba');
+// Seit 13.6.7 (Maik 22.11.2026, Entscheidung 6): Im Jahrhundertsommer öffnet sich die zweite Stufe schon mit dem eigenen Weg (R6), sonst bleibt sie bei R8.
+const tbaOffen=()=>frei('weg_tba')||jhArt()==='sommer'&&frei('weg_eigen');
 // Die Wege, die der Spieler in diesem Jahr wagen darf (frei: weg_eigen).
 // Seit 13.4.4 dazu der fremde Weg (frei: weg_fremd) in einem besonderen Jahr.
 const wegFremd=g=>g==='edel'?'frost':g==='frost'?'edel':null;
@@ -1188,7 +1189,8 @@ function pruefeQualitaet(st,q){
   const g=[], d=STUFEN[st], min=mindest(st);
   // Seit 13.3.2: die zwei Schlösser. Die Rolle muss die Stufe machen dürfen und der Rang muss reichen, der Deckel wirkt schon übers Öchsle.
   if(!rolleDarf(q.sorte,st)) g.push(`${d.name} gibt es nicht von der ${ROLLEN[SORTEN[q.sorte].rolle].name}`);
-  else if(!frei('wein_'+st)) g.push(`${d.name} erst ab dem Rang ${rangN(freiAb('wein_'+st))}`);
+  // Seit 13.6.7: Ein Jahrhundertwein (q.jh) darf vor R8 Trockenbeerenauslese werden, wenn der eigene Weg offen ist (Entscheidung 6).
+  else if(!frei('wein_'+st)&&!(st==='tba'&&q.jh&&frei('weg_eigen'))) g.push(`${d.name} erst ab dem Rang ${rangN(freiAb('wein_'+st))}`);
   if(q.oe<min) g.push(`es fehlen ${min-q.oe}° Öchsle (Minimum ${min}°)`);
   if(q.masch&&(st==='eis'||d.rang>STUFEN.qba.rang)) g.push('mit der Maschine gelesen gibt es höchstens Qualitätswein');
   if(st==='eis'){
@@ -1225,7 +1227,7 @@ const handBedarf=f=>Math.max(0,Math.ceil((f.reben-alleinReben())/HAND_REBEN));
 const handFehlt=f=>false;
 const handlese=f=>handFeld(f)&&!handFehlt(f);
 // Seit 13.2.3: Auch die überreife Lese (+5°) bleibt unter der Grenze des Weinbergs.
-function feldQ(f,la){const id=feldId(f); return {oe:Math.min(id?oeGrenze(id):150,f.oe+(la==='ueber'?5:0)),leseart:la,edel:f.edel,eis:f.gefroren,masch:handFehlt(f)?1:0,sorte:id}}
+function feldQ(f,la){const id=feldId(f); return {oe:Math.min(id?oeGrenze(id):150,f.oe+(la==='ueber'?5:0)),leseart:la,edel:f.edel,eis:f.gefroren,masch:handFehlt(f)?1:0,sorte:id,...(f.jh?{jh:1}:{})}}
 // Abnutzung bei der Lese (8.0): reben ist der Teil der Lese, den die Maschinen schaffen, M ihre Ernteleistung zusammen. Auslastung reben/M (höchstens 1),
 // je Maschine ABNUTZ_VOLL mal Auslastung mal Pflege-Faktor nach dem Zustand vor der ersten Lese des Jahres (ma.lj, ma.lz). Bruchteile sammelt ma.abn.
 function maschAbnutzung(reben,M){
