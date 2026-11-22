@@ -760,7 +760,8 @@ const aukLageF=lg=>(AUK_PREIS_AKT[RANG_AKT[S.rang]]||1)*(AUK_PREIS_LAGE[lg]||1);
 // Seit 13.7.5: der Landpreis, nur auf Stufen mit DIFF.land, sonst 1.
 const landF=()=>(DIFF[S.schwer]||{}).land?(S.landF||1):1;
 // Satz zum Markt im Winzerboten, wenn sich die Lage der Weinpreise ändert (nur mit DIFF.marktSatz). S.marktW merkt die letzte Lage.
-function marktSatz(){if(!(DIFF[S.schwer]||{}).marktSatz) return; const M=MARKT_SATZ.find(x=>S.markt>=x[0]); if(S.marktW==null){S.marktW=M[1]; return} if(M[1]===S.marktW) return; S.marktW=M[1]; schlag(24,M[2],M[3],'',{archiv:1})}
+function marktSatz(){if(!(DIFF[S.schwer]||{}).marktSatz) return; const M=MARKT_SATZ.find(x=>S.markt>=x[0]); if(S.marktW==null){S.marktW=M[1]; return} if(M[1]===S.marktW) return;
+  if(M[1]==='normal'&&(S.marktW==='gut'?S.markt>MARKT_SATZ[0][0]-MARKT_SATZ_PUFFER:S.markt<MARKT_SATZ[1][0]+MARKT_SATZ_PUFFER)) return; S.marktW=M[1]; schlag(24,M[2],M[3],'',{archiv:1})}
 function auktionHa(){const r=Math.random();return r<.4?1:r<.73?2:r<.95?3:r<.995?5:10}
 function neueAuktion(spitze,haFest){
   if(spitze){const B=misch(NACHBARN).slice(0,3).map(n=>({name:n,limit:rint(64,144)*5000})); S.auktion={ha:SPITZE_HA,lage:'sued',start:SPITZE_START,schritt:10000,gebot:SPITZE_START,fuehrer:B[rint(0,2)].name,bieter:B,ende:null,text:'',phase:0,spitze:1}; return}
@@ -1074,14 +1075,16 @@ function jhArt(j=S.jahr){const k=jhNr(j); if(k<0) return null; const g=REGIONEN[
 // Seit 13.6.9 (S.jhV): Stände aus 13.6 hatten das erste Jahrhundertjahr im Jahr nach dem Terroir, es rückt auf JH_ABSTAND Jahre nach dem Terroir.
 function altJh(){if(S.jhAb!=null&&!S.jhV) S.jhAb+=JH_ABSTAND-1; if((S.bodenSt||0)>=BODEN_STUFEN.length-1&&S.jhAb==null) S.jhAb=S.jahr+1; S.jhV=1}
 // Chance des Wegs w (edel oder frost) im Gebiet r im Jahr j, 0 wenn der Weg dort zu ist. Das Rang-Schloss prüft wegeOffen.
-function wegChance(w,r=S.region,j=S.jahr){
+// Seit 13.7.6: Grundwert ohne Verschiebung (wegGrund), daraus die Chance (wegChance). Den Grundwert kennt jeder aus dem Weinkompendium.
+function wegChance(w,r=S.region,j=S.jahr){const p=wegGrund(w,r,j); return p>=1?1:wagP(p,j)}
+function wegGrund(w,r=S.region,j=S.jahr){
   const g=REGIONEN[r].weg, a=r===S.region&&jhEcht(j); let p=0;
   // Seit 13.6.2: Im Jahrhundertjahr hat der Weg des Jahres seine eigene Chance, der Sommer die Edelfäulnis sicher, der Winter den Frost mit JH_CHANCE.
   if(a&&JH_ART[a].weg===w) p=w==='edel'?1:JH_CHANCE;
   else if(g==='beide') p=herbstTend(j).weg===w?WAGNIS.mitTend:WAGNIS.gegenTend;
   else if(g===w) p=WAGNIS.eigen;
   else if(herbstFremd(j)) p=WAGNIS.fremd;
-  return p>=1?1:wagP(p,j);
+  return p;
 }
 // Seit 13.7.1: Verschiebung des Jahres j in Prozentpunkten, fest je Partie (Thema 13), in der Spanne der Spielstufe (WAG_SPANNE).
 const wagSpanne=()=>WAG_SPANNE[S.schwer]||[0,0];
@@ -1095,7 +1098,9 @@ function wagVers(j=S.jahr){const [a,b]=wagSpanne(); return Math.round(clamp(wagR
 // Chance mit Verschiebung, ein geschlossener Weg (0) bleibt zu.
 const wagP=(p,j=S.jahr)=>p>0?clamp(p+wagVers(j)/100,WAG_MIN,WAG_MAX):0;
 // Seit 13.6.2: Chance der Trockenbeerenauslese, im Jahrhundertsommer JH_CHANCE. tbaOffen ist das Rang-Schloss der zweiten Stufe.
-const tbaChance=(j=S.jahr)=>wagP(jhEcht(j)==='sommer'?JH_CHANCE:WAGNIS.tba,j);
+const tbaGrund=(j=S.jahr)=>jhEcht(j)==='sommer'?JH_CHANCE:WAGNIS.tba, tbaChance=(j=S.jahr)=>wagP(tbaGrund(j),j);
+// Seit 13.7.6: Grundwert der Entscheidung, vor der ein Feld gerade steht (für den Test-Spieler, der die Zeichen liest).
+function wagGrundFeld(id){const f=S.felder[id]; if(f.wagnis==='edel') return tbaGrund(); const w=f.wagnis==='frost'?'frost':feldWeg(id); return w?wegGrund(w):0}
 // Seit 13.6.9 (Nachtrag 3): Die Ausnahme aus 13.6.7 ist weg, die zweite Stufe öffnet sich auch im Jahrhundertsommer erst bei R8.
 const tbaOffen=()=>frei('weg_tba');
 // Die Wege, die der Spieler in diesem Jahr wagen darf (frei: weg_eigen).

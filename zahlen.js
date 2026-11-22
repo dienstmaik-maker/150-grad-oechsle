@@ -190,7 +190,7 @@ const NAME_PFLEGE_AB=2, NAME_BODEN_AB=3;
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='13.6';
+const VERSION='13.7';
 // Seit 13.3.6 (Maik 21.11.2026): Im Umbau starten neue Partien ohne Spielführer, sonst verspricht er Dinge nach den alten Rängen.
 // Mit neuen Texten muss er am Ende wieder an sein (14.4), dann FU_START=1.
 const FU_START=0;
@@ -775,6 +775,8 @@ const MGR_WARN=.4;
 // Weinpreise (S.markt): Schritt je Monat, unten, oben, wie bis 13.6. In der Meisterprüfung gilt DIFF.markt (seit 13.7.5).
 const MARKT_SCHWANK=[.06,.85,1.15];
 // Seit 13.7.5: Satz zum Markt im Winzerboten (DIFF.marktSatz), wenn sich die Lage ändert: gut ab MARKT_SATZ[0][0], schwach unter MARKT_SATZ[1][0]. Platzhalter bis 13.8.
+// MARKT_SATZ_PUFFER: Zurück auf normal erst, wenn die Weinpreise so weit wieder drin sind, sonst springt der Satz an der Grenze jeden Monat (seit 13.7.6).
+const MARKT_SATZ_PUFFER=.05;
 const MARKT_SATZ=[[1.1,'gut','Die Händler zahlen gerade gut','Im Weinhandel ist Bewegung: Die Händler zahlen so gut wie lange nicht. Wer Wein im Keller hat, kann jetzt gut verkaufen.'],
   [.9,'normal','Die Weinpreise sind wieder normal','Der Weinhandel hat sich beruhigt, die Preise sind wieder, wie man sie kennt.'],
   [0,'schwach','Die Händler halten sich zurück','Die Händler zahlen gerade schlecht und kaufen nur das Nötigste. Wer warten kann, verkauft lieber später.']];
@@ -1288,8 +1290,8 @@ const IDEE_KEY='oechsle-idee', IDEE_MAX=1000;
 // Je Version: [Zeichen, Nummer, Titel, Datum, Punkte]. Kommendes ohne Datum und Punkte.
 const WAS_NEU=[
   {k:'🏁 13.0 Der Umbau',d:'in Arbeit',p:['Drei Generationen, drei Akte: Das Spiel wird von Grund auf neu gebaut'],v:[
-    ['▶️','13.7','Spielstufen'],
-    ['⏳','13.8','Geschichte'],
+    ['▶️','13.8','Geschichte'],
+    ['','13.7','Spielstufen','22.11.2026',['Lehrjahre, Gesellenjahre und Meisterprüfung unterscheiden sich jetzt beim Wagnis im Herbst','Lehrjahre zeigen die Chance als Zahl, Gesellenjahre als Wort, die Meisterprüfung gar nicht','Jedes Jahr ist gut oder schlecht fürs Warten: Sommer, Schädlingsjahr und die Alten im Winzerboten verraten es','Spritzen und Schädlingsschaden sind weg, die Menge-Sorte bleibt sicher','Meisterprüfung: Preise schwanken stärker, die Nachbarn bieten klüger, Herausforderer und Favoriten sind stärker']],
     ['','13.6','Finale','22.11.2026',['Ab dem Terroir kommen vier Jahrhundertjahre, groß im Winzerboten angekündigt','Wer im Jahrhundertjahr sein Wagnis gewinnt, bekommt den Jahrhundertwein','Die Weltweinschau im Juni hat drei Kronen: Sekt, Prädikat und Rarität','Nach der dritten Krone wirst du Ehrenpräsident, erst dann endet die Partie','Ohne alle Kronen übernimmt alle 40 Jahre die nächste Generation und spielt weiter']],
     ['','13.5','Leute, Manager, Maschinen','21.11.2026',['Erntehelfer und Lagerarbeiter steigen in drei Stufen auf und nehmen dir Arbeit ab','Die Manager machen nur noch Büro, Wettbewerb, Hoffest und Anmelden bleiben bei dir','Maschinen lesen nur Menge- und Sekt-Sorte, die Spitzen-Sorte wird immer von Hand gelesen','An der Mosel fahren keine Erntemaschinen, dafür kostet die Handlese dort nicht mehr','Abfüllanlage mit Ausbau, Laubschneider mit mehr Punkten und Menge']],
     ['','13.4','Gebiete und Herbst','21.11.2026',['Jedes Gebiet hat eine Stärke und ein Problem, die Pfalz ist für die erste Partie','Bis Oktober ist dein Spitzenwein sicher, danach wagst du den Weg deines Gebiets','Edelfäulnis im November, Frost im Dezember, an Mosel und Rheingau mit Tendenz','Seltene Jahre öffnen den fremden Weg, die Beerenauslese kann zur Trockenbeerenauslese werden','Am Lese-Knopf steht die Chance, der Weingut-Manager warnt']],
