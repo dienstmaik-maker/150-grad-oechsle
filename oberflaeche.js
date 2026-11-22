@@ -498,8 +498,10 @@ function vStart(){
   ${fenster('neu_namen','Namen',namen,{buch:'',i:'Dein Name steht auf dem Kaufvertrag, auf jeder Urkunde, in der Bestenliste, in der Chronik und im Winzerboten. Der Name des Weinguts steht am Hof, in der Rangliste und in den Schlagzeilen. Die Anrede bestimmt, ob du Winzer oder Winzerin, Inhaber oder Inhaberin bist. Übernimmt später dein Kind, ersetzt sein Name deinen.'})}
   ${gebiete}
   ${fenster('neu_mit','Mitspieler',`<div class="kv"><span>🍇 Computer-Winzer</span><span>3</span></div><div class="fleer">🔒 Online mit Freunden, kommt später</div>`,{buch:'',i:'Du spielst gegen drei Computer-Winzer: die Vorsichtige, den Qualitätsfanatiker und den Zocker. Sie spielen nach denselben Regeln wie du und wollen auch Präsident werden. Später kannst du hier Freunde einladen.'})}
-  ${fenster('neu_schwer','Schwierigkeit',`<div class="zwei stufu">${Object.entries(DIFF).map(([id,d])=>`<button class="wahl neuwahl stufk ${NEU.schwer===id?'an':''}" data-a="neuOpt" data-k="schwer" data-v="${id}"><small>${d.kurz}</small><b>${d.name}</b></button>`).join('')}</div>`,{buch:'',
-    i:Object.values(DIFF).map(d=>`<b>${d.name}:</b> ${d.text}`).join('<br>')+`<br><br>Bis zum Präsidenten dauert es rund 100 bis 120 Spieljahre, danach kommen noch die Jahre im Amt. Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation, Präsident wird meist erst dein Enkel. Gespeichert wird nach jedem Monat, du kannst also jederzeit aufhören.`})}
+  ${''/* Seit 13.7.7: Die Meisterprüfung bleibt ausgegraut, bis auf diesem Gerät einmal in den Gesellenjahren übergeben wurde. */}
+  ${fenster('neu_schwer','Schwierigkeit',`<div class="zwei stufu">${Object.entries(DIFF).map(([id,d])=>{const zu=id===MEISTER_STUFE&&!meisterFrei();
+    return `<button class="wahl neuwahl stufk ${NEU.schwer===id&&!zu?'an':''}" data-a="neuOpt" data-k="schwer" data-v="${id}"${zu?' disabled':''}><small>${d.kurz}</small><b>${d.name}</b>${zu?`<em class="sperr">🔒 ${MEISTER_SPERRE}</em>`:''}</button>`}).join('')}</div>`,{buch:'',
+    i:Object.values(DIFF).map(d=>`<b>${d.name}:</b> ${d.text}`).join('<br>')+(meisterFrei()?'':`<br><br>Die ${DIFF[MEISTER_STUFE].name} wartet, bis du einmal in den ${DIFF[MEISTER_VON].name}n ein Weingut an die nächste Generation übergeben hast. Das merkt sich dein Gerät über alle Partien, und es reist mit „Als Datei sichern“ mit.`)+`<br><br>Bis zum Präsidenten dauert es rund 100 bis 120 Spieljahre, danach kommen noch die Jahre im Amt. Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation, Präsident wird meist erst dein Enkel. Gespeichert wird nach jedem Monat, du kannst also jederzeit aufhören.`})}
   ${''/* Seit 12.6.8 (Maik 21.11.2026): keine Frage "Mit Spielführer?" mehr, jede neue Partie startet mit Spielführer, ausschalten geht im Büro. */}
   <div class="btns"><button data-a="start">Spiel starten</button></div></main>`;
 }
@@ -1915,7 +1917,7 @@ const AKT={
   // Zugeklappter Teil eines Fensters (Steckbrief im Weinberg): auf und zu ohne neues Zeichnen, offen bleibt er bis zum Ortswechsel.
   klapp(d,e){const b=e.target.closest('button'), x=b.closest('.fen').querySelector('.fklapp'), auf=x.hidden; x.hidden=!auf; b.textContent=auf?d.auf:d.zu; if(auf) FI_AUF.add(d.id+'+'); else FI_AUF.delete(d.id+'+')},
   region(d){neuLies();NEU.region=d.id;const y=window.scrollY;render();window.scrollTo(0,y)},
-  neuOpt(d){neuLies();NEU[d.k]=d.v;const y=window.scrollY;render();window.scrollTo(0,y)},
+  neuOpt(d){if(d.k==='schwer'&&d.v===MEISTER_STUFE&&!meisterFrei()) return; neuLies();NEU[d.k]=d.v;const y=window.scrollY;render();window.scrollTo(0,y)},
   // Seit 7.9: Namen im Büro nachtragen (alte Spielstände oder leer gelassen).
   bAnrede(d,e){for(const b of e.target.closest('.zwei').children) b.classList.toggle('an',b.dataset.v===d.v)},
   namenJa(){const i=($('#bnI').value||'').trim().slice(0,30), g=($('#bnG').value||'').trim(), a=document.querySelector('#bnA .an'); if(!i) return meldung('Dein Name fehlt','Trag oben deinen Namen ein, dann speichere noch einmal.'); S.ich=i; if(g&&g!==S.name) S.name=g.slice(0,NAME_MAX); S.anrede=a&&a.dataset.v==='w'?'w':'m'; save(); render()},
@@ -2102,7 +2104,7 @@ const AKT={
   slotSichern(d){
     if(S&&+d.id===SLOT) save(); // seit 8.3, damit die Spielzeit bis jetzt mitgeht
     const o=lies(+d.id); if(!o) return;
-    const a=document.createElement('a'), url=URL.createObjectURL(new Blob([JSON.stringify({...o,album:kompAlbumLies()})],{type:'application/json'}));
+    const a=document.createElement('a'), url=URL.createObjectURL(new Blob([JSON.stringify({...o,album:kompAlbumLies(),...(meisterFrei()?{meister:1}:{})})],{type:'application/json'}));
     a.href=url; a.download=`Öchsle ${String(o.name).replace(/[^\wäöüÄÖÜß -]/g,'').trim()||'Spielstand'} ${o.jahr}-${String(o.monat+1).padStart(2,'0')}.json`;
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000);
   },
@@ -2604,7 +2606,7 @@ document.addEventListener('click',e=>{
 });
 $('#datei').addEventListener('change',e=>{const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>dateiLaden(String(r.result),ZIEL); r.readAsText(f)});
 $('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet'&&!SL)closeSheet()});
-load(); render(); zeigeTitel();
+load(); meisterAbgleich(); render(); zeigeTitel();
 // Als App: Der Helfer sw.js legt alle Dateien aufs Gerät, danach läuft das Spiel ohne Netz und holt sich neue Fassungen von selbst.
 // Am Laptop (localhost) bleibt er aus, damit beim Bauen nichts Altes hängen bleibt. Zum Testen dort: ?app an die Adresse hängen.
 if('serviceWorker' in navigator&&(location.protocol==='https:'||/[?&]app\b/.test(location.search))) navigator.serviceWorker.register('sw.js').catch(()=>{});

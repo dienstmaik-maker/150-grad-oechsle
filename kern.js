@@ -329,9 +329,11 @@ function dateiLaden(text,i){
   o=saeubern(o);
   // Seit 11.3: Die Sicherung trägt das Album mit (Maik 19.11.2026). Es gehört nicht in den Spielstand und geht ins Album des Geräts.
   const alb=o.album; delete o.album;
+  // Seit 13.7.7: Die Freischaltung der Meisterprüfung reist mit, wie das Album. Sie kommt aufs Gerät, nicht in den Spielstand.
+  const mst=o.meister===1; delete o.meister;
   try{localStorage.setItem(KEYS[i],JSON.stringify(o))}catch(e){return meldung('Das hat nicht geklappt','Der Speicher des Browsers ist voll.')}
-  const mit=kompAlbumNimm(alb);
-  render(); meldung('Geladen',`${o.name} liegt jetzt auf Spielstand ${i+1}.${mit?' Dein Album aus der Datei ist mit dabei.':''}`);
+  const mit=kompAlbumNimm(alb), mf=(mst||meisterStand(o))&&meisterFreiSetz();
+  render(); meldung('Geladen',`${o.name} liegt jetzt auf Spielstand ${i+1}.${mit?' Dein Album aus der Datei ist mit dabei.':''}${mf?` Die ${DIFF[MEISTER_STUFE].name} ist jetzt frei.`:''}`);
 }
 
 try{Object.assign(TON,JSON.parse(localStorage.getItem(TON_KEY)||'{}'))}catch(e){}
@@ -1458,6 +1460,13 @@ function kompAlbumNimm(X){
   if(neu) kompAlbumSchreib(A);
   return true;
 }
+// Seit 13.7.7: Freischaltung der Meisterprüfung beim Gerät (MEISTER_KEY). window.MEISTER_FREI ist der Schalter "Meisterprüfung frei" für Test-Spieler und Prüfskript.
+// Wie beim Album schreibt der Test-Spieler nichts hinein. meisterFreiSetz gibt zurück, ob die Meisterprüfung gerade neu frei wurde.
+function meisterFrei(){if(window.MEISTER_FREI) return true; try{return localStorage.getItem(MEISTER_KEY)==='1'}catch(e){return false}}
+function meisterFreiSetz(){if(window.BOT||meisterFrei()) return false; try{localStorage.setItem(MEISTER_KEY,'1')}catch(e){return false} return true}
+// Ein Stand in den Gesellenjahren ab der 2. Generation, auch einer aus der Zeit vor dem Umbau, zeigt eine Übergabe, die schon geschafft ist.
+const meisterStand=o=>!!o&&o.schwer===MEISTER_VON&&(Math.floor(+o.gen)||1)>=MEISTER_GEN;
+function meisterAbgleich(){if(window.BOT||meisterFrei()) return; for(let i=0;i<KEYS.length;i++) if(meisterStand(roh(i))){meisterFreiSetz(); return}}
 /* ---- Haken im Spiel ---- */
 function kompLese(id,liter){if(KOMP['sorte_'+id]) kompE('sorte_'+id).l=(kompE('sorte_'+id).l||0)+liter}
 // Verkauf auf jedem Weg (Großhandel, Weinhandlungen, eigenes Regal, Daueraufträge): Jede Flasche zählt einmal, beim Sekt oder bei ihrer Stufe,
@@ -1535,6 +1544,7 @@ function kompAuf(id){
 }
 /* ================= Spielstart ================= */
 function neuesSpiel(){
+  if(NEU.schwer===MEISTER_STUFE&&!meisterFrei()) NEU.schwer=MEISTER_VON; // seit 13.7.7, gesperrt bis zur ersten Übergabe in den Gesellenjahren
   const reg=REG(NEU.region,!!ROLLEN_NEU);
   S={v:1,v13:1,zf:zfNeu(),name:NEU.name.trim().slice(0,NAME_MAX)||'Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:startGeld(NEU.schwer),ha:3,hang:{einfach:3,hoehe:0,sued:0},boden:80,bodenSt:0,bodenZ:0,duengungen:0,
     felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',sonne:0,markt:1,ansehen:0,ansV:1,leuteV:1,
@@ -1611,10 +1621,12 @@ function uebergabe(){
   const ea=erbAnsehen(); S.ansehen=Math.round(S.ansehen*ea);
   (S.chronik=S.chronik||[]).push({n,name:S.ich||alt.name||'',art:S.anrede?(S.anrede==='w'?'t':'s'):alt.art||'',von:genJahr(n-1),bis:S.jahr,rang:S.rang,ans:ansVor,verm:v,steuer,kredit:kr,...(amtAlt()?{alt:1}:{})});
   S.gen=n+1;
+  // Seit 13.7.7: Die erste Übergabe in den Gesellenjahren schaltet auf dem Gerät die Meisterprüfung frei.
+  const mf=S.schwer===MEISTER_VON&&meisterFreiSetz();
   const wahl=a=>a[rint(0,a.length-1)];
   const rat=S.rang>=2?(S.ratte=(S.ratte||1)+1):0;
   S.erbe={ratte:rat,k:S.flascheAuf?'offen':n===1?'g2':n===2?'g3':'weiter',offen:1,name:'',art:Math.random()<.5?'t':'s',vt:wahl(ERB_NAMEN.t),vs:wahl(ERB_NAMEN.s),steuer,kredit:kr,verm:v,ansVor,ans:S.ansehen};
-  schlag(97,`${S.name} in neuen Händen`,`Zum Jahreswechsel geht das Weingut ${WO[S.region]} an die ${n+1}. Generation. Erbschaftssteuer: ${eur(steuer)}${kr?`, davon ${eur(kr)} als Kredit bei der Bank`:''}. Vom Ansehen bleiben ${pz(ea)}, jetzt ${num(S.ansehen)}.${ea>ERB_ANSEHEN?` ${anr('Der Ehrenbürger','Die Ehrenbürgerin')} geht in den Ruhestand, das ganze Dorf zieht den Hut.`:''} Rang, Fläche, Keller, Wein und alle Leute bleiben.`,GEN_BILD.uebergabe,{gold:1,erbe:1,du:1});
+  schlag(97,`${S.name} in neuen Händen`,`Zum Jahreswechsel geht das Weingut ${WO[S.region]} an die ${n+1}. Generation. Erbschaftssteuer: ${eur(steuer)}${kr?`, davon ${eur(kr)} als Kredit bei der Bank`:''}. Vom Ansehen bleiben ${pz(ea)}, jetzt ${num(S.ansehen)}.${ea>ERB_ANSEHEN?` ${anr('Der Ehrenbürger','Die Ehrenbürgerin')} geht in den Ruhestand, das ganze Dorf zieht den Hut.`:''} Rang, Fläche, Keller, Wein und alle Leute bleiben.${mf?` Und für deine nächste Partie ist jetzt die ${DIFF[MEISTER_STUFE].name} frei.`:''}`,GEN_BILD.uebergabe,{gold:1,erbe:1,du:1});
   if(window.BOT) erbeBenennen(S.erbe.art==='t'?S.erbe.vt:S.erbe.vs);
 }
 const endeFeier=()=>!!(S.feier&&S.feier.welt==='ende');
@@ -1635,6 +1647,7 @@ function spielEnde(wie){
   (S.chronik=S.chronik||[]).push({n,name:S.ich||alt.name||'',art:S.anrede?(S.anrede==='w'?'t':'s'):alt.art||'',von:genJahr(n-1),bis:S.jahr,rang:S.rang,ans:S.ansehen,verm:vermoegen(),steuer:0,kredit:0,ende:1,...(ab?{alt:1}:{}),ehr:1});
   S.ende={art:'best',wie,j:S.jahr,m:S.monat,stand:endStand(),...(ab?{alt:1}:{})};
   S.ende.platz=bestenEintrag();
+  if(wie==='gen'&&S.schwer===MEISTER_VON) meisterFreiSetz(); // seit 13.7.7, die letzte Übergabe zählt auch
   // Seit 11.7 (A24): Wer das Weingut nach der letzten Übergabe bekommt, wählst du vor dem Küchentisch wie bei jeder Übergabe (zeigeNachfolger).
   S.ende.nf={offen:1,art:Math.random()<.5?'t':'s',vt:ERB_NAMEN.t[rint(0,ERB_NAMEN.t.length-1)],vs:ERB_NAMEN.s[rint(0,ERB_NAMEN.s.length-1)],name:''};
   if(window.BOT) nfBenennen(nfVorschlag());
