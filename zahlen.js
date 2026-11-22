@@ -323,10 +323,21 @@ const KAUF_PREIS=300000, KAUF_PLUS=5, KAUF_MAX=2, KAUF_SKANDAL=.2, KAUF_STRAFE=1
 const STIMM_PLUS=.08, STIMM_MONAT=1, STIMM_MINUS=.5;
 // Version 10.1 (Spielende, Paket 2): Weltweinschau und die zwei Enden. Die ersten zwei Zahlen hat Maik am 18.11.2026 gewählt.
 // STIFT_FAKTOR: Preis der Stiftung im Verhältnis zur verpassten Spende. MARKE_ABWAHL: so weit sinkt die Marke nach einer Abwahl, nie unter MARKE_START.
-// AMT_MIN: Amtszeiten, bis die Familie übergibt (Mindestzeit). WELT_MONAT: Monat der Ausschreibung (0 = Januar, also August), gewertet wird beim nächsten Monatswechsel.
-// WELT_STARK und WELT_FELD: Punkte der neun Weingüter aus aller Welt, dazu DIFF.feld. Zwei starke mit breiter Spanne, sieben aus dem Feld
-// (Variante 3, Maik 19.11.2026). Derselbe Wein darf jedes Jahr wieder antreten. Stellt das Prüfskript ein (beim Bundeswettbewerb sind es 20 bis 44).
-const STIFT_FAKTOR=2, MARKE_ABWAHL=10, AMT_MIN=2, WELT_MONAT=7, WELT_STARK=[55,85], WELT_FELD=[25,45];
+// AMT_MIN: Amtszeiten, bis die Familie übergibt (Mindestzeit). Seit 13.6.3 stehen Monate und Feld der Weltweinschau bei KRONEN, WELT_STARK und WELT_FELD sind weg.
+// Derselbe Wein darf jedes Jahr wieder antreten (Variante 3, Maik 19.11.2026).
+const STIFT_FAKTOR=2, MARKE_ABWAHL=10, AMT_MIN=2;
+// Seit 13.6.3 (Bauplan 13.6, Maik 21.11.2026): Weltweinschau mit drei Kronen in fester Reihenfolge, jedes Jahr genau eine Klasse mit einem Wein.
+// Anmeldung im WELT_ANM (Januar, zusammen mit den Prädikatsweinen), die Schau im WELT_MONAT (Juni), gewertet beim Monatswechsel danach.
+// Verloren heißt nächstes Jahr dieselbe Klasse noch mal, eine gewonnene Krone bleibt, auch nach einer Abwahl. KRONE_ANS Ansehen je Krone (über ANS_F Wettbewerbe).
+// KRONEN: stufen sind die zugelassenen Weine (sekt: ein Sekt), fav der große Favorit der Klasse (Platzhalter-Name bis 13.8), p seine mittleren Punkte.
+// Der Favorit hat p ± WELT_FAV_W, die acht anderen Weingüter p − WELT_FELD_AB[0] bis p − WELT_FELD_AB[1], dazu DIFF.feld.
+// Startwerte (Bau 13.6.3): p gegen die besten passenden Weine des Test-Spielers ab Jahr 90 (sechs Gebiete), Zielchancen Sekt 60, Prädikat 50,
+// Rarität 35 Prozent, mit dem Jahrhundertwein (JH_QP) 70. Gemessen wird in 14.1. WELT_FAV_PLUS: neutraler Haken für stärkere Favoriten in der Meisterprüfung (13.7).
+const WELT_ANM=0, WELT_MONAT=5, WELT_FAV_W=8, WELT_FELD_AB=[35,15], WELT_FAV_PLUS=0, KRONE_ANS=140;
+const KRONEN=[
+  {k:'sekt',name:'Sekt-Krone',sym:'🍾',sekt:1,stufen:[],was:'einem Sekt',fav:'Maison Clairval, Champagne',p:43},
+  {k:'praed',name:'Prädikats-Krone',sym:'🍷',stufen:['kab','spat','aus'],was:'einem Kabinett, einer Spätlese oder einer Auslese',fav:'Domaine Haut-Rhin, Elsass',p:51},
+  {k:'rar',name:'Raritäten-Krone',sym:'💎',stufen:['ba','eis','tba'],was:'einer Beerenauslese, einem Eiswein oder einer Trockenbeerenauslese',fav:'Tokaji Arany Ház, Tokaj',p:160}];
 const WELT_GUETER=['Château Belmont, Frankreich','Tenuta Montefiore, Italien','Bodega Sierra Alta, Spanien','Quinta do Vale Dourado, Portugal','Weingut Steinterrassen, Österreich','Domaine du Lac, Schweiz','Eagle Canyon Estate, Kalifornien','Southern Cross Vineyards, Australien','Kaapse Hoop, Südafrika','Viña Cóndor, Chile','Finca Los Andes, Argentinien','Kiwi Ridge Winery, Neuseeland'];
 const SAB={gift:['🧪 Wein vergiften','Sein bester Fasswein ist hin.'],buch:['📖 Kellerbuch fälschen','Seine Weine stehen als gepanscht im Buch. Bei seiner nächsten Kontrolle zahlt er Strafe und verliert Ansehen.'],berg:['🪓 Im Weinberg wüten','Ein Viertel seiner Reben und Flaschen ist weg.']};
 // ki: Tempo der Gegner, eingestellt mit dem Test-Spieler in Schritt H von 7.0 (16.11.2026). Der erste Gegner wird Präsident auf Schwer in Jahr 106 bis 112,
@@ -690,9 +701,10 @@ const MGR_WARN=.4;
 const JH_ANZAHL=4, JH_ABSTAND=[4,6];
 // Seit 13.6.2 (Maik 21.11.2026, Entscheidung 1): Im Jahrhundertjahr ist die Chance überall JH_CHANCE. Sommer: Edelfäulnis sicher, die Trockenbeerenauslese
 // mit JH_CHANCE, sonst ist das Feld weg. Winter: Eiswein mit JH_CHANCE. Gelingt das, wird der Wein der Jahrhundertwein (Trockenbeerenauslese oder Eiswein).
-// JH_QP: feste Punkte jedes Jahrhundertweins bei Wettbewerben, Lagerjahre und Medaillen geben nichts dazu (Startwert, gemessen wird in 14.1).
+// JH_QP: feste Punkte jedes Jahrhundertweins bei Wettbewerben, Lagerjahre und Medaillen geben nichts dazu. Startwert aus 13.6.3: damit liegt die
+// Raritäten-Krone gegen ihren Favoriten bei etwa 70 Prozent (gemessen wird in 14.1).
 // JH_ANS: Ansehen einmal bei der Anmeldung eines Jahrhundertweins, zusätzlich zum Ansehen der Stufe (Annahme von Claude).
-const JH_CHANCE=.75, JH_QP=72, JH_ANS=100;
+const JH_CHANCE=.75, JH_QP=163, JH_ANS=100;
 const JH_ART={sommer:{name:'Jahrhundertsommer',weg:'edel',tend:'feucht',bild:'supersommer'},winter:{name:'Jahrhundertwinter',weg:'frost',tend:'klar',bild:'eiswein'}};
 const JH_TEXT={
   sommer:['Ein Jahrhundertsommer kündigt sich an','Die Alten {wo} sind sich einig wie selten: Dieses Jahr wird ein Jahrhundertsommer. Wer seine Spitzen-Sorte bis November hängen lässt, bekommt die Edelfäulnis sicher, und wer bis Dezember wartet, hat die Chance auf den Jahrhundertwein.'],

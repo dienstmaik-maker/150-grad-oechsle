@@ -558,7 +558,8 @@ function amtBalken(){const A=S.amt, s=stimmZ(); return `<div class="bar stb ${s>
 // Seit 10.1: Zeile zur Weltweinschau in der Rang-Karte und im Fenster "Weinbauverband", erst nach dem Brief.
 function weltZeile(){
   const A=S.amt; if(!A||!A.brief) return '';
-  return `<div class="kv"><span>🌍 Weltweinschau</span><span>${A.ehren?`gewonnen ${A.ehren.j}`:S.wett&&S.wett.typ==='welt'&&!S.wett.fertig?'diesen Monat':weltAus()?'keine mehr vor der Übergabe':'im '+wettNaechst('welt')}</span></div>`;
+  // Seit 13.6.3: Kronen und was gerade ansteht.
+  return `<div class="kv"><span>🌍 Weltweinschau</span><span>${A.ehren?`alle Kronen, die letzte ${A.ehren.j}`:`${kronen().length} von ${KRONEN.length} Kronen · ${schauAnm()?'Anmeldung diesen Monat':S.schau?'Schau im '+MON[WELT_MONAT]:'Anmeldung im '+wettNaechst('welt')}`}</span></div>`;
 }
 // Fenster "Weinbauverband" im Rathaus, nur mit Amt (im Amt oder abgewählt): Balken mit Marke, Amtszeiten, nächste Wahl, im Wahlkampf der Herausforderer
 // und der Knopf "Stimmen kaufen". Die Regeln stehen im i.
@@ -572,7 +573,7 @@ function vVerband(){
     <h4 class="gk">Der Weg zur Weltweinschau</h4>
     <div class="kv"><span>${keyDorf()?'✅':'🔑'} Dorf: alle ${SPENDEN.length-1} Spenden</span><span>${keyDorf()?'erledigt':`${SPENDEN.length-1-stAnzahl()} von ${SPENDEN.length-1}`}</span></div>
     <div class="kv"><span>${keyVerband()?'✅':'🔑'} Verband: eine gewonnene Wahl</span><span>${keyVerband()?'erledigt':'offen'}</span></div>
-    ${A.brief?weltZeile():`<div class="mut">Mit beiden Schlüsseln kommt der Brief: Dann ist die Weltweinschau jedes Jahr im August bei dir im Dorf.${keyDorf()?'':' Verpasste Spenden holt unten die Stiftung nach.'}</div>`}
+    ${A.brief?weltZeile():`<div class="mut">Mit beiden Schlüsseln kommt der Brief: Dann ist die Weltweinschau jedes Jahr im ${MON[WELT_MONAT]} bei dir im Dorf, mit ${KRONEN.length} Kronen nacheinander.${keyDorf()?'':' Verpasste Spenden holt unten die Stiftung nach.'}</div>`}
     <h4 class="gk">Die Übergabe</h4>
     <div class="kv"><span>Letzte Übergabe</span><span>Januar ${endeJahr()}</span></div>
     <div class="mut">Mit ihr endet die Partie, es folgt die Chronik. ${A.ehren?'Als '+ehrP()+' bekommst du das beste Ende.':'Wer vorher die Weltweinschau gewinnt, bekommt das beste Ende.'}</div>`;
@@ -739,6 +740,8 @@ const wfBild=(b,kl)=>`<div class="fbild ${kl}" style="background-image:url(bilde
 function briefHtml(){
   return `<div class="urk vertrag neu"><div class="utext"><div class="utitel">Einladung</div><p>Die Weltweinschau bittet</p><b class="uname">${esc(S.ich||S.name)}</b><p>${S.ich?esc(S.name)+' und das ganze Dorf':'und das ganze Dorf'}<br>um die Ehre, Gastgeber zu sein</p><small>${weltAus()?'':`Jeden ${MON[WELT_MONAT]} ab ${wettNaechst('welt').split(' ')[1]} · `}${esc(REGIONEN[S.region].name)}</small></div><div class="usiegel"></div></div>`;
 }
+// Seit 13.6.3: Urkunde zu einer Krone der Weltweinschau, Platzhalter bis 13.8.
+function kroneUrkHtml(K){return `<div class="urk neu"><div class="utext"><div class="utitel">${esc(K.name)}</div><p>Die Weltweinschau ehrt</p><b class="uname">${esc(S.ich||S.name)}</b><p>${S.ich?esc(S.name):''}</p><small>${MON[S.monat]} ${S.jahr} · Weltweinschau im eigenen Dorf</small></div><div class="usiegel"></div></div>`}
 function ehrUrkHtml(){
   const w=frau(), wer=S.ich?`<p>Der Weinbauverband ernennt</p><b class="uname">${esc(S.ich)}</b><p>${w?'Inhaberin':'Inhaber'} von ${esc(S.name)}</p>`:`<p>Der Weinbauverband ernennt ${w?'die Inhaberin':'den Inhaber'} von</p><b class="uname">${esc(S.name)}</b>`;
   return `<div class="urk neu"><div class="utext"><div class="utitel">Urkunde</div>${wer}<p>${w?'zur':'zum'}</p><b class="urang">${esc(ehrP())}</b><small>${MON[S.monat]} ${S.jahr} · Weltweinschau im eigenen Dorf</small></div><div class="usiegel"></div></div>`;
@@ -1297,20 +1300,28 @@ function vStadt(){
       :`<div class="fleer" style="margin-top:6px">Kein Fasswein wartet auf die Anmeldung.</div>`),{
       i:'Im Rathaus meldest du deinen Fasswein an. Erst dann bekommt er seine Stufe und darf in die Flasche. Welche Stufen für einen Wein möglich sind, siehst du nach dem Tipp auf „Anmelden“. Was zuerst verdirbt, steht oben.'});
     // Seit 7.9: feste Fenster "Wettbewerbe" und "Auktionen". Einreichen und Bieten gehen hier, die Tipps in "Das steht an" führen her.
-    const wI=`Bei der Landesprämierung im Februar treten die Winzer deines Gebiets mit Prädikatsweinen vom letzten Jahrgang an.${S.rang>=R_BUND?' Der Bundeswettbewerb ist alle drei Jahre im Juni, mit verkaufsreifen Prädikatsweinen und Sekten aus der Flasche.':''} Eingereicht wird im Monat der Ausschreibung, das Ergebnis steht im nächsten Winzerboten. Ein Platz auf dem Treppchen bringt Ansehen und Qualitätspunkte für den Wein.${S.amt&&S.amt.brief?' Die Weltweinschau ist jeden August bei dir im Dorf: neun Weingüter aus aller Welt, zugelassen sind verkaufsreife Prädikatsweine und Sekte aus der Flasche, derselbe Wein darf jedes Jahr wieder antreten.':''}`;
+    const wI=`Bei der Landesprämierung im Februar treten die Winzer deines Gebiets mit Prädikatsweinen vom letzten Jahrgang an.${S.rang>=R_BUND?' Der Bundeswettbewerb ist alle drei Jahre im Juni, mit verkaufsreifen Prädikatsweinen und Sekten aus der Flasche.':''} Eingereicht wird im Monat der Ausschreibung, das Ergebnis steht im nächsten Winzerboten. Ein Platz auf dem Treppchen bringt Ansehen und Qualitätspunkte für den Wein.${S.amt&&S.amt.brief?` Die Weltweinschau ist jeden ${MON[WELT_MONAT]} bei dir im Dorf, angemeldet wird im ${MON[WELT_ANM]}. Jedes Jahr geht es um eine Krone, in fester Reihenfolge: ${KRONEN.map(K=>K.name).join(', ')}. Verlierst du, ist im nächsten Jahr dieselbe Krone dran.`:''}`;
     if(S.rang<R_LAND) zu.push(fenster('wettb','Wettbewerbe','',{zu:`ab dem Rang ${RAENGE[R_LAND].name}`,i:wI}));
     else{
       const w=S.wett&&!S.wett.fertig?S.wett:null, mb=aufgabeAktiv('wett')?mgrAufgabe('wett').bereich:'';
       const wz=typ=>{
         const name=WETTNAME[typ], rg=typ==='bund'?R_BUND:R_LAND;
-        if(typ==='welt'&&amtEhre()) return fz('🌍 '+name,`Gewonnen ${S.amt.ehren.j} mit ${esc(S.amt.ehren.wein)}. Als ${ehrP()} trittst du nicht mehr an.`);
         if(S.rang<rg) return '';   // Seit 10.6: Der Bundeswettbewerb taucht erst mit seinem Rang auf.
         if(!w||w.typ!==typ) return fz(name,`Gerade nichts, als Nächstes im ${wettNaechst(typ)}.`);
         const n=S.lots.filter(wettFaehig).length;
         return fz(`${name} ${S.jahr}`,w.ein?`Eingereicht: ${esc(w.ein.name)}`:n?`${n} ${n===1?'Wein ist':'Weine sind'} zugelassen`:'Du hast gerade keinen zugelassenen Wein.',
           w.ein?'Tauschen geht bis zum Monatsende.':n&&(!mb||typ==='welt')?'<span class="rot">Einreichen geht nur diesen Monat.</span>':'',
           `<button class="klein${w.ein||!n?' sec':''}" data-a="wettbewerb">${w.ein?'Tauschen':n?'Einreichen':'Ansehen'}</button>`)};
-      h+=fenster('wettb','Wettbewerbe',[wz('land'),wz('bund'),...(S.amt&&S.amt.brief?[wz('welt')]:[])],{hin:[mb&&`${MGR_BEREICHE[mb].sym} ${mgrG(mb).Dein} ${MGR_BEREICHE[mb].name} reicht beim Weiterblättern deinen besten Wein ein.${S.amt&&S.amt.brief?' Den Wein für die Weltweinschau wählst du selbst.':''}`],i:wI});
+      // Seit 13.6.3: die Weltweinschau mit der Krone, die gerade dran ist. Angemeldet wird nur im Januar.
+      const sz=()=>{
+        if(amtEhre()) return fz('🌍 '+WETTNAME.welt,`Alle ${KRONEN.length} Kronen geholt, die letzte ${S.amt.ehren.j}. Als ${ehrP()} trittst du nicht mehr an.`);
+        const s=S.schau, K=KRONEN[s?s.kl:kroneKl()];
+        if(!schauAnm()) return fz(`🌍 ${WETTNAME.welt} · ${K.name}`,s?`${s.ein?'Angemeldet: '+esc(s.ein.name):'Kein Wein angemeldet'}. Die Schau ist im ${MON[WELT_MONAT]}.`:`Als Nächstes Anmeldung im ${wettNaechst('welt')}.`);
+        const n=S.lots.filter(l=>schauFaehig(l)).length;
+        return fz(`🌍 ${WETTNAME.welt} ${S.jahr} · ${K.name}`,s.ein?`Angemeldet: ${esc(s.ein.name)}`:n?`${n} ${n===1?'Wein ist':'Weine sind'} zugelassen`:'Du hast gerade keinen zugelassenen Wein.',
+          s.ein?'Tauschen geht bis zum Monatsende.':n?'<span class="rot">Anmelden geht nur diesen Monat.</span>':'',
+          `<button class="klein${s.ein||!n?' sec':''}" data-a="schau">${s.ein?'Tauschen':n?'Anmelden':'Ansehen'}</button>`)};
+      h+=fenster('wettb','Wettbewerbe',[wz('land'),wz('bund'),...(S.amt&&S.amt.brief?[sz()]:[])],{hin:[mb&&`${MGR_BEREICHE[mb].sym} ${mgrG(mb).Dein} ${MGR_BEREICHE[mb].name} reicht beim Weiterblättern deinen besten Wein ein.${S.amt&&S.amt.brief?' Den Wein für die Weltweinschau wählst du selbst.':''}`],i:wI});
     }
     const aI=`Bei einer Auktion kommt Land unter den Hammer, meist viel billiger als beim Makler. Der Winzerbote kündigt sie einen Monat vorher an, im Monat danach bietest du hier mit. Mitgehen kannst du bis Konto plus freier Kreditrahmen. Auktionen gibt es nicht jedes Jahr, geboten wird wenn, dann im ${AUK_MONATE.map(m=>MON[(m+1)%12]).join(', ').replace(/, ([^,]*)$/,' oder $1')}.${deckelSatz()?' '+deckelSatz()+' Mitbieten darfst du nur, wenn dein Besitz samt dem ganzen Los darunter bleibt.':''}`;
     if(S.rang<R_AUKTION) zu.push(fenster('auktionen','Auktionen','',{zu:`ab dem Rang ${RAENGE[R_AUKTION].name}`,i:aI}));
@@ -1945,6 +1956,19 @@ const AKT={
       ${S.rang<wettRang()?`<div class="card mut">Mitmachen darfst du ab dem Rang ${RAENGE[wettRang()].name}.</div>`:ls.length?ls.map(l=>`<button class="wahl ${e&&e.id===l.id?'an':''}" data-a="wettJa" data-id="${l.id}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${l.qp} Qualitätspunkte${!land&&reifeBonus(l)?` · Reife +${reifeBonus(l)}`:''}</span></button>`).join(''):`<div class="card mut">Du hast gerade keinen zugelassenen Wein.${land?' Meldest du diesen Monat noch einen Prädikatswein vom letzten Jahrgang an, kannst du teilnehmen.':''}</div>`}
       <div class="btns"><button class="sec" data-a="close">${e||!ls.length?'Schließen':'Später entscheiden'}</button></div>`);
   },
+  // Seit 13.6.3: Anmeldung zur Weltweinschau, nur im Januar, nur Weine der Klasse, die dran ist. Die Punkte stehen beim Anmelden fest.
+  schau(){
+    const s=S.schau; if(!s) return; const K=KRONEN[s.kl], e=s.ein, an=schauAnm(), ls=an?S.lots.filter(l=>schauFaehig(l)).sort((a,b)=>schauPunkte(b)-schauPunkte(a)):[];
+    wettSheet(`${sbild('weltweinschau')}<h3>${K.sym} ${WETTNAME.welt} ${S.jahr}: ${K.name}</h3>
+      ${e?`<p>Angemeldet: <b>${esc(e.name)}</b>. Die Schau ist im ${MON[WELT_MONAT]}, das Ergebnis steht im Winzerboten danach.${an?' Bis zum Monatsende kannst du noch tauschen.':''}</p>`:''}
+      <p class="mut">${schauText(K)} Zugelassen sind verkaufsreife Weine aus der Flasche, nicht gepanscht und lange genug gelagert, auch gereifte und schon prämierte. Es zählen die Punkte. Ein Jahrhundertwein hat immer ${JH_QP}. Als Favorit gilt ${esc(s.feld.find(x=>x.fav).name)}.</p>
+      ${!an?'':ls.length?ls.map(l=>`<button class="wahl ${e&&e.id===l.id?'an':''}" data-a="schauJa" data-id="${l.id}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${jhWein(l)?`Jahrhundertwein, ${JH_QP} Punkte`:`${l.qp} Qualitätspunkte${reifeBonus(l)?` · Reife +${reifeBonus(l)}`:''}`}</span></button>`).join(''):`<div class="card mut">Du hast gerade keinen zugelassenen Wein für die ${K.name}.</div>`}
+      <div class="btns"><button class="sec" data-a="close">${e||!ls.length?'Schließen':'Später entscheiden'}</button></div>`);
+  },
+  schauJa(d){
+    const l=lot(d.id); if(!schauEinreichen(l)) return; fx('korken'); save(); render();
+    wettSheet(`${sbild('weltweinschau')}<h3>🌍 Angemeldet</h3><p>${esc(S.schau.ein.name)} tritt im ${MON[WELT_MONAT]} bei der Weltweinschau um die ${KRONEN[S.schau.kl].name} an.</p><div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`);
+  },
   // Einreichen: Die Punkte stehen jetzt fest, gewertet wird beim Monatswechsel.
   wettJa(d){
     const l=lot(d.id), w=S.wett; if(!w||w.fertig||S.rang<wettRang()||!wettFaehig(l)) return;
@@ -1983,11 +2007,11 @@ const AKT={
   // Nach dem Anstoßen geht es zu Aktuelles, nach dem Kaufvertrag zur ersten Ausgabe vom Winzerboten.
   feierEnde(){
     const el=$('#feier'); if(!el||el.classList.contains('aus')) return;
-    const start=S.feier&&S.feier.start, sp=S.feier&&S.feier.spende, w=S.feier&&S.feier.welt, amt=w==='schau'||w==='brief'&&S.feier.schau;
+    const start=S.feier&&S.feier.start, sp=S.feier&&S.feier.spende, w=S.feier&&S.feier.welt, amt=w==='brief';
     // Seit 10.2.1: Nach dem Kaufvertrag erst die Szene vom Hof im Sommer zum Startmonat, dann der Winzerbote.
     if(start&&FSTUFE!==-1){feierStopp(); FSTUFE=-1; render(); window.scrollTo(0,0); schnitt(); return}
     feierStopp(); if(!start&&w!=='ende') fx('korken'); S.feier=null; save(); el.classList.add('aus');
-    // Seit 10.2: Nach der Schau geht es ins Rathaus zum Einreichen, nach der Übergabe zur Chronik.
+    // Seit 10.2: Nach dem Brief geht es ins Rathaus, nach der Übergabe zur Chronik. Seit 13.6.3 wird vor der Schau angemeldet, danach geht es zu Aktuelles.
     setTimeout(()=>{if(start) TAB='monat'; else if(w==='ende') TAB='ende'; else if(sp||amt) geh('stadt','amt'); else geh('gut','aktuell'); render();window.scrollTo(0,0);schnitt()},matchMedia('(prefers-reduced-motion:reduce)').matches?0:450);
   },
   urkunde(d){

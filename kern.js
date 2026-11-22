@@ -258,7 +258,7 @@ function roh(i){try{const o=JSON.parse(localStorage.getItem(KEYS[i])||'null');re
 function lies(i){const o=roh(i);return o&&o.v13?o:null}
 function liesAlt(i){const o=roh(i);return o&&!o.v13?o:null}
 // Übernimmt einen gelesenen Spielstand und bringt alte Stände auf den heutigen Stand.
-function nimm(o){S=o;if(S.zf==null)S.zf=zfNeu();if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();altDoppelt();altSpende();altKeller();altZeit();altAmt();if(!S.fu)S.fu=fuAlt(); else fuPaketB(); altKomp(); altAns(); altLeute(); altRuf(); altSchaed(); altSekt(); altFrei(); altHefe(); altJh()}
+function nimm(o){S=o;if(S.zf==null)S.zf=zfNeu();if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();altDoppelt();altSpende();altKeller();altZeit();altAmt();if(!S.fu)S.fu=fuAlt(); else fuPaketB(); altKomp(); altAns(); altLeute(); altRuf(); altSchaed(); altSekt(); altFrei(); altHefe(); altJh(); altSchau()}
 // Seit 8.3: Spielstände ohne Uhr fangen bei 0 an und merken sich, dass sie erst seit 8.3 zählen.
 // Seit 8.5: Kellermeister Stufe 1 keltert statt abzufüllen. Hatte ein alter Spielstand auf Stufe 1 das Abfüllen an, ist jetzt das Keltern an.
 // Version 12.1 (Maik 20.11.2026): Alte Spielstände ab Winzer bekommen den Sektkeller geschenkt (Bestandsschutz), mit einer Zeile im Winzerboten (sektBote).
@@ -588,7 +588,7 @@ function ladenPasst(l,r){const w=S.laeden[r].wunsch; return ladenOk(l)&&(w==='se
 function ladenPreis(l,r){return Math.round(preis(l)*LADEN_AUF*100)/100}
 
 /* ================= Wettbewerbe ================= */
-function wettRang(){const t=S.wett&&S.wett.typ; return t==='welt'?R_MAX:t==='bund'?R_BUND:R_LAND}
+function wettRang(){const t=S.wett&&S.wett.typ; return t==='bund'?R_BUND:R_LAND}
 // Seit 13.6.2: Ein Jahrhundertwein hat feste Punkte (JH_QP), Lagerjahre geben ihm nichts dazu.
 function reifeBonus(l){if(jhWein(l)) return 0; return Math.min(12,Math.round((reifeFaktor(l)-1)*8))}
 function wettFaehig(l){
@@ -599,8 +599,7 @@ function wettFaehig(l){
 }
 // Ausschreibung: Feld der anderen Weingüter. ein ist der eingereichte Wein, zufall die Tagesform der Jury (bleibt beim Tauschen gleich).
 function neuerWettbewerb(typ){
-  // Seit 10.1: Bei der Weltweinschau treten neun Weingüter aus aller Welt an, die Gegner aus Deutschland nicht.
-  if(typ==='welt'){const d=DIFF[S.schwer].feld, namen=misch(WELT_GUETER); S.wett={typ,feld:namen.slice(0,9).map((name,i)=>{const b=i<2?WELT_STARK:WELT_FELD; return {name,p:rint(b[0],b[1])+d}}),ein:null,zufall:rint(-4,4)}; return}
+  // Seit 13.6.3 läuft die Weltweinschau nicht mehr über S.wett, sondern über S.schau (schauNeu).
   const d=DIFF[S.schwer].feld, bund=typ==='bund', F=[], namen=misch(GUETER);
   for(let i=0;i<(bund?8:9);i++) F.push({name:namen[i],p:(bund?rint(20,44):i<2?rint(20,34):rint(8,26))+d});
   for(const g of S.gegner) if(bund||g.region===S.region){const t=GEGNER_TYP[g.typ];F.push({name:g.name,ki:g.id,p:rint(t.ws[0],t.ws[1])+Math.round(g.rang*(bund?1.1:.85))+(bund?4:0)+d+(REGIONEN[g.region].wettPlus||0)})}
@@ -610,13 +609,11 @@ function neuerWettbewerb(typ){
 function wettPunkte(l){const w=S.wett;return (jhWein(l)?JH_QP:l.qp)+(w.typ!=='land'?reifeBonus(l):0)+w.zufall+(R().wettPlus||0)}
 // Wertung zu Beginn des Monatswechsels nach der Ausschreibung, das Ergebnis kommt als Thema in die Zeitung.
 // Medaille und Qualitätspunkte bekommt der Wein nur, wenn er noch im Keller ist. Ansehen und Preisgeld gibt es immer.
-// Weltweinschau: l.welt heißt "hat seine Medaille der Schau schon". Platz 2 und 3 bringen dann nur Ansehen und Preisgeld, der Sieg zählt immer.
+// Seit 13.6.3 nur noch Landesprämierung und Bundeswettbewerb, die Weltweinschau wertet schauAuswerten.
 function wettAuswerten(){
   const w=S.wett, P=PREISE[w.typ], F=w.feld.map(x=>({...x})), e=w.ein, l=e&&lot(e.id), N=[], name=WETTNAME[w.typ];
-  const welt=w.typ==='welt', wo=w.typ==='land'?'bei der Landesprämierung '+WO[S.region]:welt?'bei der Weltweinschau':'beim Bundeswettbewerb';
+  const wo=w.typ==='land'?'bei der Landesprämierung '+WO[S.region]:'beim Bundeswettbewerb';
   if(e) F.push({name:S.name,du:1,p:e.p});
-  const schonWelt=!!(welt&&l&&l.welt);
-  if(welt&&l) l.welt=true;
   F.sort((a,b)=>b.p-a.p||(b.du||0)-(a.du||0));
   const ich=F.findIndex(x=>x.du);
   let titel='', text='';
@@ -624,14 +621,13 @@ function wettAuswerten(){
   F.slice(0,3).forEach((x,i)=>{
     const pr=P[i];
     if(x.du){
-      const mit=l&&!(schonWelt&&i>0), r=ruhm(pr.ans,0,'Wettbewerbe'), was=`+${r} Ansehen${mit?`, +${pr.qp} Qualitätspunkte`:''}${pr.geld?', '+eur(pr.geld)+' Preisgeld':''}`;
+      const mit=!!l, r=ruhm(pr.ans,0,'Wettbewerbe'), was=`+${r} Ansehen${mit?`, +${pr.qp} Qualitätspunkte`:''}${pr.geld?', '+eur(pr.geld)+' Preisgeld':''}`;
       if(mit){l.qp+=pr.qp; (l.med=l.med||[]).push(`${pr.m} ${name} ${S.jahr}`); if(w.typ==='bund') l.bund=true}
       ehre(pr.m,`${pr.t} ${wo}: ${e.name}`,0,was); kompMedaille(l||e,i);
       if(pr.geld) kassiere(pr.geld);
-      if(welt&&i===0){weltSieg(e,was,F); return}
       titel=`${pr.t} für ${S.name}!`;
-      text=`${e.name} holt ${pr.t} ${wo}. Das bringt ${was}.${!l?' Der Wein ist schon verkauft, die Ehre bleibt trotzdem.':mit?'':' Seine Medaille der Schau hat der Wein schon von früher.'}`;
-      if(i===0&&!welt&&S.gegner.length){const g=S.gegner[rint(0,S.gegner.length-1)]; if(GEGNER_SPRUCH[g.typ]) text+=' '+GEGNER_SPRUCH[g.typ].erfolg(g.name)}
+      text=`${e.name} holt ${pr.t} ${wo}. Das bringt ${was}.${!l?' Der Wein ist schon verkauft, die Ehre bleibt trotzdem.':''}`;
+      if(i===0&&S.gegner.length){const g=S.gegner[rint(0,S.gegner.length-1)]; if(GEGNER_SPRUCH[g.typ]) text+=' '+GEGNER_SPRUCH[g.typ].erfolg(g.name)}
     }else if(x.ki!=null){
       const g=S.gegner[x.ki]; g.ansehen+=pr.ans*DIFF[S.schwer].ki; g.geld+=pr.geld;
       N.push(`${g.name} holt ${pr.t}.`);
@@ -642,27 +638,78 @@ function wettAuswerten(){
   else if(N.length) text+=' '+N.join(' ');
   // Rangliste in der Zeitung: das Treppchen, dazu du und die Gegner, wenn sie dahinter landen.
   const L=F.filter((x,i)=>i<3||x.du||x.ki!=null).map(x=>({platz:x.platz,name:x.name,p:x.p,m:x.m||'',du:x.du||0}));
-  // Seit 10.1: Jede Weltweinschau steht im Amt (S.amt.welt) für die Chronik: Jahr, Platz (0 = nicht angetreten), Wein und Punkte.
-  if(welt){
-    (S.amt.welt=S.amt.welt||[]).push({j:S.jahr,platz:ich+1,wein:e?e.name:'',p:e?e.p:0});
-    if(ich===0) return;
-    if(ich<0){titel=`Weltweinschau ${S.jahr}: ${F[0].name} gewinnt im Dorf`; text=`${F[0].name} holt Platz 1 bei der Weltweinschau auf dem Dorfplatz. ${S.name} hat diesmal keinen Wein eingereicht. ${weltAus()?'Es war die letzte Schau vor der Übergabe.':'Nächsten August ist die Schau wieder da.'}`}
-    else if(ich>2) text=`${e.name} landet bei der Weltweinschau auf Platz ${ich+1} von ${F.length}. Gewonnen hat ${F[0].name}. ${weltAus()?'Es war die letzte Schau vor der Übergabe.':'Nächsten August kommt die Welt wieder ins Dorf, dann gern auch mit demselben Wein.'}`;
-    else text+=` Gewonnen hat ${F[0].name}. ${weltAus()?'Für den Titel hätte es Platz 1 gebraucht, und es war die letzte Schau vor der Übergabe.':'Für den Titel braucht es Platz 1, nächsten August ist die nächste Gelegenheit.'}`;
-    return schlag(ich<0?60:84,titel,text,'weltweinschau',{gold:ich>0&&ich<3?1:0,liste:L,wett:{typ:w.typ,platz:ich},du:1});
-  }
   schlag(ich<0?42:ich<3?78:72,titel,text,'praemierung',{archiv:1,gold:ich>=0&&ich<3?1:0,liste:L,wett:{typ:w.typ,platz:ich},du:ich>=0&&ich<3?1:0});
 }
-// Sieg bei der Weltweinschau: Ehrenpräsident, danach gibt es keine Schau mehr. Bild 4 und 5 der Geschichte kommen seit 10.2 auf der Bild-Bühne.
+
+/* ================= Weltweinschau mit drei Kronen (seit 13.6.3) ================= */
+// S.schau ist die Schau des Jahres: angelegt im Januar (WELT_ANM), eingereicht und getauscht wird nur im Januar, die Schau ist im Juni (WELT_MONAT),
+// gewertet beim Monatswechsel danach. {j Jahr, kl Nummer in KRONEN, feld, ein, zufall}. Gewonnene Kronen stehen in S.amt.kronen ({k, j, gen, wein}),
+// sie bleiben wie die Schlüssel auch nach einer Abwahl. Jede Schau steht in S.amt.welt für die Chronik: Jahr, Klasse, Platz (0 = nicht angetreten), Wein, Punkte.
+const kronen=()=>(S&&S.amt&&S.amt.kronen)||[];
+const kroneHat=k=>kronen().some(x=>x.k===k);
+// Die Klasse, die dran ist: die erste ohne Krone in der festen Reihenfolge, nach der dritten Krone null.
+function kroneKl(){const i=KRONEN.findIndex(K=>!kroneHat(K.k)); return i<0?null:i}
+const kroneWein=(l,kl)=>{const K=KRONEN[kl]; return K.sekt?!!l.sekt:!l.sekt&&K.stufen.includes(l.stufe)};
+// Regeln wie bisher: abgefüllt, nicht gepanscht, lange genug gelagert, dazu die Klasse.
+function schauFaehig(l,s=S.schau){return !!(s&&l&&l.stufe&&!l.pansch&&l.status==='flasche'&&l.flMonate>=lager(l).min&&kroneWein(l,s.kl))}
+// Es zählen die Punkte wie bisher (mit Reife), beim Jahrhundertwein die festen JH_QP. Sie stehen beim Einreichen fest.
+function schauPunkte(l,s=S.schau){return (jhWein(l)?JH_QP:l.qp)+reifeBonus(l)+s.zufall+(R().wettPlus||0)}
+function schauNeu(){
+  const kl=kroneKl(); if(kl==null) return;
+  const K=KRONEN[kl], d=DIFF[S.schwer].feld, namen=misch(WELT_GUETER).slice(0,8);
+  const feld=[{name:K.fav,fav:1,p:rint(K.p-WELT_FAV_W,K.p+WELT_FAV_W)+d+WELT_FAV_PLUS},...namen.map(name=>({name,p:rint(K.p-WELT_FELD_AB[0],K.p-WELT_FELD_AB[1])+d}))];
+  S.schau={j:S.jahr,kl,feld:misch(feld),ein:null,zufall:rint(-4,4)};
+}
+// Einreichen und Tauschen nur im Monat der Anmeldung.
+const schauAnm=()=>!!(S.schau&&S.monat===WELT_ANM&&S.schau.j===S.jahr);
+function schauEinreichen(l){const s=S.schau; if(!schauAnm()||!schauFaehig(l)) return 0; s.ein={id:l.id,name:lotName(l),p:schauPunkte(l),sorte:l.sorte,stufe:l.stufe,sekt:l.sekt?1:0,...(jhWein(l)?{jh:1}:{})}; return 1}
+const schauText=K=>`Gesucht ist die ${K.name}: Jedes Weingut tritt mit ${K.was} an.`;
+// Wertung: Platz 1 bringt die Krone und KRONE_ANS Ansehen, Platz 2 und 3 Ansehen und Preisgeld wie bisher (PREISE.welt).
+// Medaille und Qualitätspunkte der Schau bekommt ein Wein nur einmal (l.welt) und nur, wenn er noch im Keller ist.
+function schauAuswerten(){
+  const s=S.schau, K=KRONEN[s.kl], P=PREISE.welt, F=s.feld.map(x=>({...x})), e=s.ein, l=e&&lot(e.id), A=S.amt;
+  S.schau=null;
+  if(e) F.push({name:S.name,du:1,p:e.p});
+  F.sort((a,b)=>b.p-a.p||(b.du||0)-(a.du||0));
+  const ich=F.findIndex(x=>x.du);
+  F.forEach((x,i)=>{x.platz=i+1; if(i<3) x.m=P[i].m});
+  (A.welt=A.welt||[]).push({j:S.jahr,kl:K.k,platz:ich+1,wein:e?e.name:'',p:e?e.p:0});
+  const L=F.filter((x,i)=>i<3||x.du).map(x=>({platz:x.platz,name:x.name,p:x.p,m:x.m||'',du:x.du||0}));
+  const nochmal=`Nächstes Jahr geht es wieder um die ${K.name}.`;
+  if(ich<0) return schlag(60,`Weltweinschau ${S.jahr}: ${F[0].name} holt die ${K.name}`,`${F[0].name} gewinnt die ${K.name} auf dem Dorfplatz. ${S.name} hat diesmal keinen Wein eingereicht. ${nochmal}`,'weltweinschau',{liste:L,wett:{typ:'welt',platz:-1}});
+  if(ich>2) return schlag(72,`Weltweinschau: Platz ${ich+1} für ${S.name}`,`${e.name} landet bei der Schau um die ${K.name} auf Platz ${ich+1} von ${F.length}. Die Krone holt ${F[0].name}. ${nochmal}`,'weltweinschau',{liste:L,wett:{typ:'welt',platz:ich},du:1});
+  const pr=P[ich], schon=!!(l&&l.welt), mit=!!l&&!schon, r=ruhm(ich===0?KRONE_ANS:pr.ans,0,'Wettbewerbe');
+  const was=`+${r} Ansehen${mit?`, +${pr.qp} Qualitätspunkte`:''}${pr.geld?', '+eur(pr.geld)+' Preisgeld':''}`;
+  if(l) l.welt=true;
+  if(mit){l.qp+=pr.qp; (l.med=l.med||[]).push(`${pr.m} ${WETTNAME.welt} ${S.jahr}`)}
+  if(pr.geld) kassiere(pr.geld);
+  kompMedaille(l||e,ich);
+  if(ich>0){
+    ehre(pr.m,`${pr.t} bei der Weltweinschau (${K.name}): ${e.name}`,0,was);
+    return schlag(84,`Weltweinschau: ${pr.t} für ${S.name}`,`${e.name} holt ${pr.t} bei der Schau um die ${K.name}. Das bringt ${was}. Die Krone holt ${F[0].name}. ${nochmal}`,'weltweinschau',{gold:1,liste:L,wett:{typ:'welt',platz:ich},du:1});
+  }
+  (A.kronen=A.kronen||[]).push({k:K.k,j:S.jahr,gen:genNr(),wein:e.name});
+  ehre(K.sym,`${K.name} der Weltweinschau: ${e.name}`,0,was);
+  if(kroneKl()==null) return weltSieg(e,was,L);
+  kroneSieg(K,e,was,L);
+}
+// Eine Krone, aber noch nicht alle: Feier im Dorf, nächstes Jahr ist die nächste Klasse dran.
+function kroneSieg(K,e,was,L){
+  const N=KRONEN[kroneKl()];
+  schlag(96,`Weltweinschau: Die ${K.name} geht an ${S.name}!`,`${e.name} holt die ${K.name}, vor ${L.length>3?'den':''} besten Weingütern der Welt. Das bringt ${was}. Am Holzbogen hängt jetzt eine neue Fahne. Nächstes Jahr geht es um die ${N.name}.`,'weltweinschau',{gold:1,sonder:1,du:1,liste:L,wett:{typ:'welt',platz:0}});
+  feierWelt('krone',{k:K.k,wein:e.name,was});
+}
+// Die dritte Krone: Ehrenpräsident, danach gibt es keine Schau mehr. Bild 4 und 5 der Geschichte kommen seit 10.2 auf der Bild-Bühne.
 const ehrP=()=>anr('Ehrenpräsident','Ehrenpräsidentin');
-function weltSieg(e,was,F){
-  const A=S.amt; A.ehren={j:S.jahr,m:S.monat,wein:e.name};
-  ehre('🎗️',`${ehrP()} des Weinbauverbands`,0,`Sieg bei der Weltweinschau ${S.jahr} im eigenen Dorf mit ${e.name}.`);
-  const L=F.slice(0,3).map(x=>({platz:x.platz,name:x.name,p:x.p,m:x.m||'',du:x.du||0}));
-  schlag(100,`Weltweinschau: ${S.name} gewinnt im eigenen Dorf!`,`${e.name} holt Platz 1 bei der Weltweinschau, vor ${F.length-1} Weingütern aus aller Welt. Das bringt ${was}. Über dem Dorfplatz steigt das Feuerwerk auf, und der Weinbauverband ernennt dich${S.ich?', '+S.ich+',':''} ${anr('zum Ehrenpräsidenten','zur Ehrenpräsidentin')}. Den Titel nimmt dir keine Wahl mehr. Du kannst weiterspielen oder das Weingut im Rathaus übergeben, wann du willst.`,'weltweinschau-sieg',{gold:1,sonder:1,du:1,liste:L,wett:{typ:'welt',platz:0}});
+function weltSieg(e,was,L){
+  const A=S.amt; A.ehren={j:S.jahr,m:S.monat,wein:e.name,gen:genNr()};
+  ehre('🎗️',`${ehrP()} des Weinbauverbands`,0,`Alle ${KRONEN.length} Kronen der Weltweinschau, die letzte ${S.jahr} im eigenen Dorf mit ${e.name}.`);
+  schlag(100,`Weltweinschau: ${S.name} holt die dritte Krone!`,`${e.name} holt die ${KRONEN[KRONEN.length-1].name}. Damit hat ${S.name} alle ${KRONEN.length} Kronen der Weltweinschau. Das bringt ${was}. Über dem Dorfplatz steigt das Feuerwerk auf, und der Weinbauverband ernennt dich${S.ich?', '+S.ich+',':''} ${anr('zum Ehrenpräsidenten','zur Ehrenpräsidentin')}. Den Titel nimmt dir keine Wahl mehr.`,'weltweinschau-sieg',{gold:1,sonder:1,du:1,liste:L,wett:{typ:'welt',platz:0}});
   // Seit 10.2 kommen Feuerwerk, Ehrenplatz und die zweite Flasche auf der Bild-Bühne, mit der Urkunde zum Schluss.
   feierWelt('sieg',{wein:e.name,was});
 }
+// Probestände aus 13.5 und früher: Eine Schau, die noch über S.wett lief, fällt weg.
+function altSchau(){if(S.wett&&S.wett.typ==='welt') S.wett=null}
 
 function auktionHa(){const r=Math.random();return r<.4?1:r<.73?2:r<.95?3:r<.995?5:10}
 function neueAuktion(spitze){
@@ -694,7 +741,7 @@ function aukOhneDich(){
 function aukNaechst(){const m=AUK_MONATE.find(m=>m>S.monat); return m==null?`${MON[(AUK_MONATE[0]+1)%12]} ${S.jahr+1}`:`${MON[(m+1)%12]} ${S.jahr+(m===11?1:0)}`}
 function wettNaechst(typ){
   if(typ==='land') return `Februar ${S.monat<1?S.jahr:S.jahr+1}`;
-  if(typ==='welt') return `August ${S.monat<WELT_MONAT?S.jahr:S.jahr+1}`;
+  if(typ==='welt') return `${MON[WELT_ANM]} ${S.monat<=WELT_ANM?S.jahr:S.jahr+1}`;
   let j=S.jahr+(S.monat>=5?1:0); while(j%3) j++; return `Juni ${j}`;
 }
 // Phase 0: angekündigt, nächsten Monat wird geboten. Text für "Das steht an", leer wenn nichts ansteht.
@@ -1658,6 +1705,8 @@ function monatLauf(){
   if(SPRUNG.length){Z.unshift(...SPRUNG); SPRUNG=[]}
   // Der Wettbewerb aus dem Vormonat wird jetzt gewertet, das Ergebnis steht in dieser Ausgabe.
   if(S.wett){if(!S.wett.fertig) wettAuswerten(); S.wett=null}
+  // Seit 13.6.3: Die Weltweinschau im Juni wird beim Monatswechsel danach gewertet.
+  if(S.schau&&S.monat===WELT_MONAT&&S.amt) schauAuswerten();
   if(weg.length){Z.push('Verdorben: '+weg.join('; ')+'.')}
   S.lots=S.lots.filter(l=>!(l.status==='trauben'||l.status==='sektTr'||(l.status==='fass'&&(l.stufe==='feder'||l.fassMonate>=7))||(l.status==='flasche'&&l.flMonate>=lager(l).max)));
   for(const l of S.lots){if(l.status==='fass')l.fassMonate++; else if(l.status==='flasche'||l.status==='hefe')l.flMonate++}
@@ -1839,12 +1888,13 @@ function etappe3Monat(Z){
     neuerWettbewerb('bund');
     schlag(60,`Bundeswettbewerb ${S.jahr} ausgeschrieben`,`Nur alle drei Jahre treten die besten Winzer des Landes gegeneinander an, mit verkaufsreifen Prädikatsweinen und Sekten aus der Flasche. Eingereicht wird diesen Monat, das Ergebnis steht im nächsten Winzerboten.${S.rang>=R_BUND?' Deinen Wein reichst du im Rathaus ein.':` Mitmachen darfst du ab dem Rang ${RAENGE[R_BUND].name}.`}`,'praemierung',{archiv:1});
   }
-  // Seit 10.1: Nach dem Brief ist jeden August Weltweinschau im eigenen Dorf, bis zum Sieg.
-  if(S.monat===WELT_MONAT&&weltOffen()){
-    neuerWettbewerb('welt');
+  // Seit 13.6.3: Nach dem Brief ist jedes Jahr Weltweinschau im eigenen Dorf, bis zur dritten Krone. Angemeldet wird im Januar, die Schau ist im Juni.
+  if(S.monat===WELT_ANM&&weltOffen()){schauNeu(); if(S.schau){const K=KRONEN[S.schau.kl], fav=S.schau.feld.find(x=>x.fav);
+    schlag(74,`Weltweinschau ${S.jahr}: Es geht um die ${K.name}`,`${schauText(K)} Angemeldet wird diesen Monat im Rathaus, zusammen mit den Prädikatsweinen, die Schau ist im ${MON[WELT_MONAT]} auf dem Dorfplatz. Als Favorit gilt ${fav.name}.`,'weltweinschau',{du:1})}}
+  if(S.monat===WELT_MONAT&&S.schau){
     // Seit 10.2: Die erste Schau kommt auf die Bild-Bühne (A.schauB), danach steht sie nur im Winzerboten. Alte Stände mit schon gelaufener Schau bekommen keine Bühne mehr.
-    const A=S.amt, erst=!A.schauB&&!(A.welt&&A.welt.length); A.schauB=1; if(erst) feierWelt('schau');
-    schlag(74,`Weltweinschau ${S.jahr}: Die Welt ist zu Gast`,`${erst?`Am Holzbogen hängen Fahnen, ${spLohn(7)?'auf der Bank an der Spitzenlage sitzen Gäste aus zwanzig Ländern':'in den Gassen hört man zwanzig Sprachen'}, und beim Dorffest reicht der Wein zum ersten Mal nicht.`:'Am Holzbogen hängen wieder die Fahnen, und diesmal hat das Dorf genug Wein fürs Fest bestellt.'} Neun Weingüter aus aller Welt stellen sich der Jury. Du reichst diesen Monat im Rathaus einen verkaufsreifen Prädikatswein oder Sekt ein, das Ergebnis steht im nächsten Winzerboten.`,'weltweinschau');
+    const A=S.amt, K=KRONEN[S.schau.kl], erst=!A.schauB&&!(A.welt&&A.welt.length); A.schauB=1; if(erst) feierWelt('schau');
+    schlag(74,`Weltweinschau ${S.jahr}: Die Welt ist zu Gast`,`${erst?`Am Holzbogen hängen Fahnen, ${spLohn(7)?'auf der Bank an der Spitzenlage sitzen Gäste aus zwanzig Ländern':'in den Gassen hört man zwanzig Sprachen'}, und beim Dorffest reicht der Wein zum ersten Mal nicht.`:'Am Holzbogen hängen wieder die Fahnen, und diesmal hat das Dorf genug Wein fürs Fest bestellt.'} Neun Weingüter aus aller Welt stellen sich der Jury, es geht um die ${K.name}. ${S.schau.ein?`Für ${S.name} tritt ${S.schau.ein.name} an.`:`${S.name} hat im Januar keinen Wein angemeldet.`} Das Ergebnis steht im nächsten Winzerboten.`,'weltweinschau');
   }
   // Auktion über drei Monate: angekündigt, dann wird geboten, danach steht das Ergebnis unten in der Zeitung.
   // Alte Spielstände ohne phase hatten ihren Bietmonat schon und bekommen jetzt das Ergebnis.
@@ -1974,12 +2024,12 @@ const keyDorf=()=>!stFehlt(), keyVerband=()=>!!(S.amt&&S.amt.siege>=1);
 const weltOffen=()=>!!(S.amt&&S.amt.brief&&!S.amt.ehren);
 // Seit 10.3 (A19): Liegt die nächste Wahl oder der nächste August nicht mehr vor der letzten Übergabe, versprechen die Texte kein nächstes Mal.
 const wahlAus=()=>!!(S.amt&&S.amt.wahl>=endeMonat());
-const weltAus=()=>!!(S.amt&&(S.jahr-START_JAHR+(S.monat<WELT_MONAT?0:1))*12+WELT_MONAT>=endeMonat());
+const weltAus=()=>!!(S.amt&&(S.jahr-START_JAHR+(S.monat<=WELT_ANM?0:1))*12+WELT_ANM>=endeMonat());
 function amtBrief(){
   const A=S.amt; if(A.brief||!keyDorf()||!keyVerband()) return;
   A.brief=monatNr(); feierWelt('brief');
   // Seit 10.2 steht das Gespräch mit dem Bürgermeister auf der Bild-Bühne, die Zeitung bringt nur die Nachricht.
-  schlag(94,'Ein Brief für das ganze Dorf',`Die Weltweinschau sucht einen Gastgeber, und der Bürgermeister hat ihr nur ein Dorf genannt: unseres. Ab jetzt kommen jeden August die besten Weingüter der Welt auf den Dorfplatz, und du reichst im Rathaus einen Wein ein. Wer die Schau gewinnt, wird ${ehrP()}.`,'einladung',{gold:1,du:1});
+  schlag(94,'Ein Brief für das ganze Dorf',`Die Weltweinschau sucht einen Gastgeber, und der Bürgermeister hat ihr nur ein Dorf genannt: unseres. Ab jetzt kommen jeden ${MON[WELT_MONAT]} die besten Weingüter der Welt auf den Dorfplatz. Es geht um ${KRONEN.length} Kronen, eine nach der anderen: ${KRONEN.map(K=>K.name).join(', ').replace(/, ([^,]*)$/,' und $1')}. Angemeldet wird im ${MON[WELT_ANM]} im Rathaus. Wer alle ${KRONEN.length} holt, wird ${ehrP()}.`,'einladung',{gold:1,du:1});
 }
 // Die Umfrage legt den Herausforderer fest und würfelt, ob er vor der Wahl sabotiert: 2 bis 9 Monate später, also mindestens 3 Monate vor der Wahl.
 function amtUmfrage(){
@@ -2028,6 +2078,8 @@ function aufgaben(){
   if(S.auktion&&S.auktion.phase!==0&&!S.auktion.ende&&S.rang>=R_AUKTION){const zuG=aukDeckel(), kann=!zuG&&aukNaechstes()<=aukLimit(); A.push({t:`🔨 Auktion diesen Monat: ${S.auktion.ha}\u00a0Hektar, Gebot steht bei ${eur(S.auktion.gebot)}`+(zuG?'. '+AUK_ZU_GROSS.slice(0,-1):kann?'':'. Zum Mitbieten reicht dein Geld nicht'),tab:'stadt',sub:'amt',...(kann?{rot:1}:{ruhig:1})})}
   // Wettbewerb: Rot nur mit einem zugelassenen Wein. Reicht der Manager ein, steht hier nichts. Seit 10.3 bleibt die Zeile bei der Weltweinschau immer stehen.
   if(S.wett&&!S.wett.fertig&&!S.wett.ein&&S.rang>=wettRang()&&(S.wett.typ==='welt'||!aufgabeAktiv('wett'))){const pass=S.lots.some(wettFaehig); A.push({t:`🏅 ${WETTNAME[S.wett.typ]}: `+(pass?'diesen Monat einen Wein einreichen':'diesen Monat, du hast aber keinen zugelassenen Wein'),tab:'stadt',sub:'amt',...(pass?{rot:1}:{ruhig:1})})}
+  // Seit 13.6.3: Anmeldung zur Weltweinschau im Januar, rot nur mit einem zugelassenen Wein.
+  if(schauAnm()&&!S.schau.ein){const K=KRONEN[S.schau.kl], pass=S.lots.some(l=>schauFaehig(l)); A.push({t:`${K.sym} Weltweinschau, ${K.name}: `+(pass?'diesen Monat einen Wein anmelden':'diesen Monat, du hast aber keinen zugelassenen Wein'),tab:'stadt',sub:'amt',...(pass?{rot:1}:{ruhig:1})})}
   if(fehlText()) A.push({t:`${fehlText()}, vorher geht es nicht in den nächsten Monat`,rot:1,tab:'stadt',sub:'arbeit'});
   if(m>=5&&m<=10&&leseFaktor()<.75&&R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)) A.push({t:`Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0% der Reben`,rot:1,tab:'stadt',sub:'arbeit'});
   // Seit 8.0: Maschinen unter MASCH_ROT fallen aus (Rot), unter MASCH_GELB lohnt das Warten (Gelb). Wartet der Weingut-Manager nach der Lese, ist Gelb nur ein Hinweis.
@@ -2140,16 +2192,19 @@ function feierWelt(w,o){
 }
 const wfSchau=()=>({bild:'weltweinschau',ort:'🌍 Auf dem Dorfplatz',h:'Die Welt ist zu Gast',konf:10,unten:1,p:['Am Holzbogen hängen Fahnen, die keiner im Dorf richtig zuordnen kann.',
   spLohn(7)?'Auf der Bank an der Spitzenlage sitzen Gäste aus zwanzig Ländern.':'In den Gassen hört man zwanzig Sprachen.','Und beim Dorffest reicht der Wein zum ersten Mal nicht.',
-  'Neun Weingüter aus aller Welt stellen sich der Jury. Fehlt nur noch deiner.']});
+  'Neun Weingüter aus aller Welt stellen sich der Jury, und mittendrin steht dein Wein.']});
 function weltFeier(){
   const F=S.feier, fl=!!S.flascheAuf;
   if(F.welt==='brief') return {B:[{bild:'einladung',ort:'✉️ Im eigenen Hof',h:'Ein Brief für das ganze Dorf',konf:8,p:['Der Bürgermeister steht mit einem Umschlag im Hof, das Siegel ist noch ganz.',
       '„Die Weltweinschau sucht einen Gastgeber. Die wollen diesmal kein Schloss, die wollen ein Dorf.“','„Und ich kenne nur eins, das sich das zutraut.“',
       'Hinter ihm am Zaun steht schon das halbe Dorf und tut so, als wäre es zufällig da.']},...(F.schau?[wfSchau()]:[])],
     kopf:'Post aus aller Welt',schrift:briefHtml(),titel:'Das bringt dir der Brief',
-    P:[['🌍',`Jeden ${MON[WELT_MONAT]} ist Weltweinschau auf dem Dorfplatz`],['🍷','Deinen Wein reichst du im Rathaus ein'],['🎗️',`Platz 1 macht dich ${anr('zum Ehrenpräsidenten','zur Ehrenpräsidentin')}`],weltAus()?['⏳','Bis zur letzten Übergabe reicht die Zeit für keine Schau mehr']:['🔁','Wer verliert, tritt im nächsten Jahr wieder an']],
-    knopf:F.schau?'Wein einreichen 🍷':'Wir machen das 💪'};
-  if(F.welt==='schau') return {B:[wfSchau()],knopf:'Wein einreichen 🍷'};
+    P:[['🌍',`Jeden ${MON[WELT_MONAT]} ist Weltweinschau auf dem Dorfplatz`],['👑',`${KRONEN.length} Kronen nacheinander: ${KRONEN.map(K=>K.name).join(', ')}`],['🍷',`Deinen Wein meldest du im ${MON[WELT_ANM]} im Rathaus an`],['🔁','Wer verliert, tritt im nächsten Jahr in derselben Klasse wieder an'],['🎗️',`Alle ${KRONEN.length} Kronen machen dich ${anr('zum Ehrenpräsidenten','zur Ehrenpräsidentin')}`]],
+    knopf:'Wir machen das 💪'};
+  if(F.welt==='schau') return {B:[wfSchau()],knopf:'Auf zur Schau 🌍'};
+  // Seit 13.6.3: eine Krone, aber noch nicht alle. Die Fahne am Holzbogen ist ein Platzhalter bis 14.3, der Wortlaut kommt in 13.8.
+  if(F.welt==='krone'){const K=KRONEN.find(x=>x.k===F.k)||KRONEN[0], N=KRONEN[kroneKl()]; return {B:[{bild:'weltweinschau',ort:'🎉 Auf dem Dorfplatz',h:`Die ${K.name} bleibt im Dorf!`,konf:18,funken:1,p:[`${F.wein||'Dein Wein'} hat die besten Weingüter der Welt geschlagen.`,`Am Holzbogen zieht der Bürgermeister eine neue Fahne hoch, die ${K.sym} ${K.name}.`,N?`Daneben hängt noch ein leerer Haken. „Für die ${N.name}“, sagt er.`:'']}],
+    kopf:'Eine Krone für das Dorf',schrift:kroneUrkHtml(K),titel:'Das bringt dir die Krone',P:[...(F.was||'').split(', ').filter(Boolean).map(x=>[/Ansehen/.test(x)?'⭐':/Qualit/.test(x)?'🍇':'💶',x]),['👑',`${kronen().length} von ${KRONEN.length} Kronen`],...(N?[['🔜',`Nächstes Jahr geht es um die ${N.name}`]]:[])],knopf:'Anstoßen 🥂'}}
   if(F.welt==='sieg') return {B:[{bild:'weltweinschau-sieg',ort:'🎆 Auf dem Dorfplatz, am Abend',h:`Du bist ${ehrP()}!`,konf:26,funken:1,p:['Über dem Dorfplatz steigt das Feuerwerk auf, und auf dem roten Tisch glänzt der Pokal mit der Weltkugel.',
       `${F.wein||'Dein Wein'} hat die besten Weingüter der Welt geschlagen, und das im eigenen Dorf.`,'Der Bürgermeister hat Tränen in den Augen und behauptet, das sei der Rauch.']},
     ...(fl?[{bild:'ehrenplatz',ort:'🕯️ Der Ehrenplatz',h:'Was war da drin?',konf:0,unten:1,p:['Zwischen den besten Weinen der Welt steht eine leere Flasche mit vergilbtem Etikett.',
