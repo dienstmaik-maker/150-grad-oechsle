@@ -1010,16 +1010,19 @@ const herbstFremd=(j=S.jahr)=>herbstJahr(j).uFremd<FREMD_JAHR;
 // Seit 13.6.1: Im Jahrhundertjahr meldet die Mitte die passende Tendenz klar (JH_ART), sonst gilt der Wurf.
 const herbstTend=(j=S.jahr)=>{const a=REGIONEN[S.region].weg==='beide'&&jhArt(j); return a?TENDENZEN.find(t=>t.k===JH_ART[a].tend):TENDENZEN[Math.min(TENDENZEN.length-1,Math.floor(herbstJahr(j).uTend*TENDENZEN.length))]};
 /* ================= Jahrhundertjahre (seit 13.6.1) ================= */
-// S.jhAb ist das erste Jahrhundertjahr, gesetzt beim Aufstieg zum Terroir (Jahr danach). Die Abstände kommen aus dem festen Zufall (Thema 12), neu laden ändert nichts.
-function jhJahre(){if(S.jhAb==null) return []; const J=[S.jhAb]; for(let k=1;k<JH_ANZAHL;k++) J.push(J[k-1]+festI(JH_ABSTAND[0],JH_ABSTAND[1],fest(12,k,0,0))); return J}
+// S.jhAb ist das erste Jahrhundertjahr, gesetzt beim Aufstieg zum Terroir. Seit 13.6.9 JH_ABSTAND Jahre danach und dann fest alle JH_ABSTAND Jahre.
+function jhJahre(){if(S.jhAb==null) return []; const J=[S.jhAb]; for(let k=1;k<JH_ANZAHL;k++) J.push(J[k-1]+JH_ABSTAND); return J}
 const jhNr=(j=S.jahr)=>jhJahre().indexOf(j);
+// Seit 13.6.9: wie jhArt, aber nur in den echten Jahrhundertjahren nach dem Vorgeschmack (JH_VOR). Nur sie ändern Chancen und geben den Jahrhundertwein.
+const jhEcht=(j=S.jahr)=>jhNr(j)>=JH_VOR?jhArt(j):null;
 // sommer oder winter im Jahrhundertjahr j, sonst null. Warm Sommer, kühl Winter, die Mitte abwechselnd mit dem Sommer zuerst.
 function jhArt(j=S.jahr){const k=jhNr(j); if(k<0) return null; const g=REGIONEN[S.region].weg; return g==='edel'?'sommer':g==='frost'?'winter':k%2?'winter':'sommer'}
 // Probestände, die schon Terroir haben: Das erste Jahrhundertjahr ist das nächste Jahr.
-function altJh(){if((S.bodenSt||0)>=BODEN_STUFEN.length-1&&S.jhAb==null) S.jhAb=S.jahr+1}
+// Seit 13.6.9 (S.jhV): Stände aus 13.6 hatten das erste Jahrhundertjahr im Jahr nach dem Terroir, es rückt auf JH_ABSTAND Jahre nach dem Terroir.
+function altJh(){if(S.jhAb!=null&&!S.jhV) S.jhAb+=JH_ABSTAND-1; if((S.bodenSt||0)>=BODEN_STUFEN.length-1&&S.jhAb==null) S.jhAb=S.jahr+1; S.jhV=1}
 // Chance des Wegs w (edel oder frost) im Gebiet r im Jahr j, 0 wenn der Weg dort zu ist. Das Rang-Schloss prüft wegeOffen.
 function wegChance(w,r=S.region,j=S.jahr){
-  const g=REGIONEN[r].weg, a=r===S.region&&jhArt(j); let p=0;
+  const g=REGIONEN[r].weg, a=r===S.region&&jhEcht(j); let p=0;
   // Seit 13.6.2: Im Jahrhundertjahr hat der Weg des Jahres seine eigene Chance, der Sommer die Edelfäulnis sicher, der Winter den Frost mit JH_CHANCE.
   if(a&&JH_ART[a].weg===w) p=w==='edel'?1:JH_CHANCE;
   else if(g==='beide') p=herbstTend(j).weg===w?WAGNIS.mitTend:WAGNIS.gegenTend;
@@ -1028,9 +1031,9 @@ function wegChance(w,r=S.region,j=S.jahr){
   return Math.min(1,p*WAGNIS_F);
 }
 // Seit 13.6.2: Chance der Trockenbeerenauslese, im Jahrhundertsommer JH_CHANCE. tbaOffen ist das Rang-Schloss der zweiten Stufe.
-const tbaChance=(j=S.jahr)=>Math.min(1,(jhArt(j)==='sommer'?JH_CHANCE:WAGNIS.tba)*WAGNIS_F);
-// Seit 13.6.7 (Maik 22.11.2026, Entscheidung 6): Im Jahrhundertsommer öffnet sich die zweite Stufe schon mit dem eigenen Weg (R6), sonst bleibt sie bei R8.
-const tbaOffen=()=>frei('weg_tba')||jhArt()==='sommer'&&frei('weg_eigen');
+const tbaChance=(j=S.jahr)=>Math.min(1,(jhEcht(j)==='sommer'?JH_CHANCE:WAGNIS.tba)*WAGNIS_F);
+// Seit 13.6.9 (Nachtrag 3): Die Ausnahme aus 13.6.7 ist weg, die zweite Stufe öffnet sich auch im Jahrhundertsommer erst bei R8.
+const tbaOffen=()=>frei('weg_tba');
 // Die Wege, die der Spieler in diesem Jahr wagen darf (frei: weg_eigen).
 // Seit 13.4.4 dazu der fremde Weg (frei: weg_fremd) in einem besonderen Jahr.
 const wegFremd=g=>g==='edel'?'frost':g==='frost'?'edel':null;
@@ -1077,14 +1080,14 @@ function herbstWagnis(id,f,so,m,L){
   }
   if(f.wagnis==='frost'){
     // Seit 13.6.2: Gelingt der Frost im Jahrhundertwinter, wird der Eiswein der Jahrhundertwein (f.jh). S.jhN zählt die gelungenen Jahrhundert-Wagnisse (Prüfskript).
-    if(H.uFrost<wegChance('frost')){f.gefroren=true; if(jhArt()==='winter'){f.jh=1; S.jhN=(S.jhN||0)+1; L.push(`Jahrhundertwinter! Der ${so.name} hängt gefroren am Stock. Lies ihn diesen Monat, daraus wird der Jahrhundertwein.`)} else L.push(`Frost! Der ${so.name} hängt gefroren am Stock. Eiswein ist möglich, lies ihn diesen Monat.`)}
+    if(H.uFrost<wegChance('frost')){f.gefroren=true; if(jhEcht()==='winter'){f.jh=1; S.jhN=(S.jhN||0)+1; L.push(`Jahrhundertwinter! Der ${so.name} hängt gefroren am Stock. Lies ihn diesen Monat, daraus wird der Jahrhundertwein.`)} else L.push(`Frost! Der ${so.name} hängt gefroren am Stock. Eiswein ist möglich, lies ihn diesen Monat.`)}
     else wagnisWeg(f,so,'frost',L);
     return;
   }
   // Seit 13.4.5: Die Beerenauslese wagt ab R8 die zweite Stufe, ohne den Rang verfault sie wie alles andere.
   if(f.wagnis==='edel'&&tbaOffen()){
     // Seit 13.6.2: Im Jahrhundertsommer wird die Trockenbeerenauslese der Jahrhundertwein (f.jh).
-    if(H.uTba<tbaChance()){f.oe=Math.max(f.oe,R().min.tba); if(jhArt()==='sommer'){f.jh=1; S.jhN=(S.jhN||0)+1} L.push(`${f.jh?'Jahrhundertsommer! ':''}Die edelfaulen Beeren vom ${so.name} sind zu Rosinen eingetrocknet: ${f.oe}° Öchsle, genug für eine Trockenbeerenauslese. Lies sie diesen Monat von Hand, nur überreife Trauben.`)}
+    if(H.uTba<tbaChance()){f.oe=Math.max(f.oe,R().min.tba); if(jhEcht()==='sommer'){f.jh=1; S.jhN=(S.jhN||0)+1} L.push(`${f.jh?'Jahrhundertsommer! ':''}Die edelfaulen Beeren vom ${so.name} sind zu Rosinen eingetrocknet: ${f.oe}° Öchsle, genug für eine Trockenbeerenauslese. Lies sie diesen Monat von Hand, nur überreife Trauben.`)}
     else wagnisWeg(f,so,'tba',L);
     return;
   }
@@ -1724,7 +1727,7 @@ function monatLauf(){
     const schnitt=Math.round(S.bodenSum/S.bodenN), sp=verlustSpanne(schnitt), fp=frostPlus(), rebVor=rebenGesamt(); let totAlle=0;
     // Seit 13.2.1: Boden-Zähler. Ein Jahresschnitt ab BODEN_GUT zählt +1, sonst bleibt er stehen. Die Stufe fällt nie.
     if(schnitt>=BODEN_GUT) S.bodenZ=(S.bodenZ||0)+1;
-    {const st=Math.max(S.bodenSt||0,stufeZu(S.bodenZ||0,BODEN_SCHWELLE)); if(st>(S.bodenSt||0)){S.bodenSt=st; Z.push(`🌱 Dein Boden ist jetzt ${BODEN_STUFEN[st]}.`); if(st>=BODEN_STUFEN.length-1&&S.jhAb==null) S.jhAb=S.jahr+1}}
+    {const st=Math.max(S.bodenSt||0,stufeZu(S.bodenZ||0,BODEN_SCHWELLE)); if(st>(S.bodenSt||0)){S.bodenSt=st; Z.push(`🌱 Dein Boden ist jetzt ${BODEN_STUFEN[st]}.`); if(st>=BODEN_STUFEN.length-1&&S.jhAb==null){S.jhAb=S.jahr+JH_ABSTAND; S.jhV=1}}}
     S.verlust={};
     for(const [si,id] of R().sorten.entries()){
       const f=S.felder[id]; feldReset(f);
@@ -1764,7 +1767,7 @@ function monatLauf(){
   if(eisEigen()) schlag(66,...eisT('eigen'),'eiswein',{du:1});
   if((S.monat===3||S.monat===4)&&S.wetter==='frost'&&rebenGesamt()) schlag(62,'Spätfrost im Frühjahr','Eine Frostnacht hat die jungen Triebe geschädigt. Die Ernte fällt dieses Jahr kleiner aus.','spaetfrost',{du:1});
   // Seit 13.6.1: Das Jahrhundertjahr kündigt der Winzerbote im Januar als größte Schlagzeile an (JH_TEXT, Platzhalter bis 13.8).
-  if(S.monat===0&&jhArt()){const a=jhArt(), T=JH_TEXT[a]; schlag(99,T[0],T[1].replace('{wo}',WO[S.region]),JH_ART[a].bild,{gold:1,sonder:1,du:1})}
+  if(S.monat===0&&jhArt()){const a=jhArt(), T=JH_TEXT[jhEcht()?a:a+'Vor']; schlag(99,T[0],T[1].replace('{wo}',WO[S.region]),JH_ART[a].bild,{gold:1,sonder:1,du:1})}
   if(S.monat===0) schlag(28,'Prädikatsweine anmelden','Die Weine vom letzten Jahrgang können jetzt im Rathaus als Prädikatswein angemeldet werden. Bis März ist außerdem Pflanzzeit.','kellerbuch',{archiv:1});
   if(S.monat<=2) schlag(20,'Rebenmarkt geöffnet',rebenMarktText()+'. Gepflanzt wird bis Ende März.','rebenmarkt',{archiv:1});
   if(S.monat===11){const t=steuerSchau(); if(t.steuer>0) schlag(35,'Steuer-Tipp zum Jahresende',`Bisher sind es rund ${eur(t.gew)} Gewinn in diesem Jahr. Darauf fallen im Januar rund ${eur(t.steuer)} Steuer an. Was du im Dezember noch kaufst, zum Beispiel Fassraum, Flaschen, Dünger oder eine Maschinenwartung, senkt den Gewinn.${spOffen()?` Eine Spende im Rathaus senkt ihn auch, um höchstens ${pz(SP_DECKEL)}.`:''} Kredit tilgen senkt ihn nicht.`,eisEigen()?'':'amt',{archiv:1})}
@@ -1983,7 +1986,8 @@ function sabotageGegenDich(Z){
 // vert (davon im Amt verteidigt), kauf (gekaufte Stimmen dieser Wahl), geg (Herausforderer ab der Umfrage, id des Gegners, sonst null),
 // sab (Monat der Sabotage vor der Wahl oder 0), stuhl (id des Gegners, der nach einer Abwahl auf dem Stuhl sitzt),
 // wahlen (alle Wahlen: j, m, s Stimmung, marke, ok, im, geg Name). Paket 2 braucht vert und wahlen für den Schlüssel "Verband", die Chronik und die Bestenliste.
-function amtStart(){S.amt={seit:monatNr(),stimm:STIMM_START+spStimm(),marke:MARKE_START,wahl:monatNr()+WAHL_JAHRE*12,im:1,zeit:1,siege:0,vert:0,kauf:0,geg:null,sab:0,stuhl:null,wahlen:[]}}
+// Seit 13.6.9: Die erste Wahl kommt WAHL_ERSTE Monate nach dem Amtsantritt.
+function amtStart(){S.amt={seit:monatNr(),stimm:STIMM_START+spStimm(),marke:MARKE_START,wahl:monatNr()+WAHL_ERSTE,im:1,zeit:1,siege:0,vert:0,kauf:0,geg:null,sab:0,stuhl:null,wahlen:[]}}
 // Alte Spielstände: Wer in 9.0.1 schon Präsident ist, bekommt das Amt beim Laden, die Meldung dazu steht im nächsten Winzerboten.
 function altAmt(){if(S.rang===R_MAX&&!S.amt){amtStart(); S.amt.alt=1}}
 function stimmung(d){const A=S.amt; A.stimm=clamp(A.stimm+d,0,100)}

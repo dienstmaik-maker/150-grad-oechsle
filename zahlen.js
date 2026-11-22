@@ -318,6 +318,9 @@ const SAB_KONTAKT=20000, SAB_MIN=5000, SAB_MAX=50000, SAB_AUFFLIEGEN=.2, SAB_STR
 // Die ersten beiden Zeilen hat Maik am 18.11.2026 gewählt. STIMM_PLUS (Anteil vom gewonnenen Ansehen) und STIMM_MONAT (Abzug je Monat) stellt das Prüfskript ein:
 // Startwert war .2 und 1. Gemessen am 18.11.2026 (54 Partien über 150 Jahre auf Mittel, volles Programm): mit .2 lag die Stimmung am Wahltag bei 85, mit .16 bei 68 (Ziel 65 bis 75).
 // STIMM_MINUS lässt Abzüge beim Ansehen voll durchschlagen. Seit 11.5 (Teil A) ist alles Ansehen verdoppelt, deshalb sind STIMM_PLUS (vorher .16) und STIMM_MINUS (vorher 1) halbiert, die Stimmung schlägt aus wie vorher.
+// Seit 13.6.9 (Nachtrag 3, Maik 22.11.2026): Die erste Wahl kommt WAHL_ERSTE Monate nach dem Amtsantritt, die Umfrage damit gleich mit dem Amt.
+// Danach alle WAHL_JAHRE Jahre wie bisher.
+const WAHL_ERSTE=12;
 const WAHL_JAHRE=5, WAHL_UMFRAGE=12, STIMM_START=60, STIMM_ALT=40, MARKE_START=50, MARKE_PLUS=5, MARKE_MAX=70;
 const KAUF_PREIS=300000, KAUF_PLUS=5, KAUF_MAX=2, KAUF_SKANDAL=.2, KAUF_STRAFE=15, WSAB_CHANCE=.5, WSAB_GERUECHT=5;
 const STIMM_PLUS=.08, STIMM_MONAT=1, STIMM_MINUS=.5;
@@ -696,11 +699,13 @@ const CHANCE_WORT=[[.6,'gut'],[.35,'mittel'],[0,'gering']];
 // Seit 13.4.6 (Maik 21.11.2026): Der Weingut-Manager warnt, sobald er eingestellt ist, wenn alle wartenden Felder zusammen mehr als MGR_WARN
 // vom erwarteten Erlös der Ernte des Jahres ausmachen. Erwartet heißt: sichere Lese jetzt, als Wein der höchsten erlaubten Stufe. 13.7 setzt für die Lehrjahre 0,3.
 const MGR_WARN=.4;
-// Seit 13.6.1 (Bauplan 13.6, Maik 21.11.2026): vier Jahrhundertjahre ab dem Terroir. Das erste kommt im Jahr nach dem Aufstieg zum Terroir,
-// danach JH_ANZAHL-1 weitere mit JH_ABSTAND Jahren Abstand (fest je Partie, Thema 12 im festen Zufall). Wer nie Terroir erreicht, bekommt keins.
+// Seit 13.6.1 (Bauplan 13.6, Maik 21.11.2026): vier Jahrhundertjahre ab dem Terroir. Wer nie Terroir erreicht, bekommt keins.
+// Seit 13.6.9 (Nachtrag 3, Maik 22.11.2026): fest JH_ABSTAND Jahre nach dem Aufstieg zum Terroir, danach JH_ANZAHL-1 weitere alle JH_ABSTAND Jahre
+// (Wunschjahre 90, 95, 100, 105). Die ersten JH_VOR sind nur ein Vorgeschmack: Ankündigung und Wetter, aber in keinem Gebiet ein Jahrhundertwein,
+// das Wagnis läuft wie in einem normalen Jahr.
 // Warm (weg edel) bekommt Jahrhundertsommer, kühl (weg frost) Jahrhundertwinter, die Mitte wechselt ab: Sommer, Winter, Sommer, Winter.
 // JH_ART: Name, Weg und die Tendenz, die der Winzerbote in der Mitte im Jahrhundertjahr klar meldet. JH_TEXT: Ankündigung im Januar, Platzhalter bis 13.8.
-const JH_ANZAHL=4, JH_ABSTAND=[4,6];
+const JH_ANZAHL=4, JH_ABSTAND=5, JH_VOR=1;
 // Seit 13.6.2 (Maik 21.11.2026, Entscheidung 1): Im Jahrhundertjahr ist die Chance überall JH_CHANCE. Sommer: Edelfäulnis sicher, die Trockenbeerenauslese
 // mit JH_CHANCE, sonst ist das Feld weg. Winter: Eiswein mit JH_CHANCE. Gelingt das, wird der Wein der Jahrhundertwein (Trockenbeerenauslese oder Eiswein).
 // JH_QP: feste Punkte jedes Jahrhundertweins bei Wettbewerben, Lagerjahre und Medaillen geben nichts dazu. Startwert aus 13.6.3: damit liegt die
@@ -708,7 +713,10 @@ const JH_ANZAHL=4, JH_ABSTAND=[4,6];
 // JH_ANS: Ansehen einmal bei der Anmeldung eines Jahrhundertweins, zusätzlich zum Ansehen der Stufe (Annahme von Claude).
 const JH_CHANCE=.75, JH_QP=163, JH_ANS=100;
 const JH_ART={sommer:{name:'Jahrhundertsommer',weg:'edel',tend:'feucht',bild:'supersommer'},winter:{name:'Jahrhundertwinter',weg:'frost',tend:'klar',bild:'eiswein'}};
+// Seit 13.6.9: sommerVor und winterVor kündigen den Vorgeschmack an, Platzhalter bis 13.8.
 const JH_TEXT={
+  sommerVor:['Ein Jahrhundertsommer kündigt sich an','Die Alten {wo} sind sich einig wie selten: Dieses Jahr wird ein Jahrhundertsommer. Noch ist es nur ein Vorgeschmack, einen Jahrhundertwein gibt er nicht. Aber wer jetzt hinschaut, weiß, was kommt.'],
+  winterVor:['Ein Jahrhundertwinter kündigt sich an','Die Alten {wo} sind sich einig wie selten: Dieser Winter wird ein Jahrhundertwinter. Noch ist es nur ein Vorgeschmack, einen Jahrhundertwein gibt er nicht. Aber wer jetzt hinschaut, weiß, was kommt.'],
   sommer:['Ein Jahrhundertsommer kündigt sich an','Die Alten {wo} sind sich einig wie selten: Dieses Jahr wird ein Jahrhundertsommer. Wer seine Spitzen-Sorte bis November hängen lässt, bekommt die Edelfäulnis sicher, und wer bis Dezember wartet, hat die Chance auf den Jahrhundertwein.'],
   winter:['Ein Jahrhundertwinter kündigt sich an','Die Alten {wo} sind sich einig wie selten: Dieser Winter wird ein Jahrhundertwinter. Wer seine Spitzen-Sorte bis Dezember hängen lässt, hat die Chance auf den Jahrhundertwein, einen Eiswein, wie ihn das Dorf noch nicht gesehen hat.']};
 // Seit 13.4.8 (Maik 21.11.2026): Ein misslungenes Wagnis kostet immer das ganze Feld, auch mit der Spende an die Feuerwehr. Ihre Frostfeuer
