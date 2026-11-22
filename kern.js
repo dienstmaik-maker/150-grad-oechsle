@@ -1805,7 +1805,9 @@ function bestenEintrag(){
   // Seit 11.7 (A29): Eine Pleite bleibt mit ihrem Rang stehen und steht als "pleite" in der Liste, hinter laufenden Partien mit gleichem Rang.
   const fest=(S.ende||S.pleite)&&alt&&alt.rang===S.rang, zr=(S.zeitRang||[]).find(x=>x.r===S.rang);
   L.push({name:S.name,ich:S.ich||'',w:frau()?1:0,rang:S.rang,mon:fest?bestenMon(alt):(S.jahr-START_JAHR)*12+S.monat,region:S.region,schwer:S.schwer,gen:genNr(),d,
-    ...(fest?(alt.zs!=null?{zs:alt.zs}:{}):S.zeit!=null&&!S.zeitAlt?{zs:S.ende&&zr?zr.s:Math.round(S.zeit)}:{}),...(S.ende?{ende:S.ende.art,amt:S.amt?S.amt.zeit:0}:S.pleite?{ende:'pleite'}:{})});
+    ...(fest?(alt.zs!=null?{zs:alt.zs}:{}):S.zeit!=null&&!S.zeitAlt?{zs:S.ende&&zr?zr.s:Math.round(S.zeit)}:{}),...(S.ende?{ende:S.ende.art,amt:S.amt?S.amt.zeit:0}:S.pleite?{ende:'pleite'}:{}),
+    // Seit 13.6.5: Jahr (sj) und Generation (sg) des Sieges, also der dritten Krone. Die Sortierung bleibt.
+    ...(amtEhre()?{sj:S.amt.ehren.j,sg:S.amt.ehren.gen||genNr()}:{})});
   L.sort((a,b)=>b.rang-a.rang||(ENDE_WERT[b.ende]||0)-(ENDE_WERT[a.ende]||0)||bestenMon(a)-bestenMon(b)||(STUFE_WERT[b.schwer]||0)-(STUFE_WERT[a.schwer]||0)||a.d-b.d);
   const K=L.slice(0,10);
   try{localStorage.setItem(BESTEN_KEY,JSON.stringify(K))}catch(e){return 0}

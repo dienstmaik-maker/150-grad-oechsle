@@ -394,7 +394,11 @@ function vEnde(){
   const raenge=R_.map(e=>{const z=(S.zeitRang||[]).find(x=>x.r===e.r); return kv(esc(e.w&&RAENGE[e.r].w||RAENGE[e.r].name),`${MON[e.m]} ${e.j}${z&&!S.zeitAlt?`<small class="bzs">${zeitTxt(z.s)}</small>`:''}`)}).join('');
   const W=A.wahlen||[], wahlen=W.length?W.map(w=>kv(`${MON[w.m]} ${w.j}${w.geg?' gegen '+esc(w.geg):''}`,`${w.ok?(w.im?'gewonnen':'zurück im Amt'):(w.im?'abgewählt':'verloren')} · ${w.s} zu ${w.marke}`)).join('')
     :`<div class="mut">Zu einer Wahl ist es nicht mehr gekommen.</div>`;
-  const WS=A.welt||[], welt=A.brief?(WS.length?WS.map(w=>kv(`${w.j}${w.wein?': '+esc(w.wein):''}`,w.platz===1?'🌍 Sieg':w.platz?`Platz ${w.platz}`:'nicht angetreten')).join(''):`<div class="mut">Der Brief kam ${monJahr(A.brief).replace(/^(\S+) /,'im $1 ')}, zu einer Schau ist es nicht mehr gekommen.</div>`)
+  // Seit 13.6.5: Jahr und Generation des Sieges und jeder Krone, darunter jede Schau mit ihrer Klasse (alte Einträge ohne Klasse wie bisher).
+  const WS=A.welt||[], KR=A.kronen||[], kName=k=>(KRONEN.find(K=>K.k===k)||{}).name||'';
+  const welt=A.brief?((A.ehren?kv('🎗️ Der Sieg',`${A.ehren.j}${A.ehren.gen?`, ${A.ehren.gen}. Generation`:''}`):'')
+    +KRONEN.map(K=>{const x=KR.find(y=>y.k===K.k); return kv(`${K.sym} ${K.name}`,x?`${x.j}, ${x.gen}. Generation`:'nicht geholt')}).join('')
+    +(WS.length?WS.map(w=>kv(`${w.j}${w.kl?' · '+kName(w.kl):''}${w.wein?': '+esc(w.wein):''}`,w.platz===1?(w.kl?'👑 Krone':'🌍 Sieg'):w.platz?`Platz ${w.platz}`:'nicht angetreten')).join(''):`<div class="mut">Der Brief kam ${monJahr(A.brief).replace(/^(\S+) /,'im $1 ')}, zu einer Schau ist es nicht mehr gekommen.</div>`))
     :`<div class="mut">Die Weltweinschau kam nie ins Dorf. Dafür hätte es alle ${SPENDEN.length-1} Spenden und eine gewonnene Wahl gebraucht.</div>`;
   const SP=(S.spenden||[]).slice().sort((a,b)=>a.s-b.s), spenden=SP.length?SP.map(x=>kv(esc(spKurz(x.s,x))+(x.st?' (Stiftung)':''),`${MON[x.m]} ${x.j}`)).join('')+(SP.length<SPENDEN.length-1?`<div class="mut">${SP.length} von ${SPENDEN.length-1} Stufen.</div>`:''):'';
   const wein=(S.ehrungen||[]).filter(e=>!e.a&&MED_NAME[e.i]), med=wein.length?`<div class="gold" style="font-size:17px">${ehrSumme(wein)}</div>`:'';
@@ -403,7 +407,7 @@ function vEnde(){
   return `<div id="ende"><div class="ehero" style="background-image:url(bilder/${ENDE_BILD.best}.jpg)"><div><small>Das beste Ende</small><b>Die Übergabe am Küchentisch</b></div></div>
   <div class="ein">
     <div class="card etext">${endeText().map(x=>`<p>${esc(x)}</p>`).join('')}<p class="mut">${MON[E.m]} ${E.j}: ${esc(S.ich||S.name)} übergibt als ${duN()}. Mehr geht nicht: ${anr('Präsident','Präsidentin')}, alle ${KRONEN.length} Kronen der Weltweinschau, ${ehrP()}.</p></div>
-    <div class="card"><h3>📜 Chronik von ${esc(S.name)}</h3>${kv('Gespielt',`${st.jahre} Jahre, ${genNr()} ${genNr()===1?'Generation':'Generationen'}`)}${S.zeit!=null?kv('Spielzeit',zeitTxt(S.zeit)+(S.zeitAlt?' (seit 8.3)':'')):''}${kv('Vermögen',eur(st.verm||0))}${kv('Ansehen',num(st.ans||0))}${amtZ?kv('Im Amt',amtZ):''}${kv('Das Ende',ENDE_NAME[E.art])}${E.platz?kv('Bestenliste',`Platz ${E.platz}`):''}</div>
+    <div class="card"><h3>📜 Chronik von ${esc(S.name)}</h3>${kv('Gespielt',`${st.jahre} Jahre, ${genNr()} ${genNr()===1?'Generation':'Generationen'}`)}${S.zeit!=null?kv('Spielzeit',zeitTxt(S.zeit)+(S.zeitAlt?' (seit 8.3)':'')):''}${kv('Vermögen',eur(st.verm||0))}${kv('Ansehen',num(st.ans||0))}${amtZ?kv('Im Amt',amtZ):''}${kv('Das Ende',ENDE_NAME[E.art])}${A.ehren?kv('Der Sieg',`${A.ehren.j}${A.ehren.gen?`, ${A.ehren.gen}. Generation`:''}`):''}${E.platz?kv('Bestenliste',`Platz ${E.platz}`):''}</div>
     ${karte('👪 Die Generationen',gen+nfZeile())}${karte('🪜 Der Weg nach oben',raenge)}
     ${stufen?`<div class="card"><h3>🏡 Das Weingut wächst</h3><div class="ewg">${stufen}</div></div>`:''}
     ${karte('🗳️ Die Wahlen im Verband',wahlen)}${karte('🌍 Die Weltweinschau',welt)}${karte('🤝 Für das Dorf',spenden)}${karte('🏅 Medaillen',med)}
@@ -435,7 +439,7 @@ function chronikHtml(){
 }
 function bestenZeilen(){
   return besten().map((e,i)=>({platz:i+1,du:S&&e.d===S.bestenD,name:e.ich||e.name,
-    sub:`${e.ich?e.name+' · ':''}${e.rang===R_MAX?'👑 ':''}${e.w&&(RAENGE[e.rang]||{}).kw||(RAENGE[e.rang]||RAENGE[0]).kurz} · ${(DIFF[e.schwer]||{}).name||''}${e.gen>1?` · ${e.gen}. Generation`:''}${e.amt?` · ${e.amt} ${e.amt===1?'Amtszeit':'Amtszeiten'}`:''}${ENDE_NAME[e.ende]?' · '+ENDE_NAME[e.ende]:''}`,
+    sub:`${e.ich?e.name+' · ':''}${e.rang===R_MAX?'👑 ':''}${e.w&&(RAENGE[e.rang]||{}).kw||(RAENGE[e.rang]||RAENGE[0]).kurz} · ${(DIFF[e.schwer]||{}).name||''}${e.gen>1?` · ${e.gen}. Generation`:''}${e.amt?` · ${e.amt} ${e.amt===1?'Amtszeit':'Amtszeiten'}`:''}${ENDE_NAME[e.ende]?' · '+ENDE_NAME[e.ende]:''}${e.sj?` · Sieg ${e.sj}, ${e.sg}. Generation`:''}`,
     rechts:bestenZeit(e)+(e.zs!=null?`<small class="bzs">${zeitTxt(e.zs)}</small>`:'')}));
 }
 const bestenZeile=x=>`<div class="rl ${x.du?'du':''}"><span>${x.platz}.</span><div><b>${esc(x.name)}</b><span class="mut">${esc(x.sub)}</span></div><b class="rz">${x.rechts}</b></div>`;
