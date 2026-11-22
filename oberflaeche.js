@@ -1276,11 +1276,11 @@ function vSabotage(){
   const tr=S.lots.filter(l=>l.status==='trauben'), mi=S.lots.filter(mischbar), paare=mi.some(a=>mi.some(b=>a!==b&&farbe(a)===farbe(b))), P=panschListe().length, scharf=S.kontr.scharf>0;
   if(['zuckern','verschneiden','pruefer'].every(einZu)) return einKarte('hinter','Noch alles sauber','Hinter dieser Tür geht es nicht ganz sauber zu. Bis zur ersten Lese gibt es hier nichts zu tun.');
   return fenster('zuckern','Most zuckern oder wässern',tr.map(l=>fz(dot(l.sorte)+SORTEN[l.sorte].name,
-      `${num(l.liter)} l Trauben · ${l.oe}° Öchsle${mani(l)?' · 🤫 '+maniText(l):''}`,'',
+      `${num(l.liter)} l Trauben · ${l.oe}° Öchsle${l.oe>=deckel(l.sorte)?' · am Deckel':''}${mani(l)?' · 🤫 '+maniText(l):''}`,'',
       `<button class="klein wag" data-a="zuckern" data-id="${l.id}" data-k="wasser" ${(l.wasser||0)>=ZUCKER_MAX?'disabled':''}>Wässern</button>`,
-      `<button class="klein wag" data-a="zuckern" data-id="${l.id}" data-k="zucker" ${(l.zucker||0)>=ZUCKER_MAX?'disabled':''}>Zuckern</button>`)),{
+      `<button class="klein wag" data-a="zuckern" data-id="${l.id}" data-k="zucker" ${zuckerBis(l)<1?'disabled':''}>Zuckern</button>`)),{
     leer:'Gerade liegen keine Trauben im Kelterhaus.',
-    i:`Geht nur mit frisch gelesenen Trauben, bevor sie gekeltert sind. Zucker hebt die Öchsle, Wasser streckt die Menge und senkt die Öchsle. Bis ${ZUCKER_ERLAUBT} % sind erlaubt, wenn du den Wein als Tafelwein anmeldest. Alles andere ist Panscherei und geht nur gegen Schmiergeld durchs Rathaus.`})
+    i:`Geht nur mit frisch gelesenen Trauben, bevor sie gekeltert sind. Zucker hebt die Öchsle, aber höchstens bis zum Deckel des Weinbergs, aus dem die Trauben kommen. Liegt der Most schon am Deckel, geht kein Zucker mehr. Wasser streckt die Menge und senkt die Öchsle. Beides geht um höchstens ${ZUCKER_MAX} %. Bis ${ZUCKER_ERLAUBT} % sind erlaubt, wenn du den Wein als Tafelwein anmeldest. Alles andere ist Panscherei und geht nur gegen Schmiergeld durchs Rathaus.`})
   +fenster('verschneiden','Fässer verschneiden','',{
     links:paare?'':'Dafür brauchst du zwei angemeldete Fassweine gleicher Farbe.',
     kn:`<button class="klein wag" data-a="misch1" ${paare?'':'disabled'}>Fässer mischen</button>`,
@@ -2326,9 +2326,9 @@ const AKT={
   /* ---- Hintertür: Panschen ---- */
   zuckern(d){
     const l=lot(d.id), k=d.k, zu=k==='zucker'; if(!l||l.status!=='trauben') return;
-    const hat=l[k]||0; if(hat>=ZUCKER_MAX) return;
-    const neu=n=>zu?{oe:Math.min(150,Math.round(l.oe*(1+n/100))),liter:l.liter}:{oe:Math.round(l.oe/(1+n/100)),liter:Math.round(l.liter*(1+n/100))};
-    mengeSheet({titel:zu?'Most zuckern':'Most wässern',text:zu?'Zucker hebt die Öchsle um den gewählten Anteil.':'Wasser streckt die Menge um den gewählten Anteil, die Öchsle sinken entsprechend.',min:1,max:ZUCKER_MAX-hat,step:1,start:Math.min(5,ZUCKER_MAX-hat),okText:zu?'Zuckern':'Wässern',wag:1,
+    const hat=l[k]||0, bis=zu?zuckerBis(l):ZUCKER_MAX-hat; if(bis<1) return;   // seit 13.7.8: Zucker nur bis zum Deckel des Weinbergs
+    const neu=n=>zu?{oe:zuckerOe(l,n),liter:l.liter}:{oe:Math.round(l.oe/(1+n/100)),liter:Math.round(l.liter*(1+n/100))};
+    mengeSheet({titel:zu?'Most zuckern':'Most wässern',text:zu?`Zucker hebt die Öchsle um den gewählten Anteil, höchstens bis zum Deckel des Weinbergs (${deckel(l.sorte)}°).`:'Wasser streckt die Menge um den gewählten Anteil, die Öchsle sinken entsprechend.',min:1,max:bis,step:1,start:Math.min(5,bis),okText:zu?'Zuckern':'Wässern',wag:1,
       info:n=>{const x=neu(n);return `<b>${n}\u00a0%</b>danach ${num(x.liter)}\u00a0l mit ${x.oe}° Öchsle<br><span class="${hat+n>ZUCKER_ERLAUBT?'rot':'mut'}">${hat+n>ZUCKER_ERLAUBT?'Über '+ZUCKER_ERLAUBT+' %: Das ist Panscherei.':'Als Tafelwein noch erlaubt.'}</span>`},
       ok:n=>{const x=neu(n);l.oe=x.oe;l.liter=x.liter;l[k]=hat+n}});
   },

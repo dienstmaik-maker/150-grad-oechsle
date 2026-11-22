@@ -143,7 +143,9 @@ const FREI={wein_feder:{r:0},wein_tafel:{r:0},wein_qba:{r:1},wein_kab:{r:2},wein
   masch_duenger:{r:2,name:'der Düngerstreuer',bote:'🚜 Beim Landhandel steht jetzt ein Düngerstreuer für dich. Kaufen kannst du ihn von Januar bis März.'},
   masch_klein:{r:3},
   masch_abfuell:{r:3,ab:4,name:'die Abfüllanlage',bote:'🍾 Für deinen Keller gibt es jetzt eine Abfüllanlage. Kaufen kannst du sie von Januar bis März.'},
-  sekt_anlage:{r:4,ab:5,name:'die Degorgier- und Abfüllanlage im Sektkeller',bote:'🍾 Für den Sektkeller gibt es jetzt eine Degorgier- und Abfüllanlage.'},
+  // Seit 13.7.8 (Entscheidung 12, Maik 22.11.2026): Die Sektanlage kommt, sobald die Sekt-Sorte Rebstock ist (Pflegestufe 1), statt 5 Jahre nach dem Weingutsbesitzer.
+  // Mit bote meldet der Winzerbote sie einmal (freiBote), danach bleibt sie frei, auch wenn die Pflege später fällt. Preis und Wirkung bleiben.
+  sekt_anlage:{pfl:['sekt',1],name:'die Degorgier- und Abfüllanlage im Sektkeller',bote:'🍾 Für den Sektkeller gibt es jetzt eine Degorgier- und Abfüllanlage.'},
   masch_gross:{r:5},
   masch_abfuell2:{r:5,ab:9,name:'der Ausbau der Abfüllanlage',bote:'🍾 Deine Abfüllanlage lässt sich jetzt ausbauen, auf Stufe 2.'},
   masch_laub:{r:7,ab:7,name:'der Laubschneider',bote:'🚜 Beim Landhandel steht jetzt ein Laubschneider für dich. Kaufen kannst du ihn von Januar bis März.'}};
@@ -717,11 +719,11 @@ const ANS_PFLEGE=[0,0,2,4], ANS_TERROIR=4;
 // Sekt bringt das SEKT_F-fache, die Sekt-Sorte (sektStar) dazu SEKT_STAR.
 const SEKT_F=1.6, SEKT_STAR=1.1, SEKT_GRUND='qba', SEKT_QP=5;
 // Version 12.1 (Maik 20.11.2026): Sekt nur mit eigenem Sektkeller, einmal zu kaufen ab R_SEKT für SEKTKELLER_PREIS. Sein Ausbau ist die Degorgier- und Abfüllanlage
-// ab R_SEKT_ANLAGE, sie halbiert die Kosten je Flasche (SEKT_ANLAGE_F), ohne Leute und ohne Wartung, deshalb nicht in der Maschinenliste.
+// ab FREI.sekt_anlage (seit 13.7.8 mit dem Rebstock der Sekt-Sorte), sie halbiert die Kosten je Flasche (SEKT_ANLAGE_F), ohne Leute und ohne Wartung, deshalb nicht in der Maschinenliste.
 // SEKT_KOSTEN ist Sektflasche, Korken und Agraffe. Einzige Wahl des Spielers bei der Lese: SEKT_REIFE Monate reifen oder HEFE_LANG Monate auf der Hefe (Feld hefe am Wein).
 // Seit 13.3.3 bringt das lange Hefelager HEFE_LANG_QP Qualitätspunkte, der Preis folgt über die Punkte (Startwert, Annahme von Claude, bis 12.9.5 der Faktor 1,25).
 // Preise und Faktor sind Annahmen von Claude bis zum Messlauf 12.1.7. Die Gegner rechnen ihren Sekt weiter über regionF.
-const SEKTKELLER_PREIS=40000, SEKT_ANLAGE_PREIS=30000, R_SEKT_ANLAGE=FREI.sekt_anlage.r, SEKT_ANLAGE_F=.5, SEKT_ANLAGE_NAME='Degorgier- und Abfüllanlage', SEKT_REIFE=9, HEFE_LANG=24, HEFE_LANG_QP=6;
+const SEKTKELLER_PREIS=40000, SEKT_ANLAGE_PREIS=30000, SEKT_ANLAGE_F=.5, SEKT_ANLAGE_NAME='Degorgier- und Abfüllanlage', SEKT_REIFE=9, HEFE_LANG=24, HEFE_LANG_QP=6;
 // Schritt 3: Faktor des Gebiets auf das Jahreseinkommen der Gegner. preisF und ertragF voll, Sterne mit ★★★ (ihre beste Sorte),
 // sektPreisF nur auf den Anteil GEGNER_SEKT, weil Sekt beim Test-Spieler rund 6 bis 14 % der Einnahmen bringt (Messung Schritt 2).
 const GEGNER_SEKT=.1;
@@ -1295,7 +1297,7 @@ const IDEE_KEY='oechsle-idee', IDEE_MAX=1000;
 const WAS_NEU=[
   {k:'🏁 13.0 Der Umbau',d:'in Arbeit',p:['Drei Generationen, drei Akte: Das Spiel wird von Grund auf neu gebaut'],v:[
     ['▶️','13.8','Geschichte'],
-    ['','13.7','Spielstufen','22.11.2026',['Lehrjahre, Gesellenjahre und Meisterprüfung unterscheiden sich jetzt beim Wagnis im Herbst','Lehrjahre zeigen die Chance als Zahl, Gesellenjahre als Wort, die Meisterprüfung gar nicht','Jedes Jahr ist gut oder schlecht fürs Warten: Sommer, Schädlingsjahr und die Alten im Winzerboten verraten es','Spritzen und Schädlingsschaden sind weg, die Menge-Sorte bleibt sicher','Meisterprüfung: Preise schwanken stärker, die Nachbarn bieten klüger, Herausforderer und Favoriten sind stärker','Die Meisterprüfung öffnet sich nach deiner ersten Übergabe in den Gesellenjahren']],
+    ['','13.7','Spielstufen','22.11.2026',['Lehrjahre, Gesellenjahre und Meisterprüfung unterscheiden sich jetzt beim Wagnis im Herbst','Lehrjahre zeigen die Chance als Zahl, Gesellenjahre als Wort, die Meisterprüfung gar nicht','Jedes Jahr ist gut oder schlecht fürs Warten: Sommer, Schädlingsjahr und die Alten im Winzerboten verraten es','Spritzen und Schädlingsschaden sind weg, die Menge-Sorte bleibt sicher','Meisterprüfung: Preise schwanken stärker, die Nachbarn bieten klüger, Herausforderer und Favoriten sind stärker','Die Meisterprüfung öffnet sich nach deiner ersten Übergabe in den Gesellenjahren','Die Sektanlage kommt mit dem Rebstock der Sekt-Sorte, Zucker hebt den Most nur bis zum Deckel']],
     ['','13.6','Finale','22.11.2026',['Ab dem Terroir kommen vier Jahrhundertjahre, groß im Winzerboten angekündigt','Wer im Jahrhundertjahr sein Wagnis gewinnt, bekommt den Jahrhundertwein','Die Weltweinschau im Juni hat drei Kronen: Sekt, Prädikat und Rarität','Nach der dritten Krone wirst du Ehrenpräsident, erst dann endet die Partie','Ohne alle Kronen übernimmt alle 40 Jahre die nächste Generation und spielt weiter']],
     ['','13.5','Leute, Manager, Maschinen','21.11.2026',['Erntehelfer und Lagerarbeiter steigen in drei Stufen auf und nehmen dir Arbeit ab','Die Manager machen nur noch Büro, Wettbewerb, Hoffest und Anmelden bleiben bei dir','Maschinen lesen nur Menge- und Sekt-Sorte, die Spitzen-Sorte wird immer von Hand gelesen','An der Mosel fahren keine Erntemaschinen, dafür kostet die Handlese dort nicht mehr','Abfüllanlage mit Ausbau, Laubschneider mit mehr Punkten und Menge']],
     ['','13.4','Gebiete und Herbst','21.11.2026',['Jedes Gebiet hat eine Stärke und ein Problem, die Pfalz ist für die erste Partie','Bis Oktober ist dein Spitzenwein sicher, danach wagst du den Weg deines Gebiets','Edelfäulnis im November, Frost im Dezember, an Mosel und Rheingau mit Tendenz','Seltene Jahre öffnen den fremden Weg, die Beerenauslese kann zur Trockenbeerenauslese werden','Am Lese-Knopf steht die Chance, der Weingut-Manager warnt']],

@@ -33,7 +33,7 @@ const freiAb=k=>(FREI[k]||{r:0}).r;
 const rolleSorte=rl=>R().sorten.find(id=>(SORTEN[id]||{}).rolle===rl);
 function pflFrei(p){const id=rolleSorte(p[0]); return !!id&&((S.felder[id]||{}).pflSt||0)>=p[1]}
 // Seit 13.3.7 dazu die bepflanzte Fläche (ha): frei, sobald mehr als e.ha Hektar bepflanzt sind.
-function frei(k){const e=FREI[k]; if(!e) return true; if(e.pfl) return pflFrei(e.pfl); if(e.ha!=null) return flaecheBep()>e.ha; if(S.rang<e.r||(e.bis!=null&&S.rang>=e.bis)) return false; if(!e.ab) return true;
+function frei(k){const e=FREI[k]; if(!e) return true; if(e.pfl) return pflFrei(e.pfl)||!!(e.bote&&(S.freiBote||{})[k]); if(e.ha!=null) return flaecheBep()>e.ha; if(S.rang<e.r||(e.bis!=null&&S.rang>=e.bis)) return false; if(!e.ab) return true;
   const m=(S.rangMon||{})[e.r]; return m!=null&&S.jahr*12+S.monat>=m+12*e.ab}
 // "ab dem Rang Winzer" oder "4 Jahre nach dem Rang Winzermeister", für Texte.
 const freiText=k=>{const e=FREI[k]; return e.ha!=null?`mit mehr als ${e.ha}\u00a0Hektar bepflanzt`:e.pfl?`mit der Stufe ${PFLEGE_STUFEN[e.pfl[1]]} der ${ROLLEN[e.pfl[0]].name}`:e.ab?`${e.ab} Jahre nach dem Rang ${rangN(e.r)}`:`ab dem Rang ${rangN(e.r)}`};
@@ -41,9 +41,10 @@ const freiText=k=>{const e=FREI[k]; return e.ha!=null?`mit mehr als ${e.ha}\u00a
 function rangMonMerk(von,zu){const M=S.rangMon=S.rangMon||{0:START_JAHR*12}; for(let i=von+1;i<=zu;i++) if(M[i]==null) M[i]=S.jahr*12+S.monat}
 // Spielstände aus 13.1 und 13.2 ohne S.rangMon: aus S.zeitRang (Spieljahr des Aufstiegs) oder jetzt. Schon Freies kommt nicht noch einmal in den Winzerboten.
 function altFrei(){if(!S.rangMon){const M=S.rangMon={0:START_JAHR*12}; for(let i=1;i<=S.rang;i++){const z=(S.zeitRang||[]).find(x=>x.r===i); M[i]=z?(START_JAHR+z.j-1)*12:S.jahr*12+S.monat}}
-  if(!S.freiBote){S.freiBote={}; for(const k of Object.keys(FREI)) if(FREI[k].ab&&frei(k)) S.freiBote[k]=1}}
-// Was nach dem Abstand kommt, meldet der Winzerbote einmal.
-function freiBote(Z){const B=S.freiBote=S.freiBote||{}; for(const k of Object.keys(FREI)) if(FREI[k].ab&&FREI[k].bote&&!B[k]&&frei(k)){B[k]=1; Z.push(FREI[k].bote)}}
+  if(!S.freiBote){S.freiBote={}; for(const k of Object.keys(FREI)) if((FREI[k].ab||FREI[k].pfl&&FREI[k].bote)&&frei(k)) S.freiBote[k]=1}}
+// Was nach dem Abstand kommt, meldet der Winzerbote einmal. Seit 13.7.8 auch, was mit der Pflegestufe kommt und eine Zeile hat (die Sektanlage).
+// Wer die Sektanlage schon gekauft hat (Stand von vor 13.7.8), bekommt die Zeile nicht mehr.
+function freiBote(Z){const B=S.freiBote=S.freiBote||{}; for(const k of Object.keys(FREI)) if((FREI[k].ab||FREI[k].pfl)&&FREI[k].bote&&!B[k]&&frei(k)){B[k]=1; if(!(k==='sekt_anlage'&&S.sektAnlage)) Z.push(FREI[k].bote)}}
 // Seit 13.5.1: Stufen der Erntehelfer und Lagerarbeiter (S.leuteSt). Die höchste freie Stufe zählt, sie bringt die fehlenden mit und fällt nie zurück.
 // Mit Stufe 1 kommt der erste Mensch der Gruppe, wenn noch keiner da ist: eingestellt ohne Vermittlung, Lohn wie das Angebot des Monats.
 const LEUTE_K=['helfer','lagerarb'];
@@ -1331,9 +1332,9 @@ kompWissen('spitze','gebiet','Spitzenlage',()=>`Die beste Lage weit und breit: $
 for(let k=1;k<=KELLER_PREISE.length;k++) kompWissen('keller'+k,'technik',KELLER_NAMEN[k-1],
   ()=>`Stufe ${k} im Kellerausbau. Kostet ${eur(KELLER_PREISE[k-1])} und geht mit ${kellerMit(k-1)} im Kellerbuch. Prädikatsweine und Eiswein sind damit ${k} ${k===1?'Monat':'Monate'} früher verkaufsreif, und jeder Wein gewinnt beim Reifen schneller an Wert.`);
 // Seit 12.1: der Sektkeller mit der Flaschengärung als kleine Geschichte (KOMP_TEXT.sektkeller).
-kompWissen('sektkeller','technik','Sektkeller',()=>`Kostet einmal ${eur(SEKTKELLER_PREIS)} und geht ab dem Rang ${RAENGE[R_SEKT].name}. Ohne ihn gibt es keinen Sekt. Sektflasche, Korken und Agraffe kosten ${eur2(SEKT_KOSTEN)} je Flasche, mit der ${SEKT_ANLAGE_NAME} ab dem Rang ${RAENGE[R_SEKT_ANLAGE].name} (${eur(SEKT_ANLAGE_PREIS)}) die Hälfte. Bei der Lese der ${ROLLEN.sekt.name} wählst du ${SEKT_REIFE} oder ${HEFE_LANG} Monate auf der Hefe, lang bringt ${HEFE_LANG_QP} Qualitätspunkte mehr.${S.sektkeller?` Dein Sektkeller steht${S.sektAnlage?', mit Anlage':''}.`:''}`);
+kompWissen('sektkeller','technik','Sektkeller',()=>`Kostet einmal ${eur(SEKTKELLER_PREIS)} und geht ab dem Rang ${RAENGE[R_SEKT].name}. Ohne ihn gibt es keinen Sekt. Sektflasche, Korken und Agraffe kosten ${eur2(SEKT_KOSTEN)} je Flasche, mit der ${SEKT_ANLAGE_NAME} (${eur(SEKT_ANLAGE_PREIS)}, zu haben ${freiText('sekt_anlage')}) die Hälfte. Bei der Lese der ${ROLLEN.sekt.name} wählst du ${SEKT_REIFE} oder ${HEFE_LANG} Monate auf der Hefe, lang bringt ${HEFE_LANG_QP} Qualitätspunkte mehr.${S.sektkeller?` Dein Sektkeller steht${S.sektAnlage?', mit Anlage':''}.`:''}`);
 kompWissen('reife','technik','Reife in der Flasche',()=>'In der Flasche gewinnt ein Wein mit jedem Jahr an Wert, höchstens bis zum Vierfachen. Wie schnell das geht und wie lange er hält, hängt an der Rebsorte und am Kellerausbau.');
-kompWissen('zuckern','technik','Zuckern und Wässern',()=>`Zucker hebt die Öchsle im Most, Wasser streckt die Menge, beides um höchstens ${ZUCKER_MAX} %. Bis ${ZUCKER_ERLAUBT} % ist das beim Tafelwein erlaubt. Alles andere ist Panscherei und ein Fall für den Weinprüfer.`);
+kompWissen('zuckern','technik','Zuckern und Wässern',()=>`Zucker hebt die Öchsle im Most, aber nie über den Deckel des Weinbergs, aus dem die Trauben kommen. Wasser streckt die Menge. Beides geht um höchstens ${ZUCKER_MAX} %. Bis ${ZUCKER_ERLAUBT} % ist das beim Tafelwein erlaubt. Alles andere ist Panscherei und ein Fall für den Weinprüfer.`);
 for(const id of Object.keys(MASCH)) kompWissen('masch_'+id,'technik',MASCH[id].name,
   ()=>{const T=MASCH[id]; return `${T.bonus?MASCH_BONUS[id]():`Schafft ${rbn(T.leist)} Reben bei der Lese und deckt übers Jahr ${T.helfer} Hektar Reben ab`}. Zu kaufen ${maschFreiText(id)} für ${eur(T.preis)}.`});
 kompWissen('hagel','gefahr','Hagel',()=>'Zwischen Juni und September kann ein Unwetter einen Teil der Trauben zerschlagen, die noch am Stock hängen.');
@@ -1989,6 +1990,10 @@ function pruefEnde(extra){
 /* ---- Panschen: Most zuckern oder wässern, Fässer verschneiden ---- */
 const mani=l=>(l.zucker||0)+(l.wasser||0)>0;
 const maniLegal=(l,st)=>st==='tafel'&&(l.zucker||0)<=ZUCKER_ERLAUBT&&(l.wasser||0)<=ZUCKER_ERLAUBT;
+// Seit 13.7.8 (Entscheidung 12, Maik 22.11.2026): Zucker hebt das Öchsle höchstens bis zum Deckel des Weinbergs, aus dem die Trauben kommen (deckel der Sorte, wie er gerade steht).
+// ZUCKER_MAX bleibt die zweite Grenze. zuckerOe rechnet das Öchsle nach n Prozent Zucker, zuckerBis gibt die meisten Prozent, die noch gehen (0 heißt gesperrt).
+const zuckerOe=(l,n)=>Math.min(150,Math.round(l.oe*(1+n/100)));
+function zuckerBis(l){const D=deckel(l.sorte); let n=0; while(n<ZUCKER_MAX-(l.zucker||0)&&zuckerOe(l,n+1)<=D) n++; return n}
 const maniText=l=>[l.zucker?`gezuckert (+${l.zucker}\u00a0%)`:'',l.wasser?`gewässert (+${l.wasser}\u00a0%)`:''].filter(Boolean).join(' und ');
 // Seit 8.0 (Paket B): Trauben aus einem Jahr mit Sommerschnitt (l.laub) bekommen LAUB_QP Punkte obendrauf, nach der Eignung, damit es genau so viele sind.
 // Seit 13.2.1: Der Boden gibt BODEN_ST_QP Punkte je Stufe (l.bst, bei der Lese festgehalten) statt der Punkte aus dem Bodenzustand.
