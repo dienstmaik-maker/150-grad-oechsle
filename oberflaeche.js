@@ -239,7 +239,7 @@ function handText(f,vor){
   if(handFehlt(f)) return `${vor}<b>✋ Handlese:</b> <span class="rot">${w} liest man von Hand, dafür brauchst du ${n} Erntehelfer, du hast ${S.helfer}. Liest du so, liest die Maschine, und es gibt höchstens Qualitätswein.</span>`;
   return `${vor}<b>✋ Handlese:</b> ${w} liest man von Hand. ${n?`Dafür brauchst du ${n} Erntehelfer, ${S.helfer>=n?`deine ${S.helfer} reichen`:`du hast ${S.helfer}, mehr Trauben bleiben hängen`}`:'Dieses Feld schafft deine Familie allein'}.`;
 }
-// Seit 13.4.2 (Bauplan 13.4): was das Hängenlassen bringt, im Weinberg unter der Lese-Hilfe. Platzhalter-Texte, der Wortlaut kommt in 13.8.
+// Seit 13.4.2 (Bauplan 13.4): was das Hängenlassen bringt, im Weinberg unter der Lese-Hilfe. Wortlaut seit 13.8.
 function wagnisHinweis(id){
   const f=S.felder[id], m=S.monat, w=feldWeg(id), wm=Math.round((1-WARTEN_MENGE)*100);
   if(f.gefroren||!(f.menge>0)||f.gelesen) return '';
@@ -323,7 +323,7 @@ function vLexikon(){
   const K=KOMP_KAP.find(k=>k[0]===KOMP_AKT), L=lexSeiten(K[0]);
   return fenster('lexikon',`Lexikon<small>${lexAlle().length} Seiten zum Nachlesen, ohne Siegel</small>`,`<div class="chips kchips">${KOMP_KAP.map(k=>`<button class="chip ${k[0]===KOMP_AKT?'an':''}" data-a="kompKap" data-id="${k[0]}">${k[1]} ${k[2]}${lexSeiten(k[0]).some(lexNeu)?'<i class="lpunkt"></i>':''}</button>`).join('')}</div>
     <h4 class="gk">${K[1]} ${K[3]} · ${L.length} ${L.length===1?'Seite':'Seiten'}</h4><div class="fzl">${L.map(kompZeile).join('')}</div>`,{
-    i:'Alles zum Nachlesen, ohne Siegel: deine Rebsorten, die Edelfäulnis und die Regeln zur Reifezeit, Gebiet und Lagen, Keller und Technik und die Gefahren. Oben wählst du ein Kapitel, ein Tipp auf eine Seite zeigt ihre Geschichte und was im Spiel gilt. Neue Seiten, zum Beispiel ein Schädling nach dem ersten Befall, tragen ein gelbes „Neu“, bis du sie einmal geöffnet hast.'});
+    i:'Alles zum Nachlesen, ohne Siegel: deine Rebsorten, die Edelfäulnis und die Regeln zur Reifezeit, Gebiet und Lagen, Keller und Technik und die Gefahren. Oben wählst du ein Kapitel, ein Tipp auf eine Seite zeigt ihre Geschichte und was im Spiel gilt. Neue Seiten, zum Beispiel ein Schädling nach dem ersten Schädlingsjahr, tragen ein gelbes „Neu“, bis du sie einmal geöffnet hast.'});
 }
 // Eine Seite: Geschichte, die Zeile "Im Spiel" und bei Einträgen mit Siegeln die drei Bedingungen. Die Geschichte gibt es mit dem ersten Siegel, auf Wissens-Seiten sofort.
 function kompEintragHtml(id){
@@ -553,7 +553,7 @@ function weltZeile(){
   return `<div class="kv"><span>🌍 Weltweinschau</span><span>${A.ehren?`alle Kronen, die letzte ${A.ehren.j}`:`${kronen().length} von ${KRONEN.length} Kronen · ${schauAnm()?'Anmeldung diesen Monat':S.schau?'Schau im '+MON[WELT_MONAT]:'Anmeldung im '+wettNaechst('welt')}`}</span></div>`;
 }
 // Seit 13.6.6: Fenster "Weltweinschau" im Rathaus nach dem Brief: die drei Kronen mit Jahr und Generation, welche dran ist, und die Anmeldung im Januar.
-// Platzhalter-Texte, der Wortlaut kommt in 13.8.
+// Wortlaut seit 13.8.
 function vWeltschau(){
   const A=S.amt; if(!A||!A.brief) return '';
   const kl=A.ehren?null:S.schau?S.schau.kl:kroneKl(), s=S.schau, K=kl!=null?KRONEN[kl]:null;
@@ -561,7 +561,7 @@ function vWeltschau(){
   const satz=!K?`Alle ${KRONEN.length} Kronen geholt, die letzte ${A.ehren.j}. Als ${ehrP()} trittst du nicht mehr an.`
     :`${kroneText(K)} ${schauAnm()?(s.ein?`Angemeldet: ${esc(s.ein.name)}. Tauschen geht bis zum Monatsende.`:'<span class="rot">Angemeldet wird nur diesen Monat.</span>'):s?`${s.ein?`Angemeldet: ${esc(s.ein.name)}.`:'Kein Wein angemeldet.'} Die Schau ist im ${MON[WELT_MONAT]}.`:`Angemeldet wird im ${wettNaechst('welt')}, die Schau ist im ${MON[WELT_MONAT]}.`}`;
   const n=schauAnm()?S.lots.filter(l=>schauFaehig(l)).length:0;
-  return fenster('weltschau','Weltweinschau',z+`<div class="mut">${satz}</div>`,{
+  return fenster('weltschau','Weltweinschau',z+`<div class="mut">${satz}</div>${K?`<div class="kv"><span>⭐ Der Favorit</span><span>${esc(K.fav.split(',')[0])}</span></div><div class="mut"><small>${esc(K.gesch||'')}</small></div>${A.schauB||(s&&s.ein)?'':`<div class="mut">Die erste Krone gibt es im ${MON[WELT_MONAT]} nach deiner ersten Anmeldung im ${MON[WELT_ANM]}.</div>`}`:''}`,{
     stand:K?`${kronen().length} von ${KRONEN.length} Kronen`:'',
     kn:schauAnm()?[pk('schau',s.ein?'Tauschen':n?'Wein anmelden':'Ansehen','',{sec:!!s.ein||!n})]:[],
     i:`Jedes Jahr im ${MON[WELT_MONAT]} ist Weltweinschau auf dem Dorfplatz, angemeldet wird im ${MON[WELT_ANM]}. Es geht um eine Krone nach der anderen: ${KRONEN.map(X=>`die ${X.name} mit ${X.was}`).join(', ')}. Verlierst du, ist im nächsten Jahr dieselbe Krone dran, gewonnene Kronen bleiben, auch nach einer Abwahl. Jede Krone bringt ${KRONE_ANS} Ansehen. Mit der dritten wirst du ${ehrP()}, danach kommen die letzte Übergabe und die Chronik. Ein Jahrhundertwein hat immer ${JH_QP} Punkte.`});
@@ -745,7 +745,7 @@ const wfBild=(b,kl)=>`<div class="fbild ${kl}" style="background-image:url(bilde
 function briefHtml(){
   return `<div class="urk vertrag neu"><div class="utext"><div class="utitel">Einladung</div><p>Die Weltweinschau bittet</p><b class="uname">${esc(S.ich||S.name)}</b><p>${S.ich?esc(S.name)+' und das ganze Dorf':'und das ganze Dorf'}<br>um die Ehre, Gastgeber zu sein</p><small>${weltAus()?'':`Jeden ${MON[WELT_MONAT]} ab ${wettNaechst('welt').split(' ')[1]} · `}${esc(REGIONEN[S.region].name)}</small></div><div class="usiegel"></div></div>`;
 }
-// Seit 13.6.3: Urkunde zu einer Krone der Weltweinschau, Platzhalter bis 13.8.
+// Seit 13.6.3: Urkunde zu einer Krone der Weltweinschau, Wortlaut seit 13.8.
 function kroneUrkHtml(K){return `<div class="urk neu"><div class="utext"><div class="utitel">${esc(K.name)}</div><p>Die Weltweinschau ehrt</p><b class="uname">${esc(S.ich||S.name)}</b><p>${S.ich?esc(S.name):''}</p><small>${MON[S.monat]} ${S.jahr} · Weltweinschau im eigenen Dorf</small></div><div class="usiegel"></div></div>`}
 function ehrUrkHtml(){
   const w=frau(), wer=S.ich?`<p>Der Weinbauverband ernennt</p><b class="uname">${esc(S.ich)}</b><p>${w?'Inhaberin':'Inhaber'} von ${esc(S.name)}</p>`:`<p>Der Weinbauverband ernennt ${w?'die Inhaberin':'den Inhaber'} von</p><b class="uname">${esc(S.name)}</b>`;
@@ -848,7 +848,7 @@ const sterne=n=>`<span class="sterne">${'★'.repeat(n)}<i>${'★'.repeat(3-n)}<
 // Seit 11.4: o.neu wählt die Fassung (Rollen oder alte Sorten), ohne Angabe gilt die der laufenden Partie (rollenAn).
 function steckbrief(id,o={}){
   const neu=o.neu??rollenAn(), r=REG(id,neu), [sym,art]=gebietArt(r), mi=r.min, pz=x=>Math.round(x*100)+'\u00a0%';
-  // Seit 13.4.1: Stärke und Problem aus den Konstanten in REGIONEN, dazu der Weg im Herbst. Platzhalter-Texte, der Wortlaut kommt in 13.8.
+  // Seit 13.4.1: Stärke und Problem aus den Konstanten in REGIONEN, dazu der Weg im Herbst. Wortlaut seit 13.8.
   const bonus=r.wettPlus?'Steillagen-Ruf':r.preisF?'berühmte Lage':r.ertragF>1?'volle Trauben':r.aukPreisF<1?'günstiges Land':r.reifeF>1?'Flaschenreife':r.festF>1?'Feste':'';
   const stark=[r.ertragF>1?`Die Reben tragen ${pz(r.ertragF-1)} mehr.`:'',r.aukPreisF<1?`Land ist bei Auktionen ${pz(1-r.aukPreisF)} günstiger.`:'',
     r.reifeF>1?`Wein gewinnt in der Flasche ${pz(r.reifeF-1)} schneller an Wert.`:'',r.festF>1?`Feste bringen ${pz(r.festF-1)} mehr Ansehen.`:'',
@@ -1134,7 +1134,7 @@ function vBerg(){
     // Seit 13.4.9: Lage der Sorte. Die Spitzen-Sorte nur auf dem Südhang, beim Sekt der Anteil auf dem einfachen Hang mit seinem Abzug.
     if(spitzeId(id)) z+=`<div class="kv"><span>Lage</span><span>${LAGEN.sued.sym} nur Südhang, Platz für ${rbn(suedPlatz())} Reben</span></div>`;
     else if(sektSorte(id)&&f.reben){const a=Math.round(sektEinfach()*100); z+=`<div class="kv"><span>Lage</span><span${a?' class="rot"':''}>${a?`${a}\u00a0% auf dem einfachen Hang, −${sektAbzug()} Punkte`:`${LAGEN.hoehe.sym} Höhenlage oder Südhang`}</span></div>`}
-    // Seit 13.2.6: Pflegestufe mit Zähler, Deckel und Rebschnitt. Platzhalter-Texte, der Wortlaut kommt in 13.8.
+    // Seit 13.2.6: Pflegestufe mit Zähler, Deckel und Rebschnitt. Wortlaut seit 13.8.
     if(f.reben) z+=`<div class="kv"><span>Pflege</span><span>${stufeSatz(f.pflSt||0,f.pflZ||0,PFLEGE_SCHWELLE,PFLEGE_STUFEN)}</span></div>
       <div class="kv"><span>Gute Pflegejahre</span><span>${f.pflZ||0}</span></div>
       <div class="kv"><span>Deckel</span><span>${deckel(id)}° Öchsle</span></div>
@@ -1169,7 +1169,7 @@ function vBerg(){
     <div class="mut ${S.boden<80?'rot':''}">Zustand: ${bodenText(S.boden)}</div>
     ${S.nass!=null?rot(`🌧️ Der Regen im ${MON[S.nass]} hat den Boden ausgewaschen.`):''}
     <div class="kv"><span>Bodenschnitt dieses Jahr</span><span class="${bodenSchnitt()<BODEN_GUT?'rot':''}">${bodenSchnitt()} %</span></div>
-    <div class="mut">Zum Jahreswechsel gehen voraussichtlich ${vs[1]+fp} bis ${vs[2]+fp} % der Reben ein${fp?(spLohn(2)?' (mit Frost, die Frostfeuer halbieren ihn)':' (mit Frost)'):''}.</div>`,{
+    <div class="mut">Zum Jahreswechsel gehen voraussichtlich ${vs[1]+fp} bis ${vs[2]+fp} % der Reben ein${fp?(spLohn(2)?' (mit Frost, die Frostfeuer der Feuerwehr retten die Hälfte)':' (mit Frost)'):''}.</div>`,{
     hin:[helferKann(1)&&'🧑‍🌾 Deine Erntehelfer düngen beim Weiterblättern, wenn der Boden mager wird.',bonusMasch('duenger')&&`🚜 Mit dem Düngerstreuer: ${STREU_PLUS} statt ${DUENG_PLUS} Punkte Boden und ${Math.round(STREU_RABATT*100)} % billiger.`],
     links:`Gedüngt: ${S.duengungen} von 3 Mal`,kn:pk('duengen','Düngen',eur(duengKosten()),{aus:S.duengungen>=3||S.boden>=100,arm:S.geld<duengKosten()}),
     i:`Der Boden verliert jeden Monat ${BODEN_MONAT} Punkte, in einem Regenmonat ${BODEN_REGEN}, und mit jeder Lese 4. Einmal Düngen bringt ${DUENG_PLUS}, mit dem Düngerstreuer ${STREU_PLUS} und ${Math.round(STREU_RABATT*100)} % billiger, höchstens dreimal im Jahr. Ein guter Boden bringt mehr Trauben, bessere Weine und weniger tote Reben: Je besser der Bodenschnitt des Jahres, desto weniger Reben gehen zum Jahreswechsel ein.${md?` ${wm} düngt, sobald der Boden auf 70 % fällt, im August schon unter 90 %.`:''}`});
@@ -1948,7 +1948,7 @@ const AKT={
       const b=K[rint(0,K.length-1)], sprung=Math.random()<.2&&b.limit>=x+2*a.schritt?2:1;
       a.gebot=x+sprung*a.schritt; a.fuehrer=b.name; a.text=`Du bietest ${eur(x)}. ${b.name} geht sofort drüber.`;
     }else{
-      a.gebot=x; a.fuehrer='du'; a.ende='du'; S.geld-=x; landDazu(a.lage||'einfach',a.ha); fx('hammer',3);
+      a.gebot=x; a.fuehrer='du'; a.ende='du'; S.geld-=x; landDazu(a.lage||'einfach',a.ha); if(a.lage==='sued') aukGlueck(); fx('hammer',3);
       a.text=`Zum Ersten, zum Zweiten, zum Dritten! ${losText(a)} gehören dir für ${eur(x)}. +${ruhm(2*(3+Math.min(a.ha,7)))} Ansehen. Dein Weingut hat jetzt ${S.ha}\u00a0Hektar.`;
       if(a.spitze){S.spitze=1; a.text+=` Die Spitzenlage gehört dir: +${ruhm(SPITZE_ANS)} Ansehen, und ab jetzt starten deine Trauben jeden Juli mit ${SPITZE_OE}° mehr.`}
       if(S.geld<0) a.text+=` Dein Konto steht jetzt im Minus, das kostet 1 % Zinsen im Monat. Ein Kredit bei der Bank kostet nur ${Math.round(ZINS*100)} % im Jahr.`;
@@ -2020,9 +2020,9 @@ const AKT={
     const start=S.feier&&S.feier.start, sp=S.feier&&S.feier.spende, w=S.feier&&S.feier.welt, amt=w==='brief';
     // Seit 10.2.1: Nach dem Kaufvertrag erst die Szene vom Hof im Sommer zum Startmonat, dann der Winzerbote.
     if(start&&FSTUFE!==-1){feierStopp(); FSTUFE=-1; render(); window.scrollTo(0,0); schnitt(); return}
-    feierStopp(); if(!start&&w!=='ende') fx('korken'); S.feier=null; save(); el.classList.add('aus');
+    feierStopp(); if(!start&&w!=='ende') fx('korken'); S.feier=null; const nach=!start&&!sp&&!amt&&w!=='ende'&&feierNach(); save(); el.classList.add('aus');
     // Seit 10.2: Nach dem Brief geht es ins Rathaus, nach der Übergabe zur Chronik. Seit 13.6.3 wird vor der Schau angemeldet, danach geht es zu Aktuelles.
-    setTimeout(()=>{if(start) TAB='monat'; else if(w==='ende') TAB='ende'; else if(sp||amt) geh('stadt','amt'); else geh('gut','aktuell'); render();window.scrollTo(0,0);schnitt()},matchMedia('(prefers-reduced-motion:reduce)').matches?0:450);
+    setTimeout(()=>{if(nach){TAB='feier'; FSTUFE=wgAuf(S.feier)?-1:0} else if(start) TAB='monat'; else if(w==='ende') TAB='ende'; else if(sp||amt) geh('stadt','amt'); else geh('gut','aktuell'); render();window.scrollTo(0,0);schnitt()},matchMedia('(prefers-reduced-motion:reduce)').matches?0:450);
   },
   urkunde(d){
     const e=(S.ehrungen||[])[+d.n]; if(!e) return; const i=urkRang(e);

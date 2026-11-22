@@ -52,7 +52,7 @@ const REGIONEN={
 // sind nach Maiks Wunsch die riskanten Eiswein-Gebiete für Könner. stil ist das Spielstil-Schild, sekt das Sekt-Potenzial (1 bis 3 Flaschen),
 // lohnt und strat (zwei bis drei Schritte) stehen im Steckbrief bei "Neues Spiel" und unter "Dein Gebiet".
 // Seit 13.4.1: Die Schilder leicht, mittel, riskant (stufe, stil, GEBIET_STUFE) sind weg. spiel ist der Satz zur Spielweise aus dem Bauauftrag,
-// erst der Hinweis bei der Gebietswahl. Platzhalter, der Wortlaut kommt in 13.8, ebenso lohnt und strat.
+// erst der Hinweis bei der Gebietswahl. Wortlaut seit 13.8, ebenso lohnt und strat.
 const GEBIET_TEXT={
   mosel:{spiel:'Über Wettbewerbe gewinnen',sekt:3,lohnt:'Auf Wettbewerbe und Riesling-Auslese setzen, Sekt in kühlen Jahren',
     strat:['Riesling braucht lange im Keller, die ersten Jahre sind knapp. Federweißer bringt im Herbst schnelles Geld für den Notfall.','Gute Weine zum Wettbewerb: Der Steillagen-Ruf bringt jedem Wein 3 Punkte mehr.','Ab Winzer Sekt aus Riesling machen, er ist ein Sekt-Star.']},
@@ -70,18 +70,18 @@ const GEBIET_TEXT={
 // Version 11.4: Sorten nach Rollen je Gebiet (Menge, Sekt, Spitze, in dieser Reihenfolge kommen sie auch) und die zweite Fassung von lohnt und strat.
 // REGIONEN_ROLLEN erbt alles andere vom Gebiet, eine umgestellte Zahl in REGIONEN gilt also für beide.
 const GEBIET_ROLLEN={
-  mosel:{sorten:['me_mueller','se_elbling','sp_riesling'],lohnt:'Auf Wettbewerbe und Riesling-Auslese setzen, Sekt vom Elbling',
-    strat:['Müller-Thurgau trägt viel und ist nach 6 Monaten verkaufsreif, damit kommt am Anfang Geld rein.','Als Jungwinzer kommt der Elbling, ab Winzer wird daraus der Sekt der Mosel.','Der Riesling für die großen Weine kommt als Weingutsbesitzer. Bei Wettbewerben bringt der Steillagen-Ruf jedem Wein 3 Punkte mehr.']},
-  rheingau:{sorten:['me_weissb','se_riesling','sp_spaetb'],lohnt:'Auf den Verkauf setzen, Spätburgunder darf lange reifen',
-    strat:['Weißburgunder trägt viel und ist nach 6 Monaten verkaufsreif, der Start ist entspannt.','Jeder Wein bringt 10 % mehr, das lohnt sich bei großen Mengen und bei langer Reife.','Riesling kommt als Jungwinzer und wird ab Winzer zum Rheingauer Sekt. Der Spätburgunder für die großen Weine folgt als Weingutsbesitzer.']},
-  rheinhessen:{sorten:['me_silvaner','se_graub','sp_scheu'],lohnt:'Auf Edelfäulnis und große Mengen setzen',
-    strat:['Silvaner trägt viel und bringt schon nach 6 Monaten Geld, der Start ist entspannt.','Im Herbst ruhig länger hängen lassen: mehr Zucker und öfter Edelfäulnis machen Auslese und Beerenauslese leicht.','Grauburgunder gibt ab Winzer den Sekt, die Scheurebe für edelsüße Spitzenweine kommt als Weingutsbesitzer.']},
-  pfalz:{sorten:['me_dornf','se_chard','sp_gewuerz'],lohnt:'Auf Edelfäulnis pokern, Chardonnay als Sekt',
-    strat:['Dornfelder trägt viel und ist nach 6 Monaten verkaufsreif, damit kommt am Anfang Geld rein.','Warm und sonnig: Edelfäulnis kommt oft, edelsüße Weine gelingen hier am leichtesten. Der Gewürztraminer dafür kommt als Weingutsbesitzer.','Eiswein gibt es fast nie, dafür verzeiht die Pfalz viele Wege.']},
-  franken:{sorten:['me_mueller','se_bacchus','sp_silvaner'],lohnt:'Auf Eiswein pokern',
-    strat:['Kalte Winter: Im Dezember friert es hier oft, das ist die Chance auf Eiswein.','Bei Edelfäulnis im Herbst ein Feld hängen lassen und auf Frost im Dezember hoffen. Eiswein bringt hier am meisten, am besten vom Silvaner.','Für Könner: Franken bringt weniger Geld als die anderen Gebiete, jeder Fehler wiegt schwerer.']},
-  wuerttemberg:{sorten:['me_troll','se_schwarzr','sp_lemb'],lohnt:'Auf Rotwein setzen, Eiswein nur gezielt',
-    strat:['Trollinger trägt viel und ist nach 6 Monaten verkaufsreif, damit kommt am Anfang Geld rein.','Eiswein nur mit Schwarzriesling oder Lemberger versuchen, den Trollinger lieber rechtzeitig lesen.','Für Könner: Württemberg bringt weniger Geld als die warmen Gebiete, jeder Fehler wiegt schwerer.']}
+  mosel:{sorten:['me_mueller','se_elbling','sp_riesling'],lohnt:'Auf Wettbewerbe setzen, gelesen wird von Hand',
+    strat:['Müller-Thurgau trägt viel und ist nach 6 Monaten verkaufsreif, damit kommt am Anfang Geld rein.','In der Steillage fährt keine Maschine, plane rechtzeitig Erntehelfer ein. Dafür zählt bei Wettbewerben jeder Wein 3 Punkte mehr.','Der Elbling kommt als Weingutsbesitzer für den Sekt, der Riesling als Gutsherr auf den Südhang. Im Herbst hast du später beide Wege, der Winzerbote sagt, welcher besser ist.']},
+  rheingau:{sorten:['me_weissb','se_riesling','sp_spaetb'],lohnt:'Teuer verkaufen, jedes Stück Land zählt',
+    strat:['Weißburgunder trägt viel und ist nach 6 Monaten verkaufsreif, der Start ist entspannt.','Jeder Wein bringt 10 % mehr. Auktionen sind selten, also biete mit, wenn eine kommt.','Der Riesling kommt als Weingutsbesitzer für den Sekt, der Spätburgunder als Gutsherr auf den Südhang. Im Herbst hast du später beide Wege, der Winzerbote sagt, welcher besser ist.']},
+  rheinhessen:{sorten:['me_silvaner','se_graub','sp_scheu'],lohnt:'Schnell wachsen, Land ist hier günstig',
+    strat:['Silvaner trägt viel und bringt schon nach 6 Monaten Geld, der Start ist entspannt.','Land ist bei Auktionen 20 % günstiger. Kauf zu, sooft es geht.','Der Grauburgunder kommt als Weingutsbesitzer für den Sekt, die Scheurebe als Gutsherr auf den Südhang. Im warmen Herbst wartest du auf Edelfäulnis, Eiswein gibt es nur in einem harten Winter.']},
+  pfalz:{sorten:['me_dornf','se_chard','sp_gewuerz'],lohnt:'Viel ernten und verkaufen',
+    strat:['Dornfelder trägt viel und ist nach 6 Monaten verkaufsreif, damit kommt am Anfang Geld rein.','Die Reben tragen hier 10 % mehr. Also viel lesen und viel verkaufen.','Der Chardonnay kommt als Weingutsbesitzer für den Sekt, der Gewürztraminer als Gutsherr auf den Südhang. Im warmen Herbst wartest du auf Edelfäulnis, Eiswein gibt es nur in einem harten Winter.']},
+  franken:{sorten:['me_mueller','se_bacchus','sp_silvaner'],lohnt:'Flaschen liegen lassen, auf Eiswein warten',
+    strat:['Müller-Thurgau trägt viel und ist nach 6 Monaten verkaufsreif, damit kommt am Anfang Geld rein.','Wein gewinnt hier in der Flasche schneller an Wert. Wer nicht alles gleich verkauft, verdient später mehr.','Der Bacchus kommt als Weingutsbesitzer für den Sekt, der Silvaner als Gutsherr auf den Südhang. Im kalten Herbst wartest du auf Eiswein, Edelfäulnis gibt es nur in einem goldenen Herbst.']},
+  wuerttemberg:{sorten:['me_troll','se_schwarzr','sp_lemb'],lohnt:'Feste feiern, auf Eiswein warten',
+    strat:['Trollinger trägt viel und ist nach 6 Monaten verkaufsreif, damit kommt am Anfang Geld rein.','Feste bringen hier die Hälfte mehr Ansehen. Weinfest und Hoffest lohnen sich jedes Jahr.','Der Schwarzriesling kommt als Weingutsbesitzer für den Sekt, der Lemberger als Gutsherr auf den Südhang. Im kalten Herbst wartest du auf Eiswein, Edelfäulnis gibt es nur in einem goldenen Herbst.']}
 };
 const REGIONEN_ROLLEN={};
 for(const r of Object.keys(REGIONEN)) REGIONEN_ROLLEN[r]=Object.assign(Object.create(REGIONEN[r]),{sorten:GEBIET_ROLLEN[r].sorten});
@@ -113,7 +113,7 @@ const EIS_WERT=[{name:'Auslese',f:1,qp:0},{name:'Beerenauslese',f:1.3,qp:4},{nam
 const WEIN_ROLLE={menge:['feder','tafel','qba','kab','spat'],sekt:[],spitze:['feder','tafel','qba','kab','spat','aus','ba','tba','eis']};
 // Seit 13.3.4 (Bauplan 13.3): eine Tabelle für alle Freischaltungen. r ist der Rang (Index in RAENGE), ab ist der Abstand in Jahren nach dem Aufstieg in diesen Rang
 // (S.rangMon merkt den Monat jedes Aufstiegs), bis der Rang, ab dem es wieder weg ist. Wer später aufsteigt, bekommt auch das später. name steht beim Aufstieg
-// unter "in 4 Jahren" und im Winzerboten, bote ist die Zeile, wenn es nach dem Abstand kommt (Platzhalter bis 13.8). 13.4 und 13.5 hängen hier ihre Einträge an.
+// unter "in 4 Jahren" und im Winzerboten, bote ist die Zeile, wenn es nach dem Abstand kommt (Wortlaut seit 13.8). 13.4 und 13.5 hängen hier ihre Einträge an.
 // Seit 13.4.2: Beerenauslese und Eiswein haben kein eigenes Rang-Schloss mehr, sie kommen nur über den Weg des Gebiets im Herbst (weg_eigen ab R6).
 // Seit 13.4.5 kommt auch die Trockenbeerenauslese nur über das Wagnis, als zweite Stufe nach der Beerenauslese (weg_tba ab R8, der fremde Weg weg_fremd ab R7). Feder-, Tafel- und Qualitätswein gelten für jede Rolle, die sie machen darf (Annahme von Claude).
 // Seit 13.3.7 (Nachtrag 3 im Bauauftrag, Wunschstrategie, Maik 22.11.2026): Zeitleiste neu. Tafelwein ab R0, Kabinett ab R3, Auslese und eigener Weg ab R7, fremder Weg ab R8,
@@ -121,45 +121,45 @@ const WEIN_ROLLE={menge:['feder','tafel','qba','kab','spat'],sekt:[],spitze:['fe
 // ha ist ein dritter Auslöser: Er gilt, sobald mehr als so viele Hektar bepflanzt sind (der erste Erntehelfer mit dem ersten bepflanzten Hektar über 4).
 const FREI={wein_feder:{r:0},wein_tafel:{r:0},wein_qba:{r:1},wein_kab:{r:2},wein_spat:{r:3},wein_aus:{r:7},weg_eigen:{r:7},weg_fremd:{r:8},weg_tba:{r:8},
   makler:{r:1},spende:{r:1},auktion:{r:1},auktion_oft:{r:2},land:{r:3},
-  export:{r:3,ab:4,name:'der Exporthandel',bote:'🚢 Der Exporthandel nimmt jetzt auch deinen Wein. Er zahlt mehr als das Inland und nimmt dir mit jedem Rang mehr ab.'},
+  export:{r:3,ab:4,name:'der Exporthandel',bote:'🚢 Der Export ist offen. Das Ausland zahlt mehr, vor allem für die guten Stufen.'},
   // Seit 13.5.9 (Nachtrag 3, Maik 22.11.2026): Die Sabotage ist ganz raus, auch im Wahlkampf ("Ganz heißt ganz").
   sorte_sekt:{r:4},sektkeller:{r:4},weinfest:{r:4},sorte_spitze:{r:5},laden:{r:6},botschafter:{r:6},bund:{r:6},hoffest:{r:7},kontrolle:{r:7},
   // Seit 13.4.9 (Nachtrag 3): Die Spitzenlage kommt einmal, im ersten Auktionsmonat 10 Jahre nach dem Weinbaurat (Wunschjahr 77), statt per Zufall ab dem Vizepräsidenten.
-  spitzenlage:{r:6,ab:10},
+  spitzenlage:{r:6,ab:10,name:'die Spitzenlage unter dem Hammer'},
   // Seit 13.5.1 (Bauplan 13.5, Maik 21.11.2026): Stufen der Leute, Manager und Maschinen. pfl:[Rolle, Stufe] ist der zweite Auslöser neben Rang plus Abstand,
   // er gilt, sobald die Sorte dieser Rolle die Pflegestufe erreicht hat. Leute und Manager fallen nie zurück (S.leuteSt, S.manager), auch wenn die Pflege später fällt.
-  // Eine höhere Stufe bringt die fehlenden mit, so bleibt die Reihenfolge immer gleich. Namen und Zeilen im Winzerboten sind Platzhalter bis 13.8.
+  // Eine höhere Stufe bringt die fehlenden mit, so bleibt die Reihenfolge immer gleich. Namen und Zeilen im Winzerboten sind Wortlaut seit 13.8.
   helfer1:{ha:4},helfer2:{pfl:['menge',3]},helfer3:{r:5},lagerarb1:{pfl:['menge',1]},lagerarb2:{r:2,ab:5,name:'Lagerarbeiter Stufe 2'},lagerarb3:{pfl:['sekt',1]},
-  mgr_handel1:{r:2,ab:3,name:'die Handels-Managerin',bote:'🤝 Ab heute arbeitet eine Handels-Managerin für dich. Sie kümmert sich um den Verkauf.'},
-  mgr_handel2:{r:4,ab:3,name:'Stufe 2 für die Handels-Managerin',bote:'🤝 Deine Handels-Managerin steigt auf Stufe 2.'},
-  mgr_handel3:{r:6,ab:4,name:'Stufe 3 für die Handels-Managerin',bote:'🤝 Deine Handels-Managerin steigt auf Stufe 3.'},
+  mgr_handel1:{r:2,ab:3,name:'die Handels-Managerin',bote:'🤝 Ab heute arbeitet eine Handels-Managerin für dich. Sie verkauft an den Großhandel, auch den Federweißer.'},
+  mgr_handel2:{r:4,ab:3,name:'Stufe 2 für die Handels-Managerin',bote:'🤝 Deine Handels-Managerin kann jetzt mehr: Weinhandlungen und Export übernimmt sie ab sofort.'},
+  mgr_handel3:{r:6,ab:4,name:'Stufe 3 für die Handels-Managerin',bote:'🤝 Das Regal füllt ab jetzt deine Handels-Managerin. Nur volle Regale verkaufen.'},
   mgr_keller1:{r:2,ab:5,name:'der Kellermeister',bote:'🍷 Ab heute arbeitet ein Kellermeister für dich. Er kauft Fassraum und stellt Lagerarbeiter ein.'},
-  mgr_keller2:{r:4,ab:9,name:'Stufe 2 für den Kellermeister',bote:'🍷 Dein Kellermeister steigt auf Stufe 2.'},
-  mgr_keller3:{r:7,ab:7,name:'Stufe 3 für den Kellermeister',bote:'🍷 Dein Kellermeister steigt auf Stufe 3.'},
+  mgr_keller2:{r:4,ab:9,name:'Stufe 2 für den Kellermeister',bote:'🍷 Die Flaschen kauft ab jetzt dein Kellermeister. Immer mit der Ruhe, es fehlt keine mehr.'},
+  mgr_keller3:{r:7,ab:7,name:'Stufe 3 für den Kellermeister',bote:'🍷 Beim Kellermeister reift der Wein jetzt schneller. Guter Wein braucht Zeit, aber weniger.'},
   mgr_weingut1:{r:2,ab:10,name:'der Weingut-Manager',bote:'🌿 Ab heute arbeitet ein Weingut-Manager für dich. Er stellt Erntehelfer und Fahrer ein.'},
-  mgr_weingut2:{r:5,ab:3,name:'Stufe 2 für den Weingut-Manager',bote:'🌿 Dein Weingut-Manager steigt auf Stufe 2.'},
-  mgr_weingut3:{r:8,ab:4,name:'Stufe 3 für den Weingut-Manager',bote:'🌿 Dein Weingut-Manager steigt auf Stufe 3.'},
+  mgr_weingut2:{r:5,ab:3,name:'Stufe 2 für den Weingut-Manager',bote:'🌿 Die Maschinen lässt ab jetzt dein Weingut-Manager warten. Du musst nicht mehr dran denken.'},
+  mgr_weingut3:{r:8,ab:4,name:'Stufe 3 für den Weingut-Manager',bote:'🌿 Beim Weingut-Manager nutzen sich die Maschinen jetzt weniger ab.'},
   // Seit 13.5.9 (Nachtrag 3, Maik 22.11.2026): Der Düngerstreuer kommt direkt mit dem Winzer, ohne Abstand (vorher 3 Jahre danach).
-  masch_duenger:{r:2,name:'der Düngerstreuer',bote:'🚜 Beim Landhandel steht jetzt ein Düngerstreuer für dich. Kaufen kannst du ihn von Januar bis März.'},
+  masch_duenger:{r:2,name:'der Düngerstreuer',bote:'🚜 Neu bei den Maschinen: der Düngerstreuer. Er spart dir Helfer beim Düngen. Kaufen kannst du ihn von Januar bis März.'},
   masch_klein:{r:3},
-  masch_abfuell:{r:3,ab:4,name:'die Abfüllanlage',bote:'🍾 Für deinen Keller gibt es jetzt eine Abfüllanlage. Kaufen kannst du sie von Januar bis März.'},
+  masch_abfuell:{r:3,ab:4,name:'die Abfüllanlage',bote:'🍾 Es gibt jetzt eine Abfüllanlage. Damit geht kein Tropfen mehr daneben. Kaufen kannst du sie von Januar bis März.'},
   // Seit 13.7.8 (Entscheidung 12, Maik 22.11.2026): Die Sektanlage kommt, sobald die Sekt-Sorte Rebstock ist (Pflegestufe 1), statt 5 Jahre nach dem Weingutsbesitzer.
   // Mit bote meldet der Winzerbote sie einmal (freiBote), danach bleibt sie frei, auch wenn die Pflege später fällt. Preis und Wirkung bleiben.
-  sekt_anlage:{pfl:['sekt',1],name:'die Degorgier- und Abfüllanlage im Sektkeller',bote:'🍾 Für den Sektkeller gibt es jetzt eine Degorgier- und Abfüllanlage.'},
+  sekt_anlage:{pfl:['sekt',1],name:'die Degorgier- und Abfüllanlage im Sektkeller',bote:'🍾 Die Sektanlage ist da. Mit ihr kostet jede Flasche Sekt weniger.'},
   masch_gross:{r:5},
-  masch_abfuell2:{r:5,ab:9,name:'der Ausbau der Abfüllanlage',bote:'🍾 Deine Abfüllanlage lässt sich jetzt ausbauen, auf Stufe 2.'},
-  masch_laub:{r:7,ab:7,name:'der Laubschneider',bote:'🚜 Beim Landhandel steht jetzt ein Laubschneider für dich. Kaufen kannst du ihn von Januar bis März.'}};
+  masch_abfuell2:{r:5,ab:9,name:'der Ausbau der Abfüllanlage',bote:'🍾 Die Abfüllanlage hat eine zweite Stufe. Schau sie dir bei den Maschinen an.'},
+  masch_laub:{r:7,ab:7,name:'der Laubschneider',bote:'🚜 Der Laubschneider ist da! Mehr Qualität und mehr Menge bei allen Sorten. Kaufen kannst du ihn von Januar bis März.'}};
 // Seit 13.5.1: Stufen der Erntehelfer und Lagerarbeiter, was sie je Stufe können, die Zeile im Winzerboten je Stufe und die kleine Geschichte des ersten Menschen der Gruppe.
-// Sie steigen von selbst auf, ohne Kauf und ohne höheren Lohn. Platzhalter-Texte bis 13.8.
+// Sie steigen von selbst auf, ohne Kauf und ohne höheren Lohn. Wortlaut seit 13.8.
 // Seit 13.5.8 (Maik 22.11.2026, Entscheidung 7): Die Erntehelfer düngen, sobald der Boden auf HELFER_DUENG Prozent fällt (vorher 70), damit der Jahresschnitt
 // sicher über BODEN_GUT bleibt und der Boden-Zähler wie bei einem guten Spieler steigt. Startwert, gemessen in 13.5.8 gegen den Test-Spieler.
 // Lagerarbeiter Stufe 3 kommt mit dem Rebstock der Sekt-Sorte (Entscheidung 6, Wunschwert Jahr 26), bis dahin macht der Spieler den Sekt von Hand.
 const HELFER_DUENG=80;
 const LEUTE_ST={helfer:{name:'Erntehelfer',kann:['düngen','auch der Rebschnitt','auch nachpflanzen']},lagerarb:{name:'Lagerarbeiter',kann:['keltern','auch abfüllen und Etiketten kleben','auch den Sekt in den Sektkeller legen und abfüllen']}};
-const LEUTE_BOTE={helfer:['🧑‍🌾 Deine Erntehelfer düngen ab jetzt selbst, sobald der Boden mager wird.','✂️ Deine Erntehelfer können jetzt auch den Rebschnitt. Bis Ende April ist jede Sorte geschnitten.','🌱 Deine Erntehelfer pflanzen jetzt auch nach. Du sagst nur, welche Sorte und wie viel.'],
-  lagerarb:['🛢️ Deine Lagerarbeiter keltern ab jetzt die Lese selbst, sobald Fassraum frei ist.','🍾 Deine Lagerarbeiter füllen jetzt auch ab und kleben die Etiketten, sobald ein Wein angemeldet ist und Flaschen da sind.','🥂 Deine Lagerarbeiter legen jetzt auch den Sekt in den Sektkeller und füllen ihn ab, wenn die Hefezeit um ist. Ob 9 oder 24 Monate auf der Hefe, sagst weiter du.']};
-const LEUTE_ERST={helfer:'🧑‍🌾 Ein Junge aus dem Dorf steht am Hoftor und fragt nach Arbeit im Weinberg. Er ist dein erster Erntehelfer.',
-  lagerarb:'🛢️ Eine Frau aus dem Dorf hat früher in einer Kellerei gearbeitet und fragt nach Arbeit. Sie ist deine erste Lagerarbeiterin.'};
+const LEUTE_BOTE={helfer:['🧑‍🌾 Deine Erntehelfer düngen ab jetzt für dich. Der Boden ist bei ihnen in guten Händen.','✂️ Den Rebschnitt machen ab jetzt die Erntehelfer. Du hast den Kopf frei!','🌱 Nachpflanzen machen jetzt die Erntehelfer. Die Reben dafür kauft der Weingut-Manager.'],
+  lagerarb:['🛢️ Gute Nachricht: Ab jetzt keltern deine Lagerarbeiter. Das musst du nicht mehr tun.','🍾 Deine Lagerarbeiter füllen ab jetzt ab und kleben die Etiketten. Wieder eine Sorge weniger.','🥂 Den Sekt lagern jetzt die Lagerarbeiter um und füllen ab. Kurz oder lang wählst du.']};
+const LEUTE_ERST={helfer:'🧑‍🌾 Der alte Winzer bringt eine junge Frau aus dem Dorf mit, die jeden Hang hier seit der Kindheit kennt. „Die weiß, wo der Dünger hingehört“, sagt er. Das ist deine erste Erntehelferin.',
+  lagerarb:'🛢️ Der alte Winzer kommt mit einem großen, stillen Mann durchs Hoftor. „Der kann anpacken. Und er redet wenig.“ Das ist dein erster Lagerarbeiter.'};
 const LESE={reif:'nur reife Trauben',ueber:'nur überreife Trauben',alles:'reife und überreife'};
 const WETTER={sonnig:['☀️','sonnig'],mild:['⛅','mild'],regen:['🌧️','Regen'],kalt:['🌥️','kalt'],frost:['❄️','Frost']};
 // Boden: verliert jeden Monat BODEN_MONAT Punkte (in einem Regenmonat BODEN_REGEN) und mit jeder Lese 4. Einmal Düngen bringt 30, erlaubt sind drei Mal im Jahr.
@@ -192,7 +192,7 @@ const NAME_PFLEGE_AB=2, NAME_BODEN_AB=3;
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
-const VERSION='13.7';
+const VERSION='13.8';
 // Seit 13.3.6 (Maik 21.11.2026): Im Umbau starten neue Partien ohne Spielführer, sonst verspricht er Dinge nach den alten Rängen.
 // Mit neuen Texten muss er am Ende wieder an sein (14.4), dann FU_START=1.
 const FU_START=0;
@@ -239,16 +239,16 @@ const WO={mosel:'an der Mosel',rheingau:'im Rheingau',rheinhessen:'in Rheinhesse
 // Gemessen mit l115_staffel (54 Partien, Mittel): Mosel, Rheingau, Rheinhessen und Pfalz im Median in Jahr 114, 31 von 36 Partien vor Jahr 120.
 // Seit 13.3.5 (Bauplan 13.3, Startwerte aus dem Bauauftrag): Vizepräsident 6.000 Ansehen und 29 Hektar (bis 13.2: 8.000 und 33), Präsident 8.500 und 33 (bis 13.2: 12.000 und 40).
 // Der höchste Besitz deckel ist nach der Regel neu gerechnet: Verbandsvorstand 36 statt 41, Vizepräsident 41 statt 50. R0 bis R7 bleiben.
-// Seit 13.3.7: neu nennt die Hauptsachen der Wunschstrategie (Nachtrag 3), schlicht formuliert, Platzhalter bis 13.8.
+// Seit 13.3.7: neu nennt die Hauptsachen der Wunschstrategie (Nachtrag 3), schlicht formuliert, Wortlaut seit 13.8.
 // Seit 13.3.8 (Nachtrag 3, Maik 22.11.2026): Flächen-Hürden fest 3, 7, 14, 18, 24, 27, 28, 28, 28 Hektar bepflanzt, Besitz-Deckel 5, 9, 17, 32, 42, 47, ab dem Weinbaurat 50
 // (Wunschfläche des nächsten Ziels mal 1,25). ans und verm sind hier die heutigen Werte, die Hürde rechnet RANG_HUERDE unten daraus.
 const RAENGE=[
   {name:'Neuling',kurz:'Neuling',ans:0,ha:0,verm:0,rahmen:20000,haAlt:0,deckel:5},
-  {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:30,ha:3,verm:100000,rahmen:40000,haAlt:3,deckel:9,neu:'der erste eigene Hang, Qualitätswein, der Makler im Rathaus, Spenden fürs Dorf, Auktionen'},
-  {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:7,verm:250000,rahmen:80000,haAlt:4,deckel:17,neu:'Kabinett, öfter Land bei den Auktionen'},
+  {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:30,ha:3,verm:100000,rahmen:40000,haAlt:3,deckel:9,neu:'ein geschenkter Hang vom alten Winzer, Qualitätswein, der Makler im Rathaus, Spenden fürs Dorf, die ersten Auktionen'},
+  {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:7,verm:250000,rahmen:80000,haAlt:4,deckel:17,neu:'Kabinett, der Düngerstreuer, öfter Land bei den Auktionen'},
   {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:210,ansW:300,ha:14,verm:600000,rahmen:160000,haAlt:5,deckel:32,neu:'Spätlese, Landesprämierung, die Erntemaschine'},
   {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:18,verm:1500000,rahmen:300000,haAlt:6,deckel:42,neu:'{sorte}, der Sektkeller, das Weinfest, kühle Höhenlagen bei den Auktionen'},
-  {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:24,verm:3500000,rahmen:300000,haAlt:8,deckel:47,neu:'{sorte}, der große Vollernter, der steile Südhang bei den Auktionen'},
+  {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:24,verm:3500000,rahmen:300000,haAlt:8,deckel:47,neu:'{sorte} für den steilen Südhang, Südhang bei den Auktionen, der große Vollernter'},
   {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:27,verm:6000000,rahmen:300000,haAlt:10,deckel:50,neu:'Bundeswettbewerb, eine eigene Weinhandlung, das Amt des Weinbotschafters'},
   {name:'Verbandsvorstand',kurz:'Vorstand',w:'Verbandsvorständin',kw:'Vorständin',ans:4000,ha:28,verm:12000000,rahmen:300000,haAlt:13,deckel:50,neu:'Auslese und der Weg deines Gebiets im Herbst, das Hoffest, du kannst Kontrollen anregen'},
   {name:'Vizepräsident',kurz:'Vizepräsident',w:'Vizepräsidentin',kw:'Vizepräsidentin',ans:6000,ha:28,verm:16000000,rahmen:300000,haAlt:16,deckel:50,neu:'Trockenbeerenauslese, in besonderen Jahren der fremde Weg im Herbst'},
@@ -356,22 +356,27 @@ const STIFT_FAKTOR=2, MARKE_ABWAHL=10;
 // Seit 13.6.3 (Bauplan 13.6, Maik 21.11.2026): Weltweinschau mit drei Kronen in fester Reihenfolge, jedes Jahr genau eine Klasse mit einem Wein.
 // Anmeldung im WELT_ANM (Januar, zusammen mit den Prädikatsweinen), die Schau im WELT_MONAT (Juni), gewertet beim Monatswechsel danach.
 // Verloren heißt nächstes Jahr dieselbe Klasse noch mal, eine gewonnene Krone bleibt, auch nach einer Abwahl. KRONE_ANS Ansehen je Krone, seit 13.6.8 als Endwert ohne ANS_F.
-// KRONEN: stufen sind die zugelassenen Weine (sekt: ein Sekt), fav der große Favorit der Klasse (Platzhalter-Name bis 13.8), p seine mittleren Punkte.
+// KRONEN: stufen sind die zugelassenen Weine (sekt: ein Sekt), fav der große Favorit der Klasse (Namen seit 13.8), p seine mittleren Punkte.
 // Der Favorit hat p ± WELT_FAV_W, die acht anderen Weingüter p − WELT_FELD_AB[0] bis p − WELT_FELD_AB[1], dazu DIFF.feld.
 // Startwerte (Bau 13.6.3): p gegen die besten passenden Weine des Test-Spielers ab Jahr 90 (sechs Gebiete), Zielchancen Sekt 60, Prädikat 50,
 // Rarität 35 Prozent, mit dem Jahrhundertwein (JH_QP) 70. Gemessen wird in 14.1. WELT_FAV_PLUS: neutraler Haken für stärkere Favoriten in der Meisterprüfung (13.7).
 const WELT_ANM=0, WELT_MONAT=5, WELT_FAV_W=8, WELT_FELD_AB=[35,15], WELT_FAV_PLUS=0, KRONE_ANS=140;
 // Seit 13.7.5 (Entscheidung 10): Form des Favoriten aus seinem Wurf ±WELT_FAV_W, stark ab +WELT_FORM_AB, schwach ab −WELT_FORM_AB, sonst wie immer.
-// Auf Stufen mit DIFF.form steht sie in der Rangliste und im Monat WELT_FORM_MON (Mai) im Winzerboten. Platzhalter bis 13.8, {fav} ist der Favorit.
+// Auf Stufen mit DIFF.form steht sie in der Rangliste und im Monat WELT_FORM_MON (Mai) im Winzerboten. Wortlaut seit 13.8, {fav} ist der Favorit.
 const WELT_FORM_AB=3, WELT_FORM_MON=4;
-const WELT_FORM={stark:['in starker Form','{fav} soll in diesem Jahr einen Wein im Keller haben, über den in ganz Europa gesprochen wird. Wer die Krone will, muss mehr bringen als sonst.'],
-  normal:['in gewohnter Form','{fav} tritt an wie jedes Jahr: stark, aber ohne Überraschung. Die Kenner rechnen mit dem Üblichen.'],
-  schwach:['in schwacher Form','Bei {fav} soll der Jahrgang nicht gelungen sein, heißt es unter den Kennern. Eine Chance für alle, die mit einem guten Wein antreten.']};
+const WELT_FORM={stark:['in starker Form','{fav} soll einen Wein im Keller haben, über den ganz Europa spricht.'],
+  normal:['in gewohnter Form','{fav} tritt an wie jedes Jahr, stark, aber ohne Überraschung.'],
+  schwach:['in schwacher Form','Bei {fav} soll der Jahrgang nicht gelungen sein, heißt es unter den Kennern.']};
 const KRONEN=[
-  {k:'sekt',name:'Sekt-Krone',sym:'🍾',sekt:1,stufen:[],was:'einem Sekt',fav:'Maison Clairval, Champagne',p:43},
-  {k:'praed',name:'Prädikats-Krone',sym:'🍷',stufen:['kab','spat','aus'],was:'einem Kabinett, einer Spätlese oder einer Auslese',fav:'Domaine Haut-Rhin, Elsass',p:51},
-  {k:'rar',name:'Raritäten-Krone',sym:'💎',stufen:['ba','eis','tba'],was:'einer Beerenauslese, einem Eiswein oder einer Trockenbeerenauslese',fav:'Tokaji Arany Ház, Tokaj',p:160}];
-const WELT_GUETER=['Château Belmont, Frankreich','Tenuta Montefiore, Italien','Bodega Sierra Alta, Spanien','Quinta do Vale Dourado, Portugal','Weingut Steinterrassen, Österreich','Domaine du Lac, Schweiz','Eagle Canyon Estate, Kalifornien','Southern Cross Vineyards, Australien','Kaapse Hoop, Südafrika','Viña Cóndor, Chile','Finca Los Andes, Argentinien','Kiwi Ridge Winery, Neuseeland'];
+  {k:'sekt',name:'Sekt-Krone',sym:'🍾',sekt:1,stufen:[],was:'einem Sekt',fav:'Maison Tessancourt, Champagne',p:43,gesch:'Seit sieben Generationen lagern die Tessancourts ihre Flaschen in Kreidekellern unter Reims, tiefer als jeder Kirchturm im Ort hoch ist. Madame Éloïse Tessancourt rüttelt die besten Flaschen bis heute von Hand und sagt, ein Schaumwein verrate seine Eile beim ersten Schluck. Bei der Weltweinschau hat das Haus die Sekt-Krone öfter geholt als alle anderen zusammen.'},
+  {k:'praed',name:'Prädikats-Krone',sym:'🍷',stufen:['kab','spat','aus'],was:'einem Kabinett, einer Spätlese oder einer Auslese',fav:'Weingut Uferstein, Wachau',p:51,gesch:'Die Steinterrassen von Uferstein hängen in der Wachau steil über der Donau, und Großvater Leopold hat sie nach jedem Hochwasser Stein für Stein neu aufgeschichtet. Seine Enkelin Theresa liest erst, wenn der Herbstnebel vom Fluss abzieht, keinen Tag früher. Ihre Spätlesen gelten als die feinsten der Welt.'},
+  {k:'rar',name:'Raritäten-Krone',sym:'💎',stufen:['ba','eis','tba'],was:'einer Beerenauslese, einem Eiswein oder einer Trockenbeerenauslese',fav:'Hollóvár Pince, Tokaj',p:160,gesch:'Unter der Rabenburg Hollóvár liegen die Keller so tief im Vulkanstein, dass die Wände schwarz vom Kellerschimmel sind. Die Familie Szalay wartet dort jedes Jahr auf die Edelfäulnis und zählt die Beeren einzeln, wenn sie kommt. Wer gegen Hollóvár um die Raritäten-Krone antritt, braucht schon einen Jahrhundertwein.'}];
+// Seit 13.8.6: die Feier zu jeder Krone, {wein} ist der Siegerwein. Die dritte Krone ist zugleich der Sieg.
+const KRONE_FEIER={
+  sekt:['{wein} hat Maison Tessancourt geschlagen, und Madame Tessancourt gratuliert mit einem kleinen, sehr französischen Nicken.','Am Holzbogen zieht der Bürgermeister die erste Fahne hoch, die 🍾 Sekt-Krone.','Daneben hängen noch zwei leere Haken. „Die kriegen wir auch voll“, sagt er.'],
+  praed:['{wein} hat Weingut Uferstein geschlagen, und Theresa schickt eine Karte mit einem einzigen Wort: „Verdient.“','Am Holzbogen zieht der Bürgermeister die zweite Fahne hoch, die 🍷 Prädikats-Krone.','Ein Haken ist noch frei. „Für die Raritäten-Krone“, sagt er und schaut dich dabei sehr lange an.'],
+  rar:['{wein} hat sogar Hollóvár Pince geschlagen, und das im eigenen Dorf.','Am Holzbogen zieht der Bürgermeister die dritte Fahne hoch, jetzt ist kein Haken mehr frei.','Er hat Tränen in den Augen und behauptet, das sei der Rauch vom Feuerwerk.']};
+const WELT_GUETER=['Château Belmont, Frankreich','Tenuta Montefiore, Italien','Bodega Sierra Alta, Spanien','Quinta do Vale Dourado, Portugal','Weingut Hochrain, Österreich','Domaine du Lac, Schweiz','Eagle Canyon Estate, Kalifornien','Southern Cross Vineyards, Australien','Kaapse Hoop, Südafrika','Viña Cóndor, Chile','Finca Los Andes, Argentinien','Kiwi Ridge Winery, Neuseeland'];
 // ki: Tempo der Gegner, eingestellt mit dem Test-Spieler in Schritt H von 7.0 (16.11.2026). Der erste Gegner wird Präsident auf Schwer in Jahr 106 bis 112,
 // auf Mittel um Jahr 139, auf Einfach in 170 Jahren nie. Das alte Ziel "auf Schwer jede vierte Partie" gilt seit 11.6 nicht mehr.
 // Seit 11.6 (Maik 20.11.2026): Auf Schwer steht das Ansehen des Spielers wie auf Mittel bei 1 (vorher 0,9). Es bleiben die schnelleren Gegner (ki) und das stärkere
@@ -449,8 +454,23 @@ const ANREG_ANS=60, ANREG_FEHL=6, PANSCH={zocker:.4,vorsicht:.08,qualitaet:.04},
 const MAKLER_PREIS=45000, MAKLER_HA=[0,1,1,1,2,2,2,3,3,3], WEINFEST_PREIS=30000, WEINFEST_ANS=10, KELLER_PREISE=[50000,120000,250000], KELLER_NAMEN=['Edelstahltank','Großes Holzfass','Barrique-Keller'], KELLER_REIFE=.1, KELLER_WEIN=['kab','spat','aus'], R_WEINFEST=FREI.weinfest.r;
 // Seit 13.3.7 (Nachtrag 3): Stufe 2 erst mit der ersten Spätlese der Spitzen-Sorte. KELLER_ROLLE nennt je Stufe die Rolle, deren Wein zählt (null: jede Sorte).
 const KELLER_ROLLE=[null,'spitze',null];
-// Seit 13.3.7 (Nachtrag 3): Beim Aufstieg zum Jungwinzer schenkt der alte Winzer GESCHENK_HA Hektar kahlen, einfachen Hang, der Makler übergibt ihn. Text Platzhalter bis 13.8.
-const GESCHENK_HA=1, GESCHENK_TEXT='🎁 Der alte Winzer schenkt dir zum Jungwinzer einen Hektar kahlen Hang am Dorfrand, den ersten eigenen. Der Makler im Rathaus hat die Papiere schon fertig, pflanzen musst du selbst.';
+// Seit 13.3.7 (Nachtrag 3): Beim Aufstieg zum Jungwinzer schenkt der alte Winzer GESCHENK_HA Hektar kahlen, einfachen Hang, der Makler übergibt ihn. Text Wortlaut seit 13.8.
+const GESCHENK_HA=1, GESCHENK_TEXT='🎁 Der alte Winzer schiebt dir einen Umschlag über den Zaun: einen Hektar kahlen Hang am Dorfrand, geschenkt. „Hab ich vor vierzig Jahren gekauft und nie bepflanzt. Bei dir wird das was.“ Die Papiere liegen beim Makler im Rathaus, pflanzen musst du selbst.';
+// Seit 13.8.6 (Bauplan 13.8, Maik 22.11.2026): Zeile im Winzerboten zur neuen Pflegestufe ({sorte}) und zur Boden-Stufe, dazu die Momente, die einmal je Partie kommen (S.gesch).
+// Terroir hat keinen eigenen Satz, dort bleibt die alte Zeile. suedAuk kommt mit dem ersten ersteigerten Südhang, auch der Spitzenlage, als Zeile im nächsten Winzerboten.
+const PFLEGE_BOTE=[null,'✂️ {sorte} ist jetzt Rebstock! Ab diesem Jahr gibt es die volle Ernte.','✂️ {sorte} ist jetzt Premier Cru. Gute Pflege zahlt sich aus, der Deckel steigt.','✂️ {sorte} ist jetzt Grand Cru, die höchste Pflegestufe.'];
+const BODEN_BOTE=[null,['🌱 Fruchtboden! Dein Boden hebt den Deckel, der Kabinett rückt näher.','Beim Hacken kommen die ersten Regenwürmer hoch, dick wie Bleistifte, und der alte Winzer strahlt, als hätte er Gold gefunden.'],['🌱 Gutsboden! Jetzt reicht es für die erste Spätlese.']];
+const GESCH_TEXT={rebstock:'🍇 Der alte Winzer geht die Zeilen ab, zupft an einem Blatt und nickt. „Jetzt sind es Reben.“',
+  premier:'🏷️ Die Druckerei bringt die neuen Etiketten, zum ersten Mal steht „Premier Cru“ auf deiner Flasche. Das erste klebst du selbst, ganz gerade, mit beiden Daumen.',
+  suedAuk:'🍀 Beim ersten Spatenstich auf deinem neuen Südhang staunst du: Der Boden ist dunkel und locker, als hätte ihn jemand jahrelang gepflegt. Der Makler zuckt mit den Schultern, der Vorbesitzer sei wohl ein heimlicher Gärtner gewesen. Für die Spitzen-Sorte hättest du kein besseres Stück finden können.',
+  vollendet:'🌄 Dein Weinberg ist vollendet. Die Alten sagen, auf so einem Boden kommen bald die ganz großen Jahre.'};
+// Seit 13.8.7 (Maik 22.11.2026): Feier-Fenster beim ersten Grand Cru je Rolle und beim vollendeten Weinberg (Terroir und Spitzen-Sorte Grand Cru, egal was zuletzt kommt).
+// Nur Geschichte, kein Bonus. Die drei Grand-Cru-Feiern teilen ein Bild, der vollendete Weinberg hat ein eigenes, beides Platzhalter bis 14.3.
+const GC_FEIER={
+  menge:{bild:'herbst',ort:'🍇 Im Weinberg',h:'Grand Cru für den {sorte}',p:['Auf dem Etikett deines {sorte} steht jetzt Grand Cru, die höchste Pflegestufe.','Die Nachbarn kommen extra am Hang vorbei und tun so, als wären sie nur spazieren.','Abends gibt es ein Glas auf der Bank vor der Scheune, und {ratte} bekommt ein Extrastück Käse.']},
+  sekt:{bild:'herbst',ort:'🍾 Im Sektkeller',h:'Grand Cru für den {sorte}',p:['Dein {sorte} ist Grand Cru, und der Sekt daraus perlt so fein wie nie.','Im Sektkeller knallt ein Korken, und diesmal erschrickt nicht einmal {ratte}.','Die Blaskapelle übt schon ein Lied dafür, es heißt vorläufig „Grand Cru mit Kohlensäure“.']},
+  spitze:{bild:'herbst',ort:'☀️ Am Südhang',h:'Grand Cru für den {sorte}',p:['Dein {sorte} am Südhang ist Grand Cru, die höchste Pflegestufe für deinen Spitzenwein.','Der Bürgermeister lässt sich die Zeilen zeigen und flüstert, als stünde er in der Kirche.','Zum vollendeten Weinberg fehlt nur noch der Boden, aber die Reben sind schon so weit.']},
+  vollendet:{bild:'spitzenlage',ort:'🌄 Am Südhang',h:'Der vollendete Weinberg',p:['Terroir im Boden, Grand Cru am Südhang: Dein Weinberg ist vollendet.','Das halbe Dorf steigt den steilen Hang hinauf, sogar der Pfarrer, der sonst nur bergab geht.','Oben steckst du ein kleines Schild in die Erde: „Hier hat alles gepasst.“']}};
 const FESTE={weinfest:{name:'Weinfest',preis:WEINFEST_PREIS,ans:WEINFEST_ANS,text:'Ein Weinfest im Hof mit Zelt, Musik und deinem Wein',kurz:'Musik, Zwiebelkuchen und dein Wein für Nachbarn und Gäste'},hoffest:{name:'Hoffest',preis:HOFFEST_PREIS,ans:HOFFEST_ANS,text:'Ein großes Fest für das ganze Dorf',kurz:'Musik, Flammkuchen und dein Wein für das ganze Dorf'}};
 // Erntemaschinen (Paket 4, Variante C): die kleine ab Winzermeister, der große Vollernter ab Gutsherr. Maschinen ohne Typ (alte Spielstände) sind klein und bleiben, auch vor Winzermeister.
 // Seit 11.5 (Teil C2): Der Vollernter deckt einen großen Betrieb allein ab, VOLL_HELFER Hektar (bis 11.4: 10 Hektar, 10.000 Reben, 120.000 €, Wartung 300 € je Punkt).
@@ -591,7 +611,7 @@ const RATTE_ORD=['','','die Zweite','die Dritte','die Vierte','die Fünfte','die
 // S.spenden: erledigte Stufen mit Monat, Jahr, Name und Anrede beim Stempeln und Generation g. S.spBote: Artikel für den nächsten Winzerboten.
 const SPENDEN=[null,
   {b:5000,   z:'Wein fürs Dorffest',             kurz:'Dorffest',      ans:10,  ehre:'holz',   bild:'stadt',   lohn:'Ein Erntehelfer arbeitet im nächsten Oktober umsonst'},
-  {b:25000,  z:'die Freiwillige Feuerwehr',      kurz:'Feuerwehr',     ans:20, ehre:'kupfer', bild:'frost',   lohn:'Frostfeuer halbieren, wie viele Reben Winterfrost und Spätfrost kosten'},
+  {b:25000,  z:'die Freiwillige Feuerwehr',      kurz:'Feuerwehr',     ans:20, ehre:'kupfer', bild:'frost',   lohn:'Frostfeuer retten in Frostnächten die Hälfte der Reben, die sonst erfrieren'},
   {b:100000, z:'die Weinbauschule',              kurz:'Weinbauschule', ans:30, ehre:'bronze', bild:'arbeit',  lohn:'Neue Leute im Arbeitsamt kosten 5 % weniger Lohn'},
   {b:350000, z:'das Kirchenfenster',             kurz:'Kirchenfenster',ans:40, ehre:'silber', bild:'herbst',  lohn:'Im nächsten September etwas mehr Öchsle (Erntedank-Segen)'},
   {b:750000, z:'das Gemeindehaus',               kurz:'Gemeindehaus',  ans:40, ehre:'urkunde',bild:'amt',     lohn:'5 % mehr Budget im Großhandel'},
@@ -600,8 +620,8 @@ const SPENDEN=[null,
   {b:5000000,z:'das Dorf',                       kurz:'Ehrenbürger',   ans:400,ehre:'buerger',bild:'bogen',   lohn:'Der Holzbogen auf dem Dorfplatz, bei der nächsten Übergabe bleiben 85 statt 80 % Ansehen, und im Verband startet die Stimmung für dich bei 65 statt 60'}
 ];
 // Raten in Zwanzigsteln des Betrags. Belohnungen: Frostfeuer mal SP_FROSTFEUER auf den Frost-Anteil beim Reben-Sterben (seit 13.4.8, Startwert für 14.2), Lohn mal SP_LOHN, Segen +SP_SEGEN Öchsle, Großhandel mal SP_MARKT, Weinhandlung mal SP_LADEN, Hoffest-Ansehen mal SP_HOFFEST.
-// Seit 13.5.6 (Bauplan 13.5): worum es gegen die Gegner geht, je Akt (Generation 1 bis 3, aktNr). Platzhalter, der Wortlaut kommt in 13.8.
-const GEGNER_AKT=['⚔️ 1. Akt: Deine Rivalen sitzen im Dorf. Wer hat den besseren Wein, wer das schönere Fest?','🏅 2. Akt: Jetzt geht es um Medaillen und Ränge. Deine Rivalen wollen dieselben Preise wie du.','🗳️ 3. Akt: Im Verband wird gewählt. Deine Gegner treten als Gegenkandidaten um den Stuhl im Festsaal an.'];
+// Seit 13.5.6 (Bauplan 13.5): worum es gegen die Gegner geht, je Akt (Generation 1 bis 3, aktNr). Wortlaut seit 13.8.
+const GEGNER_AKT=['⚔️ 1. Akt: Deine Rivalen wohnen nebenan. Es geht um Land, um Fässer und darum, wer am Stammtisch zuletzt lacht.','🏅 2. Akt: Jetzt geht es um Medaillen und Ränge. Wer zuerst oben ankommt, sitzt im Festsaal vorn.','🗳️ 3. Akt: Im Verband wird alle fünf Jahre gewählt. Deine Rivalen treten als Gegenkandidaten um den Stuhl im Festsaal an.'];
 const SP_TEIL=20, SP_DECKEL=.2, SP_FROSTFEUER=.5, SP_LOHN=.95, SP_SEGEN=4, SP_MARKT=1.05, SP_LADEN=1.25, SP_HOFFEST=1.25, SP_ERBE=.85, SP_STIMM=5;
 // Maiks Bilder seit 17.11.2026: Holzbogen (Spruch steht im Bild) und die Bank als eigene Nahansicht am Wanderweg (sitzbank, nicht bank.jpg, das ist die Bank in der Stadt).
 // Das Spitzenlage-Bild bei den Auktionen bleibt, wie es ist.
@@ -658,9 +678,9 @@ const AUK_FRUEH_HA=1, AUK_FRUEH_JAHRE=3, AUK_ERST_JAHRE=4;
 // Die Spitzen-Sorte wächst nur auf dem Südhang, Sekt auf dem einfachen Hang bekommt SEKT_EINFACH_QP Punkte weniger (Platzhalter).
 // SUED_MAX: höchstens so viele Hektar Südhang besitzt du in der ganzen Partie, die Spitzenlage eingerechnet. Bis sie unter den Hammer kam, bleiben ihre SPITZE_HA dafür frei.
 // satz steht bei der Auktion (Platzhalter bis 14.4).
-const LAGEN={einfach:{name:'einfacher Hang',kurz:'Einfacher Hang',sym:'🌄',satz:'Auf dem einfachen Hang trägt die Menge-Sorte gut, Sekt wird dort schlechter.'},
-  hoehe:{name:'kühle Höhenlage',kurz:'Kühle Höhenlage',sym:'🏔️',satz:'Auf der kühlen Höhenlage wird der Sekt am besten.'},
-  sued:{name:'steiler Südhang',kurz:'Steiler Südhang',sym:'☀️',satz:'Nur auf dem steilen Südhang wächst die Spitzen-Sorte.'}};
+const LAGEN={einfach:{name:'einfacher Hang',kurz:'Einfacher Hang',sym:'🌄',satz:'Auf dem einfachen Hang trägt die Menge-Sorte gut, der Sekt verliert dort ein paar Punkte.'},
+  hoehe:{name:'kühle Höhenlage',kurz:'Kühle Höhenlage',sym:'🏔️',satz:'Oben in der kühlen Höhenlage wird der Sekt am feinsten.'},
+  sued:{name:'steiler Südhang',kurz:'Steiler Südhang',sym:'☀️',satz:'Nur auf dem steilen Südhang wächst die Spitzen-Sorte, und mehr als 8 Hektar davon bekommt kein Weingut.'}};
 const LAGE_REIHE=['einfach','hoehe','sued'], SUED_MAX=8, SEKT_EINFACH_QP=5;
 // Lagen der Lose bei der Auktion je Rang, als Anteile (Platzhalter bis 14.2): im ersten Akt nur einfacher Hang, ab dem Weingutsbesitzer vor allem kühle Höhenlage,
 // ab dem Gutsherrn auch Südhang. Es gilt die letzte Zeile, deren Rang erreicht ist.
@@ -753,25 +773,25 @@ const WAG_SPANNE={einfach:[0,0],mittel:[-10,10],schwer:[-30,15]}, WAG_MIN=.05, W
 // Danach gekappt auf WAG_SPANNE. Die Gesellenjahre lernen so die Zeichen schon, gekappt bei ±10 und ohne Schädlingsjahr.
 const WAG_TEILE={einfach:[],mittel:['sommer'],schwer:['sommer','schaed','rest']}, SOMMER_MON=[4,8], SOMMER_W={sonnig:2,mild:0,regen:-3,kalt:-2,frost:-3}, SOMMER_SPANNE=[-15,10], WAG_REST=5;
 // Seit 13.7.2: der vage Satz im Winzerboten im September, nur in der Meisterprüfung und erst mit dem Wagnis. Es gilt die erste Zeile, deren Grenze die Verschiebung erreicht.
-// Eigene Wörter, damit er nicht nach der Tendenz klingt (Entscheidung 6). Platzhalter bis 13.8, {wo} ist der Ort.
-const WAG_SATZ=[[5,'Die Alten im Dorf sind zuversichtlich','Auf der Bank vor der Kirche {wo} sind die Alten zuversichtlich: So ein Jahr, sagen sie, belohnt den, der warten kann.'],
-  [-9,'Die Alten im Dorf halten sich bedeckt','Auf der Bank vor der Kirche {wo} wiegen die Alten die Köpfe. Ein Jahr wie viele, sagen sie, mehr wollen sie nicht verraten.'],
-  [-999,'Die Alten im Dorf sind besorgt','Auf der Bank vor der Kirche {wo} sind die Alten besorgt: Wer dieses Jahr zu lange hängen lässt, sagen sie, der verliert.']];
-// Seit 13.4.4: Meldung im Winzerboten vom September, wenn der fremde Weg offen ist, nach dem Weg, den sie öffnet. Platzhalter bis 13.8.
+// Eigene Wörter, damit er nicht nach der Tendenz klingt (Entscheidung 6). Wortlaut seit 13.8, {wo} ist der Ort.
+const WAG_SATZ=[[5,'Die Alten im Dorf sind zuversichtlich','Auf der Bank vor der Kirche {wo} sind die Alten zuversichtlich: So ein Jahr belohnt den, der warten kann.'],
+  [-9,'Die Alten im Dorf halten sich bedeckt','Auf der Bank vor der Kirche {wo} wiegen die Alten nur die Köpfe und verraten nichts.'],
+  [-999,'Die Alten im Dorf sind besorgt','Auf der Bank vor der Kirche {wo} sind die Alten besorgt: Wer dieses Jahr zu lange hängen lässt, verliert.']];
+// Seit 13.4.4: Meldung im Winzerboten vom September, wenn der fremde Weg offen ist, nach dem Weg, den sie öffnet. Wortlaut seit 13.8.
 const FREMD_TEXT={
-  frost:['Ein harter Winter kündigt sich an','Die Alten {wo} spüren es in den Knochen: Dieser Winter wird hart. Wer seine Spitzen-Sorte bis Dezember hängen lässt, hat diesmal eine Chance auf Eiswein.'],
-  edel:['Ein goldener Herbst kündigt sich an','Warme Tage, feuchte Nächte: {wo} rechnen die Alten in diesem Jahr mit Edelfäulnis. Wer seine Spitzen-Sorte bis November hängen lässt, hat diesmal eine Chance auf Beerenauslese.']};
+  frost:['Ein harter Winter kündigt sich an','Die Alten {wo} spüren es in den Knochen: Dieser Winter wird hart, und wer die Spitzen-Sorte bis Dezember hängen lässt, hat diesmal eine Chance auf Eiswein.'],
+  edel:['Ein goldener Herbst kündigt sich an','Warme Tage, feuchte Nächte: {wo} rechnen die Alten mit Edelfäulnis, und wer die Spitzen-Sorte bis November hängen lässt, hat diesmal eine Chance auf Beerenauslese.']};
 // Seit 13.4.3: die Tendenz des Herbstes in der Mitte, je zu einem Drittel (Annahme von Claude), gemeldet im Winzerboten vom September ab R6.
-// weg ist der Weg, zu dem sie passt. text ist die Meldung ({wo} ist der Ort), Platzhalter bis 13.8.
+// weg ist der Weg, zu dem sie passt. text ist die Meldung ({wo} ist der Ort), Wortlaut seit 13.8.
 const TENDENZEN=[
-  {k:'feucht',name:'feuchter, milder Herbst',weg:'edel',text:'Die Wetterkundigen {wo} erwarten einen feuchten, milden Herbst. Das mag die Edelfäulnis, wer bis November wartet.'},
-  {k:'klar',name:'klare, kalte Nächte',weg:'frost',text:'Die Wetterkundigen {wo} erwarten klare, kalte Nächte. Das mag der Frost, wer bis Dezember auf Eiswein wartet.'},
-  {k:'unklar',name:'unklar',weg:null,text:'Die Wetterkundigen {wo} sind sich uneins, wie der Herbst wird. Wer jetzt noch wartet, wagt viel.'}];
-// Winzerbote, wenn das Wagnis nicht klappt: Titel, Text ({s} ist die Sorte), Bild. Platzhalter, der Wortlaut kommt in 13.8.
+  {k:'feucht',name:'feuchter, milder Herbst',weg:'edel',text:'Die Wetterkundigen {wo} erwarten einen feuchten, milden Herbst, gut für die Edelfäulnis im November.'},
+  {k:'klar',name:'klare, kalte Nächte',weg:'frost',text:'Die Wetterkundigen {wo} erwarten klare, kalte Nächte, gut für den Eiswein im Dezember.'},
+  {k:'unklar',name:'unklar',weg:null,text:'Die Wetterkundigen {wo} sind sich uneins, und wer jetzt noch wartet, wagt viel.'}];
+// Winzerbote, wenn das Wagnis nicht klappt: Titel, Text ({s} ist die Sorte), Bild. Wortlaut seit 13.8.
 const WAGNIS_AUS={
-  edel:['Kälteeinbruch im November','Über Nacht ist es bitterkalt geworden. Dein {s} hing noch für die Edelfäulnis am Stock und ist erfroren.','frost'],
-  tba:['Die Trockenbeerenauslese ist dahin','Ein nasser Dezember: Die edelfaulen Beeren deines {s} sind am Stock verfault. Wer wartet, wagt eben alles.','frost'],
-  frost:['Tauwetter statt Eiswein','Der Frost bleibt aus, der Dezember ist zu mild. Dein {s} ist am Stock verfault, aus dem Eiswein wird nichts.','frost']
+  edel:['Kälteeinbruch im November','Über Nacht ist es bitterkalt geworden, und dein {s} hing noch für die Edelfäulnis am Stock. Die Trauben sind erfroren, die Ernte des Feldes ist weg.','frost'],
+  tba:['Die Trockenbeerenauslese ist dahin','Ein nasser Dezember, und die edelfaulen Beeren deines {s} sind am Stock verfault. Wer wartet, wagt eben alles.','frost'],
+  frost:['Tauwetter statt Eiswein','Der Frost bleibt aus, der Dezember ist zu mild, und dein {s} ist am Stock verfault. Aus dem Eiswein wird diesmal nichts.','frost']
 };
 // Seit 13.4.6: die Chance in Worten am Lese-Knopf, ab 0,6 gut, ab 0,35 mittel, sonst gering (Annahme von Claude im Bauplan 13.4).
 const CHANCE_WORT=[[.6,'gut'],[.35,'mittel'],[0,'gering']];
@@ -780,12 +800,12 @@ const CHANCE_WORT=[[.6,'gut'],[.35,'mittel'],[0,'gering']];
 const MGR_WARN=.4;
 // Weinpreise (S.markt): Schritt je Monat, unten, oben, wie bis 13.6. In der Meisterprüfung gilt DIFF.markt (seit 13.7.5).
 const MARKT_SCHWANK=[.06,.85,1.15];
-// Seit 13.7.5: Satz zum Markt im Winzerboten (DIFF.marktSatz), wenn sich die Lage ändert: gut ab MARKT_SATZ[0][0], schwach unter MARKT_SATZ[1][0]. Platzhalter bis 13.8.
+// Seit 13.7.5: Satz zum Markt im Winzerboten (DIFF.marktSatz), wenn sich die Lage ändert: gut ab MARKT_SATZ[0][0], schwach unter MARKT_SATZ[1][0]. Wortlaut seit 13.8.
 // MARKT_SATZ_PUFFER: Zurück auf normal erst, wenn die Weinpreise so weit wieder drin sind, sonst springt der Satz an der Grenze jeden Monat (seit 13.7.6).
 const MARKT_SATZ_PUFFER=.05;
-const MARKT_SATZ=[[1.1,'gut','Die Händler zahlen gerade gut','Im Weinhandel ist Bewegung: Die Händler zahlen so gut wie lange nicht. Wer Wein im Keller hat, kann jetzt gut verkaufen.'],
+const MARKT_SATZ=[[1.1,'gut','Die Händler zahlen gerade gut','Im Weinhandel ist Bewegung, die Händler zahlen so gut wie lange nicht.'],
   [.9,'normal','Die Weinpreise sind wieder normal','Der Weinhandel hat sich beruhigt, die Preise sind wieder, wie man sie kennt.'],
-  [0,'schwach','Die Händler halten sich zurück','Die Händler zahlen gerade schlecht und kaufen nur das Nötigste. Wer warten kann, verkauft lieber später.']];
+  [0,'schwach','Die Händler halten sich zurück','Die Händler zahlen gerade schlecht, und wer warten kann, verkauft lieber später.']];
 // Seit 13.7.3 (Bauplan 13.7, Maik 21.11.2026): Was am Lese-Knopf steht, je Spielstufe (CHANCE_ZEIGE): Lehrjahre die Zahl, Gesellenjahre das Wort, Meisterprüfung nichts.
 // In den Lehrjahren sagt der alte Winzer dazu, was er tun würde: warten ab RAT_WARTEN, sonst lesen. Seine Warnung kommt dort schon ab MGR_WARN_STUFE.einfach.
 const CHANCE_ZEIGE={einfach:'zahl',mittel:'wort',schwer:''}, RAT_WARTEN=.6, MGR_WARN_STUFE={einfach:.3};
@@ -794,7 +814,7 @@ const CHANCE_ZEIGE={einfach:'zahl',mittel:'wort',schwer:''}, RAT_WARTEN=.6, MGR_
 // (Wunschjahre 90, 95, 100, 105). Die ersten JH_VOR sind nur ein Vorgeschmack: Ankündigung und Wetter, aber in keinem Gebiet ein Jahrhundertwein,
 // das Wagnis läuft wie in einem normalen Jahr.
 // Warm (weg edel) bekommt Jahrhundertsommer, kühl (weg frost) Jahrhundertwinter, die Mitte wechselt ab: Sommer, Winter, Sommer, Winter.
-// JH_ART: Name, Weg und die Tendenz, die der Winzerbote in der Mitte im Jahrhundertjahr klar meldet. JH_TEXT: Ankündigung im Januar, Platzhalter bis 13.8.
+// JH_ART: Name, Weg und die Tendenz, die der Winzerbote in der Mitte im Jahrhundertjahr klar meldet. JH_TEXT: Ankündigung im Januar, Wortlaut seit 13.8.
 const JH_ANZAHL=4, JH_ABSTAND=5, JH_VOR=1;
 // Seit 13.6.2 (Maik 21.11.2026, Entscheidung 1): Im Jahrhundertjahr ist die Chance überall JH_CHANCE. Sommer: Edelfäulnis sicher, die Trockenbeerenauslese
 // mit JH_CHANCE, sonst ist das Feld weg. Winter: Eiswein mit JH_CHANCE. Gelingt das, wird der Wein der Jahrhundertwein (Trockenbeerenauslese oder Eiswein).
@@ -803,14 +823,14 @@ const JH_ANZAHL=4, JH_ABSTAND=5, JH_VOR=1;
 // JH_ANS: Ansehen einmal bei der Anmeldung eines Jahrhundertweins, zusätzlich zum Ansehen der Stufe (Annahme von Claude).
 const JH_CHANCE=.75, JH_QP=163, JH_ANS=100;
 const JH_ART={sommer:{name:'Jahrhundertsommer',weg:'edel',tend:'feucht',bild:'supersommer'},winter:{name:'Jahrhundertwinter',weg:'frost',tend:'klar',bild:'eiswein'}};
-// Seit 13.6.9: sommerVor und winterVor kündigen den Vorgeschmack an, Platzhalter bis 13.8.
+// Seit 13.6.9: sommerVor und winterVor kündigen den Vorgeschmack an, Wortlaut seit 13.8.
 const JH_TEXT={
-  sommerVor:['Ein Jahrhundertsommer kündigt sich an','Die Alten {wo} sind sich einig wie selten: Dieses Jahr wird ein Jahrhundertsommer. Noch ist es nur ein Vorgeschmack, einen Jahrhundertwein gibt er nicht. Aber wer jetzt hinschaut, weiß, was kommt.'],
-  winterVor:['Ein Jahrhundertwinter kündigt sich an','Die Alten {wo} sind sich einig wie selten: Dieser Winter wird ein Jahrhundertwinter. Noch ist es nur ein Vorgeschmack, einen Jahrhundertwein gibt er nicht. Aber wer jetzt hinschaut, weiß, was kommt.'],
-  sommer:['Ein Jahrhundertsommer kündigt sich an','Die Alten {wo} sind sich einig wie selten: Dieses Jahr wird ein Jahrhundertsommer. Wer seine Spitzen-Sorte bis November hängen lässt, bekommt die Edelfäulnis sicher, und wer bis Dezember wartet, hat die Chance auf den Jahrhundertwein.'],
-  winter:['Ein Jahrhundertwinter kündigt sich an','Die Alten {wo} sind sich einig wie selten: Dieser Winter wird ein Jahrhundertwinter. Wer seine Spitzen-Sorte bis Dezember hängen lässt, hat die Chance auf den Jahrhundertwein, einen Eiswein, wie ihn das Dorf noch nicht gesehen hat.']};
+  sommerVor:['Ein Jahrhundertsommer zum Vorgeschmack','Die Alten {wo} sind sich einig wie selten: So einen Sommer gab es seit hundert Jahren nicht. Für einen Jahrhundertwein ist es noch zu früh, das hier ist der Vorgeschmack. Wer genau hinschaut, weiß, was kommt.'],
+  winterVor:['Ein Jahrhundertwinter zum Vorgeschmack','Die Alten {wo} sind sich einig wie selten: So einen Winter gab es seit hundert Jahren nicht. Für einen Jahrhundertwein ist es noch zu früh, das hier ist der Vorgeschmack. Wer genau hinschaut, weiß, was kommt.'],
+  sommer:['Der Jahrhundertsommer ist da','Die Alten {wo} sind sich einig wie selten: Dieses Jahr wird ein Jahrhundertsommer. Wer die Spitzen-Sorte bis November hängen lässt, bekommt die Edelfäulnis sicher. Wer bis Dezember wartet, kann den Jahrhundertwein holen.'],
+  winter:['Der Jahrhundertwinter ist da','Die Alten {wo} sind sich einig wie selten: Dieser Winter wird ein Jahrhundertwinter. Wer die Spitzen-Sorte bis Dezember hängen lässt, kann den Jahrhundertwein holen, einen Eiswein, wie ihn das Dorf noch nicht gesehen hat.']};
 // Seit 13.4.8 (Maik 21.11.2026): Ein misslungenes Wagnis kostet immer das ganze Feld, auch mit der Spende an die Feuerwehr. Ihre Frostfeuer
-// halbieren stattdessen den Frost-Anteil beim Reben-Sterben zum Jahreswechsel (SP_FROSTFEUER). Satz dazu, Platzhalter bis 13.8.
+// halbieren stattdessen den Frost-Anteil beim Reben-Sterben zum Jahreswechsel (SP_FROSTFEUER). Satz dazu, Wortlaut seit 13.8.
 const FROST_FEUER='Die Frostfeuer der Feuerwehr haben die Hälfte davon abgewendet';
 // Seit 11.5 (Teil C2, Maik 20.11.2026): Edelfäulnis macht schneller überreif. Auf einem Feld mit Edelfäulnis sind EDEL_UEBER Prozentpunkte mehr Trauben überreif,
 // ab dem Monat, in dem sie kommt. Dadurch gibt es weniger Auslese (nur reife Trauben) und mehr für die Beerenauslese.
@@ -830,8 +850,8 @@ const SCHAED={
   kirsch:{name:'Kirschessigfliege',der:'die Kirschessigfliege',dem:'der Kirschessigfliege',den:'die Kirschessigfliege',er:'sie',sym:'🦟'}
 };
 // Beim ersten Befall je Schädling erzählt der Winzerbote, wie es früher war. Die Geschichte wächst von Generation zu Generation.
-// Platzhalter bis 13.8. SCHAEDJ_TEXT ist die Meldung im Juli ({der} ist der Schädling).
-const SCHAEDJ_TEXT='Das Weinbauamt meldet ein Schädlingsjahr: {der} ist in den Weinbergen. Den Trauben der Menge-Sorte tut das nichts, wer gleich liest, liest sicher. Aber wer die Spitzen-Sorte dieses Jahr für das Wagnis hängen lässt, wagt mehr als sonst.';
+// Wortlaut seit 13.8. SCHAEDJ_TEXT ist die Meldung im Juli ({der} ist der Schädling).
+const SCHAEDJ_TEXT='Das Weinbauamt meldet ein Schädlingsjahr, {der} ist unterwegs, und wer die Spitzen-Sorte dieses Jahr fürs Wagnis hängen lässt, wagt mehr als sonst.';
 const SCHAED_FAMILIE={
   wickler:'Die Alten im Dorf nicken nur: „Den Wurm hat jeder, der Reben hat.“',
   mehltau:'Die Alten hatten es noch einfacher, damals gab es nur den Traubenwickler. Der Mehltau ist ein Pilz und kommt mit dem Regen.',
@@ -871,7 +891,7 @@ const KOMP_KAP=[['sorte','🍇','Sorten','Rebsorten'],['stufe','🍷','Stufen','
 // Quelle und Faktencheck: Vault-Notiz "Weinbau-Spiel Weinkompendium Texte". Seit 11.4 dazu die zehn neuen Sorten und je Gebiet der Regional-Sekt (sekt_<Sorte>).
 const KOMP_TEXT={
   wickler:'Ein kleiner Falter, dessen Raupen zweimal im Jahr zuschlagen. Die erste Generation heißt Heuwurm und frisst im Frühsommer an den Blüten, die zweite heißt Sauerwurm und bohrt sich im Sommer in die Beeren. Wo sie fressen, zieht Fäulnis ein. Viele Winzer hängen Duftstoffe in den Weinberg, die die Männchen verwirren.',
-  mehltau:'Ein Pilz, der mit Reben aus Amerika nach Europa kam und auch Peronospora heißt. Er braucht Wärme und Nässe: Nach Regen zeigen die Blätter helle Ölflecken, auf der Unterseite wächst ein weißer Rasen. Befallene Beeren schrumpfen zu Lederbeeren. Gegen ihn wurde die Bordeauxbrühe aus Kupfer und Kalk erfunden.',
+  mehltau:'Ein Pilz, der mit Reben aus Amerika nach Europa kam und auch Peronospora heißt. Er braucht Wärme und Nässe: Nach Regen zeigen die Blätter helle Ölflecken, auf der Unterseite wächst ein weißer Rasen. Die Beeren schrumpfen dann zu Lederbeeren. Gegen ihn wurde die Bordeauxbrühe aus Kupfer und Kalk erfunden.',
   kirsch:'Eine kleine Fruchtfliege aus Ostasien. Anders als die heimischen Essigfliegen sägt das Weibchen gesunde, reifende Beeren an und legt seine Eier hinein. Die Beeren laufen aus, und es riecht nach Essig. Dunkle Sorten mit dünner Schale trifft es am härtesten.',
   sorte_riesling:'Der König der deutschen Weißweine und der Spezialist für kühle Steillagen. Er reift spät und braucht Geduld im Keller. Dafür belohnt er dich mit feiner Säure und Weinen, die Jahrzehnte halten. Als Sekt ist er eine Klasse für sich.',
   sorte_mueller:'1882 von Hermann Müller aus dem Thurgau gezüchtet, eine Kreuzung aus Riesling und Madeleine Royale. Die Rebe ist genügsam, reift früh und trägt viel. Ihre Weine sind mild, fruchtig und schnell trinkreif. Große Kunst wird selten daraus, ein verlässliches Einkommen schon.',
@@ -993,13 +1013,16 @@ const DORF={
   n8:['Ein neues Kissen für den Präsidenten','Aus dem Verband ist zu hören, dass der Präsident ein neues Kissen für seinen Stuhl bestellt hat. Dicker als das alte. Im Dorf sagt man, er wolle es sich noch ein paar Jahre gemütlich machen. Der Wirt hat trotzdem schon ein Fass für die nächste Wahlfeier zurückgelegt.'],
   n9:['Die Wettkasse hängt jetzt an der Wand','Der Wirt hat die alte Wettkasse von damals wieder hervorgeholt, die mit den drei Wintern. Sie hängt jetzt eingerahmt über dem Tresen, daneben dein Bild aus dem Festsaal. Darunter klebt die kleine Anzeige, mit der alles anfing. Wer sie ausgeschnitten hat, verrät keiner.']
 };
+// Seit 13.8.6 (Bauplan 13.8, Maik 21.11.2026): der dritte Absatz am Küchentisch, n ist die Generation, die übergibt. Ab der dritten nur, solange Kronen fehlen.
+const genSatz=n=>{if(n===1) return 'Dann zeigst du aus dem Fenster auf die Hänge. „Ich habe gepflanzt. Jetzt lass es reifen.“'; if(n===2) return 'Draußen hängen die Trauben schwer an den alten Stöcken. „Es ist gereift. Jetzt hol die Krone.“';
+  const f=KRONEN.length-kronen().length; return f<=0?'':f===1?'„Eine Krone fehlt noch. Die ist für dich.“':'„Die Kronen fehlen noch. Die sind für dich.“'};
 const GEN_TEXT={
   anfang:{t:'Eine Flasche für später',p:()=>['Der erste eigene Wein ist in der Flasche. Eine davon kommt nicht ins Lager, sondern bekommt einen eigenen Platz im Regal im Gewölbekeller. Aufs Etikett schreibst du: „Für den Tag, an dem einer von uns Präsident wird.“','Am Stammtisch lachen sie, als du davon erzählst. „Ob ich das selbst erlebe, weiß ich nicht“, sagst du. „Aber einer von uns macht sie auf.“','Die Ratte im Keller hat den Platz sofort begutachtet. Korken mag sie zum Glück nicht.'],
     mut:()=>`Eine Partie kann über mehrere Generationen gehen. Alle ${GEN_JAHRE} Jahre übernimmt dein Kind das Weingut mit allem, was du aufgebaut hast. Das Ziel ist der Stuhl des Präsidenten, egal in welcher Generation. Zu Ende ist die Partie erst danach, mit der letzten Übergabe und der Chronik.`},
-  g2:{t:'Der Schlüssel und die Flasche',p:()=>[`${GEN_JAHRE} Jahre nach dem ersten Spatenstich liegen zwei Dinge auf dem Küchentisch: der alte Kellerschlüssel und die Flasche vom ersten Jahrgang. Das Etikett ist schon ein wenig vergilbt.`,'„Den Schlüssel kannst du benutzen“, sagst du zu deinem Kind. „Die Flasche noch nicht.“']},
-  g3:{t:'Ein Satz, den jeder kennt',p:()=>[`${2*GEN_JAHRE} Jahre liegt die Flasche jetzt im Regal. Das Etikett ist vergilbt, die Schrift kaum noch zu lesen. Aber dein Kind kennt den Satz auswendig: „Für den Tag, an dem einer von uns Präsident wird.“`,'Am Stammtisch sitzen längst die Enkel derer, die damals gewettet haben. Gelacht wird nicht mehr. Der Schlüssel wechselt die Hand, die Flasche bleibt im Regal.']},
-  weiter:{t:'Wieder wechselt der Schlüssel',p:()=>['Noch eine Generation, noch ein Kellerschlüssel auf dem Küchentisch. Die Flasche liegt immer noch im Regal, und der Staub darauf ist älter als jeder im Haus.','„Irgendwann“, sagt man in der Familie, wenn jemand nach ihr fragt.'+(S.sieger?'':' Der Stuhl im Festsaal wartet auch noch.')]},
-  offen:{t:'Der Schlüssel wechselt die Hand',p:()=>['Wieder liegt der alte Kellerschlüssel auf dem Küchentisch. Die Flasche vom ersten Jahrgang ist längst getrunken, aber sie steht noch an ihrem Platz: leer, im Regal im Gewölbekeller.','„Präsident waren wir schon“, sagst du zu deinem Kind. „Jetzt zeig, dass es kein Glück war.“']}
+  g2:{t:'Der Schlüssel und die Flasche',p:()=>[`${GEN_JAHRE} Jahre nach dem ersten Spatenstich liegen zwei Dinge auf dem Küchentisch: der alte Kellerschlüssel und die Flasche vom ersten Jahrgang. Das Etikett ist schon ein wenig vergilbt.`,'„Den Schlüssel kannst du benutzen“, sagst du zu deinem Kind. „Die Flasche noch nicht.“',genSatz(1)]},
+  g3:{t:'Ein Satz, den jeder kennt',p:()=>[`${2*GEN_JAHRE} Jahre liegt die Flasche jetzt im Regal. Das Etikett ist vergilbt, die Schrift kaum noch zu lesen. Aber dein Kind kennt den Satz auswendig: „Für den Tag, an dem einer von uns Präsident wird.“`,'Am Stammtisch sitzen längst die Enkel derer, die damals gewettet haben. Gelacht wird nicht mehr. Der Schlüssel wechselt die Hand, die Flasche bleibt im Regal.',genSatz(2)]},
+  weiter:{t:'Wieder wechselt der Schlüssel',p:()=>['Noch eine Generation, noch ein Kellerschlüssel auf dem Küchentisch. Die Flasche liegt immer noch im Regal, und der Staub darauf ist älter als jeder im Haus.','„Irgendwann“, sagt man in der Familie, wenn jemand nach ihr fragt.'+(S.sieger?'':' Der Stuhl im Festsaal wartet auch noch.'),genSatz(genNr()-1)].filter(Boolean)},
+  offen:{t:'Der Schlüssel wechselt die Hand',p:()=>['Wieder liegt der alte Kellerschlüssel auf dem Küchentisch. Die Flasche vom ersten Jahrgang ist längst getrunken, aber sie steht noch an ihrem Platz: leer, im Regal im Gewölbekeller.','„Präsident waren wir schon“, sagst du zu deinem Kind. „Jetzt zeig, dass es kein Glück war.“',genSatz(genNr()-1)].filter(Boolean)}
 };
 // Das Ende der Partie. wie: 'gen' beim letzten Generationswechsel (im Monatswechsel, als Sonderausgabe), 'frei' bei der freiwilligen Übergabe im Rathaus.
 // art: 'best' nach dem Sieg bei der Weltweinschau (Ehrenpräsident), sonst 'gut'. Abgewählt ist kein drittes Ende, nur ein anderer Satz.
@@ -1074,7 +1097,7 @@ const NAME_MAX=14;
 // Version 8.0.1 "Dein Stand": Rangleiter mit Kurztexten (Maik 17.11.2026, ohne Manager-Stufen, die stehen im Arbeitsamt).
 // Steht im Fenster "Dein Stand" (Tipp aufs Geld) und im Rang-Fenster unter Aktuelles. Erreichte Ränge mit Haken, der aktuelle mit Pfeil,
 // die kommenden ausgegraut mit Schloss und rechts dem, was sie freischalten.
-const LEITER=['','Auktionen, 2. Sorte, Kellerausbau','Sektkeller, Export, Düngerstreuer','Landesprämierung, Erntemaschine','3. Sorte, Laubschneider, Sekt-Anlage','Bundeswettbewerb, Vollernter','Weinhandlung, Abfüllanlage','Hoffest, Kontrollen','Spitzenlage','der Sieg'];
+const LEITER=['','Geschenkter Hang, Qualitätswein, Auktionen','Kabinett, Düngerstreuer','Spätlese, Landesprämierung, Erntemaschine','Sekt, Sektkeller, Weinfest','Spitzen-Sorte, Südhang, Vollernter','Bundeswettbewerb, Weinhandlung','Auslese, Wagnis im Herbst, Hoffest','Trockenbeerenauslese, fremder Weg','der Stuhl im Festsaal'];
 const RANGL_I='Vorn steht der höchste Rang, bei gleichem Rang entscheidet das Ansehen. Was die anderen treiben, steht im Winzerboten.';
 const SPRUNG_MAX=12;
 /* ---- Infoseite: erscheint nach jedem Monatswechsel als Vollbild, die Zeitung "Der Winzerbote" vor dem Bild der Jahreszeit. Kopfleiste und Reiter fehlen, "Weiter" blendet aus und führt zu Aktuelles ---- */
@@ -1099,10 +1122,10 @@ const SZENE_VIDEO=[];
 // Kapitel der Geschichte je Szene (von Maik abgenommen am 17.11.2026). 0 ist die Geschichte vom Anfang (GESCHICHTE).
 const KAPITEL=[null,
   ['Der neue Jahrgang liegt im Fass, und auf der Bank vor der Scheune stehen zwei Gläser.','Eins für dich, eins für den alten Winzer von nebenan, der seit dem ersten Tag über den Zaun schaut.','Er probiert, schweigt lange und sagt dann nur: „Hab ich doch gleich gesagt, aus dir wird was.“'],
-  ['Im Gewölbekeller knallt der erste Sektkorken, und die Ratte flüchtet empört hinters Rüttelpult.','Deine Leute geben ihr einen Namen: Frau Öchsle.','Sie bekommt ab jetzt jeden Abend ein Stück Käse und bewacht dafür das Korkenlager.'],
-  ['Eine Medaille auf Samt, und im Weinberg glänzt eine neue Erntemaschine mit Schleife.','Am Stammtisch nimmt keiner mehr Wetten gegen dich an.','Der Bürgermeister kommt persönlich vorbei und trinkt dein letztes Glas Spätlese aus.'],
-  ['Das halbe Dorf feiert in deinem Hof, die Blaskapelle spielt schief, aber laut.','Die Nachbarn, die damals gelacht haben, stehen jetzt am Fass und fragen, welchen Dünger du nimmst.','Der Bürgermeister hält eine Rede und verwechselt deinen Namen nur einmal.'],
-  ['Aus dem kleinen Hof ist ein Gut geworden, mit Freitreppe und Wappen über der Tür.','Vor dem Haus steht ein Vollernter, so groß wie die alte Scheune.','Die Nachbarn grüßen dich jetzt schon von Weitem.','Abends bringst du Frau Öchsle trotzdem selbst ihren Käse.'],
+  ['Im Gewölbekeller wird das erste Fass Qualitätswein angestochen, und die ersten Erntehelfer stoßen mit an.','Die Ratte sitzt oben auf dem Fass, als hätte sie es selbst gefüllt, und bekommt heute ihren Namen: Frau Öchsle.','Ab jetzt gibt es jeden Abend ein Stück Käse, dafür bewacht sie das Korkenlager.'],
+  ['Eine Urkunde mit Goldrand, und ab jetzt darfst du bei der Landesprämierung antreten.','Am Stammtisch nimmt keiner mehr Wetten gegen dich an.','Der Bürgermeister kommt persönlich vorbei und trinkt das letzte Glas vom ersten Kabinett aus.'],
+  ['Das halbe Dorf feiert in deinem Hof, die Blaskapelle spielt schief, aber laut.','Um Mitternacht knallt der erste Sektkorken, und Frau Öchsle flüchtet empört hinters Rüttelpult.','Der Sekt ist noch vom Bürgermeister, der nächste kommt aus deinem eigenen Keller.'],
+  ['Aus dem kleinen Hof ist ein Gut geworden, mit Freitreppe, Wappen und einem Vollernter, so groß wie die alte Scheune.','Jetzt fehlt nur noch ein Stück steiler Südhang, denn nur dort wächst die Spitzen-Sorte.','Abends bringst du Frau Öchsle trotzdem selbst ihren Käse.'],
   ['Zum ersten Mal sitzt du im Festsaal des Weinbauverbands, der Präsident steckt dir die goldene Traubennadel an.','Ganz vorn steht der große Stuhl, an den du seit der Anzeige denkst.','Noch sitzt ein anderer darauf.'],
   ['Dein erstes Hoffest, Lampions in den Bäumen, der ganze Verband an deiner Tafel.','Die Winzer von nebenan, die auf deinen ersten Fehler gewartet haben, warten jetzt auf eine Einladung.','Du hast allen eine geschickt.','Fast allen.'],
   ['Im Festsaal sitzt du jetzt direkt neben dem großen Stuhl, das rote Kissen darauf ist frisch aufgeschüttelt.','Der Präsident flüstert dir zu: „Mein Stuhl ist bequem. Lass dir ruhig noch etwas Zeit.“'],
@@ -1274,7 +1297,7 @@ const FU_ERL={
 /* ================= Titelbild und Geschichte ================= */
 // Das Titelbild steht bei jedem Start vorn. Der erste Tipp darauf schaltet auch den Ton frei.
 // Die Geschichte vom Anfang läuft seit 7.7 auf der Bild-Bühne der Start-Feier (vFeier), nach dem Formular, damit der Kaufvertrag den Namen kennt.
-const GESCHICHTE=['Neun Jahre lang hast du für andere geschuftet.','Dann stand in der Zeitung eine kleine Anzeige: drei Hektar Weinberg, ein alter Gewölbekeller, günstig abzugeben.','Du hast dein Erspartes zusammengekratzt und unterschrieben, bevor dir jemand die Sache ausreden konnte.','Jetzt stehst du vor kahlen Hängen, leeren Fässern und einer Ratte, die sich im Keller wie die Hausherrin benimmt.','Im Dorf wetten sie schon, dass du keine drei Winter durchhältst, und die Winzer von nebenan warten nur auf deinen ersten Fehler.','Zeig es ihnen: Oben im Festsaal des Weinbauverbands steht ein Stuhl, und der ist noch frei.','Ob du selbst einmal darauf sitzt oder erst deine Enkel, wird sich zeigen.'];
+const GESCHICHTE=['Neun Jahre lang hast du für andere geschuftet.','Dann stand in der Zeitung eine kleine Anzeige: drei Hektar Weinberg, ein alter Gewölbekeller, günstig abzugeben.','Du hast dein Erspartes zusammengekratzt und unterschrieben, bevor dir jemand die Sache ausreden konnte.','Jetzt stehst du vor kahlen Hängen, leeren Fässern und einer Ratte, die sich im Keller wie die Hausherrin benimmt.','Im Dorf wetten sie schon, dass du keine drei Winter durchhältst, und die Winzer von nebenan warten nur auf deinen ersten Fehler.','Zeig es ihnen: Oben im Festsaal des Weinbauverbands steht ein Stuhl, und der ist noch frei.','Erst wird gepflanzt. Ob du selbst einmal darauf sitzt oder erst deine Enkel, wird sich zeigen.'];
 const SATZ_TAKT=3.2;
 // Seit 10.2.1 "Was ist neu" (Maik 19.11.2026): Die Versionsnummer auf dem Titelbild lässt sich immer antippen und zeigt je Version eine Zeile.
 // Bei einer neuen Version leuchtet sie einmal kurz auf, das "Neu" verschwindet nach ein paar Sekunden, die Nummer bleibt.
@@ -1296,7 +1319,8 @@ const IDEE_KEY='oechsle-idee', IDEE_MAX=1000;
 // Je Version: [Zeichen, Nummer, Titel, Datum, Punkte]. Kommendes ohne Datum und Punkte.
 const WAS_NEU=[
   {k:'🏁 13.0 Der Umbau',d:'in Arbeit',p:['Drei Generationen, drei Akte: Das Spiel wird von Grund auf neu gebaut'],v:[
-    ['▶️','13.8','Geschichte'],
+    ['▶️','13.9','Abschlussprobe'],
+    ['','13.8','Geschichte','22.11.2026',['Drei Akte mit eigenem Satz bei jeder Übergabe: pflanzen, reifen lassen, krönen','Neue Momente vom geschenkten Hang bis zum ersten Etikett mit Premier Cru','Eine eigene Feier für den ersten Grand Cru jeder Sorte und für den vollendeten Weinberg','Die drei Favoriten der Weltweinschau haben Namen und Geschichten','Winzerbote, Zeichen und Feiern mit neuen Texten']],
     ['','13.7','Spielstufen','22.11.2026',['Lehrjahre, Gesellenjahre und Meisterprüfung unterscheiden sich jetzt beim Wagnis im Herbst','Lehrjahre zeigen die Chance als Zahl, Gesellenjahre als Wort, die Meisterprüfung gar nicht','Jedes Jahr ist gut oder schlecht fürs Warten: Sommer, Schädlingsjahr und die Alten im Winzerboten verraten es','Spritzen und Schädlingsschaden sind weg, die Menge-Sorte bleibt sicher','Meisterprüfung: Preise schwanken stärker, die Nachbarn bieten klüger, Herausforderer und Favoriten sind stärker','Die Meisterprüfung öffnet sich nach deiner ersten Übergabe in den Gesellenjahren','Die Sektanlage kommt mit dem Rebstock der Sekt-Sorte, Zucker hebt den Most nur bis zum Deckel']],
     ['','13.6','Finale','22.11.2026',['Ab dem Terroir kommen vier Jahrhundertjahre, groß im Winzerboten angekündigt','Wer im Jahrhundertjahr sein Wagnis gewinnt, bekommt den Jahrhundertwein','Die Weltweinschau im Juni hat drei Kronen: Sekt, Prädikat und Rarität','Nach der dritten Krone wirst du Ehrenpräsident, erst dann endet die Partie','Ohne alle Kronen übernimmt alle 40 Jahre die nächste Generation und spielt weiter']],
     ['','13.5','Leute, Manager, Maschinen','21.11.2026',['Erntehelfer und Lagerarbeiter steigen in drei Stufen auf und nehmen dir Arbeit ab','Die Manager machen nur noch Büro, Wettbewerb, Hoffest und Anmelden bleiben bei dir','Maschinen lesen nur Menge- und Sekt-Sorte, die Spitzen-Sorte wird immer von Hand gelesen','An der Mosel fahren keine Erntemaschinen, dafür kostet die Handlese dort nicht mehr','Abfüllanlage mit Ausbau, Laubschneider mit mehr Punkten und Menge']],
