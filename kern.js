@@ -536,7 +536,9 @@ function spBote(s){
 function fassBelegt(){return S.lots.filter(l=>l.status==='fass').reduce((a,l)=>a+l.liter,0)}
 // Seit 13.2.5: Zusätze aus Pflege und Boden, zum Beispiel "Trockenbeerenauslese Grand Cru vom Terroir". Alle Namen von Weinen kommen aus lotName.
 const weinZusatz=l=>`${(l.pfl||0)>=NAME_PFLEGE_AB?' '+PFLEGE_STUFEN[l.pfl]:''}${(l.bst||0)>=NAME_BODEN_AB?' vom '+BODEN_STUFEN[l.bst]:''}`;
-function lotName(l){return `${l.jahrgang} ${SORTEN[l.sorte].name}${l.stufe&&!l.sekt?' '+STUFEN[l.stufe].name:''}${l.sekt?'-Sekt':''}${weinZusatz(l)}${l.sekt&&hefeLang(l)?` (${l.hefe} Monate Hefelager)`:''}`}
+// Seit 13.6.2: Ein Jahrhundertwein ist eine Trockenbeerenauslese oder ein Eiswein aus dem gelungenen Wagnis im Jahrhundertjahr (l.jh), der Name steht auf dem Etikett.
+const jhWein=l=>!!(l&&l.jh&&!l.sekt&&(l.stufe==='tba'||l.stufe==='eis'));
+function lotName(l){return `${l.jahrgang} ${SORTEN[l.sorte].name}${l.stufe&&!l.sekt?' '+STUFEN[l.stufe].name:''}${jhWein(l)?' Jahrhundertwein':''}${l.sekt?'-Sekt':''}${weinZusatz(l)}${l.sekt&&hefeLang(l)?` (${l.hefe} Monate Hefelager)`:''}`}
 function rahmen(){return RAENGE[S.rang].rahmen}
 // Für Anzeigen (seit Teil D): ein Tabellenwert mit dem Faktor seiner Quelle, so wie ihn ruhm auf Stufe mittel gutschreibt.
 function ansQ(n,q){return Math.max(1,Math.round(n*(ANS_F[q]||1)))}
@@ -587,7 +589,8 @@ function ladenPreis(l,r){return Math.round(preis(l)*LADEN_AUF*100)/100}
 
 /* ================= Wettbewerbe ================= */
 function wettRang(){const t=S.wett&&S.wett.typ; return t==='welt'?R_MAX:t==='bund'?R_BUND:R_LAND}
-function reifeBonus(l){return Math.min(12,Math.round((reifeFaktor(l)-1)*8))}
+// Seit 13.6.2: Ein Jahrhundertwein hat feste Punkte (JH_QP), Lagerjahre geben ihm nichts dazu.
+function reifeBonus(l){if(jhWein(l)) return 0; return Math.min(12,Math.round((reifeFaktor(l)-1)*8))}
 function wettFaehig(l){
   const w=S.wett; if(!w||!l||!l.stufe||l.pansch) return false;
   if(w.typ==='land') return !l.sekt&&STUFEN[l.stufe].rang>=3&&l.jahrgang===S.jahr-1&&l.status!=='trauben';
@@ -604,7 +607,7 @@ function neuerWettbewerb(typ){
   S.wett={typ,feld:F,ein:null,zufall:rint(-4,4)};
 }
 // Punkte eines Weins im laufenden Wettbewerb. Stehen beim Einreichen fest.
-function wettPunkte(l){const w=S.wett;return l.qp+(w.typ!=='land'?reifeBonus(l):0)+w.zufall+(R().wettPlus||0)}
+function wettPunkte(l){const w=S.wett;return (jhWein(l)?JH_QP:l.qp)+(w.typ!=='land'?reifeBonus(l):0)+w.zufall+(R().wettPlus||0)}
 // Wertung zu Beginn des Monatswechsels nach der Ausschreibung, das Ergebnis kommt als Thema in die Zeitung.
 // Medaille und Qualitätspunkte bekommt der Wein nur, wenn er noch im Keller ist. Ansehen und Preisgeld gibt es immer.
 // Weltweinschau: l.welt heißt "hat seine Medaille der Schau schon". Platz 2 und 3 bringen dann nur Ansehen und Preisgeld, der Sieg zählt immer.
@@ -967,12 +970,17 @@ function jhArt(j=S.jahr){const k=jhNr(j); if(k<0) return null; const g=REGIONEN[
 function altJh(){if((S.bodenSt||0)>=BODEN_STUFEN.length-1&&S.jhAb==null) S.jhAb=S.jahr+1}
 // Chance des Wegs w (edel oder frost) im Gebiet r im Jahr j, 0 wenn der Weg dort zu ist. Das Rang-Schloss prüft wegeOffen.
 function wegChance(w,r=S.region,j=S.jahr){
-  const g=REGIONEN[r].weg; let p=0;
-  if(g==='beide') p=herbstTend(j).weg===w?WAGNIS.mitTend:WAGNIS.gegenTend;
+  const g=REGIONEN[r].weg, a=r===S.region&&jhArt(j); let p=0;
+  // Seit 13.6.2: Im Jahrhundertjahr hat der Weg des Jahres seine eigene Chance, der Sommer die Edelfäulnis sicher, der Winter den Frost mit JH_CHANCE.
+  if(a&&JH_ART[a].weg===w) p=w==='edel'?1:JH_CHANCE;
+  else if(g==='beide') p=herbstTend(j).weg===w?WAGNIS.mitTend:WAGNIS.gegenTend;
   else if(g===w) p=WAGNIS.eigen;
   else if(herbstFremd(j)) p=WAGNIS.fremd;
   return Math.min(1,p*WAGNIS_F);
 }
+// Seit 13.6.2: Chance der Trockenbeerenauslese, im Jahrhundertsommer JH_CHANCE. tbaOffen ist das Rang-Schloss der zweiten Stufe.
+const tbaChance=(j=S.jahr)=>Math.min(1,(jhArt(j)==='sommer'?JH_CHANCE:WAGNIS.tba)*WAGNIS_F);
+const tbaOffen=()=>frei('weg_tba');
 // Die Wege, die der Spieler in diesem Jahr wagen darf (frei: weg_eigen).
 // Seit 13.4.4 dazu der fremde Weg (frei: weg_fremd) in einem besonderen Jahr.
 const wegFremd=g=>g==='edel'?'frost':g==='frost'?'edel':null;
@@ -990,7 +998,7 @@ function feldWeg(id){
 const chanceWort=p=>CHANCE_WORT.find(([g])=>p>=g)[1];
 function wagnisChance(id){
   const f=S.felder[id], m=S.monat; if(!wagnisFeld(id)||!(f.menge>0)||f.gelesen||f.gefroren) return null;
-  if(f.wagnis==='edel') return m===10&&frei('weg_tba')?Math.min(1,WAGNIS.tba*WAGNIS_F):null;
+  if(f.wagnis==='edel') return m===10&&tbaOffen()?tbaChance():null;
   if(f.wagnis==='frost') return m===10?wegChance('frost'):null;
   if(f.wagnis||m<7||m>9) return null;
   const w=feldWeg(id); return w?wegChance(w):null;
@@ -1018,13 +1026,15 @@ function herbstWagnis(id,f,so,m,L){
     return;
   }
   if(f.wagnis==='frost'){
-    if(H.uFrost<wegChance('frost')){f.gefroren=true; L.push(`Frost! Der ${so.name} hängt gefroren am Stock. Eiswein ist möglich, lies ihn diesen Monat.`)}
+    // Seit 13.6.2: Gelingt der Frost im Jahrhundertwinter, wird der Eiswein der Jahrhundertwein (f.jh).
+    if(H.uFrost<wegChance('frost')){f.gefroren=true; if(jhArt()==='winter'){f.jh=1; L.push(`Jahrhundertwinter! Der ${so.name} hängt gefroren am Stock. Lies ihn diesen Monat, daraus wird der Jahrhundertwein.`)} else L.push(`Frost! Der ${so.name} hängt gefroren am Stock. Eiswein ist möglich, lies ihn diesen Monat.`)}
     else wagnisWeg(f,so,'frost',L);
     return;
   }
   // Seit 13.4.5: Die Beerenauslese wagt ab R8 die zweite Stufe, ohne den Rang verfault sie wie alles andere.
-  if(f.wagnis==='edel'&&frei('weg_tba')){
-    if(H.uTba<Math.min(1,WAGNIS.tba*WAGNIS_F)){f.oe=Math.max(f.oe,R().min.tba); L.push(`Die edelfaulen Beeren vom ${so.name} sind zu Rosinen eingetrocknet: ${f.oe}° Öchsle, genug für eine Trockenbeerenauslese. Lies sie diesen Monat von Hand, nur überreife Trauben.`)}
+  if(f.wagnis==='edel'&&tbaOffen()){
+    // Seit 13.6.2: Im Jahrhundertsommer wird die Trockenbeerenauslese der Jahrhundertwein (f.jh).
+    if(H.uTba<tbaChance()){f.oe=Math.max(f.oe,R().min.tba); if(jhArt()==='sommer') f.jh=1; L.push(`${f.jh?'Jahrhundertsommer! ':''}Die edelfaulen Beeren vom ${so.name} sind zu Rosinen eingetrocknet: ${f.oe}° Öchsle, genug für eine Trockenbeerenauslese. Lies sie diesen Monat von Hand, nur überreife Trauben.`)}
     else wagnisWeg(f,so,'tba',L);
     return;
   }
@@ -1043,7 +1053,7 @@ function wagnisWetter(){
   const w=herbstJahr().uFrost<wegChance('frost')?'frost':S.wetter==='frost'?'mild':S.wetter;
   if(w!==S.wetter){S.wetter=w; S.temp=tempFuer(11,w,fest(8,0,S.jahr,11))}
 }
-function feldReset(f){Object.assign(f,{oe:0,plus:0,menge:0,reif:0,ueber:0,edel:false,edelGeprueft:false,gelesen:false,teil:false,gefroren:false,frostF:1,wagnis:0,weg:null,leseW:0})}
+function feldReset(f){Object.assign(f,{oe:0,plus:0,menge:0,reif:0,ueber:0,edel:false,edelGeprueft:false,gelesen:false,teil:false,gefroren:false,frostF:1,wagnis:0,weg:null,leseW:0,jh:0})}
 
 const schaedSpaet=()=>SCHAED_SPAET_IN.includes(S.region)?SCHAED_SPAET:0;
 // Erstes Spieljahr je Schädling, gezählt ab 0 (40 heißt: mit der zweiten Generation).
@@ -2662,7 +2672,7 @@ function lese(id,la,p,hefe){
   const f=S.felder[id], q=feldQ(f,la), l=Math.round(feldLiter(f,la)*p); if(l<=0) return;
   const L=leistung(), M=maschLeistung();
   if(M>0&&!spitzeId(id)) maschAbnutzung(f.reben*Math.min(1,M/Math.max(1,rebenGesamt()-handReben())),M);
-  const neu={id:S.nextId++,sorte:id,jahrgang:S.jahr,liter:l,oe:q.oe,leseart:la,edel:f.edel,eis:f.gefroren,...(q.masch?{masch:1}:{}),status:'trauben',stufe:null,qp:0,fassMonate:0,flMonate:0,sonne:S.sonne,...(S.laubJahr===S.jahr?{laub:1}:{}),boden:S.boden+4*R().sorten.filter(x=>S.felder[x].gelesen||S.felder[x].teil).length,bst:S.bodenSt||0,pfl:f.pflSt||0};
+  const neu={id:S.nextId++,sorte:id,jahrgang:S.jahr,liter:l,oe:q.oe,leseart:la,edel:f.edel,eis:f.gefroren,...(q.masch?{masch:1}:{}),status:'trauben',stufe:null,qp:0,fassMonate:0,flMonate:0,sonne:S.sonne,...(S.laubJahr===S.jahr?{laub:1}:{}),boden:S.boden+4*R().sorten.filter(x=>S.felder[x].gelesen||S.felder[x].teil).length,bst:S.bodenSt||0,pfl:f.pflSt||0,...(f.jh?{jh:1}:{})};
   // Seit 13.5.8: Die Sekt-Trauben liegen erst im Keller (sektTr), Kosten und Ansehen kommen mit dem Umlagern in den Sektkeller (sektUmlagern).
   if(sk){const h=hefe===HEFE_LANG?HEFE_LANG:SEKT_REIFE; Object.assign(neu,{status:'sektTr',stufe:SEKT_GRUND,sekt:true,edel:false,eis:false,...(h>SEKT_REIFE?{hefe:h}:{}),med:[],bund:false});
     neu.qp=qpFuer(neu,SEKT_GRUND)+SEKT_QP+(h>SEKT_REIFE?HEFE_LANG_QP:0)}

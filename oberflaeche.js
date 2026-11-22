@@ -257,11 +257,12 @@ function handText(f,vor){
 function wagnisHinweis(id){
   const f=S.felder[id], m=S.monat, w=feldWeg(id), wm=Math.round((1-WARTEN_MENGE)*100);
   if(f.gefroren||!(f.menge>0)||f.gelesen) return '';
-  if(f.wagnis==='frost') return `<br><b>🎲 Wagnis Eiswein:</b> Dein ${SORTEN[id].name} wartet auf Frost im Dezember. Klappt es nicht, ist die Ernte dieses Feldes weg.${ch}`;
-  if(f.wagnis==='edel') return m!==10?'':frei('weg_tba')?`<br><b>🎲 Wagnis Trockenbeerenauslese:</b> Lässt du die Beerenauslese bis Dezember hängen, kann daraus eine Trockenbeerenauslese werden. Klappt es nicht, ist alles weg, und der Monat kostet ${wm} % Menge.${ch}`:'<br><span class="rot">Im Dezember verfault, was noch hängt.</span>';
-  const p=wagnisChance(id), ch=p!=null?` Chance: <b>${chanceWort(p)}</b>.`:'';
+  // Seit 13.6.2 steht die Chance vor den Sätzen, die sie nutzen (vorher brach der Hinweis im Wagnis mit einem Fehler ab). jh nennt das Jahrhundertjahr.
+  const p=wagnisChance(id), ch=p!=null?` Chance: <b>${chanceWort(p)}</b>.`:'', a=wagnisFeld(id)&&jhArt(), jh=a==='winter'?' 🌟 Jahrhundertwinter: Gelingt der Eiswein, wird er der Jahrhundertwein.':a==='sommer'?(tbaOffen()?' 🌟 Jahrhundertsommer: Die Edelfäulnis ist sicher, gelingt die Trockenbeerenauslese, wird sie der Jahrhundertwein.':' 🌟 Jahrhundertsommer: Die Edelfäulnis ist sicher. Der Jahrhundertwein wäre die Trockenbeerenauslese, die gibt es erst ab einem höheren Rang.'):'';
+  if(f.wagnis==='frost') return `<br><b>🎲 Wagnis Eiswein:</b> Dein ${SORTEN[id].name} wartet auf Frost im Dezember. Klappt es nicht, ist die Ernte dieses Feldes weg.${ch}${a==='winter'?jh:''}`;
+  if(f.wagnis==='edel') return m!==10?'':tbaOffen()?`<br><b>🎲 Wagnis Trockenbeerenauslese:</b> Lässt du die Beerenauslese bis Dezember hängen, kann daraus eine Trockenbeerenauslese werden. Klappt es nicht, ist alles weg, und der Monat kostet ${wm} % Menge.${ch}${a==='sommer'?jh:''}`:'<br><span class="rot">Im Dezember verfault, was noch hängt.</span>';
   const zwei=wegeOffen().length>1, wahl=zwei?` Dein Weg: ${w==='edel'?'bis November auf Edelfäulnis':'bis Dezember auf Frost'}, wählen kannst du bis Oktober.`:'', tend=R().weg==='beide'&&m>=8?` Tendenz im Winzerboten: ${herbstTend().name}.`:'';
-  if(m<=9&&w) return `<br><b>🎲 Wagnis:</b>${tend}${wahl} ${w==='edel'?'Lässt du die Trauben bis November hängen, kann Edelfäulnis eine Beerenauslese bringen.':'Lässt du die Trauben bis Dezember hängen, kann Frost einen Eiswein bringen.'} Klappt es nicht, ist die Ernte dieses Feldes weg. Jeder Monat über Oktober kostet ${wm} % Menge.${ch}`;
+  if(m<=9&&w) return `<br><b>🎲 Wagnis:</b>${tend}${wahl} ${w==='edel'?'Lässt du die Trauben bis November hängen, kann Edelfäulnis eine Beerenauslese bringen.':'Lässt du die Trauben bis Dezember hängen, kann Frost einen Eiswein bringen.'} Klappt es nicht, ist die Ernte dieses Feldes weg. Jeder Monat über Oktober kostet ${wm} % Menge.${ch}${a&&JH_ART[a].weg===w?jh:''}`;
   if(m>=9) return `<br><span class="rot">${m===9?`Ab November kostet jeder Monat ${wm} % Menge, im Dezember verfault, was noch hängt.`:'Im Dezember verfault, was noch hängt.'}</span>`;
   return '';
 }
@@ -2327,7 +2328,7 @@ const AKT={
     if(S.geld<m.schmier) return;
     closeSheet(); fx('stempel'); zahle(m.schmier);
     // Seit 13.2.2: Der Verschnitt trägt die niedrigere Pflege- und Boden-Stufe der beiden Weine, für Preisbonus und Namen.
-    Object.assign(a,{liter:m.liter,oe:m.oe,qp:m.qp,fassMonate:Math.max(a.fassMonate,m.b.fassMonate),pansch:true,pfl:Math.min(a.pfl||0,m.b.pfl||0),bst:Math.min(a.bst||0,m.b.bst||0)});
+    Object.assign(a,{liter:m.liter,oe:m.oe,qp:m.qp,fassMonate:Math.max(a.fassMonate,m.b.fassMonate),pansch:true,jh:a.jh&&m.b.jh?1:0,pfl:Math.min(a.pfl||0,m.b.pfl||0),bst:Math.min(a.bst||0,m.b.bst||0)});
     S.lots=S.lots.filter(l=>l!==m.b); save();render();
     meldung('Verschnitten',`${lotName(a)}: ${num(a.liter)}\u00a0l mit ${a.qp} Qualitätspunkten. Bis er verkauft ist, darf ihn kein Prüfer finden.`,'fassgang');
   },
@@ -2440,7 +2441,9 @@ const AKT={
     // Ansehen gibt es je Sorte, Jahrgang und Stufe nur einmal, auch wenn die Lese auf mehrere Fässer verteilt ist. S.ansGeb merkt sich das.
     const ak=l.sorte+'|'+l.jahrgang+'|'+st, AG=S.ansGeb=(S.ansGeb||[]).filter(k=>+k.split('|')[1]>=S.jahr-2), erst=!AG.includes(ak);
     if(s.ans&&!ill&&erst) AG.push(ak);
-    const ans=s.ans&&!ill&&erst?ruhm(s.ans+ansZuschlag(l),0,'Weine'):0;closeSheet();save();render();fx('stempel');
+    // Seit 13.6.2: Der Jahrhundertwein bringt bei der Anmeldung einmal JH_ANS Ansehen dazu, je Jahrgang einmal (S.jhAns).
+    const jhA=jhWein(l)&&!ill&&!(S.jhAns=S.jhAns||[]).includes(l.jahrgang); if(jhA) S.jhAns.push(l.jahrgang);
+    const ans=(s.ans&&!ill&&erst?ruhm(s.ans+ansZuschlag(l),0,'Weine'):0)+(jhA?ruhm(JH_ANS,0,'Weine'):0);closeSheet();save();render();fx('stempel');
     meldung('Angemeldet',`${lotName(l)} steht jetzt mit ${l.qp} Qualitätspunkten im Kellerbuch.`+(ill?` Der Beamte hat ${eur(sg)} eingesteckt. Bis der Wein verkauft ist, darf ihn kein Prüfer finden.`:'')+(ans?` +${ans} Ansehen.`:s.ans&&!ill?' Ansehen gab es für diesen Jahrgang und diese Stufe schon.':'')+(st==='feder'?' Federweißer muss noch diesen Monat in die Flasche.':' Jetzt darf er abgefüllt werden.')+kw,'kellerbuch');
   },
   abfuellen(d){

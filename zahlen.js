@@ -688,6 +688,11 @@ const MGR_WARN=.4;
 // Warm (weg edel) bekommt Jahrhundertsommer, kühl (weg frost) Jahrhundertwinter, die Mitte wechselt ab: Sommer, Winter, Sommer, Winter.
 // JH_ART: Name, Weg und die Tendenz, die der Winzerbote in der Mitte im Jahrhundertjahr klar meldet. JH_TEXT: Ankündigung im Januar, Platzhalter bis 13.8.
 const JH_ANZAHL=4, JH_ABSTAND=[4,6];
+// Seit 13.6.2 (Maik 21.11.2026, Entscheidung 1): Im Jahrhundertjahr ist die Chance überall JH_CHANCE. Sommer: Edelfäulnis sicher, die Trockenbeerenauslese
+// mit JH_CHANCE, sonst ist das Feld weg. Winter: Eiswein mit JH_CHANCE. Gelingt das, wird der Wein der Jahrhundertwein (Trockenbeerenauslese oder Eiswein).
+// JH_QP: feste Punkte jedes Jahrhundertweins bei Wettbewerben, Lagerjahre und Medaillen geben nichts dazu (Startwert, gemessen wird in 14.1).
+// JH_ANS: Ansehen einmal bei der Anmeldung eines Jahrhundertweins, zusätzlich zum Ansehen der Stufe (Annahme von Claude).
+const JH_CHANCE=.75, JH_QP=72, JH_ANS=100;
 const JH_ART={sommer:{name:'Jahrhundertsommer',weg:'edel',tend:'feucht',bild:'supersommer'},winter:{name:'Jahrhundertwinter',weg:'frost',tend:'klar',bild:'eiswein'}};
 const JH_TEXT={
   sommer:['Ein Jahrhundertsommer kündigt sich an','Die Alten {wo} sind sich einig wie selten: Dieses Jahr wird ein Jahrhundertsommer. Wer seine Spitzen-Sorte bis November hängen lässt, bekommt die Edelfäulnis sicher, und wer bis Dezember wartet, hat die Chance auf den Jahrhundertwein.'],
