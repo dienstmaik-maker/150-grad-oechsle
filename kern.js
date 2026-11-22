@@ -542,7 +542,8 @@ function lotName(l){return `${l.jahrgang} ${SORTEN[l.sorte].name}${l.stufe&&!l.s
 function rahmen(){return RAENGE[S.rang].rahmen}
 // Für Anzeigen (seit Teil D): ein Tabellenwert mit dem Faktor seiner Quelle, so wie ihn ruhm auf Stufe mittel gutschreibt.
 function ansQ(n,q){return Math.max(1,Math.round(n*(ANS_F[q]||1)))}
-function ruhm(n,still,q){if(n>0)n=Math.max(1,Math.round(n*DIFF[S.schwer].ans*(ANS_F[q]||1)));S.ansehen=Math.max(0,S.ansehen+n);if(S.amt&&n&&!still)stimmung(n>0?n*STIMM_PLUS:n*STIMM_MINUS);return n}
+// Seit 13.6.8: end=1 lässt ANS_F aus (Endwert aus dem Bauplan, zum Beispiel KRONE_ANS), die Schwierigkeit wirkt weiter.
+function ruhm(n,still,q,end){if(n>0)n=Math.max(1,Math.round(n*DIFF[S.schwer].ans*(end?1:(ANS_F[q]||1))));S.ansehen=Math.max(0,S.ansehen+n);if(S.amt&&n&&!still)stimmung(n>0?n*STIMM_PLUS:n*STIMM_MINUS);return n}
 function reifeFaktor(l){const L=lager(l);return l.status==='flasche'?Math.min(4,1+Math.max(0,l.flMonate-L.min)/12*L.rate):1}
 function lotWert(l){
   if(l.status==='trauben') return 0;
@@ -678,7 +679,7 @@ function schauAuswerten(){
   const nochmal=`Nächstes Jahr geht es wieder um die ${K.name}.`;
   if(ich<0) return schlag(60,`Weltweinschau ${S.jahr}: ${F[0].name} holt die ${K.name}`,`${F[0].name} gewinnt die ${K.name} auf dem Dorfplatz. ${S.name} hat diesmal keinen Wein eingereicht. ${nochmal}`,'weltweinschau',{liste:L,wett:{typ:'welt',platz:-1}});
   if(ich>2) return schlag(72,`Weltweinschau: Platz ${ich+1} für ${S.name}`,`${e.name} landet bei der Schau um die ${K.name} auf Platz ${ich+1} von ${F.length}. Die Krone holt ${F[0].name}. ${nochmal}`,'weltweinschau',{liste:L,wett:{typ:'welt',platz:ich},du:1});
-  const pr=P[ich], schon=!!(l&&l.welt), mit=!!l&&!schon, r=ruhm(ich===0?KRONE_ANS:pr.ans,0,'Wettbewerbe');
+  const pr=P[ich], schon=!!(l&&l.welt), mit=!!l&&!schon, r=ich===0?ruhm(KRONE_ANS,0,'Wettbewerbe',1):ruhm(pr.ans,0,'Wettbewerbe');
   const was=`+${r} Ansehen${mit?`, +${pr.qp} Qualitätspunkte`:''}${pr.geld?', '+eur(pr.geld)+' Preisgeld':''}`;
   if(l) l.welt=true;
   if(mit){l.qp+=pr.qp; (l.med=l.med||[]).push(`${pr.m} ${WETTNAME.welt} ${S.jahr}`)}

@@ -328,7 +328,7 @@ const STIMM_PLUS=.08, STIMM_MONAT=1, STIMM_MINUS=.5;
 const STIFT_FAKTOR=2, MARKE_ABWAHL=10;
 // Seit 13.6.3 (Bauplan 13.6, Maik 21.11.2026): Weltweinschau mit drei Kronen in fester Reihenfolge, jedes Jahr genau eine Klasse mit einem Wein.
 // Anmeldung im WELT_ANM (Januar, zusammen mit den Prädikatsweinen), die Schau im WELT_MONAT (Juni), gewertet beim Monatswechsel danach.
-// Verloren heißt nächstes Jahr dieselbe Klasse noch mal, eine gewonnene Krone bleibt, auch nach einer Abwahl. KRONE_ANS Ansehen je Krone (über ANS_F Wettbewerbe).
+// Verloren heißt nächstes Jahr dieselbe Klasse noch mal, eine gewonnene Krone bleibt, auch nach einer Abwahl. KRONE_ANS Ansehen je Krone, seit 13.6.8 als Endwert ohne ANS_F.
 // KRONEN: stufen sind die zugelassenen Weine (sekt: ein Sekt), fav der große Favorit der Klasse (Platzhalter-Name bis 13.8), p seine mittleren Punkte.
 // Der Favorit hat p ± WELT_FAV_W, die acht anderen Weingüter p − WELT_FELD_AB[0] bis p − WELT_FELD_AB[1], dazu DIFF.feld.
 // Startwerte (Bau 13.6.3): p gegen die besten passenden Weine des Test-Spielers ab Jahr 90 (sechs Gebiete), Zielchancen Sekt 60, Prädikat 50,
@@ -594,7 +594,9 @@ const SP_BOTE=[null,
 // Das Spiel selbst braucht es nicht, nur der Messbericht liest es mit (_pruefung.js, Zeile "Ansehen nach Quelle").
 // Seit 11.5 (Teil C2, Zielbild von Maik 20.11.2026): Bis zum Präsidenten sollen Weine und Wettbewerbe zusammen mindestens die Hälfte des Ansehens bringen, Feste rund ein Viertel.
 // ANS_F ist der Faktor je Quelle (drittes Argument q von ruhm), er gilt nur für dich, die Gegner rechnen wie bisher. Die Feste sind dafür bei WEINFEST_ANS und HOFFEST_ANS gekürzt.
-const ANS_F={Weine:1.4,Wettbewerbe:1.4};
+// Seit 13.6.8 (Maik 22.11.2026, Entscheidung 7 im Bauplan 13.6): Die Ansehen-Werte der Weine (Anmeldung je Stufe, Sekt, ANS_PFLEGE, ANS_TERROIR, JH_ANS) und KRONE_ANS sind Endwerte ohne Faktor.
+// Weine fällt deshalb aus ANS_F, die Kronen rufen ruhm mit dem vierten Argument end. Medaillen sowie Platz 2 und 3 der Weltweinschau laufen weiter über Wettbewerbe.
+const ANS_F={Wettbewerbe:1.4};
 // Seit 7.0 wünschen sie nur, was schon geht: eine Farbe erst mit einer freien Sorte dieser Farbe, Sekt erst ab R_SEKT.
 // Seit 11.4 vier klare Felder: eine der freigeschalteten eigenen Sorten oder Sekt. Der Wunsch ist dann die Kennung der Sorte oder 'sekt'.
 // Die alten Wünsche (weiss, rot, edel) versteht ladenPasst weiter, bis der nächste Monat neu würfelt. LADEN_SORTEN=0 stellt für die Messung auf die alten Wünsche zurück.
