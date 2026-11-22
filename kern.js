@@ -92,9 +92,9 @@ function mgrEintrag(b,st){return MANAGER.find(e=>e.bereich===b&&e.stufe===st)}
 function mgrNaechste(b){return mgrEintrag(b,mgrSt(b)+1)}
 function mgrAufgabe(k){return MANAGER.find(e=>e.aufgaben.includes(k))}
 // aufgabeDa: Der Manager ist auf der Stufe, die die Aufgabe bringt. aufgabeAktiv: dazu ist ihr Schalter an.
-function aufgabeDa(k){if(k==='spritzen'&&!schaedAn()) return false; const e=mgrAufgabe(k); return !!e&&mgrSt(e.bereich)>=e.stufe}
+function aufgabeDa(k){const e=mgrAufgabe(k); return !!e&&mgrSt(e.bereich)>=e.stufe}
 // Die Aufgaben einer Stufe für die Anzeige: ohne Schädlinge fehlt das Spritzen (Liste der Stufen, Schalter, Vorstellung des Managers).
-function mgrAufg(e){return schaedAn()?e.aufgaben:e.aufgaben.filter(k=>k!=='spritzen')}
+function mgrAufg(e){return e.aufgaben}
 function aufgabeAktiv(k){return aufgabeDa(k)&&!!(S.manager[mgrAufgabe(k).bereich].an||{})[k]}
 function mgrLohn(){let s=0; for(const b in S.manager||{}) s+=(mgrEintrag(b,mgrSt(b))||{}).lohn||0; return s}
 // Seit 11.5 (Teil C1): Bringt jeden Manager auf die Stufe, die der Rang erlaubt. Neue Aufgaben sind eingeschaltet, was die Stufe kostet, steht in e.kosten (im Spiel 0).
@@ -134,7 +134,7 @@ function bringtSatz(i){return i===R_MAX?'bringt dir den Stuhl im Festsaal':`brin
 // Seit 11.5 (Teil B) hängt daran auch die neue Grenze fürs Land, wenn sie mit dem Rang wächst.
 function rahmenSatz(i){const r=RAENGE[i];return (r.rahmen>RAENGE[i-1].rahmen?` Dein Kreditrahmen steigt auf ${eur(r.rahmen)}.`:'')+(HA_NEU&&r.deckel>RAENGE[i-1].deckel?` Als ${rangN(i)} darfst du bis zu ${r.deckel}\u00a0Hektar Land besitzen.`:'')}
 const startGeld=s=>(DIFF[s]||{}).geld||START_GELD, bietF=()=>(DIFF[S.schwer]||{}).biet||1;
-// Gibt es in dieser Partie Schädlinge? Nur auf Stufen mit schaed:1. Daran hängen Befall, Warnung, Spritzen, der Schalter beim Weingut-Manager und die Seiten im Weinkompendium.
+// Gibt es in dieser Partie Schädlingsjahre? Nur auf Stufen mit schaed:1 (Meisterprüfung). Daran hängen die Meldungen im Winzerboten und die Seiten im Weinkompendium.
 const schaedAn=()=>!!(SCHAED_AN&&S&&(DIFF[S.schwer]||{}).schaed);
 function genNr(){return S.gen||1}
 // Seit 13.5.6: der Akt der Partie, eine Generation je Akt.
@@ -1076,7 +1076,12 @@ function wegChance(w,r=S.region,j=S.jahr){
 }
 // Seit 13.7.1: Verschiebung des Jahres j in Prozentpunkten, fest je Partie (Thema 13), in der Spanne der Spielstufe (WAG_SPANNE).
 const wagSpanne=()=>WAG_SPANNE[S.schwer]||[0,0];
-function wagRoh(j){const [a,b]=wagSpanne(); return a===b?a:festR(a,b,fest(13,0,j,0))}
+// Seit 13.7.2: aus den Zeichen (WAG_TEILE): Sommerwetter, Schädlingsjahr und kleiner Rest-Zufall.
+function sommerPunkte(j=S.jahr){let s=0; for(let n=SOMMER_MON[0];n<=SOMMER_MON[1];n++) s+=SOMMER_W[wuerfelWetter(n,fest(1,0,j,n))]||0; return clamp(s,SOMMER_SPANNE[0],SOMMER_SPANNE[1])}
+function wagTeile(j=S.jahr){const T=WAG_TEILE[S.schwer]||[]; return {sommer:T.includes('sommer')?sommerPunkte(j):0,schaed:T.includes('schaed')&&schaedJahr(j)?-SCHAEDJ_MINUS:0,rest:T.includes('rest')?festR(-WAG_REST,WAG_REST,fest(13,0,j,0)):0}}
+function wagRoh(j){const t=wagTeile(j); return t.sommer+t.schaed+t.rest}
+// Der Satz der Alten im September (WAG_SATZ) zur Verschiebung des Jahres.
+const wagSatz=(j=S.jahr)=>WAG_SATZ.find(x=>wagVers(j)>=x[0]);
 function wagVers(j=S.jahr){const [a,b]=wagSpanne(); return Math.round(clamp(wagRoh(j),a,b))}
 // Chance mit Verschiebung, ein geschlossener Weg (0) bleibt zu.
 const wagP=(p,j=S.jahr)=>p>0?clamp(p+wagVers(j)/100,WAG_MIN,WAG_MAX):0;
@@ -1158,83 +1163,30 @@ function wagnisWetter(){
 }
 function feldReset(f){Object.assign(f,{oe:0,plus:0,menge:0,reif:0,ueber:0,edel:false,edelGeprueft:false,gelesen:false,teil:false,gefroren:false,frostF:1,wagnis:0,weg:null,leseW:0,jh:0})}
 
-const schaedSpaet=()=>SCHAED_SPAET_IN.includes(S.region)?SCHAED_SPAET:0;
-// Erstes Spieljahr je Schädling, gezählt ab 0 (40 heißt: mit der zweiten Generation).
-function schaedJahr(a){
-  if(a==='wickler') return S.schaedAb&&S.schaedAb.wickler!=null?S.schaedAb.wickler-START_JAHR:Infinity;
-  const J=a==='mehltau'?MEHLTAU_JAHR:KIRSCH_JAHR;
-  return festI(J[0],J[1],fest(9,a==='mehltau'?1:2,0,0))+schaedSpaet();
+/* ================= Schädlingsjahr (seit 13.7.2) ================= */
+// Die Schädlingsjahre der Partie, fest aus der Startzahl, einmal je Startzahl gerechnet. Nur in der Meisterprüfung (schaedAn).
+let schaedListe=null;
+function schaedJahre(){
+  if(!schaedAn()) return [];
+  if(schaedListe&&schaedListe.zf===S.zf) return schaedListe.J;
+  const J=[]; for(let j=START_JAHR;;){j+=festI(SCHAEDJ_PAUSE[0],SCHAEDJ_PAUSE[1],fest(9,0,j,0)); if(j>START_JAHR+SCHAEDJ_BIS) break; J.push(j)}
+  schaedListe={zf:S.zf,J}; return J;
 }
-function schaedDa(){return schaedAn()?Object.keys(SCHAED).filter(a=>S.jahr-START_JAHR>=schaedJahr(a)):[]}
-// Die Menge-Sorten des Gebiets. Ohne Rollen (alte Spielstände) gilt die Sorte mit dem größten Ertrag.
-function mengeSorten(){const s=R().sorten, M=s.filter(id=>SORTEN[id].rolle==='menge'); return M.length?M:[s.slice().sort((a,b)=>SORTEN[b].ertrag-SORTEN[a].ertrag)[0]]}
-function schaedKann(a){return a!=='kirsch'||mengeSorten().some(id=>S.felder[id]&&S.felder[id].reben>0)}
-const spritzKosten=()=>Math.max(SPRITZ_HA,Math.round(flaecheBep()*SPRITZ_HA/50)*50);
-// Läuft gerade eine Warnung? Dann kann gespritzt werden, solange b.gespritzt fehlt.
-function schaedWarn(){const b=S.schaed; return schaedAn()&&b&&b.j===S.jahr&&b.warn&&!b.da?b:null}
-function spritze(){zahle(spritzKosten()); S.schaed.gespritzt=1; S.spritzN=(S.spritzN||0)+1}
-// Ein Satz je Schädling für das i im Weinberg und fürs Weinkompendium, die Zahlen kommen aus den Konstanten.
-function schaedRegel(a){
-  const pz=P=>`${Math.round(P[0]*100)} bis ${Math.round(P[1]*100)}\u00a0%`;
-  return {wickler:`Der Traubenwickler kommt im ${MON[SCHAED.wickler.warn+1]} und kostet auf ${WICKLER_FELDER[0]} bis ${WICKLER_FELDER[1]} Feldern ${pz(WICKLER_P)} der Trauben.`,
-    mehltau:`Der Falsche Mehltau kommt im ${MON[SCHAED.mehltau.warn+1]}, öfter in Jahren mit Regen zwischen Mai und Juli, und kostet auf allen Feldern ${pz(MEHLTAU_P)} der Trauben.`,
-    kirsch:`Die Kirschessigfliege kommt im ${MON[SCHAED.kirsch.warn+1]} und kostet die Menge-Sorte ${KIRSCH_OE[0]} bis ${KIRSCH_OE[1]}° Öchsle, wenn sie noch hängt. Früher lesen hilft, kostet aber auch Öchsle.`}[a];
-}
-const spritzRegel=()=>`Das Weinbauamt warnt einen Monat vorher im Winzerboten. Spritzen kostet ${eur(SPRITZ_HA)} je Hektar Reben, geht nur im Monat der Warnung und halbiert den Schaden.`;
-function schaedWarnText(b){
-  const T=SCHAED[b.art], ms=aufgabeAktiv('spritzen');
-  const was={wickler:'fliegt der Traubenwickler, seine Raupen bohren sich in die jungen Beeren',
-    mehltau:`zeigen die Blätter helle Ölflecken, der Falsche Mehltau geht um${b.regen?'. Der Regen macht es ihm leicht':''}`,
-    kirsch:`sticht die Kirschessigfliege die reifen Beeren an. Am liebsten mag sie dünne Schalen, bei dir also den ${mengeSorten().map(id=>SORTEN[id].name).join(' und den ')}`}[b.art];
-  return `Das Weinbauamt meldet: In den Nachbarorten ${was}. Nächsten Monat ist ${T.er} wohl auch bei dir. Spritzen kostet ${eur(spritzKosten())} und halbiert den Schaden${b.art==='kirsch'?', früher lesen hilft auch':''}. ${ms?`Dein ${MGR_BEREICHE.weingut.name} spritzt beim Weiterblättern, wenn das Geld reicht.`:'Gespritzt wird im Weinberg, aber nur diesen Monat.'}`;
-}
-// Der Befall im Monat nach der Warnung. Gespritzt bleibt vom Schaden SPRITZ_F.
-function schaedBefall(b,Z){
-  const T=SCHAED[b.art], g=b.gespritzt?SPRITZ_F:1, H=feldHaengt(), G=S.schaedGes=S.schaedGes||{}, erst=!G[b.art], u=fest(10,9);
-  const namen=F=>F.map(id=>SORTEN[id].name).join(' und ');
-  b.da=1; G[b.art]=(G[b.art]||0)+1; S.schaedLetzt={art:b.art,m:S.monat,j:S.jahr};
-  let F=H, t;
-  if(b.art==='kirsch') F=mengeSorten().filter(id=>H.includes(id));
-  if(b.art==='wickler') F=H.map((id,i)=>[fest(10,1+i),id]).sort((x,y)=>x[0]-y[0]).slice(0,festI(WICKLER_FELDER[0],WICKLER_FELDER[1],fest(10,0))).map(x=>x[1]);
-  if(!F.length){Z.push(b.art==='kirsch'?`${T.sym} Die Kirschessigfliege war da, aber dein ${namen(mengeSorten())} war schon gelesen. Glück gehabt.`:`${T.sym} ${T.name} im Ort, bei dir hing aber nichts am Stock.`); return}
-  if(b.art==='kirsch'){
-    const d=Math.ceil(festI(KIRSCH_OE[0],KIRSCH_OE[1],u)*g);
-    for(const id of F){const f=S.felder[id]; f.oe=Math.max(0,f.oe-d); f.plus=(f.plus||0)-d}
-    t=`Die Kirschessigfliege hat beim ${namen(F)} die reifen Beeren angestochen. Was nach Essig riecht, muss raus, das kostet ${d}° Öchsle.`;
-  }else{
-    const P=b.art==='wickler'?WICKLER_P:MEHLTAU_P, p=festR(P[0],P[1],u)*g, pz=String(Math.round(p*1000)/10).replace('.',',');
-    for(const id of F){const f=S.felder[id]; f.menge=Math.round(f.menge*(1-p))}
-    t=b.art==='wickler'?`Die Raupen des Traubenwicklers haben sich in deine Trauben gebohrt. Beim ${namen(F)} sind ${pz}\u00a0% der Trauben hin.`
-      :`Der Falsche Mehltau hat Blätter und junge Trauben befallen. ${F.length>1?'Auf allen Feldern':`Beim ${namen(F)}`} sind ${pz}\u00a0% der Trauben hin.`;
+const schaedJahr=(j=S.jahr)=>schaedJahre().includes(j);
+// Name im Winzerboten: der Traubenwickler zuerst, danach einer der Schädlinge, die mit dem Akt schon da sind (SCHAED_AKT).
+function schaedArt(j=S.jahr){const G=S.schaedGes||{}; if(!Object.keys(G).length) return 'wickler'; const A=Object.keys(SCHAED).filter(a=>SCHAED_AKT[a]<=RANG_AKT[S.rang]); return A[Math.min(A.length-1,Math.floor(fest(9,1,j,0)*A.length))]}
+function schaedRegel(a){const T=SCHAED[a]; return `${T.name}: Alle paar Jahre meldet das Weinbauamt im ${MON[SCHAEDJ_MON]} ein Schädlingsjahr. Es nimmt der Ernte nichts, die Menge-Sorte bleibt sicher. Aber wer die Spitzen-Sorte für das Wagnis hängen lässt, hat in diesem Jahr eine deutlich schlechtere Chance.`}
+// Läuft jeden Monat: im Juli die Meldung des Schädlingsjahrs, im September der Satz der Alten. Beides nur in der Meisterprüfung und erst mit dem Wagnis (Entscheidung 8).
+function schaedMonat(){
+  if(!schaedAn()||!frei('weg_eigen')) return;
+  if(S.monat===SCHAEDJ_MON&&schaedJahr()&&!(S.schaedJ&&S.schaedJ.j===S.jahr)){
+    const a=schaedArt(), T=SCHAED[a], G=S.schaedGes=S.schaedGes||{}, erst=!G[a]; G[a]=(G[a]||0)+1; S.schaedJ={j:S.jahr,art:a};
+    schlag(70,`Schädlingsjahr: ${T.name}`,SCHAEDJ_TEXT.replace('{der}',T.der.charAt(0).toUpperCase()+T.der.slice(1))+(erst?' '+SCHAED_FAMILIE[a]:''),'amt',{du:1});
   }
-  schlag(80,`${T.name} im Weinberg`,`${t} ${b.gespritzt?'Weil gespritzt war, ist es nur halb so schlimm gekommen.':'Mit Spritzen wäre es nur halb so schlimm gekommen.'}${erst?' '+SCHAED_FAMILIE[b.art]:''}`,erst?b.art:'',{du:1,...(erst?{foto:1}:{})});
+  if(S.monat===8){const s=wagSatz(); schlag(44,s[1],s[2].replace('{wo}',WO[S.region]),'lese',{du:feldHaengt().length?1:0})}
 }
-// Läuft jeden Monat nach dem Wachstum: freischalten, im April planen, warnen, Befall.
-function schaedMonat(Z){
-  if(!schaedAn()) return;
-  const m=S.monat;
-  if(S.rang>=WICKLER_RANG&&!(S.schaedAb&&S.schaedAb.wickler!=null)) (S.schaedAb=S.schaedAb||{}).wickler=S.jahr+schaedSpaet();
-  const D=schaedDa();
-  if(D.length&&S.schaedNext==null) S.schaedNext=S.jahr+festI(1,2,fest(9,3,S.jahr,0));
-  if(m===3&&S.schaedNext!=null&&S.jahr>=S.schaedNext){
-    const K=D.filter(schaedKann);
-    if(K.length){
-      const G=S.schaedGes||{}, regen=[4,5,6].filter(n=>wuerfelWetter(n,fest(1,0,S.jahr,n))==='regen').length;
-      let art=K.find(a=>!G[a]);
-      if(!art){const W=K.map(a=>a==='mehltau'?1+regen:1); let u=fest(9,4,S.jahr,0)*W.reduce((a,x)=>a+x,0); art=K[K.length-1]; for(let i=0;i<K.length;i++){u-=W[i]; if(u<0){art=K[i]; break}}}
-      S.schaed={j:S.jahr,art,regen};
-      S.schaedNext=S.jahr+festI(SCHAED_PAUSE[0],SCHAED_PAUSE[1],fest(9,0,S.jahr,0));
-    }
-  }
-  const b=S.schaed; if(!b||b.j!==S.jahr||b.da) return;
-  const T=SCHAED[b.art];
-  if(m===T.warn){
-    if(!rebenGesamt()){S.schaed=null; return}
-    b.warn=1; schlag(70,`Weinbauamt warnt vor ${T.dem}`,schaedWarnText(b),'amt',{du:1});
-  }else if(m===T.warn+1&&b.warn) schaedBefall(b,Z);
-}
-// Alte Spielstände: Wer den Weingut-Manager schon auf Stufe 2 hat, bekommt die neue Aufgabe Spritzen eingeschaltet dazu. Auf Einfach und Mittel bleibt der Eintrag ohne Wirkung.
-function altSchaed(){const w=(S.manager||{}).weingut; if(w&&w.stufe>=2){w.an=w.an||{}; if(!('spritzen' in w.an)) w.an.spritzen=1}}
+// Seit 13.7.2: Stände bis 13.6 verlieren Befall, Warnung und Spritzen, der Schalter beim Weingut-Manager fällt weg.
+function altSchaed(){const w=(S.manager||{}).weingut; if(w&&w.an) delete w.an.spritzen; for(const x of ['schaed','schaedNext','schaedLetzt','spritzN','schaedAb']) delete S[x]}
 
 /* ================= Weinstufen ================= */
 function mindest(st){const m=R().min; return (st==='feder'||st==='eis')?m.tafel:m[st]}
@@ -1371,9 +1323,9 @@ kompWissen('skandal','gefahr','Weinskandal',()=>'Ein Skandal im Land drückt ein
 kompWissen('kontrolle','gefahr','Weinkontrolle',()=>'Der Prüfer kommt unangemeldet, im Schnitt alle drei Jahre. Findet er gepanschten Wein, wird der vernichtet, es gibt Strafe, und fünf Jahre lang kommt er jedes Jahr wieder.');
 kompWissen('maschine','gefahr','Maschinenschaden',()=>`Ein Schaden kostet eine Maschine auf einen Schlag viel Zustand. Unter ${MASCH_ROT} % fällt sie aus, bis sie gewartet ist.`);
 kompWissen('helferweg','gefahr','Erntehelfer über alle Berge',()=>`Trifft nur, wer einem Erntehelfer höchstens ${eur(lohnF(LOHN_BILLIG))} im Monat zahlt. Dann verschwindet der billigste Helfer über Nacht und nimmt 5 bis 10 % aus der Kasse mit, mindestens ${eur(2000)} und höchstens ${eur(30000)}.`);
-// Seit 11.6: die drei Schädlinge. Ihre Seiten erscheinen nur auf Schwer und erst, wenn der Schädling zum ersten Mal da war (kompSeiten). Es sind Wissens-Seiten ohne Siegel,
+// Seit 11.6: die drei Schädlinge, seit 13.7.2 als Schädlingsjahr. Ihre Seiten erscheinen nur in der Meisterprüfung und erst, wenn der Schädling zum ersten Mal gemeldet war (kompSeiten). Es sind Wissens-Seiten ohne Siegel,
 // die Zähler im Weinkompendium (kompZahlen, kompIds) stimmen also mit und ohne sie.
-for(const a of Object.keys(SCHAED)) kompWissen(a,'gefahr',SCHAED[a].name,()=>`${schaedRegel(a)} ${spritzRegel()}`);
+for(const a of Object.keys(SCHAED)) kompWissen(a,'gefahr',SCHAED[a].name,()=>schaedRegel(a));
 kompWissen('regeln','stufe','Reifezeit und Regeln',()=>{
   const so=R().sorten, reife=f=>so.map(id=>`${SORTEN[id].name} ${f(SORTEN[id].minL)} Monate`).join(', ');
   return `<b>⏳ Reifezeit in der Flasche bis zum Verkauf</b><br>Tafel- und Qualitätswein: 2 Monate.<br>Kabinett bis Trockenbeerenauslese: ${reife(x=>Math.max(1,x-(S.keller||0)))}.<br>Eiswein: ${reife(x=>Math.max(1,Math.round(x*1.5)-(S.keller||0)))}.${S.keller?`<br>Dein ausgebauter Keller kürzt das schon um ${S.keller} ${S.keller===1?'Monat':'Monate'}.`:''}`
@@ -1803,7 +1755,7 @@ function monatLauf(){
   if(S.lage&&--S.lage.rest<=0){Z.push(S.lage.typ==='mode'?`Die Mode im Ausland ist vorbei, ${SORTEN[S.lage.sorte].name} kostet wieder so viel wie üblich.`:'Der Weinskandal ist vergessen, die Weinpreise erholen sich.'); S.lage=null}
   neuesLohnAngebot();
   const W=wachse(S.monat);
-  schaedMonat(Z);
+  schaedMonat();
   // Seit 8.0 (Paket B): Der Laubschneider macht im Juni den Sommerschnitt, wenn er im Einsatz ist. Gemeldet wird im Winzerboten vom Juli.
   if(S.monat===6){const lb=S.maschinen.find(x=>x.typ==='laub');
     if(lb){const an=bonusMasch('laub');
@@ -2132,8 +2084,6 @@ function aufgaben(){
   {const sn=R().sorten.filter(schnittOffen); if(sn.length) A.push({t:`✂️ Rebschnitt bis Ende April: ${sn.map(id=>SORTEN[id].name).join(', ')}`,tab:'gut',sub:'berg',rot:S.monat===SCHNITT_BIS?1:0})}
   // Seit 13.4.6: Der Weingut-Manager warnt, wenn zu viel der Ernte im Wagnis hängt (wagnisWarnung), Rot.
   {const ww=wagnisWarnung(); if(ww) A.push({t:`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name} warnt: ${Math.round(ww.anteil*100)} % deiner Ernte hängen im Wagnis (${ww.ids.map(id=>SORTEN[id].name).join(', ')})`,rot:1,tab:'gut',sub:'berg'})}
-  // Seit 11.6: Warnung vor einem Schädling, Gelb. Spritzt der Weingut-Manager, nur ein ruhiger Hinweis.
-  {const b=schaedWarn(); if(b&&!b.gespritzt){const T=SCHAED[b.art]; A.push(aufgabeAktiv('spritzen')?{t:`${T.sym} Warnung vor ${T.dem}: dein ${MGR_BEREICHE.weingut.name} spritzt beim Weiterblättern`,tab:'gut',sub:'berg',ruhig:1}:{t:`${T.sym} Warnung vor ${T.dem}: Spritzen halbiert den Schaden, nur diesen Monat`,tab:'gut',sub:'berg'})}}
   if(m===11){const t=steuerSchau(); if(t.steuer>0){
     A.push({t:`💶 Im Januar rund ${eur(t.steuer)} Steuer auf ${eur(t.gew)} Gewinn. Fassraum oder Flaschen kaufen senkt sie`,tab:'keller',sub:'lager',ruhig:1});
     if(S.duengungen<3&&S.boden<100) A.push({t:`💶 Steuer senken: noch düngen (${S.duengungen} von 3 Mal)`,tab:'gut',sub:'berg',ruhig:1});
@@ -2309,7 +2259,6 @@ function mgrBetrieb(){
     if(n>0){zahle(Math.round(n*pr*100)/100); const f=S.felder[id]; f.reben+=n; S.verlust[id]-=n; LW.push(`${rbn(n)} ${SORTEN[id].name}-Reben nachgepflanzt`)}
   }
   if(aufgabeAktiv('duengen')&&S.duengungen<3&&S.boden<100&&(S.boden<=70||(m===7&&S.boden<90))&&S.geld>=duengKosten()){const st=bonusMasch('duenger'); duenge(); LW.push(st?'mit dem Düngerstreuer gedüngt':'gedüngt')}
-  if(aufgabeAktiv('spritzen')){const b=schaedWarn(); if(b&&!b.gespritzt){if(S.geld-mgrPuffer('weingut')>=spritzKosten()){spritze(); LW.push(`gegen ${SCHAED[b.art].den} gespritzt`)} else LW.push(`fürs Spritzen gegen ${SCHAED[b.art].den} hat das Geld nicht gereicht`)}}
   // Seit 8.0: Maschinen warten (Stufe 1, bis Paket B Stufe 2), alle fünf Maschinen. Nach der Lese, also vor August oder wenn kein Feld mehr hängt, jede Maschine unter MGR_WART_AB auf 100 %.
   // Er lässt mgrPuffer('weingut') auf dem Konto, reicht es nicht ganz, wartet er so weit, wie das Geld reicht.
   if(aufgabeAktiv('warten')&&(m<7||!R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen))){

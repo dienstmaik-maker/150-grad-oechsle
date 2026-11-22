@@ -309,8 +309,6 @@ const MGR_AUFGABEN={
   fass:{kurz:'Fassraum kaufen',text:'Nach der Lese fehlenden Fassraum kaufen, damit die Lagerarbeiter keltern können'},
   flaschen:{kurz:'Flaschen kaufen',text:'Leere Flaschen für angemeldete Fässer kaufen, abfüllen tun die Lagerarbeiter'},
   lager:{kurz:'Lagerarbeiter einstellen',text:'Fehlende Lagerarbeiter einstellen'},
-  // Seit 11.6 (Maik 20.11.2026): ab Stufe 2 spritzt er im Monat der Warnung selbst, wenn mgrPuffer('weingut') auf dem Konto bleibt. Nur auf Schwer (aufgabeDa, mgrAufg).
-  spritzen:{kurz:'spritzen',text:'Spritzen, sobald das Weinbauamt vor einem Schädling warnt'},
   // Seit 8.0. Der Text liest MGR_WART_AB erst beim Zeichnen, die Zahl steht weiter unten bei den Maschinen.
   warten:{kurz:'Maschinen warten',get text(){return `Nach der Lese jede Maschine unter ${MGR_WART_AB} % auf 100 % warten, ausgefallene Erntemaschinen sofort`}},
   helfer:{kurz:'Erntehelfer einstellen',text:'Fehlende Erntehelfer einstellen, auch Fahrer für die Maschinen. Vor der Lese die Helfer für die Handlese, danach gehen sie wieder'},
@@ -325,7 +323,7 @@ const MANAGER=[
   {bereich:'weingut',stufe:1,aufgaben:['helfer']},
   {bereich:'handel',stufe:2,aufgaben:['laeden','export']},
   {bereich:'keller',stufe:2,aufgaben:['flaschen']},
-  {bereich:'weingut',stufe:2,aufgaben:['warten','spritzen']},
+  {bereich:'weingut',stufe:2,aufgaben:['warten']},
   {bereich:'handel',stufe:3,aufgaben:['regal']},
   {bereich:'weingut',stufe:3,aufgaben:[]},
   {bereich:'keller',stufe:3,aufgaben:[]}
@@ -374,13 +372,13 @@ const WELT_GUETER=['Château Belmont, Frankreich','Tenuta Montefiore, Italien','
 // Daraus hochgerechnet steht ki auf Schwer bei 0,81, gemessen am 20.11.2026 (l116_schwer_ki81): Er ist in 26 von 54 Partien vorn (48 %), einmal gleichauf. Im Fenster, keine Korrektur.
 // Der erste Gegner wird seit 11.5 später Präsident als oben steht: auf Schwer im Schnitt in Jahr 133 (mit ki 0,81, in 47 von 54 Partien), auf Mittel um Jahr 158 und nur in jeder neunten Partie.
 // geld: Startgeld der Stufe, ohne Eintrag gilt START_GELD (Einfach hat 20.000 € Polster). biet: Faktor auf die Bietlust der Gegner bei Land, neutral 1, nur Stellschraube.
-// schaed: Schädlinge gibt es nur auf Stufen mit schaed:1, also nur auf Schwer (Maik 20.11.2026 spät, schaedAn). Einfach und Mittel spielen sich ohne sie wie in 11.5.
+// schaed: das Schädlingsjahr gibt es nur auf Stufen mit schaed:1, also nur in der Meisterprüfung (schaedAn). Seit 13.7.2 ohne Befall und Spritzen.
 // name und text sind nur Anzeige: seit 11.6 Lehrjahre, Gesellenjahre, Meisterprüfung (Maik 20.11.2026 spät). kurz ist das alte Wort, es steht in Grau über dem Namen auf dem Knopf beim neuen Spiel.
 // Die Schlüssel einfach, mittel, schwer bleiben, an ihnen hängen Spielstände und Bestenliste.
 const DIFF={
   einfach:{name:'Lehrjahre',kurz:'Einfach',text:'Sonne satt und Zeit zum Lernen. Du startest mit einem dicken Polster, und die Nachbarn lassen es gemütlich angehen. Genau richtig für die erste Partie.',ans:1.25,ki:.45,feld:-4,biet:1,geld:80000},
   mittel:{name:'Gesellenjahre',kurz:'Mittel',text:'So ist das Winzerleben gedacht. Die Nachbarn sind fleißig, aber mit guter Arbeit bist du vor ihnen an der Spitze.',ans:1,ki:.6,feld:0,biet:1},
-  schwer:{name:'Meisterprüfung',kurz:'Schwer',text:'Trau dich! Die Nachbarn sind schnell, die Konkurrenz ist stark, und im Weinberg lauern Schädlinge. Wer hier Präsident wird, hat es sich verdient.',ans:1,ki:.81,feld:3,biet:1,schaed:1}
+  schwer:{name:'Meisterprüfung',kurz:'Schwer',text:'Trau dich! Die Nachbarn sind schnell, die Konkurrenz ist stark, und wer im Herbst wartet, muss die Zeichen lesen. Wer hier Präsident wird, hat es sich verdient.',ans:1,ki:.81,feld:3,biet:1,schaed:1}
 };
 const GEGNER_TYP={
   vorsicht:{name:'Hannelore Brück',art:'die Vorsichtige',eink:[9000,12000],ans:[16,24],biet:.4,med:.2,ws:[18,30],weine:['einen Kabinett','eine Spätlese','einen Qualitätswein']},
@@ -731,6 +729,15 @@ const WAGNIS={eigen:.7,mitTend:.55,gegenTend:.2,fremd:.5,tba:.5}, WARTEN_MENGE=.
 // des Wagnisses. WAG_SPANNE je Spielstufe [unten, oben]: Lehrjahre 0, Gesellenjahre ±10, Meisterprüfung −30 bis +15. Die Chance ist Grundwert plus Verschiebung,
 // nie unter WAG_MIN und nie über WAG_MAX. Im Jahrhundertjahr gilt sie für Trockenbeerenauslese und Eiswein, die sichere Edelfäulnis im Jahrhundertsommer bleibt sicher (Entscheidung 7).
 const WAG_SPANNE={einfach:[0,0],mittel:[-10,10],schwer:[-30,15]}, WAG_MIN=.05, WAG_MAX=.95;
+// Seit 13.7.2 (Startwerte für 14.2): Woraus die Verschiebung kommt, je Spielstufe (WAG_TEILE). sommer: das feste Wetter von Monat SOMMER_MON[0] bis [1] (Mai bis September),
+// je Monat SOMMER_W Punkte, zusammen in SOMMER_SPANNE. schaed: im Schädlingsjahr minus SCHAEDJ_MINUS. rest: kleiner Zufall ±WAG_REST (Thema 13).
+// Danach gekappt auf WAG_SPANNE. Die Gesellenjahre lernen so die Zeichen schon, gekappt bei ±10 und ohne Schädlingsjahr.
+const WAG_TEILE={einfach:[],mittel:['sommer'],schwer:['sommer','schaed','rest']}, SOMMER_MON=[4,8], SOMMER_W={sonnig:2,mild:0,regen:-3,kalt:-2,frost:-3}, SOMMER_SPANNE=[-15,10], WAG_REST=5;
+// Seit 13.7.2: der vage Satz im Winzerboten im September, nur in der Meisterprüfung und erst mit dem Wagnis. Es gilt die erste Zeile, deren Grenze die Verschiebung erreicht.
+// Eigene Wörter, damit er nicht nach der Tendenz klingt (Entscheidung 6). Platzhalter bis 13.8, {wo} ist der Ort.
+const WAG_SATZ=[[5,'Die Alten im Dorf sind zuversichtlich','Auf der Bank vor der Kirche {wo} sind die Alten zuversichtlich: So ein Jahr, sagen sie, belohnt den, der warten kann.'],
+  [-9,'Die Alten im Dorf halten sich bedeckt','Auf der Bank vor der Kirche {wo} wiegen die Alten die Köpfe. Ein Jahr wie viele, sagen sie, mehr wollen sie nicht verraten.'],
+  [-999,'Die Alten im Dorf sind besorgt','Auf der Bank vor der Kirche {wo} sind die Alten besorgt: Wer dieses Jahr zu lange hängen lässt, sagen sie, der verliert.']];
 // Seit 13.4.4: Meldung im Winzerboten vom September, wenn der fremde Weg offen ist, nach dem Weg, den sie öffnet. Platzhalter bis 13.8.
 const FREMD_TEXT={
   frost:['Ein harter Winter kündigt sich an','Die Alten {wo} spüren es in den Knochen: Dieser Winter wird hart. Wer seine Spitzen-Sorte bis Dezember hängen lässt, hat diesmal eine Chance auf Eiswein.'],
@@ -780,23 +787,21 @@ const FROST_FEUER='Die Frostfeuer der Feuerwehr haben die Hälfte davon abgewend
 // Überreife Trauben sind fast Rosinen und geben weniger Most: 1 Liter überreife Trauben wird zu MOST_UEBER Litern (feldLiter). Bis 11.4: EDEL_UEBER 0, MOST_UEBER 1.
 const EDEL_UEBER=25, MOST_UEBER=.6;
 /* ================= Schädlinge ================= */
-// Seit 11.6 (Maik 20.11.2026): drei Schädlinge, nur auf Schwer (DIFF.schaed, schaedAn). Auf Einfach und Mittel gibt es keinen Befall, keine Warnung, kein Spritzen,
-// keinen Schalter beim Weingut-Manager und keine Seiten im Weinkompendium, auch nicht in alten Spielständen. Der Traubenwickler kommt ab dem Rang WICKLER_RANG, der Falsche Mehltau mit der zweiten Generation
-// (ein festes Jahr aus MEHLTAU_JAHR), die Kirschessigfliege mit der dritten (KIRSCH_JAHR). In den Gebieten aus SCHAED_SPAET_IN kommt jeder SCHAED_SPAET Jahre später.
-// Befall: zusammen alle SCHAED_PAUSE[0] bis [1] Jahre einer, egal wie viele Schädlinge es schon gibt. Wer neu ist, kommt beim nächsten Befall zuerst, sonst entscheidet
-// die Startzahl, der Mehltau zählt je Regenmonat von Mai bis Juli einmal mehr. Im April steht fest, wer kommt (S.schaed). Im Monat warn warnt das Weinbauamt im Winzerboten,
-// im Monat danach kommt der Befall. Spritzen (AKT.spritzen, ab Stufe 2 der Weingut-Manager) geht nur im Warnmonat, kostet SPRITZ_HA je bepflanztem Hektar und lässt vom
-// Schaden SPRITZ_F übrig. Alles kommt aus der Startzahl (fest, Thema 9 Plan, Thema 10 Schaden), neu laden ändert also nichts. SCHAED_AN=0 schaltet für Messläufe alles ab, auch auf Schwer.
-// Spielstand: S.schaedAb {wickler: erstes Jahr}, S.schaedNext Jahr des nächsten Befalls, S.schaed {j,art,regen,warn,gespritzt,da}, S.schaedGes {art: Zahl der Befälle},
-// S.schaedLetzt {art,m,j}, S.spritzN Zahl der Spritzungen. Die Gegner trifft es nicht, ihre Ernte ist nur eine Zahl.
-const SCHAED_AN=1, SCHAED_PAUSE=[2,4], SCHAED_SPAET=5, SCHAED_SPAET_IN=['franken','wuerttemberg'], SPRITZ_HA=200, SPRITZ_F=.5;
-const WICKLER_RANG=3, WICKLER_FELDER=[1,2], WICKLER_P=[.05,.1], MEHLTAU_JAHR=[40,45], MEHLTAU_P=[.08,.12], KIRSCH_JAHR=[80,85], KIRSCH_OE=[4,6];
+// Seit 13.7.2 (Bauplan 13.7, Maik 21.11.2026): kein Befall, keine Warnung und kein Spritzen mehr, auf keiner Stufe. Übrig bleibt das Schädlingsjahr in der
+// Meisterprüfung (DIFF.schaed, schaedAn): alle SCHAEDJ_PAUSE[0] bis [1] Jahre eins, fest je Partie (Thema 9), bis SCHAEDJ_BIS Jahre nach dem Start.
+// Es senkt nur die Chance beim Wagnis um SCHAEDJ_MINUS Punkte, trifft also nur, wer wartet. Die Menge-Sorte und alles Gelesene bleiben unberührt.
+// Der Winzerbote meldet es im Monat SCHAEDJ_MON (Juli), erst wenn das Wagnis offen ist (Entscheidung 8), mit dem Namen eines Schädlings:
+// der Traubenwickler zuerst, danach einer, der mit dem Akt schon da ist (SCHAED_AKT, Akt nach RANG_AKT). SCHAED_AN=0 schaltet für Messläufe alles ab.
+// Spielstand: S.schaedJ {j,art} das zuletzt gemeldete, S.schaedGes {art: Zahl der Meldungen}.
+const SCHAED_AN=1, SCHAEDJ_PAUSE=[3,5], SCHAEDJ_MINUS=15, SCHAEDJ_MON=6, SCHAEDJ_BIS=400, SCHAED_AKT={wickler:1,mehltau:2,kirsch:3};
 const SCHAED={
-  wickler:{name:'Traubenwickler',der:'der Traubenwickler',dem:'dem Traubenwickler',den:'den Traubenwickler',er:'er',sym:'🐛',warn:5},
-  mehltau:{name:'Falscher Mehltau',der:'der Falsche Mehltau',dem:'dem Falschen Mehltau',den:'den Falschen Mehltau',er:'er',sym:'🍂',warn:4},
-  kirsch:{name:'Kirschessigfliege',der:'die Kirschessigfliege',dem:'der Kirschessigfliege',den:'die Kirschessigfliege',er:'sie',sym:'🦟',warn:7}
+  wickler:{name:'Traubenwickler',der:'der Traubenwickler',dem:'dem Traubenwickler',den:'den Traubenwickler',er:'er',sym:'🐛'},
+  mehltau:{name:'Falscher Mehltau',der:'der Falsche Mehltau',dem:'dem Falschen Mehltau',den:'den Falschen Mehltau',er:'er',sym:'🍂'},
+  kirsch:{name:'Kirschessigfliege',der:'die Kirschessigfliege',dem:'der Kirschessigfliege',den:'die Kirschessigfliege',er:'sie',sym:'🦟'}
 };
 // Beim ersten Befall je Schädling erzählt der Winzerbote, wie es früher war. Die Geschichte wächst von Generation zu Generation.
+// Platzhalter bis 13.8. SCHAEDJ_TEXT ist die Meldung im Juli ({der} ist der Schädling).
+const SCHAEDJ_TEXT='Das Weinbauamt meldet ein Schädlingsjahr: {der} ist in den Weinbergen. Den Trauben der Menge-Sorte tut das nichts, wer gleich liest, liest sicher. Aber wer die Spitzen-Sorte dieses Jahr für das Wagnis hängen lässt, wagt mehr als sonst.';
 const SCHAED_FAMILIE={
   wickler:'Die Alten im Dorf nicken nur: „Den Wurm hat jeder, der Reben hat.“',
   mehltau:'Die Alten hatten es noch einfacher, damals gab es nur den Traubenwickler. Der Mehltau ist ein Pilz und kommt mit dem Regen.',

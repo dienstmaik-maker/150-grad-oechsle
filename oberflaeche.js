@@ -230,20 +230,6 @@ function medHtml(l){return l.med&&l.med.length?`<div class="gold" style="font-si
 function helferFehlen(){const b=rebenGesamt(); let k=0; while(helferReben(S.helfer+k)<b) k++; return k}
 function dot(id){return `<i class="dot ${SORTEN[id].farbe==='weiss'?'weiss':'rotw'}"></i>`}
 
-// Fenster im Weinberg. Es erscheint erst mit der ersten Warnung, vorher kündigt nichts die Schädlinge an.
-function schutzHtml(WM){
-  if(!schaedAn()) return '';
-  const b=schaedWarn(), L=S.schaedLetzt; if(!b&&!L) return '';
-  const k=spritzKosten(), G=S.schaedGes||{}, T=b&&SCHAED[b.art], kennt=Object.keys(SCHAED).filter(a=>G[a]||(b&&b.art===a));
-  let z=!b?'<div class="mut">Im Moment ist Ruhe im Weinberg.</div>'
-    :b.gespritzt?`<div class="mut">🧴 Gegen ${T.den} ist gespritzt, der Schaden fällt nur halb so groß aus.</div>`
-    :`<div class="rot" style="font-size:14px">${T.sym} Das Weinbauamt warnt vor ${T.dem}. Nächsten Monat ist ${T.er} wohl auch bei dir.</div><div class="mut">Spritzen halbiert den Schaden und geht nur diesen Monat.</div>`;
-  if(L) z+=`<div class="kv"><span>Letzter Befall</span><span>${SCHAED[L.art].name}, ${MON[L.m]} ${L.j}</span></div>`;
-  return fenster('schutz','Pflanzenschutz',z,{
-    hin:[aufgabeAktiv('spritzen')&&`${WM} spritzt beim Weiterblättern, sobald das Weinbauamt warnt.`],
-    kn:pk('spritzen','Spritzen',eur(k),{aus:!b||!!b.gespritzt,arm:S.geld<k}),
-    i:`Alle paar Jahre kommt ein Schädling in den Weinberg. ${spritzRegel()} ${kennt.map(schaedRegel).join(' ')} Dein ${MGR_BEREICHE.weingut.name} spritzt ab Stufe 2 selbst, wenn danach genug Geld auf dem Konto bleibt.`});
-}
 // Was gefrorenen Trauben für Eiswein fehlt (ohne die Leseart, die wählt man beim Lesen).
 function eisFehlt(f){const g=pruefeQualitaet('eis',feldQ(f,'reif')).filter(x=>!x.startsWith('Leseart')); return g.length?`<b>Kein Eiswein:</b> ${g.join(', ')}`:''}
 // Seit 8.0: Satz zur Handlese für Felder mit Edelfäulnis, vor leer.
@@ -980,7 +966,7 @@ function mgrSchalter(b){
       +mgrExtra(e).map(t=>`<div class="mut" style="margin:0 0 8px">✅ ${t}, ohne Schalter</div>`).join('');
   return E.map(teil).join('')
     +(b==='handel'&&(aufgabeAktiv('laeden')||aufgabeAktiv('handel')||aufgabeAktiv('regal'))?`<div class="mut" style="margin:8px 0 6px">Je Wein bleiben im Keller, außer kurz vorm Verderben:</div>${reserveChips()}`:'')
-    +(b==='keller'&&(aufgabeAktiv('sekt')||aufgabeAktiv('keltern'))||b==='handel'&&aufgabeAktiv('fest')||b==='weingut'&&(aufgabeAktiv('warten')||aufgabeAktiv('spritzen'))?`<div class="mut" style="margin:8px 0 6px">${b==='keller'?'Für '+[aufgabeAktiv('sekt')&&'Sekt',aufgabeAktiv('keltern')&&'Fassraum'].filter(Boolean).join(' und '):b==='weingut'?'Für '+[aufgabeAktiv('warten')&&'die Wartung',aufgabeAktiv('spritzen')&&'das Spritzen'].filter(Boolean).join(' und '):'Für das Fest'} gibt ${G.er} nur so viel aus, dass mindestens das auf dem Konto bleibt:</div>${pufferChips(b)}`:'');
+    +(b==='keller'&&(aufgabeAktiv('sekt')||aufgabeAktiv('keltern'))||b==='handel'&&aufgabeAktiv('fest')||b==='weingut'&&aufgabeAktiv('warten')?`<div class="mut" style="margin:8px 0 6px">${b==='keller'?'Für '+[aufgabeAktiv('sekt')&&'Sekt',aufgabeAktiv('keltern')&&'Fassraum'].filter(Boolean).join(' und '):b==='weingut'?'Für '+[aufgabeAktiv('warten')&&'die Wartung',aufgabeAktiv('spritzen')&&'das Spritzen'].filter(Boolean).join(' und '):'Für das Fest'} gibt ${G.er} nur so viel aus, dass mindestens das auf dem Konto bleibt:</div>${pufferChips(b)}`:'');
 }
 // Fenster von unten: Porträt, Lohn, zuletzt Erledigtes, die Schalter (mgrSchalter) und der Knopf zum Befördern. Öffnet sich nach Einstellen oder Befördern.
 let MGR_OFFEN=null;
@@ -1185,7 +1171,6 @@ function vBerg(){
     hin:[helferKann(1)&&'🧑‍🌾 Deine Erntehelfer düngen beim Weiterblättern, wenn der Boden mager wird.',bonusMasch('duenger')&&`🚜 Mit dem Düngerstreuer: ${STREU_PLUS} statt ${DUENG_PLUS} Punkte Boden und ${Math.round(STREU_RABATT*100)} % billiger.`],
     links:`Gedüngt: ${S.duengungen} von 3 Mal`,kn:pk('duengen','Düngen',eur(duengKosten()),{aus:S.duengungen>=3||S.boden>=100,arm:S.geld<duengKosten()}),
     i:`Der Boden verliert jeden Monat ${BODEN_MONAT} Punkte, in einem Regenmonat ${BODEN_REGEN}, und mit jeder Lese 4. Einmal Düngen bringt ${DUENG_PLUS}, mit dem Düngerstreuer ${STREU_PLUS} und ${Math.round(STREU_RABATT*100)} % billiger, höchstens dreimal im Jahr. Ein guter Boden bringt mehr Trauben, bessere Weine und weniger tote Reben: Je besser der Bodenschnitt des Jahres, desto weniger Reben gehen zum Jahreswechsel ein.${md?` ${wm} düngt, sobald der Boden auf 70 % fällt, im August schon unter 90 %.`:''}`});
-  h+=schutzHtml(WM);
   h+=fenster('uebersicht','Übersicht',`<div class="kv"><span>Bepflanzt</span><span>${rbn(bep)} von ${rbn(ges)} Reben</span></div><div class="bar"><i style="width:${ant}%"></i></div>
     <div class="kv"><span>Fläche</span><span>${S.ha} Hektar, ${Math.round(ant)} % bepflanzt</span></div>
     ${LAGE_REIHE.filter(lg=>hangHa(lg)>0).map(lg=>`<div class="kv"><span>${LAGEN[lg].sym} ${LAGEN[lg].kurz}</span><span>${String(hangHa(lg)).replace('.',',')}\u00a0ha${lg==='sued'?`${S.spitze?`, davon ${SPITZE_HA} Spitzenlage`:''}, Spitzen-Sorte ${String(Math.round(handReben()/HA_REBEN*10)/10).replace('.',',')}\u00a0ha`:''}</span></div>`).join('')}
@@ -2265,12 +2250,6 @@ const AKT={
       ok:n=>{fx('korken'); regalStellen(l,n)}});
   },
   regalRaus(d){const l=lot(d.id); if(!l) return; l.regal=false; weinZusammen(l); closeSheet(); save(); render()},
-  spritzen(){
-    const b=schaedWarn(); if(!b||b.gespritzt) return;
-    const k=spritzKosten();
-    if(S.geld<k) return meldung('Zu wenig Geld',`Spritzen kostet ${eur(k)}.`);
-    spritze();fx('stempel');save();render();
-  },
   duengen(){
     const k=duengKosten();
     if(S.geld<k) return meldung('Zu wenig Geld',`Düngen kostet ${eur(k)}.`);
