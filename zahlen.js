@@ -117,9 +117,9 @@ const WEIN_ROLLE={menge:['feder','tafel','qba','kab','spat'],sekt:[],spitze:['fe
 // Seit 13.4.2: Beerenauslese und Eiswein haben kein eigenes Rang-Schloss mehr, sie kommen nur über den Weg des Gebiets im Herbst (weg_eigen ab R6).
 // Seit 13.4.5 kommt auch die Trockenbeerenauslese nur über das Wagnis, als zweite Stufe nach der Beerenauslese (weg_tba ab R8, der fremde Weg weg_fremd ab R7). Feder-, Tafel- und Qualitätswein gelten für jede Rolle, die sie machen darf (Annahme von Claude).
 // Seit 13.3.7 (Nachtrag 3 im Bauauftrag, Wunschstrategie, Maik 22.11.2026): Zeitleiste neu. Tafelwein ab R0, Kabinett ab R3, Auslese und eigener Weg ab R7, fremder Weg ab R8,
-// Bundeswettbewerb ab R6, Auktionen ab R1 (vor dem Winzer selten, auktion_oft ab R2). Neue Abstände für Leute, Manager und Abfüllanlage 2 nach Kapitel 6 des Plans.
+// Bundeswettbewerb ab R6, Auktionen ab R1 (vor dem Winzer selten, auktion_oft ab R2). Spätlese wie das Kabinett ab R3 (Maik 22.11.2026, sonst käme sie bei langsamem Aufstieg vor dem Kabinett). Neue Abstände für Leute, Manager und Abfüllanlage 2 nach Kapitel 6 des Plans.
 // ha ist ein dritter Auslöser: Er gilt, sobald mehr als so viele Hektar bepflanzt sind (der erste Erntehelfer mit dem ersten bepflanzten Hektar über 4).
-const FREI={wein_feder:{r:0},wein_tafel:{r:0},wein_qba:{r:2},wein_kab:{r:3},wein_spat:{r:0},wein_aus:{r:7},weg_eigen:{r:7},weg_fremd:{r:8},weg_tba:{r:8},
+const FREI={wein_feder:{r:0},wein_tafel:{r:0},wein_qba:{r:2},wein_kab:{r:3},wein_spat:{r:3},wein_aus:{r:7},weg_eigen:{r:7},weg_fremd:{r:8},weg_tba:{r:8},
   makler:{r:1},spende:{r:1},auktion:{r:1},auktion_oft:{r:2},land:{r:3},
   export:{r:3,ab:4,name:'der Exporthandel',bote:'🚢 Der Exporthandel nimmt jetzt auch deinen Wein. Er zahlt mehr als das Inland und nimmt dir mit jedem Rang mehr ab.'},
   sabotage:{r:3,ab:4,bis:5,name:'Sabotage hinter der Hintertür',bote:'💣 Hinter der Hintertür kennt man jetzt deinen Namen. Wer will, kann einem Gegner schaden lassen.'},
@@ -238,7 +238,7 @@ const RAENGE=[
   {name:'Neuling',kurz:'Neuling',ans:0,ha:0,verm:0,rahmen:20000,haAlt:0,deckel:5},
   {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:30,ha:3,verm:100000,rahmen:40000,haAlt:3,deckel:9,neu:'der erste eigene Hang, der Makler im Rathaus, Spenden fürs Dorf, Auktionen'},
   {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:7,verm:250000,rahmen:80000,haAlt:4,deckel:17,neu:'Qualitätswein, öfter Land bei den Auktionen'},
-  {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:300,ha:14,verm:600000,rahmen:160000,haAlt:5,deckel:32,neu:'Kabinett, Landesprämierung, die Erntemaschine'},
+  {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:210,ansW:300,ha:14,verm:600000,rahmen:160000,haAlt:5,deckel:32,neu:'Kabinett, Landesprämierung, die Erntemaschine'},
   {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:18,verm:1500000,rahmen:300000,haAlt:6,deckel:42,neu:'{sorte}, der Sektkeller, das Weinfest'},
   {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:24,verm:3500000,rahmen:300000,haAlt:8,deckel:47,neu:'{sorte}, der große Vollernter',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.',wegW:'Sabotage ist für dich ab jetzt tabu, eine Dame macht so etwas nicht.'},
   {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:27,verm:6000000,rahmen:300000,haAlt:10,deckel:50,neu:'Bundeswettbewerb, eine eigene Weinhandlung, das Amt des Weinbotschafters'},
@@ -258,7 +258,9 @@ for(const r of RAENGE){const neu=r.ha; Object.defineProperty(r,'ha',{get:()=>HA_
 // Die Flächen-Hürden stehen fest in ha (Nachtrag 3), die 0,7 im zweiten und dritten Akt stecken dort schon drin (26, 34, 38 und 40 Hektar Wunschfläche mal 0,7).
 const RANG_AKT=[1,1,1,1,2,2,2,3,3,3], HUERDE_FUEHRT={1:'ha',2:'verm',3:'ans'}, HUERDE_REST=.7;
 const huerdeF=(i,k)=>HUERDE_FUEHRT[RANG_AKT[i]]===k?1:HUERDE_REST;
-RAENGE.forEach((r,i)=>{for(const k of ['ans','verm']){r[k+'W']=r[k]/huerdeF(i,k); Object.defineProperty(r,k,{get:()=>Math.round(r[k+'W']*huerdeF(i,k)),enumerable:true})}});
+// Ausnahme Winzermeister (Maik 22.11.2026, Platzhalter bis 14.1): ansW 300 gemessen, der Test-Spieler hat um Jahr 26 in Mosel 210 und Pfalz 224 Ansehen,
+// mal 0,7 ergibt die Hürde 210. Ohne das blieb er beim Winzer stecken, weil Kabinett und Landesprämierung erst mit R3 kommen.
+RAENGE.forEach((r,i)=>{for(const k of ['ans','verm']){r[k+'W']=r[k+'W']??r[k]/huerdeF(i,k); Object.defineProperty(r,k,{get:()=>Math.round(r[k+'W']*huerdeF(i,k)),enumerable:true})}});
 // Ab welcher Stufe (Index in RAENGE) etwas geht. RANG_ALT rechnet die sechs Ränge alter Spielstände um.
 // Seit 13.3.4 kommen die Ränge aus FREI, dort stehen auch Makler, Weinbotschafter und Kontrollen.
 const R_MAX=RAENGE.length-1, R_AUKTION=FREI.auktion.r, R_MAKLER=FREI.makler.r, R_LAND=FREI.land.r, R_BUND=FREI.bund.r, R_LADEN=FREI.laden.r, R_BOTSCHAFT=FREI.botschafter.r,
