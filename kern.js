@@ -1104,6 +1104,10 @@ function feldWeg(id){
 }
 // Seit 13.4.6: die Chance in Worten und die Chance, um die es gerade geht (null, wenn das Feld nichts wagt).
 const chanceWort=p=>CHANCE_WORT.find(([g])=>p>=g)[1];
+// Seit 13.7.3: die Chance, wie sie am Knopf steht (CHANCE_ZEIGE), leer in der Meisterprüfung. rat: was der alte Winzer in den Lehrjahren tun würde.
+const chanceZeige=p=>({zahl:`${Math.round(p*100)}\u00a0%`,wort:chanceWort(p)})[CHANCE_ZEIGE[S.schwer]]||'';
+const chanceRat=p=>CHANCE_ZEIGE[S.schwer]==='zahl'?(p>=RAT_WARTEN?'warten':'lesen'):'';
+const mgrWarnAb=()=>MGR_WARN_STUFE[S.schwer]!=null?MGR_WARN_STUFE[S.schwer]:MGR_WARN;
 function wagnisChance(id){
   const f=S.felder[id], m=S.monat; if(!wagnisFeld(id)||!(f.menge>0)||f.gelesen||f.gefroren) return null;
   if(f.wagnis==='edel') return m===10&&tbaOffen()?tbaChance():null;
@@ -1121,7 +1125,7 @@ function wagnisWarnung(){
   if(mgrSt('weingut')<1||S.monat<9||S.monat>10) return null;
   const I=R().sorten, W=I.filter(feldWartet); if(!W.length) return null;
   const w=W.reduce((a,id)=>a+feldErloes(id),0), ges=I.reduce((a,id)=>a+feldErloes(id)+(S.felder[id].leseW||0),0);
-  return ges>0&&w>MGR_WARN*ges?{ids:W,anteil:w/ges}:null;
+  return ges>0&&w>mgrWarnAb()*ges?{ids:W,anteil:w/ges}:null;
 }
 // f.wagnis: edel (Edelfäulnis ist da), frost (wartet auf Frost im Dezember), aus (vorbei, das Feld hängt wie jedes andere).
 function herbstWagnis(id,f,so,m,L){

@@ -759,6 +759,9 @@ const CHANCE_WORT=[[.6,'gut'],[.35,'mittel'],[0,'gering']];
 // Seit 13.4.6 (Maik 21.11.2026): Der Weingut-Manager warnt, sobald er eingestellt ist, wenn alle wartenden Felder zusammen mehr als MGR_WARN
 // vom erwarteten Erlös der Ernte des Jahres ausmachen. Erwartet heißt: sichere Lese jetzt, als Wein der höchsten erlaubten Stufe. 13.7 setzt für die Lehrjahre 0,3.
 const MGR_WARN=.4;
+// Seit 13.7.3 (Bauplan 13.7, Maik 21.11.2026): Was am Lese-Knopf steht, je Spielstufe (CHANCE_ZEIGE): Lehrjahre die Zahl, Gesellenjahre das Wort, Meisterprüfung nichts.
+// In den Lehrjahren sagt der alte Winzer dazu, was er tun würde: warten ab RAT_WARTEN, sonst lesen. Seine Warnung kommt dort schon ab MGR_WARN_STUFE.einfach.
+const CHANCE_ZEIGE={einfach:'zahl',mittel:'wort',schwer:''}, RAT_WARTEN=.6, MGR_WARN_STUFE={einfach:.3};
 // Seit 13.6.1 (Bauplan 13.6, Maik 21.11.2026): vier Jahrhundertjahre ab dem Terroir. Wer nie Terroir erreicht, bekommt keins.
 // Seit 13.6.9 (Nachtrag 3, Maik 22.11.2026): fest JH_ABSTAND Jahre nach dem Aufstieg zum Terroir, danach JH_ANZAHL-1 weitere alle JH_ABSTAND Jahre
 // (Wunschjahre 90, 95, 100, 105). Die ersten JH_VOR sind nur ein Vorgeschmack: Ankündigung und Wetter, aber in keinem Gebiet ein Jahrhundertwein,
