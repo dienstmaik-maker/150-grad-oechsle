@@ -663,7 +663,7 @@ function schauNeu(){
 // Einreichen und Tauschen nur im Monat der Anmeldung.
 const schauAnm=()=>!!(S.schau&&S.monat===WELT_ANM&&S.schau.j===S.jahr);
 function schauEinreichen(l){const s=S.schau; if(!schauAnm()||!schauFaehig(l)) return 0; s.ein={id:l.id,name:lotName(l),p:schauPunkte(l),sorte:l.sorte,stufe:l.stufe,sekt:l.sekt?1:0,...(jhWein(l)?{jh:1}:{})}; return 1}
-const schauText=K=>`Gesucht ist die ${K.name}: Jedes Weingut tritt mit ${K.was} an.`;
+const kroneText=K=>`Gesucht ist die ${K.name}: Jedes Weingut tritt mit ${K.was} an.`;
 // Wertung: Platz 1 bringt die Krone und KRONE_ANS Ansehen, Platz 2 und 3 Ansehen und Preisgeld wie bisher (PREISE.welt).
 // Medaille und Qualitätspunkte der Schau bekommt ein Wein nur einmal (l.welt) und nur, wenn er noch im Keller ist.
 function schauAuswerten(){
@@ -1074,15 +1074,15 @@ function herbstWagnis(id,f,so,m,L){
     return;
   }
   if(f.wagnis==='frost'){
-    // Seit 13.6.2: Gelingt der Frost im Jahrhundertwinter, wird der Eiswein der Jahrhundertwein (f.jh).
-    if(H.uFrost<wegChance('frost')){f.gefroren=true; if(jhArt()==='winter'){f.jh=1; L.push(`Jahrhundertwinter! Der ${so.name} hängt gefroren am Stock. Lies ihn diesen Monat, daraus wird der Jahrhundertwein.`)} else L.push(`Frost! Der ${so.name} hängt gefroren am Stock. Eiswein ist möglich, lies ihn diesen Monat.`)}
+    // Seit 13.6.2: Gelingt der Frost im Jahrhundertwinter, wird der Eiswein der Jahrhundertwein (f.jh). S.jhN zählt die gelungenen Jahrhundert-Wagnisse (Prüfskript).
+    if(H.uFrost<wegChance('frost')){f.gefroren=true; if(jhArt()==='winter'){f.jh=1; S.jhN=(S.jhN||0)+1; L.push(`Jahrhundertwinter! Der ${so.name} hängt gefroren am Stock. Lies ihn diesen Monat, daraus wird der Jahrhundertwein.`)} else L.push(`Frost! Der ${so.name} hängt gefroren am Stock. Eiswein ist möglich, lies ihn diesen Monat.`)}
     else wagnisWeg(f,so,'frost',L);
     return;
   }
   // Seit 13.4.5: Die Beerenauslese wagt ab R8 die zweite Stufe, ohne den Rang verfault sie wie alles andere.
   if(f.wagnis==='edel'&&tbaOffen()){
     // Seit 13.6.2: Im Jahrhundertsommer wird die Trockenbeerenauslese der Jahrhundertwein (f.jh).
-    if(H.uTba<tbaChance()){f.oe=Math.max(f.oe,R().min.tba); if(jhArt()==='sommer') f.jh=1; L.push(`${f.jh?'Jahrhundertsommer! ':''}Die edelfaulen Beeren vom ${so.name} sind zu Rosinen eingetrocknet: ${f.oe}° Öchsle, genug für eine Trockenbeerenauslese. Lies sie diesen Monat von Hand, nur überreife Trauben.`)}
+    if(H.uTba<tbaChance()){f.oe=Math.max(f.oe,R().min.tba); if(jhArt()==='sommer'){f.jh=1; S.jhN=(S.jhN||0)+1} L.push(`${f.jh?'Jahrhundertsommer! ':''}Die edelfaulen Beeren vom ${so.name} sind zu Rosinen eingetrocknet: ${f.oe}° Öchsle, genug für eine Trockenbeerenauslese. Lies sie diesen Monat von Hand, nur überreife Trauben.`)}
     else wagnisWeg(f,so,'tba',L);
     return;
   }
@@ -1882,7 +1882,7 @@ function etappe3Monat(Z){
   }
   // Seit 13.6.3: Nach dem Brief ist jedes Jahr Weltweinschau im eigenen Dorf, bis zur dritten Krone. Angemeldet wird im Januar, die Schau ist im Juni.
   if(S.monat===WELT_ANM&&weltOffen()){schauNeu(); if(S.schau){const K=KRONEN[S.schau.kl], fav=S.schau.feld.find(x=>x.fav);
-    schlag(74,`Weltweinschau ${S.jahr}: Es geht um die ${K.name}`,`${schauText(K)} Angemeldet wird diesen Monat im Rathaus, zusammen mit den Prädikatsweinen, die Schau ist im ${MON[WELT_MONAT]} auf dem Dorfplatz. Als Favorit gilt ${fav.name}.`,'weltweinschau',{du:1})}}
+    schlag(74,`Weltweinschau ${S.jahr}: Es geht um die ${K.name}`,`${kroneText(K)} Angemeldet wird diesen Monat im Rathaus, zusammen mit den Prädikatsweinen, die Schau ist im ${MON[WELT_MONAT]} auf dem Dorfplatz. Als Favorit gilt ${fav.name}.`,'weltweinschau',{du:1})}}
   if(S.monat===WELT_MONAT&&S.schau){
     // Seit 10.2: Die erste Schau kommt auf die Bild-Bühne (A.schauB), danach steht sie nur im Winzerboten. Alte Stände mit schon gelaufener Schau bekommen keine Bühne mehr.
     const A=S.amt, K=KRONEN[S.schau.kl], erst=!A.schauB&&!(A.welt&&A.welt.length); A.schauB=1; if(erst) feierWelt('schau');
