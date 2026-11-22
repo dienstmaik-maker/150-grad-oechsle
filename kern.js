@@ -551,8 +551,14 @@ function lotWert(l){
   if(!l.stufe) return l.liter*2;
   return l.liter*STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*(1+pflegePreis(l.sorte,l.pfl))*reifeFaktor(l)*sektF(l)*sternF(l.sorte)*(l.status==='fass'?.7:1);
 }
-function vermoegen(){return Math.round(S.geld-(S.kredit?S.kredit.rest:0)+S.ha*LANDWERT+S.maschinen.reduce((a,m)=>a+mTyp(m).preis*.5*m.zustand/100,0)+Math.min(12*marktFrei(),WEIN_WERT*S.lots.reduce((a,l)=>a+lotWert(l),0)))}
-function gVerm(g){return Math.round(g.geld-g.kredit+g.ha*LANDWERT)}
+// Seit 13.3.8 (Nachtrag 3): neue Formel, Konstanten bei VERM_GRUND in zahlen.js.
+const haWert=(rl,pfl,bst)=>VERM_GRUND*(VERM_SORTE[rl]||1)*VERM_PFLEGE[pfl||0]*VERM_BODEN[bst||0];
+const kahlWert=bst=>VERM_GRUND*VERM_BODEN[bst||0]*VERM_KAHL;
+function weinbergWert(){let w=0, bep=0; for(const id of Object.keys(S.felder)){const f=S.felder[id], h=(f.reben||0)/HA_REBEN; if(!(h>0)) continue; bep+=h; w+=h*haWert((SORTEN[id]||{}).rolle,f.pflSt,S.bodenSt)}
+  return w+Math.max(0,S.ha-bep)*kahlWert(S.bodenSt)}
+function vermoegen(){return Math.round(S.geld-(S.kredit?S.kredit.rest:0)+WEIN_WERT*S.lots.reduce((a,l)=>a+lotWert(l),0)+weinbergWert())}
+function gWeinberg(g){const j=S.jahr-START_JAHR, b=stufeZu(j,BODEN_SCHWELLE), p=stufeZu(j,PFLEGE_SCHWELLE); let rest=g.ha, w=0; for(const [rl,n] of GEGNER_FL){const h=Math.min(rest,n); if(h>0) w+=h*haWert(rl,p,b); rest-=h} return w}
+function gVerm(g){return Math.round(g.geld-g.kredit+gWeinberg(g))}
 function rangFuer(ab,ans,ha,verm){let r=ab;while(r<R_MAX){const n=RAENGE[r+1];if(ans>=n.ans&&ha>=n.ha&&verm>=n.verm)r++;else break}return r}
 /* ================= Absatzwege ================= */
 // Seit 7.0 (Schritt H, Maik 16.11.2026): Federweißer nimmt der Weinhändler in jeder Menge zum vollen Inlandspreis ab.

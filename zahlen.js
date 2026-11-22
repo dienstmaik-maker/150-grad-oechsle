@@ -205,12 +205,19 @@ const LOHN_F=1, LOHN_ALT=[200,500];
 const ALLEIN_HA=4, ALLEIN_FASS=10000, ALLEIN_FL=10000, REBEN_JE_HELFER=3000, MASCH_HELFER=6, FASS_JE_LAGERARB=30000, FLASCHEN_JE_LAGERARB=60000;
 /* ---- Etappe 3: Ränge, Gegner, Auktionen, Wettbewerbe, Export ---- */
 // START_GELD: seit 7.0 (Schritt C, Maik 16.11.2026) 60.000 € statt 40.000 €, weil am Start nur die ★★★-Sorte geht und Riesling erst nach 18 Monaten Geld bringt. Endgültig in Schritt H.
-const START_JAHR=2027, LANDWERT=15000, START_GELD=60000;
+const START_JAHR=2027, START_GELD=60000;
+// Seit 13.3.8 (Nachtrag 3): Vermögen = Geld minus offener Kredit + Wein im Keller (WEIN_WERT seines Listenwerts, ohne Deckel beim Großhandel) + Weinberge.
+// Maschinen, Gebäude und der feste Landwert je Hektar (bis 13.3.7 LANDWERT 15.000 €) zählen nicht mehr. Ein Hektar Weinberg ist VERM_GRUND mal Sorte (VERM_SORTE
+// je Rolle) mal Pflegestufe (VERM_PFLEGE) mal Boden-Stufe (VERM_BODEN), kahles Land VERM_GRUND mal Boden mal VERM_KAHL. Pflanzen lohnt sich immer (Maik).
+// VERM_GRUND ist ein Platzhalter bis 14.1 (der alte Landwert). Sorten ohne Rolle (Messläufe mit ROLLEN_NEU=0) zählen wie die Menge-Sorte.
+// Die Gegner haben keine Stufen und bekommen eine Schätzung (gVerm): Boden und Pflege nach dem Spieljahr, als wäre jedes Jahr gut, die Fläche zuerst Menge,
+// dann Sekt, dann Spitze nach der Wunschfläche GEGNER_FL (26 Menge, 8 Sekt, der Rest Spitze, Nachtrag 3).
+const VERM_GRUND=15000, VERM_SORTE={menge:1,sekt:1.5,spitze:3}, VERM_PFLEGE=[1,1.25,1.5,2], VERM_BODEN=[1,1.25,1.5,5], VERM_KAHL=.5, GEGNER_FL=[['menge',26],['sekt',8],['spitze',Infinity]];
 // Aufstiegstempo: Die ersten HA_FREI Hektar kosten im Monat HA_KOSTEN_KLEIN, jeder weitere HA_KOSTEN.
 // Der Großhandel kauft je Monat für MARKT_FREI Euro zum vollen Preis, je Rang für MARKT_RANG, je Stufe des Exporthandels für MARKT_EXPORT und je bepflanztem Hektar über HA_FREI für MARKT_HA mehr.
 // Seit 4.2 (Paket 3, 15.11.2026) hängt das Budget vor allem an der Fläche, damit ein großes Gut nicht ärmer ist als ein kleines. Verkäufe an Weinhandlungen zählen seit Paket 9 nicht mehr mit. Darüber fällt der Preis bis auf MARKT_MIN, erreicht nach dem MARKT_BREIT-fachen des Budgets.
 // Jede Weinhandlung nimmt im Monat 1 bis LADEN_MAX mal LADEN_MENGE Flaschen, seit Paket 9 nur Wein, der zu ihrem Wunsch passt (ladenPasst).
-// Seit 5.1 (Paket 10) kommen je bepflanztem Hektar über HA_FREI LADEN_HA Flaschen dazu, über denselben Flächenwert wie MARKT_HA (haUeber). Sie zahlen LADEN_AUF mal den Listenpreis. Der Wein im Keller zählt beim Vermögen nur mit WEIN_WERT seines Listenwerts und höchstens mit dem, was der Großhandel in einem Jahr zum vollen Preis kauft.
+// Seit 5.1 (Paket 10) kommen je bepflanztem Hektar über HA_FREI LADEN_HA Flaschen dazu, über denselben Flächenwert wie MARKT_HA (haUeber). Sie zahlen LADEN_AUF mal den Listenpreis. Der Wein im Keller zählt beim Vermögen nur mit WEIN_WERT seines Listenwerts (bis 13.3.7 höchstens mit dem, was der Großhandel in einem Jahr zum vollen Preis kauft).
 // Die Gegner fangen mit GEGNER_START ihrer Stärke an und wachsen über GEGNER_JAHRE Jahre auf GEGNER_ENDE.
 // Seit 10.3 (B13): Am Deckel zahlt ein Gegner weiter und bekommt das Ansehen, baut aber den Keller aus statt Land zu kaufen.
 // Seit 11.5 (Teil B) ist das der Deckel seines Rangs (gegnerDeckel). GEGNER_HA_MAX gilt nur noch für Messläufe mit HA_NEU=0.
@@ -225,24 +232,33 @@ const WO={mosel:'an der Mosel',rheingau:'im Rheingau',rheinhessen:'in Rheinhesse
 // Seit 13.3.5 (Bauplan 13.3, Startwerte aus dem Bauauftrag): Vizepräsident 6.000 Ansehen und 29 Hektar (bis 13.2: 8.000 und 33), Präsident 8.500 und 33 (bis 13.2: 12.000 und 40).
 // Der höchste Besitz deckel ist nach der Regel neu gerechnet: Verbandsvorstand 36 statt 41, Vizepräsident 41 statt 50. R0 bis R7 bleiben.
 // Seit 13.3.7: neu nennt die Hauptsachen der Wunschstrategie (Nachtrag 3), schlicht formuliert, Platzhalter bis 13.8.
+// Seit 13.3.8 (Nachtrag 3, Maik 22.11.2026): Flächen-Hürden fest 3, 7, 14, 18, 24, 27, 28, 28, 28 Hektar bepflanzt, Besitz-Deckel 5, 9, 17, 32, 42, 47, ab dem Weinbaurat 50
+// (Wunschfläche des nächsten Ziels mal 1,25). ans und verm sind hier die heutigen Werte, die Hürde rechnet RANG_HUERDE unten daraus.
 const RAENGE=[
-  {name:'Neuling',kurz:'Neuling',ans:0,ha:0,verm:0,rahmen:20000,haAlt:0,deckel:4},
-  {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:30,ha:3,verm:100000,rahmen:40000,haAlt:3,deckel:8,neu:'der erste eigene Hang, der Makler im Rathaus, Spenden fürs Dorf, Auktionen'},
-  {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:6,verm:250000,rahmen:80000,haAlt:4,deckel:11,neu:'Qualitätswein, öfter Land bei den Auktionen'},
-  {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:300,ha:9,verm:600000,rahmen:160000,haAlt:5,deckel:16,neu:'Kabinett, Landesprämierung, die Erntemaschine'},
-  {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:13,verm:1500000,rahmen:300000,haAlt:6,deckel:20,neu:'{sorte}, der Sektkeller, das Weinfest'},
-  {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:16,verm:3500000,rahmen:300000,haAlt:8,deckel:26,neu:'{sorte}, der große Vollernter',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.',wegW:'Sabotage ist für dich ab jetzt tabu, eine Dame macht so etwas nicht.'},
-  {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:21,verm:6000000,rahmen:300000,haAlt:10,deckel:33,neu:'Bundeswettbewerb, eine eigene Weinhandlung, das Amt des Weinbotschafters'},
-  {name:'Verbandsvorstand',kurz:'Vorstand',w:'Verbandsvorständin',kw:'Vorständin',ans:4000,ha:26,verm:12000000,rahmen:300000,haAlt:13,deckel:36,neu:'Auslese und der Weg deines Gebiets im Herbst, das Hoffest, du kannst Kontrollen anregen'},
-  {name:'Vizepräsident',kurz:'Vizepräsident',w:'Vizepräsidentin',kw:'Vizepräsidentin',ans:6000,ha:29,verm:16000000,rahmen:300000,haAlt:16,deckel:41,neu:'Trockenbeerenauslese, in besonderen Jahren der fremde Weg im Herbst, die Chance auf eine Spitzenlage'},
-  {name:'Präsident des Weinbauverbands',kurz:'Präsident',w:'Präsidentin des Weinbauverbands',kw:'Präsidentin',ans:8500,ha:33,verm:30000000,rahmen:300000,haAlt:20,deckel:50,neu:'der Stuhl im Festsaal, das Amt an der Spitze des Verbands, der Weg zur Weltweinschau'}
+  {name:'Neuling',kurz:'Neuling',ans:0,ha:0,verm:0,rahmen:20000,haAlt:0,deckel:5},
+  {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:30,ha:3,verm:100000,rahmen:40000,haAlt:3,deckel:9,neu:'der erste eigene Hang, der Makler im Rathaus, Spenden fürs Dorf, Auktionen'},
+  {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:7,verm:250000,rahmen:80000,haAlt:4,deckel:17,neu:'Qualitätswein, öfter Land bei den Auktionen'},
+  {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:300,ha:14,verm:600000,rahmen:160000,haAlt:5,deckel:32,neu:'Kabinett, Landesprämierung, die Erntemaschine'},
+  {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:18,verm:1500000,rahmen:300000,haAlt:6,deckel:42,neu:'{sorte}, der Sektkeller, das Weinfest'},
+  {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:24,verm:3500000,rahmen:300000,haAlt:8,deckel:47,neu:'{sorte}, der große Vollernter',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.',wegW:'Sabotage ist für dich ab jetzt tabu, eine Dame macht so etwas nicht.'},
+  {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:27,verm:6000000,rahmen:300000,haAlt:10,deckel:50,neu:'Bundeswettbewerb, eine eigene Weinhandlung, das Amt des Weinbotschafters'},
+  {name:'Verbandsvorstand',kurz:'Vorstand',w:'Verbandsvorständin',kw:'Vorständin',ans:4000,ha:28,verm:12000000,rahmen:300000,haAlt:13,deckel:50,neu:'Auslese und der Weg deines Gebiets im Herbst, das Hoffest, du kannst Kontrollen anregen'},
+  {name:'Vizepräsident',kurz:'Vizepräsident',w:'Vizepräsidentin',kw:'Vizepräsidentin',ans:6000,ha:28,verm:16000000,rahmen:300000,haAlt:16,deckel:50,neu:'Trockenbeerenauslese, in besonderen Jahren der fremde Weg im Herbst, die Chance auf eine Spitzenlage'},
+  {name:'Präsident des Weinbauverbands',kurz:'Präsident',w:'Präsidentin des Weinbauverbands',kw:'Präsidentin',ans:8500,ha:28,verm:30000000,rahmen:300000,haAlt:20,deckel:50,neu:'der Stuhl im Festsaal, das Amt an der Spitze des Verbands, der Weg zur Weltweinschau'}
 ];
 // Seit 11.5 (Teil B): Fläche neu. Die Hürden (ha, bepflanzt) gehen bis 40 Hektar statt bis 20, haAlt sind die Werte bis 11.4.
-// deckel ist der höchste Besitz je Rang: immer ein Viertel mehr, als der nächste Rang verlangt, gerundet, und für niemanden mehr als 50 (Maik 20.11.2026).
+// deckel ist der höchste Besitz je Rang, seit 13.3.8 nach Nachtrag 3 (bis 13.3.7: ein Viertel mehr, als der nächste Rang verlangt), für niemanden mehr als 50 (Maik 20.11.2026).
 // Er gilt für dich (haDeckel) und für die Gegner (gegnerDeckel). Wer aus einem alten Spielstand mehr Land hat, behält es und kann nur nichts dazukaufen.
 // HA_NEU=0 holt für Messläufe die Regeln bis 11.4 zurück: alte Hürden, kein Deckel für dich, GEGNER_HA_MAX für die Gegner, beim Makler ein Hektar im Jahr.
 const HA_NEU=1;
 for(const r of RAENGE){const neu=r.ha; Object.defineProperty(r,'ha',{get:()=>HA_NEU?neu:r.haAlt,enumerable:true})}
+// Seit 13.3.8 (Nachtrag 3): Je Akt führt eine Hürde und gilt ganz (HUERDE_FUEHRT, Faktor 1), die anderen beiden gelten zu HUERDE_REST ihres Wunschwerts.
+// RANG_AKT nennt den Akt je Rang (Neuling zählt zum ersten). Hürde = Wunschwert (ansW, vermW) mal Faktor, gerundet.
+// Platzhalter bis 14.1: Die Wunschwerte für Ansehen und Vermögen sind so gesetzt, dass die Hürden ihre Werte von 13.3.7 behalten (heutiger Wert durch Faktor).
+// Die Flächen-Hürden stehen fest in ha (Nachtrag 3), die 0,7 im zweiten und dritten Akt stecken dort schon drin (26, 34, 38 und 40 Hektar Wunschfläche mal 0,7).
+const RANG_AKT=[1,1,1,1,2,2,2,3,3,3], HUERDE_FUEHRT={1:'ha',2:'verm',3:'ans'}, HUERDE_REST=.7;
+const huerdeF=(i,k)=>HUERDE_FUEHRT[RANG_AKT[i]]===k?1:HUERDE_REST;
+RAENGE.forEach((r,i)=>{for(const k of ['ans','verm']){r[k+'W']=r[k]/huerdeF(i,k); Object.defineProperty(r,k,{get:()=>Math.round(r[k+'W']*huerdeF(i,k)),enumerable:true})}});
 // Ab welcher Stufe (Index in RAENGE) etwas geht. RANG_ALT rechnet die sechs Ränge alter Spielstände um.
 // Seit 13.3.4 kommen die Ränge aus FREI, dort stehen auch Makler, Weinbotschafter und Kontrollen.
 const R_MAX=RAENGE.length-1, R_AUKTION=FREI.auktion.r, R_MAKLER=FREI.makler.r, R_LAND=FREI.land.r, R_BUND=FREI.bund.r, R_LADEN=FREI.laden.r, R_BOTSCHAFT=FREI.botschafter.r,
