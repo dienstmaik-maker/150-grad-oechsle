@@ -191,6 +191,9 @@ function aufstiegFehlt(){
 }
 // Bei einer Auktion darf nur mitbieten, wessen Besitz samt dem ganzen Los unter den Deckel passt (leer = du darfst).
 // Die Spitzenlage ist ausgenommen: Sie kommt nur einmal und darf den Deckel um ihre SPITZE_HA Hektar überschreiten (Annahme von Claude im Plan für 11.5).
+// Seit 13.4.9: Los mit Lage für die Texte, zum Beispiel "2 Hektar kühle Höhenlage". Alte Lose ohne Lage sind einfacher Hang.
+const losLage=a=>LAGEN[(a&&a.lage)||'einfach'], losText=a=>`${a.ha}\u00a0Hektar ${losLage(a).name}`;
+function hangZeile(){return LAGE_REIHE.filter(lg=>hangHa(lg)>0).map(lg=>`${LAGEN[lg].sym} ${String(hangHa(lg)).replace('.',',')}\u00a0ha`).join(' · ')||'kein Land'}
 function aukDeckel(a){a=a||S.auktion; const d=haDeckel(); if(!a||a.spitze||S.ha+a.ha<=d) return '';
   return `${S.ha>=d?`Du hast ${S.ha}\u00a0Hektar`:`Mit diesem Los hättest du ${S.ha+a.ha}\u00a0Hektar`}, als ${rangN(S.rang)} darfst du höchstens ${d} besitzen. ${aufstiegFehlt()}`}
 // Der Makler verkauft, wenn der Spieler den Rang hat, dieses Jahr noch Land für ihn da ist (maklerHa) und ihm für den nächsten Rang allein noch Land fehlt.
@@ -259,7 +262,7 @@ function roh(i){try{const o=JSON.parse(localStorage.getItem(KEYS[i])||'null');re
 function lies(i){const o=roh(i);return o&&o.v13?o:null}
 function liesAlt(i){const o=roh(i);return o&&!o.v13?o:null}
 // Übernimmt einen gelesenen Spielstand und bringt alte Stände auf den heutigen Stand.
-function nimm(o){S=o;if(S.zf==null)S.zf=zfNeu();if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();altDoppelt();altSpende();altKeller();altZeit();altAmt();if(!S.fu)S.fu=fuAlt(); else fuPaketB(); altKomp(); altAns(); altLeute(); altRuf(); altSchaed(); altSekt(); altFrei(); altHefe(); altJh(); altSchau()}
+function nimm(o){S=o;if(S.zf==null)S.zf=zfNeu();if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();altDoppelt();altSpende();altKeller();altZeit();altAmt();if(!S.fu)S.fu=fuAlt(); else fuPaketB(); altKomp(); altAns(); altLeute(); altRuf(); altSchaed(); altSekt(); altFrei(); altHefe(); altJh(); altSchau(); altHang()}
 // Seit 8.3: Spielstände ohne Uhr fangen bei 0 an und merken sich, dass sie erst seit 8.3 zählen.
 // Seit 8.5: Kellermeister Stufe 1 keltert statt abzufüllen. Hatte ein alter Spielstand auf Stufe 1 das Abfüllen an, ist jetzt das Keltern an.
 // Version 12.1 (Maik 20.11.2026): Alte Spielstände ab Winzer bekommen den Sektkeller geschenkt (Bestandsschutz), mit einer Zeile im Winzerboten (sektBote).
@@ -460,6 +463,27 @@ function ratte(){const n=S.ratte||1; return n<2?'Frau Öchsle':`Frau Öchsle ${R
 function rebenGesamt(){return R().sorten.reduce((a,id)=>a+S.felder[id].reben,0)}
 // Bepflanzte Hektar mit einer Nachkommastelle. Zählt für deinen Aufstieg, gekaufte Fläche allein reicht nicht.
 function flaecheBep(){return Math.round(rebenGesamt()/HA_REBEN*10)/10}
+// Seit 13.4.9 (Nachtrag 3): Land je Lage in S.hang (S.lage ist schon Weinskandal und Mode). S.ha bleibt die Summe und wächst nur über landDazu.
+// S.suedMax merkt den höchsten Südhang-Besitz der Partie, S.spitzeAuk das Jahr, in dem die Spitzenlage unter den Hammer kam.
+const hangHa=lg=>(S.hang||{})[lg]||0;
+function landDazu(lg,ha){const H=S.hang=S.hang||{einfach:S.ha,hoehe:0,sued:0}; H[lg]=Math.round(((H[lg]||0)+ha)*10)/10; S.ha=Math.round((S.ha+ha)*10)/10; if(lg==='sued') S.suedMax=Math.max(S.suedMax||0,H.sued)}
+// Wie viel Südhang darf noch kommen: SUED_MAX minus Besitz, bis die Spitzenlage unter den Hammer kam, bleiben ihre SPITZE_HA frei.
+function suedRest(){return Math.max(0,SUED_MAX-hangHa('sued')-(S.spitzeAuk?0:SPITZE_HA))}
+// Freier Platz in Reben. Die Spitzen-Sorte wächst nur auf freiem Südhang, Menge- und Sekt-Sorte dürfen überall stehen.
+function suedPlatz(){return Math.max(0,hangHa('sued')*HA_REBEN-handReben())}
+function platzFuer(id){const f=Math.max(0,S.ha*HA_REBEN-rebenGesamt()); return spitzeId(id)?Math.min(f,suedPlatz()):f}
+// Anteil der Sekt-Reben auf dem einfachen Hang. Die Reben bleiben je Sorte, die Lage ergibt sich zu deinen Gunsten: Die Spitzen-Sorte steht auf dem Südhang,
+// der Sekt zuerst auf der Höhenlage, dann auf dem übrigen Südhang, erst der Rest auf dem einfachen Hang. Der Abzug gilt anteilig (Annahme von Claude).
+function sektEinfach(){const s=R().sorten.filter(sektSorte).reduce((a,id)=>a+S.felder[id].reben,0); if(!s) return 0; const gut=Math.max(0,(hangHa('hoehe')+hangHa('sued'))*HA_REBEN-handReben()); return Math.max(0,s-gut)/s}
+const sektAbzug=()=>Math.round(SEKT_EINFACH_QP*sektEinfach());
+// So viele Reben der Menge- oder Sekt-Sorte passen noch, ohne Südhang zu belegen (für die Warnung beim Pflanzen). Ohne Südhang unbegrenzt.
+function suedWarnAb(id){if(spitzeId(id)||!hangHa('sued')) return Infinity; const belegt=rebenGesamt()-Math.min(handReben(),hangHa('sued')*HA_REBEN);
+  return Math.min(platzFuer(id),Math.max(0,(hangHa('einfach')+hangHa('hoehe'))*HA_REBEN-belegt))}
+function sektHangSatz(){const a=Math.round(sektEinfach()*100); return `${SUED_SATZ.sekt}${a?` Gerade stehen ${a} % deiner Sekt-Reben auf dem einfachen Hang.`:''}`}
+// Stände vor 13.4.9: Ihr Land zählt als einfacher Hang. Die Spitzenlage zählt als Südhang, dazu so viel Land, wie Spitzen-Reben darauf stehen (aufgerundet, zusammen höchstens SUED_MAX).
+// Stehen mehr Spitzen-Reben, bleiben sie stehen, nachgepflanzt wird nur auf freiem Südhang. Kam die Spitzenlage schon unter den Hammer, kommt sie nicht noch einmal.
+function altHang(){if(S.hang) return; const sued=Math.min(SUED_MAX-(S.spitze||S.spitzeVers?0:SPITZE_HA),S.ha,Math.max(S.spitze?SPITZE_HA:0,Math.ceil(handReben()/HA_REBEN)));
+  S.hang={einfach:Math.round((S.ha-sued)*10)/10,hoehe:0,sued}; S.suedMax=sued; if(S.spitze||S.spitzeVers) S.spitzeAuk=S.spitzeVers||S.jahr}
 const verlustSpanne=b=>VERLUST.find(v=>b>=v[0]);
 // Bodenschnitt des laufenden Jahres: die Monatsenden bisher und der heutige Stand.
 function bodenSchnitt(){return Math.round(((S.bodenSum||0)+S.boden)/((S.bodenN||0)+1))}
@@ -720,12 +744,18 @@ function weltSieg(e,was,L){
 // Probestände aus 13.5 und früher: Eine Schau, die noch über S.wett lief, fällt weg.
 function altSchau(){if(S.wett&&S.wett.typ==='welt') S.wett=null}
 
+// Seit 13.4.9: Lage des nächsten Loses, gewürfelt nach den Anteilen in AUK_LAGE für deinen Rang. Südhang nur, solange noch ein ganzer Hektar frei ist.
+// Gibt es nur eine Lage, wird nicht gewürfelt, so bleiben die Würfe im ersten Akt wie vorher.
+function aukLage(){const z=AUK_LAGE.filter(x=>S.rang>=x.r).pop().w, W=LAGE_REIHE.filter(lg=>z[lg]>0&&(lg!=='sued'||suedRest()>=1)); if(W.length<2) return W[0]||'einfach';
+  let r=Math.random()*W.reduce((a,lg)=>a+z[lg],0); for(const lg of W){r-=z[lg]; if(r<0) return lg} return W[W.length-1]}
+const aukLageF=lg=>(AUK_PREIS_AKT[RANG_AKT[S.rang]]||1)*(AUK_PREIS_LAGE[lg]||1);
 function auktionHa(){const r=Math.random();return r<.4?1:r<.73?2:r<.95?3:r<.995?5:10}
 function neueAuktion(spitze,haFest){
-  if(spitze){const B=misch(NACHBARN).slice(0,3).map(n=>({name:n,limit:rint(64,144)*5000})); S.auktion={ha:SPITZE_HA,start:SPITZE_START,schritt:10000,gebot:SPITZE_START,fuehrer:B[rint(0,2)].name,bieter:B,ende:null,text:'',phase:0,spitze:1}; return}
+  if(spitze){const B=misch(NACHBARN).slice(0,3).map(n=>({name:n,limit:rint(64,144)*5000})); S.auktion={ha:SPITZE_HA,lage:'sued',start:SPITZE_START,schritt:10000,gebot:SPITZE_START,fuehrer:B[rint(0,2)].name,bieter:B,ende:null,text:'',phase:0,spitze:1}; return}
   // Seit 13.4.1: aukPreisF des Gebiets (Rheinhessen) auf Startgebot und alle Gebote, so wird das Land günstiger.
   // Seit 13.3.7: haFest gibt die Größe des Loses vor (vor dem Winzer AUK_FRUEH_HA).
-  const pf=R().aukPreisF||1, ha=haFest||auktionHa(), start=Math.round(ha*8000*pf/500)*500, B=misch(NACHBARN).slice(0,rint(2,3)).map(n=>({name:n,limit:Math.round(ha*rnd(11000,30000)*pf/500)*500}));
+  // Seit 13.4.9: Lage des Loses nach Rang (aukLage), ein Südhang-Los höchstens so groß, wie suedRest() erlaubt, der Preis mal Faktor je Akt und Lage.
+  const lage=aukLage(), ha0=haFest||auktionHa(), ha=lage==='sued'?Math.min(ha0,Math.floor(suedRest())):ha0, pf=(R().aukPreisF||1)*aukLageF(lage), start=Math.round(ha*8000*pf/500)*500, B=misch(NACHBARN).slice(0,rint(2,3)).map(n=>({name:n,limit:Math.round(ha*rnd(11000,30000)*pf/500)*500}));
   for(const g of S.gegner) if(g.region===S.region){
     const t=GEGNER_TYP[g.typ];
     // Der Zufall wird immer gezogen, auch wenn der Gegner am Deckel ist und nicht mitbietet.
@@ -733,7 +763,7 @@ function neueAuktion(spitze,haFest){
     if(g.ha+ha<=gegnerDeckel(g)) B.push({name:g.name,ki:g.id,limit:lim});
   }
   const offen=B.filter(b=>b.limit>=start);
-  S.auktion={ha,start,schritt:Math.max(500,Math.round(start*.1/500)*500),gebot:start,fuehrer:offen.length?offen[rint(0,offen.length-1)].name:null,bieter:B,ende:null,text:'',phase:0};
+  S.auktion={ha,lage,start,schritt:Math.max(500,Math.round(start*.1/500)*500),gebot:start,fuehrer:offen.length?offen[rint(0,offen.length-1)].name:null,bieter:B,ende:null,text:'',phase:0};
 }
 // Seit 13.3.7 (Nachtrag 3): Chance je Auktionsmonat. Vor dem Winzer im Schnitt ein Los alle AUK_FRUEH_JAHRE Jahre, danach AUK_CHANCE wie bisher.
 function aukChance(){return (frei('auktion_oft')?AUK_CHANCE:1/(AUK_FRUEH_JAHRE*AUK_MONATE.length))*(R().aukF||1)}
@@ -745,11 +775,11 @@ function aukLimit(){return S.geld+rahmen()-(S.kredit?S.kredit.rest:0)}
 // Der Spieler ist raus oder hat die Auktion verpasst: Die anderen machen es unter sich aus.
 function aukOhneDich(){
   const a=S.auktion, B=a.bieter.filter(b=>b.limit>=a.gebot).sort((x,y)=>y.limit-x.limit);
-  if(!B.length){a.ende='niemand'; return a.text=`Für den Weinberg mit ${a.ha}\u00a0Hektar ${WO[S.region]} fand sich kein Bieter.`}
+  if(!B.length){a.ende='niemand'; return a.text=`Für ${losText(a)} ${WO[S.region]} fand sich kein Bieter.`}
   const sieger=B[0], pr=B[1]?Math.max(a.gebot,Math.min(sieger.limit,B[1].limit+a.schritt)):a.gebot;
   a.ende=sieger.name; a.gebot=pr;
   if(sieger.ki!=null){const g=S.gegner[sieger.ki]; g.geld-=pr; g.ha+=a.ha; g.ansehen+=2*(3+Math.min(a.ha,7))*DIFF[S.schwer].ki}
-  return a.text=`${sieger.name} bekommt den Zuschlag: ${a.ha}\u00a0Hektar ${WO[S.region]} für ${eur(pr)}.`;
+  return a.text=`${sieger.name} bekommt den Zuschlag: ${losText(a)} ${WO[S.region]} für ${eur(pr)}.`;
 }
 // Seit 7.9 für das Rathaus: Wann kann frühestens wieder geboten werden, und wann ist der nächste Wettbewerb?
 // Geboten wird im Monat nach der Ankündigung. Steht für diesen Monat nichts an, zählt erst die nächste Ankündigung.
@@ -760,12 +790,12 @@ function wettNaechst(typ){
   let j=S.jahr+(S.monat>=5?1:0); while(j%3) j++; return `Juni ${j}`;
 }
 // Phase 0: angekündigt, nächsten Monat wird geboten. Text für "Das steht an", leer wenn nichts ansteht.
-function aukInfo(){const a=S.auktion; return a&&a.phase===0&&S.rang>=R_AUKTION?`🔨 Nächsten Monat Auktion: ${a.ha}\u00a0Hektar, Start bei ${eur(a.start)}${aukDeckel(a)?', für deinen Rang zu groß':''}`:''}
+function aukInfo(){const a=S.auktion; return a&&a.phase===0&&S.rang>=R_AUKTION?`🔨 Nächsten Monat Auktion: ${losText(a)}, Start bei ${eur(a.start)}${aukDeckel(a)?', für deinen Rang zu groß':''}`:''}
 // Ergebnis für den Fuß der Zeitung, im Monat nach dem Bieten.
 function aukErgebnis(){
   const a=S.auktion; if(!a.ende) aukOhneDich();
-  if(a.ende==='niemand') return `Für den Weinberg mit ${a.ha}\u00a0Hektar ${WO[S.region]} fand sich kein Bieter.`;
-  return `Auktion ${WO[S.region]}: ${a.ende==='du'?S.name:a.ende} bekommt ${a.ha}\u00a0Hektar für ${eur(a.gebot)}.`;
+  if(a.ende==='niemand') return `Für ${losText(a)} ${WO[S.region]} fand sich kein Bieter.`;
+  return `Auktion ${WO[S.region]}: ${a.ende==='du'?S.name:a.ende} bekommt ${losText(a)} für ${eur(a.gebot)}.`;
 }
 
 /* ================= Ereignisse ================= */
@@ -1318,7 +1348,7 @@ function kompSektText(){
 }
 // Wissens-Seiten: Geschichte und die Zeile "Im Spiel", ohne Siegel. Die Kennungen aus 11.1 bleiben, neu ist helferweg.
 for(const r of Object.keys(REGIONEN)) kompWissen('gebiet_'+r,'gebiet',REGIONEN[r].name,()=>`${REGIONEN[r].text} ${r===S.region?'Hier steht dein Weingut.':`So spielt es sich in einer Partie ${WO[r]}.`}`);
-kompWissen('spitze','gebiet','Spitzenlage',()=>`Die beste Lage weit und breit: ${SPITZE_HA} Hektar Steilhang in voller Südsonne. Wem sie gehört, dessen Trauben starten jeden Juli mit ${SPITZE_OE}° Öchsle mehr. Unter den Hammer kommt sie ab dem Rang ${RAENGE[R_SPITZE].name}.`);
+kompWissen('spitze','gebiet','Spitzenlage',()=>`Die beste Lage weit und breit: ${SPITZE_HA} Hektar Steilhang in voller Südsonne. Wem sie gehört, dessen Trauben starten jeden Juli mit ${SPITZE_OE}° Öchsle mehr. Sie ist steiler Südhang, und unter den Hammer kommt sie nur einmal, ${freiText('spitzenlage')}.`);
 for(let k=1;k<=KELLER_PREISE.length;k++) kompWissen('keller'+k,'technik',KELLER_NAMEN[k-1],
   ()=>`Stufe ${k} im Kellerausbau. Kostet ${eur(KELLER_PREISE[k-1])} und geht mit ${kellerMit(k-1)} im Kellerbuch. Prädikatsweine und Eiswein sind damit ${k} ${k===1?'Monat':'Monate'} früher verkaufsreif, und jeder Wein gewinnt beim Reifen schneller an Wert.`);
 // Seit 12.1: der Sektkeller mit der Flaschengärung als kleine Geschichte (KOMP_TEXT.sektkeller).
@@ -1516,7 +1546,7 @@ function kompAuf(id){
 /* ================= Spielstart ================= */
 function neuesSpiel(){
   const reg=REG(NEU.region,!!ROLLEN_NEU);
-  S={v:1,v13:1,zf:zfNeu(),name:NEU.name.trim().slice(0,NAME_MAX)||'Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:startGeld(NEU.schwer),ha:3,boden:80,bodenSt:0,bodenZ:0,duengungen:0,
+  S={v:1,v13:1,zf:zfNeu(),name:NEU.name.trim().slice(0,NAME_MAX)||'Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:startGeld(NEU.schwer),ha:3,hang:{einfach:3,hoehe:0,sued:0},boden:80,bodenSt:0,bodenZ:0,duengungen:0,
     felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',sonne:0,markt:1,ansehen:0,ansV:1,leuteV:1,
     jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:ALLEIN_HA?0:1,lagerarb:ALLEIN_FASS?0:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,meilen:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],rangMon:{0:START_JAHR*12},freiBote:{},komp:{},kompV:3,v121:1,ein:{f:[]},...(ROLLEN_NEU?{rollen:1}:{})};
   for(const id of reg.sorten){S.felder[id]={reben:0,pflSt:0,pflZ:0}; feldReset(S.felder[id])}
@@ -1879,7 +1909,7 @@ function etappe3Monat(Z){
     S.rangNeu=S.jahr*12+S.monat;
     zeitAufstieg(alt,S.rang); rangMonMerk(alt,S.rang);
     // Seit 13.3.7 (Nachtrag 3): Zum Jungwinzer schenkt der alte Winzer einen Hektar kahlen Hang, übergeben über den Makler. S.geschenkHa merkt ihn für die Lage (13.4.9).
-    if(alt<1&&S.rang>=1&&!S.geschenk){S.geschenk=S.jahr; S.ha+=GESCHENK_HA; S.geschenkHa=GESCHENK_HA; Z.push(GESCHENK_TEXT)}
+    if(alt<1&&S.rang>=1&&!S.geschenk){S.geschenk=S.jahr; landDazu('einfach',GESCHENK_HA); S.geschenkHa=GESCHENK_HA; Z.push(GESCHENK_TEXT)}
     S.feier={von:alt,zu:S.rang,platz:bestenEintrag()}; if(S.rang<R_MAX) S.aufBrief=S.rang;
     schlag(95,`Aufstieg: Du bist jetzt ${rangN(S.rang)}`,`Das ${bringtSatz(S.rang)}.${rahmenSatz(S.rang)}${r.weg?' '+anr(r.weg,r.wegW):''}`,wgBild(S.rang+1,'sommer'),{sonder:1,gold:1,du:1});   // Seit 12.4.3: Weingut-Bild der neuen Stufe statt 'aufstieg' (Maik 20.11.2026)
     if(S.rang===R_MAX&&!S.sieger) siegSpieler();
@@ -1913,17 +1943,18 @@ function etappe3Monat(Z){
   // Alte Spielstände ohne phase hatten ihren Bietmonat schon und bekommen jetzt das Ergebnis.
   const a=S.auktion, wo=WO[S.region], ab=S.rang>=R_AUKTION, nichtDu=` Mitbieten darfst du ab dem Rang ${RAENGE[R_AUKTION].name}.`;
   if(a&&a.phase!==0){FUSS.push('🔨 '+aukErgebnis()); S.auktion=null}
-  else if(a){a.phase=1; schlag(56,a.spitze?`Heute wird geboten: die Spitzenlage ${wo}`:`Heute wird geboten: ${a.ha}\u00a0Hektar ${wo}`,`Im Saal sitzen ${a.bieter.length} Bieter, das Startgebot liegt bei ${eur(a.start)}.${!ab?nichtDu:aukDeckel(a)?' '+AUK_ZU_GROSS+' Warum, steht im Rathaus.':' Mitbieten kannst du diesen Monat im Rathaus.'}`,a.spitze?'spitzenlage':'auktion',{archiv:a.spitze?0:1})}
-  // Spitzenlage: ab Vizepräsident alle drei Jahre eine Chance, in einem Auktionsmonat zur Hälfte. Nur Nachbarn bieten mit.
-  if(!S.auktion&&!S.spitze&&S.rang>=R_SPITZE&&AUK_MONATE.includes(S.monat)&&S.jahr-(S.spitzeVers||0)>=3&&Math.random()<.5){
-    neueAuktion(1); S.spitzeVers=S.jahr;
-    schlag(57,`Die Spitzenlage ${wo} kommt unter den Hammer`,`Die beste Lage weit und breit: ${SPITZE_HA}\u00a0Hektar Steilhang in voller Südsonne. Nächsten Monat wird versteigert, das Startgebot liegt bei ${eur(SPITZE_START)}. Wer sie bekommt, erntet jedes Jahr süßere Trauben.`,'spitzenlage');
+  else if(a){a.phase=1; schlag(56,a.spitze?`Heute wird geboten: die Spitzenlage ${wo}`:`Heute wird geboten: ${losText(a)} ${wo}`,`Im Saal sitzen ${a.bieter.length} Bieter, das Startgebot liegt bei ${eur(a.start)}.${!ab?nichtDu:aukDeckel(a)?' '+AUK_ZU_GROSS+' Warum, steht im Rathaus.':' Mitbieten kannst du diesen Monat im Rathaus.'}`,a.spitze?'spitzenlage':'auktion',{archiv:a.spitze?0:1})}
+  // Seit 13.4.9 (Nachtrag 3): Die Spitzenlage kommt genau einmal unter den Hammer, im ersten Auktionsmonat, sobald frei('spitzenlage') gilt (Weinbaurat plus 10 Jahre).
+  // Sie ist steiler Südhang und zählt zu SUED_MAX. Das Zufallsangebot ab dem Vizepräsidenten ist weg. Nur Nachbarn bieten mit.
+  if(!S.auktion&&!S.spitze&&!S.spitzeAuk&&frei('spitzenlage')&&AUK_MONATE.includes(S.monat)){
+    neueAuktion(1); S.spitzeAuk=S.jahr; S.spitzeVers=S.jahr;
+    schlag(57,`Die Spitzenlage ${wo} kommt unter den Hammer`,`Die beste Lage weit und breit: ${SPITZE_HA}\u00a0Hektar steiler Südhang in voller Südsonne, die gibt es nur dieses eine Mal. Nächsten Monat wird versteigert, das Startgebot liegt bei ${eur(SPITZE_START)}. Wer sie bekommt, erntet jedes Jahr süßere Trauben.`,'spitzenlage');
   }
   // Seit 13.4.1: aukF des Gebiets (Rheingau) auf die Chance einer Auktion.
   // Seit 13.3.7: vor dem Winzer selten und klein (aukChance), ab dem Jungwinzer kommt das erste Angebot spätestens nach AUK_ERST_JAHRE Jahren (aukErstFaellig).
   if(!S.auktion&&AUK_MONATE.includes(S.monat)&&(S.jahr-START_JAHR)*12+S.monat>=6&&(aukErstFaellig()||Math.random()<aukChance())){
     neueAuktion(0,frei('auktion_oft')?0:AUK_FRUEH_HA); if(S.rang>=R_AUKTION&&!S.aukErst) S.aukErst=S.jahr*12+S.monat;
-    schlag(55,`Weinberg ${wo} zu versteigern`,`Nächsten Monat kommen ${S.auktion.ha}\u00a0Hektar unter den Hammer, das Startgebot liegt bei ${eur(S.auktion.start)}.${!ab?nichtDu:aukDeckel()?' '+AUK_ZU_GROSS:' Halte Geld oder Kreditrahmen bereit.'}`,'auktion',{archiv:1});
+    schlag(55,`Weinberg ${wo} zu versteigern`,`Nächsten Monat kommen ${losText(S.auktion)} unter den Hammer, das Startgebot liegt bei ${eur(S.auktion.start)}. ${losLage(S.auktion).satz}${!ab?nichtDu:aukDeckel()?' '+AUK_ZU_GROSS:' Halte Geld oder Kreditrahmen bereit.'}`,'auktion',{archiv:1});
   }
   ladenMonat(Z);
   neueLaeden(); S.absatz=0;
@@ -2090,7 +2121,7 @@ function aufgaben(){
   if(amtKampf()){const s=stimmZ(), mk=S.amt.marke; A.push({t:`🗳️ Wahl im ${monJahr(S.amt.wahl)}: Stimmung ${s}, du brauchst ${mk}`+(s>=mk?'. Im Moment reicht das':''),tab:'stadt',sub:'amt',...(s>=mk?{ruhig:1}:{})})}
   if(aukInfo()) A.push({t:aukInfo(),tab:'stadt',sub:'amt',ruhig:1});
   // Auktionstag: Rot nur, wenn Konto plus freier Kreditrahmen fürs nächste Gebot reichen. Sonst bleibt es ein Hinweis.
-  if(S.auktion&&S.auktion.phase!==0&&!S.auktion.ende&&S.rang>=R_AUKTION){const zuG=aukDeckel(), kann=!zuG&&aukNaechstes()<=aukLimit(); A.push({t:`🔨 Auktion diesen Monat: ${S.auktion.ha}\u00a0Hektar, Gebot steht bei ${eur(S.auktion.gebot)}`+(zuG?'. '+AUK_ZU_GROSS.slice(0,-1):kann?'':'. Zum Mitbieten reicht dein Geld nicht'),tab:'stadt',sub:'amt',...(kann?{rot:1}:{ruhig:1})})}
+  if(S.auktion&&S.auktion.phase!==0&&!S.auktion.ende&&S.rang>=R_AUKTION){const zuG=aukDeckel(), kann=!zuG&&aukNaechstes()<=aukLimit(); A.push({t:`🔨 Auktion diesen Monat: ${losText(S.auktion)}, Gebot steht bei ${eur(S.auktion.gebot)}`+(zuG?'. '+AUK_ZU_GROSS.slice(0,-1):kann?'':'. Zum Mitbieten reicht dein Geld nicht'),tab:'stadt',sub:'amt',...(kann?{rot:1}:{ruhig:1})})}
   // Wettbewerb: Rot nur mit einem zugelassenen Wein. Reicht der Manager ein, steht hier nichts. Seit 10.3 bleibt die Zeile bei der Weltweinschau immer stehen.
   if(S.wett&&!S.wett.fertig&&!S.wett.ein&&S.rang>=wettRang()&&(S.wett.typ==='welt'||!aufgabeAktiv('wett'))){const pass=S.lots.some(wettFaehig); A.push({t:`🏅 ${WETTNAME[S.wett.typ]}: `+(pass?'diesen Monat einen Wein einreichen':'diesen Monat, du hast aber keinen zugelassenen Wein'),tab:'stadt',sub:'amt',...(pass?{rot:1}:{ruhig:1})})}
   // Seit 13.6.4: Nach der dritten Krone steht die letzte Übergabe an.
@@ -2302,7 +2333,7 @@ function mgrBetrieb(){
   const LW=[], LK=[], m=S.monat, neu={helfer:0,lagerarb:0}, hf=aufgabeAktiv('helfer'), la=aufgabeAktiv('lager');
   const stell=k=>{zahle(VERMITTLUNG); S[k]++; S.loehne[k].push(S.angebot[k]); S.loehne[k].sort((x,y)=>x-y); neu[k]++};
   if(aufgabeAktiv('reben')&&m<=2&&S.verlust) for(const id of R().sorten){
-    const pr=rebenPreis(id), platz=()=>Math.min(S.verlust[id]||0,S.ha*HA_REBEN-rebenGesamt(),Math.floor(Math.max(0,S.geld-5000)/pr/10)*10);
+    const pr=rebenPreis(id), platz=()=>Math.min(S.verlust[id]||0,platzFuer(id),Math.floor(Math.max(0,S.geld-5000)/pr/10)*10);
     if(hf){let i=0; while(platz()>=10&&helferReben()<rebenGesamt()+platz()&&S.geld>5000+VERMITTLUNG&&i++<20) stell('helfer')}
     const n=Math.floor(Math.min(platz(),helferReben()-rebenGesamt())/10)*10;
     if(n>0){zahle(Math.round(n*pr*100)/100); const f=S.felder[id]; f.reben+=n; S.verlust[id]-=n; LW.push(`${rbn(n)} ${SORTEN[id].name}-Reben nachgepflanzt`)}
@@ -2438,8 +2469,10 @@ function pflanzAb(id,n){const v=S.verlust||{}, a=Math.min(v[id]||0,n); if(a) v[i
 const pflanzMitA=id=>(S.felder[id].auftrag||0)>0;
 const pflanzKann=id=>sorteFrei(id)&&!(sektSorte(id)&&!S.sektkeller);
 const pflanzReihe=()=>[...R().sorten.filter(pflanzMitA),...R().sorten.filter(id=>!pflanzMitA(id))];
-const pflanzReserve=()=>R().sorten.filter(id=>pflanzMitA(id)&&pflanzKann(id)).reduce((a,id)=>a+pflanzSoll(id),0);
-function pflanzPlan(id){let cap=Math.max(0,S.ha*HA_REBEN-rebenGesamt()); for(const x of pflanzReihe()){const n=pflanzKann(x)?Math.floor(Math.min(pflanzSoll(x),cap)/10)*10:0; if(x===id) return n; cap-=n} return 0}
+// Seit 13.4.9: Die Spitzen-Sorte bekommt höchstens den freien Südhang (spitzeDeckel), auch beim Freihalten für ihren Auftrag.
+const spitzeDeckel=id=>spitzeId(id)?suedPlatz():Infinity;
+const pflanzReserve=()=>R().sorten.filter(id=>pflanzMitA(id)&&pflanzKann(id)).reduce((a,id)=>a+Math.min(pflanzSoll(id),spitzeDeckel(id)),0);
+function pflanzPlan(id){let cap=Math.max(0,S.ha*HA_REBEN-rebenGesamt()); for(const x of pflanzReihe()){const n=pflanzKann(x)?Math.floor(Math.min(pflanzSoll(x),cap,spitzeDeckel(x))/10)*10:0; if(x===id) return n; cap-=n} return 0}
 function helferArbeit(L){
   if(!S.helfer) return; const st=leuteSt('helfer'), m=S.monat;
   if(st>=1&&abgabe('duengen')&&S.duengungen<3&&S.boden<100&&(S.boden<=HELFER_DUENG||(m===7&&S.boden<90))&&S.geld>=duengKosten()){const ma=bonusMasch('duenger'); duenge(); L.push(ma?'mit dem Düngerstreuer gedüngt':'gedüngt')}
@@ -2447,7 +2480,7 @@ function helferArbeit(L){
   if(st>=3&&m<=2&&abgabe('pflanzen')) for(const id of pflanzReihe()){
     const f=S.felder[id], soll=pflanzSoll(id); if(soll<10||!pflanzKann(id)) continue;
     const wm=mgrSt('weingut')>0, pr=rebenPreis(id); if(wm&&m<2&&pr>SORTEN[id].preis) continue;
-    const res=pflanzMitA(id)?0:pflanzReserve(), pu=wm?mgrPuffer('weingut'):0, n=Math.floor(Math.min(soll,S.ha*HA_REBEN-rebenGesamt()-res,helferReben()-rebenGesamt(),Math.max(0,S.geld-pu)/pr)/10)*10;
+    const res=pflanzMitA(id)?0:pflanzReserve(), pu=wm?mgrPuffer('weingut'):0, n=Math.floor(Math.min(soll,S.ha*HA_REBEN-rebenGesamt()-res,spitzeDeckel(id),helferReben()-rebenGesamt(),Math.max(0,S.geld-pu)/pr)/10)*10;
     if(n<10) continue; zahle(Math.round(n*pr*100)/100); f.reben+=n; pflanzAb(id,n); L.push(`${rbn(n)} ${SORTEN[id].name}-Reben gepflanzt`);
   }
 }
@@ -2752,7 +2785,8 @@ function lese(id,la,p,hefe){
   const neu={id:S.nextId++,sorte:id,jahrgang:S.jahr,liter:l,oe:q.oe,leseart:la,edel:f.edel,eis:f.gefroren,...(q.masch?{masch:1}:{}),status:'trauben',stufe:null,qp:0,fassMonate:0,flMonate:0,sonne:S.sonne,...(S.laubJahr===S.jahr?{laub:1}:{}),boden:S.boden+4*R().sorten.filter(x=>S.felder[x].gelesen||S.felder[x].teil).length,bst:S.bodenSt||0,pfl:f.pflSt||0,...(f.jh?{jh:1}:{})};
   // Seit 13.5.8: Die Sekt-Trauben liegen erst im Keller (sektTr), Kosten und Ansehen kommen mit dem Umlagern in den Sektkeller (sektUmlagern).
   if(sk){const h=hefe===HEFE_LANG?HEFE_LANG:SEKT_REIFE; Object.assign(neu,{status:'sektTr',stufe:SEKT_GRUND,sekt:true,edel:false,eis:false,...(h>SEKT_REIFE?{hefe:h}:{}),med:[],bund:false});
-    neu.qp=qpFuer(neu,SEKT_GRUND)+SEKT_QP+(h>SEKT_REIFE?HEFE_LANG_QP:0)}
+    // Seit 13.4.9: Sekt vom einfachen Hang bekommt SEKT_EINFACH_QP Punkte weniger, anteilig nach sektEinfach(). ab merkt den Abzug für die Anzeige.
+    const ab=sektAbzug(); neu.qp=Math.max(1,qpFuer(neu,SEKT_GRUND)+SEKT_QP+(h>SEKT_REIFE?HEFE_LANG_QP:0)-ab); if(ab) neu.hangAb=ab}
   // Seit 13.4.6: Erlös der Lese für die Warnung des Weingut-Managers.
   {const st=sk?SEKT_GRUND:besteStufe(q); f.leseW=(f.leseW||0)+(st?leseWert(id,la,st,l):0)}
   S.lots.push(neu);

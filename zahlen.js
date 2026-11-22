@@ -123,7 +123,9 @@ const FREI={wein_feder:{r:0},wein_tafel:{r:0},wein_qba:{r:2},wein_kab:{r:3},wein
   makler:{r:1},spende:{r:1},auktion:{r:1},auktion_oft:{r:2},land:{r:3},
   export:{r:3,ab:4,name:'der Exporthandel',bote:'🚢 Der Exporthandel nimmt jetzt auch deinen Wein. Er zahlt mehr als das Inland und nimmt dir mit jedem Rang mehr ab.'},
   sabotage:{r:3,ab:4,bis:5,name:'Sabotage hinter der Hintertür',bote:'💣 Hinter der Hintertür kennt man jetzt deinen Namen. Wer will, kann einem Gegner schaden lassen.'},
-  sorte_sekt:{r:4},sektkeller:{r:4},weinfest:{r:4},sorte_spitze:{r:5},laden:{r:6},botschafter:{r:6},bund:{r:6},hoffest:{r:7},kontrolle:{r:7},spitzenlage:{r:8},
+  sorte_sekt:{r:4},sektkeller:{r:4},weinfest:{r:4},sorte_spitze:{r:5},laden:{r:6},botschafter:{r:6},bund:{r:6},hoffest:{r:7},kontrolle:{r:7},
+  // Seit 13.4.9 (Nachtrag 3): Die Spitzenlage kommt einmal, im ersten Auktionsmonat 10 Jahre nach dem Weinbaurat (Wunschjahr 77), statt per Zufall ab dem Vizepräsidenten.
+  spitzenlage:{r:6,ab:10},
   // Seit 13.5.1 (Bauplan 13.5, Maik 21.11.2026): Stufen der Leute, Manager und Maschinen. pfl:[Rolle, Stufe] ist der zweite Auslöser neben Rang plus Abstand,
   // er gilt, sobald die Sorte dieser Rolle die Pflegestufe erreicht hat. Leute und Manager fallen nie zurück (S.leuteSt, S.manager), auch wenn die Pflege später fällt.
   // Eine höhere Stufe bringt die fehlenden mit, so bleibt die Reihenfolge immer gleich. Namen und Zeilen im Winzerboten sind Platzhalter bis 13.8.
@@ -239,11 +241,11 @@ const RAENGE=[
   {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:30,ha:3,verm:100000,rahmen:40000,haAlt:3,deckel:9,neu:'der erste eigene Hang, der Makler im Rathaus, Spenden fürs Dorf, Auktionen'},
   {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:7,verm:250000,rahmen:80000,haAlt:4,deckel:17,neu:'Qualitätswein, öfter Land bei den Auktionen'},
   {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:210,ansW:300,ha:14,verm:600000,rahmen:160000,haAlt:5,deckel:32,neu:'Kabinett, Landesprämierung, die Erntemaschine'},
-  {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:18,verm:1500000,rahmen:300000,haAlt:6,deckel:42,neu:'{sorte}, der Sektkeller, das Weinfest'},
-  {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:24,verm:3500000,rahmen:300000,haAlt:8,deckel:47,neu:'{sorte}, der große Vollernter',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.',wegW:'Sabotage ist für dich ab jetzt tabu, eine Dame macht so etwas nicht.'},
+  {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:18,verm:1500000,rahmen:300000,haAlt:6,deckel:42,neu:'{sorte}, der Sektkeller, das Weinfest, kühle Höhenlagen bei den Auktionen'},
+  {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:24,verm:3500000,rahmen:300000,haAlt:8,deckel:47,neu:'{sorte}, der große Vollernter, der steile Südhang bei den Auktionen',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.',wegW:'Sabotage ist für dich ab jetzt tabu, eine Dame macht so etwas nicht.'},
   {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:27,verm:6000000,rahmen:300000,haAlt:10,deckel:50,neu:'Bundeswettbewerb, eine eigene Weinhandlung, das Amt des Weinbotschafters'},
   {name:'Verbandsvorstand',kurz:'Vorstand',w:'Verbandsvorständin',kw:'Vorständin',ans:4000,ha:28,verm:12000000,rahmen:300000,haAlt:13,deckel:50,neu:'Auslese und der Weg deines Gebiets im Herbst, das Hoffest, du kannst Kontrollen anregen'},
-  {name:'Vizepräsident',kurz:'Vizepräsident',w:'Vizepräsidentin',kw:'Vizepräsidentin',ans:6000,ha:28,verm:16000000,rahmen:300000,haAlt:16,deckel:50,neu:'Trockenbeerenauslese, in besonderen Jahren der fremde Weg im Herbst, die Chance auf eine Spitzenlage'},
+  {name:'Vizepräsident',kurz:'Vizepräsident',w:'Vizepräsidentin',kw:'Vizepräsidentin',ans:6000,ha:28,verm:16000000,rahmen:300000,haAlt:16,deckel:50,neu:'Trockenbeerenauslese, in besonderen Jahren der fremde Weg im Herbst'},
   {name:'Präsident des Weinbauverbands',kurz:'Präsident',w:'Präsidentin des Weinbauverbands',kw:'Präsidentin',ans:8500,ha:28,verm:30000000,rahmen:300000,haAlt:20,deckel:50,neu:'der Stuhl im Festsaal, das Amt an der Spitze des Verbands, der Weg zur Weltweinschau'}
 ];
 // Seit 11.5 (Teil B): Fläche neu. Die Hürden (ha, bepflanzt) gehen bis 40 Hektar statt bis 20, haAlt sind die Werte bis 11.4.
@@ -639,6 +641,25 @@ const AUK_MONATE=[2,3,6,10], AUK_CHANCE=.22;
 // Seit 13.3.7 (Nachtrag 3): Vor dem Winzer (auktion_oft) kommt selten Land, im Schnitt AUK_FRUEH_HA Hektar alle AUK_FRUEH_JAHRE Jahre, danach so oft wie bisher.
 // Ab dem Jungwinzer kommt das erste Angebot per Zufall, spätestens AUK_ERST_JAHRE Jahre nach dem Aufstieg (S.aukErst merkt den Monat, in dem es kam).
 const AUK_FRUEH_HA=1, AUK_FRUEH_JAHRE=3, AUK_ERST_JAHRE=4;
+// Seit 13.4.9 (Nachtrag 3, Maik 22.11.2026): Land mit Lage. Jedes Stück Land ist einfacher Hang, kühle Höhenlage oder steiler Südhang (S.hang, S.ha bleibt die Summe).
+// Die Spitzen-Sorte wächst nur auf dem Südhang, Sekt auf dem einfachen Hang bekommt SEKT_EINFACH_QP Punkte weniger (Platzhalter).
+// SUED_MAX: höchstens so viele Hektar Südhang besitzt du in der ganzen Partie, die Spitzenlage eingerechnet. Bis sie unter den Hammer kam, bleiben ihre SPITZE_HA dafür frei.
+// satz steht bei der Auktion (Platzhalter bis 14.4).
+const LAGEN={einfach:{name:'einfacher Hang',kurz:'Einfacher Hang',sym:'🌄',satz:'Auf dem einfachen Hang trägt die Menge-Sorte gut, Sekt wird dort schlechter.'},
+  hoehe:{name:'kühle Höhenlage',kurz:'Kühle Höhenlage',sym:'🏔️',satz:'Auf der kühlen Höhenlage wird der Sekt am besten.'},
+  sued:{name:'steiler Südhang',kurz:'Steiler Südhang',sym:'☀️',satz:'Nur auf dem steilen Südhang wächst die Spitzen-Sorte.'}};
+const LAGE_REIHE=['einfach','hoehe','sued'], SUED_MAX=8, SEKT_EINFACH_QP=5;
+// Lagen der Lose bei der Auktion je Rang, als Anteile (Platzhalter bis 14.2): im ersten Akt nur einfacher Hang, ab dem Weingutsbesitzer vor allem kühle Höhenlage,
+// ab dem Gutsherrn auch Südhang. Es gilt die letzte Zeile, deren Rang erreicht ist.
+const AUK_LAGE=[{r:0,w:{einfach:1}},{r:4,w:{einfach:.3,hoehe:.7}},{r:5,w:{einfach:.2,hoehe:.5,sued:.3}}];
+// Landpreis je Akt (RANG_AKT) und je Lage als Faktoren auf Startgebot und Gebote. Neutral auf dem heutigen Preis, die Werte setzt 14.2 (Platzhalter).
+const AUK_PREIS_AKT={1:1,2:1,3:1}, AUK_PREIS_LAGE={einfach:1,hoehe:1,sued:1};
+// Sätze zur Lage im Weinberg und beim Pflanzen (Platzhalter bis 14.4).
+const SUED_SATZ={
+  keinPlatz:'Die Spitzen-Sorte wächst nur auf dem steilen Südhang, und dort ist kein Platz frei. Südhang gibt es bei den Auktionen ab dem Gutsherrn und einmal mit der Spitzenlage.',
+  spitze:'Sie wächst nur auf dem steilen Südhang.',
+  sekt:`Sekt wird am besten auf der kühlen Höhenlage, auf dem einfachen Hang bekommt er ${SEKT_EINFACH_QP} Qualitätspunkte weniger.`,
+  umpflanzen:'Rodest du die Menge-Sorte, um Sekt zu pflanzen, sind die gerodeten Reben samt ihrer Pflege weg. Die neuen übernehmen die Pflegestufe der Sekt-Sorte, und auf dem einfachen Hang wird der Sekt schlechter.'};
 // Version 7.0 (Schritt I): In der langen Partie kommt der Weinskandal rund alle anderthalb Jahre, die Erbschaft alle drei.
 // Damit nicht immer derselbe Text steht, wechseln die Varianten der Reihe nach durch (S.vz), ohne Zufall.
 // Version 7.0 (Schritt J, Maik 16.11.2026): Nach einem Weinskandal ist SKANDAL_PAUSE Monate Ruhe (S.skAb), sonst füllt er spät die Lücke der schlechten Ereignisse.
