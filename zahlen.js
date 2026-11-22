@@ -683,6 +683,15 @@ const CHANCE_WORT=[[.6,'gut'],[.35,'mittel'],[0,'gering']];
 // Seit 13.4.6 (Maik 21.11.2026): Der Weingut-Manager warnt, sobald er eingestellt ist, wenn alle wartenden Felder zusammen mehr als MGR_WARN
 // vom erwarteten Erlös der Ernte des Jahres ausmachen. Erwartet heißt: sichere Lese jetzt, als Wein der höchsten erlaubten Stufe. 13.7 setzt für die Lehrjahre 0,3.
 const MGR_WARN=.4;
+// Seit 13.6.1 (Bauplan 13.6, Maik 21.11.2026): vier Jahrhundertjahre ab dem Terroir. Das erste kommt im Jahr nach dem Aufstieg zum Terroir,
+// danach JH_ANZAHL-1 weitere mit JH_ABSTAND Jahren Abstand (fest je Partie, Thema 12 im festen Zufall). Wer nie Terroir erreicht, bekommt keins.
+// Warm (weg edel) bekommt Jahrhundertsommer, kühl (weg frost) Jahrhundertwinter, die Mitte wechselt ab: Sommer, Winter, Sommer, Winter.
+// JH_ART: Name, Weg und die Tendenz, die der Winzerbote in der Mitte im Jahrhundertjahr klar meldet. JH_TEXT: Ankündigung im Januar, Platzhalter bis 13.8.
+const JH_ANZAHL=4, JH_ABSTAND=[4,6];
+const JH_ART={sommer:{name:'Jahrhundertsommer',weg:'edel',tend:'feucht',bild:'supersommer'},winter:{name:'Jahrhundertwinter',weg:'frost',tend:'klar',bild:'eiswein'}};
+const JH_TEXT={
+  sommer:['Ein Jahrhundertsommer kündigt sich an','Die Alten {wo} sind sich einig wie selten: Dieses Jahr wird ein Jahrhundertsommer. Wer seine Spitzen-Sorte bis November hängen lässt, bekommt die Edelfäulnis sicher, und wer bis Dezember wartet, hat die Chance auf den Jahrhundertwein.'],
+  winter:['Ein Jahrhundertwinter kündigt sich an','Die Alten {wo} sind sich einig wie selten: Dieser Winter wird ein Jahrhundertwinter. Wer seine Spitzen-Sorte bis Dezember hängen lässt, hat die Chance auf den Jahrhundertwein, einen Eiswein, wie ihn das Dorf noch nicht gesehen hat.']};
 // Seit 13.4.8 (Maik 21.11.2026): Ein misslungenes Wagnis kostet immer das ganze Feld, auch mit der Spende an die Feuerwehr. Ihre Frostfeuer
 // halbieren stattdessen den Frost-Anteil beim Reben-Sterben zum Jahreswechsel (SP_FROSTFEUER). Satz dazu, Platzhalter bis 13.8.
 const FROST_FEUER='Die Frostfeuer der Feuerwehr haben die Hälfte davon abgewendet';

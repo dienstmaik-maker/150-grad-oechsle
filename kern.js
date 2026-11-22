@@ -258,7 +258,7 @@ function roh(i){try{const o=JSON.parse(localStorage.getItem(KEYS[i])||'null');re
 function lies(i){const o=roh(i);return o&&o.v13?o:null}
 function liesAlt(i){const o=roh(i);return o&&!o.v13?o:null}
 // Übernimmt einen gelesenen Spielstand und bringt alte Stände auf den heutigen Stand.
-function nimm(o){S=o;if(S.zf==null)S.zf=zfNeu();if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();altDoppelt();altSpende();altKeller();altZeit();altAmt();if(!S.fu)S.fu=fuAlt(); else fuPaketB(); altKomp(); altAns(); altLeute(); altRuf(); altSchaed(); altSekt(); altFrei(); altHefe()}
+function nimm(o){S=o;if(S.zf==null)S.zf=zfNeu();if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();altDoppelt();altSpende();altKeller();altZeit();altAmt();if(!S.fu)S.fu=fuAlt(); else fuPaketB(); altKomp(); altAns(); altLeute(); altRuf(); altSchaed(); altSekt(); altFrei(); altHefe(); altJh()}
 // Seit 8.3: Spielstände ohne Uhr fangen bei 0 an und merken sich, dass sie erst seit 8.3 zählen.
 // Seit 8.5: Kellermeister Stufe 1 keltert statt abzufüllen. Hatte ein alter Spielstand auf Stufe 1 das Abfüllen an, ist jetzt das Keltern an.
 // Version 12.1 (Maik 20.11.2026): Alte Spielstände ab Winzer bekommen den Sektkeller geschenkt (Bestandsschutz), mit einer Zeile im Winzerboten (sektBote).
@@ -955,7 +955,16 @@ function herbstJahr(j=S.jahr){return {uEdel:fest(11,0,j,0),uFrost:fest(11,1,j,0)
 // Die Tendenz des Herbstes in der Mitte (seit 13.4.3).
 // Seit 13.4.4: ein besonderes Jahr, das in warmen und kühlen Gebieten den fremden Weg öffnet.
 const herbstFremd=(j=S.jahr)=>herbstJahr(j).uFremd<FREMD_JAHR;
-const herbstTend=(j=S.jahr)=>TENDENZEN[Math.min(TENDENZEN.length-1,Math.floor(herbstJahr(j).uTend*TENDENZEN.length))];
+// Seit 13.6.1: Im Jahrhundertjahr meldet die Mitte die passende Tendenz klar (JH_ART), sonst gilt der Wurf.
+const herbstTend=(j=S.jahr)=>{const a=REGIONEN[S.region].weg==='beide'&&jhArt(j); return a?TENDENZEN.find(t=>t.k===JH_ART[a].tend):TENDENZEN[Math.min(TENDENZEN.length-1,Math.floor(herbstJahr(j).uTend*TENDENZEN.length))]};
+/* ================= Jahrhundertjahre (seit 13.6.1) ================= */
+// S.jhAb ist das erste Jahrhundertjahr, gesetzt beim Aufstieg zum Terroir (Jahr danach). Die Abstände kommen aus dem festen Zufall (Thema 12), neu laden ändert nichts.
+function jhJahre(){if(S.jhAb==null) return []; const J=[S.jhAb]; for(let k=1;k<JH_ANZAHL;k++) J.push(J[k-1]+festI(JH_ABSTAND[0],JH_ABSTAND[1],fest(12,k,0,0))); return J}
+const jhNr=(j=S.jahr)=>jhJahre().indexOf(j);
+// sommer oder winter im Jahrhundertjahr j, sonst null. Warm Sommer, kühl Winter, die Mitte abwechselnd mit dem Sommer zuerst.
+function jhArt(j=S.jahr){const k=jhNr(j); if(k<0) return null; const g=REGIONEN[S.region].weg; return g==='edel'?'sommer':g==='frost'?'winter':k%2?'winter':'sommer'}
+// Probestände, die schon Terroir haben: Das erste Jahrhundertjahr ist das nächste Jahr.
+function altJh(){if((S.bodenSt||0)>=BODEN_STUFEN.length-1&&S.jhAb==null) S.jhAb=S.jahr+1}
 // Chance des Wegs w (edel oder frost) im Gebiet r im Jahr j, 0 wenn der Weg dort zu ist. Das Rang-Schloss prüft wegeOffen.
 function wegChance(w,r=S.region,j=S.jahr){
   const g=REGIONEN[r].weg; let p=0;
@@ -1663,7 +1672,7 @@ function monatLauf(){
     const schnitt=Math.round(S.bodenSum/S.bodenN), sp=verlustSpanne(schnitt), fp=frostPlus(), rebVor=rebenGesamt(); let totAlle=0;
     // Seit 13.2.1: Boden-Zähler. Ein Jahresschnitt ab BODEN_GUT zählt +1, sonst bleibt er stehen. Die Stufe fällt nie.
     if(schnitt>=BODEN_GUT) S.bodenZ=(S.bodenZ||0)+1;
-    {const st=Math.max(S.bodenSt||0,stufeZu(S.bodenZ||0,BODEN_SCHWELLE)); if(st>(S.bodenSt||0)){S.bodenSt=st; Z.push(`🌱 Dein Boden ist jetzt ${BODEN_STUFEN[st]}.`)}}
+    {const st=Math.max(S.bodenSt||0,stufeZu(S.bodenZ||0,BODEN_SCHWELLE)); if(st>(S.bodenSt||0)){S.bodenSt=st; Z.push(`🌱 Dein Boden ist jetzt ${BODEN_STUFEN[st]}.`); if(st>=BODEN_STUFEN.length-1&&S.jhAb==null) S.jhAb=S.jahr+1}}
     S.verlust={};
     for(const [si,id] of R().sorten.entries()){
       const f=S.felder[id]; feldReset(f);
@@ -1702,6 +1711,8 @@ function monatLauf(){
   // Wetter als Thema für die Zeitung. Die Einzelheiten je Rebsorte stehen unter "Aus dem Weinberg".
   if(eisEigen()) schlag(66,...eisT('eigen'),'eiswein',{du:1});
   if((S.monat===3||S.monat===4)&&S.wetter==='frost'&&rebenGesamt()) schlag(62,'Spätfrost im Frühjahr','Eine Frostnacht hat die jungen Triebe geschädigt. Die Ernte fällt dieses Jahr kleiner aus.','spaetfrost',{du:1});
+  // Seit 13.6.1: Das Jahrhundertjahr kündigt der Winzerbote im Januar als größte Schlagzeile an (JH_TEXT, Platzhalter bis 13.8).
+  if(S.monat===0&&jhArt()){const a=jhArt(), T=JH_TEXT[a]; schlag(99,T[0],T[1].replace('{wo}',WO[S.region]),JH_ART[a].bild,{gold:1,sonder:1,du:1})}
   if(S.monat===0) schlag(28,'Prädikatsweine anmelden','Die Weine vom letzten Jahrgang können jetzt im Rathaus als Prädikatswein angemeldet werden. Bis März ist außerdem Pflanzzeit.','kellerbuch',{archiv:1});
   if(S.monat<=2) schlag(20,'Rebenmarkt geöffnet',rebenMarktText()+'. Gepflanzt wird bis Ende März.','rebenmarkt',{archiv:1});
   if(S.monat===11){const t=steuerSchau(); if(t.steuer>0) schlag(35,'Steuer-Tipp zum Jahresende',`Bisher sind es rund ${eur(t.gew)} Gewinn in diesem Jahr. Darauf fallen im Januar rund ${eur(t.steuer)} Steuer an. Was du im Dezember noch kaufst, zum Beispiel Fassraum, Flaschen, Dünger oder eine Maschinenwartung, senkt den Gewinn.${spOffen()?` Eine Spende im Rathaus senkt ihn auch, um höchstens ${pz(SP_DECKEL)}.`:''} Kredit tilgen senkt ihn nicht.`,eisEigen()?'':'amt',{archiv:1})}
