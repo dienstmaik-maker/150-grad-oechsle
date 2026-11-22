@@ -117,9 +117,9 @@ const WEIN_ROLLE={menge:['feder','tafel','qba','kab','spat'],sekt:[],spitze:['fe
 // Seit 13.4.2: Beerenauslese und Eiswein haben kein eigenes Rang-Schloss mehr, sie kommen nur über den Weg des Gebiets im Herbst (weg_eigen ab R6).
 // Seit 13.4.5 kommt auch die Trockenbeerenauslese nur über das Wagnis, als zweite Stufe nach der Beerenauslese (weg_tba ab R8, der fremde Weg weg_fremd ab R7). Feder-, Tafel- und Qualitätswein gelten für jede Rolle, die sie machen darf (Annahme von Claude).
 // Seit 13.3.7 (Nachtrag 3 im Bauauftrag, Wunschstrategie, Maik 22.11.2026): Zeitleiste neu. Tafelwein ab R0, Kabinett ab R3, Auslese und eigener Weg ab R7, fremder Weg ab R8,
-// Bundeswettbewerb ab R6, Auktionen ab R1 (vor dem Winzer selten, auktion_oft ab R2). Spätlese wie das Kabinett ab R3 (Maik 22.11.2026, sonst käme sie bei langsamem Aufstieg vor dem Kabinett). Neue Abstände für Leute, Manager und Abfüllanlage 2 nach Kapitel 6 des Plans.
+// Bundeswettbewerb ab R6, Auktionen ab R1 (vor dem Winzer selten, auktion_oft ab R2). Spätlese ab R3 (Maik 22.11.2026). Seit der Fehlersuche zu den Pleiten (Maik 22.11.2026): Qualitätswein ab R1, Kabinett ab R2. Neue Abstände für Leute, Manager und Abfüllanlage 2 nach Kapitel 6 des Plans.
 // ha ist ein dritter Auslöser: Er gilt, sobald mehr als so viele Hektar bepflanzt sind (der erste Erntehelfer mit dem ersten bepflanzten Hektar über 4).
-const FREI={wein_feder:{r:0},wein_tafel:{r:0},wein_qba:{r:2},wein_kab:{r:3},wein_spat:{r:3},wein_aus:{r:7},weg_eigen:{r:7},weg_fremd:{r:8},weg_tba:{r:8},
+const FREI={wein_feder:{r:0},wein_tafel:{r:0},wein_qba:{r:1},wein_kab:{r:2},wein_spat:{r:3},wein_aus:{r:7},weg_eigen:{r:7},weg_fremd:{r:8},weg_tba:{r:8},
   makler:{r:1},spende:{r:1},auktion:{r:1},auktion_oft:{r:2},land:{r:3},
   export:{r:3,ab:4,name:'der Exporthandel',bote:'🚢 Der Exporthandel nimmt jetzt auch deinen Wein. Er zahlt mehr als das Inland und nimmt dir mit jedem Rang mehr ab.'},
   // Seit 13.5.9 (Nachtrag 3, Maik 22.11.2026): Die Sabotage ist ganz raus, auch im Wahlkampf ("Ganz heißt ganz").
@@ -242,9 +242,9 @@ const WO={mosel:'an der Mosel',rheingau:'im Rheingau',rheinhessen:'in Rheinhesse
 // (Wunschfläche des nächsten Ziels mal 1,25). ans und verm sind hier die heutigen Werte, die Hürde rechnet RANG_HUERDE unten daraus.
 const RAENGE=[
   {name:'Neuling',kurz:'Neuling',ans:0,ha:0,verm:0,rahmen:20000,haAlt:0,deckel:5},
-  {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:30,ha:3,verm:100000,rahmen:40000,haAlt:3,deckel:9,neu:'der erste eigene Hang, der Makler im Rathaus, Spenden fürs Dorf, Auktionen'},
-  {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:7,verm:250000,rahmen:80000,haAlt:4,deckel:17,neu:'Qualitätswein, öfter Land bei den Auktionen'},
-  {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:210,ansW:300,ha:14,verm:600000,rahmen:160000,haAlt:5,deckel:32,neu:'Kabinett, Landesprämierung, die Erntemaschine'},
+  {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:30,ha:3,verm:100000,rahmen:40000,haAlt:3,deckel:9,neu:'der erste eigene Hang, Qualitätswein, der Makler im Rathaus, Spenden fürs Dorf, Auktionen'},
+  {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:7,verm:250000,rahmen:80000,haAlt:4,deckel:17,neu:'Kabinett, öfter Land bei den Auktionen'},
+  {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:210,ansW:300,ha:14,verm:600000,rahmen:160000,haAlt:5,deckel:32,neu:'Spätlese, Landesprämierung, die Erntemaschine'},
   {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:18,verm:1500000,rahmen:300000,haAlt:6,deckel:42,neu:'{sorte}, der Sektkeller, das Weinfest, kühle Höhenlagen bei den Auktionen'},
   {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:24,verm:3500000,rahmen:300000,haAlt:8,deckel:47,neu:'{sorte}, der große Vollernter, der steile Südhang bei den Auktionen'},
   {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:27,verm:6000000,rahmen:300000,haAlt:10,deckel:50,neu:'Bundeswettbewerb, eine eigene Weinhandlung, das Amt des Weinbotschafters'},
