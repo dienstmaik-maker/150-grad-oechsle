@@ -32,10 +32,11 @@ const freiAb=k=>(FREI[k]||{r:0}).r;
 // Seit 13.5.1 dazu die Pflegestufe der Sorte einer Rolle (pfl), für die Stufen der Leute.
 const rolleSorte=rl=>R().sorten.find(id=>(SORTEN[id]||{}).rolle===rl);
 function pflFrei(p){const id=rolleSorte(p[0]); return !!id&&((S.felder[id]||{}).pflSt||0)>=p[1]}
-function frei(k){const e=FREI[k]; if(!e) return true; if(e.pfl) return pflFrei(e.pfl); if(S.rang<e.r||(e.bis!=null&&S.rang>=e.bis)) return false; if(!e.ab) return true;
+// Seit 13.3.7 dazu die bepflanzte Fläche (ha): frei, sobald mehr als e.ha Hektar bepflanzt sind.
+function frei(k){const e=FREI[k]; if(!e) return true; if(e.pfl) return pflFrei(e.pfl); if(e.ha!=null) return flaecheBep()>e.ha; if(S.rang<e.r||(e.bis!=null&&S.rang>=e.bis)) return false; if(!e.ab) return true;
   const m=(S.rangMon||{})[e.r]; return m!=null&&S.jahr*12+S.monat>=m+12*e.ab}
 // "ab dem Rang Winzer" oder "4 Jahre nach dem Rang Winzermeister", für Texte.
-const freiText=k=>{const e=FREI[k]; return e.pfl?`mit der Stufe ${PFLEGE_STUFEN[e.pfl[1]]} der ${ROLLEN[e.pfl[0]].name}`:e.ab?`${e.ab} Jahre nach dem Rang ${rangN(e.r)}`:`ab dem Rang ${rangN(e.r)}`};
+const freiText=k=>{const e=FREI[k]; return e.ha!=null?`mit mehr als ${e.ha}\u00a0Hektar bepflanzt`:e.pfl?`mit der Stufe ${PFLEGE_STUFEN[e.pfl[1]]} der ${ROLLEN[e.pfl[0]].name}`:e.ab?`${e.ab} Jahre nach dem Rang ${rangN(e.r)}`:`ab dem Rang ${rangN(e.r)}`};
 // Monat jedes Aufstiegs (S.rangMon, Schlüssel ist der Rang). Springt jemand über einen Rang, gilt für beide derselbe Monat.
 function rangMonMerk(von,zu){const M=S.rangMon=S.rangMon||{0:START_JAHR*12}; for(let i=von+1;i<=zu;i++) if(M[i]==null) M[i]=S.jahr*12+S.monat}
 // Spielstände aus 13.1 und 13.2 ohne S.rangMon: aus S.zeitRang (Spieljahr des Aufstiegs) oder jetzt. Schon Freies kommt nicht noch einmal in den Winzerboten.
@@ -714,10 +715,11 @@ function weltSieg(e,was,L){
 function altSchau(){if(S.wett&&S.wett.typ==='welt') S.wett=null}
 
 function auktionHa(){const r=Math.random();return r<.4?1:r<.73?2:r<.95?3:r<.995?5:10}
-function neueAuktion(spitze){
+function neueAuktion(spitze,haFest){
   if(spitze){const B=misch(NACHBARN).slice(0,3).map(n=>({name:n,limit:rint(64,144)*5000})); S.auktion={ha:SPITZE_HA,start:SPITZE_START,schritt:10000,gebot:SPITZE_START,fuehrer:B[rint(0,2)].name,bieter:B,ende:null,text:'',phase:0,spitze:1}; return}
   // Seit 13.4.1: aukPreisF des Gebiets (Rheinhessen) auf Startgebot und alle Gebote, so wird das Land günstiger.
-  const pf=R().aukPreisF||1, ha=auktionHa(), start=Math.round(ha*8000*pf/500)*500, B=misch(NACHBARN).slice(0,rint(2,3)).map(n=>({name:n,limit:Math.round(ha*rnd(11000,30000)*pf/500)*500}));
+  // Seit 13.3.7: haFest gibt die Größe des Loses vor (vor dem Winzer AUK_FRUEH_HA).
+  const pf=R().aukPreisF||1, ha=haFest||auktionHa(), start=Math.round(ha*8000*pf/500)*500, B=misch(NACHBARN).slice(0,rint(2,3)).map(n=>({name:n,limit:Math.round(ha*rnd(11000,30000)*pf/500)*500}));
   for(const g of S.gegner) if(g.region===S.region){
     const t=GEGNER_TYP[g.typ];
     // Der Zufall wird immer gezogen, auch wenn der Gegner am Deckel ist und nicht mitbietet.
@@ -727,6 +729,11 @@ function neueAuktion(spitze){
   const offen=B.filter(b=>b.limit>=start);
   S.auktion={ha,start,schritt:Math.max(500,Math.round(start*.1/500)*500),gebot:start,fuehrer:offen.length?offen[rint(0,offen.length-1)].name:null,bieter:B,ende:null,text:'',phase:0};
 }
+// Seit 13.3.7 (Nachtrag 3): Chance je Auktionsmonat. Vor dem Winzer im Schnitt ein Los alle AUK_FRUEH_JAHRE Jahre, danach AUK_CHANCE wie bisher.
+function aukChance(){return (frei('auktion_oft')?AUK_CHANCE:1/(AUK_FRUEH_JAHRE*AUK_MONATE.length))*(R().aukF||1)}
+// Das erste Angebot ab dem Jungwinzer: Kam noch keins und wäre der nächste Auktionsmonat später als AUK_ERST_JAHRE Jahre nach dem Aufstieg, kommt es jetzt.
+function aukErstFaellig(){const m0=(S.rangMon||{})[R_AUKTION]; if(S.aukErst||S.rang<R_AUKTION||m0==null) return false; const jetzt=S.jahr*12+S.monat, bis=m0+12*AUK_ERST_JAHRE; if(jetzt>bis) return false;
+  const n=AUK_MONATE.find(m=>m>S.monat), nx=n==null?(S.jahr+1)*12+AUK_MONATE[0]:S.jahr*12+n; return nx>bis}
 function aukNaechstes(){const a=S.auktion;return a.fuehrer?a.gebot+a.schritt:a.gebot}
 function aukLimit(){return S.geld+rahmen()-(S.kredit?S.kredit.rest:0)}
 // Der Spieler ist raus oder hat die Auktion verpasst: Die anderen machen es unter sich aus.
@@ -1865,6 +1872,8 @@ function etappe3Monat(Z){
     if(MGR_GLEICH) mgrKommen();
     S.rangNeu=S.jahr*12+S.monat;
     zeitAufstieg(alt,S.rang); rangMonMerk(alt,S.rang);
+    // Seit 13.3.7 (Nachtrag 3): Zum Jungwinzer schenkt der alte Winzer einen Hektar kahlen Hang, übergeben über den Makler. S.geschenkHa merkt ihn für die Lage (13.4.9).
+    if(alt<1&&S.rang>=1&&!S.geschenk){S.geschenk=S.jahr; S.ha+=GESCHENK_HA; S.geschenkHa=GESCHENK_HA; Z.push(GESCHENK_TEXT)}
     S.feier={von:alt,zu:S.rang,platz:bestenEintrag()}; if(S.rang<R_MAX) S.aufBrief=S.rang;
     schlag(95,`Aufstieg: Du bist jetzt ${rangN(S.rang)}`,`Das ${bringtSatz(S.rang)}.${rahmenSatz(S.rang)}${r.weg?' '+anr(r.weg,r.wegW):''}`,wgBild(S.rang+1,'sommer'),{sonder:1,gold:1,du:1});   // Seit 12.4.3: Weingut-Bild der neuen Stufe statt 'aufstieg' (Maik 20.11.2026)
     if(S.rang===R_MAX&&!S.sieger) siegSpieler();
@@ -1905,8 +1914,9 @@ function etappe3Monat(Z){
     schlag(57,`Die Spitzenlage ${wo} kommt unter den Hammer`,`Die beste Lage weit und breit: ${SPITZE_HA}\u00a0Hektar Steilhang in voller Südsonne. Nächsten Monat wird versteigert, das Startgebot liegt bei ${eur(SPITZE_START)}. Wer sie bekommt, erntet jedes Jahr süßere Trauben.`,'spitzenlage');
   }
   // Seit 13.4.1: aukF des Gebiets (Rheingau) auf die Chance einer Auktion.
-  if(!S.auktion&&AUK_MONATE.includes(S.monat)&&(S.jahr-START_JAHR)*12+S.monat>=6&&Math.random()<AUK_CHANCE*(R().aukF||1)){
-    neueAuktion();
+  // Seit 13.3.7: vor dem Winzer selten und klein (aukChance), ab dem Jungwinzer kommt das erste Angebot spätestens nach AUK_ERST_JAHRE Jahren (aukErstFaellig).
+  if(!S.auktion&&AUK_MONATE.includes(S.monat)&&(S.jahr-START_JAHR)*12+S.monat>=6&&(aukErstFaellig()||Math.random()<aukChance())){
+    neueAuktion(0,frei('auktion_oft')?0:AUK_FRUEH_HA); if(S.rang>=R_AUKTION&&!S.aukErst) S.aukErst=S.jahr*12+S.monat;
     schlag(55,`Weinberg ${wo} zu versteigern`,`Nächsten Monat kommen ${S.auktion.ha}\u00a0Hektar unter den Hammer, das Startgebot liegt bei ${eur(S.auktion.start)}.${!ab?nichtDu:aukDeckel()?' '+AUK_ZU_GROSS:' Halte Geld oder Kreditrahmen bereit.'}`,'auktion',{archiv:1});
   }
   ladenMonat(Z);
@@ -2506,12 +2516,18 @@ function vKeller(){
 // Vor dem ersten Kabinett ist das Fenster ausgeblendet (seit 10.6, damals vor Jungwinzer), danach steht unter dem Stand, womit die nächste Stufe geht.
 // Probestände aus 13.3 bis 13.5 ohne S.kellerW bekommen ihn einmal aus dem Kellerbuch und den gebauten Stufen (altKellerW), ohne Umzug.
 const KELLER_MIT={kab:'dem ersten Kabinett',spat:'der ersten Spätlese',aus:'der ersten Auslese'};
-const kellerMit=k=>KELLER_MIT[KELLER_WEIN[k]]||'dem ersten '+STUFEN[KELLER_WEIN[k]].name;
+// Seit 13.3.7 (Nachtrag 3): Hat eine Stufe eine Rolle in KELLER_ROLLE, zählt nur ein Wein dieser Rolle (S.kellerWR je Rolle, wie S.kellerW). Sorten ohne Rolle zählen für jede.
+// Probestände bis 13.6 ohne S.kellerWR bekommen ihn einmal aus Kellerbuch und gebauten Stufen.
+const kellerMit=k=>{const rl=KELLER_ROLLE[k], m=KELLER_MIT[KELLER_WEIN[k]]||'dem ersten '+STUFEN[KELLER_WEIN[k]].name; return rl&&ROLLEN[rl]?`${m} der ${ROLLEN[rl].name}`:m};
+const lotRolle=l=>l&&SORTEN[l.sorte]?SORTEN[l.sorte].rolle:null;
+function kellerWRMerk(rl,w){const W=S.kellerWR=S.kellerWR||{}; for(const r of KELLER_ROLLE) if(r&&(!rl||r===rl)) W[r]=Math.max(W[r]||0,w)}
 function altKellerW(){let w=0; for(const l of S.lots||[]) if(l.stufe&&!l.sekt&&STUFEN[l.stufe]) w=Math.max(w,STUFEN[l.stufe].rang); for(let k=0;k<(S.keller||0)&&k<KELLER_WEIN.length;k++) w=Math.max(w,STUFEN[KELLER_WEIN[k]].rang); S.kellerW=w}
-function kellerFrei(k){if(S.kellerW==null) altKellerW(); return k<KELLER_WEIN.length&&S.kellerW>=STUFEN[KELLER_WEIN[k]].rang}
+function altKellerWR(){S.kellerWR={}; for(const l of S.lots||[]) if(l.stufe&&!l.sekt&&STUFEN[l.stufe]) kellerWRMerk(lotRolle(l),STUFEN[l.stufe].rang);
+  for(let k=0;k<(S.keller||0)&&k<KELLER_WEIN.length;k++) kellerWRMerk(null,STUFEN[KELLER_WEIN[k]].rang)}
+function kellerFrei(k){if(S.kellerW==null) altKellerW(); if(S.kellerWR==null) altKellerWR(); const rl=KELLER_ROLLE[k], w=rl?S.kellerWR[rl]||0:S.kellerW; return k<KELLER_WEIN.length&&w>=STUFEN[KELLER_WEIN[k]].rang}
 // Bei jeder Anmeldung: Gibt der Wein eine neue Stufe frei, kommt der Satz für die Meldung zurück, sonst ''.
 const kellerFreiN=()=>KELLER_WEIN.filter((w,k)=>kellerFrei(k)).length;
-function kellerWein(l,st){if(!l||l.sekt||!STUFEN[st]) return ''; const K=S.keller||0, vor=kellerFreiN(); S.kellerW=Math.max(S.kellerW,STUFEN[st].rang); const nach=kellerFreiN();
+function kellerWein(l,st){if(!l||l.sekt||!STUFEN[st]) return ''; const K=S.keller||0, vor=kellerFreiN(); S.kellerW=Math.max(S.kellerW,STUFEN[st].rang); kellerWRMerk(lotRolle(l),STUFEN[st].rang); const nach=kellerFreiN();
   if(nach<=vor||nach<=K) return '';
   return nach>K+1?` Damit kannst du deinen Keller bis Stufe ${nach} (${KELLER_NAMEN[nach-1]}) ausbauen.`:` Damit kannst du deinen Keller ausbauen, Stufe ${K+1} (${KELLER_NAMEN[K]}).`}
 function kellerRangText(){return ` Stufe 1 (${KELLER_NAMEN[0]}) gibt es mit ${kellerMit(0)}, Stufe 2 (${KELLER_NAMEN[1]}) mit ${kellerMit(1)}, Stufe 3 (${KELLER_NAMEN[2]}) mit ${kellerMit(2)}.`}

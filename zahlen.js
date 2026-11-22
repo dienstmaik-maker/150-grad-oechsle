@@ -116,30 +116,33 @@ const WEIN_ROLLE={menge:['feder','tafel','qba','kab','spat'],sekt:[],spitze:['fe
 // unter "in 4 Jahren" und im Winzerboten, bote ist die Zeile, wenn es nach dem Abstand kommt (Platzhalter bis 13.8). 13.4 und 13.5 hängen hier ihre Einträge an.
 // Seit 13.4.2: Beerenauslese und Eiswein haben kein eigenes Rang-Schloss mehr, sie kommen nur über den Weg des Gebiets im Herbst (weg_eigen ab R6).
 // Seit 13.4.5 kommt auch die Trockenbeerenauslese nur über das Wagnis, als zweite Stufe nach der Beerenauslese (weg_tba ab R8, der fremde Weg weg_fremd ab R7). Feder-, Tafel- und Qualitätswein gelten für jede Rolle, die sie machen darf (Annahme von Claude).
-const FREI={wein_feder:{r:0},wein_tafel:{r:1},wein_qba:{r:2},wein_kab:{r:0},wein_spat:{r:0},wein_aus:{r:6},weg_eigen:{r:6},weg_fremd:{r:7},weg_tba:{r:8},
-  makler:{r:1},spende:{r:1},auktion:{r:2},land:{r:3},
+// Seit 13.3.7 (Nachtrag 3 im Bauauftrag, Wunschstrategie, Maik 22.11.2026): Zeitleiste neu. Tafelwein ab R0, Kabinett ab R3, Auslese und eigener Weg ab R7, fremder Weg ab R8,
+// Bundeswettbewerb ab R6, Auktionen ab R1 (vor dem Winzer selten, auktion_oft ab R2). Neue Abstände für Leute, Manager und Abfüllanlage 2 nach Kapitel 6 des Plans.
+// ha ist ein dritter Auslöser: Er gilt, sobald mehr als so viele Hektar bepflanzt sind (der erste Erntehelfer mit dem ersten bepflanzten Hektar über 4).
+const FREI={wein_feder:{r:0},wein_tafel:{r:0},wein_qba:{r:2},wein_kab:{r:3},wein_spat:{r:0},wein_aus:{r:7},weg_eigen:{r:7},weg_fremd:{r:8},weg_tba:{r:8},
+  makler:{r:1},spende:{r:1},auktion:{r:1},auktion_oft:{r:2},land:{r:3},
   export:{r:3,ab:4,name:'der Exporthandel',bote:'🚢 Der Exporthandel nimmt jetzt auch deinen Wein. Er zahlt mehr als das Inland und nimmt dir mit jedem Rang mehr ab.'},
   sabotage:{r:3,ab:4,bis:5,name:'Sabotage hinter der Hintertür',bote:'💣 Hinter der Hintertür kennt man jetzt deinen Namen. Wer will, kann einem Gegner schaden lassen.'},
-  sorte_sekt:{r:4},sektkeller:{r:4},weinfest:{r:4},sorte_spitze:{r:5},laden:{r:6},botschafter:{r:6},bund:{r:7},hoffest:{r:7},kontrolle:{r:7},spitzenlage:{r:8},
+  sorte_sekt:{r:4},sektkeller:{r:4},weinfest:{r:4},sorte_spitze:{r:5},laden:{r:6},botschafter:{r:6},bund:{r:6},hoffest:{r:7},kontrolle:{r:7},spitzenlage:{r:8},
   // Seit 13.5.1 (Bauplan 13.5, Maik 21.11.2026): Stufen der Leute, Manager und Maschinen. pfl:[Rolle, Stufe] ist der zweite Auslöser neben Rang plus Abstand,
   // er gilt, sobald die Sorte dieser Rolle die Pflegestufe erreicht hat. Leute und Manager fallen nie zurück (S.leuteSt, S.manager), auch wenn die Pflege später fällt.
   // Eine höhere Stufe bringt die fehlenden mit, so bleibt die Reihenfolge immer gleich. Namen und Zeilen im Winzerboten sind Platzhalter bis 13.8.
-  helfer1:{r:2},helfer2:{pfl:['menge',3]},helfer3:{r:5},lagerarb1:{pfl:['menge',1]},lagerarb2:{r:3,ab:2,name:'Lagerarbeiter Stufe 2'},lagerarb3:{pfl:['sekt',1]},
-  mgr_handel1:{r:2,ab:2,name:'die Handels-Managerin',bote:'🤝 Ab heute arbeitet eine Handels-Managerin für dich. Sie kümmert sich um den Verkauf.'},
+  helfer1:{ha:4},helfer2:{pfl:['menge',3]},helfer3:{r:5},lagerarb1:{pfl:['menge',1]},lagerarb2:{r:2,ab:5,name:'Lagerarbeiter Stufe 2'},lagerarb3:{pfl:['sekt',1]},
+  mgr_handel1:{r:2,ab:3,name:'die Handels-Managerin',bote:'🤝 Ab heute arbeitet eine Handels-Managerin für dich. Sie kümmert sich um den Verkauf.'},
   mgr_handel2:{r:4,ab:3,name:'Stufe 2 für die Handels-Managerin',bote:'🤝 Deine Handels-Managerin steigt auf Stufe 2.'},
   mgr_handel3:{r:6,ab:4,name:'Stufe 3 für die Handels-Managerin',bote:'🤝 Deine Handels-Managerin steigt auf Stufe 3.'},
-  mgr_keller1:{r:3,ab:2,name:'der Kellermeister',bote:'🍷 Ab heute arbeitet ein Kellermeister für dich. Er kauft Fassraum und stellt Lagerarbeiter ein.'},
+  mgr_keller1:{r:2,ab:5,name:'der Kellermeister',bote:'🍷 Ab heute arbeitet ein Kellermeister für dich. Er kauft Fassraum und stellt Lagerarbeiter ein.'},
   mgr_keller2:{r:4,ab:9,name:'Stufe 2 für den Kellermeister',bote:'🍷 Dein Kellermeister steigt auf Stufe 2.'},
-  mgr_keller3:{r:7,ab:3,name:'Stufe 3 für den Kellermeister',bote:'🍷 Dein Kellermeister steigt auf Stufe 3.'},
-  mgr_weingut1:{r:3,ab:6,name:'der Weingut-Manager',bote:'🌿 Ab heute arbeitet ein Weingut-Manager für dich. Er stellt Erntehelfer und Fahrer ein.'},
-  mgr_weingut2:{r:5,ab:9,name:'Stufe 2 für den Weingut-Manager',bote:'🌿 Dein Weingut-Manager steigt auf Stufe 2.'},
-  mgr_weingut3:{r:7,ab:11,name:'Stufe 3 für den Weingut-Manager',bote:'🌿 Dein Weingut-Manager steigt auf Stufe 3.'},
+  mgr_keller3:{r:7,ab:7,name:'Stufe 3 für den Kellermeister',bote:'🍷 Dein Kellermeister steigt auf Stufe 3.'},
+  mgr_weingut1:{r:2,ab:10,name:'der Weingut-Manager',bote:'🌿 Ab heute arbeitet ein Weingut-Manager für dich. Er stellt Erntehelfer und Fahrer ein.'},
+  mgr_weingut2:{r:5,ab:3,name:'Stufe 2 für den Weingut-Manager',bote:'🌿 Dein Weingut-Manager steigt auf Stufe 2.'},
+  mgr_weingut3:{r:8,ab:4,name:'Stufe 3 für den Weingut-Manager',bote:'🌿 Dein Weingut-Manager steigt auf Stufe 3.'},
   masch_duenger:{r:2,ab:3,name:'der Düngerstreuer',bote:'🚜 Beim Landhandel steht jetzt ein Düngerstreuer für dich. Kaufen kannst du ihn von Januar bis März.'},
   masch_klein:{r:3},
   masch_abfuell:{r:3,ab:4,name:'die Abfüllanlage',bote:'🍾 Für deinen Keller gibt es jetzt eine Abfüllanlage. Kaufen kannst du sie von Januar bis März.'},
   sekt_anlage:{r:4,ab:5,name:'die Degorgier- und Abfüllanlage im Sektkeller',bote:'🍾 Für den Sektkeller gibt es jetzt eine Degorgier- und Abfüllanlage.'},
   masch_gross:{r:5},
-  masch_abfuell2:{r:6,ab:12,name:'der Ausbau der Abfüllanlage',bote:'🍾 Deine Abfüllanlage lässt sich jetzt ausbauen, auf Stufe 2.'},
+  masch_abfuell2:{r:5,ab:9,name:'der Ausbau der Abfüllanlage',bote:'🍾 Deine Abfüllanlage lässt sich jetzt ausbauen, auf Stufe 2.'},
   masch_laub:{r:7,ab:7,name:'der Laubschneider',bote:'🚜 Beim Landhandel steht jetzt ein Laubschneider für dich. Kaufen kannst du ihn von Januar bis März.'}};
 // Seit 13.5.1: Stufen der Erntehelfer und Lagerarbeiter, was sie je Stufe können, die Zeile im Winzerboten je Stufe und die kleine Geschichte des ersten Menschen der Gruppe.
 // Sie steigen von selbst auf, ohne Kauf und ohne höheren Lohn. Platzhalter-Texte bis 13.8.
@@ -221,16 +224,17 @@ const WO={mosel:'an der Mosel',rheingau:'im Rheingau',rheinhessen:'in Rheinhesse
 // Gemessen mit l115_staffel (54 Partien, Mittel): Mosel, Rheingau, Rheinhessen und Pfalz im Median in Jahr 114, 31 von 36 Partien vor Jahr 120.
 // Seit 13.3.5 (Bauplan 13.3, Startwerte aus dem Bauauftrag): Vizepräsident 6.000 Ansehen und 29 Hektar (bis 13.2: 8.000 und 33), Präsident 8.500 und 33 (bis 13.2: 12.000 und 40).
 // Der höchste Besitz deckel ist nach der Regel neu gerechnet: Verbandsvorstand 36 statt 41, Vizepräsident 41 statt 50. R0 bis R7 bleiben.
+// Seit 13.3.7: neu nennt die Hauptsachen der Wunschstrategie (Nachtrag 3), schlicht formuliert, Platzhalter bis 13.8.
 const RAENGE=[
   {name:'Neuling',kurz:'Neuling',ans:0,ha:0,verm:0,rahmen:20000,haAlt:0,deckel:4},
-  {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:30,ha:3,verm:100000,rahmen:40000,haAlt:3,deckel:8,neu:'Tafelwein, der Makler im Rathaus, Spenden fürs Dorf, Kellerausbau'},
-  {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:6,verm:250000,rahmen:80000,haAlt:4,deckel:11,neu:'Qualitätswein, Auktionen'},
-  {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:300,ha:9,verm:600000,rahmen:160000,haAlt:5,deckel:16,neu:'Landesprämierung, die Erntemaschine'},
+  {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:30,ha:3,verm:100000,rahmen:40000,haAlt:3,deckel:8,neu:'der erste eigene Hang, der Makler im Rathaus, Spenden fürs Dorf, Auktionen'},
+  {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:6,verm:250000,rahmen:80000,haAlt:4,deckel:11,neu:'Qualitätswein, öfter Land bei den Auktionen'},
+  {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:300,ha:9,verm:600000,rahmen:160000,haAlt:5,deckel:16,neu:'Kabinett, Landesprämierung, die Erntemaschine'},
   {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:13,verm:1500000,rahmen:300000,haAlt:6,deckel:20,neu:'{sorte}, der Sektkeller, das Weinfest'},
   {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:16,verm:3500000,rahmen:300000,haAlt:8,deckel:26,neu:'{sorte}, der große Vollernter',weg:'Sabotage ist für dich ab jetzt tabu, ein Herr macht so etwas nicht.',wegW:'Sabotage ist für dich ab jetzt tabu, eine Dame macht so etwas nicht.'},
-  {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:21,verm:6000000,rahmen:300000,haAlt:10,deckel:33,neu:'Auslese und der Weg deines Gebiets im Herbst, eine eigene Weinhandlung, das Amt des Weinbotschafters'},
-  {name:'Verbandsvorstand',kurz:'Vorstand',w:'Verbandsvorständin',kw:'Vorständin',ans:4000,ha:26,verm:12000000,rahmen:300000,haAlt:13,deckel:36,neu:'Bundeswettbewerb, das Hoffest, du kannst Kontrollen anregen, in besonderen Jahren der fremde Weg im Herbst'},
-  {name:'Vizepräsident',kurz:'Vizepräsident',w:'Vizepräsidentin',kw:'Vizepräsidentin',ans:6000,ha:29,verm:16000000,rahmen:300000,haAlt:16,deckel:41,neu:'Trockenbeerenauslese, die Chance auf eine Spitzenlage'},
+  {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:21,verm:6000000,rahmen:300000,haAlt:10,deckel:33,neu:'Bundeswettbewerb, eine eigene Weinhandlung, das Amt des Weinbotschafters'},
+  {name:'Verbandsvorstand',kurz:'Vorstand',w:'Verbandsvorständin',kw:'Vorständin',ans:4000,ha:26,verm:12000000,rahmen:300000,haAlt:13,deckel:36,neu:'Auslese und der Weg deines Gebiets im Herbst, das Hoffest, du kannst Kontrollen anregen'},
+  {name:'Vizepräsident',kurz:'Vizepräsident',w:'Vizepräsidentin',kw:'Vizepräsidentin',ans:6000,ha:29,verm:16000000,rahmen:300000,haAlt:16,deckel:41,neu:'Trockenbeerenauslese, in besonderen Jahren der fremde Weg im Herbst, die Chance auf eine Spitzenlage'},
   {name:'Präsident des Weinbauverbands',kurz:'Präsident',w:'Präsidentin des Weinbauverbands',kw:'Präsidentin',ans:8500,ha:33,verm:30000000,rahmen:300000,haAlt:20,deckel:50,neu:'der Stuhl im Festsaal, das Amt an der Spitze des Verbands, der Weg zur Weltweinschau'}
 ];
 // Seit 11.5 (Teil B): Fläche neu. Die Hürden (ha, bepflanzt) gehen bis 40 Hektar statt bis 20, haAlt sind die Werte bis 11.4.
@@ -410,6 +414,10 @@ const ANREG_ANS=60, ANREG_FEHL=6, PANSCH={zocker:.4,vorsicht:.08,qualitaet:.04},
 // Seit 13.5.8 (Maik 22.11.2026, Entscheidung 9): Die Freigabe hängt nicht mehr am Rang (KELLER_RANG ist weg), sondern am ersten angemeldeten Wein der Stufe in KELLER_WEIN:
 // Stufe 1 mit dem ersten Kabinett, Stufe 2 mit der ersten Spätlese, Stufe 3 mit der ersten Auslese. Ein höherer Wein gibt die Stufen darunter mit frei. Die Wirkung bleibt.
 const MAKLER_PREIS=45000, MAKLER_HA=[0,1,1,1,2,2,2,3,3,3], WEINFEST_PREIS=30000, WEINFEST_ANS=10, KELLER_PREISE=[50000,120000,250000], KELLER_NAMEN=['Edelstahltank','Großes Holzfass','Barrique-Keller'], KELLER_REIFE=.1, KELLER_WEIN=['kab','spat','aus'], R_WEINFEST=FREI.weinfest.r;
+// Seit 13.3.7 (Nachtrag 3): Stufe 2 erst mit der ersten Spätlese der Spitzen-Sorte. KELLER_ROLLE nennt je Stufe die Rolle, deren Wein zählt (null: jede Sorte).
+const KELLER_ROLLE=[null,'spitze',null];
+// Seit 13.3.7 (Nachtrag 3): Beim Aufstieg zum Jungwinzer schenkt der alte Winzer GESCHENK_HA Hektar kahlen, einfachen Hang, der Makler übergibt ihn. Text Platzhalter bis 13.8.
+const GESCHENK_HA=1, GESCHENK_TEXT='🎁 Der alte Winzer schenkt dir zum Jungwinzer einen Hektar kahlen Hang am Dorfrand, den ersten eigenen. Der Makler im Rathaus hat die Papiere schon fertig, pflanzen musst du selbst.';
 const FESTE={weinfest:{name:'Weinfest',preis:WEINFEST_PREIS,ans:WEINFEST_ANS,text:'Ein Weinfest im Hof mit Zelt, Musik und deinem Wein',kurz:'Musik, Zwiebelkuchen und dein Wein für Nachbarn und Gäste'},hoffest:{name:'Hoffest',preis:HOFFEST_PREIS,ans:HOFFEST_ANS,text:'Ein großes Fest für das ganze Dorf',kurz:'Musik, Flammkuchen und dein Wein für das ganze Dorf'}};
 // Erntemaschinen (Paket 4, Variante C): die kleine ab Winzermeister, der große Vollernter ab Gutsherr. Maschinen ohne Typ (alte Spielstände) sind klein und bleiben, auch vor Winzermeister.
 // Seit 11.5 (Teil C2): Der Vollernter deckt einen großen Betrieb allein ab, VOLL_HELFER Hektar (bis 11.4: 10 Hektar, 10.000 Reben, 120.000 €, Wartung 300 € je Punkt).
@@ -610,6 +618,9 @@ const WEIN_FREI=['id','liter','regal','med'];
 /* ================= Auktionen ================= */
 // Neue Auktionen gibt es nur in diesen Monaten (0 = Januar), mit dieser Wahrscheinlichkeit, frühestens nach 6 Monaten.
 const AUK_MONATE=[2,3,6,10], AUK_CHANCE=.22;
+// Seit 13.3.7 (Nachtrag 3): Vor dem Winzer (auktion_oft) kommt selten Land, im Schnitt AUK_FRUEH_HA Hektar alle AUK_FRUEH_JAHRE Jahre, danach so oft wie bisher.
+// Ab dem Jungwinzer kommt das erste Angebot per Zufall, spätestens AUK_ERST_JAHRE Jahre nach dem Aufstieg (S.aukErst merkt den Monat, in dem es kam).
+const AUK_FRUEH_HA=1, AUK_FRUEH_JAHRE=3, AUK_ERST_JAHRE=4;
 // Version 7.0 (Schritt I): In der langen Partie kommt der Weinskandal rund alle anderthalb Jahre, die Erbschaft alle drei.
 // Damit nicht immer derselbe Text steht, wechseln die Varianten der Reihe nach durch (S.vz), ohne Zufall.
 // Version 7.0 (Schritt J, Maik 16.11.2026): Nach einem Weinskandal ist SKANDAL_PAUSE Monate Ruhe (S.skAb), sonst füllt er spät die Lücke der schlechten Ereignisse.
