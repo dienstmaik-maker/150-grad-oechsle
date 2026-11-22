@@ -599,7 +599,7 @@ function bueroRang(){
     ${z('Ansehen',S.ansehen,n.ans,`${num(S.ansehen)} von ${num(n.ans)}`)}${z('Bepflanzt',bep,n.ha,`${bep.toLocaleString('de-DE')} von ${n.ha} Hektar`)}${z('Vermögen',v,n.verm,vonGeld(v,n.verm))}`
     :`<div class="kv"><span>⭐ Ansehen</span><span>${num(S.ansehen)}</span></div><div class="kv"><span>💰 Vermögen</span><span>${eur(v)}</span></div>${S.amt?`<div class="kv"><span>🗳️ Stimmung im Verband</span><span>${stimmZ()} von 100</span></div>`:''}`;
   return fenster('rangliste',`Dein Rang: ${duN()}`,ziel,{buch:'gegner',
-    hin:[GEGNER_AKT[aktNr()-1],S.sieger&&!S.amt&&`🪑 Auf dem Stuhl im Festsaal: ${esc(S.sieger)}`],
+    hin:[GEGNER_AKT[aktNr()-1],weltFormZeile(),S.sieger&&!S.amt&&`🪑 Auf dem Stuhl im Festsaal: ${esc(S.sieger)}`],
     links:`📊 Platz ${platz} von ${L.length}${vor?`, vor dir ${esc(vor.name)}`:', du führst'}`,
     kn:pk('rangliste','Rangliste','',{sec:1}),
     i:`Für den Aufstieg brauchst du Ansehen, bepflanzte Fläche und Vermögen zugleich. Die Balken dazu und was der nächste Rang bringt, stehen unter „Aktuelles“.<br><br>„Rangliste“ zeigt dich und deine Gegner. ${RANGL_I}`});
@@ -611,7 +611,7 @@ function lohnAngebot(k){const n=S.angebot[k], lage=lohnLage(n);return `<span cla
 function marktBericht(){
   const z=[];
   if(S.monat<=2) z.push(['Reben',proz(S.rebenF||1)+(S.rebenAng?`, ${SORTEN[S.rebenAng].name} ${proz(1-REBEN_ANGEBOT)}`:'')]);
-  z.push(['Fassraum',`${eur2(fassPreis())} je Liter, ${proz(S.fassF||1)}`],['Flaschen',`${eur2(flaschePreis())} je Stück, ${proz(S.flaschF||1)}`],['Erntehelfer',eur(S.angebot.helfer)+' im Monat'],['Lagerarbeiter',eur(S.angebot.lagerarb)+' im Monat'],['Weinpreise',proz(S.markt)]);
+  z.push(['Fassraum',`${eur2(fassPreis())} je Liter, ${proz(S.fassF||1)}`],['Flaschen',`${eur2(flaschePreis())} je Stück, ${proz(S.flaschF||1)}`],['Erntehelfer',eur(S.angebot.helfer)+' im Monat'],['Lagerarbeiter',eur(S.angebot.lagerarb)+' im Monat'],['Weinpreise',proz(S.markt)]); if((DIFF[S.schwer]||{}).land) z.push(['Landpreise',proz(S.landF||1)]);
   if(S.lage) z.push([S.lage.typ==='mode'?SORTEN[S.lage.sorte].name:'Weinskandal',`${proz(S.lage.f)}, noch ${S.lage.rest} ${S.lage.rest===1?'Monat':'Monate'}`]);
   return '<h4>Marktbericht</h4>'+z.map(x=>`<div class="zz"><b>${x[0]}</b>${x[1]}</div>`).join('');
 }
@@ -2058,7 +2058,7 @@ const AKT={
   sub(d){SUB=d.id;render();window.scrollTo(0,0)},
   // Seit 11.2: Bereich im Büro wählen und die ganze Rangliste als Fenster von unten.
   buero(d){if(BUERO===d.id) return; BUERO=d.id; FI_AUF.clear(); render()},
-  rangliste(){openSheet(`<h3>Rangliste</h3><p class="mut">${GEGNER_AKT[aktNr()-1]}</p><p class="mut">${RANGL_I}</p>${ranglisteHtml()}<div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`)},
+  rangliste(){openSheet(`<h3>Rangliste</h3><p class="mut">${GEGNER_AKT[aktNr()-1]}</p>${weltForm()?`<p class="mut">${weltFormZeile()}</p>`:''}<p class="mut">${RANGL_I}</p>${ranglisteHtml()}<div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`)},
   arbeitsamt(){closeSheet();geh('stadt','arbeit');render();window.scrollTo(0,0)},
   // Seit 11.1 öffnet der Knopf im Kellerbuch das Weinkompendium. Der Name der Aktion bleibt, die Sprechblasen zeigen darauf.
   weinQual(){archivGeh('brett')},

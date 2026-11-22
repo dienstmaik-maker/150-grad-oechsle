@@ -359,6 +359,12 @@ const STIFT_FAKTOR=2, MARKE_ABWAHL=10;
 // Startwerte (Bau 13.6.3): p gegen die besten passenden Weine des Test-Spielers ab Jahr 90 (sechs Gebiete), Zielchancen Sekt 60, Prädikat 50,
 // Rarität 35 Prozent, mit dem Jahrhundertwein (JH_QP) 70. Gemessen wird in 14.1. WELT_FAV_PLUS: neutraler Haken für stärkere Favoriten in der Meisterprüfung (13.7).
 const WELT_ANM=0, WELT_MONAT=5, WELT_FAV_W=8, WELT_FELD_AB=[35,15], WELT_FAV_PLUS=0, KRONE_ANS=140;
+// Seit 13.7.5 (Entscheidung 10): Form des Favoriten aus seinem Wurf ±WELT_FAV_W, stark ab +WELT_FORM_AB, schwach ab −WELT_FORM_AB, sonst wie immer.
+// Auf Stufen mit DIFF.form steht sie in der Rangliste und im Monat WELT_FORM_MON (Mai) im Winzerboten. Platzhalter bis 13.8, {fav} ist der Favorit.
+const WELT_FORM_AB=3, WELT_FORM_MON=4;
+const WELT_FORM={stark:['in starker Form','{fav} soll in diesem Jahr einen Wein im Keller haben, über den in ganz Europa gesprochen wird. Wer die Krone will, muss mehr bringen als sonst.'],
+  normal:['in gewohnter Form','{fav} tritt an wie jedes Jahr: stark, aber ohne Überraschung. Die Kenner rechnen mit dem Üblichen.'],
+  schwach:['in schwacher Form','Bei {fav} soll der Jahrgang nicht gelungen sein, heißt es unter den Kennern. Eine Chance für alle, die mit einem guten Wein antreten.']};
 const KRONEN=[
   {k:'sekt',name:'Sekt-Krone',sym:'🍾',sekt:1,stufen:[],was:'einem Sekt',fav:'Maison Clairval, Champagne',p:43},
   {k:'praed',name:'Prädikats-Krone',sym:'🍷',stufen:['kab','spat','aus'],was:'einem Kabinett, einer Spätlese oder einer Auslese',fav:'Domaine Haut-Rhin, Elsass',p:51},
@@ -375,10 +381,14 @@ const WELT_GUETER=['Château Belmont, Frankreich','Tenuta Montefiore, Italien','
 // schaed: das Schädlingsjahr gibt es nur auf Stufen mit schaed:1, also nur in der Meisterprüfung (schaedAn). Seit 13.7.2 ohne Befall und Spritzen.
 // name und text sind nur Anzeige: seit 11.6 Lehrjahre, Gesellenjahre, Meisterprüfung (Maik 20.11.2026 spät). kurz ist das alte Wort, es steht in Grau über dem Namen auf dem Knopf beim neuen Spiel.
 // Die Schlüssel einfach, mittel, schwer bleiben, an ihnen hängen Spielstände und Bestenliste.
+// Seit 13.7.5 (Bauplan 13.7): Erschwernisse der Meisterprüfung, nur auf Stufen mit dem Eintrag, die alten bleiben in jedem Akt. 1. Akt: markt [Schritt, unten, oben]
+// für die Weinpreise (sonst MARKT_SCHWANK), land wie markt für S.landF auf Startgebot und alle Gebote der Auktionen (sonst fest 1, der Makler bleibt fest),
+// klug: die Gegner bieten bis AUK_KLUG vom Wert des Loses (AUK_WERT_HA), marktSatz: Satz zum Markt im Winzerboten (MARKT_SATZ). 3. Akt: marke Punkte mehr für den
+// Herausforderer beim Amtsantritt und als Untergrenze nach der Abwahl, fav Punkte mehr für die Favoriten der Weltweinschau, form: ihre Form in Worten (WELT_FORM).
 const DIFF={
   einfach:{name:'Lehrjahre',kurz:'Einfach',text:'Sonne satt und Zeit zum Lernen. Du startest mit einem dicken Polster, und die Nachbarn lassen es gemütlich angehen. Genau richtig für die erste Partie.',ans:1.25,ki:.45,feld:-4,biet:1,geld:80000},
   mittel:{name:'Gesellenjahre',kurz:'Mittel',text:'So ist das Winzerleben gedacht. Die Nachbarn sind fleißig, aber mit guter Arbeit bist du vor ihnen an der Spitze.',ans:1,ki:.6,feld:0,biet:1},
-  schwer:{name:'Meisterprüfung',kurz:'Schwer',text:'Trau dich! Die Nachbarn sind schnell, die Konkurrenz ist stark, und wer im Herbst wartet, muss die Zeichen lesen. Wer hier Präsident wird, hat es sich verdient.',ans:1,ki:.81,feld:3,biet:1,schaed:1}
+  schwer:{name:'Meisterprüfung',kurz:'Schwer',text:'Trau dich! Die Nachbarn sind schnell, die Konkurrenz ist stark, und wer im Herbst wartet, muss die Zeichen lesen. Wer hier Präsident wird, hat es sich verdient.',ans:1,ki:.81,feld:3,biet:1,schaed:1,markt:[.09,.75,1.25],land:[.09,.75,1.25],klug:1,marktSatz:1,marke:5,fav:5,form:1}
 };
 const GEGNER_TYP={
   vorsicht:{name:'Hannelore Brück',art:'die Vorsichtige',eink:[9000,12000],ans:[16,24],biet:.4,med:.2,ws:[18,30],weine:['einen Kabinett','eine Spätlese','einen Qualitätswein']},
@@ -651,6 +661,9 @@ const LAGE_REIHE=['einfach','hoehe','sued'], SUED_MAX=8, SEKT_EINFACH_QP=5;
 const AUK_LAGE=[{r:0,w:{einfach:1}},{r:4,w:{einfach:.3,hoehe:.7}},{r:5,w:{einfach:.2,hoehe:.5,sued:.3}}];
 // Landpreis je Akt (RANG_AKT) und je Lage als Faktoren auf Startgebot und Gebote. Neutral auf dem heutigen Preis, die Werte setzt 14.2 (Platzhalter).
 const AUK_PREIS_AKT={1:1,2:1,3:1}, AUK_PREIS_LAGE={einfach:1,hoehe:1,sued:1};
+// Seit 13.7.5 (Entscheidung 9, Platzhalter bis 14.2): Wert des Loses = Hektar × AUK_WERT_HA × Gebiet × Lage × Akt × Landpreis (S.landF). Auf Stufen mit DIFF.klug
+// gehen die Gegner bis AUK_KLUG[0] bis [1] davon, statt wie sonst 14.000 bis 26.000 € je Hektar nach Laune. AUK_WERT_HA ist die alte Obergrenze der Laune.
+const AUK_WERT_HA=26000, AUK_KLUG=[.9,1];
 // Sätze zur Lage im Weinberg und beim Pflanzen (Platzhalter bis 14.4).
 const SUED_SATZ={
   keinPlatz:'Die Spitzen-Sorte wächst nur auf dem steilen Südhang, und dort ist kein Platz frei. Südhang gibt es bei den Auktionen ab dem Gutsherrn und einmal mit der Spitzenlage.',
@@ -759,6 +772,12 @@ const CHANCE_WORT=[[.6,'gut'],[.35,'mittel'],[0,'gering']];
 // Seit 13.4.6 (Maik 21.11.2026): Der Weingut-Manager warnt, sobald er eingestellt ist, wenn alle wartenden Felder zusammen mehr als MGR_WARN
 // vom erwarteten Erlös der Ernte des Jahres ausmachen. Erwartet heißt: sichere Lese jetzt, als Wein der höchsten erlaubten Stufe. 13.7 setzt für die Lehrjahre 0,3.
 const MGR_WARN=.4;
+// Weinpreise (S.markt): Schritt je Monat, unten, oben, wie bis 13.6. In der Meisterprüfung gilt DIFF.markt (seit 13.7.5).
+const MARKT_SCHWANK=[.06,.85,1.15];
+// Seit 13.7.5: Satz zum Markt im Winzerboten (DIFF.marktSatz), wenn sich die Lage ändert: gut ab MARKT_SATZ[0][0], schwach unter MARKT_SATZ[1][0]. Platzhalter bis 13.8.
+const MARKT_SATZ=[[1.1,'gut','Die Händler zahlen gerade gut','Im Weinhandel ist Bewegung: Die Händler zahlen so gut wie lange nicht. Wer Wein im Keller hat, kann jetzt gut verkaufen.'],
+  [.9,'normal','Die Weinpreise sind wieder normal','Der Weinhandel hat sich beruhigt, die Preise sind wieder, wie man sie kennt.'],
+  [0,'schwach','Die Händler halten sich zurück','Die Händler zahlen gerade schlecht und kaufen nur das Nötigste. Wer warten kann, verkauft lieber später.']];
 // Seit 13.7.3 (Bauplan 13.7, Maik 21.11.2026): Was am Lese-Knopf steht, je Spielstufe (CHANCE_ZEIGE): Lehrjahre die Zahl, Gesellenjahre das Wort, Meisterprüfung nichts.
 // In den Lehrjahren sagt der alte Winzer dazu, was er tun würde: warten ab RAT_WARTEN, sonst lesen. Seine Warnung kommt dort schon ab MGR_WARN_STUFE.einfach.
 const CHANCE_ZEIGE={einfach:'zahl',mittel:'wort',schwer:''}, RAT_WARTEN=.6, MGR_WARN_STUFE={einfach:.3};

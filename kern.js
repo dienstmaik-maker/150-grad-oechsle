@@ -693,8 +693,12 @@ function schauPunkte(l,s=S.schau){return (jhWein(l)?JH_QP:l.qp)+reifeBonus(l)+s.
 function schauNeu(){
   const kl=kroneKl(); if(kl==null) return;
   const K=KRONEN[kl], d=DIFF[S.schwer].feld, namen=misch(WELT_GUETER).slice(0,8);
-  const feld=[{name:K.fav,fav:1,p:rint(K.p-WELT_FAV_W,K.p+WELT_FAV_W)+d+WELT_FAV_PLUS},...namen.map(name=>({name,p:rint(K.p-WELT_FELD_AB[0],K.p-WELT_FELD_AB[1])+d}))];
-  S.schau={j:S.jahr,kl,feld:misch(feld),ein:null,zufall:rint(-4,4)};
+  const form=rint(-WELT_FAV_W,WELT_FAV_W), feld=[{name:K.fav,fav:1,p:K.p+form+d+WELT_FAV_PLUS+(DIFF[S.schwer].fav||0)},...namen.map(name=>({name,p:rint(K.p-WELT_FELD_AB[0],K.p-WELT_FELD_AB[1])+d}))];
+  S.schau={j:S.jahr,kl,feld:misch(feld),ein:null,zufall:rint(-4,4),form};
+}
+// Seit 13.7.5: Form des Favoriten in Worten (WELT_FORM), nur auf Stufen mit DIFF.form, sonst null. Ältere Schauen ohne Wurf gelten als normal.
+function weltForm(){const s=S.schau; if(!s||!(DIFF[S.schwer]||{}).form) return null; const f=s.form||0; return f>=WELT_FORM_AB?'stark':f<=-WELT_FORM_AB?'schwach':'normal'}
+function weltFormZeile(){const w=weltForm(); if(!w) return ''; const fav=S.schau.feld.find(x=>x.fav); return `🌍 Favorit der Weltweinschau: ${fav.name}, ${WELT_FORM[w][0]}`
 }
 // Einreichen und Tauschen nur im Monat der Anmeldung.
 const schauAnm=()=>!!(S.schau&&S.monat===WELT_ANM&&S.schau.j===S.jahr);
@@ -753,17 +757,22 @@ function altSchau(){if(S.wett&&S.wett.typ==='welt') S.wett=null}
 function aukLage(){const z=AUK_LAGE.filter(x=>S.rang>=x.r).pop().w, W=LAGE_REIHE.filter(lg=>z[lg]>0&&(lg!=='sued'||suedRest()>=1)); if(W.length<2) return W[0]||'einfach';
   let r=Math.random()*W.reduce((a,lg)=>a+z[lg],0); for(const lg of W){r-=z[lg]; if(r<0) return lg} return W[W.length-1]}
 const aukLageF=lg=>(AUK_PREIS_AKT[RANG_AKT[S.rang]]||1)*(AUK_PREIS_LAGE[lg]||1);
+// Seit 13.7.5: der Landpreis, nur auf Stufen mit DIFF.land, sonst 1.
+const landF=()=>(DIFF[S.schwer]||{}).land?(S.landF||1):1;
+// Satz zum Markt im Winzerboten, wenn sich die Lage der Weinpreise ändert (nur mit DIFF.marktSatz). S.marktW merkt die letzte Lage.
+function marktSatz(){if(!(DIFF[S.schwer]||{}).marktSatz) return; const M=MARKT_SATZ.find(x=>S.markt>=x[0]); if(S.marktW==null){S.marktW=M[1]; return} if(M[1]===S.marktW) return; S.marktW=M[1]; schlag(24,M[2],M[3],'',{archiv:1})}
 function auktionHa(){const r=Math.random();return r<.4?1:r<.73?2:r<.95?3:r<.995?5:10}
 function neueAuktion(spitze,haFest){
   if(spitze){const B=misch(NACHBARN).slice(0,3).map(n=>({name:n,limit:rint(64,144)*5000})); S.auktion={ha:SPITZE_HA,lage:'sued',start:SPITZE_START,schritt:10000,gebot:SPITZE_START,fuehrer:B[rint(0,2)].name,bieter:B,ende:null,text:'',phase:0,spitze:1}; return}
   // Seit 13.4.1: aukPreisF des Gebiets (Rheinhessen) auf Startgebot und alle Gebote, so wird das Land günstiger.
   // Seit 13.3.7: haFest gibt die Größe des Loses vor (vor dem Winzer AUK_FRUEH_HA).
   // Seit 13.4.9: Lage des Loses nach Rang (aukLage), ein Südhang-Los höchstens so groß, wie suedRest() erlaubt, der Preis mal Faktor je Akt und Lage.
-  const lage=aukLage(), ha0=haFest||auktionHa(), ha=lage==='sued'?Math.min(ha0,Math.floor(suedRest())):ha0, pf=(R().aukPreisF||1)*aukLageF(lage), start=Math.round(ha*8000*pf/500)*500, B=misch(NACHBARN).slice(0,rint(2,3)).map(n=>({name:n,limit:Math.round(ha*rnd(11000,30000)*pf/500)*500}));
+  const lage=aukLage(), ha0=haFest||auktionHa(), ha=lage==='sued'?Math.min(ha0,Math.floor(suedRest())):ha0, pf=(R().aukPreisF||1)*aukLageF(lage)*landF(), start=Math.round(ha*8000*pf/500)*500, B=misch(NACHBARN).slice(0,rint(2,3)).map(n=>({name:n,limit:Math.round(ha*rnd(11000,30000)*pf/500)*500}));
   for(const g of S.gegner) if(g.region===S.region){
     const t=GEGNER_TYP[g.typ];
     // Der Zufall wird immer gezogen, auch wenn der Gegner am Deckel ist und nicht mitbietet.
-    const lim=Math.round(Math.min(g.geld+(g.typ==='zocker'?30000:0),ha*rnd(14000,26000)*pf*(1+t.biet*bietF()*.6))/500)*500;
+    // Seit 13.7.5: Auf Stufen mit DIFF.klug bieten sie bis nah an den Wert des Loses (AUK_WERT_HA, AUK_KLUG) statt nach Laune.
+    const lim=Math.round(Math.min(g.geld+(g.typ==='zocker'?30000:0),DIFF[S.schwer].klug?ha*AUK_WERT_HA*pf*rnd(AUK_KLUG[0],AUK_KLUG[1]):ha*rnd(14000,26000)*pf*(1+t.biet*bietF()*.6))/500)*500;
     if(g.ha+ha<=gegnerDeckel(g)) B.push({name:g.name,ki:g.id,limit:lim});
   }
   const offen=B.filter(b=>b.limit>=start);
@@ -1346,7 +1355,9 @@ kompWissen('zeichen','stufe','Zeichen fürs Warten',()=>{
   return `${stufe}<br><br><b>☀️ Der Sommer</b><br>Das Wetter von ${MON[SOMMER_MON[0]]} bis ${MON[SOMMER_MON[1]]} zählt fürs Warten: jeder sonnige Monat ${W.sonnig>0?'+':''}${W.sonnig} Punkte, jeder verregnete ${W.regen}, kalt ${W.kalt}, Frost ${W.frost}. Ein feuchter September heißt also: lieber lesen.${T.includes('sommer')?'':' (zählt erst ab den Gesellenjahren)'}`
     +`<br><br><b>🐛 Das Schädlingsjahr</b><br>Alle ${SCHAEDJ_PAUSE[0]} bis ${SCHAEDJ_PAUSE[1]} Jahre meldet das Weinbauamt im ${MON[SCHAEDJ_MON]} ein Schädlingsjahr. Es nimmt der Ernte nichts, die Menge-Sorte bleibt sicher, aber das Warten kostet ${SCHAEDJ_MINUS} Punkte Chance.${T.includes('schaed')?'':' (nur in der Meisterprüfung)'}`
     +`<br><br><b>👴 Die Alten im Winzerboten</b><br>Im September sagen die Alten auf der Bank vor der Kirche, was sie vom Jahr halten: zuversichtlich, bedeckt oder besorgt. Sie wissen ein bisschen mehr als der Sommer allein.${T.includes('rest')?'':' (nur in der Meisterprüfung)'}`
-    +`<br><br><b>🍂 Die Tendenz</b><br>In ${mitte} meldet der Winzerbote im September dazu die Tendenz des Herbstes. Sie sagt nur, welcher Weg besser ist, Edelfäulnis oder Frost. Wie gut das Jahr fürs Warten ist, sagen die anderen Zeichen.`;
+    +`<br><br><b>🍂 Die Tendenz</b><br>In ${mitte} meldet der Winzerbote im September dazu die Tendenz des Herbstes. Sie sagt nur, welcher Weg besser ist, Edelfäulnis oder Frost. Wie gut das Jahr fürs Warten ist, sagen die anderen Zeichen.`
+    +`<br><br><b>💶 Der Markt</b><br>${(DIFF[S.schwer]||{}).land?'Wein- und Landpreise schwanken':'Die Weinpreise schwanken'} von Monat zu Monat, den Stand zeigt der Marktbericht.${(DIFF[S.schwer]||{}).marktSatz?' In der Meisterprüfung schwanken sie stärker, und der Winzerbote meldet, wenn die Händler gerade gut oder schlecht zahlen.':''}`
+    +`<br><br><b>🌍 Die Form der Gegner</b><br>${(DIFF[S.schwer]||{}).form?`Der Favorit der Weltweinschau ist mal stärker, mal schwächer als sonst. Seine Form steht in der Rangliste und im ${MON[WELT_FORM_MON]} im Winzerboten.`:'In der Meisterprüfung verrät der Winzerbote vor der Weltweinschau, in welcher Form der Favorit ist.'}`;
 });
 // Was eine Stufe braucht, mit den Hürden des eigenen Gebiets (früher die Zeilen im Weinlexikon).
 function kompStufeText(st){
@@ -1764,7 +1775,8 @@ function monatLauf(){
   if(S.wetter==='frost'){if(S.monat===11||S.monat<=1) S.winterFrost=(S.winterFrost||0)+1; else if(S.monat===3||S.monat===4) S.spaetFrost=true}
   // Rebenmarkt: in der Pflanzzeit jeden Monat neu gewürfelt, ohne Vorschau.
   S.rebenF=S.monat<=2?Math.round(rnd(1-REBEN_SCHWANK,1+REBEN_SCHWANK)*100)/100:1;
-  S.markt=clamp(S.markt+rnd(-.06,.06),.85,1.15);
+  // Seit 13.7.5: Weinpreise je Stufe (DIFF.markt), in der Meisterprüfung dazu der Landpreis (DIFF.land) und der Satz zum Markt.
+  {const D=DIFF[S.schwer]||{}, M=D.markt||MARKT_SCHWANK; S.markt=clamp(S.markt+rnd(-M[0],M[0]),M[1],M[2]); if(D.land) S.landF=clamp((S.landF||1)+rnd(-D.land[0],D.land[0]),D.land[1],D.land[2]); marktSatz()}
   S.fassF=clamp((S.fassF||1)+rnd(-.08,.08),1-LAGER_SCHWANK,1+LAGER_SCHWANK); S.flaschF=clamp((S.flaschF||1)+rnd(-.08,.08),1-LAGER_SCHWANK,1+LAGER_SCHWANK);
   {const fr=R().sorten.filter(sorteFrei); S.rebenAng=S.monat<=2?fr[rint(0,fr.length-1)]:null}
   if(S.lage&&--S.lage.rest<=0){Z.push(S.lage.typ==='mode'?`Die Mode im Ausland ist vorbei, ${SORTEN[S.lage.sorte].name} kostet wieder so viel wie üblich.`:'Der Weinskandal ist vergessen, die Weinpreise erholen sich.'); S.lage=null}
@@ -1908,6 +1920,7 @@ function etappe3Monat(Z){
   // Seit 13.6.3: Nach dem Brief ist jedes Jahr Weltweinschau im eigenen Dorf, bis zur dritten Krone. Angemeldet wird im Januar, die Schau ist im Juni.
   if(S.monat===WELT_ANM&&weltOffen()){schauNeu(); if(S.schau){const K=KRONEN[S.schau.kl], fav=S.schau.feld.find(x=>x.fav);
     schlag(74,`Weltweinschau ${S.jahr}: Es geht um die ${K.name}`,`${kroneText(K)} Angemeldet wird diesen Monat im Rathaus, zusammen mit den Prädikatsweinen, die Schau ist im ${MON[WELT_MONAT]} auf dem Dorfplatz. Als Favorit gilt ${fav.name}.`,'weltweinschau',{du:1})}}
+  if(S.monat===WELT_FORM_MON&&weltForm()){const w=weltForm(), fav=S.schau.feld.find(x=>x.fav); schlag(48,`Weltweinschau: ${fav.name} ${WELT_FORM[w][0]}`,WELT_FORM[w][1].replace('{fav}',fav.name),'weltweinschau',{du:1})}
   if(S.monat===WELT_MONAT&&S.schau){
     // Seit 10.2: Die erste Schau kommt auf die Bild-Bühne (A.schauB), danach steht sie nur im Winzerboten. Alte Stände mit schon gelaufener Schau bekommen keine Bühne mehr.
     const A=S.amt, K=KRONEN[S.schau.kl], erst=!A.schauB&&!(A.welt&&A.welt.length); A.schauB=1; if(erst) feierWelt('schau');
@@ -1981,7 +1994,9 @@ function mischung(a,b){
 // stuhl (id des Gegners, der nach einer Abwahl auf dem Stuhl sitzt),
 // wahlen (alle Wahlen: j, m, s Stimmung, marke, ok, im, geg Name). Paket 2 braucht vert und wahlen für den Schlüssel "Verband", die Chronik und die Bestenliste.
 // Seit 13.6.9: Die erste Wahl kommt WAHL_ERSTE Monate nach dem Amtsantritt.
-function amtStart(){S.amt={seit:monatNr(),stimm:STIMM_START+spStimm(),marke:MARKE_START,wahl:monatNr()+WAHL_ERSTE,im:1,zeit:1,siege:0,vert:0,kauf:0,geg:null,stuhl:null,wahlen:[]}}
+// Seit 13.7.5: Der Herausforderer startet auf Stufen mit DIFF.marke höher, das gilt auch als Untergrenze nach der Abwahl.
+const markeStart=()=>MARKE_START+((DIFF[S.schwer]||{}).marke||0);
+function amtStart(){S.amt={seit:monatNr(),stimm:STIMM_START+spStimm(),marke:markeStart(),wahl:monatNr()+WAHL_ERSTE,im:1,zeit:1,siege:0,vert:0,kauf:0,geg:null,stuhl:null,wahlen:[]}}
 // Alte Spielstände: Wer in 9.0.1 schon Präsident ist, bekommt das Amt beim Laden, die Meldung dazu steht im nächsten Winzerboten.
 function altAmt(){if(S.rang===R_MAX&&!S.amt){amtStart(); S.amt.alt=1}}
 function stimmung(d){const A=S.amt; A.stimm=clamp(A.stimm+d,0,100)}
@@ -2040,7 +2055,7 @@ function amtWahl(){
     amtSchlag(96,war?'gewonnen':'zurueck',{...par,zeit:A.zeit,neu:A.marke},'wahl',{gold:1});
   }else{
     // Seit 10.1 (Maik 18.11.2026): Nach der Abwahl sinkt die Marke um MARKE_ABWAHL, nie unter MARKE_START. Verliert der Altpräsident noch einmal, bleibt sie.
-    A.stimm=STIMM_ALT+spStimm(); if(war){A.im=0; A.stuhl=g?g.id:null; A.marke=Math.max(MARKE_START,marke-MARKE_ABWAHL)}
+    A.stimm=STIMM_ALT+spStimm(); if(war){A.im=0; A.stuhl=g?g.id:null; A.marke=Math.max(markeStart(),marke-MARKE_ABWAHL)}
     amtSchlag(96,war?'verloren':'wieder',{...par,neu:A.marke},'gegnerpraesident');
   }
 }
