@@ -479,7 +479,6 @@ function amtTxt(k,p){
   if(k==='verloren') return {t:`Abgewählt: ${p.g} übernimmt den Stuhl`,text:`${kopf} Die Stimmung für dich lag bei ${p.s}, gebraucht hättest du ${p.marke}. ${p.g} ${p.wo} sitzt jetzt auf dem Stuhl im Festsaal. ${amtEhre()?`Den Stuhl bist du los, ${ehrP()} bleibst du, und du`:`Du bist ${AP} und`} behältst alles, was du aufgebaut hast: Rang, Fläche, Geld und Ansehen. ${p.letzte?`Eine weitere Wahl gibt es für dich nicht mehr: Im Januar ${p.letzte} übergibst du das Weingut.`:`Im ${p.wann} wird wieder gewählt. Dann kannst du dir den Stuhl zurückholen${p.neu!=null?(p.neu<p.marke?`, und dafür reichen dann ${p.neu}`:`, dafür brauchst du wieder ${p.neu}`):''}.`}`};
   if(k==='wieder') return {t:`${p.g} bleibt auf dem Stuhl`,text:`${kopf} Die Stimmung für dich lag bei ${p.s}, gebraucht hättest du ${p.marke}. ${p.g} bleibt ${p.gw?'Präsidentin':'Präsident'}, du bleibst ${amtEhre()?ehrP():AP}. ${p.letzte?`Eine weitere Wahl gibt es für dich nicht mehr: Im Januar ${p.letzte} übergibst du das Weingut.`:`Im ${p.wann} wird wieder gewählt.`}`};
   if(k==='skandal') return {t:'Stimmenkauf im Verband aufgeflogen',text:`Ein Umschlag ist am falschen Tisch gelandet. Jetzt weiß der ganze Verband, dass bei ${S.name} Stimmen gekauft werden sollten. Das Geld ist weg, und die Stimmung für dich ist um ${KAUF_STRAFE} gefallen.`};
-  if(k==='geruecht') return {t:'Ein Gerücht macht die Runde',text:`Im Verband wird getuschelt, bei ${S.name} sei bei der letzten Prämierung nachgeholfen worden. Belegt ist nichts, aber es bleibt etwas hängen: Die Stimmung für dich fällt um ${WSAB_GERUECHT}. Man munkelt, ${p.g} habe das Gerücht gestreut.`};
   return {t:'Im Verband wird jetzt gewählt',text:`Der Weinbauverband hat seine Satzung geändert: Ab sofort wird alle ${WAHL_JAHRE} Jahre gewählt, und auch ${anr('der Präsident','die Präsidentin')} muss sich stellen. Die Stimmung für dich steht bei ${p.s} von 100, deine erste Wahl ist im ${p.wann}. Alles dazu steht im Rathaus im Fenster „Weinbauverband“.`};
 }
 function zeigePleite(){
@@ -1284,12 +1283,11 @@ function kellerAusHtml(){
   if(!kellerFrei(K)) return fenster('ausbau','Kellerausbau',stand+`<div class="fleer" style="margin-top:6px">🔒 Stufe ${K+1} (${KELLER_NAMEN[K]}) kannst du mit ${kellerMit(K)} im Kellerbuch ausbauen.</div>`,{i:was});
   return fenster('ausbau','Kellerausbau',stand,{kn:pk('kellerAus','Ausbauen',eur(pr),{klein:KELLER_NAMEN[K],arm:S.geld<pr}),i:was});
 }
-// Hintertür im Keller (seit 7.4 auf dem Fenster-Baustein): Zuckern und Wässern, Verschneiden, darunter der Weinprüfer als Zustand, Sabotage als Seltenes unten.
+// Hintertür im Keller (seit 7.4 auf dem Fenster-Baustein): Zuckern und Wässern, Verschneiden, darunter der Weinprüfer als Zustand. Die Sabotage ist seit 13.5.9 raus.
 // Die roten Zeilen zu gepanschtem Wein und zum Prüfer stehen immer sichtbar im Fenster "Weinprüfer", die Erklärungen im i.
 function vSabotage(){
-  const tr=S.lots.filter(l=>l.status==='trauben'), mi=S.lots.filter(mischbar), paare=mi.some(a=>mi.some(b=>a!==b&&farbe(a)===farbe(b))), P=panschListe().length, sp=sabSperre(), scharf=S.kontr.scharf>0;
-  const sabI=`Ein Mittelsmann erledigt bei einem Gegner die schmutzige Arbeit. Von Juli bis Dezember, höchstens einmal im Jahr. ${eur(SAB_KONTAKT)} für den Kontakt, dazu ${eur(SAB_MIN)} bis ${eur(SAB_MAX)} Handgeld. Je mehr Handgeld, desto eher klappt es. Jeder fünfte Versuch fliegt auf, das kostet ${eur(SAB_STRAFE)} und ${SAB_STRAFE_ANS} Ansehen.`;
-  if(['zuckern','verschneiden','pruefer'].every(einZu)&&!frei('sabotage')&&S.rang<SAB_RANG) return einKarte('hinter','Noch alles sauber','Hinter dieser Tür geht es nicht ganz sauber zu. Bis zur ersten Lese gibt es hier nichts zu tun.');
+  const tr=S.lots.filter(l=>l.status==='trauben'), mi=S.lots.filter(mischbar), paare=mi.some(a=>mi.some(b=>a!==b&&farbe(a)===farbe(b))), P=panschListe().length, scharf=S.kontr.scharf>0;
+  if(['zuckern','verschneiden','pruefer'].every(einZu)) return einKarte('hinter','Noch alles sauber','Hinter dieser Tür geht es nicht ganz sauber zu. Bis zur ersten Lese gibt es hier nichts zu tun.');
   return fenster('zuckern','Most zuckern oder wässern',tr.map(l=>fz(dot(l.sorte)+SORTEN[l.sorte].name,
       `${num(l.liter)} l Trauben · ${l.oe}° Öchsle${mani(l)?' · 🤫 '+maniText(l):''}`,'',
       `<button class="klein wag" data-a="zuckern" data-id="${l.id}" data-k="wasser" ${(l.wasser||0)>=ZUCKER_MAX?'disabled':''}>Wässern</button>`,
@@ -1303,9 +1301,7 @@ function vSabotage(){
   +fenster('pruefer','Weinprüfer',`<div class="kv"><span>Gepanschte Weine im Keller</span><span${P?' class="rot"':''}>${P}</span></div>
     <div class="kv"><span>Kontrolle</span><span${scharf?' class="rot"':''}>${scharf?'jedes Jahr':'etwa alle drei Jahre'}</span></div>
     ${scharf?'<div class="rot" style="font-size:14px;margin-top:4px">Der Prüfer hat dich auf dem Kieker.</div>':''}`,{
-    i:'Hinter der unscheinbaren Tür geht es nicht ganz sauber zu. Der Weinprüfer kommt unangemeldet, im Schnitt alle drei Jahre, spätestens nach vier. Was bis dahin verkauft ist, findet er nicht mehr.'})
-  +(S.rang<SAB_RANG&&!frei('sabotage')?'':S.rang>=SAB_RANG?fenster('sabotage','Sabotage',[],{leer:sp,i:sabI})
-    :fenster('sabotage','Sabotage','',{links:sp,kn:`<button class="klein wag" data-a="sabZiel" ${sp?'disabled':''}>Sabotage planen</button>`,i:sabI}));
+    i:'Hinter der unscheinbaren Tür geht es nicht ganz sauber zu. Der Weinprüfer kommt unangemeldet, im Schnitt alle drei Jahre, spätestens nach vier. Was bis dahin verkauft ist, findet er nicht mehr.'});
 }
 function vStadt(){
   let h=kopf({amt:'Rathaus',handel:'Großhandel',laeden:S.rang>=R_LADEN?'Deine Weinhandlung':'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'}[SUB]);
@@ -1673,7 +1669,6 @@ const FU_ZEIG={
   'r7-1':{tab:'stadt',sub:'amt',sel:[fiSel('wettb')]},
   'r7-2':{tab:'gut',sub:'maschinen',sel:[fiSel('kauf_gross')]},
   'r7-3':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="keller"]',fiSel('mgr_amt')]},
-  'r7-4':{tab:'keller',sub:'sabotage',sel:[fiSel('sabotage'),'#subs [data-id="sabotage"]']},
   'r8-1':{tab:'stadt',sub:'laeden',sel:[fiSel('regalRein'),fiSel('regal')]},
   'r8-2':{tab:'gut',sub:'maschinen',sel:[fiSel('kauf_abfuell')]},
   'r8-3':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="weingut"]',fiSel('mgr_amt')]},
@@ -2412,34 +2407,6 @@ const AKT={
       stimmung(KAUF_PLUS); save();render();
       meldung('🗳️ Es hat geklappt',`Die Umschläge sind angekommen. An ein paar Tischen im Verband redet man plötzlich freundlicher über dich. Die Stimmung steigt um ${KAUF_PLUS} auf ${stimmZ()}.`,'wahl');
     }
-  },
-  /* ---- Sabotage ---- */
-  sabZiel(){
-    if(sabSperre()) return;
-    openSheet(`${sbild('sabotage')}<h3>Wen soll es treffen?</h3>${S.gegner.map(g=>`<button class="wahl" data-a="sabWas" data-id="${g.id}"><b>${esc(g.name)}</b><br><span class="mut">${GEGNER_TYP[g.typ].art}, ${REGIONEN[g.region].name} · ${RAENGE[g.rang].kurz} · ${num(g.ansehen)} Ansehen · ${g.ha}\u00a0ha</span></button>`).join('')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
-  },
-  sabWas(d){
-    const g=S.gegner[+d.id]; if(!g||sabSperre()) return;
-    openSheet(`${sbild('sabotage')}<h3>Was soll bei ${esc(g.name)} passieren?</h3>${Object.entries(SAB).map(([k,v])=>`<button class="wahl" data-a="sabGeld" data-id="${g.id}" data-k="${k}"><b>${v[0]}</b><br><span class="mut">${v[1]}</span></button>`).join('')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
-  },
-  sabGeld(d){
-    const g=S.gegner[+d.id], k=d.k; if(!g||!SAB[k]||sabSperre()) return;
-    const max=Math.floor(Math.min(SAB_MAX,S.geld-SAB_KONTAKT)/1000)*1000;
-    mengeSheet({titel:`${SAB[k][0]} bei ${g.name}`,text:`Der Kontakt kostet ${eur(SAB_KONTAKT)}, dazu kommt das Handgeld. Das Geld ist in jedem Fall weg.`,min:SAB_MIN,max,step:1000,start:Math.min(max,20000),okText:'Auftrag geben',bild:'sabotage',wag:1,
-      info:n=>`<b>${eur(n)} Handgeld</b>zusammen ${eur(SAB_KONTAKT+n)} · klappt mit ${Math.round(sabChance(n)*100)}\u00a0%, fliegt mit ${Math.round(SAB_AUFFLIEGEN*100)}\u00a0% auf`,
-      ok:n=>{
-        if(sabSperre()) return;
-        S.sabJahr=S.jahr; zahle(SAB_KONTAKT+n);
-        const r=Math.random(), p=sabChance(n);
-        if(r<p){
-          let t='';
-          if(k==='gift'){const v=Math.round(g.ha*rnd(3000,5000)/100)*100; g.geld-=v; t=`Der beste Fasswein von ${g.name} ist hin. Schaden rund ${eur(v)}.`}
-          if(k==='buch'){g.falsch=rint(2,10); t=`Im Kellerbuch von ${g.name} stehen jetzt gepanschte Weine. Die nächste Kontrolle dort wird teuer.`}
-          if(k==='berg'){g.schaden=.25; const v=g.ha*1500; g.geld-=v; t=`Bei ${g.name} ist ein Viertel der Reben zerstört, dazu Flaschen für rund ${eur(v)}. Die nächste Ernte fällt kleiner aus.`}
-          meldung('💣 Es hat geklappt',t,'sabotage');
-        }else if(r<p+SAB_AUFFLIEGEN){zahle(SAB_STRAFE); ruhm(-SAB_STRAFE_ANS); meldung('💣 Aufgeflogen',`Dein Mann wurde bei ${g.name} erwischt und hat geplaudert. ${eur(SAB_STRAFE)} Strafe und ${SAB_STRAFE_ANS} Ansehen weg.`,'sabotage')}
-        else meldung('💣 Fehlschlag',`Der Mittelsmann kommt mit leeren Händen zurück. Bei ${g.name} ist nichts passiert, dein Geld ist trotzdem weg.`,'sabotage');
-      }});
   },
   // Tipp ins Bild öffnet den Ort des Motivs.
   bild(d,e){const s=panoTipp(e); if(s&&s!==SUB){SUB=s;render()}},

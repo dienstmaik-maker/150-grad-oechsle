@@ -851,9 +851,8 @@ function gegnerMonat(){
     // Aufstiegstempo: Die Gegner fangen gemütlich an und werden über die Jahre stärker.
     const st=st0*(GEGNER_START+(GEGNER_ENDE-GEGNER_START)*clamp(((g.jahre||1)-1)/GEGNER_JAHRE,0,1));
     if(m===0){
-      // g.schaden: Anteil der Ernte, den eine Sabotage im Vorjahr gekostet hat.
       // Schritt 3 (6.0): Das Gebiet wirkt über regionF auf das Einkommen, wie bei dir über Preis, Lese-Menge, Sekt und Sterne.
-      const gew=Math.round(g.ha*rnd(t.eink[0],t.eink[1])*st*auf*(1-(g.schaden||0))*regionF(g.region)/100)*100; g.schaden=0;
+      const gew=Math.round(g.ha*rnd(t.eink[0],t.eink[1])*st*auf*regionF(g.region)/100)*100;
       // Auch die Gegner zahlen Steuer auf den Jahresgewinn und pflanzen nach, sobald ihr Weinberg voll trägt.
       g.geld+=gew-(gew>0?Math.round(gew*STEUER/100)*100:0)-(auf===1?g.ha*GEGNER_ABNUTZ:0);
       if(gew>0&&auf===1) g.ansehen+=4*st;
@@ -864,8 +863,6 @@ function gegnerMonat(){
     // Seit 13.4.7: Der Kälteeinbruch der Gegner (warm und Mitte) kommt in den Jahren, in denen die Edelfäulnis im eigenen Weg nicht klappt (uEdel ab WAGNIS.eigen, 30 statt 25 Prozent,
     // Annahme von Claude). Er trifft, wer noch Trauben hängen hat, die Vorsichtige meist nicht. Der Umbau der Gegner kommt in 13.5.
     if(m===10&&REGIONEN[g.region].weg!=='frost'&&herbstJahr().uEdel>=WAGNIS.eigen&&auf>.2&&(g.poker||Math.random()<(g.typ==='vorsicht'?.2:.6))){g.geld-=g.ha*(g.poker?2500:1500); g.poker=false; neu(3,`Kälteeinbruch ${wo}: Bei ${g.name} ist erfroren, was noch hing.`)}
-    // Gefälschtes Kellerbuch (Sabotage des Spielers): g.falsch zählt die Monate bis zur Kontrolle beim Gegner.
-    if(g.falsch&&--g.falsch<=0){g.falsch=0; g.ansehen=Math.max(0,g.ansehen-40); g.geld-=Math.max(10000,Math.round(g.geld*.15)); neu(6,`Weinkontrolle bei ${g.name}: Im Kellerbuch steht gepanschter Wein. Das kostet Strafe und Ansehen.`)}
     if(m===1&&g.jahre){g.ansehen+=rnd(t.ans[0],t.ans[1])*st*auf; if(Math.random()<.5) neu(1,`${g.name} meldet im Rathaus ${t.weine[rint(0,t.weine.length-1)]} an.`)}
     if(m===2&&!heim&&auf===1&&Math.random()<t.med*st){const P=PREISE.land[rint(0,2)]; g.ansehen+=P.ans*st; neu(4,`${g.name} holt ${P.t} bei der Landesprämierung ${wo}.`)}
     if((!heim||g.ha>=gegnerDeckel(g))&&Math.random()<1/18){
@@ -1921,7 +1918,7 @@ function etappe3Monat(Z){
     // Seit 10.0: Das Amt beginnt in dem Monat, in dem der Spieler Präsident wird, auch wenn ein Gegner vorher schon Präsident war.
     if(S.rang===R_MAX&&!S.amt) amtStart();
   }
-  freiBote(Z); leuteKommen(Z); mgrKommen(); kontrolleMonat(Z); sabotageGegenDich(Z);
+  freiBote(Z); leuteKommen(Z); mgrKommen(); kontrolleMonat(Z);
   if(S.monat===0&&S.rang>=R_BOTSCHAFT) Z.push(`Als Weinbotschafter ${WO[S.region]} warst du auf Messen in aller Welt unterwegs. +${ruhm(BOTSCHAFT_ANS)} Ansehen.`);
   Z.push(...gegnerMonat()); eisGeschichte();
   // Wettbewerbe: Ausschreibung im Februar (Land) und alle drei Jahre im Juni (Bund). Eingereicht wird im selben Monat, gewertet beim nächsten Monatswechsel.
@@ -1963,7 +1960,7 @@ function etappe3Monat(Z){
   ladenMonat(Z);
   neueLaeden(); S.absatz=0;
   S.exLage.ex=clamp(S.exLage.ex+rnd(-.05,.05),.9,1.12);
-  // Seit 10.0: Stimmung, Umfrage, Sabotage vor der Wahl und die Wahl selbst, nach allem, was in diesem Monat Ansehen gebracht oder gekostet hat.
+  // Seit 10.0: Stimmung, Umfrage und die Wahl selbst, nach allem, was in diesem Monat Ansehen gebracht oder gekostet hat.
   amtMonat();
   ereignisMonat();
 }
@@ -2004,41 +2001,14 @@ function mischung(a,b){
   const L=a.liter+b.liter, o={a,b,liter:L,oe:Math.round((a.oe*a.liter+b.oe*b.liter)/L),qp:Math.round((a.qp*a.liter+b.qp*b.liter)/L)};
   o.schmier=schmierVon(L*STUFEN[a.stufe].preis*eisF(a)*(1+o.qp/100)); return o;
 }
-/* ---- Sabotage ---- */
-const sabChance=n=>.3+.45*(n-SAB_MIN)/(SAB_MAX-SAB_MIN);
-function sabSperre(){
-  return !frei('sabotage')&&S.rang<SAB_RANG?`Sabotage geht erst ${freiText('sabotage')}.`:S.rang>=SAB_RANG?`Als ${duK()} machst du so etwas nicht mehr.`:S.monat<6?'Die Unterwelt ist nur von Juli bis Dezember zu sprechen.':S.sabJahr===S.jahr?'Für dieses Jahr hast du dein Glück schon versucht.'
-    :S.geld<SAB_KONTAKT+SAB_MIN?`Du brauchst mindestens ${eur(SAB_KONTAKT+SAB_MIN)}: ${eur(SAB_KONTAKT)} für den Kontakt und ${eur(SAB_MIN)} Handgeld.`:'';
-}
-// Sabotage gegen den Spieler: nur vom Zocker, frühestens ab dem fünften Jahr, höchstens alle fünf Jahre. Schaden: ein Fass oder rund 15 % der Reben.
-// Seit 10.0 steht der Schaden in sabSchaden, weil ihn auch der Herausforderer vor der Wahl anrichtet (wahl=1). Gibt false zurück, wenn es weder ein Fass noch genug Reben gibt.
-function sabSchaden(g,wahl){
-  const F=S.lots.filter(l=>l.status==='fass').sort((a,b)=>lotWert(b)-lotWert(a)), B=R().sorten.filter(id=>S.felder[id].reben>=500);
-  if(!F.length&&!B.length) return false;
-  const wer=wahl?`So kurz vor der Wahl glaubt im Verband keiner an einen Zufall. Man munkelt, ${g.name} stecke dahinter.`:`Man munkelt, ${g.name} stecke dahinter.`;
-  if(F.length&&(Math.random()<.5||!B.length)){
-    const l=F[0]; S.lots=S.lots.filter(x=>x!==l);
-    schlag(85,'Sabotage im Keller!',`Nachts war jemand in deinem Keller: ${num(l.liter)}\u00a0l ${lotName(l)} sind vergiftet und mussten weg. ${wer}`,'sabotage',{du:1});
-  }else{
-    let weg=0;
-    for(const id of B){const f=S.felder[id], tot=Math.round(f.reben*.15/100)*100; f.reben-=tot; weg+=tot; if(f.menge>0&&!f.gelesen) f.menge=Math.round(f.menge*.85)}
-    schlag(85,'Sabotage im Weinberg!',`Nachts hat jemand in deinem Weinberg gewütet: ${rbn(weg)} Reben sind zerstört. ${wer}`,'sabotage',{du:1});
-  }
-  return true;
-}
-function sabotageGegenDich(Z){
-  const g=S.gegner.find(x=>x.typ==='zocker');
-  if(!g||S.monat<6||S.jahr-START_JAHR<4||S.jahr-(S.sabDich||0)<5||Math.random()>=.04) return;
-  if(sabSchaden(g)) S.sabDich=S.jahr;
-}
 /* ---- Version 10.0: Amtszeit und Wahl (Spielende, Paket 1) ---- */
 // S.amt gibt es ab dem Monat, in dem der Spieler Präsident wird: seit (Monat des Amtsantritts als monatNr), stimm (Stimmung im Verband, Kommazahl 0 bis 100),
 // marke (so viel braucht es am Wahltag), wahl (Monat der nächsten Wahl), im (1 im Amt, 0 abgewählt), zeit (laufende Amtszeit), siege (gewonnene Wahlen),
 // vert (davon im Amt verteidigt), kauf (gekaufte Stimmen dieser Wahl), geg (Herausforderer ab der Umfrage, id des Gegners, sonst null),
-// sab (Monat der Sabotage vor der Wahl oder 0), stuhl (id des Gegners, der nach einer Abwahl auf dem Stuhl sitzt),
+// stuhl (id des Gegners, der nach einer Abwahl auf dem Stuhl sitzt),
 // wahlen (alle Wahlen: j, m, s Stimmung, marke, ok, im, geg Name). Paket 2 braucht vert und wahlen für den Schlüssel "Verband", die Chronik und die Bestenliste.
 // Seit 13.6.9: Die erste Wahl kommt WAHL_ERSTE Monate nach dem Amtsantritt.
-function amtStart(){S.amt={seit:monatNr(),stimm:STIMM_START+spStimm(),marke:MARKE_START,wahl:monatNr()+WAHL_ERSTE,im:1,zeit:1,siege:0,vert:0,kauf:0,geg:null,sab:0,stuhl:null,wahlen:[]}}
+function amtStart(){S.amt={seit:monatNr(),stimm:STIMM_START+spStimm(),marke:MARKE_START,wahl:monatNr()+WAHL_ERSTE,im:1,zeit:1,siege:0,vert:0,kauf:0,geg:null,stuhl:null,wahlen:[]}}
 // Alte Spielstände: Wer in 9.0.1 schon Präsident ist, bekommt das Amt beim Laden, die Meldung dazu steht im nächsten Winzerboten.
 function altAmt(){if(S.rang===R_MAX&&!S.amt){amtStart(); S.amt.alt=1}}
 function stimmung(d){const A=S.amt; A.stimm=clamp(A.stimm+d,0,100)}
@@ -2048,7 +2018,7 @@ const amtAlt=()=>!!(S&&S.amt&&!S.amt.im), stimmZ=()=>Math.round(S.amt.stimm);
 const amtEhre=()=>!!(S&&S.amt&&S.amt.ehren);
 const altP=()=>anr('Altpräsident','Altpräsidentin'), duN=()=>amtEhre()?ehrP():amtAlt()?altP():rangN(S.rang), duK=()=>amtEhre()?ehrP():amtAlt()?altP():rangK(S.rang);
 const monJahr=nr=>`${MON[nr%12]} ${START_JAHR+Math.floor(nr/12)}`;
-// Wahlkampf: von der Umfrage bis zur Wahl. Nur dann gibt es den Stimmenkauf und die Sabotage des Herausforderers.
+// Wahlkampf: von der Umfrage bis zur Wahl. Nur dann gibt es den Stimmenkauf.
 function amtKampf(){const A=S.amt; return !!(A&&A.geg!=null&&monatNr()<A.wahl)}
 const gFrau=g=>!!g&&g.typ==='vorsicht';
 function amtGegner(){const A=S.amt; return A&&A.geg!=null?S.gegner.find(g=>g.id===A.geg)||null:null}
@@ -2065,7 +2035,6 @@ function amtMonat(){
   if(A.skandal){A.skandal=0; amtSchlag(86,'skandal',{},'wahl')}
   if(nr>=A.wahl) amtWahl();
   else if(A.geg==null&&nr>=A.wahl-WAHL_UMFRAGE&&!wahlAus()) amtUmfrage();
-  else if(A.sab&&nr>=A.sab) amtSabotage();
   amtBrief();
 }
 // Seit 10.1: die zwei Schlüssel zur Weltweinschau. Dorf: alle acht Spenden, als Spende oder über die Stiftung. Verband: mindestens eine gewonnene Wahl,
@@ -2081,25 +2050,16 @@ function amtBrief(){
   // Seit 10.2 steht das Gespräch mit dem Bürgermeister auf der Bild-Bühne, die Zeitung bringt nur die Nachricht.
   schlag(94,'Ein Brief für das ganze Dorf',`Die Weltweinschau sucht einen Gastgeber, und der Bürgermeister hat ihr nur ein Dorf genannt: unseres. Ab jetzt kommen jeden ${MON[WELT_MONAT]} die besten Weingüter der Welt auf den Dorfplatz. Es geht um ${KRONEN.length} Kronen, eine nach der anderen: ${KRONEN.map(K=>K.name).join(', ').replace(/, ([^,]*)$/,' und $1')}. Angemeldet wird im ${MON[WELT_ANM]} im Rathaus. Wer alle ${KRONEN.length} holt, wird ${ehrP()}.`,'einladung',{gold:1,du:1});
 }
-// Die Umfrage legt den Herausforderer fest und würfelt, ob er vor der Wahl sabotiert: 2 bis 9 Monate später, also mindestens 3 Monate vor der Wahl.
+// Die Umfrage legt den Herausforderer fest. Seit 13.5.9 sabotiert er nicht mehr vor der Wahl.
 function amtUmfrage(){
   const A=S.amt, g=amtRivale(); A.geg=g?g.id:-1; A.kauf=0;
-  A.sab=Math.random()<WSAB_CHANCE?monatNr()+rint(2,9):0;
   amtSchlag(88,'umfrage',{im:A.im,s:stimmZ(),marke:A.marke,wann:monJahr(A.wahl),...gPar(g)},'wahl');
-}
-// Zur Hälfte Schaden wie bei der Sabotage des Zockers, zur Hälfte ein Gerücht. Ohne Fass und ohne genug Reben wird es immer ein Gerücht.
-// Die Fünf-Jahres-Sperre des Zockers läuft mit, damit nicht zwei Anschläge kurz hintereinander kommen.
-function amtSabotage(){
-  const A=S.amt, g=amtGegner(); A.sab=0; if(!g) return;
-  S.sabDich=S.jahr;
-  if(Math.random()<.5&&sabSchaden(g,1)) return;
-  stimmung(-WSAB_GERUECHT); amtSchlag(85,'geruecht',{g:g.name},'wahl');
 }
 // Die Wahl: Liegt die gerundete Stimmung auf oder über der Marke, gewinnt der Spieler. Kein Würfel.
 function amtWahl(){
   const A=S.amt, g=amtGegner()||amtRivale(), s=stimmZ(), marke=A.marke, ok=s>=marke, war=A.im;
   A.wahlen.push({j:S.jahr,m:S.monat,s,marke,ok:ok?1:0,im:war?1:0,geg:g?g.name:''});
-  A.wahl=monatNr()+WAHL_JAHRE*12; A.kauf=0; A.geg=null; A.sab=0;
+  A.wahl=monatNr()+WAHL_JAHRE*12; A.kauf=0; A.geg=null;
   const par={s,marke,wann:monJahr(A.wahl),letzte:wahlAus()?endeJahr():0,...gPar(g)};
   if(ok){
     A.siege++; if(war) A.vert++; A.zeit++; A.marke=Math.min(MARKE_MAX,marke+MARKE_PLUS); A.stimm=STIMM_START+spStimm(); A.im=1; A.stuhl=null;
