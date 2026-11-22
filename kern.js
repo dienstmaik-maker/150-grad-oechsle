@@ -208,7 +208,7 @@ const rnd=(a,b)=>a+Math.random()*(b-a), rint=(a,b)=>Math.floor(rnd(a,b+1)), clam
 // Seit 11.6 "Schummeln verboten" (Maik 20.11.2026): festes Wetter je Partie. S.zf ist die Startzahl der Partie, fest() macht daraus mit Thema, Nummer, Jahr und Monat
 // immer dieselbe Zahl zwischen 0 und 1 (Rechnung wie zufallH in _h.js). Neu laden ändert Wetter, Kälteeinbruch, Vorhersage und Weinberg also nicht.
 // Themen: 1 Wetter, 2 Kälteeinbruch (ruht seit 13.4.2), 3 Vorhersage, 4 Edelfäulnis (ruht seit 13.4.2), 5 Öchsle-Streuung, 6 Ertrag, 7 Reben-Sterben, 8 Temperatur,
-// 9 Schädlinge (Plan), 10 Schädlinge (Schaden), 11 Herbst-Wagnis (seit 13.4.2). nr trennt Sorten und Würfe im selben Monat.
+// 9 Schädlinge (Plan), 10 Schädlinge (Schaden), 11 Herbst-Wagnis (seit 13.4.2), 12 Jahrhundertjahre, 13 Verschiebung beim Wagnis (seit 13.7.1). nr trennt Sorten und Würfe im selben Monat.
 // Die Startzahl entsteht über Math.random, damit Messläufe mit festem Zufall wiederholbar bleiben. Ohne Startzahl würfelt fest() wie früher.
 const zfNeu=()=>Math.floor(Math.random()*4294967296)|0;
 function fest(thema,nr,jahr=S.jahr,monat=S.monat){
@@ -1072,10 +1072,16 @@ function wegChance(w,r=S.region,j=S.jahr){
   else if(g==='beide') p=herbstTend(j).weg===w?WAGNIS.mitTend:WAGNIS.gegenTend;
   else if(g===w) p=WAGNIS.eigen;
   else if(herbstFremd(j)) p=WAGNIS.fremd;
-  return Math.min(1,p*WAGNIS_F);
+  return p>=1?1:wagP(p,j);
 }
+// Seit 13.7.1: Verschiebung des Jahres j in Prozentpunkten, fest je Partie (Thema 13), in der Spanne der Spielstufe (WAG_SPANNE).
+const wagSpanne=()=>WAG_SPANNE[S.schwer]||[0,0];
+function wagRoh(j){const [a,b]=wagSpanne(); return a===b?a:festR(a,b,fest(13,0,j,0))}
+function wagVers(j=S.jahr){const [a,b]=wagSpanne(); return Math.round(clamp(wagRoh(j),a,b))}
+// Chance mit Verschiebung, ein geschlossener Weg (0) bleibt zu.
+const wagP=(p,j=S.jahr)=>p>0?clamp(p+wagVers(j)/100,WAG_MIN,WAG_MAX):0;
 // Seit 13.6.2: Chance der Trockenbeerenauslese, im Jahrhundertsommer JH_CHANCE. tbaOffen ist das Rang-Schloss der zweiten Stufe.
-const tbaChance=(j=S.jahr)=>Math.min(1,(jhEcht(j)==='sommer'?JH_CHANCE:WAGNIS.tba)*WAGNIS_F);
+const tbaChance=(j=S.jahr)=>wagP(jhEcht(j)==='sommer'?JH_CHANCE:WAGNIS.tba,j);
 // Seit 13.6.9 (Nachtrag 3): Die Ausnahme aus 13.6.7 ist weg, die zweite Stufe öffnet sich auch im Jahrhundertsommer erst bei R8.
 const tbaOffen=()=>frei('weg_tba');
 // Die Wege, die der Spieler in diesem Jahr wagen darf (frei: weg_eigen).

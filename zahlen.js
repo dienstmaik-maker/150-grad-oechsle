@@ -721,12 +721,16 @@ const OE_START=49, OE_PLUS=[14,14,12,15,4];
 // Seit 13.4.2 (Bauplan 13.4, Maik 21.11.2026): der Herbst der Spitzen-Sorte als Wagnis. Bis Oktober ist sicher, was der Deckel erlaubt.
 // Wer länger hängen lässt, wagt den Weg seines Gebiets: warm bis November auf Edelfäulnis (Beerenauslese, mindestens MIN_NORMAL.ba),
 // kühl bis Dezember auf Frost (Eiswein mit dem Öchsle der Trauben). WAGNIS.eigen ist die Chance im eigenen Weg. Klappt es nicht, ist die Ernte des Feldes weg.
-// WARTEN_MENGE bleibt von der Menge je Monat über Oktober hinaus (für jedes Feld). WAGNIS_F ist der neutrale Haken für die Schwankung der Spielstufen (13.7).
+// WARTEN_MENGE bleibt von der Menge je Monat über Oktober hinaus (für jedes Feld). Seit 13.7.1 sitzt dort, wo bis 13.6 der neutrale Haken WAGNIS_F stand, die Verschiebung je Jahr (WAG_SPANNE).
 // Seit 13.4.3: In der Mitte (weg beide) sind beide Wege eigene, die Chance hängt an der Tendenz: mit ihr WAGNIS.mitTend, dagegen oder bei unklar WAGNIS.gegenTend.
 // Seit 13.4.4: Ab R7 öffnet ein besonderes Jahr den fremden Weg (warm ein harter Winter für den Eiswein, kühl ein goldener Herbst für die Edelfäulnis)
 // mit WAGNIS.fremd. Ein Jahr ist mit FREMD_JAHR besonders (etwa alle acht Jahre), in der Mitte gibt es keinen fremden Weg.
 // Seit 13.4.5: Ab R8 kann eine gelungene Beerenauslese einen Monat länger hängen, mit WAGNIS.tba wird sie Trockenbeerenauslese (MIN_NORMAL.tba), sonst ist alles weg.
-const WAGNIS={eigen:.7,mitTend:.55,gegenTend:.2,fremd:.5,tba:.5}, WARTEN_MENGE=.9, WAGNIS_F=1, FREMD_JAHR=1/8;
+const WAGNIS={eigen:.7,mitTend:.55,gegenTend:.2,fremd:.5,tba:.5}, WARTEN_MENGE=.9, FREMD_JAHR=1/8;
+// Seit 13.7.1 (Bauplan 13.7, Maik 21.11.2026): Jedes Jahr hat eine feste Verschiebung der Chance in Prozentpunkten, gleich für alle Felder, Wege und Stufen
+// des Wagnisses. WAG_SPANNE je Spielstufe [unten, oben]: Lehrjahre 0, Gesellenjahre ±10, Meisterprüfung −30 bis +15. Die Chance ist Grundwert plus Verschiebung,
+// nie unter WAG_MIN und nie über WAG_MAX. Im Jahrhundertjahr gilt sie für Trockenbeerenauslese und Eiswein, die sichere Edelfäulnis im Jahrhundertsommer bleibt sicher (Entscheidung 7).
+const WAG_SPANNE={einfach:[0,0],mittel:[-10,10],schwer:[-30,15]}, WAG_MIN=.05, WAG_MAX=.95;
 // Seit 13.4.4: Meldung im Winzerboten vom September, wenn der fremde Weg offen ist, nach dem Weg, den sie öffnet. Platzhalter bis 13.8.
 const FREMD_TEXT={
   frost:['Ein harter Winter kündigt sich an','Die Alten {wo} spüren es in den Knochen: Dieser Winter wird hart. Wer seine Spitzen-Sorte bis Dezember hängen lässt, hat diesmal eine Chance auf Eiswein.'],
