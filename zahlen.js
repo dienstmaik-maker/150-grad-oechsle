@@ -139,7 +139,8 @@ const FREI={wein_feder:{r:0},wein_tafel:{r:0},wein_qba:{r:2},wein_kab:{r:3},wein
   mgr_weingut1:{r:2,ab:10,name:'der Weingut-Manager',bote:'🌿 Ab heute arbeitet ein Weingut-Manager für dich. Er stellt Erntehelfer und Fahrer ein.'},
   mgr_weingut2:{r:5,ab:3,name:'Stufe 2 für den Weingut-Manager',bote:'🌿 Dein Weingut-Manager steigt auf Stufe 2.'},
   mgr_weingut3:{r:8,ab:4,name:'Stufe 3 für den Weingut-Manager',bote:'🌿 Dein Weingut-Manager steigt auf Stufe 3.'},
-  masch_duenger:{r:2,ab:3,name:'der Düngerstreuer',bote:'🚜 Beim Landhandel steht jetzt ein Düngerstreuer für dich. Kaufen kannst du ihn von Januar bis März.'},
+  // Seit 13.5.9 (Nachtrag 3, Maik 22.11.2026): Der Düngerstreuer kommt direkt mit dem Winzer, ohne Abstand (vorher 3 Jahre danach).
+  masch_duenger:{r:2,name:'der Düngerstreuer',bote:'🚜 Beim Landhandel steht jetzt ein Düngerstreuer für dich. Kaufen kannst du ihn von Januar bis März.'},
   masch_klein:{r:3},
   masch_abfuell:{r:3,ab:4,name:'die Abfüllanlage',bote:'🍾 Für deinen Keller gibt es jetzt eine Abfüllanlage. Kaufen kannst du sie von Januar bis März.'},
   sekt_anlage:{r:4,ab:5,name:'die Degorgier- und Abfüllanlage im Sektkeller',bote:'🍾 Für den Sektkeller gibt es jetzt eine Degorgier- und Abfüllanlage.'},
@@ -197,14 +198,17 @@ const KEYS=['rebenreich-1','rebenreich-2','rebenreich-3'], SLOT_KEY='rebenreich-
 // Seit 11.5 (Teil C2, Maik 20.11.2026): realistische Löhne. Das Arbeitsamt bietet LOHN_MIN bis LOHN_MAX im Monat (bis 11.4: 200 bis 500 €, Startlohn 350, Vermittlung 300).
 // LOHN_F ist der gemeinsame Faktor auf alle Löhne (Angestellte und Manager), eingestellt über die Dosis-Reihe der Messung. lohnF rechnet einen Lohn damit um, auf 10 € gerundet.
 // Die Erntemaschine deckt seitdem MASCH_HELFER Hektar ab und liest MASCH_LEISTUNG Reben (bis 11.4: 3 Hektar, 3.000 Reben, 28.000 €, Wartung 100 € je Punkt).
-const HELFER_LEISTUNG=3000, MASCH_LEISTUNG=6000, MASCH_PREIS=140000, WARTUNG=300, LOHN_MIN=1800, LOHN_MAX=2400, LOHN_START=2000, VERMITTLUNG=1000, ZINS=.06, SEKT_KOSTEN=.8;
+// MASCH_LEISTUNG seit 13.5.9 15.000 Reben, gleich den MASCH_HELFER 15 Hektar weiter unten (bis 13.5: 6.000).
+const HELFER_LEISTUNG=3000, MASCH_LEISTUNG=15000, MASCH_PREIS=140000, WARTUNG=300, LOHN_MIN=1800, LOHN_MAX=2400, LOHN_START=2000, VERMITTLUNG=1000, ZINS=.06, SEKT_KOSTEN=.8;
 const LOHN_F=1, LOHN_ALT=[200,500];
 // Leute-Regel seit 11.5 (Teil C1, Maik 20.11.2026): Bis ALLEIN_HA Hektar Reben, ALLEIN_FASS Liter Fassraum und ALLEIN_FL leere Flaschen schafft die Familie alles allein
 // und liest ihre ALLEIN_HA Hektar selbst. Darüber braucht es das ganze Jahr je REBEN_JE_HELFER angebaute Reben (3 Hektar) einen fest angestellten Erntehelfer,
 // jeder liest HELFER_LEISTUNG Reben (oben, dreimal so viel wie bis 11.4). Eine Erntemaschine im Einsatz deckt MASCH_HELFER Hektar ab (bis 11.4 "zählt wie so viele Helfer", das war dasselbe).
 // Zahlen bis 11.4, für Messläufe: ALLEIN_HA, ALLEIN_FASS und ALLEIN_FL 0, REBEN_JE_HELFER, HELFER_LEISTUNG und HAND_REBEN 1000, FASS_JE_LAGERARB 10000, FLASCHEN_JE_LAGERARB 20000, ABF_FLASCHEN 25000.
 // Ein Lagerarbeiter betreut FASS_JE_LAGERARB Liter Fassraum und FLASCHEN_JE_LAGERARB leere Flaschen, zusätzlich zu dem, was die Familie schafft. Fehlen Leute, sperrt "Nächster Monat".
-const ALLEIN_HA=4, ALLEIN_FASS=10000, ALLEIN_FL=10000, REBEN_JE_HELFER=3000, MASCH_HELFER=6, FASS_JE_LAGERARB=30000, FLASCHEN_JE_LAGERARB=60000;
+// Seit 13.5.9 (Nachtrag 3, Maik 22.11.2026): Es gibt höchstens eine Erntemaschine (MASCH_EINE), sie deckt MASCH_HELFER 15 Hektar ab (bis 13.5: 6) und liest
+// so viele Reben, wie sie abdeckt. Alles darüber lesen die Erntehelfer von Hand, einer je REBEN_JE_HELFER, die Löhne bremsen dort bewusst.
+const ALLEIN_HA=4, ALLEIN_FASS=10000, ALLEIN_FL=10000, REBEN_JE_HELFER=3000, MASCH_HELFER=15, MASCH_EINE=1, FASS_JE_LAGERARB=30000, FLASCHEN_JE_LAGERARB=60000;
 /* ---- Etappe 3: Ränge, Gegner, Auktionen, Wettbewerbe, Export ---- */
 // START_GELD: seit 7.0 (Schritt C, Maik 16.11.2026) 60.000 € statt 40.000 €, weil am Start nur die ★★★-Sorte geht und Riesling erst nach 18 Monaten Geld bringt. Endgültig in Schritt H.
 const START_JAHR=2027, START_GELD=60000;
@@ -463,7 +467,7 @@ const ABF_PREIS=60000, ABF_WARTUNG=200, ABF_ABN=15, ABF_NORM=40000, ABF_PLUS=.05
 const ABF_PLUS2=.1, ABF_FLASCHEN2=90000, ABF_PREIS2=ABF_PREIS;
 // Reihenfolge wie die Ränge, so stehen sie auch im Feld Maschinen. f:1 heißt "die" (Dein/Deine, er/sie), ernte:1 liest bei der Lese mit.
 const MASCH={duenger:{name:'Düngerstreuer',preis:STREU_PREIS,leist:0,helfer:0,wart:STREU_WARTUNG,rang:R_STREU,fahrer:1,leute:'helfer',bonus:1,text:'streut den Dünger gleichmäßig'},
-  klein:{name:'Erntemaschine',preis:MASCH_PREIS,leist:MASCH_LEISTUNG,helfer:MASCH_HELFER,wart:WARTUNG,rang:R_ERNTE,fahrer:1,leute:'helfer',ernte:1,f:1,text:'die kleine Maschine für den Anfang'},
+  klein:{name:'Erntemaschine',preis:MASCH_PREIS,leist:MASCH_LEISTUNG,helfer:MASCH_HELFER,wart:WARTUNG,rang:R_ERNTE,fahrer:1,leute:'helfer',ernte:1,f:1,eins:MASCH_EINE,text:'die Maschine für die Menge'},
   laub:{name:'Laubschneider',preis:LAUB_PREIS,leist:0,helfer:0,wart:LAUB_WARTUNG,rang:R_LAUB,fahrer:1,leute:'helfer',bonus:1,text:'macht im Juni den Sommerschnitt'},
   gross:{name:'Vollernter',preis:VOLL_PREIS,leist:VOLL_LEISTUNG,helfer:VOLL_HELFER,wart:VOLL_WARTUNG,rang:R_VOLL,fahrer:2,leute:'helfer',ernte:1,text:'die große Maschine für weite Lagen'},
   abfuell:{name:'Abfüllanlage',preis:ABF_PREIS,leist:0,helfer:0,wart:ABF_WARTUNG,rang:R_ABF,fahrer:1,leute:'lagerarb',bonus:1,f:1,text:'füllt ab, ohne dass etwas danebengeht'}};

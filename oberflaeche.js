@@ -1071,8 +1071,8 @@ function vMaschinen(){
     leer:'Du hast noch keine Maschine.',i:`${mI}<br><br>Warten bringt den Zustand wieder hoch, verkaufen bringt die Hälfte vom Neupreis, je nach Zustand.`});
   for(const [id,T] of Object.entries(MASCH)){
     if(R().steil&&T.ernte) continue;
-    const titel=`Neue${T.f?' ':'r '}${T.name}`, lw=T.leute==='lagerarb'?'Lagerarbeiter':'Fahrer', fa=`braucht ${T.fahrer} ${lw}`, hat=T.bonus&&S.maschinen.some(x=>x.typ===id);
-    const was=(T.bonus?`${MASCH_BONUS[id]()}. ${wie[id]} Mehr als ${T.f?'eine':'einen'} brauchst du nicht`:`Schafft ${rbn(T.leist)} Reben bei der Lese und deckt übers Jahr ${T.helfer} Hektar Reben ab`)+`, ${fa}. Die Wartung kostet ${eur(T.wart)} je Prozentpunkt.<br><br>${mI}`;
+    const titel=`Neue${T.f?' ':'r '}${T.name}`, lw=T.leute==='lagerarb'?'Lagerarbeiter':'Fahrer', fa=`braucht ${T.fahrer} ${lw}`, hat=maschEins(id)&&S.maschinen.some(x=>x.typ===id);
+    const was=(T.bonus?`${MASCH_BONUS[id]()}. ${wie[id]} Mehr als ${T.f?'eine':'einen'} brauchst du nicht`:`Schafft ${rbn(T.leist)} Reben bei der Lese und deckt übers Jahr ${T.helfer} Hektar Reben ab${T.eins?`. Mehr als ${T.f?'eine':'einen'} gibt es nicht, alles darüber lesen deine Erntehelfer von Hand, einer je ${REBEN_JE_HELFER/HA_REBEN} Hektar`:''}`)+`, ${fa}. Die Wartung kostet ${eur(T.wart)} je Prozentpunkt.<br><br>${mI}`;
     if(!maschFrei(id)){zu.push(fenster('kauf_'+id,titel,'',{zu:maschFreiText(id),i:was})); continue}
     h+=fenster('kauf_'+id,titel,(T.bonus?`<div class="mut" style="margin-bottom:4px">${MASCH_BONUS[id]()}.</div>`:`<div class="kv"><span>Leistung bei der Lese</span><span>${rbn(T.leist)} Reben</span></div>
       <div class="kv"><span>Deckt übers Jahr ab</span><span>${T.helfer} Hektar Reben</span></div>`)+`<div class="kv"><span>${lw}</span><span>${fa}</span></div><div class="kv"><span>Wartung</span><span>${eur(T.wart)} je %</span></div>`,{
@@ -2174,7 +2174,7 @@ const AKT={
     // Leute-Regel: Ohne genug Erntehelfer und Lagerarbeiter geht es nicht in den nächsten Monat.
     const fl=fehlText(), fe=leuteFehlen();
     if(fl) return leuteSheet('⚠️ Zu wenig Leute',`<p>${fl}. Vorher geht es nicht in den nächsten Monat.</p>
-      ${fe.helfer?`<p class="mut">${helferRegel()}. Du hast ${rbn(rebenGesamt())} Reben, deine Leute reichen für ${rbn(helferReben())}. ${S.monat<=2?'Statt einzustellen, kannst du bis März auch Reben roden oder eine Erntemaschine kaufen.':''}${maschOhneFahrer().length||S.maschinen.some(m=>m.zustand<MASCH_ROT)?` Eine Maschine zählt nur im Einsatz, also mit Fahrer und ab ${MASCH_ROT}\u00a0% Zustand.`:''}</p>`:''}
+      ${fe.helfer?`<p class="mut">${helferRegel()}. Du hast ${rbn(rebenGesamt())} Reben, deine Leute reichen für ${rbn(helferReben())}. ${S.monat<=2?`Statt einzustellen, kannst du bis März auch Reben roden${maschFrei('klein')&&!S.maschinen.some(x=>x.typ==='klein')?' oder eine Erntemaschine kaufen':''}.`:''}${maschOhneFahrer().length||S.maschinen.some(m=>m.zustand<MASCH_ROT)?` Eine Maschine zählt nur im Einsatz, also mit Fahrer und ab ${MASCH_ROT}\u00a0% Zustand.`:''}</p>`:''}
       ${fe.lagerarb?`<p class="mut">${lagerRegel(flSperre())}. Du hast ${num(S.fassraum)}\u00a0l Fassraum und ${num(S.flaschen)} leere Flaschen.</p>`:''}
       <p class="mut">Einstellen geht auch ohne Geld, dein Konto rutscht dann ins Minus.</p>`);
     const v=verfallListe(), t=S.monat===11?steuerSchau():null, st=!!(t&&t.steuer>0);
@@ -2296,7 +2296,7 @@ const AKT={
     // Seit 13.4.9: Die Spitzen-Sorte nur auf freiem Südhang (platzFuer). Menge- und Sekt-Sorte warnen, wenn sie Südhang belegen würden.
     if(spitzeId(d.id)&&suedPlatz()<10) return meldung('Kein Südhang frei',SUED_SATZ.keinPlatz);
     const so=SORTEN[d.id], pr=rebenPreis(d.id), frei=platzFuer(d.id), kap=helferReben()-rebenGesamt(), max=Math.min(frei,kap,Math.floor(S.geld/pr/10)*10), aus=suedWarnAb(d.id);
-    if(frei>=10&&kap<10) return leuteSheet('Zu wenige Erntehelfer',`<p>${helferRegel()}. Deine Leute reichen für ${rbn(helferReben())} Reben, gepflanzt sind ${rbn(rebenGesamt())}.</p><p class="mut">Stell erst beim Arbeitsamt ein${maschFrei('klein')?` oder kauf eine Erntemaschine, mit ${MASCH.klein.fahrer} Fahrer deckt sie ${MASCH_HELFER} Hektar ab`:''}.</p>`);
+    if(frei>=10&&kap<10) return leuteSheet('Zu wenige Erntehelfer',`<p>${helferRegel()}. Deine Leute reichen für ${rbn(helferReben())} Reben, gepflanzt sind ${rbn(rebenGesamt())}.</p><p class="mut">Stell erst beim Arbeitsamt ein${maschFrei('klein')&&!S.maschinen.some(x=>x.typ==='klein')?` oder kauf eine Erntemaschine, mit ${MASCH.klein.fahrer} Fahrer deckt sie ${MASCH_HELFER} Hektar ab`:''}.</p>`);
     if(max<10) return meldung('Geht gerade nicht',`Dir fehlt das Geld oder der Platz für ${rbn(10)} Reben.`);
     mengeSheet({titel:`${so.name} pflanzen`,text:`${eur2(pr/STOCK_F)} je Rebe${pr!==so.preis?`, üblich sind ${eur2(so.preis/STOCK_F)}`:''}. Neue Reben übernehmen die Pflegestufe der Sorte. Deine Erntehelfer reichen noch für ${rbn(kap)} Reben${kap<frei?', für mehr musst du erst einstellen':''}.${spitzeId(d.id)?' '+SUED_SATZ.spitze:aus<max?` Mehr als ${rbn(aus)} Reben belegen deinen Südhang, dort wächst sonst die Spitzen-Sorte.`:''}${sektSorte(d.id)?' '+sektHangSatz():''}`,max,step:10,start:Math.min(max,1000),okText:'Pflanzen',zahl:rbn,
       info:n=>`<b>${rbn(n)} Reben</b>kostet ${eur(n*pr)}${n>aus?', belegt Südhang':''}`,
@@ -2546,7 +2546,7 @@ const AKT={
   maschKauf(d){
     const id=d&&MASCH[d.id]?d.id:'klein', T=MASCH[id];
     if(S.monat>2||!maschFrei(id)) return;
-    if(T.bonus&&S.maschinen.some(x=>x.typ===id)) return meldung('Schon da',`${T.f?'Eine':'Einen'} ${T.name} hast du schon, ein zweiter Bonus kommt nicht dazu.`);
+    if(maschEins(id)&&S.maschinen.some(x=>x.typ===id)) return meldung('Schon da',`${T.f?'Eine':'Einen'} ${T.name} hast du schon, ${T.bonus?'ein zweiter Bonus kommt nicht dazu':`${T.f?'eine zweite':'einen zweiten'} gibt es nicht`}.`);
     if(S.geld<T.preis) return meldung('Zu wenig Geld',`${T.f?'Eine':'Ein'} ${T.name} kostet ${eur(T.preis)}.`);
     // Seit 12.2: Meldung mit Timos Bild, beim ersten Gerät der Art dazu ein Artikel im nächsten Winzerboten.
     const MB=S.maschBote=S.maschBote||{}, erst=!MB[id]&&!S.maschinen.some(x=>x.typ===id);

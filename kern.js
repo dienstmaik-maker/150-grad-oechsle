@@ -300,7 +300,11 @@ function altZeit(){if(S.zeit==null){S.zeit=0; S.zeitAb=monatNr(); S.zeitAlt=1; S
 // Seit 8.2: doppelte Weine aus älteren Spielständen (geteilt fürs Regal, dann wieder rausgenommen) wieder zusammenlegen.
 function altDoppelt(){for(const l of S.lots.slice()) if(l.status==='flasche'&&S.lots.includes(l)) weinZusammen(l)}
 // Seit 8.0: Maschinen aus älteren Spielständen bekommen ihren Typ (vorher gross:1 oder nichts), sonst bleibt alles, wie es war.
-function altMasch(){for(const ma of S.maschinen||[]) if(!MASCH[ma.typ]){ma.typ=ma.gross?'gross':'klein'; delete ma.gross}}
+// Seit 13.5.9 (Nachtrag 3): Von Maschinen mit eins (die Erntemaschine) bleibt nur eine, die mit dem besten Zustand. Die übrigen gehen ohne Erlös (Annahme von Claude).
+function altMasch(){for(const ma of S.maschinen||[]) if(!MASCH[ma.typ]){ma.typ=ma.gross?'gross':'klein'; delete ma.gross}
+  for(const [id,T] of Object.entries(MASCH)) if(T.eins){const A=(S.maschinen||[]).filter(x=>x.typ===id); if(A.length>1){const b=A.reduce((x,y)=>y.zustand>x.zustand?y:x); S.maschinen=S.maschinen.filter(x=>x.typ!==id||x===b)}}}
+// Seit 13.5.9: Von Bonus-Maschinen und der Erntemaschine gibt es je Betrieb nur eine.
+const maschEins=id=>!!(MASCH[id]&&(MASCH[id].bonus||MASCH[id].eins));
 // Alte Spielstände mit sechs Rängen: Rang des Spielers und der Gegner auf die zehn Stufen umrechnen. S.v3 merkt sich, dass das passiert ist.
 function altRang(){if(S.v3) return; S.rang=RANG_ALT[S.rang]||0; for(const g of S.gegner) g.rang=RANG_ALT[g.rang]||0; S.v3=1}
 // Alte Spielstände: Die Werbung gibt es nicht mehr. Die Ehrungen fürs Büro entstehen aus den Medaillen der Weine im Keller und dem Rang.
