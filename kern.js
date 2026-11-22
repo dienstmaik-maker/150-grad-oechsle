@@ -125,9 +125,8 @@ function mgrBringt(i){
 // Seit 7.2 liefert bringtTeile die einzelnen Punkte für die Urkunde, bringt fügt sie für Zeitung und Rang-Karte zusammen.
 // Seit 13.3.4 dazu, was mit Abstand kommt: "in 4 Jahren der Exporthandel".
 const abBringt=i=>Object.values(FREI).filter(e=>e.r===i&&e.ab&&e.name).map(e=>`in ${e.ab} Jahren ${e.name}`);
-function bringtTeile(i){const n=SORTE_RANG.indexOf(i), id=n>0&&S?sortenFolge()[n]:null; return [...RAENGE[i].neu.replace('{sorte}',`die ${n===1?'zweite':'dritte'} Rebsorte${id?' '+SORTEN[id].name:''}`).split(', '),...abBringt(i),...leuteBringt(i),...kellerBringt(i),...mgrBringt(i)]}
-// Seit 8.6: die zweite und dritte Stufe Kellerausbau als eigener Punkt beim Aufstieg. "Ausbaustufe" klein, damit FREI_SYM das Fass zeigt und nicht den Manager.
-function kellerBringt(i){return KELLER_RANG.map((r,k)=>k&&r===i?`die ${k===1?'zweite':'dritte'} Ausbaustufe im Keller`:'').filter(Boolean)}
+function bringtTeile(i){const n=SORTE_RANG.indexOf(i), id=n>0&&S?sortenFolge()[n]:null; return [...RAENGE[i].neu.replace('{sorte}',`die ${n===1?'zweite':'dritte'} Rebsorte${id?' '+SORTEN[id].name:''}`).split(', '),...abBringt(i),...leuteBringt(i),...mgrBringt(i)]}
+// Seit 13.5.8 kommt der Kellerausbau nicht mehr mit dem Rang (bis dahin kellerBringt), sondern mit dem ersten Wein der Stufe (kellerFrei).
 function bringt(i){return bringtTeile(i).join(', ')}
 // Version 8.2: der ganze Satzteil nach "bringt", beim Präsidenten "bringt dir den Sieg" statt "bringt: der Sieg".
 function bringtSatz(i){return i===R_MAX?'bringt dir den Stuhl im Festsaal':`bringt: ${bringt(i)}`}
@@ -1235,7 +1234,7 @@ function kompSektText(){
 for(const r of Object.keys(REGIONEN)) kompWissen('gebiet_'+r,'gebiet',REGIONEN[r].name,()=>`${REGIONEN[r].text} ${r===S.region?'Hier steht dein Weingut.':`So spielt es sich in einer Partie ${WO[r]}.`}`);
 kompWissen('spitze','gebiet','Spitzenlage',()=>`Die beste Lage weit und breit: ${SPITZE_HA} Hektar Steilhang in voller Südsonne. Wem sie gehört, dessen Trauben starten jeden Juli mit ${SPITZE_OE}° Öchsle mehr. Unter den Hammer kommt sie ab dem Rang ${RAENGE[R_SPITZE].name}.`);
 for(let k=1;k<=KELLER_PREISE.length;k++) kompWissen('keller'+k,'technik',KELLER_NAMEN[k-1],
-  ()=>`Stufe ${k} im Kellerausbau. Kostet ${eur(KELLER_PREISE[k-1])} und geht ab dem Rang ${RAENGE[KELLER_RANG[k-1]].name}. Prädikatsweine und Eiswein sind damit ${k} ${k===1?'Monat':'Monate'} früher verkaufsreif, und jeder Wein gewinnt beim Reifen schneller an Wert.`);
+  ()=>`Stufe ${k} im Kellerausbau. Kostet ${eur(KELLER_PREISE[k-1])} und geht mit ${kellerMit(k-1)} im Kellerbuch. Prädikatsweine und Eiswein sind damit ${k} ${k===1?'Monat':'Monate'} früher verkaufsreif, und jeder Wein gewinnt beim Reifen schneller an Wert.`);
 // Seit 12.1: der Sektkeller mit der Flaschengärung als kleine Geschichte (KOMP_TEXT.sektkeller).
 kompWissen('sektkeller','technik','Sektkeller',()=>`Kostet einmal ${eur(SEKTKELLER_PREIS)} und geht ab dem Rang ${RAENGE[R_SEKT].name}. Ohne ihn gibt es keinen Sekt. Sektflasche, Korken und Agraffe kosten ${eur2(SEKT_KOSTEN)} je Flasche, mit der ${SEKT_ANLAGE_NAME} ab dem Rang ${RAENGE[R_SEKT_ANLAGE].name} (${eur(SEKT_ANLAGE_PREIS)}) die Hälfte. Bei der Lese der ${ROLLEN.sekt.name} wählst du ${SEKT_REIFE} oder ${HEFE_LANG} Monate auf der Hefe, lang bringt ${HEFE_LANG_QP} Qualitätspunkte mehr.${S.sektkeller?` Dein Sektkeller steht${S.sektAnlage?', mit Anlage':''}.`:''}`);
 kompWissen('reife','technik','Reife in der Flasche',()=>'In der Flasche gewinnt ein Wein mit jedem Jahr an Wert, höchstens bis zum Vierfachen. Wie schnell das geht und wie lange er hält, hängt an der Rebsorte und am Kellerausbau.');
@@ -2341,14 +2340,22 @@ function leuteArbeit(){const L=[]; helferArbeit(L); lagerArbeit(L); leuteMelde(L
 const helferKann=n=>!!S.helfer&&leuteSt('helfer')>=n;
 const pflanzSoll=id=>((S.verlust||{})[id]||0)+(S.felder[id].auftrag||0);
 function pflanzAb(id,n){const v=S.verlust||{}, a=Math.min(v[id]||0,n); if(a) v[id]-=a; const f=S.felder[id]; if(f.auftrag) f.auftrag=Math.max(0,f.auftrag-(n-a))}
+// Seit 13.5.8 (Maik 22.11.2026, Entscheidung 11): Nachpflanzen nach Auftrag. Braucht eine Sorte im Auftrag noch Reben, bekommt sie frei gewordene Flächen zuerst,
+// mit ihren eigenen eingegangenen Reben. Ohne Auftrag kommt die alte Sorte nach, auf dem Platz, der danach noch frei ist. Wartet ein Auftrag noch auf günstige Reben,
+// bleibt sein Platz frei (pflanzReserve). pflanzPlan sagt ohne Geld und Preis, wie viele Reben einer Sorte so bis März Platz finden.
+const pflanzMitA=id=>(S.felder[id].auftrag||0)>0;
+const pflanzKann=id=>sorteFrei(id)&&!(sektSorte(id)&&!S.sektkeller);
+const pflanzReihe=()=>[...R().sorten.filter(pflanzMitA),...R().sorten.filter(id=>!pflanzMitA(id))];
+const pflanzReserve=()=>R().sorten.filter(id=>pflanzMitA(id)&&pflanzKann(id)).reduce((a,id)=>a+pflanzSoll(id),0);
+function pflanzPlan(id){let cap=Math.max(0,S.ha*HA_REBEN-rebenGesamt()); for(const x of pflanzReihe()){const n=pflanzKann(x)?Math.floor(Math.min(pflanzSoll(x),cap)/10)*10:0; if(x===id) return n; cap-=n} return 0}
 function helferArbeit(L){
   if(!S.helfer) return; const st=leuteSt('helfer'), m=S.monat;
   if(st>=1&&abgabe('duengen')&&S.duengungen<3&&S.boden<100&&(S.boden<=HELFER_DUENG||(m===7&&S.boden<90))&&S.geld>=duengKosten()){const ma=bonusMasch('duenger'); duenge(); L.push(ma?'mit dem Düngerstreuer gedüngt':'gedüngt')}
   if(st>=2&&abgabe('schneiden')) for(const id of R().sorten) if(schnittOffen(id)&&S.geld>=schnittKosten(id)){schneide(id); L.push(`${SORTEN[id].name} geschnitten`)}
-  if(st>=3&&m<=2&&abgabe('pflanzen')) for(const id of R().sorten){
-    const f=S.felder[id], soll=pflanzSoll(id); if(soll<10||!sorteFrei(id)||(sektSorte(id)&&!S.sektkeller)) continue;
+  if(st>=3&&m<=2&&abgabe('pflanzen')) for(const id of pflanzReihe()){
+    const f=S.felder[id], soll=pflanzSoll(id); if(soll<10||!pflanzKann(id)) continue;
     const wm=mgrSt('weingut')>0, pr=rebenPreis(id); if(wm&&m<2&&pr>SORTEN[id].preis) continue;
-    const pu=wm?mgrPuffer('weingut'):0, n=Math.floor(Math.min(soll,S.ha*HA_REBEN-rebenGesamt(),helferReben()-rebenGesamt(),Math.max(0,S.geld-pu)/pr)/10)*10;
+    const res=pflanzMitA(id)?0:pflanzReserve(), pu=wm?mgrPuffer('weingut'):0, n=Math.floor(Math.min(soll,S.ha*HA_REBEN-rebenGesamt()-res,helferReben()-rebenGesamt(),Math.max(0,S.geld-pu)/pr)/10)*10;
     if(n<10) continue; zahle(Math.round(n*pr*100)/100); f.reben+=n; pflanzAb(id,n); L.push(`${rbn(n)} ${SORTEN[id].name}-Reben gepflanzt`);
   }
 }
@@ -2418,9 +2425,20 @@ function vKeller(){
   const T={start:'Weinkeller',buch:'Weinarchiv',sabotage:'Hintertür',lager:'Lager'};
   return kopf(T[SUB])+{start:vKellerStart,buch:vBuch,sabotage:vSabotage,lager:vLager}[SUB]();
 }
-// Kellerausbau in drei Stufen, je Stufe ab dem Rang in KELLER_RANG. Vor Jungwinzer ist das Fenster seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten),
-// danach steht unter dem Stand, ab welchem Rang die nächste Stufe geht (seit 8.6).
-function kellerRangText(){return ` Stufe 1 (${KELLER_NAMEN[0]}) gibt es ab ${RAENGE[KELLER_RANG[0]].name}, Stufe 2 (${KELLER_NAMEN[1]}) ab ${RAENGE[KELLER_RANG[1]].name}, Stufe 3 (${KELLER_NAMEN[2]}) ab ${RAENGE[KELLER_RANG[2]].name}.`}
+// Kellerausbau in drei Stufen. Seit 13.5.8 (Entscheidung 9) gibt der erste angemeldete Wein der Stufe in KELLER_WEIN sie frei, nicht mehr der Rang.
+// S.kellerW ist der höchste Rang (STUFEN.rang) eines angemeldeten Weins ohne Sekt, ein höherer Wein gibt die Stufen darunter mit frei.
+// Vor dem ersten Kabinett ist das Fenster ausgeblendet (seit 10.6, damals vor Jungwinzer), danach steht unter dem Stand, womit die nächste Stufe geht.
+// Probestände aus 13.3 bis 13.5 ohne S.kellerW bekommen ihn einmal aus dem Kellerbuch und den gebauten Stufen (altKellerW), ohne Umzug.
+const KELLER_MIT={kab:'dem ersten Kabinett',spat:'der ersten Spätlese',aus:'der ersten Auslese'};
+const kellerMit=k=>KELLER_MIT[KELLER_WEIN[k]]||'dem ersten '+STUFEN[KELLER_WEIN[k]].name;
+function altKellerW(){let w=0; for(const l of S.lots||[]) if(l.stufe&&!l.sekt&&STUFEN[l.stufe]) w=Math.max(w,STUFEN[l.stufe].rang); for(let k=0;k<(S.keller||0)&&k<KELLER_WEIN.length;k++) w=Math.max(w,STUFEN[KELLER_WEIN[k]].rang); S.kellerW=w}
+function kellerFrei(k){if(S.kellerW==null) altKellerW(); return k<KELLER_WEIN.length&&S.kellerW>=STUFEN[KELLER_WEIN[k]].rang}
+// Bei jeder Anmeldung: Gibt der Wein eine neue Stufe frei, kommt der Satz für die Meldung zurück, sonst ''.
+const kellerFreiN=()=>KELLER_WEIN.filter((w,k)=>kellerFrei(k)).length;
+function kellerWein(l,st){if(!l||l.sekt||!STUFEN[st]) return ''; const K=S.keller||0, vor=kellerFreiN(); S.kellerW=Math.max(S.kellerW,STUFEN[st].rang); const nach=kellerFreiN();
+  if(nach<=vor||nach<=K) return '';
+  return nach>K+1?` Damit kannst du deinen Keller bis Stufe ${nach} (${KELLER_NAMEN[nach-1]}) ausbauen.`:` Damit kannst du deinen Keller ausbauen, Stufe ${K+1} (${KELLER_NAMEN[K]}).`}
+function kellerRangText(){return ` Stufe 1 (${KELLER_NAMEN[0]}) gibt es mit ${kellerMit(0)}, Stufe 2 (${KELLER_NAMEN[1]}) mit ${kellerMit(1)}, Stufe 3 (${KELLER_NAMEN[2]}) mit ${kellerMit(2)}.`}
 // Feste Reihenfolge im Kellerbuch und im Großhandel (seit 7.4 ohne Sortier-Knöpfe): Was zuerst verdirbt, steht oben. Danach verkaufen auch die Manager.
 const lotRest=l=>l.status==='fass'?8-l.fassMonate:lager(l).max-l.flMonate;
 // Haltbarkeit als kurzer Text, wie im Kellerbuch.

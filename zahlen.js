@@ -245,7 +245,7 @@ const R_MAX=RAENGE.length-1, R_AUKTION=FREI.auktion.r, R_MAKLER=FREI.makler.r, R
   R_HOFFEST=FREI.hoffest.r, R_KONTROLLE=FREI.kontrolle.r, R_SPITZE=FREI.spitzenlage.r, RANG_ALT=[0,1,3,5,7,9];
 // Version 7.0 (Schritt C): Freischalt-Plan aus Schritt A. Die Rebsorten kommen nacheinander nach ihren Sternen im Gebiet (sortenFolge):
 // die ★★★-Sorte von Anfang an, die ★★-Sorte ab R_SORTE2, die ★-Sorte ab R_SORTE3. Seit 13.3.4 aus FREI: Sekt-Sorte und Sektkeller ab R4, Spitzen-Sorte ab R5,
-// der Exporthandel ab FREI.export (R_EXPORT ist nur noch sein Rang, der Abstand kommt dazu), Kellerausbau ab R_KELLER (weiter unten).
+// der Exporthandel ab FREI.export (R_EXPORT ist nur noch sein Rang, der Abstand kommt dazu), Kellerausbau seit 13.5.8 mit dem ersten Wein der Stufe (KELLER_WEIN, weiter unten).
 const R_SORTE2=FREI.sorte_sekt.r, R_SORTE3=FREI.sorte_spitze.r, R_SEKT=FREI.sektkeller.r, R_EXPORT=FREI.export.r, SORTE_RANG=[0,R_SORTE2,R_SORTE3];
 // Version 7.0 (Schritt D): drei Manager statt Gutsverwalter, nach dem Plan aus Schritt A ("Fundament für 7.0" in der Projektnotiz).
 // MANAGER: je Stufe der Bereich, die Stufe und welche Aufgaben (seit 13.5.1 kommt die Stufe über FREI, Schlüssel mgr_ mit Bereich und Stufe, rang liest dort nach) (Schlüssel aus MGR_AUFGABEN) sie dazubringt.
@@ -393,7 +393,9 @@ const ANREG_ANS=60, ANREG_FEHL=6, PANSCH={zocker:.4,vorsicht:.08,qualitaet:.04},
 // Weinfest: ab Winzermeister bis zum Hoffest, einmal im Jahr von Juni bis August, kostet WEINFEST_PREIS und bringt WEINFEST_ANS Ansehen mal Wetter-Faktor.
 // Kellerausbau: drei Stufen (KELLER_PREISE), seit 8.6 gestaffelt nach KELLER_RANG: Jungwinzer, Winzermeister, Gutsherr (Maik 18.11.2026, vorher alle ab Jungwinzer). Jede Stufe kürzt die Reifezeit von Prädikatswein und Eiswein in der Flasche um einen Monat, und jeder Wein gewinnt beim Reifen KELLER_REIFE schneller an Wert.
 // Seit 11.6: KELLER_NAMEN gibt den drei Stufen im Kellerausbau Namen, nur für die Anzeige. S.keller bleibt die Zahl der Stufen.
-const MAKLER_PREIS=45000, MAKLER_HA=[0,1,1,1,2,2,2,3,3,3], WEINFEST_PREIS=30000, WEINFEST_ANS=10, KELLER_PREISE=[50000,120000,250000], KELLER_NAMEN=['Edelstahltank','Großes Holzfass','Barrique-Keller'], KELLER_REIFE=.1, KELLER_RANG=[1,3,5], R_WEINFEST=FREI.weinfest.r, R_KELLER=KELLER_RANG[0];
+// Seit 13.5.8 (Maik 22.11.2026, Entscheidung 9): Die Freigabe hängt nicht mehr am Rang (KELLER_RANG ist weg), sondern am ersten angemeldeten Wein der Stufe in KELLER_WEIN:
+// Stufe 1 mit dem ersten Kabinett, Stufe 2 mit der ersten Spätlese, Stufe 3 mit der ersten Auslese. Ein höherer Wein gibt die Stufen darunter mit frei. Die Wirkung bleibt.
+const MAKLER_PREIS=45000, MAKLER_HA=[0,1,1,1,2,2,2,3,3,3], WEINFEST_PREIS=30000, WEINFEST_ANS=10, KELLER_PREISE=[50000,120000,250000], KELLER_NAMEN=['Edelstahltank','Großes Holzfass','Barrique-Keller'], KELLER_REIFE=.1, KELLER_WEIN=['kab','spat','aus'], R_WEINFEST=FREI.weinfest.r;
 const FESTE={weinfest:{name:'Weinfest',preis:WEINFEST_PREIS,ans:WEINFEST_ANS,text:'Ein Weinfest im Hof mit Zelt, Musik und deinem Wein',kurz:'Musik, Zwiebelkuchen und dein Wein für Nachbarn und Gäste'},hoffest:{name:'Hoffest',preis:HOFFEST_PREIS,ans:HOFFEST_ANS,text:'Ein großes Fest für das ganze Dorf',kurz:'Musik, Flammkuchen und dein Wein für das ganze Dorf'}};
 // Erntemaschinen (Paket 4, Variante C): die kleine ab Winzermeister, der große Vollernter ab Gutsherr. Maschinen ohne Typ (alte Spielstände) sind klein und bleiben, auch vor Winzermeister.
 // Seit 11.5 (Teil C2): Der Vollernter deckt einen großen Betrieb allein ab, VOLL_HELFER Hektar (bis 11.4: 10 Hektar, 10.000 Reben, 120.000 €, Wartung 300 € je Punkt).

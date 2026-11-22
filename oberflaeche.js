@@ -1144,7 +1144,7 @@ function vBerg(){
     }
     const sektOhne=sektSorte(id)&&!S.sektkeller, kannLesen=m>=7&&f.menge>0&&!f.gelesen&&(m<11||f.gefroren||f.edel)&&!sektOhne, pflanz=m<=2&&sorteFrei(id)&&!sektOhne, schnitt=schnittOffen(id), haengt=f.reben&&f.menge>0&&!f.gelesen&&m>5&&m<7;
     h+=fenster('feld_'+id,titel,z,{buch:m>=7?'lese':'berg',
-      hin:[mr&&m<=2&&S.verlust&&S.verlust[id]>0&&`${WM} pflanzt beim Weiterblättern nach.`,helferKann(3)&&pflanzSoll(id)>=10&&`🌱 Deine Erntehelfer pflanzen bis März ${rbn(pflanzSoll(id))} Reben nach.`,
+      hin:[mr&&m<=2&&S.verlust&&S.verlust[id]>0&&`${WM} pflanzt beim Weiterblättern nach.`,helferKann(3)&&pflanzPlan(id)>=10&&`🌱 Deine Erntehelfer pflanzen bis März ${rbn(pflanzPlan(id))} Reben nach.${pflanzPlan(id)<pflanzSoll(id)&&!pflanzMitA(id)?' Den übrigen Platz bekommt dein Auftrag.':''}`,
         helferKann(2)&&schnitt&&'✂️ Deine Erntehelfer schneiden beim Weiterblättern, sobald das Geld reicht.',(()=>{const ww=wagnisWarnung(); return ww&&ww.ids.includes(id)&&`${WM} warnt: ${Math.round(ww.anteil*100)} % deiner Ernte hängen im Wagnis.`})()],
       // Seit 13.4.6: Am Lese-Knopf steht die Chance des Wagnisses in Worten.
       links:kannLesen&&wagnisChance(id)!=null?`🎲 Warten: Chance ${chanceWort(wagnisChance(id))}`:sektOhne?'Die Sekt-Sorte macht nur Sekt, erst den Sektkeller kaufen.':pflanz&&frei<10?'Auf deinem Land ist kein Platz mehr frei.':haengt?'Lese ab August.':schnitt?`✂️ Rebschnitt bis Ende April: ${eur(schnittKosten(id))}`:'',
@@ -1230,7 +1230,7 @@ function vLager(){
   const bel=fassBelegt(), KM=MGR_BEREICHE.keller.name, la=aufgabeAktiv('lager'), mk=aufgabeAktiv('fass'), mf=aufgabeAktiv('flaschen');
   const kf=fassKap()-S.fassraum, kl=flKap()-S.flaschen;
   const leute=la?' Fehlen dafür Lagerarbeiter, stellt er sie ein.':' Fehlen dafür Lagerarbeiter, kauft er nichts.';
-  if(einZu('faesser')&&einZu('flaschen')&&S.rang<R_KELLER) return einKarte('lager','Noch genug Platz',`Hier kaufst du Fässer und Flaschen. Noch reichen ${num(S.fassraum)} l Fassraum und ${num(S.flaschen)} leere Flaschen, vor der Lese schaust du wieder rein.`);
+  if(einZu('faesser')&&einZu('flaschen')&&!S.keller&&!kellerFrei(0)) return einKarte('lager','Noch genug Platz',`Hier kaufst du Fässer und Flaschen. Noch reichen ${num(S.fassraum)} l Fassraum und ${num(S.flaschen)} leere Flaschen, vor der Lese schaust du wieder rein.`);
   return fenster('faesser','Fässer',`<div class="kv"><span>Fassraum belegt</span><span>${num(bel)} von ${num(S.fassraum)} l</span></div><div class="bar w"><i style="width:${S.fassraum?bel/S.fassraum*100:0}%"></i></div>
     <div class="kv"><span>Betreut (Lagerarbeiter: ${S.lagerarb})</span><span>bis ${num(fassKap())} l</span></div>`,{
     hin:[mk&&`🍷 Dein ${KM} kauft fehlenden Fassraum beim Keltern dazu.`],
@@ -1250,11 +1250,11 @@ function vLager(){
 function kellerAusHtml(){
   const K=S.keller||0, pr=KELLER_PREISE[K], N=KELLER_PREISE.length;
   const was='Jede Stufe lässt Prädikatsweine und Eiswein einen Monat früher verkaufsreif werden, und jeder Wein gewinnt beim Reifen in der Flasche schneller an Wert.'+kellerRangText();
-  if(pr!=null&&S.rang<R_KELLER) return fenster('ausbau','Kellerausbau','',{zu:`ab dem Rang ${RAENGE[R_KELLER].name}`,i:`${was} Ausbauen kannst du ab dem Rang ${RAENGE[R_KELLER].name}.`});
+  if(pr!=null&&!K&&!kellerFrei(0)) return fenster('ausbau','Kellerausbau','',{zu:`mit ${kellerMit(0)}`,i:`${was} Ausbauen kannst du mit ${kellerMit(0)} im Kellerbuch.`});
   const stand=`<div class="kv"><span>Ausgebaut</span><span>Stufe ${K} von ${N}</span></div>${K?`<div class="kv"><span>Zuletzt gebaut</span><span>${KELLER_NAMEN[K-1]}</span></div>`:''}<div class="bar w"><i style="width:${K/N*100}%"></i></div>
     ${K?`<div class="kv"><span>Prädikat und Eiswein</span><span>${K} ${K===1?'Monat':'Monate'} früher reif</span></div>`:''}`;
   if(pr==null) return fenster('ausbau','Kellerausbau',stand+`<div class="fleer" style="margin-top:6px">Dein Keller ist fertig ausgebaut.</div>`,{i:was});
-  if(S.rang<KELLER_RANG[K]) return fenster('ausbau','Kellerausbau',stand+`<div class="fleer" style="margin-top:6px">🔒 Stufe ${K+1} (${KELLER_NAMEN[K]}) kannst du ab dem Rang ${RAENGE[KELLER_RANG[K]].name} ausbauen.</div>`,{i:was+kellerRangText()});
+  if(!kellerFrei(K)) return fenster('ausbau','Kellerausbau',stand+`<div class="fleer" style="margin-top:6px">🔒 Stufe ${K+1} (${KELLER_NAMEN[K]}) kannst du mit ${kellerMit(K)} im Kellerbuch ausbauen.</div>`,{i:was});
   return fenster('ausbau','Kellerausbau',stand,{kn:pk('kellerAus','Ausbauen',eur(pr),{klein:KELLER_NAMEN[K],arm:S.geld<pr}),i:was});
 }
 // Hintertür im Keller (seit 7.4 auf dem Fenster-Baustein): Zuckern und Wässern, Verschneiden, darunter der Weinprüfer als Zustand, Sabotage als Seltenes unten.
@@ -2184,13 +2184,13 @@ const AKT={
   },
   kellerAus(){
     const K=S.keller||0, pr=KELLER_PREISE[K];
-    if(pr==null||S.rang<KELLER_RANG[K]) return;
+    if(pr==null||!kellerFrei(K)) return;
     if(S.geld<pr) return meldung('Zu wenig Geld',`Die nächste Stufe kostet ${eur(pr)}.`,'fassgang');
     openSheet(`${sbild('fassgang')}<h3>🏗️ Keller ausbauen?</h3><p>Stufe ${K+1} von ${KELLER_PREISE.length}, ${KELLER_NAMEN[K]}, kostet ${eur(pr)}.</p><p class="mut">Danach dürfen Prädikatsweine und Eiswein ${K+1} ${K?'Monate':'Monat'} früher aus dem Keller, und jeder Wein gewinnt beim Reifen schneller an Wert.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button data-a="kellerAusJa">Ausbauen</button></div>`);
   },
   kellerAusJa(){
     const K=S.keller||0, pr=KELLER_PREISE[K];
-    if(pr==null||S.rang<KELLER_RANG[K]||S.geld<pr) return;
+    if(pr==null||!kellerFrei(K)||S.geld<pr) return;
     zahle(pr); S.keller=K+1; fx('stempel'); closeSheet(); save(); render();
     meldung('Der Keller ist ausgebaut',`Stufe ${S.keller} von ${KELLER_PREISE.length}, ${KELLER_NAMEN[S.keller-1]}, ist fertig. Prädikatsweine und Eiswein sind jetzt ${S.keller} ${S.keller===1?'Monat':'Monate'} früher verkaufsreif.`,'fassgang');
   },
@@ -2257,9 +2257,11 @@ const AKT={
   pflanzAuftrag(d){
     if(!sorteFrei(d.id)) return meldung('Noch nicht',`${SORTEN[d.id].name} kannst du ab dem Rang ${RAENGE[sorteAb(d.id)].name} pflanzen.`);
     if(sektSorte(d.id)&&!S.sektkeller) return meldung('Erst der Sektkeller',`Die ${ROLLEN.sekt.name} macht nur Sekt. Kauf erst den Sektkeller im Keller.`);
-    const f=S.felder[d.id], andere=R().sorten.filter(x=>x!==d.id).reduce((a,x)=>a+pflanzSoll(x),0), v=(S.verlust||{})[d.id]||0, max=Math.max(0,S.ha*HA_REBEN-rebenGesamt()-andere-v);
+    const f=S.felder[d.id], andere=R().sorten.filter(x=>x!==d.id&&pflanzMitA(x)).reduce((a,x)=>a+pflanzSoll(x),0), v=(S.verlust||{})[d.id]||0, max=Math.max(0,S.ha*HA_REBEN-rebenGesamt()-andere-v);
+    // Seit 13.5.8 (Entscheidung 11): Der Platz eingegangener Reben anderer Sorten ohne Auftrag zählt mit, der Auftrag bekommt ihn zuerst.
+    const fremd=R().sorten.filter(x=>x!==d.id&&!pflanzMitA(x)).reduce((a,x)=>a+((S.verlust||{})[x]||0),0);
     if(max<10&&!f.auftrag) return meldung('Kein Platz',`Auf deinem Land ist kein Platz mehr frei${v?`, deine Erntehelfer pflanzen nur die ${rbn(v)} eingegangenen Reben nach`:''}.`);
-    mengeSheet({titel:`Auftrag: ${SORTEN[d.id].name}`,text:`Deine Erntehelfer pflanzen bis März, ${mgrSt('weingut')?`die Reben kauft ${mgrG('weingut').dein} ${MGR_BEREICHE.weingut.name} so günstig wie möglich`:'die Reben kaufen sie gleich zum Preis des Monats'}.${v?` Die ${rbn(v)} eingegangenen Reben pflanzen sie sowieso nach.`:''}`,
+    mengeSheet({titel:`Auftrag: ${SORTEN[d.id].name}`,text:`Deine Erntehelfer pflanzen bis März, ${mgrSt('weingut')?`die Reben kauft ${mgrG('weingut').dein} ${MGR_BEREICHE.weingut.name} so günstig wie möglich`:'die Reben kaufen sie gleich zum Preis des Monats'}.${v?` Die ${rbn(v)} eingegangenen Reben pflanzen sie sowieso nach.`:''}${fremd>=10?` Dein Auftrag bekommt den Platz eingegangener Reben anderer Sorten zuerst, ohne Auftrag pflanzen sie dort die alte Sorte nach.`:''}`,
       max,step:10,start:Math.min(max,f.auftrag||1000),okText:'Auftrag geben',zahl:rbn,
       info:n=>`<b>${rbn(n)} Reben</b>${String(Math.round(n/HA_REBEN*10)/10).replace('.',',')}\u00a0Hektar, heute ${eur(n*rebenPreis(d.id))}`,
       ok:n=>{fx('stempel');f.auftrag=n}});
@@ -2432,14 +2434,14 @@ const AKT={
     // Gepanschter Most: nur unter der Hand, mit Schmiergeld und ohne Ansehen.
     const ill=mani(l)&&!maniLegal(l,st), sg=ill?schmier(l,st):0;
     if(ill&&S.geld<s.geb+sg) return meldung('Zu wenig Geld',`Der Beamte will ${eur(sg)} Schmiergeld${s.geb?`, dazu kommt die Gebühr von ${eur(s.geb)}`:''}.`);
-    zahle(s.geb+sg);l.stufe=st;if(ill)l.pansch=true;
+    zahle(s.geb+sg);l.stufe=st;if(ill)l.pansch=true; const kw=kellerWein(l,st);
     if(st==='eis') l.eisW=eisStufe(l.oe);
     l.qp=qpFuer(l,st);
     // Ansehen gibt es je Sorte, Jahrgang und Stufe nur einmal, auch wenn die Lese auf mehrere Fässer verteilt ist. S.ansGeb merkt sich das.
     const ak=l.sorte+'|'+l.jahrgang+'|'+st, AG=S.ansGeb=(S.ansGeb||[]).filter(k=>+k.split('|')[1]>=S.jahr-2), erst=!AG.includes(ak);
     if(s.ans&&!ill&&erst) AG.push(ak);
     const ans=s.ans&&!ill&&erst?ruhm(s.ans+ansZuschlag(l),0,'Weine'):0;closeSheet();save();render();fx('stempel');
-    meldung('Angemeldet',`${lotName(l)} steht jetzt mit ${l.qp} Qualitätspunkten im Kellerbuch.`+(ill?` Der Beamte hat ${eur(sg)} eingesteckt. Bis der Wein verkauft ist, darf ihn kein Prüfer finden.`:'')+(ans?` +${ans} Ansehen.`:s.ans&&!ill?' Ansehen gab es für diesen Jahrgang und diese Stufe schon.':'')+(st==='feder'?' Federweißer muss noch diesen Monat in die Flasche.':' Jetzt darf er abgefüllt werden.'),'kellerbuch');
+    meldung('Angemeldet',`${lotName(l)} steht jetzt mit ${l.qp} Qualitätspunkten im Kellerbuch.`+(ill?` Der Beamte hat ${eur(sg)} eingesteckt. Bis der Wein verkauft ist, darf ihn kein Prüfer finden.`:'')+(ans?` +${ans} Ansehen.`:s.ans&&!ill?' Ansehen gab es für diesen Jahrgang und diese Stufe schon.':'')+(st==='feder'?' Federweißer muss noch diesen Monat in die Flasche.':' Jetzt darf er abgefüllt werden.')+kw,'kellerbuch');
   },
   abfuellen(d){
     const l=lot(d.id); closeSheet();
