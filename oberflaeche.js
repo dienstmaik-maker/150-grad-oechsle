@@ -384,7 +384,7 @@ function zeigeNachfolger(){
 // Reiter ende: Bild der Übergabe, die Geschichte, die Chronik als Abspann, die Bestenliste und der Knopf für ein neues Spiel.
 // Die Chronik: Generationen, der Weg durch die Ränge, die Wahlen, die Weltweinschauen, Spenden mit Stiftung, Medaillen und das Weingut in seinen Stufen.
 function vEnde(){
-  const E=S.ende, best=E.art==='best', A=S.amt||{}, st=E.stand||{}, C=S.chronik||[], L=bestenZeilen();
+  const E=S.ende, A=S.amt||{}, st=E.stand||{}, C=S.chronik||[], L=bestenZeilen();
   const kv=(a,x)=>`<div class="kv"><span>${a}</span><span>${x}</span></div>`, karte=(t,h)=>h?`<div class="card"><h3>${t}</h3>${h}</div>`:'';
   const wer=(nr,name,art)=>nr===1?(name?`${esc(name)}, ${art==='t'?'die Gründerin':'der Gründer'}`:'die Gründung'):name?`${esc(name)}, ${art==='s'?'der Sohn':'die Tochter'}`:'die nächste Generation';
   const titel=c=>c.ehr?(c.art==='t'?'Ehrenpräsidentin':'Ehrenpräsident'):c.alt?(c.art==='t'?'Altpräsidentin':'Altpräsident'):c.art==='t'&&RAENGE[c.rang].kw||RAENGE[c.rang].kurz;
@@ -400,9 +400,9 @@ function vEnde(){
   const wein=(S.ehrungen||[]).filter(e=>!e.a&&MED_NAME[e.i]), med=wein.length?`<div class="gold" style="font-size:17px">${ehrSumme(wein)}</div>`:'';
   const stufen=Array.from({length:Math.min(10,S.rang+1)},(_,k)=>`<div style="background-image:url(bilder/${wgBild(k+1,'sommer')}.jpg)"><span>${esc(rangK(k))}</span></div>`).join('');
   const amtZ=A.zeit?`${A.zeit} ${A.zeit===1?'Amtszeit':'Amtszeiten'}`:'';
-  return `<div id="ende"><div class="ehero" style="background-image:url(bilder/${ENDE_BILD[E.art]}.jpg)"><div><small>${best?'Das beste Ende':'Ein gutes Ende'}</small><b>${best?'Die Übergabe am Küchentisch':`${esc(S.name)} geht in neue Hände`}</b></div></div>
+  return `<div id="ende"><div class="ehero" style="background-image:url(bilder/${ENDE_BILD.best}.jpg)"><div><small>Das beste Ende</small><b>Die Übergabe am Küchentisch</b></div></div>
   <div class="ein">
-    <div class="card etext">${endeText().map(x=>`<p>${esc(x)}</p>`).join('')}<p class="mut">${MON[E.m]} ${E.j}: ${esc(S.ich||S.name)} übergibt als ${duN()}${E.wie==='frei'?', aus freien Stücken':''}. ${best?`Mehr geht nicht: ${anr('Präsident','Präsidentin')}, Weltweinschau, ${ehrP()}.`:'Das beste Ende gibt es mit einem Sieg bei der Weltweinschau im eigenen Dorf.'}</p></div>
+    <div class="card etext">${endeText().map(x=>`<p>${esc(x)}</p>`).join('')}<p class="mut">${MON[E.m]} ${E.j}: ${esc(S.ich||S.name)} übergibt als ${duN()}. Mehr geht nicht: ${anr('Präsident','Präsidentin')}, alle ${KRONEN.length} Kronen der Weltweinschau, ${ehrP()}.</p></div>
     <div class="card"><h3>📜 Chronik von ${esc(S.name)}</h3>${kv('Gespielt',`${st.jahre} Jahre, ${genNr()} ${genNr()===1?'Generation':'Generationen'}`)}${S.zeit!=null?kv('Spielzeit',zeitTxt(S.zeit)+(S.zeitAlt?' (seit 8.3)':'')):''}${kv('Vermögen',eur(st.verm||0))}${kv('Ansehen',num(st.ans||0))}${amtZ?kv('Im Amt',amtZ):''}${kv('Das Ende',ENDE_NAME[E.art])}${E.platz?kv('Bestenliste',`Platz ${E.platz}`):''}</div>
     ${karte('👪 Die Generationen',gen+nfZeile())}${karte('🪜 Der Weg nach oben',raenge)}
     ${stufen?`<div class="card"><h3>🏡 Das Weingut wächst</h3><div class="ewg">${stufen}</div></div>`:''}
@@ -430,8 +430,8 @@ function zeigeErz(){
 function chronikHtml(){
   const C=S.chronik||[], n=genNr(), e=S.erbe, wer=(nr,name,art)=>nr===1?(name?`${esc(name)}, ${art==='t'?'die Gründerin':'der Gründer'}`:'die Gründung'):name?`${esc(name)}, ${art==='s'?'der Sohn':'die Tochter'}`:'die nächste Generation';
   return fenster('chronik','Generationen-Chronik',`${C.map(c=>`<div class="rl"><span>${c.n}.</span><div><b>${c.von} bis ${c.bis}: ${wer(c.n,c.name,c.art)}</b><span class="mut">übergeben als ${c.ehr?(c.art==='t'?'Ehrenpräsidentin':'Ehrenpräsident'):c.alt?(c.art==='t'?'Altpräsidentin':'Altpräsident'):c.art==='t'&&RAENGE[c.rang].kw||RAENGE[c.rang].kurz} mit ${num(c.ans)} Ansehen${c.ende?'':`, Erbschaftssteuer ${eur(c.steuer)}`}</span></div></div>`).join('')}
-    ${S.ende?'':`<div class="rl du"><span>${n}.</span><div><b>seit ${genJahr(n-1)}: ${wer(n,S.ich||(e&&e.name),S.anrede?(S.anrede==='w'?'t':'s'):e&&e.art)}</b><span class="mut">${S.flascheAuf?'Die Flasche vom ersten Jahrgang ist getrunken. ':S.gesch&&S.gesch.flasche?'Die Flasche vom ersten Jahrgang liegt noch im Regal. ':''}${S.amt?`Letzte Übergabe im Januar ${endeJahr()}`:`Nächste Übergabe im Januar ${genJahr(n)}`}</span></div></div>`}${S.ende?nfZeile():''}`,{
-    buch:'generationen',i:`Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation. Vom Ansehen bleiben ${pz(ERB_ANSEHEN)}, als Ehrenbürger ${pz(SP_ERBE)}, ${pz(ERB_STEUER)} vom Vermögen gehen als Erbschaftssteuer weg, alles andere bleibt. Wer ${anr('Präsident','Präsidentin')} geworden ist, übergibt nur noch einmal: Danach endet die Partie mit der Chronik, ohne Erbschaftssteuer.`});
+    ${S.ende?'':`<div class="rl du"><span>${n}.</span><div><b>seit ${genJahr(n-1)}: ${wer(n,S.ich||(e&&e.name),S.anrede?(S.anrede==='w'?'t':'s'):e&&e.art)}</b><span class="mut">${S.flascheAuf?'Die Flasche vom ersten Jahrgang ist getrunken. ':S.gesch&&S.gesch.flasche?'Die Flasche vom ersten Jahrgang liegt noch im Regal. ':''}${amtEhre()?`Letzte Übergabe im Januar ${endeJahr()}`:`Nächste Übergabe im Januar ${genJahr(n)}`}</span></div></div>`}${S.ende?nfZeile():''}`,{
+    buch:'generationen',i:`Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation. Vom Ansehen bleiben ${pz(ERB_ANSEHEN)}, als Ehrenbürger ${pz(SP_ERBE)}, ${pz(ERB_STEUER)} vom Vermögen gehen als Erbschaftssteuer weg, alles andere bleibt. Zu Ende ist die Partie erst mit allen ${KRONEN.length} Kronen der Weltweinschau: Danach übergibst du ein letztes Mal, ohne Erbschaftssteuer, und es folgt die Chronik.`});
 }
 function bestenZeilen(){
   return besten().map((e,i)=>({platz:i+1,du:S&&e.d===S.bestenD,name:e.ich||e.name,
@@ -549,9 +549,9 @@ function vRang(){
         :`<div class="fleer" style="margin-top:6px">Höher geht es nicht.</div>`))   // Seit 10.2.1 ohne Rangleiter, der Rang steht in der Überschrift (Maik 19.11.2026).
     +(S.sieger&&!S.amt?`<div class="mut" style="margin-top:6px">🪑 Auf dem Stuhl im Festsaal: ${esc(S.sieger)}</div>`:'');
   // Seit 10.6 (Maik 20.11.2026): Die drei Regler stehen direkt unter der Überschrift, der übrige Text darunter. Die Generation steht im i.
-  const gen=`Du bist die ${genNr()}. Generation, ${S.amt?`die letzte Übergabe ist im Januar ${endeJahr()}`:`die nächste übernimmt im Januar ${genJahr(genNr())}`}.<br><br>`;
+  const gen=`Du bist die ${genNr()}. Generation, ${amtEhre()?`die letzte Übergabe ist im Januar ${endeJahr()}`:`die nächste übernimmt im Januar ${genJahr(genNr())}`}.<br><br>`;
   return fenster('rang',`${neu?'<span class="rneuB">Neu</span> ':''}Aktueller Rang: ${duN()}`,h,{kl:neu?'rneu':'',buch:'ziel',
-    i:gen+'Dein Ziel ist der Stuhl des Präsidenten im Weinbauverband. Gewonnen ist die Partie erst danach, mit der letzten Übergabe und der Chronik. Jeder Aufstieg braucht Ansehen, bepflanzte Fläche und Vermögen zugleich. Bei der Fläche zählt nur, was bepflanzt ist: Der helle Balken zeigt dein gekauftes Land, der dunkle das bepflanzte.'+(S.amt?` Wer ${anr('Präsident','Präsidentin')} ist, muss das Amt alle ${WAHL_JAHRE} Jahre in einer Wahl verteidigen. Die Regeln stehen im Rathaus im Fenster „Weinbauverband“.`:'')});
+    i:gen+'Dein Ziel ist der Stuhl des Präsidenten im Weinbauverband und danach die drei Kronen der Weltweinschau. Gewonnen ist die Partie mit der dritten Krone, dann folgen die letzte Übergabe und die Chronik. Jeder Aufstieg braucht Ansehen, bepflanzte Fläche und Vermögen zugleich. Bei der Fläche zählt nur, was bepflanzt ist: Der helle Balken zeigt dein gekauftes Land, der dunkle das bepflanzte.'+(S.amt?` Wer ${anr('Präsident','Präsidentin')} ist, muss das Amt alle ${WAHL_JAHRE} Jahre in einer Wahl verteidigen. Die Regeln stehen im Rathaus im Fenster „Weinbauverband“.`:'')});
 }
 // Version 10.0: Balken der Stimmung von 0 bis 100, der Strich ist die Marke des Herausforderers.
 function amtBalken(){const A=S.amt, s=stimmZ(); return `<div class="bar stb ${s>=A.marke?'':'g'}"><i style="width:${s}%"></i><u style="left:${A.marke}%"></u></div>`}
@@ -575,9 +575,9 @@ function vVerband(){
     <div class="kv"><span>${keyVerband()?'✅':'🔑'} Verband: eine gewonnene Wahl</span><span>${keyVerband()?'erledigt':'offen'}</span></div>
     ${A.brief?weltZeile():`<div class="mut">Mit beiden Schlüsseln kommt der Brief: Dann ist die Weltweinschau jedes Jahr im ${MON[WELT_MONAT]} bei dir im Dorf, mit ${KRONEN.length} Kronen nacheinander.${keyDorf()?'':' Verpasste Spenden holt unten die Stiftung nach.'}</div>`}
     <h4 class="gk">Die Übergabe</h4>
-    <div class="kv"><span>Letzte Übergabe</span><span>Januar ${endeJahr()}</span></div>
-    <div class="mut">Mit ihr endet die Partie, es folgt die Chronik. ${A.ehren?'Als '+ehrP()+' bekommst du das beste Ende.':'Wer vorher die Weltweinschau gewinnt, bekommt das beste Ende.'}</div>`;
-  const kn=[...(kampf?[pk('stimmKauf','Stimmen kaufen',eur(KAUF_PREIS),{klein:`+${KAUF_PLUS} Stimmung`,wag:1,aus:frei<=0,arm:S.geld<KAUF_PREIS})]:[]),pk('endeFrage','Weingut übergeben','',{sec:1})];
+    ${A.ehren?`<div class="kv"><span>Letzte Übergabe</span><span>Januar ${endeJahr()}</span></div><div class="mut">Mit ihr endet die Partie, es folgt die Chronik.</div>`
+      :`<div class="kv"><span>Nächste Generation</span><span>Januar ${genJahr(genNr())}</span></div><div class="mut">Zu Ende ist die Partie erst mit allen ${KRONEN.length} Kronen der Weltweinschau. Bis dahin übernimmt alle ${GEN_JAHRE} Jahre die nächste Generation und tritt weiter an.</div>`}`;
+  const kn=[...(kampf?[pk('stimmKauf','Stimmen kaufen',eur(KAUF_PREIS),{klein:`+${KAUF_PLUS} Stimmung`,wag:1,aus:frei<=0,arm:S.geld<KAUF_PREIS})]:[])];
   return fenster('verband','Weinbauverband',inhalt,{
     stand:kampf?(s>=A.marke?'Wahlkampf: Im Moment reicht die Stimmung. Bis zur Wahl bröckelt sie aber weiter.':'<span class="rot">Wahlkampf: Im Moment reicht die Stimmung nicht.</span>'):`Die Umfrage kommt im ${monJahr(A.wahl-WAHL_UMFRAGE)}, ein Jahr vor der Wahl.`,
     links:kampf?(frei<=0?`Mehr als ${KAUF_MAX} Käufe je Wahl gehen nicht.`:`Noch ${frei} von ${KAUF_MAX} Käufen. Jeder fliegt mit ${pz(KAUF_SKANDAL)} auf.`):'',
@@ -2036,13 +2036,7 @@ const AKT={
       info:n=>`<b>${eur(n)}</b>${n>=rest?'Damit ist die Stufe voll.':`Danach sind noch ${eur(rest-n)} offen.`}<br><small>${spSteuerText(t,n)}</small>`,
       ok:n=>stZahle(n)});
   },
-  endeFrage(){
-    if(!S.amt||S.ende) return; const A=S.amt;
-    openSheet(`${sbild(GEN_BILD.uebergabe)}<h3>👪 Das Weingut übergeben?</h3><p>Du legst den Kellerschlüssel auf den Küchentisch und übergibst ${esc(S.name)} an dein Kind. Damit endet die Partie: Es folgt die Chronik, weiterspielen geht danach nicht mehr.</p>
-      <p class="mut">${A.ehren?`Als ${ehrP()} bekommst du das beste Ende.`:A.brief?'Die Weltweinschau hast du noch nicht gewonnen. Ohne den Sieg ist es das gute Ende, nicht das beste.':'Die Weltweinschau war noch nicht im Dorf. Ohne sie ist es das gute Ende, nicht das beste.'} Erbschaftssteuer fällt nicht an. Von selbst übergibt die Familie im Januar ${endeJahr()}.</p>
-      <div class="btns"><button class="sec" data-a="close">Noch nicht</button><button class="wag" data-a="endeJa">Weingut übergeben</button></div>`);
-  },
-  endeJa(){if(!S.amt||S.ende) return; closeSheet(); spielEnde('frei'); save(); if(nfOffen()) return zeigeNachfolger(); TAB='feier'; FSTUFE=0; render(); window.scrollTo(0,0); schnitt()},
+  // Seit 13.6.4 gibt es keine freiwillige Übergabe mehr: Wer aufhören will, startet eine neue Partie (Maik 21.11.2026, Entscheidung 2).
   // Seit 11.7 (A24): Nachfolger wählen. Bei der freiwilligen Übergabe geht es danach gleich an den Küchentisch, zum Jahreswechsel erst mit dem Knopf im Winzerboten.
   nfArt(d){if(!nfOffen()) return; S.ende.nf.art=d.id==='s'?'s':'t'; zeigeNachfolger()},
   nfJa(){if(!nfOffen()) return; const n=(($('#nfname')||{}).value||'').trim().slice(0,20)||nfVorschlag(); nfBenennen(n); closeSheet(); save();

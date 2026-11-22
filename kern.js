@@ -702,9 +702,10 @@ function kroneSieg(K,e,was,L){
 // Die dritte Krone: Ehrenpräsident, danach gibt es keine Schau mehr. Bild 4 und 5 der Geschichte kommen seit 10.2 auf der Bild-Bühne.
 const ehrP=()=>anr('Ehrenpräsident','Ehrenpräsidentin');
 function weltSieg(e,was,L){
-  const A=S.amt; A.ehren={j:S.jahr,m:S.monat,wein:e.name,gen:genNr()};
+  // Seit 13.6.4: Die letzte Übergabe ist im Januar danach (A.ehren.ende), mit der Ankündigung im Artikel und unter "Das steht an".
+  const A=S.amt; A.ehren={j:S.jahr,m:S.monat,wein:e.name,gen:genNr(),ende:(S.jahr+1-START_JAHR)*12};
   ehre('🎗️',`${ehrP()} des Weinbauverbands`,0,`Alle ${KRONEN.length} Kronen der Weltweinschau, die letzte ${S.jahr} im eigenen Dorf mit ${e.name}.`);
-  schlag(100,`Weltweinschau: ${S.name} holt die dritte Krone!`,`${e.name} holt die ${KRONEN[KRONEN.length-1].name}. Damit hat ${S.name} alle ${KRONEN.length} Kronen der Weltweinschau. Das bringt ${was}. Über dem Dorfplatz steigt das Feuerwerk auf, und der Weinbauverband ernennt dich${S.ich?', '+S.ich+',':''} ${anr('zum Ehrenpräsidenten','zur Ehrenpräsidentin')}. Den Titel nimmt dir keine Wahl mehr.`,'weltweinschau-sieg',{gold:1,sonder:1,du:1,liste:L,wett:{typ:'welt',platz:0}});
+  schlag(100,`Weltweinschau: ${S.name} holt die dritte Krone!`,`${e.name} holt die ${KRONEN[KRONEN.length-1].name}. Damit hat ${S.name} alle ${KRONEN.length} Kronen der Weltweinschau. Das bringt ${was}. Über dem Dorfplatz steigt das Feuerwerk auf, und der Weinbauverband ernennt dich${S.ich?', '+S.ich+',':''} ${anr('zum Ehrenpräsidenten','zur Ehrenpräsidentin')}. Den Titel nimmt dir keine Wahl mehr. Im Januar ${S.jahr+1} übergibst du das Weingut am Küchentisch an dein Kind, danach kommt die Chronik.`,'weltweinschau-sieg',{gold:1,sonder:1,du:1,liste:L,wett:{typ:'welt',platz:0}});
   // Seit 10.2 kommen Feuerwerk, Ehrenplatz und die zweite Flasche auf der Bild-Bühne, mit der Urkunde zum Schluss.
   feierWelt('sieg',{wein:e.name,was});
 }
@@ -1550,24 +1551,15 @@ function dorf(k){
 // weiter bei jeder späteren, offen bei einer Übergabe, wenn du schon Präsident bist und die Flasche getrunken ist.
 const pz=x=>Math.round(x*100)+' %';
 // Zum Januar: Ankündigung GEN_VORAUS Jahre vorher, Erinnerung ein Jahr vorher, dann die Übergabe.
-// Seit 10.1 (Spielende, Paket 2): Mit Amt (Präsident oder Altpräsident) ist die nächste Übergabe die letzte, danach endet das Spiel mit der Chronik (spielEnde).
-// Mindestzeit: Steht der Generationswechsel vor dem Ende der AMT_MIN-ten Amtszeit an, wartet die Familie bis zum ersten Januar nach dieser Wahl.
-// endeMonat() ist dieser letzte Januar als Monats-Nummer. Ankündigung und Hinweis ziehen mit. Erbschaftssteuer gibt es beim Ende nicht, danach kommt nichts mehr.
-function endeMonat(){
-  const gen=GEN_JAHRE*genNr()*12, w=S.amt.seit+AMT_MIN*WAHL_JAHRE*12;
-  return Math.max(gen,(Math.floor(w/12)+1)*12);
-}
+// Seit 13.6.4 (Maik 21.11.2026, Entscheidung 2): Die Partie endet nur noch als Ehrenpräsident. Nach der dritten Krone ist die nächste Übergabe im Januar
+// die letzte (A.ehren.ende als Monats-Nummer), danach kommt die Chronik, ohne Erbschaftssteuer. Ohne alle Kronen gibt es kein Ende: Alle GEN_JAHRE Jahre
+// übernimmt die nächste Generation wie gewohnt, auch mit Amt, und tritt weiter an. Nur die Pleite beendet eine Partie sonst. Ohne Ende ist endeMonat() unendlich.
+function endeMonat(){const E=S.amt&&S.amt.ehren; return E?(E.ende!=null?E.ende:(E.j+1-START_JAHR)*12):Infinity}
 const endeJahr=()=>START_JAHR+endeMonat()/12;
-function generationAmt(Z){
-  const e=endeMonat(), nr=monatNr(), gen=GEN_JAHRE*genNr()*12, kind=' Im Rathaus kannst du auch früher übergeben.';
-  if(nr>=e) return spielEnde('gen');
-  if(nr===e-GEN_VORAUS*12) schlag(68,`In ${GEN_VORAUS} Jahren übergibst du ${S.name}`,`Die Jahre am Hang hinterlassen Spuren. Im Januar ${endeJahr()} übergibst du das Weingut an dein Kind. Für dich ist es die letzte Übergabe: Wer an der Spitze des Verbands stand, schreibt danach nur noch die Chronik. Erbschaftssteuer fällt dabei nicht an.${S.amt.ehren?'':S.amt.brief?' Ohne den Sieg bei der Weltweinschau wird es das gute Ende, nicht das beste.':` Für das beste Ende braucht es den Sieg bei der Weltweinschau, und für die fehlt noch ${!keyDorf()&&!keyVerband()?'jeder der zwei Schlüssel':!keyDorf()?'der Schlüssel „Dorf“':'der Schlüssel „Verband“'}.`} Bis dahin bleibt Zeit für alles, was du noch vorhast.${weltOffen()?' Die Weltweinschau im August zum Beispiel.':''}`,GEN_BILD.uebergabe,{du:1});
-  else if(nr===e-12) Z.push(`👪 Nächsten Januar übergibst du ${S.name} an dein Kind. Damit endet die Partie mit der Chronik.${weltOffen()?' Im August ist noch einmal Weltweinschau.':''}`);
-  else if(nr===gen&&e>gen) schlag(64,'Die Familie wartet',`Eigentlich wäre jetzt die nächste Generation dran. ${amtAlt()?'Aber die Familie lässt dir noch eine Wahl, um den Stuhl zurückzuholen.':`Aber ${anr('einen Präsidenten','eine Präsidentin')} holt man nicht mitten in der Arbeit vom Hof: Die Familie wartet mit der Übergabe bis zum Januar nach deiner zweiten Wahl.`} Übergeben wird im Januar ${endeJahr()}.${kind}`,GEN_BILD.uebergabe,{du:1});
-}
+function generationAmt(Z){if(monatNr()>=endeMonat()) spielEnde('gen')}
 function generationMonat(Z){
   if(S.monat!==0) return;
-  if(S.amt) return generationAmt(Z);
+  if(amtEhre()) return generationAmt(Z);
   const j=S.jahr-START_JAHR, n=genNr();
   if(j===GEN_JAHRE*n-GEN_VORAUS) schlag(68,`In ${GEN_VORAUS} Jahren übernimmt die nächste Generation`,`Die Jahre am Hang hinterlassen Spuren. Im Januar ${genJahr(n)} übergibst du ${S.name} an dein Kind. Bleiben wird alles, was du aufgebaut hast: Fläche, Reben, Keller, Wein, Maschinen, Leute, Manager und dein Rang. Vom Ansehen nimmt die nächste Generation ${pz(erbAnsehen())} mit, und das Finanzamt verlangt ${pz(ERB_STEUER)} vom Vermögen als Erbschaftssteuer, nach heutigem Stand rund ${eur(erbSchaetzung())}. Reicht das Geld nicht, leiht die Bank den Rest, auch über den Kreditrahmen hinaus.`,GEN_BILD.uebergabe,{du:1});
   else if(j===GEN_JAHRE*n-1) Z.push(`👪 Nächsten Januar übernimmt die nächste Generation. Erbschaftssteuer nach heutigem Stand rund ${eur(erbSchaetzung())}, vom Ansehen bleiben ${pz(erbAnsehen())}.`);
@@ -1587,12 +1579,10 @@ function uebergabe(){
   if(window.BOT) erbeBenennen(S.erbe.art==='t'?S.erbe.vt:S.erbe.vs);
 }
 const endeFeier=()=>!!(S.feier&&S.feier.welt==='ende');
+// Seit 13.6.4 nur noch der Text zum besten Ende, das gute Ende ist weg.
 function endeText(){
-  const best=S.ende.art==='best', fl=S.flascheAuf;
-  const P=best?[`Auf dem Küchentisch liegen der alte Kellerschlüssel${fl?', die leere Flasche vom ersten Jahrgang':''} und die volle vom Siegerwein der Weltweinschau.`,`„Den Schlüssel kannst du benutzen“, sagst du zu deinem Kind. „${fl?'Die leere bleibt, wo sie ist. Und die volle':'Und die Flasche'} ...“`,'„Ich weiß. Noch nicht.“']
-    :fl?['Auf dem Küchentisch liegen der alte Kellerschlüssel und die leere Flasche vom ersten Jahrgang.','„Die ist ja leer“, sagt dein Kind.','„Die war nie zum Trinken da.“']
-    :['Auf dem Küchentisch liegt der alte Kellerschlüssel.','„Den kannst du jetzt benutzen“, sagst du zu deinem Kind. „Den Rest findest du im Keller.“'];
-  if(S.ende.alt&&!best) P.push('Auf dem Stuhl im Festsaal sitzt inzwischen jemand anderes. Aber wer ihn erreicht hat, steht in jeder Chronik.');
+  const fl=S.flascheAuf;
+  const P=[`Auf dem Küchentisch liegen der alte Kellerschlüssel${fl?', die leere Flasche vom ersten Jahrgang':''} und die volle vom Siegerwein der Weltweinschau.`,`„Den Schlüssel kannst du benutzen“, sagst du zu deinem Kind. „${fl?'Die leere bleibt, wo sie ist. Und die volle':'Und die Flasche'} ...“`,'„Ich weiß. Noch nicht.“'];
   if(nfName()) P.push(`Es übernimmt: ${nfName()}.`);
   return P;
 }
@@ -1602,16 +1592,16 @@ function nfVorschlag(){const f=S.ende.nf; return f.art==='s'?f.vs:f.vt}
 function nfName(){const f=S&&S.ende&&S.ende.nf; return f&&!f.offen&&f.name?`${f.voll||f.name}, ${f.art==='s'?'der Sohn':'die Tochter'}`:''}
 function nfBenennen(name){const f=S.ende.nf, fam=famName(); f.name=name; f.voll=(fam&&!name.includes(' ')?name+' '+fam:name).slice(0,40); f.offen=0}
 function spielEnde(wie){
-  const n=genNr(), alt=S.erbe||{}, best=amtEhre(), ab=amtAlt();
-  (S.chronik=S.chronik||[]).push({n,name:S.ich||alt.name||'',art:S.anrede?(S.anrede==='w'?'t':'s'):alt.art||'',von:genJahr(n-1),bis:S.jahr,rang:S.rang,ans:S.ansehen,verm:vermoegen(),steuer:0,kredit:0,ende:1,...(ab?{alt:1}:{}),...(best?{ehr:1}:{})});
-  S.ende={art:best?'best':'gut',wie,j:S.jahr,m:S.monat,stand:endStand(),...(ab?{alt:1}:{})};
+  const n=genNr(), alt=S.erbe||{}, ab=amtAlt();
+  (S.chronik=S.chronik||[]).push({n,name:S.ich||alt.name||'',art:S.anrede?(S.anrede==='w'?'t':'s'):alt.art||'',von:genJahr(n-1),bis:S.jahr,rang:S.rang,ans:S.ansehen,verm:vermoegen(),steuer:0,kredit:0,ende:1,...(ab?{alt:1}:{}),ehr:1});
+  S.ende={art:'best',wie,j:S.jahr,m:S.monat,stand:endStand(),...(ab?{alt:1}:{})};
   S.ende.platz=bestenEintrag();
   // Seit 11.7 (A24): Wer das Weingut nach der letzten Übergabe bekommt, wählst du vor dem Küchentisch wie bei jeder Übergabe (zeigeNachfolger).
   S.ende.nf={offen:1,art:Math.random()<.5?'t':'s',vt:ERB_NAMEN.t[rint(0,ERB_NAMEN.t.length-1)],vs:ERB_NAMEN.s[rint(0,ERB_NAMEN.s.length-1)],name:''};
   if(window.BOT) nfBenennen(nfVorschlag());
   // Seit 10.2 kommt das Gespräch am Küchentisch auf der Bild-Bühne (S.feier.welt 'ende'), danach die Chronik. Der Winzerbote meldet nur noch die Übergabe.
   S.wett=null; S.auktion=null; S.feier={welt:'ende'};
-  if(wie==='gen') schlag(100,best?`${S.name}: Die Übergabe am Küchentisch`:`${S.name} geht in neue Hände`,`Zum Jahreswechsel übergibt ${S.ich||anr('der '+duN(),'die '+duN())} das Weingut an die nächste Generation. Damit schließt sich nach ${jahreTxt(S.ende.stand.jahre)} ${WO[S.region]} der Kreis für ${S.name}.${spLohn(SPENDEN.length-1)?` ${anr('Der Ehrenbürger','Die Ehrenbürgerin')} geht in den Ruhestand, das ganze Dorf zieht den Hut.`:''} Am Küchentisch wartet schon dein Kind, danach kommt die Chronik.`,ENDE_BILD[S.ende.art],{gold:1,sonder:1,du:1,schluss:1});
+  if(wie==='gen') schlag(100,`${S.name}: Die Übergabe am Küchentisch`,`Zum Jahreswechsel übergibt ${S.ich||anr('der '+duN(),'die '+duN())} das Weingut an die nächste Generation. Damit schließt sich nach ${jahreTxt(S.ende.stand.jahre)} ${WO[S.region]} der Kreis für ${S.name}.${spLohn(SPENDEN.length-1)?` ${anr('Der Ehrenbürger','Die Ehrenbürgerin')} geht in den Ruhestand, das ganze Dorf zieht den Hut.`:''} Am Küchentisch wartet schon dein Kind, danach kommt die Chronik.`,ENDE_BILD.best,{gold:1,sonder:1,du:1,schluss:1});
 }
 function erbeOffen(){return !!(S&&S.erbe&&S.erbe.offen)}
 function erbeVorschlag(){const e=S.erbe; return e.art==='s'?e.vs:e.vt}
@@ -2078,6 +2068,8 @@ function aufgaben(){
   if(S.auktion&&S.auktion.phase!==0&&!S.auktion.ende&&S.rang>=R_AUKTION){const zuG=aukDeckel(), kann=!zuG&&aukNaechstes()<=aukLimit(); A.push({t:`🔨 Auktion diesen Monat: ${S.auktion.ha}\u00a0Hektar, Gebot steht bei ${eur(S.auktion.gebot)}`+(zuG?'. '+AUK_ZU_GROSS.slice(0,-1):kann?'':'. Zum Mitbieten reicht dein Geld nicht'),tab:'stadt',sub:'amt',...(kann?{rot:1}:{ruhig:1})})}
   // Wettbewerb: Rot nur mit einem zugelassenen Wein. Reicht der Manager ein, steht hier nichts. Seit 10.3 bleibt die Zeile bei der Weltweinschau immer stehen.
   if(S.wett&&!S.wett.fertig&&!S.wett.ein&&S.rang>=wettRang()&&(S.wett.typ==='welt'||!aufgabeAktiv('wett'))){const pass=S.lots.some(wettFaehig); A.push({t:`🏅 ${WETTNAME[S.wett.typ]}: `+(pass?'diesen Monat einen Wein einreichen':'diesen Monat, du hast aber keinen zugelassenen Wein'),tab:'stadt',sub:'amt',...(pass?{rot:1}:{ruhig:1})})}
+  // Seit 13.6.4: Nach der dritten Krone steht die letzte Übergabe an.
+  if(amtEhre()&&!S.ende) A.push({t:`👪 Im Januar ${endeJahr()} übergibst du ${S.name} am Küchentisch, danach kommt die Chronik`,tab:'stadt',sub:'amt',ruhig:1});
   // Seit 13.6.3: Anmeldung zur Weltweinschau im Januar, rot nur mit einem zugelassenen Wein.
   if(schauAnm()&&!S.schau.ein){const K=KRONEN[S.schau.kl], pass=S.lots.some(l=>schauFaehig(l)); A.push({t:`${K.sym} Weltweinschau, ${K.name}: `+(pass?'diesen Monat einen Wein anmelden':'diesen Monat, du hast aber keinen zugelassenen Wein'),tab:'stadt',sub:'amt',...(pass?{rot:1}:{ruhig:1})})}
   if(fehlText()) A.push({t:`${fehlText()}, vorher geht es nicht in den nächsten Monat`,rot:1,tab:'stadt',sub:'arbeit'});
@@ -2206,17 +2198,16 @@ function weltFeier(){
   if(F.welt==='krone'){const K=KRONEN.find(x=>x.k===F.k)||KRONEN[0], N=KRONEN[kroneKl()]; return {B:[{bild:'weltweinschau',ort:'🎉 Auf dem Dorfplatz',h:`Die ${K.name} bleibt im Dorf!`,konf:18,funken:1,p:[`${F.wein||'Dein Wein'} hat die besten Weingüter der Welt geschlagen.`,`Am Holzbogen zieht der Bürgermeister eine neue Fahne hoch, die ${K.sym} ${K.name}.`,N?`Daneben hängt noch ein leerer Haken. „Für die ${N.name}“, sagt er.`:'']}],
     kopf:'Eine Krone für das Dorf',schrift:kroneUrkHtml(K),titel:'Das bringt dir die Krone',P:[...(F.was||'').split(', ').filter(Boolean).map(x=>[/Ansehen/.test(x)?'⭐':/Qualit/.test(x)?'🍇':'💶',x]),['👑',`${kronen().length} von ${KRONEN.length} Kronen`],...(N?[['🔜',`Nächstes Jahr geht es um die ${N.name}`]]:[])],knopf:'Anstoßen 🥂'}}
   if(F.welt==='sieg') return {B:[{bild:'weltweinschau-sieg',ort:'🎆 Auf dem Dorfplatz, am Abend',h:`Du bist ${ehrP()}!`,konf:26,funken:1,p:['Über dem Dorfplatz steigt das Feuerwerk auf, und auf dem roten Tisch glänzt der Pokal mit der Weltkugel.',
-      `${F.wein||'Dein Wein'} hat die besten Weingüter der Welt geschlagen, und das im eigenen Dorf.`,'Der Bürgermeister hat Tränen in den Augen und behauptet, das sei der Rauch.']},
+      `${F.wein||'Dein Wein'} hat die besten Weingüter der Welt geschlagen, und das im eigenen Dorf.`,`Am Holzbogen zieht der Bürgermeister die ${KRONEN.length}. Fahne hoch, jetzt ist kein Haken mehr frei.`,'Der Bürgermeister hat Tränen in den Augen und behauptet, das sei der Rauch.']},
     ...(fl?[{bild:'ehrenplatz',ort:'🕯️ Der Ehrenplatz',h:'Was war da drin?',konf:0,unten:1,p:['Zwischen den besten Weinen der Welt steht eine leere Flasche mit vergilbtem Etikett.',
       'Ein Prüfer aus Übersee bleibt davor stehen: „Was war da drin?“','„Unser erster. Besonders gut war er nicht.“','„Und warum steht er hier?“','„Weil ohne ihn keiner von den anderen da wäre.“']},
     {bild:'flasche-regal-zwei',ort:'🍾 Im Gewölbekeller',h:'Eine zweite Flasche im Regal',konf:0,p:['Am Abend, als alle weg sind, gehst du allein in den Keller.',
       'Eine Flasche vom Siegerwein kommt ins Regal, direkt neben die leere.','Aufs Etikett schreibst du: „Für den Tag, an dem einer von uns es besser macht.“',
       `${ratte()} schaut kurz vorbei und prüft, ob die neue auch einen Korken hat.`]}]:[])],
     kopf:'Herzlichen Glückwunsch!',schrift:ehrUrkHtml(),titel:'Das bringt dir der Sieg',
-    P:[...(F.was||'').split(', ').filter(Boolean).map(x=>[/Ansehen/.test(x)?'⭐':/Qualit/.test(x)?'🍇':'💶',x]),['🎗️',`Den Titel ${ehrP()} nimmt dir keine Wahl mehr`],['🔑','Übergeben kannst du im Rathaus, wann du willst'],['🏆','Dein Weg zum besten Ende steht']],
+    P:[...(F.was||'').split(', ').filter(Boolean).map(x=>[/Ansehen/.test(x)?'⭐':/Qualit/.test(x)?'🍇':'💶',x]),['🎗️',`Den Titel ${ehrP()} nimmt dir keine Wahl mehr`],['🔑',`Im Januar ${endeJahr()} übergibst du am Küchentisch, danach kommt die Chronik`],['🏆','Dein Weg zum besten Ende steht']],
     knopf:'Anstoßen 🥂'};
-  const best=S.ende&&S.ende.art==='best';
-  return {B:[{bild:ENDE_BILD[best?'best':'gut'],ort:'🔑 Am Küchentisch',h:best?'Die Übergabe am Küchentisch':`${S.name} geht in neue Hände`,konf:0,ruhig:1,p:endeText()}],knopf:'Zur Chronik 📜'};
+  return {B:[{bild:ENDE_BILD.best,ort:'🔑 Am Küchentisch',h:'Die Übergabe am Küchentisch',konf:0,ruhig:1,p:endeText()}],knopf:'Zur Chronik 📜'};
 }
 // Urkundenwand im Büro: jede Aufstiegs-Ehrung als kleine Urkunde. Alte Ehrungen ohne r finden ihren Rang über den Namen.
 function urkRang(e){if(e.r!=null) return e.r; const m=/jetzt (.+)\.$/.exec(e.t||''); return m?RAENGE.findIndex(x=>x.name===m[1]):-1}

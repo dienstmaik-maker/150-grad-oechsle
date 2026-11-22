@@ -323,9 +323,9 @@ const KAUF_PREIS=300000, KAUF_PLUS=5, KAUF_MAX=2, KAUF_SKANDAL=.2, KAUF_STRAFE=1
 const STIMM_PLUS=.08, STIMM_MONAT=1, STIMM_MINUS=.5;
 // Version 10.1 (Spielende, Paket 2): Weltweinschau und die zwei Enden. Die ersten zwei Zahlen hat Maik am 18.11.2026 gewählt.
 // STIFT_FAKTOR: Preis der Stiftung im Verhältnis zur verpassten Spende. MARKE_ABWAHL: so weit sinkt die Marke nach einer Abwahl, nie unter MARKE_START.
-// AMT_MIN: Amtszeiten, bis die Familie übergibt (Mindestzeit). Seit 13.6.3 stehen Monate und Feld der Weltweinschau bei KRONEN, WELT_STARK und WELT_FELD sind weg.
+// Seit 13.6.4 ist AMT_MIN weg (die Familie wartet nicht mehr auf den Präsidenten). Seit 13.6.3 stehen Monate und Feld der Weltweinschau bei KRONEN.
 // Derselbe Wein darf jedes Jahr wieder antreten (Variante 3, Maik 19.11.2026).
-const STIFT_FAKTOR=2, MARKE_ABWAHL=10, AMT_MIN=2;
+const STIFT_FAKTOR=2, MARKE_ABWAHL=10;
 // Seit 13.6.3 (Bauplan 13.6, Maik 21.11.2026): Weltweinschau mit drei Kronen in fester Reihenfolge, jedes Jahr genau eine Klasse mit einem Wein.
 // Anmeldung im WELT_ANM (Januar, zusammen mit den Prädikatsweinen), die Schau im WELT_MONAT (Juni), gewertet beim Monatswechsel danach.
 // Verloren heißt nächstes Jahr dieselbe Klasse noch mal, eine gewonnene Krone bleibt, auch nach einer Abwahl. KRONE_ANS Ansehen je Krone (über ANS_F Wettbewerbe).
@@ -906,7 +906,8 @@ const GEN_TEXT={
 // Das Ende der Partie. wie: 'gen' beim letzten Generationswechsel (im Monatswechsel, als Sonderausgabe), 'frei' bei der freiwilligen Übergabe im Rathaus.
 // art: 'best' nach dem Sieg bei der Weltweinschau (Ehrenpräsident), sonst 'gut'. Abgewählt ist kein drittes Ende, nur ein anderer Satz.
 // Danach ist der Spielstand abgeschlossen (S.ende): Er zeigt nur noch die Chronik (Reiter ende), weiterspielen geht nicht mehr.
-const ENDE_BILD={gut:'flasche-kueche-leer',best:'flasche-kueche-zwei'};
+// Seit 13.6.4 gibt es nur noch das beste Ende (ENDE_NAME und ENDE_WERT kennen gut weiter, für alte Einträge in der Bestenliste).
+const ENDE_BILD={best:'flasche-kueche-zwei'};
 // Sprüche der Gegner: vorbei = er überholt dich, du = du überholst ihn, erfolg = nach deinem Sieg in einem Wettbewerb.
 const GEGNER_SPRUCH={
   vorsicht:{vorbei:n=>`„Langsam ist auch eine Geschwindigkeit“, sagt ${n}, als sie an dir vorbeizieht.`,du:n=>`${n} gratuliert dir mit einem Korb Äpfel. „Nicht übermütig werden“, steht auf dem Zettel.`,erfolg:n=>`${n} hat deine Medaille in der Zeitung ausgeschnitten. Wofür, sagt sie nicht.`},
