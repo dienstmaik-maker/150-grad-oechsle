@@ -17,9 +17,25 @@ const eigText=e=>e>=1?'★★★ sehr gut geeignet':e>=.85?'★★ gut geeignet'
 const rolleVon=id=>ROLLEN[(SORTEN[id]||{}).rolle];
 // Seit 13.2.2: Schlüssel der Rolle für die Tabellen der Rebpflege, Sorten ohne Rolle rechnen wie die Menge-Sorte.
 const rolleK=id=>(SORTEN[id]||{}).rolle||'menge';
-// Mengen-Faktor der Rebpflege: Setzling nach Zählerstand, ab Rebstock je Rolle.
-const pflegeMenge=(f,id)=>{const st=f.pflSt||0; return st?PFLEGE_MENGE[rolleK(id)][st-1]:SETZ_MENGE[Math.min(SETZ_MENGE.length-1,f.ep||0)]};
-const pflegeQP=(id,st)=>PFLEGE_QP[rolleK(id)][st||0];
+// Seit 14.2.2: Mengen-Faktor der Pflegestufe, für alle Rollen gleich (STUFE_MENGE). Die Qualitätspunkte bekommen STUFE_QPF in qpFuer.
+const pflegeMenge=(f,id)=>STUFE_MENGE[f.pflSt||0];
+// Seit 14.2.2: Entwicklungspunkte (f.ep, 0 bis EP_MAX). Erziehungsform des Weinbergs, ohne Wahl die passende (Entscheidung 34).
+const formVon=id=>{const f=S.felder[id]||{}; return f.form||FORM_PASST[rolleK(id)]};
+// Schwellen in Punkten: Rebstock nach EP_REBSTOCK_JAHRE Chef-Jahren der Form, Premier Cru, Grand Cru.
+const epSchwelle=id=>[0,EP_REBSTOCK_JAHRE*FORMEN[formVon(id)].ep,EP_PREMIER,EP_GRAND];
+const epStufe=id=>stufeZu((S.felder[id]||{}).ep||0,epSchwelle(id));
+const epRund=x=>Math.round(x*1000)/1000, epT=x=>String(Math.round(x*10)/10).replace('.',',');
+// Punkte eines Jahres: EP_SCHNITT aus dem Rebschnitt mal Zuwachs dessen, der schneidet (zs), EP_BODEN aus einem guten Bodenjahr mal Zuwachs
+// dessen, der düngt (zd), beides mal den Punkten der Form. Ab Grand Cru bringt jeder Rebschnitt mindestens GC_HALTEN.
+function epPlus(id,gutBoden,zs,zd){const e=FORMEN[formVon(id)].ep; let p=EP_SCHNITT*e*zs+(gutBoden?EP_BODEN*e*zd:0); if(((S.felder[id]||{}).ep||0)>=EP_GRAND) p=Math.max(p,GC_HALTEN); return p}
+// Zum Jahreswechsel: geschnitten (f.schnitt im abgelaufenen Jahr) gibt epPlus, sonst verwildert der Weinberg (VERWILDERN nach Jahren ohne Schnitt, f.wild).
+// Annahme von Claude: Ohne Rebschnitt zählt auch das Boden-Zehntel nicht.
+function epJahr(f,id,gutBoden,zs=1,zd=1){
+  if(f.schnitt===S.jahr-1){f.wild=0; f.ep=epRund(Math.min(EP_MAX,(f.ep||0)+epPlus(id,gutBoden,zs,zd)))}
+  else{f.wild=(f.wild||0)+1; f.ep=epRund(Math.max(0,(f.ep||0)-VERWILDERN[Math.min(VERWILDERN.length,f.wild)-1]))}
+}
+// Neue Reben verdünnen die Punkte genau um ihren Anteil (Entscheidung 4), auch beim Nachpflanzen. Die Stufe folgt zum Jahreswechsel.
+function rebenDazu(id,n){const f=S.felder[id]; if(!(n>0)||!f) return; const a=f.reben||0; f.ep=epRund((f.ep||0)*a/(a+n)); f.reben=a+n}
 const pflegePreis=(id,st)=>((PFLEGE_PREIS[rolleK(id)]||[])[st||0])||0;
 // Seit 13.2.3: Deckel fürs Öchsle eines Weinbergs aus Rolle, Boden-Stufe und Pflegestufe.
 function deckel(id){const f=S.felder[id]||{}; return DECKEL_BASIS[rolleK(id)]+BODEN_ST_OE*wbBoden(id)+PFLEGE_ST_OE*(f.pflSt||0)}
@@ -1587,7 +1603,7 @@ function neuesSpiel(){
   lohnAbgleich();
   neuePrognose();
   TOP=[]; FUSS=[];
-  schlag(100,'Willkommen auf deinem Weingut',`${S.ich?`${S.ich} übernimmt ${S.name} ${WO[S.region]}: 3 Hektar kahler Weinberg, leere Fässer und ${eur(S.geld)}.`:`${S.name} ${WO[S.region]} startet mit 3 Hektar kahlem Weinberg, leeren Fässern und ${eur(S.geld)}.`} Bis März ist Pflanzzeit, im Weinberg pflanzt du deinen ${SORTEN[sortenFolge()[0]].name}. Die zweite und dritte Rebsorte bringt der Aufstieg. Neue Reben starten als Setzling und tragen erst wenig.`,'weingut-01-sommer',{du:1});
+  schlag(100,'Willkommen auf deinem Weingut',`${S.ich?`${S.ich} übernimmt ${S.name} ${WO[S.region]}: 3 Hektar kahler Weinberg, leere Fässer und ${eur(S.geld)}.`:`${S.name} ${WO[S.region]} startet mit 3 Hektar kahlem Weinberg, leeren Fässern und ${eur(S.geld)}.`} Bis März ist Pflanzzeit, im Weinberg pflanzt du deinen ${SORTEN[sortenFolge()[0]].name}. Die zweite und dritte Rebsorte bringt der Aufstieg. Neue Reben starten als Jungrebe und tragen erst wenig.`,'weingut-01-sommer',{du:1});
   // Seit 10.3 (Frage 11): Mit Spielführer fallen die zwei Artikel weg, die der alte Winzer im ersten Monat selbst sagt.
   if(!(S.fu&&S.fu.an)) schlag(50,'So kommst du herum','Unten wählst du Weingut, Kellerei oder Stadt, die Leiste darüber bringt dich zu den Orten. Wischen übers Bild geht auch. Ein Punkt am Reiter zeigt Neues oder Dringendes, ein Tipp aufs Geld öffnet deinen Stand mit Kasse und Rängen. Das kleine i oben rechts in jedem Fenster erklärt, was du dort tust. Spielstände, Ton und das Buch liegen im Büro.');
   if(!(S.fu&&S.fu.an)) schlag(40,'Leute für Weinberg und Keller',`${helferRegel()}. ${lagerRegel()}. Leute findest du beim Arbeitsamt in der Stadt, der Lohn dort schwankt jeden Monat, wer eingestellt ist, behält seinen. Fehlen dir Leute, geht es nicht in den nächsten Monat.`,'arbeit');
@@ -1813,9 +1829,10 @@ function monatLauf(){
       const f=S.felder[id]; feldReset(f);
       // Seit 13.2.2: Rebpflege-Zähler der Sorte. Bis Ende April des abgelaufenen Jahres geschnitten (f.schnitt) zählt PFLEGE_GUT, sonst PFLEGE_PATZER zurück.
       if(f.reben){
-        const vor=f.pflSt||0; f.ep=f.schnitt===S.jahr-1?(f.ep||0)+PFLEGE_GUT:Math.max(0,(f.ep||0)-PFLEGE_PATZER); f.pflSt=stufeZu(f.ep,PFLEGE_SCHWELLE);
+        // Seit 14.2.2: Entwicklungspunkte (epJahr), die Stufe folgt den Punkten und fällt mit ihnen.
+        const vor=f.pflSt||0, gs=f.schnitt===S.jahr-1; epJahr(f,id,schnitt>=BODEN_GUT); f.pflSt=epStufe(id);
         if(f.pflSt>vor) pflegeAuf(Z,id,f.pflSt);
-        else if(f.pflSt<vor) Z.push(`✂️ Dein ${SORTEN[id].name} fällt auf ${PFLEGE_STUFEN[f.pflSt]} zurück, er wurde nicht rechtzeitig geschnitten.`);
+        else if(f.pflSt<vor) Z.push(gs?`✂️ Dein ${SORTEN[id].name} fällt durch die vielen neuen Reben auf ${PFLEGE_STUFEN[f.pflSt]} zurück.`:`✂️ Dein ${SORTEN[id].name} fällt auf ${PFLEGE_STUFEN[f.pflSt]} zurück, er wurde nicht rechtzeitig geschnitten.`); // Platzhalter, Wortlaut in Meilenstein 17
       }
       if(f.reben){const tot=Math.min(f.reben,Math.round(f.reben*(festR(sp[1],sp[2],fest(7,si))+fp)/1000)*10); if(tot){f.reben-=tot; S.verlust[id]=tot; totAlle+=tot}}
     }
@@ -2031,7 +2048,7 @@ const maniText=l=>[l.zucker?`gezuckert (+${l.zucker}\u00a0%)`:'',l.wasser?`gewä
 // Seit 8.0 (Paket B): Trauben aus einem Jahr mit Sommerschnitt (l.laub) bekommen LAUB_QP Punkte obendrauf, nach der Eignung, damit es genau so viele sind.
 // Seit 13.2.1: Der Boden gibt BODEN_ST_QP Punkte je Stufe (l.bst, bei der Lese festgehalten) statt der Punkte aus dem Bodenzustand.
 // Seit 13.2.2: dazu die Punkte der Rebpflege (l.pfl, bei der Lese festgehalten, PFLEGE_QP).
-function qpFuer(l,st){return Math.max(1,Math.round((STUFEN[st].qp+(st==='eis'?EIS_WERT[eisStufe(l.oe)].qp:0)+Math.min(8,Math.floor((l.oe-mindest(st))/3))+Math.round(SORTEN[l.sorte].q/2)+Math.min(4,l.sonne||0)+BODEN_ST_QP*(l.bst||0)+pflegeQP(l.sorte,l.pfl))*eignung(l.sorte)))+(l.laub?LAUB_QP:0)}
+function qpFuer(l,st){return Math.max(1,Math.round((STUFEN[st].qp+(st==='eis'?EIS_WERT[eisStufe(l.oe)].qp:0)+Math.min(8,Math.floor((l.oe-mindest(st))/3))+Math.round(SORTEN[l.sorte].q/2)+Math.min(4,l.sonne||0)+BODEN_ST_QP*(l.bst||0))*STUFE_QPF[l.pfl||0]*eignung(l.sorte)))+(l.laub?LAUB_QP:0)}
 // Schmiergeld für den Beamten: ein Anteil vom Wert des Weins, mindestens SCHMIER_MIN.
 const schmierVon=w=>Math.max(SCHMIER_MIN,Math.round(w*SCHMIER_ANTEIL/100)*100);
 function schmier(l,st){return schmierVon(l.liter*STUFEN[st].preis*(1+qpFuer(l,st)/100))}
@@ -2343,7 +2360,7 @@ function mgrBetrieb(){
     const pr=rebenPreis(id), platz=()=>Math.min(S.verlust[id]||0,platzFuer(id),Math.floor(Math.max(0,S.geld-5000)/pr/10)*10);
     if(hf){let i=0; while(platz()>=10&&helferReben()<rebenGesamt()+platz()&&S.geld>5000+VERMITTLUNG&&i++<20) stell('helfer')}
     const n=Math.floor(Math.min(platz(),helferReben()-rebenGesamt())/10)*10;
-    if(n>0){zahle(Math.round(n*pr*100)/100); const f=S.felder[id]; f.reben+=n; S.verlust[id]-=n; LW.push(`${rbn(n)} ${SORTEN[id].name}-Reben nachgepflanzt`)}
+    if(n>0){zahle(Math.round(n*pr*100)/100); const f=S.felder[id]; rebenDazu(id,n); S.verlust[id]-=n; LW.push(`${rbn(n)} ${SORTEN[id].name}-Reben nachgepflanzt`)}
   }
   if(aufgabeAktiv('duengen')&&S.duengungen<3&&S.boden<100&&(S.boden<=70||(m===7&&S.boden<90))&&S.geld>=duengKosten()){const st=bonusMasch('duenger'); duenge(); LW.push(st?'mit dem Düngerstreuer gedüngt':'gedüngt')}
   // Seit 8.0: Maschinen warten (Stufe 1, bis Paket B Stufe 2), alle fünf Maschinen. Nach der Lese, also vor August oder wenn kein Feld mehr hängt, jede Maschine unter MGR_WART_AB auf 100 %.
@@ -2487,7 +2504,7 @@ function helferArbeit(L){
     const f=S.felder[id], soll=pflanzSoll(id); if(soll<10||!pflanzKann(id)) continue;
     const wm=mgrSt('weingut')>0, pr=rebenPreis(id); if(wm&&m<2&&pr>SORTEN[id].preis) continue;
     const res=pflanzMitA(id)?0:pflanzReserve(), pu=wm?mgrPuffer('weingut'):0, n=Math.floor(Math.min(soll,S.ha*HA_REBEN-rebenGesamt()-res,spitzeDeckel(id),helferReben()-rebenGesamt(),Math.max(0,S.geld-pu)/pr)/10)*10;
-    if(n<10) continue; zahle(Math.round(n*pr*100)/100); f.reben+=n; pflanzAb(id,n); L.push(`${rbn(n)} ${SORTEN[id].name}-Reben gepflanzt`);
+    if(n<10) continue; zahle(Math.round(n*pr*100)/100); rebenDazu(id,n); pflanzAb(id,n); L.push(`${rbn(n)} ${SORTEN[id].name}-Reben gepflanzt`);
   }
 }
 // Lagerarbeiter: Stufe 1 keltert die Lese, sobald genug Fassraum frei ist, Stufe 2 füllt angemeldete Weine ab und klebt die Etiketten, sobald genug leere Flaschen da sind.
