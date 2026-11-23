@@ -48,7 +48,8 @@ function epJahr(f,id,gutBoden,zs=1,zd=1){
   else{f.wild=(f.wild||0)+1; f.ep=epRund(Math.max(0,(f.ep||0)-VERWILDERN[Math.min(VERWILDERN.length,f.wild)-1]))}
 }
 // Neue Reben verdünnen die Punkte genau um ihren Anteil (Entscheidung 4), auch beim Nachpflanzen. Die Stufe folgt zum Jahreswechsel.
-function rebenDazu(id,n){const f=S.felder[id]; if(!(n>0)||!f) return; const a=f.reben||0; f.ep=epRund((f.ep||0)*a/(a+n)); f.reben=a+n}
+// Seit 14.2.5 verdünnt neu bepflanzte Fläche auch die Bodenpunkte ihrer Lage (bodenVerduennen).
+function rebenDazu(id,n){const f=S.felder[id]; if(!(n>0)||!f) return; const a=f.reben||0; f.ep=epRund((f.ep||0)*a/(a+n)); f.reben=a+n; bodenVerduennen()}
 const pflegePreis=(id,st)=>((PFLEGE_PREIS[rolleK(id)]||[])[st||0])||0;
 // Seit 13.2.3: Deckel fürs Öchsle eines Weinbergs aus Rolle, Boden-Stufe und Pflegestufe.
 function deckel(id){const f=S.felder[id]||{}; return DECKEL_BASIS[rolleK(id)]+BODEN_ST_OE*wbBoden(id)+PFLEGE_ST_OE*(f.pflSt||0)}
@@ -135,8 +136,30 @@ const stufeSatz=(s,z,SW,N)=>{if(s>=N.length-1) return `${N[s]}, höher geht es n
 // Seit 13.8.6: Zeile im Winzerboten zur neuen Pflegestufe, beim ersten Mal je Partie mit Moment (S.gesch). Seit 13.8.7 kommt beim ersten Grand Cru
 // jeder Rolle eine Feier, bei der Spitzen-Sorte nur ohne Terroir, sonst gleich der vollendete Weinberg (vollendetPruef).
 // Seit 14.2.1: Bodenpunkte je Lage (S.bodenP) statt des Boden-Zählers. wbBodenP ist der Boden eines Weinbergs in Punkten, wbBoden seine Stufe.
-// In 14.2.1 sind noch alle Lagen gleich (1 Punkt je gutem Bodenjahr), ohne id gilt der einfache Hang. S.bodenSt merkt nur die zuletzt gemeldete Stufe.
-const wbBodenP=id=>(S.bodenP||{}).einfach||0;
+// Seit 14.2.5 (Annahme 8): der nach Reben gewichtete Schnitt der Lagen, auf denen der Weinberg steht (lagenBelegung). Ohne Reben die Lage, auf die er käme,
+// ohne id der einfache Hang. S.bodenSt merkt die höchste gemeldete Stufe aller Lagen, je Lage S.bodenStL.
+const lageBodenP=lg=>(S.bodenP||{})[lg]||0, lageBoden=lg=>stufeZu(lageBodenP(lg),BODEN_SCHWELLE);
+// Welche Reben auf welcher Lage stehen, zu deinen Gunsten wie bisher: die Spitzen-Sorte auf dem Südhang, die Sekt-Sorte zuerst auf der Höhenlage, dann auf
+// dem übrigen Südhang, dann auf dem einfachen Hang, die Menge-Sorte (und Sorten ohne Rolle) zuerst auf dem einfachen Hang, dann auf dem, was frei ist.
+// Was nirgends Platz hat (Rundung), zählt zum einfachen Hang, bei der Spitzen-Sorte zum Südhang. W je Sorte, T je Lage, alles in Reben.
+const BELEG_REIHE={spitze:['sued'],sekt:['hoehe','sued','einfach'],menge:['einfach','hoehe','sued']}, ROLLE_REIHE=['spitze','sekt','menge'];
+function lagenBelegung(){const frei={}, W={}, T={einfach:0,hoehe:0,sued:0}; for(const lg of LAGE_REIHE) frei[lg]=hangHa(lg)*HA_REBEN;
+  const ids=R().sorten.slice().sort((a,b)=>ROLLE_REIHE.indexOf(rolleK(a))-ROLLE_REIHE.indexOf(rolleK(b)));
+  for(const id of ids){let n=(S.felder[id]||{}).reben||0; const w=W[id]={einfach:0,hoehe:0,sued:0};
+    for(const lg of BELEG_REIHE[rolleK(id)]){const k=Math.min(n,frei[lg]); w[lg]+=k; frei[lg]-=k; n-=k}
+    if(n>0) w[spitzeId(id)?'sued':'einfach']+=n; for(const lg of LAGE_REIHE) T[lg]+=w[lg]}
+  return {W,T}}
+function wbBodenP(id){if(!id) return lageBodenP('einfach'); const w=lagenBelegung().W[id], n=w?LAGE_REIHE.reduce((a,lg)=>a+w[lg],0):0;
+  if(!n) return lageBodenP(spitzeId(id)?'sued':rolleK(id)==='sekt'&&hangHa('hoehe')>0?'hoehe':'einfach');
+  return epRund(LAGE_REIHE.reduce((a,lg)=>a+w[lg]*lageBodenP(lg),0)/n)}
+// Seit 14.2.5 (Entscheidungen 38 und 41, Annahme 7): S.bodenFl merkt je Lage die größte bisher bepflanzte Fläche in Reben. Wächst die bepflanzte Fläche
+// darüber, sinken die Punkte der Lage genau um den Anteil der neuen Fläche. Nachpflanzen auf gezählter Fläche und gekauftes Land ohne Reben kosten nichts.
+function bodenVerduennen(){const T=lagenBelegung().T, F=S.bodenFl=S.bodenFl||{einfach:0,hoehe:0,sued:0}, P=S.bodenP=S.bodenP||{einfach:0,hoehe:0,sued:0};
+  for(const lg of LAGE_REIHE) if(T[lg]>(F[lg]||0)){P[lg]=epRund((P[lg]||0)*(F[lg]||0)/T[lg]); F[lg]=T[lg]}}
+// Zum Jahreswechsel (Entscheidungen 20 und 39): Im guten Bodenjahr bekommt jede bepflanzte Lage ihre BODEN_PUNKTE mal den Zuwachs dessen, der gedüngt hat (zd).
+function bodenJahr(gut,zd,Z){bodenVerduennen(); const T=lagenBelegung().T, P=S.bodenP, L=S.bodenStL=S.bodenStL||{};
+  if(gut) for(const lg of LAGE_REIHE) if(T[lg]>0) P[lg]=epRund(Math.min(BODEN_MAX,(P[lg]||0)+BODEN_PUNKTE[lg]*zd));
+  for(const lg of LAGE_REIHE){const st=lageBoden(lg); if(st>(L[lg]||0)){L[lg]=st; S.bodenSt=Math.max(S.bodenSt||0,st); Z.push(BODEN_LAGE_BOTE.replace('{lage}',LAGEN[lg].kurz).replace('{stufe}',BODEN_STUFEN[st]))}}}
 const wbBoden=id=>stufeZu(wbBodenP(id),BODEN_SCHWELLE);
 const terroir=id=>wbBoden(id||rolleSorte('spitze'))>=BODEN_STUFEN.length-1;
 function pflegeAuf(Z,id,st){
@@ -673,7 +696,10 @@ function lotWert(l){
 const haWert=(rl,pfl,bst)=>VERM_GRUND*(VERM_SORTE[rl]||1)*VERM_PFLEGE[pfl||0]*VERM_BODEN[bst||0];
 const kahlWert=bst=>VERM_GRUND*VERM_BODEN[bst||0]*VERM_KAHL;
 function weinbergWert(){let w=0, bep=0; for(const id of Object.keys(S.felder)){const f=S.felder[id], h=(f.reben||0)/HA_REBEN; if(!(h>0)) continue; bep+=h; w+=h*haWert((SORTEN[id]||{}).rolle,f.pflSt,wbBoden(id))}
-  return w+Math.max(0,S.ha-bep)*kahlWert(wbBoden())}
+  // Seit 14.2.5: kahles Land je Lage, bis zur gezählten Fläche (S.bodenFl) mit der Stufe der Lage, darüber Rohboden (Annahme 7, Maik 23.11.2026).
+  const T=lagenBelegung().T, F=S.bodenFl||{}; let k=0;
+  for(const lg of LAGE_REIHE){const kahl=Math.max(0,hangHa(lg)*HA_REBEN-T[lg]), mit=Math.min(kahl,Math.max(0,(F[lg]||0)-T[lg])); k+=(mit*kahlWert(lageBoden(lg))+(kahl-mit)*kahlWert(0))/HA_REBEN}
+  return w+k}
 function vermoegen(){return Math.round(S.geld-(S.kredit?S.kredit.rest:0)+WEIN_WERT*S.lots.reduce((a,l)=>a+lotWert(l),0)+weinbergWert())}
 function gWeinberg(g){const j=S.jahr-START_JAHR, b=stufeZu(j,BODEN_SCHWELLE), p=stufeZu(j,PFLEGE_SCHWELLE); let rest=g.ha, w=0; for(const [rl,n] of GEGNER_FL){const h=Math.min(rest,n); if(h>0) w+=h*haWert(rl,p,b); rest-=h} return w}
 function gVerm(g){return Math.round(g.geld-g.kredit+gWeinberg(g))}
@@ -1155,8 +1181,9 @@ const herbstFremd=(j=S.jahr)=>herbstJahr(j).uFremd<FREMD_JAHR;
 // Seit 13.6.1: Im Jahrhundertjahr meldet die Mitte die passende Tendenz klar (JH_ART), sonst gilt der Wurf.
 const herbstTend=(j=S.jahr)=>{const a=REGIONEN[S.region].weg==='beide'&&jhArt(j); return a?TENDENZEN.find(t=>t.k===JH_ART[a].tend):TENDENZEN[Math.min(TENDENZEN.length-1,Math.floor(herbstJahr(j).uTend*TENDENZEN.length))]};
 /* ================= Jahrhundertjahre (seit 13.6.1) ================= */
-// S.jhAb ist das erste Jahrhundertjahr, gesetzt beim Aufstieg zum Terroir. Seit 13.6.9 JH_ABSTAND Jahre danach und dann fest alle JH_ABSTAND Jahre.
-function jhJahre(){if(S.jhAb==null) return []; const J=[S.jhAb]; for(let k=1;k<JH_ANZAHL;k++) J.push(J[k-1]+JH_ABSTAND); return J}
+// Seit 14.2.5 (Entscheidungen 21, 25, 29): Die Jahrhundertjahre hängen nicht mehr am Terroir. Sie liegen um START_JAHR+JH_ERST, dann alle JH_ABSTAND Jahre,
+// jedes bis zu JH_STREU Jahre früher oder später, je Partie fest gewürfelt (fest, Thema 12). S.jhAb merkt das erste, gesetzt beim Start der Partie.
+function jhJahre(){const J=[]; for(let k=0;k<JH_ANZAHL;k++) J.push(START_JAHR+JH_ERST+k*JH_ABSTAND+festI(-JH_STREU,JH_STREU,fest(12,k,START_JAHR,0))); return J}
 const jhNr=(j=S.jahr)=>jhJahre().indexOf(j);
 // Seit 13.6.9: wie jhArt, aber nur in den echten Jahrhundertjahren nach dem Vorgeschmack (JH_VOR). Nur sie ändern Chancen und geben den Jahrhundertwein.
 const jhEcht=(j=S.jahr)=>jhNr(j)>=JH_VOR?jhArt(j):null;
@@ -1653,6 +1680,7 @@ function neuesSpiel(){
   S.bericht=zeitung([],[],[]);
   // Version 7.7: Der Spielstart ist selbst eine Feier: Bühne mit der Geschichte, Kaufvertrag, dann die erste Ausgabe vom Winzerboten.
   elternMerk(); S.feier={start:1,von:0,zu:0}; FSTUFE=0;
+  S.jhAb=jhJahre()[0]; S.jhV=1; S.bodenFl={einfach:0,hoehe:0,sued:0}; S.bodenStL={}; bodenVerduennen(); // seit 14.2.5
   START=null; TAB='feier'; save(); render();
 }
 
@@ -1862,9 +1890,8 @@ function monatLauf(){
     // Reben-Abnutzung: je Sorte ein gewürfelter Anteil aus der Spanne des Bodenschnitts, Frost kommt obendrauf. S.verlust merkt die Zahlen für Aktuelles.
     const schnitt=Math.round(S.bodenSum/S.bodenN), sp=verlustSpanne(schnitt), fp=frostPlus(), rebVor=rebenGesamt(); let totAlle=0;
     // Seit 13.2.1: Boden-Zähler. Ein Jahresschnitt ab BODEN_GUT zählt +1, sonst bleibt er stehen. Die Stufe fällt nie.
-    // Seit 14.2.1 je Lage (S.bodenP), in 14.2.1 noch für alle Lagen gleich.
-    if(schnitt>=BODEN_GUT) for(const k of Object.keys(S.bodenP)) S.bodenP[k]+=1;
-    {const st=Math.max(S.bodenSt||0,wbBoden()); if(st>(S.bodenSt||0)){S.bodenSt=st; Z.push(...(BODEN_BOTE[st]||[`🌱 Dein Boden ist jetzt ${BODEN_STUFEN[st]}.`])); if(st>=BODEN_STUFEN.length-1&&S.jhAb==null){S.jhAb=S.jahr+JH_ABSTAND; S.jhV=1} vollendetPruef(Z)}}
+    // Seit 14.2.5 je Lage mit eigenen Punkten nur für bepflanztes Land (bodenJahr), die Jahrhundertjahre stehen seit dem Start der Partie fest.
+    bodenJahr(schnitt>=BODEN_GUT,duengZuwachs(),Z); vollendetPruef(Z);
     S.verlust={};
     for(const [si,id] of R().sorten.entries()){
       const f=S.felder[id]; feldReset(f);

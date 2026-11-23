@@ -171,7 +171,8 @@ const STOCK_F=4; const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER
 // ab BODEN_GUT Prozent als gutes Jahr (S.bodenZ +1), ein schlechtes zählt 0, der Boden fällt nie. Die Stufe S.bodenSt steigt, sobald der Zähler
 // ihre Schwelle in BODEN_SCHWELLE erreicht. Je Stufe BODEN_ST_OE Grad mehr Deckel (ab 13.2.3), BODEN_ST_MENGE mehr Menge und BODEN_ST_QP Qualitätspunkte.
 // Startwerte, Stellschrauben für 14.2.
-const BODEN_STUFEN=['Rohboden','Fruchtboden','Gutsboden','Terroir'], BODEN_SCHWELLE=[0,10,37,85], BODEN_GUT=90, BODEN_ST_OE=4, BODEN_ST_MENGE=.05, BODEN_ST_QP=4;
+// Seit 14.2.5: BODEN_SCHWELLE in Bodenpunkten je Lage (bis 14.2.4 gute Bodenjahre 0, 10, 37, 85), höchstens BODEN_MAX Punkte (Annahme von Claude, wie EP_MAX).
+const BODEN_STUFEN=['Rohboden','Fruchtboden','Gutsboden','Terroir'], BODEN_SCHWELLE=[0,10,40,90], BODEN_MAX=100, BODEN_GUT=90, BODEN_ST_OE=4, BODEN_ST_MENGE=.05, BODEN_ST_QP=4;
 // Seit 13.2.2 (Bauplan 13.2): Rebpflege je Sorte (f.pflSt, Zähler f.pflZ), das Rebalter mit Jungreben ist weg. Am Jahresende zählt eine Sorte mit Reben,
 // die bis Ende April geschnitten wurde (f.schnitt), PFLEGE_GUT, sonst geht der Zähler um PFLEGE_PATZER zurück, höchstens bis 0. Die Stufe ist die höchste
 // Schwelle in PFLEGE_SCHWELLE, die der Zähler erreicht, sie fällt also erst, wenn er darunter rutscht. Neue Reben übernehmen die Stufe ihrer Sorte.
@@ -230,6 +231,8 @@ const FORM_RAT={menge:'Der alte Winzer rät zum Flachbogen: „Der trägt viel, 
   spitze:'Der alte Winzer rät zum Einzelpfahl: „Jeder Stock steht für sich, das gibt wenig Menge, aber die besten Trauben, und am Pfahl wächst der Weinberg am schnellsten zum Grand Cru.“'};
 const FORM_PFAHL_HAND='Am Einzelpfahl liest du immer von Hand, eine Maschine passt nicht in den Weinberg.';
 const FORM_WAHL_SATZ='Die Form wählst du einmal für den Weinberg. Wer später umstellt, fängt mit der Erziehung von vorn an.';
+// Seit 14.2.5: Winzerbote, wenn eine Lage eine neue Boden-Stufe erreicht. Platzhalter, Wortlaut in Meilenstein 17.
+const BODEN_LAGE_BOTE='🌱 {lage}: Der Boden ist jetzt {stufe}.';
 const LAUB_HAND_BOTE='✂️ Ab jetzt kannst du im Juni den Sommerschnitt von Hand machen, im Weinberg bei jeder Sorte. Eine Maschine kommt in deine steilen Hänge nicht.';
 const VERSION='13.8';
 // Seit 13.3.6 (Maik 21.11.2026): Im Umbau starten neue Partien ohne Spielführer, sonst verspricht er Dinge nach den alten Rängen.
