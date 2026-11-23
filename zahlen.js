@@ -237,7 +237,7 @@ const FORM_WAHL_SATZ='Die Form wählst du einmal für den Weinberg. Wer später 
 // Seit 14.2.5: Winzerbote, wenn eine Lage eine neue Boden-Stufe erreicht. Platzhalter, Wortlaut in Meilenstein 17.
 const BODEN_LAGE_BOTE='🌱 {lage}: Der Boden ist jetzt {stufe}.';
 const LAUB_HAND_BOTE='✂️ Ab jetzt kannst du im Juni den Sommerschnitt von Hand machen, im Weinberg bei jeder Sorte. Eine Maschine kommt in deine steilen Hänge nicht.';
-const VERSION='13.8';
+const VERSION='14.2';
 // Seit 13.3.6 (Maik 21.11.2026): Im Umbau starten neue Partien ohne Spielführer, sonst verspricht er Dinge nach den alten Rängen.
 // Mit neuen Texten muss er am Ende wieder an sein (14.4), dann FU_START=1.
 const FU_START=0;
@@ -1364,9 +1364,13 @@ const IDEE_KEY='oechsle-idee', IDEE_MAX=1000;
 // ihre Punkte mit ▸/▾ auf und zu, immer nur eine ist offen. Die Kopfzeile tut nichts, die Punkte zum Ganzen (p am Block) sind immer zu sehen.
 // Für 1.0 bis 10.5 gab es nie Punkte, dort steht der alte Satz aus der Liste vor 11.7.1 als ein Punkt. Unteretappen (dritte Stelle) kommen nicht hierher.
 // Je Version: [Zeichen, Nummer, Titel, Datum, Punkte]. Kommendes ohne Datum und Punkte.
+// Seit 14.2: Block 14.0. Die Punkte von 14.2 sind Platzhalter, Wortlaut in Meilenstein 17. 14.1 und 14.3 haben keine eigene Version (Messlauf, Klären ohne Code),
+// deshalb steht als Nächstes 14.4. Meilenstein 13 ist seit 22.11.2026 fertig, seine Kopfzeile trägt deshalb das ✅ (die Abschlussprobe 13.9 bekam keine Version).
 const WAS_NEU=[
-  {k:'🏁 13.0 Der Umbau',d:'in Arbeit',p:['Drei Generationen, drei Akte: Das Spiel wird von Grund auf neu gebaut'],v:[
-    ['▶️','13.9','Abschlussprobe'],
+  {k:'🏁 14.0 Pflege-Umbau',d:'in Arbeit',p:['Wie du deine Reben und deinen Boden pflegst, entscheidet über deinen Wein'],v:[
+    ['▶️','14.4','Zeitleiste'],
+    ['','14.2','Pflege und Boden','23.11.2026',['Jeder Weinberg sammelt Entwicklungspunkte, von der Jungrebe bis zum Grand Cru','Rebschnitt und Düngen machst du selbst oder gibst sie an die Erntehelfer ab','Drei Erziehungsformen: Flachbogen, Kordon und Einzelpfahl, jede mit eigener Menge und Güte','Jede Lage hat ihren eigenen Boden bis zum Terroir','Qualitätspunkte bis 100 sind das Maß für jeden Wein']]]},
+  {k:'✅ 13.0 Der Umbau',d:'fertig 22.11.2026',p:['Drei Generationen, drei Akte: Das Spiel wird von Grund auf neu gebaut'],v:[
     ['','13.8','Geschichte','22.11.2026',['Drei Akte mit eigenem Satz bei jeder Übergabe: pflanzen, reifen lassen, krönen','Neue Momente vom geschenkten Hang bis zum ersten Etikett mit Premier Cru','Eine eigene Feier für den ersten Grand Cru jeder Sorte und für den vollendeten Weinberg','Die drei Favoriten der Weltweinschau haben Namen und Geschichten','Winzerbote, Zeichen und Feiern mit neuen Texten']],
     ['','13.7','Spielstufen','22.11.2026',['Lehrjahre, Gesellenjahre und Meisterprüfung unterscheiden sich jetzt beim Wagnis im Herbst','Lehrjahre zeigen die Chance als Zahl, Gesellenjahre als Wort, die Meisterprüfung gar nicht','Jedes Jahr ist gut oder schlecht fürs Warten: Sommer, Schädlingsjahr und die Alten im Winzerboten verraten es','Spritzen und Schädlingsschaden sind weg, die Menge-Sorte bleibt sicher','Meisterprüfung: Preise schwanken stärker, die Nachbarn bieten klüger, Herausforderer und Favoriten sind stärker','Die Meisterprüfung öffnet sich nach deiner ersten Übergabe in den Gesellenjahren','Die Sektanlage kommt mit dem Rebstock der Sekt-Sorte, Zucker hebt den Most nur bis zum Deckel']],
     ['','13.6','Finale','22.11.2026',['Ab dem Terroir kommen vier Jahrhundertjahre, groß im Winzerboten angekündigt','Wer im Jahrhundertjahr sein Wagnis gewinnt, bekommt den Jahrhundertwein','Die Weltweinschau im Juni hat drei Kronen: Sekt, Prädikat und Rarität','Nach der dritten Krone wirst du Ehrenpräsident, erst dann endet die Partie','Ohne alle Kronen übernimmt alle 40 Jahre die nächste Generation und spielt weiter']],
