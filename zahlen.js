@@ -192,6 +192,37 @@ const NAME_PFLEGE_AB=2, NAME_BODEN_AB=3;
 // Frost kommt obendrauf: zwei Frostmonate im Winter (Januar, Februar, Dezember) FROST_2 Punkte, drei FROST_3, Spätfrost zur Blüte SPAETFROST.
 // Der Rebenpreis schwankt von Januar bis März um REBEN_SCHWANK. STEUER gilt für dich und die Gegner, GEGNER_ABNUTZ ist ihr Nachpflanzen je Hektar und Jahr.
 const VERLUST=[[70,2,4],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPAETFROST=2, REBEN_SCHWANK=.3, STEUER=.2, GEGNER_ABNUTZ=150;
+// ===== Seit 14.2 (Bauplan 14.2 Pflege, Erziehungsform und Boden, 23.11.2026). Alle Zahlen sind Startwerte, gemessen wird in Meilenstein 15.
+// Bestehende Konstanten, die in 14.2 neue Werte bekommen, ändern sich in ihrer Unteretappe: VERLUST (erste Zeile 0 bis 1 Prozent) und
+// PFLEGE_STUFEN (Jungrebe) in 14.2.2, FREI.helfer2 (Premier Cru der Menge-Sorte) in 14.2.3, BODEN_SCHWELLE (0, 10, 40, 90 Punkte) in 14.2.5,
+// DECKEL_BASIS (90, 90, 104), BODEN_ST_OE und PFLEGE_ST_OE (0), BODEN_ST_QP (Liste), LAUB_QP (5) und PFLEGE_PREIS (0) in 14.2.6.
+// Entwicklungspunkte je Weinberg (f.ep): 0 bis EP_MAX, Premier Cru ab EP_PREMIER, Grand Cru ab EP_GRAND, Rebstock nach EP_REBSTOCK_JAHRE Chef-Jahren
+// der Form (Flachbogen und Kordon 7,5, Einzelpfahl 12 Punkte).
+const EP_MAX=100, EP_PREMIER=45, EP_GRAND=90, EP_REBSTOCK_JAHRE=3;
+// Erziehungsform je Weinberg: Punkte je Jahr mit dem Chef (ep), Rebschnitt je Hektar in der Erziehung bis Rebstock (haErz) und danach (ha),
+// Maschine (masch: 1 immer, 'rebstock' erst ab Rebstock, 0 nie), nur für eine Rolle (nur).
+const FORMEN={flach:{name:'Flachbogen',ep:2.5,haErz:250,ha:250,masch:1},kordon:{name:'Kordon',ep:2.5,haErz:500,ha:375,masch:'rebstock'},pfahl:{name:'Einzelpfahl',ep:4,haErz:750,ha:750,masch:0,nur:'spitze'}};
+const FORM_PASST={menge:'flach',sekt:'kordon',spitze:'pfahl'};
+// Faktoren für Menge und Qualitätspunkte je Rolle und Form, die passende Form hat 1 und 1.
+const FORM_WIRKUNG={menge:{flach:[1,1],kordon:[.85,1.15]},sekt:{kordon:[1,1],flach:[1.1,.85]},spitze:{pfahl:[1,1],kordon:[1.1,.85],flach:[1.2,.7]}};
+// Wirkung je Pflegestufe für alle Rollen gleich: Jungrebe, Rebstock, Premier Cru, Grand Cru. Ersetzen PFLEGE_MENGE, SETZ_MENGE und PFLEGE_QP.
+const STUFE_MENGE=[.5,1,1,.9], STUFE_QPF=[.5,.75,1,1.25];
+// Zuwachs nach dem, der schneidet oder düngt: der Chef ganz, Erntehelfer je Stufe (Index 1 bis 3).
+const ZUWACHS={chef:1,helfer:[0,0,.5,.9]};
+// Anteil der Punkte aus dem Rebschnitt und aus einem guten Bodenjahr (9 zu 1, Startwert nach Entscheidung 37). Verwildern ohne Schnitt im
+// ersten, zweiten und ab dem dritten Jahr. Ab Grand Cru bringt jeder Rebschnitt mindestens GC_HALTEN. Chef-Grenze vorbereitet, 3 heißt keine.
+const EP_SCHNITT=.9, EP_BODEN=.1, VERWILDERN=[5,10,20], GC_HALTEN=1, CHEF_SCHNITT_MAX=3;
+// Bodenpunkte je Lage und gutem Jahr, wenn der Chef düngt (Entscheidung 39).
+const BODEN_PUNKTE={einfach:1.5,hoehe:2,sued:3.5};
+// Ansehen bei der Anmeldung: Grundwert der Weinstufe plus 1 je ANS_JE_QP Qualitätspunkte.
+const ANS_JE_QP=5;
+// Jahrhundertjahre ohne Terroir: um JH_ERST, dann alle JH_ABSTAND Jahre, jedes bis zu JH_STREU Jahre früher oder später, je Partie fest gewürfelt.
+const JH_ERST=90, JH_STREU=2;
+// Skala der Qualitätspunkte: mindestens QP_MIN, normaler Wein höchstens QP_MAX, Jahrhundertwein JH_ZUSCHLAG mehr, höchstens QP_MAX_JH.
+// Sonne gibt bis SONNE_QP_MAX. Sommerschnitt von Hand LAUB_HAND_HA Euro je Hektar.
+const QP_MIN=5, QP_MAX=90, QP_MAX_JH=100, JH_ZUSCHLAG=10, SONNE_QP_MAX=5, LAUB_HAND_HA=500;
+// Anspruch je Weinstufe in Qualitätspunkten (Entscheidung 32), ausgeschaltet: ANSPRUCH_PREIS und ANSPRUCH_ANS je fehlendem Punkt stehen auf 0.
+const ANSPRUCH={feder:0,tafel:0,qba:15,kab:30,spat:40,aus:50,ba:60,tba:70,eis:50}, ANSPRUCH_PREIS=0, ANSPRUCH_ANS=0;
 const VERSION='13.8';
 // Seit 13.3.6 (Maik 21.11.2026): Im Umbau starten neue Partien ohne Spielführer, sonst verspricht er Dinge nach den alten Rängen.
 // Mit neuen Texten muss er am Ende wieder an sein (14.4), dann FU_START=1.

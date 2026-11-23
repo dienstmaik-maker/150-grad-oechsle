@@ -18,11 +18,11 @@ const rolleVon=id=>ROLLEN[(SORTEN[id]||{}).rolle];
 // Seit 13.2.2: Schlüssel der Rolle für die Tabellen der Rebpflege, Sorten ohne Rolle rechnen wie die Menge-Sorte.
 const rolleK=id=>(SORTEN[id]||{}).rolle||'menge';
 // Mengen-Faktor der Rebpflege: Setzling nach Zählerstand, ab Rebstock je Rolle.
-const pflegeMenge=(f,id)=>{const st=f.pflSt||0; return st?PFLEGE_MENGE[rolleK(id)][st-1]:SETZ_MENGE[Math.min(SETZ_MENGE.length-1,f.pflZ||0)]};
+const pflegeMenge=(f,id)=>{const st=f.pflSt||0; return st?PFLEGE_MENGE[rolleK(id)][st-1]:SETZ_MENGE[Math.min(SETZ_MENGE.length-1,f.ep||0)]};
 const pflegeQP=(id,st)=>PFLEGE_QP[rolleK(id)][st||0];
 const pflegePreis=(id,st)=>((PFLEGE_PREIS[rolleK(id)]||[])[st||0])||0;
 // Seit 13.2.3: Deckel fürs Öchsle eines Weinbergs aus Rolle, Boden-Stufe und Pflegestufe.
-function deckel(id){const f=S.felder[id]||{}; return DECKEL_BASIS[rolleK(id)]+BODEN_ST_OE*(S.bodenSt||0)+PFLEGE_ST_OE*(f.pflSt||0)}
+function deckel(id){const f=S.felder[id]||{}; return DECKEL_BASIS[rolleK(id)]+BODEN_ST_OE*wbBoden(id)+PFLEGE_ST_OE*(f.pflSt||0)}
 // Obergrenze im Monatsmodell: der Deckel, mit Edelfäulnis bei der Spitzen-Sorte 150°.
 function oeGrenze(id){const f=S.felder[id]; return f&&f.edel&&rolleK(id)==='spitze'?150:deckel(id)}
 const feldId=f=>R().sorten.find(id=>S.felder[id]===f);
@@ -79,13 +79,17 @@ const stufeZu=(z,SW)=>{let s=0; for(let i=1;i<SW.length;i++) if(z>=SW[i]) s=i; r
 const stufeSatz=(s,z,SW,N)=>{if(s>=N.length-1) return `${N[s]}, höher geht es nicht`; const r=SW[s+1]-z; return `${N[s]}, in ${r} ${r===1?'gutem Jahr':'guten Jahren'} ${N[s+1]}`};
 // Seit 13.8.6: Zeile im Winzerboten zur neuen Pflegestufe, beim ersten Mal je Partie mit Moment (S.gesch). Seit 13.8.7 kommt beim ersten Grand Cru
 // jeder Rolle eine Feier, bei der Spitzen-Sorte nur ohne Terroir, sonst gleich der vollendete Weinberg (vollendetPruef).
-const terroir=()=>(S.bodenSt||0)>=BODEN_STUFEN.length-1;
+// Seit 14.2.1: Bodenpunkte je Lage (S.bodenP) statt des Boden-Zählers. wbBodenP ist der Boden eines Weinbergs in Punkten, wbBoden seine Stufe.
+// In 14.2.1 sind noch alle Lagen gleich (1 Punkt je gutem Bodenjahr), ohne id gilt der einfache Hang. S.bodenSt merkt nur die zuletzt gemeldete Stufe.
+const wbBodenP=id=>(S.bodenP||{}).einfach||0;
+const wbBoden=id=>stufeZu(wbBodenP(id),BODEN_SCHWELLE);
+const terroir=id=>wbBoden(id||rolleSorte('spitze'))>=BODEN_STUFEN.length-1;
 function pflegeAuf(Z,id,st){
   const rl=rolleK(id), G=S.gesch=S.gesch||{};
   Z.push(PFLEGE_BOTE[st].replace('{sorte}',SORTEN[id].name));
   if(st===1&&rl==='menge'&&!G.rebstock){G.rebstock=S.jahr; Z.push(GESCH_TEXT.rebstock)}
   if(st===2&&!G.premier){G.premier=S.jahr; Z.push(GESCH_TEXT.premier)}
-  if(st===3&&!G['gc_'+rl]){G['gc_'+rl]=S.jahr; if(!(rl==='spitze'&&terroir())) feierNachDazu({welt:'gc',k:rl,id})}
+  if(st===3&&!G['gc_'+rl]){G['gc_'+rl]=S.jahr; if(!(rl==='spitze'&&terroir(id))) feierNachDazu({welt:'gc',k:rl,id})}
   if(st===3&&rl==='spitze') vollendetPruef(Z);
 }
 function vollendetPruef(Z){
@@ -287,8 +291,9 @@ function saeubern(x,k){
 }
 function save(){try{localStorage.setItem(KEYS[SLOT],JSON.stringify(S));localStorage.setItem(SLOT_KEY,SLOT)}catch(e){}}
 function roh(i){try{const o=JSON.parse(localStorage.getItem(KEYS[i])||'null');return gueltig(o)?o:null}catch(e){return null}}
-function lies(i){const o=roh(i);return o&&o.v13?o:null}
-function liesAlt(i){const o=roh(i);return o&&!o.v13?o:null}
+// Seit 14.2.1: Marke v14. Stände ohne sie (auch aus 13.1 bis 13.8) werden nicht berücksichtigt, nur freundlich abgewiesen (Entscheidung 22).
+function lies(i){const o=roh(i);return o&&o.v14?o:null}
+function liesAlt(i){const o=roh(i);return o&&!o.v14?o:null}
 // Übernimmt einen gelesenen Spielstand und bringt alte Stände auf den heutigen Stand.
 function nimm(o){S=o;if(S.zf==null)S.zf=zfNeu();if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();altDoppelt();altSpende();altKeller();altZeit();altAmt();if(!S.fu)S.fu=fuAlt(); else fuPaketB(); altKomp(); altAns(); altLeute(); altRuf(); altSchaed(); altSekt(); altFrei(); altHefe(); altJh(); altSchau(); altHang()}
 // Seit 8.3: Spielstände ohne Uhr fangen bei 0 an und merken sich, dass sie erst seit 8.3 zählen.
@@ -353,7 +358,7 @@ function dateiLaden(text,i){
   let o=null; try{o=JSON.parse(text)}catch(e){}
   if(lies(i)) return meldung('Das hat nicht geklappt','Der Speicherplatz ist schon belegt.');
   if(!gueltig(o)) return meldung('Das hat nicht geklappt','Die Datei ist kein Spielstand von 150 Grad Öchsle.');
-  if(!o.v13) return meldung('Das geht leider nicht',ALT_SATZ);
+  if(!o.v14) return meldung('Das geht leider nicht',ALT_SATZ);
   o=saeubern(o);
   // Seit 11.3: Die Sicherung trägt das Album mit (Maik 19.11.2026). Es gehört nicht in den Spielstand und geht ins Album des Geräts.
   const alb=o.album; delete o.album;
@@ -612,8 +617,8 @@ function lotWert(l){
 // Seit 13.3.8 (Nachtrag 3): neue Formel, Konstanten bei VERM_GRUND in zahlen.js.
 const haWert=(rl,pfl,bst)=>VERM_GRUND*(VERM_SORTE[rl]||1)*VERM_PFLEGE[pfl||0]*VERM_BODEN[bst||0];
 const kahlWert=bst=>VERM_GRUND*VERM_BODEN[bst||0]*VERM_KAHL;
-function weinbergWert(){let w=0, bep=0; for(const id of Object.keys(S.felder)){const f=S.felder[id], h=(f.reben||0)/HA_REBEN; if(!(h>0)) continue; bep+=h; w+=h*haWert((SORTEN[id]||{}).rolle,f.pflSt,S.bodenSt)}
-  return w+Math.max(0,S.ha-bep)*kahlWert(S.bodenSt)}
+function weinbergWert(){let w=0, bep=0; for(const id of Object.keys(S.felder)){const f=S.felder[id], h=(f.reben||0)/HA_REBEN; if(!(h>0)) continue; bep+=h; w+=h*haWert((SORTEN[id]||{}).rolle,f.pflSt,wbBoden(id))}
+  return w+Math.max(0,S.ha-bep)*kahlWert(wbBoden())}
 function vermoegen(){return Math.round(S.geld-(S.kredit?S.kredit.rest:0)+WEIN_WERT*S.lots.reduce((a,l)=>a+lotWert(l),0)+weinbergWert())}
 function gWeinberg(g){const j=S.jahr-START_JAHR, b=stufeZu(j,BODEN_SCHWELLE), p=stufeZu(j,PFLEGE_SCHWELLE); let rest=g.ha, w=0; for(const [rl,n] of GEGNER_FL){const h=Math.min(rest,n); if(h>0) w+=h*haWert(rl,p,b); rest-=h} return w}
 function gVerm(g){return Math.round(g.geld-g.kredit+gWeinberg(g))}
@@ -1069,7 +1074,7 @@ function wachse(m){
     const f=S.felder[id], so=SORTEN[id]; if(!f.reben) continue;
     if((m===3||m===4)&&w==='frost'){f.frostF=.7; L.push(`Spätfrost schädigt die Blüte beim ${so.name}.`)}
     // Seit 13.2.2: statt der Jungreben der Mengen-Faktor der Rebpflege (pflegeMenge).
-    if(m===5) f.menge=Math.round(f.reben*pflegeMenge(f,id)*so.ertrag*(reg.ertragF||1)*(.6+.4*S.boden/100)*(1+BODEN_ST_MENGE*(S.bodenSt||0))*f.frostF*festR(.9,1.1,fest(6,si,S.jahr,m)));
+    if(m===5) f.menge=Math.round(f.reben*pflegeMenge(f,id)*so.ertrag*(reg.ertragF||1)*(.6+.4*S.boden/100)*(1+BODEN_ST_MENGE*wbBoden(id))*f.frostF*festR(.9,1.1,fest(6,si,S.jahr,m)));
     // Seit 13.2.3: Das Wetter-Öchsle zählt höchstens bis zur Grenze des Weinbergs (oeGrenze: Deckel, Edelfäulnis der Spitzen-Sorte bis 150°).
     if(m===6){f.oe=Math.min(oeGrenze(id),OE_START+zuckerIm(id)+wbonus(w)+festI(-2,2,fest(5,si,S.jahr,m))+(S.spitze?SPITZE_OE:0)); f.reif=5; f.ueber=0; f.plus=0}
     if(m>=7&&f.menge>0&&!f.gelesen){
@@ -1293,7 +1298,7 @@ function maschAbnutzung(reben,M){
   }
 }
 // Version 4.4: ungefährer Listenwert einer Lese als Flaschenwein der Stufe st, ohne Reife und Marktlage.
-function leseWert(id,la,st,liter){const q=feldQ(S.felder[id],la), pfl=S.felder[id].pflSt||0, qp=qpFuer({sorte:id,oe:q.oe,sonne:S.sonne,boden:S.boden,bst:S.bodenSt||0,pfl,laub:S.laubJahr===S.jahr},st);
+function leseWert(id,la,st,liter){const q=feldQ(S.felder[id],la), pfl=S.felder[id].pflSt||0, qp=qpFuer({sorte:id,oe:q.oe,sonne:S.sonne,boden:S.boden,bst:wbBoden(id),pfl,laub:S.laubJahr===S.jahr},st);
   return Math.round(liter*STUFEN[st].preis*(st==='eis'?EIS_WERT[eisStufe(q.oe)].f:1)*(1+qp/100)*(1+pflegePreis(id,pfl))*sternF(id)*(R().preisF||1)/100)*100}
 function feldLiter(f,la){const r=f.reif/100,u=f.ueber/100; return Math.round(f.menge*r*(la==='reif'?1-u:la==='ueber'?u*MOST_UEBER:1-u+u*MOST_UEBER)*leseFaktor(feldId(f)))}
 // Ab wann ein Wein frühestens verkauft werden darf, wenn er jetzt gelesen wird.
@@ -1574,10 +1579,10 @@ function kompAuf(id){
 function neuesSpiel(){
   if(NEU.schwer===MEISTER_STUFE&&!meisterFrei()) NEU.schwer=MEISTER_VON; // seit 13.7.7, gesperrt bis zur ersten Übergabe in den Gesellenjahren
   const reg=REG(NEU.region,!!ROLLEN_NEU);
-  S={v:1,v13:1,zf:zfNeu(),name:NEU.name.trim().slice(0,NAME_MAX)||'Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:startGeld(NEU.schwer),ha:3,hang:{einfach:3,hoehe:0,sued:0},boden:80,bodenSt:0,bodenZ:0,duengungen:0,
+  S={v:1,v13:1,v14:1,zf:zfNeu(),name:NEU.name.trim().slice(0,NAME_MAX)||'Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:startGeld(NEU.schwer),ha:3,hang:{einfach:3,hoehe:0,sued:0},boden:80,bodenSt:0,bodenP:{einfach:0,hoehe:0,sued:0},duengungen:0,
     felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',sonne:0,markt:1,ansehen:0,ansV:1,leuteV:1,
     jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:ALLEIN_HA?0:1,lagerarb:ALLEIN_FASS?0:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,meilen:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],rangMon:{0:START_JAHR*12},freiBote:{},komp:{},kompV:3,v121:1,ein:{f:[]},...(ROLLEN_NEU?{rollen:1}:{})};
-  for(const id of reg.sorten){S.felder[id]={reben:0,pflSt:0,pflZ:0}; feldReset(S.felder[id])}
+  for(const id of reg.sorten){S.felder[id]={reben:0,pflSt:0,ep:0}; feldReset(S.felder[id])}
   etappe3(3,NEU.schwer);
   lohnAbgleich();
   neuePrognose();
@@ -1800,14 +1805,15 @@ function monatLauf(){
     // Reben-Abnutzung: je Sorte ein gewürfelter Anteil aus der Spanne des Bodenschnitts, Frost kommt obendrauf. S.verlust merkt die Zahlen für Aktuelles.
     const schnitt=Math.round(S.bodenSum/S.bodenN), sp=verlustSpanne(schnitt), fp=frostPlus(), rebVor=rebenGesamt(); let totAlle=0;
     // Seit 13.2.1: Boden-Zähler. Ein Jahresschnitt ab BODEN_GUT zählt +1, sonst bleibt er stehen. Die Stufe fällt nie.
-    if(schnitt>=BODEN_GUT) S.bodenZ=(S.bodenZ||0)+1;
-    {const st=Math.max(S.bodenSt||0,stufeZu(S.bodenZ||0,BODEN_SCHWELLE)); if(st>(S.bodenSt||0)){S.bodenSt=st; Z.push(...(BODEN_BOTE[st]||[`🌱 Dein Boden ist jetzt ${BODEN_STUFEN[st]}.`])); if(st>=BODEN_STUFEN.length-1&&S.jhAb==null){S.jhAb=S.jahr+JH_ABSTAND; S.jhV=1} vollendetPruef(Z)}}
+    // Seit 14.2.1 je Lage (S.bodenP), in 14.2.1 noch für alle Lagen gleich.
+    if(schnitt>=BODEN_GUT) for(const k of Object.keys(S.bodenP)) S.bodenP[k]+=1;
+    {const st=Math.max(S.bodenSt||0,wbBoden()); if(st>(S.bodenSt||0)){S.bodenSt=st; Z.push(...(BODEN_BOTE[st]||[`🌱 Dein Boden ist jetzt ${BODEN_STUFEN[st]}.`])); if(st>=BODEN_STUFEN.length-1&&S.jhAb==null){S.jhAb=S.jahr+JH_ABSTAND; S.jhV=1} vollendetPruef(Z)}}
     S.verlust={};
     for(const [si,id] of R().sorten.entries()){
       const f=S.felder[id]; feldReset(f);
       // Seit 13.2.2: Rebpflege-Zähler der Sorte. Bis Ende April des abgelaufenen Jahres geschnitten (f.schnitt) zählt PFLEGE_GUT, sonst PFLEGE_PATZER zurück.
       if(f.reben){
-        const vor=f.pflSt||0; f.pflZ=f.schnitt===S.jahr-1?(f.pflZ||0)+PFLEGE_GUT:Math.max(0,(f.pflZ||0)-PFLEGE_PATZER); f.pflSt=stufeZu(f.pflZ,PFLEGE_SCHWELLE);
+        const vor=f.pflSt||0; f.ep=f.schnitt===S.jahr-1?(f.ep||0)+PFLEGE_GUT:Math.max(0,(f.ep||0)-PFLEGE_PATZER); f.pflSt=stufeZu(f.ep,PFLEGE_SCHWELLE);
         if(f.pflSt>vor) pflegeAuf(Z,id,f.pflSt);
         else if(f.pflSt<vor) Z.push(`✂️ Dein ${SORTEN[id].name} fällt auf ${PFLEGE_STUFEN[f.pflSt]} zurück, er wurde nicht rechtzeitig geschnitten.`);
       }
@@ -2782,7 +2788,7 @@ function lese(id,la,p,hefe){
   const f=S.felder[id], q=feldQ(f,la), l=Math.round(feldLiter(f,la)*p); if(l<=0) return;
   const L=leistung(), M=maschLeistung();
   if(M>0&&!spitzeId(id)) maschAbnutzung(f.reben*Math.min(1,M/Math.max(1,rebenGesamt()-handReben())),M);
-  const neu={id:S.nextId++,sorte:id,jahrgang:S.jahr,liter:l,oe:q.oe,leseart:la,edel:f.edel,eis:f.gefroren,...(q.masch?{masch:1}:{}),status:'trauben',stufe:null,qp:0,fassMonate:0,flMonate:0,sonne:S.sonne,...(S.laubJahr===S.jahr?{laub:1}:{}),boden:S.boden+4*R().sorten.filter(x=>S.felder[x].gelesen||S.felder[x].teil).length,bst:S.bodenSt||0,pfl:f.pflSt||0,...(f.jh?{jh:1}:{})};
+  const neu={id:S.nextId++,sorte:id,jahrgang:S.jahr,liter:l,oe:q.oe,leseart:la,edel:f.edel,eis:f.gefroren,...(q.masch?{masch:1}:{}),status:'trauben',stufe:null,qp:0,fassMonate:0,flMonate:0,sonne:S.sonne,...(S.laubJahr===S.jahr?{laub:1}:{}),boden:S.boden+4*R().sorten.filter(x=>S.felder[x].gelesen||S.felder[x].teil).length,bst:wbBoden(id),pfl:f.pflSt||0,...(f.jh?{jh:1}:{})};
   // Seit 13.5.8: Die Sekt-Trauben liegen erst im Keller (sektTr), Kosten und Ansehen kommen mit dem Umlagern in den Sektkeller (sektUmlagern).
   if(sk){const h=hefe===HEFE_LANG?HEFE_LANG:SEKT_REIFE; Object.assign(neu,{status:'sektTr',stufe:SEKT_GRUND,sekt:true,edel:false,eis:false,...(h>SEKT_REIFE?{hefe:h}:{}),med:[],bund:false});
     // Seit 13.4.9: Sekt vom einfachen Hang bekommt SEKT_EINFACH_QP Punkte weniger, anteilig nach sektEinfach(). ab merkt den Abzug für die Anzeige.
