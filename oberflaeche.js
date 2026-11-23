@@ -235,7 +235,8 @@ function eisFehlt(f){const g=pruefeQualitaet('eis',feldQ(f,'reif')).filter(x=>!x
 // Seit 8.0: Satz zur Handlese für Felder mit Edelfäulnis, vor leer.
 function handText(f,vor){
   if(!handFeld(f)||!(f.menge>0)||f.gelesen) return '';
-  const n=handBedarf(f), w=f.gefroren?'Gefrorene Trauben':'Trauben mit Edelfäulnis';
+  // Seit 14.2.4 auch für Weinberge ohne Maschine (Platzhalter, Wortlaut in Meilenstein 17).
+  const n=handBedarf(f), w=f.gefroren?'Gefrorene Trauben':f.edel?'Trauben mit Edelfäulnis':'Diesen Weinberg';
   if(handFehlt(f)) return `${vor}<b>✋ Handlese:</b> <span class="rot">${w} liest man von Hand, dafür brauchst du ${n} Erntehelfer, du hast ${S.helfer}. Liest du so, liest die Maschine, und es gibt höchstens Qualitätswein.</span>`;
   return `${vor}<b>✋ Handlese:</b> ${w} liest man von Hand. ${n?`Dafür brauchst du ${n} Erntehelfer, ${S.helfer>=n?`deine ${S.helfer} reichen`:`du hast ${S.helfer}, mehr Trauben bleiben hängen`}`:'Dieses Feld schafft deine Familie allein'}.`;
 }
@@ -1119,6 +1120,12 @@ function bueroEinst(){
       i:'Schreib oder sprich deine Idee ins Textfeld, das Mikrofon deiner Tastatur schreibt mit. Danach schickst du sie über WhatsApp oder „Teilen“ an Maik. Das Spiel selbst verschickt nichts und kennt keine Nummer, den Empfänger wählst du aus deinen Kontakten. „Was geplant ist“ zeigt, woran schon gearbeitet wird.'})
     +`<div class="fussnote">Bilder, Musik und Geräusche sind mit KI erstellt (Musik mit Treblo, Geräusche mit ElevenLabs, elevenlabs.io).</div>`;
 }
+// Seit 14.2.4: Erziehungsform. Gefragt wird beim ersten Pflanzen in einen leeren Weinberg, nicht in den Lehrjahren (Entscheidung 19), ohne Wahl gilt die passende.
+const formFrage=id=>!(S.felder[id]||{}).reben&&S.schwer!=='einfach'&&formenFuer(id).length>1;
+// Wer liest in diesem Weinberg mit dieser Form. Platzhalter, Wortlaut in Meilenstein 17.
+const formLese=(id,fm)=>{const F=FORMEN[fm]; return R().steil?'von Hand, an der Mosel fährt keine Maschine':spitzeId(id)?'von Hand, auf dem Südhang lesen immer Arbeiter':F.masch===1?'Maschine erlaubt':F.masch?(fm===formVon(id)&&!inErziehung(id)?'Maschine erlaubt, der Rebstock steht':'von Hand bis zum Rebstock, danach Maschine'):'nur von Hand'};
+// Steckbrief einer Form für die Wahl und das Umstellen.
+const formSteck=(id,fm)=>{const F=FORMEN[fm], w=(FORM_WIRKUNG[rolleK(id)]||{})[fm]||[1,1]; return `${Math.round(w[0]*100)} % Menge, ${Math.round(w[1]*100)} % Qualität, ${epT(F.ep)} Punkte im Jahr, Rebschnitt ${eur(F.haErz)} je Hektar${F.ha!==F.haErz?` bis zum Rebstock, danach ${eur(F.ha)}`:''}, Lese ${formLese(id,fm)}`};
 // Weinberg (seit 7.4 auf dem Fenster-Baustein): je Sorte ein Fenster (seit 4.4 oben), dann Düngung und Übersicht, darunter zugeklappt der Steckbrief des Gebiets.
 // Sorten, die der Rang noch sperrt, sind seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten). Lese-Hinweise und rote Warnungen bleiben sichtbar, die Erklärungen stehen im i.
 function vBerg(){
@@ -1140,6 +1147,9 @@ function vBerg(){
       <div class="kv"><span>Entwicklungspunkte</span><span>${epT(f.ep||0)} von ${EP_MAX}</span></div>
       <div class="kv"><span>Wirkung der Stufe</span><span>${Math.round(STUFE_MENGE[st]*100)}\u00a0% Menge, ${Math.round(STUFE_QPF[st]*100)}\u00a0% Qualität</span></div>
       <div class="kv"><span>Rebschnitt durch</span><span>${helferSchneidet(id)?`Erntehelfer Stufe ${leuteSt('helfer')}`:'dich selbst'}, +${epT(epJahrSoll(id))} Punkte im guten Jahr</span></div>`}
+    // Seit 14.2.4: Erziehungsform mit Wirkung und Lese, nicht in den Lehrjahren. Platzhalter, Wortlaut in Meilenstein 17.
+    if(f.reben&&S.schwer!=='einfach'){const w=formWirk(id); z+=`<div class="kv"><span>Erziehungsform</span><span>${FORMEN[formVon(id)].name}, ${Math.round(w[0]*100)} % Menge, ${Math.round(w[1]*100)} % Qualität</span></div>
+      <div class="kv"><span>Lese</span><span>${formLese(id,formVon(id))}</span></div>`}
     if(f.reben) z+=`
       <div class="kv"><span>Deckel</span><span>${deckel(id)}° Öchsle</span></div>
       <div class="kv"><span>Rebschnitt ${S.jahr}</span><span${f.schnitt!==S.jahr&&m>SCHNITT_BIS?' class="rot"':''}>${f.schnitt===S.jahr?'✂️ geschnitten':m<=SCHNITT_BIS?'offen bis Ende April':`nicht geschnitten, verwildert um ${VERWILDERN[Math.min(VERWILDERN.length,(f.wild||0)+1)-1]} Punkte`}</span></div>`;
@@ -1162,10 +1172,10 @@ function vBerg(){
     const sektOhne=sektSorte(id)&&!S.sektkeller, kannLesen=m>=7&&f.menge>0&&!f.gelesen&&(m<11||f.gefroren||f.edel)&&!sektOhne, pflanz=m<=2&&sorteFrei(id)&&!sektOhne, schnitt=schnittOffen(id), haengt=f.reben&&f.menge>0&&!f.gelesen&&m>5&&m<7;
     h+=fenster('feld_'+id,titel,z,{buch:m>=7?'lese':'berg',
       hin:[mr&&m<=2&&S.verlust&&S.verlust[id]>0&&`${WM} pflanzt beim Weiterblättern nach.`,helferKann(3)&&pflanzPlan(id)>=10&&`🌱 Deine Erntehelfer pflanzen bis März ${rbn(pflanzPlan(id))} Reben nach.${pflanzPlan(id)<pflanzSoll(id)&&!pflanzMitA(id)?' Den übrigen Platz bekommt dein Auftrag.':''}`,
-        helferSchneidet(id)&&schnitt&&'✂️ Deine Erntehelfer schneiden beim Weiterblättern, sobald das Geld reicht.',(()=>{const ww=wagnisWarnung(); return ww&&ww.ids.includes(id)&&`${WM} warnt: ${Math.round(ww.anteil*100)} % deiner Ernte hängen im Wagnis.`})()],
+        helferSchneidet(id)&&schnitt&&'✂️ Deine Erntehelfer schneiden beim Weiterblättern, sobald das Geld reicht.',helferSchneidet(id)&&laubHandOffen(id)&&'✂️ Deine Erntehelfer machen den Sommerschnitt von Hand, sobald das Geld reicht.',(()=>{const ww=wagnisWarnung(); return ww&&ww.ids.includes(id)&&`${WM} warnt: ${Math.round(ww.anteil*100)} % deiner Ernte hängen im Wagnis.`})()],
       // Seit 13.4.6: Am Lese-Knopf steht die Chance des Wagnisses in Worten.
-      links:kannLesen&&wagnisChance(id)!=null&&chanceZeige(wagnisChance(id))?`🎲 Warten: Chance ${chanceZeige(wagnisChance(id))}${chanceRat(wagnisChance(id))?`, der alte Winzer würde ${chanceRat(wagnisChance(id))}`:''}`:sektOhne?'Die Sekt-Sorte macht nur Sekt, erst den Sektkeller kaufen.':pflanz&&platzFuer(id)<10?(spitzeId(id)&&frei>=10?'Auf deinem Südhang ist kein Platz frei.':'Auf deinem Land ist kein Platz mehr frei.'):haengt?'Lese ab August.':schnitt?`✂️ Rebschnitt bis Ende April: ${eur(schnittKosten(id))}`:'',
-      kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,...wagnisKnoepfe(id),schnitt&&!helferSchneidet(id)&&`<button class="klein" data-a="schneiden" data-id="${id}" ${S.geld<schnittKosten(id)?'disabled':''}>Schneiden</button>`,helferKann(1)&&f.reben&&`<button class="klein" data-a="schneider" data-id="${id}">${helferSchneidet(id)?'Selbst schneiden':'Schnitt abgeben'}</button>`,pflanz&&(helferKann(3)?`<button class="klein" data-a="pflanzAuftrag" data-id="${id}">Auftrag</button>`:`<button class="klein" data-a="pflanzen" data-id="${id}" ${platzFuer(id)<10?'disabled':''}>Pflanzen</button>`),pflanz&&f.reben&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
+      links:kannLesen&&wagnisChance(id)!=null&&chanceZeige(wagnisChance(id))?`🎲 Warten: Chance ${chanceZeige(wagnisChance(id))}${chanceRat(wagnisChance(id))?`, der alte Winzer würde ${chanceRat(wagnisChance(id))}`:''}`:sektOhne?'Die Sekt-Sorte macht nur Sekt, erst den Sektkeller kaufen.':pflanz&&platzFuer(id)<10?(spitzeId(id)&&frei>=10?'Auf deinem Südhang ist kein Platz frei.':'Auf deinem Land ist kein Platz mehr frei.'):laubHandOffen(id)?`✂️ Sommerschnitt von Hand: ${eur(laubHandKosten(id))}`:haengt?'Lese ab August.':schnitt?`✂️ Rebschnitt bis Ende April: ${eur(schnittKosten(id))}`:'',
+      kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,...wagnisKnoepfe(id),schnitt&&!helferSchneidet(id)&&`<button class="klein" data-a="schneiden" data-id="${id}" ${S.geld<schnittKosten(id)?'disabled':''}>Schneiden</button>`,laubHandOffen(id)&&!helferSchneidet(id)&&`<button class="klein" data-a="sommerHand" data-id="${id}" ${S.geld<laubHandKosten(id)?'disabled':''}>Sommerschnitt</button>`,f.reben&&S.schwer!=='einfach'&&m<=SCHNITT_BIS&&formenFuer(id).length>1&&`<button class="klein" data-a="formAendern" data-id="${id}">Form ändern</button>`,helferKann(1)&&f.reben&&`<button class="klein" data-a="schneider" data-id="${id}">${helferSchneidet(id)?'Selbst schneiden':'Schnitt abgeben'}</button>`,pflanz&&(helferKann(3)?`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzAuftrag'}" data-id="${id}" data-weiter="pflanzAuftrag">Auftrag</button>`:`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzen'}" data-id="${id}" data-weiter="pflanzen" ${platzFuer(id)<10?'disabled':''}>Pflanzen</button>`),pflanz&&f.reben&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
   }
   h+=fenster('duengung','Düngung',`<div class="kv"><span>Boden-Stufe</span><span>${stufeSatz(wbBoden(),wbBodenP(),BODEN_SCHWELLE,BODEN_STUFEN)}</span></div>
     <div class="kv"><span>Gute Bodenjahre</span><span>${wbBodenP()}</span></div><div class="mut">Ein Jahresschnitt ab ${BODEN_GUT} % zählt als gutes Bodenjahr.</div>
@@ -2275,6 +2285,28 @@ const AKT={
   // Seit 14.2.3: Rebschnitt je Weinberg abgeben oder selbst machen, Düngen für das ganze Weingut.
   schneider(d){const f=S.felder[d.id]; if(!f||!helferKann(1)) return; f.schneider=f.schneider==='helfer'?'chef':'helfer'; save(); render()},
   duengWer(){if(!helferKann(1)) return; S.duengWer=S.duengWer==='helfer'?'chef':'helfer'; save(); render()},
+  // Seit 14.2.4: Wahl der Erziehungsform beim ersten Pflanzen, als halbhohes Fenster. In den Gesellenjahren mit dem Rat des alten Winzers und dem Warum,
+  // in der Meisterprüfung ohne Rat (Annahme von Claude: der Steckbrief jeder Form steht in beiden). Platzhalter, Wortlaut in Meilenstein 17.
+  formWahl(d){const id=d.id, rl=rolleK(id), rat=S.schwer==='mittel', weiter=d.weiter==='pflanzAuftrag'?'pflanzAuftrag':'pflanzen';
+    openSheet(`<h3>${esc(SORTEN[id].name)}: Erziehungsform</h3><p class="mut">${FORM_WAHL_SATZ}</p>${rat?`<p>👴 ${FORM_RAT[rl]}</p>`:''}
+      ${formenFuer(id).map(fm=>`<div class="kv"><span><b>${FORMEN[fm].name}</b>${rat&&fm===FORM_PASST[rl]?' 👴':''}</span><span>${formSteck(id,fm)}</span></div>${rat&&fm==='pfahl'?`<div class="mut">${FORM_PFAHL_HAND}</div>`:''}<div class="mitte"><button data-a="formNimm" data-id="${id}" data-form="${fm}" data-weiter="${weiter}">${FORMEN[fm].name}</button></div>`).join('')}
+      <div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`)},
+  formNimm(d){const f=S.felder[d.id]; if(!f||f.reben||!formenFuer(d.id).includes(d.form)) return; f.form=d.form; closeSheet(); AKT[d.weiter==='pflanzAuftrag'?'pflanzAuftrag':'pflanzen']({id:d.id})},
+  // Seit 14.2.4: Umstellen mit Sicherheitsabfrage (Annahme 12), nicht in den Lehrjahren, nur von Januar bis April.
+  formAendern(d){const id=d.id, alt=formVon(id), andere=formenFuer(id).filter(x=>x!==alt);
+    if(andere.length===1) return AKT.formUmFrage({id,form:andere[0]});
+    openSheet(`<h3>${esc(SORTEN[id].name)}: Form ändern</h3><p class="mut">Jetzt am ${FORMEN[alt].name}. ${FORM_WAHL_SATZ}</p>
+      ${andere.map(fm=>`<div class="kv"><span><b>${FORMEN[fm].name}</b></span><span>${formSteck(id,fm)}</span></div><div class="mitte"><button data-a="formUmFrage" data-id="${id}" data-form="${fm}">${FORMEN[fm].name}</button></div>`).join('')}
+      <div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`)},
+  formUmFrage(d){const id=d.id, f=S.felder[id], k=formUmKosten(id,d.form);
+    openSheet(`<h3>Auf ${FORMEN[d.form].name} umstellen?</h3><p>Der ${esc(SORTEN[id].name)} fängt mit der Erziehung von vorn an: Die ${epT(f.ep||0)} Entwicklungspunkte fallen auf 0, die Stufe auf ${PFLEGE_STUFEN[0]}. Die Reben bleiben stehen.</p><p class="mut">Das Umstellen kostet einen Rebschnitt der neuen Form, ${eur(k)}, und zählt als Rebschnitt ${S.jahr}. ${formSteck(id,d.form)}.</p>
+      <div class="btns"><button class="sec" data-a="close">Abbrechen</button><button class="wag" data-a="formUm" data-id="${id}" data-form="${d.form}" ${S.geld<k?'disabled':''}>Umstellen</button></div>`)},
+  formUm(d){const id=d.id, f=S.felder[id]; if(!f||!f.reben||S.schwer==='einfach'||S.monat>SCHNITT_BIS||!formenFuer(id).includes(d.form)||d.form===formVon(id)) return closeSheet();
+    const k=formUmKosten(id,d.form); if(S.geld<k) return meldung('Zu wenig Geld',`Das Umstellen kostet ${eur(k)}.`);
+    formUmstellen(id,d.form); fx('schere'); save(); render(); meldung('Umgestellt',`Der ${SORTEN[id].name} steht jetzt am ${FORMEN[d.form].name} und fängt als ${PFLEGE_STUFEN[0]} von vorn an.`)},
+  // Seit 14.2.4: Sommerschnitt von Hand im Juni (Annahme 18). Platzhalter, Wortlaut in Meilenstein 17.
+  sommerHand(d){const id=d.id; if(!laubHandOffen(id)) return; const k=laubHandKosten(id); if(S.geld<k) return meldung('Zu wenig Geld',`Der Sommerschnitt von Hand kostet ${eur(k)}.`);
+    const a=laubHand(id); fx('schere'); save(); render(); meldung('Sommerschnitt',`Der ${SORTEN[id].name} ist für ${eur(k)} von Hand geschnitten: Die Lese ${S.jahr} bekommt ${LAUB_QP} Qualitätspunkte und ${Math.round(LAUB_MENGE*100)} % mehr Menge${a?`, dazu +${a} Ansehen`:''}.`)},
   pflanzen(d){
     if(!sorteFrei(d.id)) return meldung('Noch nicht',`${SORTEN[d.id].name} kannst du ab dem Rang ${RAENGE[sorteAb(d.id)].name} pflanzen.`);
     if(sektSorte(d.id)&&!S.sektkeller) return meldung('Erst der Sektkeller',`Die ${ROLLEN.sekt.name} macht nur Sekt. Kauf erst den Sektkeller im Keller.`);
@@ -2305,7 +2337,7 @@ const AKT={
     const f=S.felder[d.id];
     mengeSheet({titel:`${SORTEN[d.id].name} roden`,text:`Roden kostet ${eur2(.5/STOCK_F)} je Rebe. Die Fläche wird frei für andere Sorten.${rolleK(d.id)==='menge'?' '+SUED_SATZ.umpflanzen:''}`,max:f.reben,step:10,start:0,okText:'Roden',zahl:rbn,
       info:n=>`<b>${rbn(n)} Reben</b>kostet ${eur(n*.5)}`,
-      ok:n=>{zahle(n*.5);f.reben-=n}});
+      ok:n=>{zahle(n*.5);f.reben-=n;if(!f.reben) delete f.form}});
   },
   lesen(d){
     const f=S.felder[d.id], so=SORTEN[d.id];

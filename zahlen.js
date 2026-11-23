@@ -224,6 +224,13 @@ const JH_ERST=90, JH_STREU=2;
 const QP_MIN=5, QP_MAX=90, QP_MAX_JH=100, JH_ZUSCHLAG=10, SONNE_QP_MAX=5, LAUB_HAND_HA=500;
 // Anspruch je Weinstufe in Qualitätspunkten (Entscheidung 32), ausgeschaltet: ANSPRUCH_PREIS und ANSPRUCH_ANS je fehlendem Punkt stehen auf 0.
 const ANSPRUCH={feder:0,tafel:0,qba:15,kab:30,spat:40,aus:50,ba:60,tba:70,eis:50}, ANSPRUCH_PREIS=0, ANSPRUCH_ANS=0;
+// Seit 14.2.4: Texte zur Erziehungsform und zum Sommerschnitt von Hand. Platzhalter, Wortlaut in Meilenstein 17.
+const FORM_RAT={menge:'Der alte Winzer rät zum Flachbogen: „Der trägt viel, der Schnitt ist billig, und die Maschine darf lesen. Genau das will die Menge-Sorte.“',
+  sekt:'Der alte Winzer rät zum Kordon: „Am Kordon hängen die Trauben gleichmäßig und luftig, das gibt den feinsten Grundwein. Bis zum Rebstock ist er teuer und will von Hand gelesen werden, danach darf die Maschine.“',
+  spitze:'Der alte Winzer rät zum Einzelpfahl: „Jeder Stock steht für sich, das gibt wenig Menge, aber die besten Trauben, und am Pfahl wächst der Weinberg am schnellsten zum Grand Cru.“'};
+const FORM_PFAHL_HAND='Am Einzelpfahl liest du immer von Hand, eine Maschine passt nicht in den Weinberg.';
+const FORM_WAHL_SATZ='Die Form wählst du einmal für den Weinberg. Wer später umstellt, fängt mit der Erziehung von vorn an.';
+const LAUB_HAND_BOTE='✂️ Ab jetzt kannst du im Juni den Sommerschnitt von Hand machen, im Weinberg bei jeder Sorte. Eine Maschine kommt in deine steilen Hänge nicht.';
 const VERSION='13.8';
 // Seit 13.3.6 (Maik 21.11.2026): Im Umbau starten neue Partien ohne Spielführer, sonst verspricht er Dinge nach den alten Rängen.
 // Mit neuen Texten muss er am Ende wieder an sein (14.4), dann FU_START=1.
