@@ -565,7 +565,7 @@ function vWeltschau(){
   return fenster('weltschau','Weltweinschau',z+`<div class="mut">${satz}</div>${K?`<div class="kv"><span>⭐ Der Favorit</span><span>${esc(K.fav.split(',')[0])}</span></div><div class="mut"><small>${esc(K.gesch||'')}</small></div>${A.schauB||(s&&s.ein)?'':`<div class="mut">Die erste Krone gibt es im ${MON[WELT_MONAT]} nach deiner ersten Anmeldung im ${MON[WELT_ANM]}.</div>`}`:''}`,{
     stand:K?`${kronen().length} von ${KRONEN.length} Kronen`:'',
     kn:schauAnm()?[pk('schau',s.ein?'Tauschen':n?'Wein anmelden':'Ansehen','',{sec:!!s.ein||!n})]:[],
-    i:`Jedes Jahr im ${MON[WELT_MONAT]} ist Weltweinschau auf dem Dorfplatz, angemeldet wird im ${MON[WELT_ANM]}. Es geht um eine Krone nach der anderen: ${KRONEN.map(X=>`die ${X.name} mit ${X.was}`).join(', ')}. Verlierst du, ist im nächsten Jahr dieselbe Krone dran, gewonnene Kronen bleiben, auch nach einer Abwahl. Jede Krone bringt ${KRONE_ANS} Ansehen. Mit der dritten wirst du ${ehrP()}, danach kommen die letzte Übergabe und die Chronik. Ein Jahrhundertwein hat immer ${JH_QP} Punkte.`});
+    i:`Jedes Jahr im ${MON[WELT_MONAT]} ist Weltweinschau auf dem Dorfplatz, angemeldet wird im ${MON[WELT_ANM]}. Es geht um eine Krone nach der anderen: ${KRONEN.map(X=>`die ${X.name} mit ${X.was}`).join(', ')}. Verlierst du, ist im nächsten Jahr dieselbe Krone dran, gewonnene Kronen bleiben, auch nach einer Abwahl. Jede Krone bringt ${KRONE_ANS} Ansehen. Mit der dritten wirst du ${ehrP()}, danach kommen die letzte Übergabe und die Chronik. Ein Jahrhundertwein hat ${JH_ZUSCHLAG} Punkte mehr, höchstens ${QP_MAX_JH}.`});
 }
 // Fenster "Weinbauverband" im Rathaus, nur mit Amt (im Amt oder abgewählt): Balken mit Marke, Amtszeiten, nächste Wahl, im Wahlkampf der Herausforderer
 // und der Knopf "Stimmen kaufen". Die Regeln stehen im i.
@@ -1989,8 +1989,8 @@ const AKT={
     const s=S.schau; if(!s) return; const K=KRONEN[s.kl], e=s.ein, an=schauAnm(), ls=an?S.lots.filter(l=>schauFaehig(l)).sort((a,b)=>schauPunkte(b)-schauPunkte(a)):[];
     wettSheet(`${sbild('weltweinschau')}<h3>${K.sym} ${WETTNAME.welt} ${S.jahr}: ${K.name}</h3>
       ${e?`<p>Angemeldet: <b>${esc(e.name)}</b>. Die Schau ist im ${MON[WELT_MONAT]}, das Ergebnis steht im Winzerboten danach.${an?' Bis zum Monatsende kannst du noch tauschen.':''}</p>`:''}
-      <p class="mut">${kroneText(K)} Zugelassen sind verkaufsreife Weine aus der Flasche, nicht gepanscht und lange genug gelagert, auch gereifte und schon prämierte. Es zählen die Punkte. Ein Jahrhundertwein hat immer ${JH_QP}. Als Favorit gilt ${esc(s.feld.find(x=>x.fav).name)}.</p>
-      ${!an?'':ls.length?ls.map(l=>`<button class="wahl ${e&&e.id===l.id?'an':''}" data-a="schauJa" data-id="${l.id}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${jhWein(l)?`Jahrhundertwein, ${JH_QP} Punkte`:`${l.qp} Qualitätspunkte${reifeBonus(l)?` · Reife +${reifeBonus(l)}`:''}`}</span></button>`).join(''):`<div class="card mut">Du hast gerade keinen zugelassenen Wein für die ${K.name}.</div>`}
+      <p class="mut">${kroneText(K)} Zugelassen sind verkaufsreife Weine aus der Flasche, nicht gepanscht und lange genug gelagert, auch gereifte und schon prämierte. Es zählen die Punkte. Ein Jahrhundertwein hat ${JH_ZUSCHLAG} Punkte mehr, höchstens ${QP_MAX_JH}. Als Favorit gilt ${esc(s.feld.find(x=>x.fav).name)}.</p>
+      ${!an?'':ls.length?ls.map(l=>`<button class="wahl ${e&&e.id===l.id?'an':''}" data-a="schauJa" data-id="${l.id}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${jhWein(l)?`Jahrhundertwein, ${l.qp} Punkte`:`${l.qp} Qualitätspunkte${reifeBonus(l)?` · Reife +${reifeBonus(l)}`:''}`}</span></button>`).join(''):`<div class="card mut">Du hast gerade keinen zugelassenen Wein für die ${K.name}.</div>`}
       <div class="btns"><button class="sec" data-a="close">${e||!ls.length?'Schließen':'Später entscheiden'}</button></div>`);
   },
   schauJa(d){
@@ -2484,7 +2484,8 @@ const AKT={
     if(s.ans&&!ill&&erst) AG.push(ak);
     // Seit 13.6.2: Der Jahrhundertwein bringt bei der Anmeldung einmal JH_ANS Ansehen dazu, je Jahrgang einmal (S.jhAns).
     const jhA=jhWein(l)&&!ill&&!(S.jhAns=S.jhAns||[]).includes(l.jahrgang); if(jhA) S.jhAns.push(l.jahrgang);
-    const ans=(s.ans&&!ill&&erst?ruhm(s.ans+ansZuschlag(l),0,'Weine'):0)+(jhA?ruhm(JH_ANS,0,'Weine'):0);closeSheet();save();render();fx('stempel');
+    // Seit 14.2.6: plus 1 Ansehen je ANS_JE_QP Qualitätspunkte, minus ANSPRUCH_ANS je fehlendem Punkt zum Anspruch (ausgeschaltet).
+    const ans=(s.ans&&!ill&&erst?ruhm(s.ans+ansZuschlag(l)-ANSPRUCH_ANS*anspruchFehlt(st,l.qp),0,'Weine'):0)+(jhA?ruhm(JH_ANS,0,'Weine'):0);closeSheet();save();render();fx('stempel');
     meldung('Angemeldet',`${lotName(l)} steht jetzt mit ${l.qp} Qualitätspunkten im Kellerbuch.`+(ill?` Der Beamte hat ${eur(sg)} eingesteckt. Bis der Wein verkauft ist, darf ihn kein Prüfer finden.`:'')+(ans?` +${ans} Ansehen.`:s.ans&&!ill?' Ansehen gab es für diesen Jahrgang und diese Stufe schon.':'')+(st==='feder'?' Federweißer muss noch diesen Monat in die Flasche.':' Jetzt darf er abgefüllt werden.')+kw,'kellerbuch');
   },
   abfuellen(d){

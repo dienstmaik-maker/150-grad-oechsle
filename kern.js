@@ -690,7 +690,7 @@ function reifeFaktor(l){const L=lager(l);return l.status==='flasche'?Math.min(4,
 function lotWert(l){
   if(l.status==='trauben') return 0;
   if(!l.stufe) return l.liter*2;
-  return l.liter*STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*(1+pflegePreis(l.sorte,l.pfl))*reifeFaktor(l)*sektF(l)*sternF(l.sorte)*(l.status==='fass'?.7:1);
+  return l.liter*STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*(1+pflegePreis(l.sorte,l.pfl))*anspruchF(l.stufe,l.qp)*reifeFaktor(l)*sektF(l)*sternF(l.sorte)*(l.status==='fass'?.7:1);
 }
 // Seit 13.3.8 (Nachtrag 3): neue Formel, Konstanten bei VERM_GRUND in zahlen.js.
 const haWert=(rl,pfl,bst)=>VERM_GRUND*(VERM_SORTE[rl]||1)*VERM_PFLEGE[pfl||0]*VERM_BODEN[bst||0];
@@ -741,7 +741,7 @@ function ladenPreis(l,r){return Math.round(preis(l)*LADEN_AUF*100)/100}
 
 /* ================= Wettbewerbe ================= */
 function wettRang(){const t=S.wett&&S.wett.typ; return t==='bund'?R_BUND:R_LAND}
-// Seit 13.6.2: Ein Jahrhundertwein hat feste Punkte (JH_QP), Lagerjahre geben ihm nichts dazu.
+// Seit 13.6.2: Lagerjahre geben einem Jahrhundertwein nichts dazu. Seit 14.2.6 zählen seine eigenen Punkte samt JH_ZUSCHLAG (qpFuer).
 function reifeBonus(l){if(jhWein(l)) return 0; return Math.min(12,Math.round((reifeFaktor(l)-1)*8))}
 function wettFaehig(l){
   const w=S.wett; if(!w||!l||!l.stufe||l.pansch) return false;
@@ -758,7 +758,7 @@ function neuerWettbewerb(typ){
   S.wett={typ,feld:F,ein:null,zufall:rint(-4,4)};
 }
 // Punkte eines Weins im laufenden Wettbewerb. Stehen beim Einreichen fest.
-function wettPunkte(l){const w=S.wett;return (jhWein(l)?JH_QP:l.qp)+(w.typ!=='land'?reifeBonus(l):0)+w.zufall+(R().wettPlus||0)}
+function wettPunkte(l){const w=S.wett;return l.qp+(w.typ!=='land'?reifeBonus(l):0)+w.zufall+(R().wettPlus||0)}
 // Wertung zu Beginn des Monatswechsels nach der Ausschreibung, das Ergebnis kommt als Thema in die Zeitung.
 // Medaille und Qualitätspunkte bekommt der Wein nur, wenn er noch im Keller ist. Ansehen und Preisgeld gibt es immer.
 // Seit 13.6.3 nur noch Landesprämierung und Bundeswettbewerb, die Weltweinschau wertet schauAuswerten.
@@ -804,8 +804,8 @@ function kroneKl(){const i=KRONEN.findIndex(K=>!kroneHat(K.k)); return i<0?null:
 const kroneWein=(l,kl)=>{const K=KRONEN[kl]; return K.sekt?!!l.sekt:!l.sekt&&K.stufen.includes(l.stufe)};
 // Regeln wie bisher: abgefüllt, nicht gepanscht, lange genug gelagert, dazu die Klasse.
 function schauFaehig(l,s=S.schau){return !!(s&&l&&l.stufe&&!l.pansch&&l.status==='flasche'&&l.flMonate>=lager(l).min&&kroneWein(l,s.kl))}
-// Es zählen die Punkte wie bisher (mit Reife), beim Jahrhundertwein die festen JH_QP. Sie stehen beim Einreichen fest.
-function schauPunkte(l,s=S.schau){return (jhWein(l)?JH_QP:l.qp)+reifeBonus(l)+s.zufall+(R().wettPlus||0)}
+// Es zählen die Punkte wie bisher (mit Reife), seit 14.2.6 auch beim Jahrhundertwein seine eigenen. Sie stehen beim Einreichen fest.
+function schauPunkte(l,s=S.schau){return l.qp+reifeBonus(l)+s.zufall+(R().wettPlus||0)}
 function schauNeu(){
   const kl=kroneKl(); if(kl==null) return;
   const K=KRONEN[kl], d=DIFF[S.schwer].feld, namen=misch(WELT_GUETER).slice(0,8);
@@ -1095,7 +1095,11 @@ function regionF(id){const r=REGIONEN[id]; return (r.preisF||1)*(r.ertragF||1)*(
 // Seit 13.3.3: Sekt-Ansehen einmal im Jahr, in dem mindestens ein Sekt angemeldet wird. Der Sekt gilt mit der Lese als angemeldet.
 function sektAnsText(){return S.sektJahr===S.jahr?`Die ${ansQ(SEKT_ANS,'Weine')} Ansehen für Sekt hast du dieses Jahr schon.`:`Der erste Sekt des Jahres bringt ${ansQ(SEKT_ANS,'Weine')} Ansehen.`}
 // Seit 13.3.5: Zuschlag für Pflegestufe und Terroir aufs Ansehen bei der Anmeldung.
-const ansZuschlag=l=>(ANS_PFLEGE[l.pfl||0]||0)+((l.bst||0)>=NAME_BODEN_AB?ANS_TERROIR:0);
+// Seit 14.2.6 (Annahme 15): 1 Ansehen je ANS_JE_QP Qualitätspunkte statt der festen Zuschläge für Pflegestufe und Terroir.
+const ansZuschlag=l=>Math.floor((l.qp||0)/ANS_JE_QP);
+// Seit 14.2.6 (Entscheidung 32): Anspruch je Weinstufe, ausgeschaltet (ANSPRUCH_PREIS und ANSPRUCH_ANS 0). Fehlende Punkte kosten Preis und Ansehen.
+const anspruchFehlt=(st,qp)=>Math.max(0,((ANSPRUCH||{})[st]||0)-(qp||0));
+const anspruchF=(st,qp)=>Math.max(0,1-ANSPRUCH_PREIS*anspruchFehlt(st,qp));
 function sektAnmelden(l){if(l.pansch||S.sektJahr===S.jahr) return 0; S.sektJahr=S.jahr; return ruhm(SEKT_ANS+ansZuschlag(l),0,'Weine')}
 const sektSorte=id=>!!S.rollen&&(SORTEN[id]||{}).rolle==='sekt';
 // Sekt, der noch auf der Hefe liegt, für den Sektkeller.
@@ -1383,7 +1387,7 @@ function maschAbnutzung(reben,M){
 }
 // Version 4.4: ungefährer Listenwert einer Lese als Flaschenwein der Stufe st, ohne Reife und Marktlage.
 function leseWert(id,la,st,liter){const q=feldQ(S.felder[id],la), pfl=S.felder[id].pflSt||0, qp=qpFuer({sorte:id,oe:q.oe,sonne:S.sonne,boden:S.boden,bst:wbBoden(id),pfl,laub:S.felder[id].laub===S.jahr,fq:formWirk(id)[1]},st);
-  return Math.round(liter*STUFEN[st].preis*(st==='eis'?EIS_WERT[eisStufe(q.oe)].f:1)*(1+qp/100)*(1+pflegePreis(id,pfl))*sternF(id)*(R().preisF||1)/100)*100}
+  return Math.round(liter*STUFEN[st].preis*(st==='eis'?EIS_WERT[eisStufe(q.oe)].f:1)*(1+qp/100)*(1+pflegePreis(id,pfl))*anspruchF(st,qp)*sternF(id)*(R().preisF||1)/100)*100}
 function feldLiter(f,la){const r=f.reif/100,u=f.ueber/100; return Math.round(f.menge*r*(la==='reif'?1-u:la==='ueber'?u*MOST_UEBER:1-u+u*MOST_UEBER)*leseFaktor(feldId(f)))}
 // Ab wann ein Wein frühestens verkauft werden darf, wenn er jetzt gelesen wird.
 // Gekeltert wird im Lesemonat, nach einem Monat im Fass darf er angemeldet und abgefüllt werden, ab Kabinett und beim Eiswein erst im Januar.
@@ -1413,7 +1417,7 @@ function preis(l){
   const L=lager(l); if(l.flMonate<L.min) return 0;
   const alter=Math.min(4,1+(l.flMonate-L.min)/12*L.rate);
   // Seit 13.2.2: Preisbonus der Rebpflege bei der Spitzen-Sorte (pflegePreis), sonst 0.
-  return Math.round(STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*(1+pflegePreis(l.sorte,l.pfl))*alter*S.markt*lageF(l)*sektF(l)*sternF(l.sorte)*(R().preisF||1)*100)/100;
+  return Math.round(STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*(1+pflegePreis(l.sorte,l.pfl))*anspruchF(l.stufe,l.qp)*alter*S.markt*lageF(l)*sektF(l)*sternF(l.sorte)*(R().preisF||1)*100)/100;
 }
 
 // Die drei Sorten der Partie nach Rolle: {menge, sekt, spitze}.
@@ -2117,7 +2121,12 @@ const maniText=l=>[l.zucker?`gezuckert (+${l.zucker}\u00a0%)`:'',l.wasser?`gewä
 // Seit 8.0 (Paket B): Trauben aus einem Jahr mit Sommerschnitt (l.laub) bekommen LAUB_QP Punkte obendrauf, nach der Eignung, damit es genau so viele sind.
 // Seit 13.2.1: Der Boden gibt BODEN_ST_QP Punkte je Stufe (l.bst, bei der Lese festgehalten) statt der Punkte aus dem Bodenzustand.
 // Seit 13.2.2: dazu die Punkte der Rebpflege (l.pfl, bei der Lese festgehalten, PFLEGE_QP).
-function qpFuer(l,st){return Math.max(1,Math.round((STUFEN[st].qp+(st==='eis'?EIS_WERT[eisStufe(l.oe)].qp:0)+Math.min(8,Math.floor((l.oe-mindest(st))/3))+Math.round(SORTEN[l.sorte].q/2)+Math.min(4,l.sonne||0)+BODEN_ST_QP*(l.bst||0))*STUFE_QPF[l.pfl||0]*(l.fq||1)*eignung(l.sorte)))+(l.laub?LAUB_QP:0)}
+// Seit 14.2.6 (Entscheidungen 28 und 33): eine Skala bis 100. Grundpunkte (Weinstufe, Öchsle bis 8, Sorte, Sonne bis SONNE_QP_MAX, Boden nach BODEN_ST_QP)
+// mal Pflegestufe mal Form mal Eignung, gerundet, plus Laubschnitt, mindestens QP_MIN und höchstens QP_MAX. Der Jahrhundertwein bekommt danach
+// JH_ZUSCHLAG dazu, höchstens QP_MAX_JH. Der Reife-Bonus bei Wettbewerben bleibt außerhalb der Skala.
+function qpGrund(l,st){return STUFEN[st].qp+(st==='eis'?EIS_WERT[eisStufe(l.oe)].qp:0)+Math.min(8,Math.floor((l.oe-mindest(st))/3))+Math.round(SORTEN[l.sorte].q/2)+Math.min(SONNE_QP_MAX,l.sonne||0)+(BODEN_ST_QP[l.bst||0]||0)}
+function qpFuer(l,st){const n=Math.min(QP_MAX,Math.max(QP_MIN,Math.round(qpGrund(l,st)*STUFE_QPF[l.pfl||0]*(l.fq||1)*eignung(l.sorte))+(l.laub?LAUB_QP:0)));
+  return jhWein(Object.assign({},l,{stufe:st}))?Math.min(QP_MAX_JH,n+JH_ZUSCHLAG):n}
 // Schmiergeld für den Beamten: ein Anteil vom Wert des Weins, mindestens SCHMIER_MIN.
 const schmierVon=w=>Math.max(SCHMIER_MIN,Math.round(w*SCHMIER_ANTEIL/100)*100);
 function schmier(l,st){return schmierVon(l.liter*STUFEN[st].preis*(1+qpFuer(l,st)/100))}
@@ -2881,7 +2890,7 @@ function lese(id,la,p,hefe){
   // Seit 13.5.8: Die Sekt-Trauben liegen erst im Keller (sektTr), Kosten und Ansehen kommen mit dem Umlagern in den Sektkeller (sektUmlagern).
   if(sk){const h=hefe===HEFE_LANG?HEFE_LANG:SEKT_REIFE; Object.assign(neu,{status:'sektTr',stufe:SEKT_GRUND,sekt:true,edel:false,eis:false,...(h>SEKT_REIFE?{hefe:h}:{}),med:[],bund:false});
     // Seit 13.4.9: Sekt vom einfachen Hang bekommt SEKT_EINFACH_QP Punkte weniger, anteilig nach sektEinfach(). ab merkt den Abzug für die Anzeige.
-    const ab=sektAbzug(); neu.qp=Math.max(1,qpFuer(neu,SEKT_GRUND)+SEKT_QP+(h>SEKT_REIFE?HEFE_LANG_QP:0)-ab); if(ab) neu.hangAb=ab}
+    const ab=sektAbzug(); neu.qp=Math.min(QP_MAX,Math.max(QP_MIN,qpFuer(neu,SEKT_GRUND)+SEKT_QP+(h>SEKT_REIFE?HEFE_LANG_QP:0)-ab)); if(ab) neu.hangAb=ab} // seit 14.2.6 auf der Skala bis 90 (Entscheidung 33)
   // Seit 13.4.6: Erlös der Lese für die Warnung des Weingut-Managers.
   {const st=sk?SEKT_GRUND:besteStufe(q); f.leseW=(f.leseW||0)+(st?leseWert(id,la,st,l):0)}
   S.lots.push(neu);

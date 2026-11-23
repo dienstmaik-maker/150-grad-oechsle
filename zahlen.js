@@ -172,18 +172,21 @@ const STOCK_F=4; const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER
 // ihre Schwelle in BODEN_SCHWELLE erreicht. Je Stufe BODEN_ST_OE Grad mehr Deckel (ab 13.2.3), BODEN_ST_MENGE mehr Menge und BODEN_ST_QP Qualitätspunkte.
 // Startwerte, Stellschrauben für 14.2.
 // Seit 14.2.5: BODEN_SCHWELLE in Bodenpunkten je Lage (bis 14.2.4 gute Bodenjahre 0, 10, 37, 85), höchstens BODEN_MAX Punkte (Annahme von Claude, wie EP_MAX).
-const BODEN_STUFEN=['Rohboden','Fruchtboden','Gutsboden','Terroir'], BODEN_SCHWELLE=[0,10,40,90], BODEN_MAX=100, BODEN_GUT=90, BODEN_ST_OE=4, BODEN_ST_MENGE=.05, BODEN_ST_QP=4;
+const BODEN_STUFEN=['Rohboden','Fruchtboden','Gutsboden','Terroir'], BODEN_SCHWELLE=[0,10,40,90], BODEN_MAX=100, BODEN_GUT=90, BODEN_ST_OE=0, BODEN_ST_MENGE=.05, BODEN_ST_QP=[0,5,10,20];
+// Seit 14.2.6 (Entscheidungen 24 und 28): Der Boden hebt den Deckel nicht mehr (BODEN_ST_OE 0, bis 14.2.5: 4), BODEN_ST_QP ist eine Liste je Stufe (bis 14.2.5: 4 je Stufe).
 // Seit 13.2.2 (Bauplan 13.2): Rebpflege je Sorte (f.pflSt, Zähler f.pflZ), das Rebalter mit Jungreben ist weg. Am Jahresende zählt eine Sorte mit Reben,
 // die bis Ende April geschnitten wurde (f.schnitt), PFLEGE_GUT, sonst geht der Zähler um PFLEGE_PATZER zurück, höchstens bis 0. Die Stufe ist die höchste
 // Schwelle in PFLEGE_SCHWELLE, die der Zähler erreicht, sie fällt also erst, wenn er darunter rutscht. Neue Reben übernehmen die Stufe ihrer Sorte.
 // Menge: Der Setzling trägt SETZ_MENGE nach seinem Zählerstand (0 bis 4), ab Rebstock gilt PFLEGE_MENGE je Rolle für Rebstock, Premier Cru, Grand Cru.
 // Punkte PFLEGE_QP je Rolle und Stufe, Preisbonus PFLEGE_PREIS je Stufe nur bei der Spitzen-Sorte, je Stufe PFLEGE_ST_OE Grad mehr Deckel (ab 13.2.3).
-const PFLEGE_STUFEN=['Jungrebe','Rebstock','Premier Cru','Grand Cru'], PFLEGE_SCHWELLE=[0,5,12,20], PFLEGE_GUT=1, PFLEGE_PATZER=2, PFLEGE_ST_OE=4;
+const PFLEGE_STUFEN=['Jungrebe','Rebstock','Premier Cru','Grand Cru'], PFLEGE_SCHWELLE=[0,5,12,20], PFLEGE_GUT=1, PFLEGE_PATZER=2, PFLEGE_ST_OE=0;
+// Seit 14.2.6 (Entscheidung 24, Annahme 14): Die Pflege hebt den Deckel nicht mehr (PFLEGE_ST_OE 0, bis 14.2.5: 4), PFLEGE_PREIS steht auf 0 (bis 14.2.5: 0, 0, 5, 15 Prozent).
 const SETZ_MENGE=[.4,.48,.55,.63,.7], PFLEGE_MENGE={menge:[1,1,1],sekt:[1,1,1],spitze:[1,.9,.8]};
-const PFLEGE_QP={menge:[0,1,3,6],sekt:[0,1,3,6],spitze:[0,2,6,12]}, PFLEGE_PREIS={spitze:[0,0,.05,.15]};
+const PFLEGE_QP={menge:[0,1,3,6],sekt:[0,1,3,6],spitze:[0,2,6,12]}, PFLEGE_PREIS={spitze:[0,0,0,0]};
 // Seit 13.2.3 (Bauplan 13.2): Deckel je Weinberg = DECKEL_BASIS der Rolle + BODEN_ST_OE je Boden-Stufe + PFLEGE_ST_OE je Pflegestufe, also höchstens 90° und 104°.
 // Das Monatsmodell bleibt, es zählt der kleinere Wert aus Wetter und Deckel. Nur die Edelfäulnis der Spitzen-Sorte darf darüber, bis 150°.
-const DECKEL_BASIS={menge:66,spitze:80,sekt:66};
+// Seit 14.2.6 (Entscheidung 24): fester Deckel je Sorte, Menge und Sekt 90°, Spitze 104° (bis 14.2.5: 66, 66, 80 plus 4° je Boden- und Pflegestufe).
+const DECKEL_BASIS={menge:90,spitze:104,sekt:90};
 // Seit 13.2.4 (Bauplan 13.2): Rebschnitt von Hand je Sorte von Januar bis SCHNITT_BIS (3 = April), SCHNITT_HA Euro je Hektar der Sorte, so viel wie das Düngen.
 // Wer bis Ende April schneidet, hat ein gutes Pflegejahr (13.2.2). Die Abgabe an die Erntehelfer kommt in 13.5.
 const SCHNITT_HA=DUENGER_HA, SCHNITT_BIS=3;
@@ -531,7 +534,8 @@ const R_ERNTE=FREI.masch_klein.r, R_VOLL=FREI.masch_gross.r;
 // Abnutzung ABF_ABN je ABF_NORM abgefüllte Flaschen (rund ein Jahr auf 10 Hektar). Bedient wird sie von einem Lagerarbeiter.
 const STREU_PREIS=8000, STREU_WARTUNG=30, STREU_ABN=5, DUENG_PLUS=30, STREU_PLUS=40, STREU_RABATT=.3, R_STREU=FREI.masch_duenger.r;
 // Seit 13.5.5: Der Laubschneider bringt LAUB_QP Punkte und LAUB_MENGE mehr Menge bei allen Sorten (bis 13.4: 1 Punkt), kein Öchsle. Die LAUB_ANS Ansehen bleiben.
-const LAUB_PREIS=20000, LAUB_WARTUNG=60, LAUB_ABN=15, LAUB_QP=4, LAUB_MENGE=.05, LAUB_ANS=4, R_LAUB=FREI.masch_laub.r;
+// Seit 14.2.6 (Entscheidung 28): LAUB_QP 5 (bis 14.2.5: 4).
+const LAUB_PREIS=20000, LAUB_WARTUNG=60, LAUB_ABN=15, LAUB_QP=5, LAUB_MENGE=.05, LAUB_ANS=4, R_LAUB=FREI.masch_laub.r;
 const ABF_PREIS=60000, ABF_WARTUNG=200, ABF_ABN=15, ABF_NORM=40000, ABF_PLUS=.05, ABF_FLASCHEN=75000, R_ABF=FREI.masch_abfuell.r;
 // Seit 13.5.5 (Maik 21.11.2026): Stufe 2 der Abfüllanlage ist ein Ausbau der vorhandenen (ma.stufe 2, frei über masch_abfuell2): ABF_PLUS2 mehr Flaschen,
 // ein Lagerarbeiter betreut ABF_FLASCHEN2 leere Flaschen. Der Preis ist noch einmal der der Stufe 1, ein Startwert für 14.2.
@@ -775,7 +779,7 @@ const LOHN_ARTEN=['helfer','lagerarb'];
 const SEKT_ANS=8;
 // Seit 13.3.5: fester Zuschlag aufs Ansehen bei der Anmeldung nach der Pflegestufe des Weins (l.pfl: Setzling, Rebstock, Premier Cru, Grand Cru),
 // vom Terroir (l.bst ab NAME_BODEN_AB) noch einmal ANS_TERROIR. Gilt für jeden Wein und den Sekt, nicht für gepanschten (Annahme von Claude: auch beim Sekt).
-const ANS_PFLEGE=[0,0,2,4], ANS_TERROIR=4;
+// Seit 14.2.6 (Annahme 15): ANS_PFLEGE und ANS_TERROIR sind weg, das Ansehen bei der Anmeldung folgt den Qualitätspunkten (ANS_JE_QP).
 // Seit 13.3.3: Die Sekt-Sorte macht nur Sekt, direkt bei der Lese und ohne Grundwein, die Lagerarbeiter stellen ihn her. Sekt aus Qualitätswein oder Kabinett (SEKT_STUFEN) ist weg.
 // Preis und Punkte rechnet der Sekt auf SEKT_GRUND (Annahme von Claude, damit Preis, Reife und Qualitätspunkte wie bisher laufen), dazu SEKT_QP Punkte wie bisher beim Versekten.
 // Sekt bringt das SEKT_F-fache, die Sekt-Sorte (sektStar) dazu SEKT_STAR.
@@ -863,7 +867,8 @@ const JH_ANZAHL=4, JH_ABSTAND=5, JH_VOR=1;
 // JH_QP: feste Punkte jedes Jahrhundertweins bei Wettbewerben, Lagerjahre und Medaillen geben nichts dazu. Startwert aus 13.6.3: damit liegt die
 // Raritäten-Krone gegen ihren Favoriten bei etwa 70 Prozent (gemessen wird in 14.1).
 // JH_ANS: Ansehen einmal bei der Anmeldung eines Jahrhundertweins, zusätzlich zum Ansehen der Stufe (Annahme von Claude).
-const JH_CHANCE=.75, JH_QP=163, JH_ANS=100;
+// Seit 14.2.6 (Entscheidung 28): Statt JH_QP (bis 14.2.5: 163 feste Punkte) bekommt der Jahrhundertwein JH_ZUSCHLAG auf seine eigenen Punkte, höchstens QP_MAX_JH.
+const JH_CHANCE=.75, JH_ANS=100;
 const JH_ART={sommer:{name:'Jahrhundertsommer',weg:'edel',tend:'feucht',bild:'supersommer'},winter:{name:'Jahrhundertwinter',weg:'frost',tend:'klar',bild:'eiswein'}};
 // Seit 13.6.9: sommerVor und winterVor kündigen den Vorgeschmack an, Wortlaut seit 13.8.
 const JH_TEXT={
