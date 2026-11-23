@@ -129,7 +129,7 @@ const FREI={wein_feder:{r:0},wein_tafel:{r:0},wein_qba:{r:1},wein_kab:{r:2},wein
   // Seit 13.5.1 (Bauplan 13.5, Maik 21.11.2026): Stufen der Leute, Manager und Maschinen. pfl:[Rolle, Stufe] ist der zweite Auslöser neben Rang plus Abstand,
   // er gilt, sobald die Sorte dieser Rolle die Pflegestufe erreicht hat. Leute und Manager fallen nie zurück (S.leuteSt, S.manager), auch wenn die Pflege später fällt.
   // Eine höhere Stufe bringt die fehlenden mit, so bleibt die Reihenfolge immer gleich. Namen und Zeilen im Winzerboten sind Wortlaut seit 13.8.
-  helfer1:{ha:4},helfer2:{pfl:['menge',3]},helfer3:{r:5},lagerarb1:{pfl:['menge',1]},lagerarb2:{r:2,ab:5,name:'Lagerarbeiter Stufe 2'},lagerarb3:{pfl:['sekt',1]},
+  helfer1:{ha:4},helfer2:{pfl:['menge',2]},helfer3:{r:5},lagerarb1:{pfl:['menge',1]},lagerarb2:{r:2,ab:5,name:'Lagerarbeiter Stufe 2'},lagerarb3:{pfl:['sekt',1]},
   mgr_handel1:{r:2,ab:3,name:'die Handels-Managerin',bote:'🤝 Ab heute arbeitet eine Handels-Managerin für dich. Sie verkauft an den Großhandel, auch den Federweißer.'},
   mgr_handel2:{r:4,ab:3,name:'Stufe 2 für die Handels-Managerin',bote:'🤝 Deine Handels-Managerin kann jetzt mehr: Weinhandlungen und Export übernimmt sie ab sofort.'},
   mgr_handel3:{r:6,ab:4,name:'Stufe 3 für die Handels-Managerin',bote:'🤝 Das Regal füllt ab jetzt deine Handels-Managerin. Nur volle Regale verkaufen.'},
@@ -155,8 +155,9 @@ const FREI={wein_feder:{r:0},wein_tafel:{r:0},wein_qba:{r:1},wein_kab:{r:2},wein
 // sicher über BODEN_GUT bleibt und der Boden-Zähler wie bei einem guten Spieler steigt. Startwert, gemessen in 13.5.8 gegen den Test-Spieler.
 // Lagerarbeiter Stufe 3 kommt mit dem Rebstock der Sekt-Sorte (Entscheidung 6, Wunschwert Jahr 26), bis dahin macht der Spieler den Sekt von Hand.
 const HELFER_DUENG=80;
-const LEUTE_ST={helfer:{name:'Erntehelfer',kann:['düngen','auch der Rebschnitt','auch nachpflanzen']},lagerarb:{name:'Lagerarbeiter',kann:['keltern','auch abfüllen und Etiketten kleben','auch den Sekt in den Sektkeller legen und abfüllen']}};
-const LEUTE_BOTE={helfer:['🧑‍🌾 Deine Erntehelfer düngen ab jetzt für dich. Der Boden ist bei ihnen in guten Händen.','✂️ Den Rebschnitt machen ab jetzt die Erntehelfer. Du hast den Kopf frei!','🌱 Nachpflanzen machen jetzt die Erntehelfer. Die Reben dafür kauft der Weingut-Manager.'],
+// Seit 14.2.3: Erntehelfer schneiden und düngen ab Stufe 1, wenn du es abgibst, mit dem Zuwachs ihrer Stufe (ZUWACHS). Platzhalter, Wortlaut in Meilenstein 17.
+const LEUTE_ST={helfer:{name:'Erntehelfer',kann:['schneiden und düngen, halten aber nur den Stand','schneiden und düngen mit halbem Zuwachs','schneiden und düngen fast wie du, dazu nachpflanzen']},lagerarb:{name:'Lagerarbeiter',kann:['keltern','auch abfüllen und Etiketten kleben','auch den Sekt in den Sektkeller legen und abfüllen']}};
+const LEUTE_BOTE={helfer:['🧑‍🌾 Deine Erntehelfer können ab jetzt schneiden und düngen. Abgeben kannst du im Weinberg und bei der Düngung, sie halten aber nur den Stand.','✂️ Deine Erntehelfer sind jetzt Stufe 2: Wer bei ihnen abgibt, bekommt den halben Zuwachs.','🌱 Nachpflanzen machen jetzt die Erntehelfer. Die Reben dafür kauft der Weingut-Manager.'],
   lagerarb:['🛢️ Gute Nachricht: Ab jetzt keltern deine Lagerarbeiter. Das musst du nicht mehr tun.','🍾 Deine Lagerarbeiter füllen ab jetzt ab und kleben die Etiketten. Wieder eine Sorge weniger.','🥂 Den Sekt lagern jetzt die Lagerarbeiter um und füllen ab. Kurz oder lang wählst du.']};
 const LEUTE_ERST={helfer:'🧑‍🌾 Der alte Winzer bringt eine junge Frau aus dem Dorf mit, die jeden Hang hier seit der Kindheit kennt. „Die weiß, wo der Dünger hingehört“, sagt er. Das ist deine erste Erntehelferin.',
   lagerarb:'🛢️ Der alte Winzer kommt mit einem großen, stillen Mann durchs Hoftor. „Der kann anpacken. Und er redet wenig.“ Das ist dein erster Lagerarbeiter.'};

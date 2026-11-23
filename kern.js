@@ -82,7 +82,20 @@ const rolleDarf=(id,st)=>{const rl=id&&SORTEN[id]?SORTEN[id].rolle:null; return 
 // Seit 13.2.4: Rebschnitt von Hand. Kosten nach den Hektar der Sorte, möglich von Januar bis April, einmal im Jahr.
 const schnittKosten=id=>Math.round(SCHNITT_HA*(S.felder[id].reben||0)/HA_REBEN);
 const schnittOffen=id=>{const f=S.felder[id]; return !!f&&f.reben>0&&S.monat<=SCHNITT_BIS&&f.schnitt!==S.jahr};
-function schneide(id){zahle(schnittKosten(id)); S.felder[id].schnitt=S.jahr}
+// Seit 14.2.3: Wer schneidet (wer 'chef' oder 'helfer'). f.schnittZ merkt den Zuwachs für die Entwicklungspunkte zum Jahreswechsel.
+function schneide(id,wer='chef'){zahle(schnittKosten(id)); const f=S.felder[id]; f.schnitt=S.jahr; f.schnittWer=wer; f.schnittZ=zuwachsVon(wer)}
+// Seit 14.2.3: Zuwachs nach dem, der schneidet oder düngt (ZUWACHS). In den Lehrjahren zählt das Düngen immer voll (Annahme 13, boden=1).
+const zuwachsVon=(wer,boden)=>boden&&S.schwer==='einfach'?1:wer==='helfer'?(ZUWACHS.helfer[leuteSt('helfer')]||0):ZUWACHS.chef;
+// Einstellung je Weinberg (f.schneider) und für das Düngen (S.duengWer): 'helfer' gibt ab, sobald Erntehelfer da sind, sonst macht es der Chef.
+// Annahme von Claude: Ohne Einstellung macht es der Chef, auch das Düngen. In den Lehrjahren düngen die Erntehelfer wie bisher von selbst.
+const helferSchneidet=id=>helferKann(1)&&(S.felder[id]||{}).schneider==='helfer';
+const helferDuengt=()=>helferKann(1)&&(S.schwer==='einfach'||S.duengWer==='helfer');
+// Chef-Grenze (CHEF_SCHNITT_MAX Weinberge je Winter, Startwert 3 heißt keine Grenze, ob sie greift, klärt 14.3).
+const chefSchnitte=()=>R().sorten.filter(id=>{const f=S.felder[id]; return f.schnitt===S.jahr&&f.schnittWer!=='helfer'}).length;
+// Zuwachs beim Düngen in diesem Jahr: Schnitt über alle Düngungen (Annahme 6), ohne Düngung zählt er voll.
+const duengZuwachs=()=>{const D=S.duengZ||[]; return D.length?D.reduce((a,b)=>a+b,0)/D.length:1};
+// Punkte, die ein Weinberg in einem guten Jahr bekäme, mit den heutigen Einstellungen (für die Anzeige).
+const epJahrSoll=id=>epPlus(id,true,zuwachsVon(helferSchneidet(id)?'helfer':'chef'),zuwachsVon(helferDuengt()?'helfer':'chef',1));
 const sorteSchild=(id,r)=>rolleVon(id)?`${rolleVon(id).name}: ${rolleVon(id).satz}`:eigText(eignung(id,r));
 const sternZahl=(id,r)=>{const e=eignung(id,r); return e>=1?3:e>=.85?2:1};
 const sternF=(id,r)=>[0,STERN_PREIS_1,STERN_PREIS_2,STERN_PREIS_3][sternZahl(id,r)];
@@ -999,7 +1012,7 @@ function fuelleAb(l){const ma=bonusMasch('abfuell'), n=abfFl(l); S.flaschen-=n; 
 // Düngen (von Hand und beim Weingut-Manager): mit dem Düngerstreuer im Einsatz billiger und mehr Boden, er nutzt sich je Düngung um STREU_ABN ab.
 function duengKosten(){return Math.round(DUENGER_HA*S.ha*(bonusMasch('duenger')?1-STREU_RABATT:1))}
 function duengPlus(){return bonusMasch('duenger')?STREU_PLUS:DUENG_PLUS}
-function duenge(){const ma=bonusMasch('duenger'), p=duengPlus(); zahle(duengKosten()); S.duengungen++; S.boden=Math.min(100,S.boden+p); if(ma) abnutz(ma,STREU_ABN); return p}
+function duenge(wer='chef'){const ma=bonusMasch('duenger'), p=duengPlus(); zahle(duengKosten()); S.duengungen++; (S.duengZ=S.duengZ||[]).push(zuwachsVon(wer,1)); S.boden=Math.min(100,S.boden+p); if(ma) abnutz(ma,STREU_ABN); return p}
 function leuteFehlen(){return {helfer:helferFehlen(),lagerarb:Math.max(0,lagerBedarf()-S.lagerarb)}}
 // "Es fehlen 2 Erntehelfer und 1 Lagerarbeiter" oder leer, wenn niemand fehlt. Seit 8.0 mit dem Hinweis auf Fahrer, wenn Maschinen stillstehen.
 function fehlText(){
@@ -1830,14 +1843,14 @@ function monatLauf(){
       // Seit 13.2.2: Rebpflege-Zähler der Sorte. Bis Ende April des abgelaufenen Jahres geschnitten (f.schnitt) zählt PFLEGE_GUT, sonst PFLEGE_PATZER zurück.
       if(f.reben){
         // Seit 14.2.2: Entwicklungspunkte (epJahr), die Stufe folgt den Punkten und fällt mit ihnen.
-        const vor=f.pflSt||0, gs=f.schnitt===S.jahr-1; epJahr(f,id,schnitt>=BODEN_GUT); f.pflSt=epStufe(id);
+        const vor=f.pflSt||0, gs=f.schnitt===S.jahr-1; epJahr(f,id,schnitt>=BODEN_GUT,f.schnittZ!=null?f.schnittZ:1,duengZuwachs()); f.pflSt=epStufe(id);
         if(f.pflSt>vor) pflegeAuf(Z,id,f.pflSt);
         else if(f.pflSt<vor) Z.push(gs?`✂️ Dein ${SORTEN[id].name} fällt durch die vielen neuen Reben auf ${PFLEGE_STUFEN[f.pflSt]} zurück.`:`✂️ Dein ${SORTEN[id].name} fällt auf ${PFLEGE_STUFEN[f.pflSt]} zurück, er wurde nicht rechtzeitig geschnitten.`); // Platzhalter, Wortlaut in Meilenstein 17
       }
       if(f.reben){const tot=Math.min(f.reben,Math.round(f.reben*(festR(sp[1],sp[2],fest(7,si))+fp)/1000)*10); if(tot){f.reben-=tot; S.verlust[id]=tot; totAlle+=tot}}
     }
     if(totAlle) Z.push(`Zum Jahreswechsel sind ${String(Math.round(totAlle/rebVor*1000)/10).replace('.',',')}\u00a0% deiner Reben eingegangen (${R().sorten.filter(id=>S.verlust[id]).map(id=>`${num(S.verlust[id])} ${SORTEN[id].name}`).join(', ')}). Der Boden lag im Jahresschnitt bei ${schnitt}\u00a0%${fp?', dazu kam der Frost'+(spLohn(2)?'. '+FROST_FEUER:''):''}. Bis März kannst du nachpflanzen.`);
-    S.bodenSum=0; S.bodenN=0; S.winterFrost=0; S.spaetFrost=false;
+    S.bodenSum=0; S.bodenN=0; S.winterFrost=0; S.spaetFrost=false; S.duengZ=[];
   }
   S.wetter=S.wetterNext; S.temp=tempFuer(S.monat,S.wetter,fest(8,0)); neuePrognose();
   // Frost fürs Reben-Sterben mitzählen: Wintermonate und Spätfrost zur Blüte. Der Kälteeinbruch im November zählt nicht.
@@ -2182,9 +2195,9 @@ function aufgaben(){
   if(m<=2&&S.verlust) for(const id of R().sorten) if(S.verlust[id]) A.push({t:`Über den Winter sind ${rbn(S.verlust[id])} ${SORTEN[id].name}-Reben eingegangen. Nachpflanzen`,tab:'gut',sub:'berg',ruhig:aufgabeAktiv('reben')||helferKann(3)?1:0});
   if(m<=2&&frei>0) A.push({t:`Pflanzzeit: Platz für ${rbn(frei)} Reben`,tab:'gut',sub:'berg',ruhig:1});
   // Version 7.3: Düngen steht an, sobald der Boden auf 70 % oder weniger fällt (Gelb), seit 7.9 Rot ab DUENG_ROT. Düngt der Weingut-Manager, nur ein ruhiger Hinweis.
-  if(S.boden<=70&&S.duengungen<3) A.push(helferKann(1)?{t:`Boden bei ${S.boden}\u00a0%: deine Erntehelfer düngen beim Weiterblättern`,tab:'gut',sub:'berg',ruhig:1}:{t:`🌱 Boden bei ${S.boden}\u00a0%: Düngen ist ${S.boden<=DUENG_ROT?'überfällig':'dran'}`,tab:'gut',sub:'berg',rot:S.boden<=DUENG_ROT?1:0});
+  if(S.boden<=70&&S.duengungen<3) A.push(helferDuengt()?{t:`Boden bei ${S.boden}\u00a0%: deine Erntehelfer düngen beim Weiterblättern`,tab:'gut',sub:'berg',ruhig:1}:{t:`🌱 Boden bei ${S.boden}\u00a0%: Düngen ist ${S.boden<=DUENG_ROT?'überfällig':'dran'}`,tab:'gut',sub:'berg',rot:S.boden<=DUENG_ROT?1:0});
   // Seit 13.2.4: Rebschnitt bis Ende April, im April rot.
-  {const sn=R().sorten.filter(schnittOffen); if(sn.length) A.push({t:`✂️ Rebschnitt bis Ende April: ${sn.map(id=>SORTEN[id].name).join(', ')}`,tab:'gut',sub:'berg',rot:S.monat===SCHNITT_BIS?1:0})}
+  {const sn=R().sorten.filter(id=>schnittOffen(id)&&!helferSchneidet(id)); if(sn.length) A.push({t:`✂️ Rebschnitt bis Ende April: ${sn.map(id=>SORTEN[id].name).join(', ')}`,tab:'gut',sub:'berg',rot:S.monat===SCHNITT_BIS?1:0})}
   // Seit 13.4.6: Der Weingut-Manager warnt, wenn zu viel der Ernte im Wagnis hängt (wagnisWarnung), Rot.
   {const ww=wagnisWarnung(); if(ww) A.push({t:`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name} warnt: ${Math.round(ww.anteil*100)} % deiner Ernte hängen im Wagnis (${ww.ids.map(id=>SORTEN[id].name).join(', ')})`,rot:1,tab:'gut',sub:'berg'})}
   if(m===11){const t=steuerSchau(); if(t.steuer>0){
@@ -2362,7 +2375,7 @@ function mgrBetrieb(){
     const n=Math.floor(Math.min(platz(),helferReben()-rebenGesamt())/10)*10;
     if(n>0){zahle(Math.round(n*pr*100)/100); const f=S.felder[id]; rebenDazu(id,n); S.verlust[id]-=n; LW.push(`${rbn(n)} ${SORTEN[id].name}-Reben nachgepflanzt`)}
   }
-  if(aufgabeAktiv('duengen')&&S.duengungen<3&&S.boden<100&&(S.boden<=70||(m===7&&S.boden<90))&&S.geld>=duengKosten()){const st=bonusMasch('duenger'); duenge(); LW.push(st?'mit dem Düngerstreuer gedüngt':'gedüngt')}
+  if(aufgabeAktiv('duengen')&&S.duengungen<3&&S.boden<100&&(S.boden<=70||(m===7&&S.boden<90))&&S.geld>=duengKosten()){const st=bonusMasch('duenger'); duenge('helfer'); LW.push(st?'mit dem Düngerstreuer gedüngt':'gedüngt')}
   // Seit 8.0: Maschinen warten (Stufe 1, bis Paket B Stufe 2), alle fünf Maschinen. Nach der Lese, also vor August oder wenn kein Feld mehr hängt, jede Maschine unter MGR_WART_AB auf 100 %.
   // Er lässt mgrPuffer('weingut') auf dem Konto, reicht es nicht ganz, wartet er so weit, wie das Geld reicht.
   if(aufgabeAktiv('warten')&&(m<7||!R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen))){
@@ -2498,8 +2511,9 @@ const pflanzReserve=()=>R().sorten.filter(id=>pflanzMitA(id)&&pflanzKann(id)).re
 function pflanzPlan(id){let cap=Math.max(0,S.ha*HA_REBEN-rebenGesamt()); for(const x of pflanzReihe()){const n=pflanzKann(x)?Math.floor(Math.min(pflanzSoll(x),cap,spitzeDeckel(x))/10)*10:0; if(x===id) return n; cap-=n} return 0}
 function helferArbeit(L){
   if(!S.helfer) return; const st=leuteSt('helfer'), m=S.monat;
-  if(st>=1&&abgabe('duengen')&&S.duengungen<3&&S.boden<100&&(S.boden<=HELFER_DUENG||(m===7&&S.boden<90))&&S.geld>=duengKosten()){const ma=bonusMasch('duenger'); duenge(); L.push(ma?'mit dem Düngerstreuer gedüngt':'gedüngt')}
-  if(st>=2&&abgabe('schneiden')) for(const id of R().sorten) if(schnittOffen(id)&&S.geld>=schnittKosten(id)){schneide(id); L.push(`${SORTEN[id].name} geschnitten`)}
+  // Seit 14.2.3: Düngen und Rebschnitt nur, wo der Spieler sie abgegeben hat, schon ab Stufe 1 (Entscheidung 9).
+  if(st>=1&&abgabe('duengen')&&helferDuengt()&&S.duengungen<3&&S.boden<100&&(S.boden<=HELFER_DUENG||(m===7&&S.boden<90))&&S.geld>=duengKosten()){const ma=bonusMasch('duenger'); duenge('helfer'); L.push(ma?'mit dem Düngerstreuer gedüngt':'gedüngt')}
+  if(st>=1&&abgabe('schneiden')) for(const id of R().sorten) if(helferSchneidet(id)&&schnittOffen(id)&&S.geld>=schnittKosten(id)){schneide(id,'helfer'); L.push(`${SORTEN[id].name} geschnitten`)}
   if(st>=3&&m<=2&&abgabe('pflanzen')) for(const id of pflanzReihe()){
     const f=S.felder[id], soll=pflanzSoll(id); if(soll<10||!pflanzKann(id)) continue;
     const wm=mgrSt('weingut')>0, pr=rebenPreis(id); if(wm&&m<2&&pr>SORTEN[id].preis) continue;
