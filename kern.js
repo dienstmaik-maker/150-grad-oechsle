@@ -59,37 +59,53 @@ const feldId=f=>R().sorten.find(id=>S.felder[id]===f);
 // Seit 13.3.2: Freischaltung nach Rang (FREI) und welche Stufen eine Sorte nach ihrer Rolle machen darf (WEIN_ROLLE).
 const freiAb=k=>(FREI[k]||{r:0}).r;
 // Seit 13.3.4 mit Abstand (ab Jahre nach dem Aufstieg in den Rang r, genau auf den Monat) und Ende (bis).
-// Seit 13.5.1 dazu die Pflegestufe der Sorte einer Rolle (pfl), für die Stufen der Leute.
+// Seit 14.4.2 (Grundsatz der drei Sorten): am Rang (r), verdient (tat, S.taten) oder als Ereignis (ev mit r und ab). Pflegestufe (pfl) und Fläche (ha) sind weg.
+// Ein Eintrag mit Tat und Ereignis (der Export) ist frei, sobald eins davon gilt. Einen Abstand ohne ev haben nur noch die Manager (Annahme 28).
 const rolleSorte=rl=>R().sorten.find(id=>(SORTEN[id]||{}).rolle===rl);
-function pflFrei(p){const id=rolleSorte(p[0]); return !!id&&((S.felder[id]||{}).pflSt||0)>=p[1]}
-// Seit 13.3.7 dazu die bepflanzte Fläche (ha): frei, sobald mehr als e.ha Hektar bepflanzt sind.
-function frei(k){const e=FREI[k]; if(!e) return true; if(e.pfl) return pflFrei(e.pfl)||!!(e.bote&&(S.freiBote||{})[k]); if(e.ha!=null) return flaecheBep()>e.ha; if(S.rang<e.r||(e.bis!=null&&S.rang>=e.bis)) return false; if(!e.ab) return true;
-  const m=(S.rangMon||{})[e.r]; return m!=null&&S.jahr*12+S.monat>=m+12*e.ab}
-// "ab dem Rang Winzer" oder "4 Jahre nach dem Rang Winzermeister", für Texte.
-const freiText=k=>{const e=FREI[k]; return e.ha!=null?`mit mehr als ${e.ha}\u00a0Hektar bepflanzt`:e.pfl?`mit der Stufe ${PFLEGE_STUFEN[e.pfl[1]]} der ${ROLLEN[e.pfl[0]].name}`:e.ab?`${e.ab} Jahre nach dem Rang ${rangN(e.r)}`:`ab dem Rang ${rangN(e.r)}`};
+const tatDa=t=>!!(S.taten||{})[t];
+// Eine Tat merken (Annahme 19): einmal und für immer, mit Monat.
+function tatMerk(t){const T=S.taten=S.taten||{}; if(T[t]==null) T[t]=S.jahr*12+S.monat}
+// Abstand in Jahren eines Eintrags. Als Liste [von, bis] je Partie fest gewürfelt (fest Thema 14, nr ist die Stelle des Schlüssels in FREI).
+function freiAbstand(k){const a=(FREI[k]||{}).ab; return Array.isArray(a)?festI(a[0],a[1],fest(14,Object.keys(FREI).indexOf(k),START_JAHR,0)):a||0}
+function frei(k){const e=FREI[k]; if(!e) return true; if(e.tat&&tatDa(e.tat)) return true; if(e.r==null) return false;
+  if(S.rang<e.r||(e.bis!=null&&S.rang>=e.bis)) return false; const ab=freiAbstand(k); if(!ab) return !e.tat;
+  const m=(S.rangMon||{})[e.r]; return m!=null&&S.jahr*12+S.monat>=m+12*ab}
+// "ab dem Rang Winzer", "mit deinem ersten Qualitätswein" oder bei Managern "4 Jahre nach dem Rang Winzermeister", für Texte.
+// Ereignisse nennen keinen Zeitpunkt, nur den Rang, ab dem sie kommen können (EV_TEXT, Platzhalter).
+const freiText=k=>{const e=FREI[k]; return e.ev?(EV_TEXT[k]||'irgendwann ab dem Rang {rang}').replace('{rang}',rangN(e.r)):e.tat?TAT_TEXT[e.tat]:e.ab?`${e.ab} Jahre nach dem Rang ${rangN(e.r)}`:`ab dem Rang ${rangN(e.r)}`};
 // Monat jedes Aufstiegs (S.rangMon, Schlüssel ist der Rang). Springt jemand über einen Rang, gilt für beide derselbe Monat.
 function rangMonMerk(von,zu){const M=S.rangMon=S.rangMon||{0:START_JAHR*12}; for(let i=von+1;i<=zu;i++) if(M[i]==null) M[i]=S.jahr*12+S.monat}
 // Spielstände aus 13.1 und 13.2 ohne S.rangMon: aus S.zeitRang (Spieljahr des Aufstiegs) oder jetzt. Schon Freies kommt nicht noch einmal in den Winzerboten.
+const boteArt=e=>!!(e.ab||e.tat||e.ev);
 function altFrei(){if(!S.rangMon){const M=S.rangMon={0:START_JAHR*12}; for(let i=1;i<=S.rang;i++){const z=(S.zeitRang||[]).find(x=>x.r===i); M[i]=z?(START_JAHR+z.j-1)*12:S.jahr*12+S.monat}}
-  if(!S.freiBote){S.freiBote={}; for(const k of Object.keys(FREI)) if((FREI[k].ab||FREI[k].pfl&&FREI[k].bote)&&frei(k)) S.freiBote[k]=1}}
-// Was nach dem Abstand kommt, meldet der Winzerbote einmal. Seit 13.7.8 auch, was mit der Pflegestufe kommt und eine Zeile hat (die Sektanlage).
-// Wer die Sektanlage schon gekauft hat (Stand von vor 13.7.8), bekommt die Zeile nicht mehr.
-function freiBote(Z){const B=S.freiBote=S.freiBote||{}; for(const k of Object.keys(FREI)) if((FREI[k].ab||FREI[k].pfl)&&FREI[k].bote&&!B[k]&&frei(k)){B[k]=1; if(!(k==='sekt_anlage'&&S.sektAnlage)) Z.push(k==='masch_laub'&&R().steil?LAUB_HAND_BOTE:FREI[k].bote)}}
+  if(!S.freiBote){S.freiBote={}; for(const k of Object.keys(FREI)) if(boteArt(FREI[k])&&FREI[k].bote&&frei(k)) S.freiBote[k]=1}}
+// Was nach dem Abstand der Manager, als Ereignis oder verdient kommt, meldet der Winzerbote einmal (seit 14.4.2, vorher Abstand und Pflegestufe).
+// Der Export hat zwei Zeilen: mit der Medaille bote, als Ereignis boteEv. Wer die Sektanlage schon gekauft hat, bekommt ihre Zeile nicht.
+function freiBote(Z){const B=S.freiBote=S.freiBote||{}; for(const k of Object.keys(FREI)){const e=FREI[k]; if(boteArt(e)&&e.bote&&!B[k]&&frei(k)){B[k]=1; if(!(k==='sekt_anlage'&&S.sektAnlage)) Z.push(e.boteEv&&!(e.tat&&tatDa(e.tat))?e.boteEv:e.bote)}}}
+// Seit 14.4.2: Taten, die nicht an einem Handgriff hängen. Sekt zählt, sobald die erste Flasche fertig im Sektkeller liegt (Annahme 19), jeden Monat vor dem Winzerboten geprüft.
+// Seit 14.4.2: Die eigene Weinhandlung ist ein Ereignis (FREI.laden). Eigener Name, weil es in manchen Funktionen eine Variable frei gibt.
+const ladenFrei=()=>frei('laden');
+function tatenMonat(){if(!tatDa('sekt')&&S.lots.some(l=>l.sekt&&(l.status==='flasche'||l.status==='hefe'&&sektFertig(l)))) tatMerk('sekt')}
 // Seit 13.5.1: Stufen der Erntehelfer und Lagerarbeiter (S.leuteSt). Die höchste freie Stufe zählt, sie bringt die fehlenden mit und fällt nie zurück.
 // Mit Stufe 1 kommt der erste Mensch der Gruppe, wenn noch keiner da ist: eingestellt ohne Vermittlung, Lohn wie das Angebot des Monats.
 const LEUTE_K=['helfer','lagerarb'];
 function leuteSt(k){return (S.leuteSt||{})[k]||0}
+// Seit 14.4.2 (einfache Fassung, die Leute zählen wie heute): Die Erntehelfer bekommen Stufe 1 mit dem Jungwinzer, der erste Erntehelfer kommt aber wie bis 14.2
+// erst, wenn mehr als ALLEIN_HA Hektar bepflanzt sind und noch keiner da ist (bis 14.2 war das der Auslöser von helfer1). Annahme der Bau-Sitzung.
+const leuteErstGebraucht=k=>k!=='helfer'||flaecheBep()>ALLEIN_HA;
+function leuteErst(k,Z){S[k]=1; S.loehne[k].push(S.angebot[k]); S.loehne[k].sort((x,y)=>x-y); Z.push(LEUTE_ERST[k])}
 function leuteKommen(Z){
   const L=S.leuteSt=S.leuteSt||{helfer:0,lagerarb:0};
   for(const k of LEUTE_K){
     let hoch=0; for(let n=1;n<=3;n++) if(frei(k+n)) hoch=n;
     while((L[k]||0)<hoch){const n=L[k]=(L[k]||0)+1;
-      if(n===1&&!S[k]){S[k]=1; S.loehne[k].push(S.angebot[k]); S.loehne[k].sort((x,y)=>x-y); Z.push(LEUTE_ERST[k])}
+      if(n===1&&!S[k]){if(leuteErstGebraucht(k)) leuteErst(k,Z); else S.leuteErstOffen=1}
       Z.push(LEUTE_BOTE[k][n-1])}
   }
+  if(S.leuteErstOffen&&L.helfer>=1&&leuteErstGebraucht('helfer')){delete S.leuteErstOffen; if(!S.helfer) leuteErst('helfer',Z)}
 }
 // Für den Aufstiegstext: Stufen der Leute, die mit dem Rang i kommen (ohne Abstand, die anderen nennt abBringt).
-const leuteBringt=i=>LEUTE_K.flatMap(k=>[1,2,3].filter(n=>FREI[k+n].r===i&&!FREI[k+n].ab).map(n=>`${LEUTE_ST[k].name} Stufe ${n}: ${LEUTE_ST[k].kann[n-1]}`));
+const leuteBringt=i=>LEUTE_K.flatMap(k=>[1,2,3].filter(n=>FREI[k+n].r===i&&!FREI[k+n].ab&&!FREI[k+n].tat).map(n=>`${LEUTE_ST[k].name} Stufe ${n}: ${LEUTE_ST[k].kann[n-1]}`));
 // Seit 13.5.1: Maschinen kommen über FREI (Schlüssel masch_ und der Typ).
 // Seit 14.2.4 auch kein Laubschneider an der Mosel, dort gibt es den Sommerschnitt von Hand (Annahme 18).
 const maschSteil=id=>R().steil&&MASCH[id]&&(MASCH[id].ernte||id==='laub');
@@ -108,7 +124,8 @@ function formUmstellen(id,form){const f=S.felder[id]; zahle(formUmKosten(id,form
 // Seit 14.2.4: Sommerschnitt von Hand (Annahme 18) für Weinberge ohne Maschine, im Juni, frei mit dem Laubschneider. Wirkung wie der Laubschneider (f.laub),
 // das Ansehen gibt es einmal im Jahr (S.laubAns), auch wenn Hand und Maschine schneiden (Annahme von Claude).
 const laubHandKosten=id=>Math.round(LAUB_HAND_HA*(S.felder[id].reben||0)/HA_REBEN);
-const laubHandOffen=id=>{const f=S.felder[id]; return !!f&&f.reben>0&&S.monat===6&&frei('masch_laub')&&!maschDarf(id)&&f.laub!==S.jahr&&f.menge>0&&!f.gelesen};
+// Seit 14.4.2 (Entscheidung 45): frei mit dem Winzermeister (laub_hand) und in jedem Weinberg, auch wo eine Maschine fahren darf. Wirkung wie seit 14.2.4.
+const laubHandOffen=id=>{const f=S.felder[id]; return !!f&&f.reben>0&&S.monat===6&&frei('laub_hand')&&f.laub!==S.jahr&&f.menge>0&&!f.gelesen};
 function laubAnsehen(){if(S.laubAns===S.jahr) return 0; S.laubAns=S.jahr; return ruhm(LAUB_ANS)}
 function laubHand(id){const f=S.felder[id]; zahle(laubHandKosten(id)); f.laub=S.jahr; f.menge=Math.round(f.menge*(1+LAUB_MENGE)); return laubAnsehen()}
 // Seit 14.2.3: Zuwachs nach dem, der schneidet oder düngt (ZUWACHS). In den Lehrjahren zählt das Düngen immer voll (Annahme 13, boden=1).
@@ -235,7 +252,8 @@ function mgrBringt(i){
 // Seit 7.0 steht {sorte} für die Rebsorte, die mit dem Rang kommt, mit ihrem Namen im Gebiet. Die Manager hängt mgrBringt an.
 // Seit 7.2 liefert bringtTeile die einzelnen Punkte für die Urkunde, bringt fügt sie für Zeitung und Rang-Karte zusammen.
 // Seit 13.3.4 dazu, was mit Abstand kommt: "in 4 Jahren der Exporthandel".
-const abBringt=i=>Object.values(FREI).filter(e=>e.r===i&&e.ab&&e.name).map(e=>`in ${e.ab} Jahren ${e.name}`);
+// Seit 14.4.2: nur noch die Manager, Ereignisse (ev) kommen unangekündigt.
+const abBringt=i=>Object.values(FREI).filter(e=>e.r===i&&e.ab&&!e.ev&&e.name).map(e=>`in ${e.ab} Jahren ${e.name}`);
 function bringtTeile(i){const n=SORTE_RANG.indexOf(i), id=n>0&&S?sortenFolge()[n]:null; return [...RAENGE[i].neu.replace('{sorte}',`die ${n===1?'zweite':'dritte'} Rebsorte${id?' '+SORTEN[id].name:''}`).split(', '),...abBringt(i),...leuteBringt(i),...mgrBringt(i)]}
 // Seit 13.5.8 kommt der Kellerausbau nicht mehr mit dem Rang (bis dahin kellerBringt), sondern mit dem ersten Wein der Stufe (kellerFrei).
 function bringt(i){return bringtTeile(i).join(', ')}
@@ -346,7 +364,7 @@ function badges(){const B={}, A=aufgaben(); if(ladenPunkt()) A.push({tab:'stadt'
 function ladenPunkt(){
   if(S.ladenSeh===S.jahr*12+S.monat) return false;
   const fremd=!aufgabeAktiv('laeden')&&Object.keys(S.laeden||{}).some(r=>S.laeden[r].rest>0&&S.lots.some(l=>ladenPasst(l,r)));
-  return fremd||(S.rang>=R_LADEN&&!aufgabeAktiv('regal')&&S.lots.some(ladenOk));
+  return fremd||(ladenFrei()&&!aufgabeAktiv('regal')&&S.lots.some(ladenOk));
 }
 // Wechselt den Hauptreiter. Ohne Unterreiter geht es zur Startansicht des Hauptreiters.
 function geh(tab,sub){TAB=tab; SUB=sub||START_SUB[tab]||SUB}
@@ -641,8 +659,10 @@ function stBote(L){
   const sum=L.reduce((a,s)=>a+stPreis(s),0), was=L.map(s=>SPENDEN[s].z), liste=was.length>1?was.slice(0,-1).join(', ')+' und '+was[was.length-1]:was[0];
   schlag(66,L.length>1?`Stiftung ${S.name} holt ${L.length} Spenden nach`:`Stiftung ${S.name} holt nach: ${SPENDEN[L[0]].kurz}`,`Die Stiftung von ${S.ich||S.name} hat ${eur(sum)} gegeben, für ${liste}. „Spät, aber von Herzen“, sagt der Bürgermeister. ${stFehlt()?'Im Rathaus heißt es, die Stiftung habe noch mehr vor.':'Damit hat das Dorf alles bekommen, was es sich je gewünscht hat.'}`,stFoto(L[L.length-1]),{du:1,archiv:1});
 }
-function spOffen(){const r=S.rang; return r>=1&&r<SPENDEN.length&&!spFertig(r)?r:0}
-function spBezahlt(){return S.sp&&S.sp.r===S.rang?S.sp.bez:0}
+// Seit 14.4.2 (Entscheidung 46 ersetzt, Spenden beim Winzer): Spenden gibt es ab FREI.spende. Im ersten Spenden-Rang kommen vorher die Spenden der Ränge darunter
+// (die des Jungwinzers), eine nach der anderen, damit alle acht für den Schlüssel Dorf erreichbar bleiben (Annahme der Bau-Sitzung).
+function spOffen(){const r=S.rang, r0=FREI.spende.r; if(r<r0||r>=SPENDEN.length) return 0; for(let s=r===r0?1:r;s<=r;s++) if(!spFertig(s)) return s; return 0}
+function spBezahlt(){return S.sp&&S.sp.r===spOffen()?S.sp.bez:0}
 function spAbzug(gew){return gew>0?Math.min(S.spJahr||0,Math.round(gew*SP_DECKEL)):0}
 const bankBild=()=>SP_BILD.bank||'spitzenlage';
 const bogenBild=()=>SP_BILD.bogen||'stadt';
@@ -728,7 +748,7 @@ function regalStellen(l,n){if(n>=l.liter){l.regal=true; weinZusammen(l)} else{co
 function gleicherWein(a,b){if(a===b||!!a.regal!==!!b.regal) return false; for(const k of new Set([...Object.keys(a),...Object.keys(b)])) if(!WEIN_FREI.includes(k)&&JSON.stringify(a[k])!==JSON.stringify(b[k])) return false; return true}
 function weinZusammen(l){const o=S.lots.find(x=>gleicherWein(x,l)); if(!o) return l; o.liter+=l.liter; o.med=[...new Set([...(o.med||[]),...(l.med||[])])]; S.lots=S.lots.filter(x=>x!==l); return o}
 function ladenMonat(Z){
-  if(S.rang<R_LADEN) return;
+  if(!ladenFrei()) return;
   let rest=ladenEigen(), n=0, ein=0;
   for(const l of regalWeine().filter(l=>preis(l)>0).sort((a,b)=>preis(b)-preis(a))){
     const p=preis(l), k=Math.min(l.liter,Math.floor(rest/p)); if(k<=0) continue;
@@ -776,6 +796,7 @@ function wettAuswerten(){
     if(x.du){
       const mit=!!l, r=ruhm(pr.ans,0,'Wettbewerbe'), was=`+${r} Ansehen${mit?`, +${pr.qp} Qualitätspunkte`:''}${pr.geld?', '+eur(pr.geld)+' Preisgeld':''}`;
       if(mit){l.qp+=pr.qp; (l.med=l.med||[]).push(`${pr.m} ${name} ${S.jahr}`); if(w.typ==='bund') l.bund=true}
+      if(w.typ==='land') tatMerk('medaille');
       ehre(pr.m,`${pr.t} ${wo}: ${e.name}`,0,was); kompMedaille(l||e,i);
       if(pr.geld) kassiere(pr.geld);
       titel=`${pr.t} für ${S.name}!`;
@@ -899,6 +920,8 @@ function neueAuktion(spitze,haFest){
 // Seit 13.3.7 (Nachtrag 3): Chance je Auktionsmonat. Vor dem Winzer im Schnitt ein Los alle AUK_FRUEH_JAHRE Jahre, danach AUK_CHANCE wie bisher.
 function aukChance(){return (frei('auktion_oft')?AUK_CHANCE:1/(AUK_FRUEH_JAHRE*AUK_MONATE.length))*(R().aukF||1)}
 // Das erste Angebot ab dem Jungwinzer: Kam noch keins und wäre der nächste Auktionsmonat später als AUK_ERST_JAHRE Jahre nach dem Aufstieg, kommt es jetzt.
+// Seit 14.4.2: Vor dem ersten Angebot ab dem Jungwinzer liegen mindestens AUK_ERST_AB Jahre, so lange kommt gar kein Los.
+function aukErstSperre(){const m0=(S.rangMon||{})[R_AUKTION]; return S.rang>=R_AUKTION&&!S.aukErst&&m0!=null&&S.jahr*12+S.monat<m0+12*AUK_ERST_AB}
 function aukErstFaellig(){const m0=(S.rangMon||{})[R_AUKTION]; if(S.aukErst||S.rang<R_AUKTION||m0==null) return false; const jetzt=S.jahr*12+S.monat, bis=m0+12*AUK_ERST_JAHRE; if(jetzt>bis) return false;
   const n=AUK_MONATE.find(m=>m>S.monat), nx=n==null?(S.jahr+1)*12+AUK_MONATE[0]:S.jahr*12+n; return nx>bis}
 function aukNaechstes(){const a=S.auktion;return a.fuehrer?a.gebot+a.schritt:a.gebot}
@@ -1115,7 +1138,7 @@ const sektAufHefe=()=>S.lots.filter(l=>l.status==='hefe');
 const sektTrauben=()=>S.lots.filter(l=>l.status==='sektTr');
 const sektFertig=l=>l.status==='hefe'&&l.flMonate>=lager(l).min;
 function sektUmlagern(l){if(!l||l.status!=='sektTr'||!S.sektkeller) return 0; zahle(Math.round(l.liter*sektKosten()*100)/100); l.status='hefe'; l.flMonate=0; l.ans=sektAnmelden(l); return 1}
-function sektAbfuellen(l){if(!l||l.status!=='hefe') return 0; l.status='flasche'; return 1}
+function sektAbfuellen(l){if(!l||l.status!=='hefe') return 0; l.status='flasche'; tatMerk('sekt'); return 1}
 // Spielstände bis 13.5.7: Sekt, der noch auf der Hefe liegt, wechselt einmal in den neuen Zustand, fertiger gilt als abgefüllt.
 function altHefe(){if(S.v1358) return; for(const l of S.lots) if(l.sekt&&l.status==='flasche'&&l.flMonate<lager(l).min) l.status='hefe'; S.v1358=1}
 // hefe ist das Hefelager in Monaten, nur gespeichert, wenn es länger als SEKT_REIFE ist.
@@ -1672,7 +1695,7 @@ function neuesSpiel(){
   const reg=REG(NEU.region,!!ROLLEN_NEU);
   S={v:1,v13:1,v144:1,zf:zfNeu(),name:NEU.name.trim().slice(0,NAME_MAX)||'Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:startGeld(NEU.schwer),ha:3,hang:{einfach:3,hoehe:0,sued:0},boden:80,bodenSt:0,bodenP:{einfach:0,hoehe:0,sued:0},duengungen:0,
     felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',sonne:0,markt:1,ansehen:0,ansV:1,leuteV:1,
-    jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:ALLEIN_HA?0:1,lagerarb:ALLEIN_FASS?0:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,meilen:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],rangMon:{0:START_JAHR*12},freiBote:{},komp:{},kompV:3,v121:1,ein:{f:[]},...(ROLLEN_NEU?{rollen:1}:{})};
+    jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:ALLEIN_HA?0:1,lagerarb:ALLEIN_FASS?0:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,meilen:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],rangMon:{0:START_JAHR*12},freiBote:{},taten:{},komp:{},kompV:3,v121:1,ein:{f:[]},...(ROLLEN_NEU?{rollen:1}:{})};
   for(const id of reg.sorten){S.felder[id]={reben:0,pflSt:0,ep:0}; feldReset(S.felder[id])}
   etappe3(3,NEU.schwer);
   lohnAbgleich();
@@ -2048,7 +2071,7 @@ function etappe3Monat(Z){
     // Seit 10.0: Das Amt beginnt in dem Monat, in dem der Spieler Präsident wird, auch wenn ein Gegner vorher schon Präsident war.
     if(S.rang===R_MAX&&!S.amt) amtStart();
   }
-  freiBote(Z); leuteKommen(Z); mgrKommen(); kontrolleMonat(Z);
+  tatenMonat(); freiBote(Z); leuteKommen(Z); mgrKommen(); kontrolleMonat(Z);
   if(S.monat===0&&S.rang>=R_BOTSCHAFT) Z.push(`Als Weinbotschafter ${WO[S.region]} warst du auf Messen in aller Welt unterwegs. +${ruhm(BOTSCHAFT_ANS)} Ansehen.`);
   Z.push(...gegnerMonat()); eisGeschichte();
   // Wettbewerbe: Ausschreibung im Februar (Land) und alle drei Jahre im Juni (Bund). Eingereicht wird im selben Monat, gewertet beim nächsten Monatswechsel.
@@ -2084,7 +2107,7 @@ function etappe3Monat(Z){
   }
   // Seit 13.4.1: aukF des Gebiets (Rheingau) auf die Chance einer Auktion.
   // Seit 13.3.7: vor dem Winzer selten und klein (aukChance), ab dem Jungwinzer kommt das erste Angebot spätestens nach AUK_ERST_JAHRE Jahren (aukErstFaellig).
-  if(!S.auktion&&AUK_MONATE.includes(S.monat)&&(S.jahr-START_JAHR)*12+S.monat>=6&&(aukErstFaellig()||Math.random()<aukChance())){
+  if(!S.auktion&&AUK_MONATE.includes(S.monat)&&(S.jahr-START_JAHR)*12+S.monat>=6&&!aukErstSperre()&&(aukErstFaellig()||Math.random()<aukChance())){
     neueAuktion(0,frei('auktion_oft')?0:AUK_FRUEH_HA); if(S.rang>=R_AUKTION&&!S.aukErst) S.aukErst=S.jahr*12+S.monat;
     schlag(55,`Weinberg ${wo} zu versteigern`,`Nächsten Monat kommen ${losText(S.auktion)} unter den Hammer, das Startgebot liegt bei ${eur(S.auktion.start)}. ${losLage(S.auktion).satz}${!ab?nichtDu:aukDeckel()?' '+AUK_ZU_GROSS:' Halte Geld oder Kreditrahmen bereit.'}`,'auktion',{archiv:1});
   }
@@ -2276,7 +2299,7 @@ function aufgaben(){
   // Seit 8.2: gelber Punkt im Rathaus im November und Dezember, solange die Spende des Rangs offen ist. Nie rot.
   {const s=spOffen(); if(s&&m>=10) A.push({t:`🤝 Spende für ${SPENDEN[s].z}: ${vonGeld(spBezahlt(),SPENDEN[s].b)}. Vor Silvester gespendet senkt sie die Steuer`,tab:'stadt',sub:'amt'})}
   if(m>=7&&R().sorten.some(id=>{const f=S.felder[id];return f.menge>0&&!f.gelesen&&(m<11||f.gefroren||f.edel)})) A.push({t:'Lese möglich',tab:'gut',sub:'berg',...(m===7?{ruhig:1}:{halt:1})});
-  if(S.rang>=R_LADEN&&!aufgabeAktiv('regal')&&!regalWeine().length&&S.lots.some(l=>l.status==='flasche'&&preis(l)>0)) A.push({t:'🍷 Das Regal deiner Weinhandlung ist leer',tab:'stadt',sub:'laeden',ruhig:1});
+  if(ladenFrei()&&!aufgabeAktiv('regal')&&!regalWeine().length&&S.lots.some(l=>l.status==='flasche'&&preis(l)>0)) A.push({t:'🍷 Das Regal deiner Weinhandlung ist leer',tab:'stadt',sub:'laeden',ruhig:1});
   {const art=festArt(); if(art&&m>=5&&m<=7&&S.festJahr!==S.jahr&&S.geld>=FESTE[art].preis) A.push({t:`🎉 Das Geld reicht für ein ${FESTE[art].name}`,tab:'gut',sub:'betrieb',ruhig:1})}
   const vk=S.lots.filter(l=>preis(l)>0&&!l.regal).length;
   if(vk) A.push({t:`${vk} ${vk===1?'Wein ist':'Weine sind'} verkaufsreif`,tab:'stadt',sub:'handel',ruhig:1});
@@ -2525,7 +2548,7 @@ function handelMelde(L){if(!L.length) return; S.dauerLog=(S.dauerLog||[]).concat
 function mgrHandel(){
   if(!S.manager||!S.manager.handel) return;
   const L=[], m=S.monat;
-  if(aufgabeAktiv('regal')&&S.rang>=R_LADEN){
+  if(aufgabeAktiv('regal')&&ladenFrei()){
     let raus=0, rein=0, rw=0;
     for(const l of regalWeine()) if(lotRest(l)<=2){l.regal=false; raus+=l.liter; weinZusammen(l)}
     rw=regalWeine().reduce((a,l)=>a+l.liter*preis(l),0);
@@ -2664,16 +2687,15 @@ function vKeller(){
 const KELLER_MIT={kab:'dem ersten Kabinett',spat:'der ersten Spätlese',aus:'der ersten Auslese'};
 // Seit 13.3.7 (Nachtrag 3): Hat eine Stufe eine Rolle in KELLER_ROLLE, zählt nur ein Wein dieser Rolle (S.kellerWR je Rolle, wie S.kellerW). Sorten ohne Rolle zählen für jede.
 // Probestände bis 13.6 ohne S.kellerWR bekommen ihn einmal aus Kellerbuch und gebauten Stufen.
-const kellerMit=k=>{const rl=KELLER_ROLLE[k], m=KELLER_MIT[KELLER_WEIN[k]]||'dem ersten '+STUFEN[KELLER_WEIN[k]].name; return rl&&ROLLEN[rl]?`${m} der ${ROLLEN[rl].name}`:m};
+// Seit 14.4.2: je Stufe ein Wein (KELLER_WEIN) oder ein Rang (KELLER_RANG), KELLER_ROLLE und S.kellerWR sind weg.
+const kellerMit=k=>KELLER_RANG[k]!=null?`dem Rang ${rangN(KELLER_RANG[k])}`:KELLER_MIT[KELLER_WEIN[k]]||'dem ersten '+STUFEN[KELLER_WEIN[k]].name;
 const lotRolle=l=>l&&SORTEN[l.sorte]?SORTEN[l.sorte].rolle:null;
-function kellerWRMerk(rl,w){const W=S.kellerWR=S.kellerWR||{}; for(const r of KELLER_ROLLE) if(r&&(!rl||r===rl)) W[r]=Math.max(W[r]||0,w)}
-function altKellerW(){let w=0; for(const l of S.lots||[]) if(l.stufe&&!l.sekt&&STUFEN[l.stufe]) w=Math.max(w,STUFEN[l.stufe].rang); for(let k=0;k<(S.keller||0)&&k<KELLER_WEIN.length;k++) w=Math.max(w,STUFEN[KELLER_WEIN[k]].rang); S.kellerW=w}
-function altKellerWR(){S.kellerWR={}; for(const l of S.lots||[]) if(l.stufe&&!l.sekt&&STUFEN[l.stufe]) kellerWRMerk(lotRolle(l),STUFEN[l.stufe].rang);
-  for(let k=0;k<(S.keller||0)&&k<KELLER_WEIN.length;k++) kellerWRMerk(null,STUFEN[KELLER_WEIN[k]].rang)}
-function kellerFrei(k){if(S.kellerW==null) altKellerW(); if(S.kellerWR==null) altKellerWR(); const rl=KELLER_ROLLE[k], w=rl?S.kellerWR[rl]||0:S.kellerW; return k<KELLER_WEIN.length&&w>=STUFEN[KELLER_WEIN[k]].rang}
+function altKellerW(){let w=0; for(const l of S.lots||[]) if(l.stufe&&!l.sekt&&STUFEN[l.stufe]) w=Math.max(w,STUFEN[l.stufe].rang); for(let k=0;k<(S.keller||0)&&k<KELLER_WEIN.length;k++) if(KELLER_WEIN[k]) w=Math.max(w,STUFEN[KELLER_WEIN[k]].rang); S.kellerW=w}
+function kellerFrei(k){if(S.kellerW==null) altKellerW(); if(k>=KELLER_WEIN.length) return false; return KELLER_RANG[k]!=null?S.rang>=KELLER_RANG[k]:S.kellerW>=STUFEN[KELLER_WEIN[k]].rang}
 // Bei jeder Anmeldung: Gibt der Wein eine neue Stufe frei, kommt der Satz für die Meldung zurück, sonst ''.
 const kellerFreiN=()=>KELLER_WEIN.filter((w,k)=>kellerFrei(k)).length;
-function kellerWein(l,st){if(!l||l.sekt||!STUFEN[st]) return ''; const K=S.keller||0, vor=kellerFreiN(); S.kellerW=Math.max(S.kellerW,STUFEN[st].rang); kellerWRMerk(lotRolle(l),STUFEN[st].rang); const nach=kellerFreiN();
+// Seit 14.4.2: Die erste Anmeldung als Qualitätswein oder höher ist die Tat qba (Kellerhelfer keltern), Annahme der Bau-Sitzung.
+function kellerWein(l,st){if(!l||l.sekt||!STUFEN[st]) return ''; if(STUFEN[st].rang>=STUFEN.qba.rang) tatMerk('qba'); const K=S.keller||0, vor=kellerFreiN(); S.kellerW=Math.max(S.kellerW,STUFEN[st].rang); const nach=kellerFreiN();
   if(nach<=vor||nach<=K) return '';
   return nach>K+1?` Damit kannst du deinen Keller bis Stufe ${nach} (${KELLER_NAMEN[nach-1]}) ausbauen.`:` Damit kannst du deinen Keller ausbauen, Stufe ${K+1} (${KELLER_NAMEN[K]}).`}
 function kellerRangText(){return ` Stufe 1 (${KELLER_NAMEN[0]}) gibt es mit ${kellerMit(0)}, Stufe 2 (${KELLER_NAMEN[1]}) mit ${kellerMit(1)}, Stufe 3 (${KELLER_NAMEN[2]}) mit ${kellerMit(2)}.`}

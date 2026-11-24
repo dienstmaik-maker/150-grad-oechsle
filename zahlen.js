@@ -111,25 +111,28 @@ const EIS_WERT=[{name:'Auslese',f:1,qp:0},{name:'Beerenauslese',f:1.3,qp:4},{nam
 // WEIN_ROLLE: welche Stufen eine Rolle überhaupt machen darf. Die Menge-Sorte hat nie Edelfäulnis und keine Auslese, Auslese und höher gibt es nur von der Spitzen-Sorte.
 // Die Sekt-Sorte macht keinen Stillwein, nur Sekt (seit 13.3.3, sektSorte). Sorten ohne Rolle (Messläufe mit ROLLEN_NEU=0) dürfen alles.
 const WEIN_ROLLE={menge:['feder','tafel','qba','kab','spat'],sekt:[],spitze:['feder','tafel','qba','kab','spat','aus','ba','tba','eis']};
-// Seit 13.3.4 (Bauplan 13.3): eine Tabelle für alle Freischaltungen. r ist der Rang (Index in RAENGE), ab ist der Abstand in Jahren nach dem Aufstieg in diesen Rang
-// (S.rangMon merkt den Monat jedes Aufstiegs), bis der Rang, ab dem es wieder weg ist. Wer später aufsteigt, bekommt auch das später. name steht beim Aufstieg
-// unter "in 4 Jahren" und im Winzerboten, bote ist die Zeile, wenn es nach dem Abstand kommt (Wortlaut seit 13.8). 13.4 und 13.5 hängen hier ihre Einträge an.
-// Seit 13.4.2: Beerenauslese und Eiswein haben kein eigenes Rang-Schloss mehr, sie kommen nur über den Weg des Gebiets im Herbst (weg_eigen ab R6).
-// Seit 13.4.5 kommt auch die Trockenbeerenauslese nur über das Wagnis, als zweite Stufe nach der Beerenauslese (weg_tba ab R8, der fremde Weg weg_fremd ab R7). Feder-, Tafel- und Qualitätswein gelten für jede Rolle, die sie machen darf (Annahme von Claude).
-// Seit 13.3.7 (Nachtrag 3 im Bauauftrag, Wunschstrategie, Maik 22.11.2026): Zeitleiste neu. Tafelwein ab R0, Kabinett ab R3, Auslese und eigener Weg ab R7, fremder Weg ab R8,
-// Bundeswettbewerb ab R6, Auktionen ab R1 (vor dem Winzer selten, auktion_oft ab R2). Spätlese ab R3 (Maik 22.11.2026). Seit der Fehlersuche zu den Pleiten (Maik 22.11.2026): Qualitätswein ab R1, Kabinett ab R2. Neue Abstände für Leute, Manager und Abfüllanlage 2 nach Kapitel 6 des Plans.
-// ha ist ein dritter Auslöser: Er gilt, sobald mehr als so viele Hektar bepflanzt sind (der erste Erntehelfer mit dem ersten bepflanzten Hektar über 4).
+// Seit 14.4.1 (Bauplan 14.4 Zeitleiste): Ereignisse. Die Weinhandlung kommt LADEN_AB bis LADEN_BIS Jahre nach dem Gutsherrn, je Partie gewürfelt. Der Export kommt ohne Medaille
+// EXPORT_SPAET Jahre nach dem Winzermeister. Die erste Auktion kommt frühestens AUK_ERST_AB und spätestens AUK_ERST_JAHRE Jahre nach dem Jungwinzer. Startwerte.
+const LADEN_AB=3, LADEN_BIS=7, EXPORT_SPAET=5, AUK_ERST_AB=2;
+// Seit 14.4.2 (Bauplan 14.4 Zeitleiste, Grundsatz der drei Sorten, Maik 24.11.2026): eine Tabelle für alle Freischaltungen, jede hängt an genau einer Sache.
+// Leitsatz: Der Rang gibt Rechte, das Leben bringt Gelegenheiten, die Arbeit bringt Lohn. Bis 14.2 gab es dazu Rang plus Abstand, Pflegestufe (pfl) und Fläche (ha).
+// 1. Am Rang: r ist der Rang (Index in RAENGE), frei ab dem Monat des Aufstiegs. bis ist der Rang, ab dem es wieder weg ist.
+// 2. Verdient: tat ist eine Tat des Spielers (S.taten, tatMerk in kern.js), sie zählt einmal und bleibt (Annahme 19). qba: der erste Qualitätswein
+//    (oder höher) ist angemeldet, medaille: jede Medaille bei der Landesprämierung, sekt: die erste Flasche Sekt liegt fertig im Sektkeller.
+// 3. Ereignis (ev): kommt unangekündigt ab Jahre nach dem Aufstieg in den Rang r (S.rangMon). Ein ab als Liste [von, bis] wird je Partie fest gewürfelt
+//    (fest Thema 14). Hat ein Ereignis auch eine Tat, kommt es mit der Tat oder spätestens als Ereignis (der Export). Der Rangtext nennt Ereignisse nicht vorab.
+// Nur die Manager hängen bis zur Etappe für Köpfe und Helfer noch an Rang plus Abstand (r und ab ohne ev, Annahme 28), ihr Abstand steht weiter im Rangtext.
+// name steht im Rangtext der Manager und in freiText, bote ist die Zeile im Winzerboten, wenn Verdientes, ein Ereignis oder ein Manager nach dem Abstand kommt.
+// Beim Export gibt es zwei Zeilen: bote mit der Medaille, boteEv als Ereignis. Neue Zeilen sind Platzhalter, Wortlaut in Meilenstein 17.
+// Beerenauslese und Eiswein kommen nur über den Weg des Gebiets im Herbst (weg_eigen), die Trockenbeerenauslese nur über das Wagnis (weg_tba), dazu der fremde Weg (weg_fremd).
+// Feder-, Tafel- und Qualitätswein gelten für jede Rolle, die sie machen darf. laub_hand ist der Sommerschnitt von Hand, masch_laub nur noch die Maschine.
+// hintertuer (gebaut in 14.4.6) und presse (gebaut in 14.5) sind schon angelegt.
 const FREI={wein_feder:{r:0},wein_tafel:{r:0},wein_qba:{r:1},wein_kab:{r:2},wein_spat:{r:3},wein_aus:{r:7},weg_eigen:{r:7},weg_fremd:{r:8},weg_tba:{r:8},
-  makler:{r:1},spende:{r:1},auktion:{r:1},auktion_oft:{r:2},land:{r:3},
-  export:{r:3,ab:4,name:'der Exporthandel',bote:'🚢 Der Export ist offen. Das Ausland zahlt mehr, vor allem für die guten Stufen.'},
-  // Seit 13.5.9 (Nachtrag 3, Maik 22.11.2026): Die Sabotage ist ganz raus, auch im Wahlkampf ("Ganz heißt ganz").
-  sorte_sekt:{r:4},sektkeller:{r:4},weinfest:{r:4},sorte_spitze:{r:5},laden:{r:6},botschafter:{r:6},bund:{r:6},hoffest:{r:7},kontrolle:{r:7},
-  // Seit 13.4.9 (Nachtrag 3): Die Spitzenlage kommt einmal, im ersten Auktionsmonat 10 Jahre nach dem Weinbaurat (Wunschjahr 77), statt per Zufall ab dem Vizepräsidenten.
-  spitzenlage:{r:6,ab:10,name:'die Spitzenlage unter dem Hammer'},
-  // Seit 13.5.1 (Bauplan 13.5, Maik 21.11.2026): Stufen der Leute, Manager und Maschinen. pfl:[Rolle, Stufe] ist der zweite Auslöser neben Rang plus Abstand,
-  // er gilt, sobald die Sorte dieser Rolle die Pflegestufe erreicht hat. Leute und Manager fallen nie zurück (S.leuteSt, S.manager), auch wenn die Pflege später fällt.
-  // Eine höhere Stufe bringt die fehlenden mit, so bleibt die Reihenfolge immer gleich. Namen und Zeilen im Winzerboten sind Wortlaut seit 13.8.
-  helfer1:{ha:4},helfer2:{pfl:['menge',2]},helfer3:{r:5},lagerarb1:{pfl:['menge',1]},lagerarb2:{r:2,ab:5,name:'Lagerarbeiter Stufe 2'},lagerarb3:{pfl:['sekt',1]},
+  makler:{r:1},auktion:{r:1},spende:{r:2},auktion_oft:{r:2},land:{r:3},laub_hand:{r:3},
+  sorte_sekt:{r:4},sektkeller:{r:4},weinfest:{r:4},hintertuer:{r:4},sorte_spitze:{r:6},botschafter:{r:6},bund:{r:7},hoffest:{r:7},kontrolle:{r:8},presse:{r:9},
+  // Stufen der Leute: Erntehelfer am Rang, Lagerarbeiter Stufe 2 am Rang (Annahme 26), Stufe 1 und 3 verdient. Eine höhere Stufe bringt die fehlenden mit,
+  // Leute fallen nie zurück (S.leuteSt). Namen und Arbeiten bleiben bis zur Etappe für Köpfe und Helfer, wie sie sind.
+  helfer1:{r:1},helfer2:{r:3},helfer3:{r:5},lagerarb1:{tat:'qba'},lagerarb2:{r:2},lagerarb3:{tat:'sekt'},
   mgr_handel1:{r:2,ab:3,name:'die Handels-Managerin',bote:'🤝 Ab heute arbeitet eine Handels-Managerin für dich. Sie verkauft an den Großhandel, auch den Federweißer.'},
   mgr_handel2:{r:4,ab:3,name:'Stufe 2 für die Handels-Managerin',bote:'🤝 Deine Handels-Managerin kann jetzt mehr: Weinhandlungen und Export übernimmt sie ab sofort.'},
   mgr_handel3:{r:6,ab:4,name:'Stufe 3 für die Handels-Managerin',bote:'🤝 Das Regal füllt ab jetzt deine Handels-Managerin. Nur volle Regale verkaufen.'},
@@ -139,26 +142,29 @@ const FREI={wein_feder:{r:0},wein_tafel:{r:0},wein_qba:{r:1},wein_kab:{r:2},wein
   mgr_weingut1:{r:2,ab:10,name:'der Weingut-Manager',bote:'🌿 Ab heute arbeitet ein Weingut-Manager für dich. Er stellt Erntehelfer und Fahrer ein.'},
   mgr_weingut2:{r:5,ab:3,name:'Stufe 2 für den Weingut-Manager',bote:'🌿 Die Maschinen lässt ab jetzt dein Weingut-Manager warten. Du musst nicht mehr dran denken.'},
   mgr_weingut3:{r:8,ab:4,name:'Stufe 3 für den Weingut-Manager',bote:'🌿 Beim Weingut-Manager nutzen sich die Maschinen jetzt weniger ab.'},
-  // Seit 13.5.9 (Nachtrag 3, Maik 22.11.2026): Der Düngerstreuer kommt direkt mit dem Winzer, ohne Abstand (vorher 3 Jahre danach).
   masch_duenger:{r:2,name:'der Düngerstreuer',bote:'🚜 Neu bei den Maschinen: der Düngerstreuer. Er spart dir Helfer beim Düngen. Kaufen kannst du ihn von Januar bis März.'},
-  masch_klein:{r:3},
-  masch_abfuell:{r:3,ab:4,name:'die Abfüllanlage',bote:'🍾 Es gibt jetzt eine Abfüllanlage. Damit geht kein Tropfen mehr daneben. Kaufen kannst du sie von Januar bis März.'},
-  // Seit 13.7.8 (Entscheidung 12, Maik 22.11.2026): Die Sektanlage kommt, sobald die Sekt-Sorte Rebstock ist (Pflegestufe 1), statt 5 Jahre nach dem Weingutsbesitzer.
-  // Mit bote meldet der Winzerbote sie einmal (freiBote), danach bleibt sie frei, auch wenn die Pflege später fällt. Preis und Wirkung bleiben.
-  sekt_anlage:{pfl:['sekt',1],name:'die Degorgier- und Abfüllanlage im Sektkeller',bote:'🍾 Die Sektanlage ist da. Mit ihr kostet jede Flasche Sekt weniger.'},
-  masch_gross:{r:5},
-  masch_abfuell2:{r:5,ab:9,name:'der Ausbau der Abfüllanlage',bote:'🍾 Die Abfüllanlage hat eine zweite Stufe. Schau sie dir bei den Maschinen an.'},
-  masch_laub:{r:7,ab:7,name:'der Laubschneider',bote:'🚜 Der Laubschneider ist da! Mehr Qualität und mehr Menge bei allen Sorten. Kaufen kannst du ihn von Januar bis März.'}};
+  masch_klein:{r:3},masch_abfuell:{r:3,name:'die Abfüllanlage'},masch_gross:{r:5},masch_abfuell2:{r:6,name:'der Ausbau der Abfüllanlage'},masch_laub:{r:7,name:'der Laubschneider'},
+  // Die Sektanlage kommt mit dem ersten eigenen Sekt, zusammen mit Lagerarbeiter Stufe 3. Preis und Wirkung bleiben.
+  sekt_anlage:{tat:'sekt',name:'die Degorgier- und Abfüllanlage im Sektkeller',bote:'🍾 Dein erster Sekt ist fertig, und gleich steht die Sektanlage bereit. Mit ihr kostet jede Flasche Sekt weniger.'},
+  // Ereignisse: Export mit der ersten Medaille, sonst EXPORT_SPAET Jahre nach dem Winzermeister. Weinhandlung LADEN_AB bis LADEN_BIS Jahre nach dem Gutsherrn.
+  // Die Spitzenlage kommt einmal, im ersten Auktionsmonat 10 Jahre nach dem Weinbaurat (seit 13.4.9).
+  export:{tat:'medaille',r:3,ab:EXPORT_SPAET,ev:1,name:'der Exporthandel',bote:'🚢 Deine Medaille hat sich herumgesprochen: Händler aus dem Ausland fragen nach deinem Wein. Der Export ist offen, er zahlt mehr, vor allem für die guten Stufen.',
+    boteEv:'🚢 Ein Händler aus dem Ausland klopft an und will deinen Wein. Der Export ist offen, er zahlt mehr, vor allem für die guten Stufen.'},
+  laden:{r:5,ab:[LADEN_AB,LADEN_BIS],ev:1,name:'die eigene Weinhandlung',bote:'🏪 Ein Laden in der Stadt wird frei, und du bekommst den Schlüssel. Ab jetzt hast du eine eigene Weinhandlung, das Regal füllst du im Weinhandel.'},
+  spitzenlage:{r:6,ab:10,ev:1,name:'die Spitzenlage unter dem Hammer'}};
+// Wann etwas Verdientes oder ein Ereignis kommt, für freiText (Platzhalter, Wortlaut in Meilenstein 17).
+const TAT_TEXT={qba:'mit deinem ersten Qualitätswein',medaille:'mit deiner ersten Medaille bei der Landesprämierung',sekt:'mit deinem ersten eigenen Sekt'};
+const EV_TEXT={export:'mit deiner ersten Medaille bei der Landesprämierung, sonst irgendwann ab dem Rang {rang}',laden:'irgendwann ab dem Rang {rang}, wenn in der Stadt ein Laden frei wird',spitzenlage:'irgendwann ab dem Rang {rang}'};
 // Seit 13.5.1: Stufen der Erntehelfer und Lagerarbeiter, was sie je Stufe können, die Zeile im Winzerboten je Stufe und die kleine Geschichte des ersten Menschen der Gruppe.
 // Sie steigen von selbst auf, ohne Kauf und ohne höheren Lohn. Wortlaut seit 13.8.
 // Seit 13.5.8 (Maik 22.11.2026, Entscheidung 7): Die Erntehelfer düngen, sobald der Boden auf HELFER_DUENG Prozent fällt (vorher 70), damit der Jahresschnitt
 // sicher über BODEN_GUT bleibt und der Boden-Zähler wie bei einem guten Spieler steigt. Startwert, gemessen in 13.5.8 gegen den Test-Spieler.
-// Lagerarbeiter Stufe 3 kommt mit dem Rebstock der Sekt-Sorte (Entscheidung 6, Wunschwert Jahr 26), bis dahin macht der Spieler den Sekt von Hand.
+// Lagerarbeiter Stufe 3 kommt seit 14.4.2 mit dem ersten eigenen Sekt (bis 14.2 mit dem Rebstock der Sekt-Sorte), bis dahin macht der Spieler den Sekt von Hand.
 const HELFER_DUENG=80;
 // Seit 14.2.3: Erntehelfer schneiden und düngen ab Stufe 1, wenn du es abgibst, mit dem Zuwachs ihrer Stufe (ZUWACHS). Platzhalter, Wortlaut in Meilenstein 17.
 const LEUTE_ST={helfer:{name:'Erntehelfer',kann:['schneiden und düngen, halten aber nur den Stand','schneiden und düngen mit halbem Zuwachs','schneiden und düngen fast wie du, dazu nachpflanzen']},lagerarb:{name:'Lagerarbeiter',kann:['keltern','auch abfüllen und Etiketten kleben','auch den Sekt in den Sektkeller legen und abfüllen']}};
 const LEUTE_BOTE={helfer:['🧑‍🌾 Deine Erntehelfer können ab jetzt schneiden und düngen. Abgeben kannst du im Weinberg und bei der Düngung, sie halten aber nur den Stand.','✂️ Deine Erntehelfer sind jetzt Stufe 2: Wer bei ihnen abgibt, bekommt den halben Zuwachs.','🌱 Nachpflanzen machen jetzt die Erntehelfer. Die Reben dafür kauft der Weingut-Manager.'],
-  lagerarb:['🛢️ Gute Nachricht: Ab jetzt keltern deine Lagerarbeiter. Das musst du nicht mehr tun.','🍾 Deine Lagerarbeiter füllen ab jetzt ab und kleben die Etiketten. Wieder eine Sorge weniger.','🥂 Den Sekt lagern jetzt die Lagerarbeiter um und füllen ab. Kurz oder lang wählst du.']};
+  lagerarb:['🛢️ Dein erster Qualitätswein ist angemeldet. Ab jetzt keltern deine Lagerarbeiter, das musst du nicht mehr tun.','🍾 Deine Lagerarbeiter füllen ab jetzt ab und kleben die Etiketten. Wieder eine Sorge weniger.','🥂 Dein erster Sekt ist fertig. Ab jetzt lagern die Lagerarbeiter den Sekt um und füllen ab. Kurz oder lang wählst du.']};
 const LEUTE_ERST={helfer:'🧑‍🌾 Der alte Winzer bringt eine junge Frau aus dem Dorf mit, die jeden Hang hier seit der Kindheit kennt. „Die weiß, wo der Dünger hingehört“, sagt er. Das ist deine erste Erntehelferin.',
   lagerarb:'🛢️ Der alte Winzer kommt mit einem großen, stillen Mann durchs Hoftor. „Der kann anpacken. Und er redet wenig.“ Das ist dein erster Lagerarbeiter.'};
 const LESE={reif:'nur reife Trauben',ueber:'nur überreife Trauben',alles:'reife und überreife'};
@@ -222,7 +228,8 @@ const BODEN_PUNKTE={einfach:1.5,hoehe:2,sued:3.5};
 // Ansehen bei der Anmeldung: Grundwert der Weinstufe plus 1 je ANS_JE_QP Qualitätspunkte.
 const ANS_JE_QP=5;
 // Jahrhundertjahre ohne Terroir: um JH_ERST, dann alle JH_ABSTAND Jahre, jedes bis zu JH_STREU Jahre früher oder später, je Partie fest gewürfelt.
-const JH_ERST=90, JH_STREU=2;
+// Seit 14.4.2 (Maik 24.11.2026, Frage 1): JH_ERST 91 statt 90, Vorgeschmack in Jahr 89 bis 93, die echten ab Jahr 94, nicht vor dem Vizepräsidenten.
+const JH_ERST=91, JH_STREU=2;
 // Skala der Qualitätspunkte: mindestens QP_MIN, normaler Wein höchstens QP_MAX, Jahrhundertwein JH_ZUSCHLAG mehr, höchstens QP_MAX_JH.
 // Sonne gibt bis SONNE_QP_MAX. Sommerschnitt von Hand LAUB_HAND_HA Euro je Hektar.
 const QP_MIN=5, QP_MAX=90, QP_MAX_JH=100, JH_ZUSCHLAG=10, SONNE_QP_MAX=5, LAUB_HAND_HA=500;
@@ -289,14 +296,14 @@ const WO={mosel:'an der Mosel',rheingau:'im Rheingau',rheinhessen:'in Rheinhesse
 // (Wunschfläche des nächsten Ziels mal 1,25). ans und verm sind hier die heutigen Werte, die Hürde rechnet RANG_HUERDE unten daraus.
 const RAENGE=[
   {name:'Neuling',kurz:'Neuling',ans:0,ha:0,verm:0,rahmen:20000,haAlt:0,deckel:5},
-  {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:30,ha:3,verm:100000,rahmen:40000,haAlt:3,deckel:9,neu:'ein geschenkter Hang vom alten Winzer, Qualitätswein, der Makler im Rathaus, Spenden fürs Dorf, die ersten Auktionen'},
-  {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:7,verm:250000,rahmen:80000,haAlt:4,deckel:17,neu:'Kabinett, der Düngerstreuer, öfter Land bei den Auktionen'},
-  {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:210,ansW:300,ha:14,verm:600000,rahmen:160000,haAlt:5,deckel:32,neu:'Spätlese, Landesprämierung, die Erntemaschine'},
+  {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:30,ha:3,verm:100000,rahmen:40000,haAlt:3,deckel:9,neu:'ein geschenkter Hang vom alten Winzer, Qualitätswein, der Makler im Rathaus, die ersten Auktionen'},
+  {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:7,verm:250000,rahmen:80000,haAlt:4,deckel:17,neu:'Kabinett, der Düngerstreuer, Spenden fürs Dorf, öfter Land bei den Auktionen'},
+  {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:210,ansW:300,ha:14,verm:600000,rahmen:160000,haAlt:5,deckel:32,neu:'Spätlese, Landesprämierung, die Erntemaschine, die Abfüllanlage, der Sommerschnitt von Hand'},
   {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:18,verm:1500000,rahmen:300000,haAlt:6,deckel:42,neu:'{sorte}, der Sektkeller, das Weinfest, kühle Höhenlagen bei den Auktionen'},
-  {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:24,verm:3500000,rahmen:300000,haAlt:8,deckel:47,neu:'{sorte} für den steilen Südhang, Südhang bei den Auktionen, der große Vollernter'},
-  {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:27,verm:6000000,rahmen:300000,haAlt:10,deckel:50,neu:'Bundeswettbewerb, eine eigene Weinhandlung, das Amt des Weinbotschafters'},
-  {name:'Verbandsvorstand',kurz:'Vorstand',w:'Verbandsvorständin',kw:'Vorständin',ans:4000,ha:28,verm:12000000,rahmen:300000,haAlt:13,deckel:50,neu:'Auslese und der Weg deines Gebiets im Herbst, das Hoffest, du kannst Kontrollen anregen'},
-  {name:'Vizepräsident',kurz:'Vizepräsident',w:'Vizepräsidentin',kw:'Vizepräsidentin',ans:6000,ha:28,verm:16000000,rahmen:300000,haAlt:16,deckel:50,neu:'Trockenbeerenauslese, in besonderen Jahren der fremde Weg im Herbst'},
+  {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:24,verm:3500000,rahmen:300000,haAlt:8,deckel:47,neu:'der große Vollernter'},
+  {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:24,verm:6000000,rahmen:300000,haAlt:10,deckel:50,neu:'{sorte} für den steilen Südhang, Südhang bei den Auktionen, das Amt des Weinbotschafters, der Ausbau der Abfüllanlage'},
+  {name:'Verbandsvorstand',kurz:'Vorstand',w:'Verbandsvorständin',kw:'Vorständin',ans:4000,ha:28,verm:12000000,rahmen:300000,haAlt:13,deckel:50,neu:'Auslese und der Weg deines Gebiets im Herbst, das Hoffest, der Bundeswettbewerb, der Laubschneider'},
+  {name:'Vizepräsident',kurz:'Vizepräsident',w:'Vizepräsidentin',kw:'Vizepräsidentin',ans:6000,ha:28,verm:16000000,rahmen:300000,haAlt:16,deckel:50,neu:'Trockenbeerenauslese, in besonderen Jahren der fremde Weg im Herbst, du kannst Kontrollen anregen'},
   {name:'Präsident des Weinbauverbands',kurz:'Präsident',w:'Präsidentin des Weinbauverbands',kw:'Präsidentin',ans:8500,ha:28,verm:30000000,rahmen:300000,haAlt:20,deckel:50,neu:'der Stuhl im Festsaal, das Amt an der Spitze des Verbands, der Weg zur Weltweinschau'}
 ];
 // Seit 11.5 (Teil B): Fläche neu. Die Hürden (ha, bepflanzt) gehen bis 40 Hektar statt bis 20, haAlt sind die Werte bis 11.4.
@@ -320,7 +327,7 @@ const R_MAX=RAENGE.length-1, R_AUKTION=FREI.auktion.r, R_MAKLER=FREI.makler.r, R
   R_HOFFEST=FREI.hoffest.r, R_KONTROLLE=FREI.kontrolle.r, R_SPITZE=FREI.spitzenlage.r, RANG_ALT=[0,1,3,5,7,9];
 // Version 7.0 (Schritt C): Freischalt-Plan aus Schritt A. Die Rebsorten kommen nacheinander nach ihren Sternen im Gebiet (sortenFolge):
 // die ★★★-Sorte von Anfang an, die ★★-Sorte ab R_SORTE2, die ★-Sorte ab R_SORTE3. Seit 13.3.4 aus FREI: Sekt-Sorte und Sektkeller ab R4, Spitzen-Sorte ab R5,
-// der Exporthandel ab FREI.export (R_EXPORT ist nur noch sein Rang, der Abstand kommt dazu), Kellerausbau seit 13.5.8 mit dem ersten Wein der Stufe (KELLER_WEIN, weiter unten).
+// der Exporthandel seit 14.4.2 mit der ersten Medaille oder als Ereignis (FREI.export, R_EXPORT ist der Rang des Ereignisses und die erste Exportstufe), Kellerausbau seit 13.5.8 mit dem ersten Wein der Stufe (KELLER_WEIN, weiter unten).
 const R_SORTE2=FREI.sorte_sekt.r, R_SORTE3=FREI.sorte_spitze.r, R_SEKT=FREI.sektkeller.r, R_EXPORT=FREI.export.r, SORTE_RANG=[0,R_SORTE2,R_SORTE3];
 // Version 7.0 (Schritt D): drei Manager statt Gutsverwalter, nach dem Plan aus Schritt A ("Fundament für 7.0" in der Projektnotiz).
 // MANAGER: je Stufe der Bereich, die Stufe und welche Aufgaben (seit 13.5.1 kommt die Stufe über FREI, Schlüssel mgr_ mit Bereich und Stufe, rang liest dort nach) (Schlüssel aus MGR_AUFGABEN) sie dazubringt.
@@ -496,9 +503,11 @@ const ANREG_ANS=60, ANREG_FEHL=6, PANSCH={zocker:.4,vorsicht:.08,qualitaet:.04},
 // Seit 11.6: KELLER_NAMEN gibt den drei Stufen im Kellerausbau Namen, nur für die Anzeige. S.keller bleibt die Zahl der Stufen.
 // Seit 13.5.8 (Maik 22.11.2026, Entscheidung 9): Die Freigabe hängt nicht mehr am Rang (KELLER_RANG ist weg), sondern am ersten angemeldeten Wein der Stufe in KELLER_WEIN:
 // Stufe 1 mit dem ersten Kabinett, Stufe 2 mit der ersten Spätlese, Stufe 3 mit der ersten Auslese. Ein höherer Wein gibt die Stufen darunter mit frei. Die Wirkung bleibt.
-const MAKLER_PREIS=45000, MAKLER_HA=[0,1,1,1,2,2,2,3,3,3], WEINFEST_PREIS=30000, WEINFEST_ANS=10, KELLER_PREISE=[50000,120000,250000], KELLER_NAMEN=['Edelstahltank','Großes Holzfass','Barrique-Keller'], KELLER_REIFE=.1, KELLER_WEIN=['kab','spat','aus'], R_WEINFEST=FREI.weinfest.r;
-// Seit 13.3.7 (Nachtrag 3): Stufe 2 erst mit der ersten Spätlese der Spitzen-Sorte. KELLER_ROLLE nennt je Stufe die Rolle, deren Wein zählt (null: jede Sorte).
-const KELLER_ROLLE=[null,'spitze',null];
+const MAKLER_PREIS=45000, MAKLER_HA=[0,1,1,1,2,2,2,3,3,3], WEINFEST_PREIS=30000, WEINFEST_ANS=10, KELLER_PREISE=[50000,120000,250000], KELLER_NAMEN=['Edelstahltank','Großes Holzfass','Barrique-Keller'], KELLER_REIFE=.1, KELLER_WEIN=['spat',null,'aus'], R_WEINFEST=FREI.weinfest.r;
+// Seit 14.4.2 (Grundsatz der drei Sorten): Stufe 1 (Edelstahltank) mit der ersten Spätlese, Stufe 2 (Großes Holzfass) am Rang KELLER_RANG (Gutsherr),
+// Stufe 3 (Barrique-Keller) mit der ersten Auslese. Je Stufe gilt entweder der Wein in KELLER_WEIN oder der Rang in KELLER_RANG.
+// KELLER_ROLLE ist weg (13.3.7 bis 14.2: Stufe 2 mit der ersten Spätlese der Spitzen-Sorte), es zählt jede Sorte.
+const KELLER_RANG=[null,5,null];
 // Seit 13.3.7 (Nachtrag 3): Beim Aufstieg zum Jungwinzer schenkt der alte Winzer GESCHENK_HA Hektar kahlen, einfachen Hang, der Makler übergibt ihn. Text Wortlaut seit 13.8.
 const GESCHENK_HA=1, GESCHENK_TEXT='🎁 Der alte Winzer schiebt dir einen Umschlag über den Zaun: einen Hektar kahlen Hang am Dorfrand, geschenkt. „Hab ich vor vierzig Jahren gekauft und nie bepflanzt. Bei dir wird das was.“ Die Papiere liegen beim Makler im Rathaus, pflanzen musst du selbst.';
 // Seit 13.8.6 (Bauplan 13.8, Maik 22.11.2026): Zeile im Winzerboten zur neuen Pflegestufe ({sorte}) und zur Boden-Stufe, dazu die Momente, die einmal je Partie kommen (S.gesch).
@@ -729,8 +738,8 @@ const LAGEN={einfach:{name:'einfacher Hang',kurz:'Einfacher Hang',sym:'🌄',sat
   sued:{name:'steiler Südhang',kurz:'Steiler Südhang',sym:'☀️',satz:'Nur auf dem steilen Südhang wächst die Spitzen-Sorte, und mehr als 8 Hektar davon bekommt kein Weingut.'}};
 const LAGE_REIHE=['einfach','hoehe','sued'], SUED_MAX=8, SEKT_EINFACH_QP=5;
 // Lagen der Lose bei der Auktion je Rang, als Anteile (Platzhalter bis 14.2): im ersten Akt nur einfacher Hang, ab dem Weingutsbesitzer vor allem kühle Höhenlage,
-// ab dem Gutsherrn auch Südhang. Es gilt die letzte Zeile, deren Rang erreicht ist.
-const AUK_LAGE=[{r:0,w:{einfach:1}},{r:4,w:{einfach:.3,hoehe:.7}},{r:5,w:{einfach:.2,hoehe:.5,sued:.3}}];
+// seit 14.4.2 ab dem Weinbaurat auch Südhang (bis 14.2 ab dem Gutsherrn). Es gilt die letzte Zeile, deren Rang erreicht ist.
+const AUK_LAGE=[{r:0,w:{einfach:1}},{r:4,w:{einfach:.3,hoehe:.7}},{r:6,w:{einfach:.2,hoehe:.5,sued:.3}}];
 // Landpreis je Akt (RANG_AKT) und je Lage als Faktoren auf Startgebot und Gebote. Neutral auf dem heutigen Preis, die Werte setzt 14.2 (Platzhalter).
 const AUK_PREIS_AKT={1:1,2:1,3:1}, AUK_PREIS_LAGE={einfach:1,hoehe:1,sued:1};
 // Seit 13.7.5 (Entscheidung 9, Platzhalter bis 14.2): Wert des Loses = Hektar × AUK_WERT_HA × Gebiet × Lage × Akt × Landpreis (S.landF). Auf Stufen mit DIFF.klug
@@ -738,7 +747,7 @@ const AUK_PREIS_AKT={1:1,2:1,3:1}, AUK_PREIS_LAGE={einfach:1,hoehe:1,sued:1};
 const AUK_WERT_HA=26000, AUK_KLUG=[.9,1];
 // Sätze zur Lage im Weinberg und beim Pflanzen (Platzhalter bis 14.4).
 const SUED_SATZ={
-  keinPlatz:'Die Spitzen-Sorte wächst nur auf dem steilen Südhang, und dort ist kein Platz frei. Südhang gibt es bei den Auktionen ab dem Gutsherrn und einmal mit der Spitzenlage.',
+  keinPlatz:`Die Spitzen-Sorte wächst nur auf dem steilen Südhang, und dort ist kein Platz frei. Südhang gibt es bei den Auktionen ab dem Rang ${RAENGE[AUK_LAGE[AUK_LAGE.length-1].r].name} und einmal mit der Spitzenlage.`,
   spitze:'Sie wächst nur auf dem steilen Südhang.',
   sekt:`Sekt wird am besten auf der kühlen Höhenlage, auf dem einfachen Hang bekommt er ${SEKT_EINFACH_QP} Qualitätspunkte weniger.`,
   umpflanzen:'Rodest du die Menge-Sorte, um Sekt zu pflanzen, sind die gerodeten Reben samt ihrer Pflege weg. Die neuen übernehmen die Pflegestufe der Sekt-Sorte, und auf dem einfachen Hang wird der Sekt schlechter.'};
@@ -785,7 +794,7 @@ const SEKT_ANS=8;
 // Sekt bringt das SEKT_F-fache, die Sekt-Sorte (sektStar) dazu SEKT_STAR.
 const SEKT_F=1.6, SEKT_STAR=1.1, SEKT_GRUND='qba', SEKT_QP=5;
 // Version 12.1 (Maik 20.11.2026): Sekt nur mit eigenem Sektkeller, einmal zu kaufen ab R_SEKT für SEKTKELLER_PREIS. Sein Ausbau ist die Degorgier- und Abfüllanlage
-// ab FREI.sekt_anlage (seit 13.7.8 mit dem Rebstock der Sekt-Sorte), sie halbiert die Kosten je Flasche (SEKT_ANLAGE_F), ohne Leute und ohne Wartung, deshalb nicht in der Maschinenliste.
+// ab FREI.sekt_anlage (seit 14.4.2 mit dem ersten eigenen Sekt, 13.7.8 bis 14.2 mit dem Rebstock der Sekt-Sorte), sie halbiert die Kosten je Flasche (SEKT_ANLAGE_F), ohne Leute und ohne Wartung, deshalb nicht in der Maschinenliste.
 // SEKT_KOSTEN ist Sektflasche, Korken und Agraffe. Einzige Wahl des Spielers bei der Lese: SEKT_REIFE Monate reifen oder HEFE_LANG Monate auf der Hefe (Feld hefe am Wein).
 // Seit 13.3.3 bringt das lange Hefelager HEFE_LANG_QP Qualitätspunkte, der Preis folgt über die Punkte (Startwert, Annahme von Claude, bis 12.9.5 der Faktor 1,25).
 // Preise und Faktor sind Annahmen von Claude bis zum Messlauf 12.1.7. Die Gegner rechnen ihren Sekt weiter über regionF.
@@ -1438,9 +1447,7 @@ const WAS_NEU=[
 // Seit 14.4.1 (Bauplan 14.4 Zeitleiste, Maik 24.11.2026): die neuen Zahlen der Etappe an einer Stelle, alles Startwerte, gemessen und gedreht wird in Meilenstein 15.
 // Bis zu ihrer Unteretappe sind sie ungenutzt. Nur LEUTE_LOHN_F ist schon verdrahtet (lohnSumme) und steht neutral auf 1.
 // Bestehende Zahlen mit neuem Wert (zum Beispiel JH_ERST, EP_PREMIER, AUK_PREIS_LAGE, ANREG_ANS, DIFF.mittel.land) stellt erst ihre Unteretappe um, damit die Gegenprobe gleich bleibt.
-// Ereignisse (14.4.2): Die Weinhandlung kommt LADEN_AB bis LADEN_BIS Jahre nach dem Gutsherrn, je Partie gewürfelt. Der Export kommt ohne Medaille EXPORT_SPAET Jahre
-// nach dem Winzermeister. Die erste Auktion kommt frühestens AUK_ERST_AB und spätestens AUK_ERST_JAHRE Jahre nach dem Jungwinzer.
-const LADEN_AB=3, LADEN_BIS=7, EXPORT_SPAET=5, AUK_ERST_AB=2;
+// Die Zahlen für die Ereignisse (LADEN_AB, LADEN_BIS, EXPORT_SPAET, AUK_ERST_AB) stehen seit 14.4.2 vor der Tabelle FREI, weil sie dort gebraucht werden.
 // Löhne je Stufe (Maik 24.11.2026): Faktor auf den Lohn je Gruppe, Index 0 bis 2 für Stufe 1 bis 3 (ohne Stufe gilt der erste). Startwert überall 1.
 const LEUTE_LOHN_F={helfer:[1,1,1],lagerarb:[1,1,1]};
 // Chef-Grenze (14.4.3): 'jung' heißt, in den Lehrjahren schneidet der Chef still den Weinberg mit der niedrigsten Pflegestufe unter Grand Cru
@@ -1471,6 +1478,6 @@ const STRAFE_ANS_AKT={2:0,3:150}, VERWARNUNG={einfach:1,mittel:0,schwer:0}, ANRE
 const GEGNER_WB={menge:[4,35,62],sekt:[46,64,89],spitze:[71,79,93]}, GEGNER_BODEN={einfach:[9,36,82],hoehe:[47,64,92],sued:[70,79,94]};
 const GEGNER_DECKEL_AN=1, GEGNER_DECKEL=[5,9,17,32,42,47,50,50,50,50], GEGNER_HA_OBEN=56;
 // Auftakt der Akte (14.4.8): eigene Schlagzeile im Monat des Aufstiegs in den 2. und 3. Akt. Platzhalter, Wortlaut in Meilenstein 17.
-const AKT_AUFTAKT={2:{t:'Der zweite Akt beginnt',text:'Ab jetzt steht dir die Hintertür offen, aber die Weinkontrolle schaut genauer hin. (Platzhalter, Wortlaut in Meilenstein 17)'},
-  3:{t:'Der dritte Akt beginnt',text:'Ab jetzt setzt du deinen Ruf ein, wenn du etwas wagst. (Platzhalter, Wortlaut in Meilenstein 17)'}};
+const AKT_AUFTAKT={2:{t:'Der zweite Akt beginnt',text:'Ab jetzt steht dir die Hintertür offen, aber die Weinkontrolle schaut genauer hin.'},
+  3:{t:'Der dritte Akt beginnt',text:'Ab jetzt setzt du deinen Ruf ein, wenn du etwas wagst.'}};
 const TITEL_NAMEN=[[['Spielidee &amp;','Entwicklung'],'Maik','Dienst'],[['Chef-Tester &amp;','Visuelle Effekte'],'Timo','Dienst']];
