@@ -1435,4 +1435,42 @@ const WAS_NEU=[
     ['','3.3','Edelfäulnis','15.11.2026',['Edelfäulnis, Spätherbst und ausgeglichene Gebiete.']],
     ['','3.0','Großer Umbau','15.11.2026',['Großer Umbau: der Winzerbote, zehn Ränge, eigene Weinhandlung, Hoffest und Bestenliste.']],
     ['','1.0','Erste Fassung','14.11.2026',['Die erste Fassung als App fürs Handy.']]]}];
+// Seit 14.4.1 (Bauplan 14.4 Zeitleiste, Maik 24.11.2026): die neuen Zahlen der Etappe an einer Stelle, alles Startwerte, gemessen und gedreht wird in Meilenstein 15.
+// Bis zu ihrer Unteretappe sind sie ungenutzt. Nur LEUTE_LOHN_F ist schon verdrahtet (lohnSumme) und steht neutral auf 1.
+// Bestehende Zahlen mit neuem Wert (zum Beispiel JH_ERST, EP_PREMIER, AUK_PREIS_LAGE, ANREG_ANS, DIFF.mittel.land) stellt erst ihre Unteretappe um, damit die Gegenprobe gleich bleibt.
+// Ereignisse (14.4.2): Die Weinhandlung kommt LADEN_AB bis LADEN_BIS Jahre nach dem Gutsherrn, je Partie gewürfelt. Der Export kommt ohne Medaille EXPORT_SPAET Jahre
+// nach dem Winzermeister. Die erste Auktion kommt frühestens AUK_ERST_AB und spätestens AUK_ERST_JAHRE Jahre nach dem Jungwinzer.
+const LADEN_AB=3, LADEN_BIS=7, EXPORT_SPAET=5, AUK_ERST_AB=2;
+// Löhne je Stufe (Maik 24.11.2026): Faktor auf den Lohn je Gruppe, Index 0 bis 2 für Stufe 1 bis 3 (ohne Stufe gilt der erste). Startwert überall 1.
+const LEUTE_LOHN_F={helfer:[1,1,1],lagerarb:[1,1,1]};
+// Chef-Grenze (14.4.3): 'jung' heißt, in den Lehrjahren schneidet der Chef still den Weinberg mit der niedrigsten Pflegestufe unter Grand Cru
+// (bei Gleichstand den mit weniger Punkten), in den Gesellenjahren rät der alte Winzer dasselbe, in der Meisterprüfung gibt es keinen Rat.
+const CHEF_RAT='jung';
+// Spitzenlage als vierter Weinberg (14.4.4): Start beim Kauf mit SL_EP_START Entwicklungspunkten, SL_BODEN_START Bodenpunkten, Erziehungsform SL_FORM,
+// Ansehen beim Grand Cru SL_ANS_GC und beim Terroir SL_ANS_TERROIR (beim Kauf weiter SPITZE_ANS).
+const SL_EP_START=45, SL_BODEN_START=40, SL_FORM='pfahl', SL_ANS_GC=60, SL_ANS_TERROIR=90;
+// Land mit weichem Deckel je Lage (14.4.5): bis LAND_SCHWELLE Hektar Besitz in der Lage normaler Preis, darüber steigt der Aufschlag im Quadrat bis zum Deckel
+// LAND_DECKEL auf das (1+LAND_AUFSCHLAG)-fache, bis zum Rang LAND_FRUEH_BIS (Winzer) auf das (1+LAND_AUFSCHLAG_FRUEH)-fache. Je Rang (Index in RAENGE) eine Zahl.
+// Der Südhang zählt ohne die 2 Hektar der Spitzenlage, SUED_MAX bleibt die Obergrenze.
+const LAND_SCHWELLE={einfach:[4,7,14,26,26,26,26,26,26,26],hoehe:[8,8,8,8,8,8,8,8,8,8],sued:[4,4,4,4,4,4,4,4,4,4]};
+const LAND_DECKEL={einfach:[5,9,17,32,32,32,32,32,32,32],hoehe:[16,16,16,16,16,16,16,16,16,16],sued:[6,6,6,6,6,6,6,6,6,6]};
+const LAND_AUFSCHLAG=7, LAND_AUFSCHLAG_FRUEH=3, LAND_FRUEH_BIS=2;
+// Preislage beim Land (14.4.5): günstig unter LAND_SATZ[0], teuer ab LAND_SATZ[1], zurück auf normal erst mit LAND_SATZ_PUFFER Abstand (wie beim Markt).
+// Der Satz kommt in den Spielstufen LAND_SATZ_STUFEN in den Winzerboten. Zeichen am Los je Spielstufe (LAND_ZEIGE): Rat des alten Winzers, Aufschlag als Zahl, nichts.
+// Der alte Winzer warnt ab einem Aufschlag von LAND_RAT_AB (1 heißt 100 Prozent). Platzhalter, Wortlaut in Meilenstein 17.
+const LAND_SATZ=[.92,1.08], LAND_SATZ_PUFFER=.03, LAND_SATZ_STUFEN=['mittel','schwer'], LAND_ZEIGE={einfach:'rat',mittel:'zahl',schwer:'nichts'}, LAND_RAT_AB=1;
+// Stundung (14.4.5): Bei der dritten Mahnung in Folge STUNDUNG_MONATE Monate ohne Mahnung statt der Pfändung, ab der Generation STUNDUNG_AB_GEN, einmal je Generation.
+const STUNDUNG_MONATE=12, STUNDUNG_AB_GEN=2;
+// Hintertür und Kontrollen je Akt (14.4.6): Kontrollen ab dem Akt KONTR_AB_AKT, Abstand in Monaten je Spielstufe, Anzeige je Spielstufe,
+// Grundstrafe in Ansehen je Akt (die Zuschläge STRAFE_ANS_WEITER und BESTECH_NEIN_ANS nur im 3. Akt), Verwarnung beim ersten Fund je Spielstufe,
+// Anzeige bei "Kontrolle anregen" je Spielstufe.
+const KONTR_AB_AKT=2, KONTR_ABSTAND={einfach:[24,48],mittel:[24,48],schwer:[12,48]}, KONTR_ZEIGE={einfach:'warnung',mittel:'strafe',schwer:'nichts'};
+const STRAFE_ANS_AKT={2:0,3:150}, VERWARNUNG={einfach:1,mittel:0,schwer:0}, ANREG_ZEIGE={einfach:'chance',mittel:'wort',schwer:'geruecht'};
+// Gegner mit Wunschjahren (14.4.7): je Rolle die Jahre für Rebstock, Premier Cru und Grand Cru, je Lage die Jahre für Fruchtboden, Gutsboden und Terroir (Annahme 12).
+// Deckel der Gegner: GEGNER_DECKEL_AN 1 mit dem Besitz-Deckel je Rang (GEGNER_DECKEL), 0 nur mit der Obergrenze GEGNER_HA_OBEN.
+const GEGNER_WB={menge:[4,35,62],sekt:[46,64,89],spitze:[71,79,93]}, GEGNER_BODEN={einfach:[9,36,82],hoehe:[47,64,92],sued:[70,79,94]};
+const GEGNER_DECKEL_AN=1, GEGNER_DECKEL=[5,9,17,32,42,47,50,50,50,50], GEGNER_HA_OBEN=56;
+// Auftakt der Akte (14.4.8): eigene Schlagzeile im Monat des Aufstiegs in den 2. und 3. Akt. Platzhalter, Wortlaut in Meilenstein 17.
+const AKT_AUFTAKT={2:{t:'Der zweite Akt beginnt',text:'Ab jetzt steht dir die Hintertür offen, aber die Weinkontrolle schaut genauer hin. (Platzhalter, Wortlaut in Meilenstein 17)'},
+  3:{t:'Der dritte Akt beginnt',text:'Ab jetzt setzt du deinen Ruf ein, wenn du etwas wagst. (Platzhalter, Wortlaut in Meilenstein 17)'}};
 const TITEL_NAMEN=[[['Spielidee &amp;','Entwicklung'],'Maik','Dienst'],[['Chef-Tester &amp;','Visuelle Effekte'],'Timo','Dienst']];
