@@ -263,7 +263,7 @@ const FORM_VORAUS='Vorausgewählt ist die Form, die der alte Winzer empfiehlt. D
 // Seit 14.2.5: Winzerbote, wenn eine Lage eine neue Boden-Stufe erreicht. Platzhalter, Wortlaut in Meilenstein 17.
 const BODEN_LAGE_BOTE='🌱 {lage}: Der Boden ist jetzt {stufe}.';
 const LAUB_HAND_BOTE='✂️ Ab jetzt kannst du im Juni den Sommerschnitt von Hand machen, im Weinberg bei jeder Sorte. Eine Maschine kommt in deine steilen Hänge nicht.';
-const VERSION='16.2';
+const VERSION='16.3';
 // Seit 13.3.6 (Maik 21.11.2026): Im Umbau starten neue Partien ohne Spielführer, sonst verspricht er Dinge nach den alten Rängen.
 // Mit neuen Texten muss er am Ende wieder an sein (14.4), dann FU_START=1.
 const FU_START=0;
@@ -1457,9 +1457,11 @@ const IDEE_KEY='oechsle-idee', IDEE_MAX=1000;
 // Seit 16.1.6 (Bauplan 16.1, Zweig design-16): Block 16.0 Design mit Version 16.1, Punkte sind Platzhalter, Wortlaut in Meilenstein 17. Das Kommende bekommt
 // erst eine Zeile, wenn 16.2 bis 16.9 aufgeteilt sind. Beim Zusammenführen nach 15.8 die Blöcke 14.0 und 15.0 von Meilenstein 15 übernehmen.
 // Seit 16.2.6 (Bauplan 16.2): Version 16.2 mit Platzhalter-Punkten (Wortlaut in Meilenstein 17), darüber das Kommende 16.3 bis 16.9 nach dem Fahrplan der 16.0.
+// Seit 16.3.6 (Bauplan 16.3): Version 16.3 Klemmbrett mit Platzhalter-Punkten (Wortlaut in Meilenstein 17), als Nächstes 16.4.
 const WAS_NEU=[
   {k:'🏁 16.0 Design',d:'in Arbeit',p:['Das Spiel bekommt das neue Aussehen nach Timos Entwürfen'],v:[
-    ['▶️','16.3','Klemmbrett'],['⏳','16.4','Betrieb'],['⏳','16.5','Kellerei'],['⏳','16.6','Stadt'],['⏳','16.7','Büro'],['⏳','16.8','Fenster von unten'],['⏳','16.9','Abschlussprobe'],
+    ['▶️','16.4','Betrieb'],['⏳','16.5','Kellerei'],['⏳','16.6','Stadt'],['⏳','16.7','Büro'],['⏳','16.8','Fenster von unten'],['⏳','16.9','Abschlussprobe'],
+    ['','16.3','Klemmbrett','25.11.2026',['Das Klemmbrett ist ein eigener Ort mit deinen Aufgaben, Aktuelles entfällt','Jede Aufgabe mit Timos Bild für Weinberg, Betrieb, Keller oder Stadt','Darunter Neuigkeiten mit Wetter, Vorhersage und den wichtigsten Schlagzeilen','„Nächster Monat“ sitzt unten im Klemmbrett, daneben „Weiter, bis was passiert“','Deinen Rang findest du im Büro']],
     ['','16.2','Navigation und Kopfzeile','25.11.2026',['Die Leiste unten aus Holz mit Timos Bildern für Weingut, Kellerei und Stadt','Neu das Klemmbrett mit der Zahl deiner Aufgaben, es öffnet vorerst Aktuelles','Die Unterreiter sind Registerzungen über der Leiste','Oben Datum, Wetter und Geld auf Pergament, in der Mitte groß das Gesicht, das gerade spricht','Timo hat den alten Winzer, beide Köpfe, den Kellermann und die Erntehelferin neu gezeichnet']],
     ['','16.1','Weinberg','25.11.2026',['Der Weinberg liegt auf dem Holzbrett, je Sorte ein Zettel zum Auf- und Zuklappen','Ein Hinweis je Weinberg zeigt, was gerade am wichtigsten ist','Öchsle, Rebstufe, Boden und Dünger als Balken mit Siegel und Symbol','Das kleine i öffnet Zustand, Kosten und Tipps, nach unten wischen schließt','Ganz oben die Karte Boden und Düngung mit dem Bild der Jahreszeit']]]},
   {k:'🏁 14.0 Pflege-Umbau',d:'in Arbeit',p:['Wie du deine Reben und deinen Boden pflegst, entscheidet über deinen Wein'],v:[
