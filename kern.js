@@ -165,7 +165,10 @@ function formUmstellen(id,form){const f=S.felder[id]; zahle(formUmKosten(id,form
 // das Ansehen gibt es einmal im Jahr (S.laubAns), auch wenn Hand und Maschine schneiden (Annahme von Claude).
 const laubHandKosten=id=>Math.round(LAUB_HAND_HA*(S.felder[id].reben||0)/HA_REBEN);
 // Seit 14.4.2 (Entscheidung 45): frei mit dem Winzermeister (laub_hand) und in jedem Weinberg, auch wo eine Maschine fahren darf. Wirkung wie seit 14.2.4.
-const laubHandOffen=id=>{const f=S.felder[id]; return !!f&&f.reben>0&&S.monat===6&&frei('laub_hand')&&f.laub!==S.jahr&&f.menge>0&&!f.gelesen};
+// Seit 14.6.6 (Prüfregel E5): im Juni (S.monat 5), wie es Annahme 18 in 14.2, Annahme 34 in 14.5 und alle Texte sagen, bis 14.6.5 stand er im Juli.
+// Der Laubschneider schneidet weiter beim Wechsel vom Juni in den Juli, seine Weinberge (laubMaschKommt) bleiben wie bisher bei ihm, nie doppelt.
+const laubMaschKommt=id=>!!bonusMasch('laub')&&maschDarf(id);
+const laubHandOffen=id=>{const f=S.felder[id]; return !!f&&f.reben>0&&S.monat===5&&frei('laub_hand')&&f.laub!==S.jahr&&f.menge>0&&!f.gelesen&&!laubMaschKommt(id)};
 function laubAnsehen(){if(S.laubAns===S.jahr) return 0; S.laubAns=S.jahr; return ruhm(LAUB_ANS)}
 function laubHand(id){const f=S.felder[id]; zahle(laubHandKosten(id)); f.laub=S.jahr; f.menge=Math.round(f.menge*(1+LAUB_MENGE)); return laubAnsehen()}
 // Seit dem Nachtrag zu 14.5.2 (Annahmen 31 bis 34): Ausdünnen von Hand durch den Chef, je Weinberg, im August (AUSD_MONAT), frei am Gutsherrn (ausduennen).
@@ -185,7 +188,7 @@ const naechsteStufe=(id,q)=>REIHE.find(st=>st!=='eis'&&rolleDarf(id,st)&&stufeRa
 function sommerLohnt(id,art){const vor=qualWb(id), q=qualTeile(id,{[art]:S.jahr}).q, st=naechsteStufe(id,vor); return st&&q>=ANSPRUCH[st]?{vor,q,st}:null}
 function sommerFrage(){
   if(!SOMMER_FRAGE[S.schwer]||S.sommerGefragt===monatNr()) return [];
-  const art=S.monat===6?'laub':S.monat===AUSD_MONAT?'ausd':null; if(!art) return [];
+  const art=S.monat===5?'laub':S.monat===AUSD_MONAT?'ausd':null; if(!art) return [];
   const F=[]; for(const id of weinberge()){
     if(art==='laub'?!(laubHandOffen(id)&&!autoLaub(id)):!(ausdOffen(id)&&!autoAusd(id))) continue;
     const L=sommerLohnt(id,art); if(L) F.push({id,art,...L,kosten:art==='laub'?laubHandKosten(id):ausdKosten(id)});
@@ -2251,7 +2254,7 @@ function monatLauf(){
   if(S.monat===6){const lb=S.maschinen.find(x=>x.typ==='laub');
     if(lb){const an=bonusMasch('laub');
       // Seit 14.2.4 nur in Weinbergen, in die die Maschine darf (maschDarf), die anderen bekommen den Sommerschnitt von Hand.
-      if(an){S.laubJahr=S.jahr; for(const id of weinberge()){const f=S.felder[id]; if(maschDarf(id)&&f.menge>0&&!f.gelesen){f.laub=S.jahr; f.menge=Math.round(f.menge*(1+LAUB_MENGE))}} abnutz(an,LAUB_ABN); const a=laubAnsehen(); Z.push(`✂️ Dein Laubschneider hat im Juni den Sommerschnitt gemacht: Die Lese ${S.jahr} bekommt ${LAUB_QP} Punkte Qualität und ${Math.round(LAUB_MENGE*100)} % mehr Menge${a?`, dazu +${a} Ansehen`:''}. Zustand jetzt ${an.zustand} %.`)}
+      if(an){S.laubJahr=S.jahr; for(const id of weinberge()){const f=S.felder[id]; if(maschDarf(id)&&f.menge>0&&!f.gelesen&&f.laub!==S.jahr){f.laub=S.jahr; f.menge=Math.round(f.menge*(1+LAUB_MENGE))}} abnutz(an,LAUB_ABN); const a=laubAnsehen(); Z.push(`✂️ Dein Laubschneider hat im Juni den Sommerschnitt gemacht: Die Lese ${S.jahr} bekommt ${LAUB_QP} Punkte Qualität und ${Math.round(LAUB_MENGE*100)} % mehr Menge${a?`, dazu +${a} Ansehen`:''}. Zustand jetzt ${an.zustand} %.`)}
       else Z.push(`✂️ Dein Laubschneider ${lb.zustand<MASCH_ROT?'ist ausgefallen':'hatte keinen Fahrer'}, einen Sommerschnitt gab es dieses Jahr nicht.`)}}
   // Seit 8.0 nutzen sich Maschinen nur noch bei der Lese ab (maschAbnutzung), die feste Abnutzung je Herbstmonat ist weg.
   // Der Weingut-Manager stellt nach dem Monatswechsel die Helfer für die Handlese ein, sobald Edelfäulnis da ist.
@@ -2941,7 +2944,7 @@ function helferArbeit(L){
   // Seit 14.7.4 (Annahmen 13 und 22): Draußen bringt jede Stufe ihre Arbeit. Winzergesellen machen auf Automatik den Laubschnitt (bis 14.7.3 machten die Erntehelfer
   // den Sommerschnitt von Hand, wo der Rebschnitt abgegeben war), Rebmeister das Ausdünnen, beides nur, wo es die nächste Weinstufe bringt (sommerLohnt),
   // mit den Kosten wie von Hand. Was der Chef oder der Laubschneider schon gemacht hat, läuft nicht doppelt (laubHandOffen, ausdOffen). Testschalter wie der Rebschnitt.
-  if(m===6&&abgabe('schneiden')) for(const id of weinberge()) if(autoLaub(id)&&laubHandOffen(id)&&sommerLohnt(id,'laub')&&S.geld>=laubHandKosten(id)){laubHand(id); L.push(`${SORTEN[id].name}: Laubschnitt gemacht`)} // Platzhalter, Wortlaut in Meilenstein 17
+  if(m===5&&abgabe('schneiden')) for(const id of weinberge()) if(autoLaub(id)&&laubHandOffen(id)&&sommerLohnt(id,'laub')&&S.geld>=laubHandKosten(id)){laubHand(id); L.push(`${SORTEN[id].name}: Laubschnitt gemacht`)} // Platzhalter, Wortlaut in Meilenstein 17
   if(m===AUSD_MONAT&&abgabe('schneiden')) for(const id of weinberge()) if(autoAusd(id)&&ausdOffen(id)&&sommerLohnt(id,'ausd')&&S.geld>=ausdKosten(id)){ausduennen(id); L.push(`${SORTEN[id].name} ausgedünnt`)} // Platzhalter, Wortlaut in Meilenstein 17
   if(st>=3&&m<=2&&abgabe('pflanzen')) for(const id of pflanzReihe()){
     const f=S.felder[id], soll=pflanzSoll(id); if(soll<10||!pflanzKann(id)) continue;
