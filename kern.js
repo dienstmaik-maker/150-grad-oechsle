@@ -380,7 +380,7 @@ function fahrerFehlen(){return Math.max(0,S.maschinen.filter(m=>m.zustand>=MASCH
 function maschName(ma){return `${mTyp(ma).name} ${S.maschinen.indexOf(ma)+1}`}
 // Pronomen je Maschine: die Erntemaschine und die Abfüllanlage sind "sie", die anderen "er".
 function maschEr(ma){return mTyp(ma).f?'sie':'er'}
-function maschStatus(ma){const T=mTyp(ma); return ma.zustand<MASCH_ROT?`fällt aus, bis ${maschEr(ma)} gewartet ist`:maschVerteilung().includes(ma)?'im Einsatz':T.leute==='lagerarb'?'steht still, es fehlt ein Lagerarbeiter':'steht still, es fehlt ein Fahrer'}
+function maschStatus(ma){const T=mTyp(ma); return ma.zustand<MASCH_ROT?`fällt aus, bis ${maschEr(ma)} gewartet ist`:maschVerteilung().includes(ma)?'im Einsatz':T.leute==='lagerarb'?'steht still, es fehlt ein Kellermensch':'steht still, es fehlt ein Fahrer'}
 function festArt(){return S.rang>=R_HOFFEST?'hoffest':S.rang>=R_WEINFEST?'weinfest':''}
 // Seit 11.5 (Teil B): Deckel für den Besitz je Rang. Ohne HA_NEU gibt es für dich keinen, die Gegner halten dann bei GEGNER_HA_MAX.
 // Seit 14.4.5 (Entscheidung 5): Für dich gibt es keinen Besitz-Deckel über alles mehr, an seine Stelle tritt der weiche Deckel je Lage (landDeckel). Die Gegner behalten ihren.
@@ -1228,7 +1228,7 @@ function lagerBedarf(){return Math.max(0,Math.ceil((S.fassraum-ALLEIN_FASS)/FASS
 // Die Leute-Regel als Satz ohne Punkt, für Arbeitsamt, Betrieb, Sperre und den Start. Mit den Zahlen bis 11.4 (ALLEIN_HA 0) liest er sich wie früher.
 function haWort(n){return n===1?'Hektar':`${String(n).replace('.',',')} Hektar`}
 function helferRegel(){const je=`einen Erntehelfer je ${haWort(REBEN_JE_HELFER/HA_REBEN)} Reben`; return ALLEIN_HA?`Die ersten ${ALLEIN_HA} Hektar Reben schaffst du mit deiner Familie allein, darüber brauchst du das ganze Jahr ${je}`:`Du brauchst das ganze Jahr ${je}`}
-function lagerRegel(fl){const was=`${num(FASS_JE_LAGERARB)}\u00a0l Fassraum und ${num(fl||FLASCHEN_JE_LAGERARB)} leere Flaschen`; return ALLEIN_FASS||ALLEIN_FL?`${num(ALLEIN_FASS)}\u00a0l Fassraum und ${num(ALLEIN_FL)} leere Flaschen betreust du selbst, jeder Lagerarbeiter schafft ${was} dazu`:`Ein Lagerarbeiter betreut ${was}`}
+function lagerRegel(fl){const was=`${num(FASS_JE_LAGERARB)}\u00a0l Fassraum und ${num(fl||FLASCHEN_JE_LAGERARB)} leere Flaschen`; return ALLEIN_FASS||ALLEIN_FL?`${num(ALLEIN_FASS)}\u00a0l Fassraum und ${num(ALLEIN_FL)} leere Flaschen betreust du selbst, jeder Kellermensch schafft ${was} dazu`:`Ein Kellermensch betreut ${was}`}
 // Abfüllen (von Hand und beim Kellermeister): mit der Abfüllanlage ABF_PLUS mehr Flaschen aus dem Fass, dafür so viele leere Flaschen.
 // Die Anlage nutzt sich je ABF_NORM Flaschen um ABF_ABN Prozentpunkte ab, mal Pflege-Faktor.
 function abfFl(l){const p=abfPlus(); return p?Math.round(l.liter*(1+p)):l.liter}
@@ -1242,7 +1242,7 @@ function leuteFehlen(){return {helfer:helferFehlen(),lagerarb:Math.max(0,lagerBe
 function fehlText(){
   const f=leuteFehlen(), t=[];
   if(f.helfer) t.push(`${f.helfer} Erntehelfer${maschOhneFahrer().length?' (auch als Fahrer für deine Maschinen)':''}`);
-  if(f.lagerarb) t.push(`${f.lagerarb} Lagerarbeiter`);
+  if(f.lagerarb) t.push(kellerZahl(f.lagerarb));
   return t.length?`${f.helfer+f.lagerarb===1?'Es fehlt':'Es fehlen'} ${t.join(' und ')}`:'';
 }
 // Seit 13.4.1: handLohnF des Gebiets (Mosel) auf den Lohn der Erntehelfer, sie lesen von Hand.
@@ -1941,7 +1941,7 @@ function neuesSpiel(){
 function verfallListe(){
   const v=[];
   for(const l of S.lots){
-    if(l.status==='trauben') v.push(`${num(l.liter)}\u00a0l ${SORTEN[l.sorte].name}-Trauben sind nicht gekeltert${l.mgrNot&&aufgabeAktiv('fass')?(l.mgrNot==='geld'?`, dein ${MGR_BEREICHE.weingut.name} kauft keinen Fassraum unter deiner Geldgrenze`:`, deinem ${MGR_BEREICHE.weingut.name} fehlen Lagerarbeiter für mehr Fassraum`):''}`);
+    if(l.status==='trauben') v.push(`${num(l.liter)}\u00a0l ${SORTEN[l.sorte].name}-Trauben sind nicht gekeltert${l.mgrNot&&aufgabeAktiv('fass')?(l.mgrNot==='geld'?`, dein ${MGR_BEREICHE.weingut.name} kauft keinen Fassraum unter deiner Geldgrenze`:`, deinem ${MGR_BEREICHE.weingut.name} fehlen Kellerleute für mehr Fassraum`):''}`);
     else if(l.status==='sektTr') v.push(`${num(l.liter)} Flaschen ${SORTEN[l.sorte].name}-Sekt sind nicht im Sektkeller`);
     else if(l.status==='fass'&&l.stufe==='feder') v.push(`Federweißer ${l.jahrgang} ${SORTEN[l.sorte].name} ist nicht abgefüllt`);
     else if(l.status==='fass'&&l.fassMonate>=7) v.push(`${lotName(l)} liegt zu lange im Fass`);
@@ -2105,7 +2105,7 @@ function monatLauf(){
     schlag(65,f>1?`Rauschendes ${n} bei ${S.name}`:f<.8?`${n} bei ${S.name} fällt ins Wasser`:`${n} bei ${S.name}`,`${T[w]||T.mild}, es gab Musik, ${S.fest.art==='weinfest'?'Zwiebelkuchen':'Flammkuchen'} und deinen Wein. Das ganze Dorf redet davon: +${a} Ansehen.`,f<.8?'hoffest-regen':'hoffest'); S.fest=null;
   }
   // Seit 11.5 (Teil C1): Der Winzerbote erklärt alten Spielständen einmal die neue Leute-Regel.
-  if(S.leuteNeu){const n=S.leuteNeu, weg=[n.h&&`${n.h} Erntehelfer`,n.l&&`${n.l} Lagerarbeiter`].filter(Boolean).join(' und ');
+  if(S.leuteNeu){const n=S.leuteNeu, weg=[n.h&&`${n.h} Erntehelfer`,n.l&&kellerZahl(n.l)].filter(Boolean).join(' und ');
     // Seit Teil D: derselbe Artikel erklärt auch das verdoppelte Ansehen, die Löhne und den Deckel für die Fläche.
     // Maik 20.11.2026: gekürzt, die Lager-Regel und die Begründung für den Deckel stehen nur noch im Buch.
     const dk=haDeckel(), dkT=dk<Infinity?` Als ${rangK(S.rang)} darfst du höchstens ${dk} ha Land besitzen${S.ha>dk?', was du schon darüber hast, behältst du':''}.`:'';
@@ -2520,17 +2520,17 @@ function aufgaben(){
   if(m>=5&&m<=10&&leseFaktor()<.75&&weinberge().some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)) A.push({t:`Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0% der Reben`,rot:1,tab:'stadt',sub:'arbeit'});
   // Seit 8.0: Maschinen unter MASCH_ROT fallen aus (Rot), unter MASCH_GELB lohnt das Warten (Gelb). Wartet der Weingut-Manager nach der Lese, ist Gelb nur ein Hinweis.
   // Dazu Gelb für Maschinen ohne Fahrer und für Felder, denen Helfer für die Handlese fehlen.
-  {const mw=aufgabeAktiv('warten');
+  {const mw=kellerWartet();
   // Seit Paket B: Bei den Bonus-Maschinen ist Rot nur ein gelber Hinweis, es fällt nur der Bonus weg.
   for(const ma of S.maschinen) if(ma.zustand<MASCH_ROT) A.push({t:`🔧 ${maschName(ma)} bei ${ma.zustand} %: fällt aus, bis ${maschEr(ma)} gewartet ist${mTyp(ma).bonus?', solange fehlt der Bonus':''}`,...(mTyp(ma).bonus?{}:{rot:1}),tab:'gut',sub:'maschinen'});
-    else if(ma.zustand<MASCH_GELB) A.push({t:`🔧 ${maschName(ma)} bei ${ma.zustand} %: `+(mw?`dein ${MGR_BEREICHE.weingut.name} wartet nach der Lese`:'Warten lohnt sich'),tab:'gut',sub:'maschinen',...(mw?{ruhig:1}:{})});
+    else if(ma.zustand<MASCH_GELB) A.push({t:`🔧 ${maschName(ma)} bei ${ma.zustand} %: `+(mw?'deine Kellerhelfer warten nach der Lese':'Warten lohnt sich'),tab:'gut',sub:'maschinen',...(mw?{ruhig:1}:{})});
   const of=maschOhneFahrer().filter(x=>mTyp(x).leute==='helfer').length;
-  if(maschOhneFahrer().some(x=>mTyp(x).leute==='lagerarb')) A.push({t:'🍾 Die Abfüllanlage steht still, es fehlt ein Lagerarbeiter',tab:'stadt',sub:'arbeit'});
+  if(maschOhneFahrer().some(x=>mTyp(x).leute==='lagerarb')) A.push({t:'🍾 Die Abfüllanlage steht still, es fehlt ein Kellermensch',tab:'stadt',sub:'arbeit'});
   if(of&&!fehlText()) A.push({t:`🚜 ${of===1?'Eine Maschine steht':of+' Maschinen stehen'} still, es ${fahrerFehlen()===1?'fehlt ein Fahrer':'fehlen '+fahrerFehlen()+' Fahrer'}`,tab:'stadt',sub:'arbeit'});
   for(const id of weinberge()){const f=S.felder[id]; if(f.menge>0&&!f.gelesen&&handFehlt(f)) A.push({t:`✋ ${SORTEN[id].name}: für die Handlese fehlen ${handBedarf(f)-S.helfer} Erntehelfer, sonst nur Qualitätswein`,tab:'stadt',sub:'arbeit'})}}
-  for(const l of S.lots) if(l.status==='trauben') A.push(lagerKann(1)&&l.liter<=S.fassraum-fassBelegt()+(aufgabeAktiv('fass')?Infinity:0)?{t:`${SORTEN[l.sorte].name}-Trauben: deine Lagerarbeiter keltern beim Weiterblättern`,tab:'keller',ruhig:1}:{t:`${SORTEN[l.sorte].name}-Trauben müssen diesen Monat gekeltert werden`,rot:1,tab:'keller'});
+  for(const l of S.lots) if(l.status==='trauben') A.push(lagerKann(1)&&l.liter<=S.fassraum-fassBelegt()+(aufgabeAktiv('fass')?Infinity:0)?{t:`${SORTEN[l.sorte].name}-Trauben: deine Kellerleute keltern beim Weiterblättern`,tab:'keller',ruhig:1}:{t:`${SORTEN[l.sorte].name}-Trauben müssen diesen Monat gekeltert werden`,rot:1,tab:'keller'});
   // Seit 13.5.8: Sekt von Hand, bis Lagerarbeiter Stufe 3.
-  for(const l of S.lots) if(l.status==='sektTr') A.push(lagerKann(3)?{t:`${SORTEN[l.sorte].name}-Sekt: deine Lagerarbeiter legen ihn beim Weiterblättern in den Sektkeller`,tab:'keller',ruhig:1}:{t:`${SORTEN[l.sorte].name}-Sekt muss diesen Monat in den Sektkeller`,rot:1,tab:'keller'});
+  for(const l of S.lots) if(l.status==='sektTr') A.push(lagerKann(3)?{t:`${SORTEN[l.sorte].name}-Sekt: deine Kellerleute legen ihn beim Weiterblättern in den Sektkeller`,tab:'keller',ruhig:1}:{t:`${SORTEN[l.sorte].name}-Sekt muss diesen Monat in den Sektkeller`,rot:1,tab:'keller'});
     else if(sektFertig(l)&&!lagerKann(3)) A.push({t:`🍾 ${lotName(l)}: die Hefezeit ist um, jetzt abfüllen`,tab:'keller'});
   for(const l of S.lots) if(l.status==='fass'){
     if(l.stufe==='feder') A.push({t:`Federweißer ${SORTEN[l.sorte].name} muss diesen Monat abgefüllt werden`,rot:1,tab:'keller'});
@@ -2733,7 +2733,7 @@ function mgrBetrieb(){
     if(n>0){zahle(Math.round(n*pr*100)/100); const f=S.felder[id]; rebenDazu(id,n); S.verlust[id]-=n; LW.push(`${rbn(n)} ${SORTEN[id].name}-Reben nachgepflanzt`)}
   }
   if(aufgabeAktiv('duengen')&&S.duengungen<3&&S.boden<100&&(S.boden<=70||(m===7&&S.boden<90))&&S.geld>=duengKosten()){const st=bonusMasch('duenger'); duenge('helfer'); LW.push(st?'mit dem Düngerstreuer gedüngt':'gedüngt')}
-  // Bis 14.7.1 wartete hier der Weingut-Manager die Maschinen (Aufgabe warten), seit 14.7.3 machen das die Kellerhelfer.
+  // Bis 14.7.1 wartete hier der Weingut-Manager die Maschinen (Aufgabe warten), seit 14.7.3 machen das die Kellerhelfer (kellerWarten).
   if(hf){const nh=mgrHandlese(); if(nh) LW.push(`${nh===1?'einen Erntehelfer':nh+' Erntehelfer'} für die Handlese eingestellt`)}
   // Schritt F: Kellermeister (seit 8.5 ab Stufe 1, vorher Stufe 2) keltert die Lese beim Weiterblättern und kauft fehlenden Fassraum in Schritten von 500 l wie von Hand.
   // Für den Kauf lässt er mgrPuffer auf dem Konto, fehlende Lagerarbeiter stellt er nur mit der Aufgabe 'lager' ein. Reicht es nicht, bleiben die Trauben liegen
@@ -2775,7 +2775,7 @@ function mgrBetrieb(){
     while(k<mw.handH&&S.helfer>0&&S.helfer-1>=fahrer&&helferReben(S.helfer-1)>=rebenGesamt()){S.helfer--; S.loehne.helfer.pop(); k++}
     mw.handH=0; if(k) LW.push(`${k===1?'einen Erntehelfer':k+' Erntehelfer'} nach der Handlese entlassen`);
   }}
-  if(neu.lagerarb) LK.unshift(`${neu.lagerarb} Lagerarbeiter eingestellt`);
+  if(neu.lagerarb) LK.unshift(`${kellerZahl(neu.lagerarb)} eingestellt`);
   mgrMelde('weingut',LW);
   if(LW.length) save();
 }
@@ -2824,7 +2824,8 @@ function mgrHandel(){
 function mgrMelde(b,L){if(!L.length) return; S.mgrLog=S.mgrLog||{}; S.mgrLog[b]=(S.mgrLog[b]||[]).concat(L); S.manager[b].zuletzt=L.join(', '); S.manager[b].zm=S.jahr*12+S.monat; mgrLogbuch(b,S.mgrLog[b].join(', '))}
 // Alles, was die Manager beim Weiterblättern erledigen (früher verwalter() und dauerAuftrag()).
 // Seit 11.1: Siegel aus der Arbeit der Manager melden sich nur im Winzerboten (KOMP_LEISE).
-function managerArbeit(){KOMP_LEISE++; try{mgrKommen(); mgrBetrieb(); leuteArbeit(); mgrHandel(); dauerAuftrag()}finally{KOMP_LEISE--}}
+// Seit 14.7.3 warten die Kellerhelfer die Maschinen vor der Arbeit des Weingut-Managers, so wie er bis 14.7.2 vor dem Einstellen für eine Lücke gewartet hat.
+function managerArbeit(){KOMP_LEISE++; try{mgrKommen(); {const L=[]; kellerWarten(L); leuteMelde(L)} mgrBetrieb(); leuteArbeit(); mgrHandel(); dauerAuftrag()}finally{KOMP_LEISE--}}
 // Seit 13.5.2 (Bauplan 13.5): Arbeit der Leute nach ihrer Stufe (leuteSt), beim Weiterblättern nach den Managern, die vorher einkaufen und einstellen.
 // Gearbeitet wird nur, wenn mindestens einer der Gruppe angestellt ist. Was sie tun, steht im nächsten Winzerboten (S.leuteLog).
 function leuteMelde(L){if(L.length) S.leuteLog=(S.leuteLog||[]).concat(L)}
@@ -2877,6 +2878,24 @@ function lagerArbeit(L){
     for(const l of sektAufHefe()) if(l.flMonate+1>=lager(l).min){sektAbfuellen(l); L.push(`${lotName(l)} abgefüllt`)}}
 }
 const lagerKann=n=>!!S.lagerarb&&leuteSt('lagerarb')>=n;
+// Seit 14.7.3 (Annahme 21): Die Kellerhelfer warten die Maschinen, sobald einer angestellt ist, nach der Regel des Weingut-Managers bis 14.7.2: nach der Lese
+// (vor August oder wenn kein Feld mehr hängt) jede Maschine unter MGR_WART_AB auf 100 %, eine ausgefallene Erntemaschine (unter MASCH_ROT) sofort, auch mitten in der Lese.
+// Sie lassen die Geldgrenze des Weingut-Managers auf dem Konto (mgrPuffer, ohne ihn MGR_PUFFER_START), reicht es nicht ganz, warten sie so weit, wie das Geld reicht.
+// Die Ausgefallene kommt nur, wenn das Geld bis MASCH_ROT reicht. Der Schalter dafür kommt in 14.7.5, bis dahin warten sie immer (Testschalter ABGABE_AUS.warten).
+const kellerWartet=()=>lagerKann(1)&&abgabe('warten');
+const kellerZahl=n=>`${num(n)} ${n===1?'Kellermensch':'Kellerleute'}`;   // Platzhalter, Wortlaut in Meilenstein 17
+function kellerWarten(L){
+  if(!kellerWartet()) return; const pu=mgrPuffer('weingut');
+  if(S.monat<7||!weinberge().some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen))
+    for(const ma of S.maschinen.filter(x=>x.zustand<MGR_WART_AB)){
+      const W=mTyp(ma).wart, n=Math.min(100-ma.zustand,Math.floor((S.geld-pu)/W)); if(n<1) continue;
+      zahle(n*W); ma.zustand+=n; L.push(`${maschName(ma)} auf ${ma.zustand} % gewartet`);
+    }
+  for(const ma of S.maschinen.filter(x=>mTyp(x).ernte&&x.zustand<MASCH_ROT)){
+    const W=mTyp(ma).wart, n=Math.min(100-ma.zustand,Math.floor((S.geld-pu)/W)); if(ma.zustand+n<MASCH_ROT) continue;
+    zahle(n*W); ma.zustand+=n; L.push(`${maschName(ma)} nach dem Ausfall auf ${ma.zustand} % gewartet`);
+  }
+}
 // Seit 13.5.7: was die Leute schon können und was als Nächstes kommt, für "Deine Leute" im Betrieb. Wortlaut seit 13.8.
 function leuteStufeText(k){const st=leuteSt(k), T=LEUTE_ST[k], n=st+1;
   return (st?`${T.stufen?leuteStName(k,st)+' k':'K'}önnen schon: ${T.kann.slice(0,st).join(', ')}.`:'Noch machst du ihre Arbeit selbst.')+(n<=3?` ${T.stufen?leuteStName(k,n):'Stufe '+n} (${T.kann[n-1]}) ${T.stufen?'kommen':'kommt'} ${freiText(k+n)}.`:'')}

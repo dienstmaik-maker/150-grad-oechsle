@@ -162,11 +162,13 @@ const EV_TEXT={export:'mit deiner ersten Medaille bei der Landesprämierung, son
 const HELFER_DUENG=80;
 // Seit 14.2.3: Erntehelfer schneiden und düngen ab Stufe 1, wenn du es abgibst, mit dem Zuwachs ihrer Stufe (ZUWACHS). Platzhalter, Wortlaut in Meilenstein 17.
 // Seit 14.4.3: Die Stufen der Erntehelfer haben eigene Namen (stufen), Platzhalter, Wortlaut in Meilenstein 17.
-const LEUTE_ST={helfer:{name:'Erntehelfer',stufen:['Erntehelfer','Winzergesellen','Rebmeister'],kann:['schneiden und düngen, halten aber nur den Stand','schneiden und düngen mit halbem Zuwachs','schneiden und düngen fast wie du, dazu nachpflanzen']},lagerarb:{name:'Lagerarbeiter',kann:['keltern','auch abfüllen und Etiketten kleben','auch den Sekt in den Sektkeller legen und abfüllen']}};
+// Seit 14.7.3 (Bauplan 14.7, Annahme 20): Aus den Lagerarbeitern werden die Kellerleute mit Kellerhelfern, Kellergesellen und Kellermeister, der Schlüssel lagerarb bleibt.
+// Kellerhelfer keltern und warten die Maschinen (Annahme 21), Kellergesellen füllen ab, der Kellermeister macht den Sekt. Neue Texte sind Platzhalter, Wortlaut in Meilenstein 17.
+const LEUTE_ST={helfer:{name:'Erntehelfer',stufen:['Erntehelfer','Winzergesellen','Rebmeister'],kann:['schneiden und düngen, halten aber nur den Stand','schneiden und düngen mit halbem Zuwachs','schneiden und düngen fast wie du, dazu nachpflanzen']},lagerarb:{name:'Kellerleute',stufen:['Kellerhelfer','Kellergesellen','Kellermeister'],kann:['keltern und die Maschinen warten','abfüllen und Etiketten kleben','den Sekt machen']}};
 const LEUTE_BOTE={helfer:['🧑‍🌾 Deine Erntehelfer können ab jetzt schneiden und düngen. Abgeben kannst du im Weinberg und bei der Düngung, sie halten aber nur den Stand.','✂️ Aus deinen Erntehelfern sind Winzergesellen geworden: Wer bei ihnen abgibt, bekommt den halben Zuwachs.','🌱 Deine Rebmeister schneiden und düngen fast wie du und pflanzen jetzt auch nach. Die Reben dafür kauft der Weingut-Manager.'],
-  lagerarb:['🛢️ Dein erster Qualitätswein ist angemeldet. Ab jetzt keltern deine Lagerarbeiter, das musst du nicht mehr tun.','🍾 Deine Lagerarbeiter füllen ab jetzt ab und kleben die Etiketten. Wieder eine Sorge weniger.','🥂 Dein erster Sekt ist fertig. Ab jetzt lagern die Lagerarbeiter den Sekt um und füllen ab. Kurz oder lang wählst du.']};
+  lagerarb:['🛢️ Dein erster Qualitätswein ist angemeldet. Ab jetzt keltern deine Kellerhelfer und warten nach der Lese die Maschinen.','🍾 Aus deinen Kellerhelfern sind Kellergesellen geworden: Sie füllen ab jetzt ab und kleben die Etiketten.','🥂 Dein erster Sekt ist fertig. Ab jetzt macht dein Kellermeister den Sekt, Verfahren und Hefezeit wählst du.']};
 const LEUTE_ERST={helfer:'🧑‍🌾 Der alte Winzer bringt eine junge Frau aus dem Dorf mit, die jeden Hang hier seit der Kindheit kennt. „Die weiß, wo der Dünger hingehört“, sagt er. Das ist deine erste Erntehelferin.',
-  lagerarb:'🛢️ Der alte Winzer kommt mit einem großen, stillen Mann durchs Hoftor. „Der kann anpacken. Und er redet wenig.“ Das ist dein erster Lagerarbeiter.'};
+  lagerarb:'🛢️ Der alte Winzer kommt mit einem großen, stillen Mann durchs Hoftor. „Der kann anpacken. Und er redet wenig.“ Das ist dein erster Kellerhelfer.'};
 const LESE={reif:'nur reife Trauben',ueber:'nur überreife Trauben',alles:'reife und überreife'};
 const WETTER={sonnig:['☀️','sonnig'],mild:['⛅','mild'],regen:['🌧️','Regen'],kalt:['🌥️','kalt'],frost:['❄️','Frost']};
 // Boden: verliert jeden Monat BODEN_MONAT Punkte (in einem Regenmonat BODEN_REGEN) und mit jeder Lese 4. Einmal Düngen bringt 30, erlaubt sind drei Mal im Jahr.
@@ -566,7 +568,7 @@ const MASCH={duenger:{name:'Düngerstreuer',preis:STREU_PREIS,leist:0,helfer:0,w
 // Bonus der drei neuen Maschinen, für Fenster und Infotafeln.
 const MASCH_BONUS={duenger:()=>`Düngen kostet ${Math.round(STREU_RABATT*100)} % weniger und bringt ${STREU_PLUS} statt ${DUENG_PLUS} Punkte Boden`,
   laub:()=>`Sommerschnitt im Juni: Jede Lese des Jahres bekommt ${LAUB_QP} Punkte Qualität und ${Math.round(LAUB_MENGE*100)} % mehr Menge, dazu ${LAUB_ANS} Ansehen`,
-  abfuell:()=>{const z=S&&S.maschinen.some(x=>x.typ==='abfuell'&&x.stufe>=2); return `${Math.round((z?ABF_PLUS2:ABF_PLUS)*100)} % mehr Flaschen aus jedem Fass, ein Lagerarbeiter betreut ${num(z?ABF_FLASCHEN2:ABF_FLASCHEN)} statt ${num(FLASCHEN_JE_LAGERARB)} leere Flaschen`}};
+  abfuell:()=>{const z=S&&S.maschinen.some(x=>x.typ==='abfuell'&&x.stufe>=2); return `${Math.round((z?ABF_PLUS2:ABF_PLUS)*100)} % mehr Flaschen aus jedem Fass, ein Kellermensch betreut ${num(z?ABF_FLASCHEN2:ABF_FLASCHEN)} statt ${num(FLASCHEN_JE_LAGERARB)} leere Flaschen`}};
 // Abnutzung je Lese: ABNUTZ_VOLL Prozentpunkte bei voller Auslastung im Jahr, anteilig darunter, mal Pflege-Faktor aus PFLEGE nach dem Zustand vor der ersten Lese des Jahres.
 // Nie unter MASCH_MIN. Gewartet wird nach der Lese jede Maschine unter MGR_WART_AB auf 100 % (bis 14.7.1 vom Weingut-Manager, ab 14.7.3 von den Kellerhelfern).
 const MASCH_GELB=60, MASCH_ROT=30, MASCH_MIN=10, ABNUTZ_VOLL=35, PFLEGE=[[80,.8],[60,1],[0,1.4]], MGR_WART_AB=80;
@@ -600,7 +602,7 @@ const MASCH_BOTE={duenger:'Im Dorf hat man es gleich gesehen: Hinter dem Schlepp
   klein:'Ab der nächsten Lese rollt eine Erntemaschine durch die Zeilen. Die Erntehelfer sehen es mit gemischten Gefühlen, edelfaule Trauben bleiben aber ihre Sache.',
   laub:'Wo früher im Juni Leute mit der Heckenschere durch die Zeilen liefen, fährt jetzt ein Laubschneider. Oben und an den Seiten, sauber wie beim Gärtner.',
   gross:'Ein Vollernter ist im Dorf noch selten. Er fährt aus eigener Kraft über die Rebzeile, die Kinder laufen hinterher, wenn er zum ersten Mal aus der Scheune kommt.',
-  abfuell:'Im Keller läuft jetzt ein Band: spülen, füllen, verkorken, etikettieren. Kein Schluck geht mehr daneben, sagen die Lagerarbeiter, und sie klingen dabei erleichtert.'};
+  abfuell:'Im Keller läuft jetzt ein Band: spülen, füllen, verkorken, etikettieren. Kein Schluck geht mehr daneben, sagen die Kellerleute, und sie klingen dabei erleichtert.'};
 /* ================= Musik und Geräusche ================= */
 // Sechs Musikstücke und sieben Geräusche liegen als Dateien im Ordner ton (gebaut von _medien_bauen.py). Musik und Geräusche sind getrennt abschaltbar (TON).
 // Musik: Beim Ortswechsel blendet das alte Stück aus und das neue ein. Jedes Stück merkt sich seine Stelle und spielt dort später weiter.
@@ -1212,7 +1214,7 @@ const KAPITEL=[null,
 // 7.8: Wer die Anzeige gelesen hat, je Generation. Neutral, weil das Spiel das Geschlecht der ersten Generation nicht kennt.
 const VORFAHREN=['Deine Eltern','Deine Großeltern','Deine Urgroßeltern','Deine Vorfahren'];
 // Seit 10.6 nennt die Feier alles, was mit dem Rang auftaucht (gesperrte Fenster sind unsichtbar), dazu Makler, Spenden und Weinfest.
-const FREI_SYM=[[/Erntehelfer|Lagerarbeiter|Kellergeselle|Winzergesellen|Rebmeister/,'🧑‍🌾'],[/Makler/,'🤝'],[/Spenden/,'💝'],[/Manager|Stufe/,'👔'],[/Rebsorte/,'🍇'],[/Auktion/,'🔨'],[/Sekt/,'🍾'],[/Export/,'🚢'],[/Keller/i,'🛢️'],[/prämierung|wettbewerb/i,'🏅'],[/ernte|vollernter/i,'🚜'],
+const FREI_SYM=[[/Erntehelfer|Kellerleute|Kellerhelfer|Kellermeister|Kellergeselle|Winzergesellen|Rebmeister/,'🧑‍🌾'],[/Makler/,'🤝'],[/Spenden/,'💝'],[/Manager|Stufe/,'👔'],[/Rebsorte/,'🍇'],[/Auktion/,'🔨'],[/Sekt/,'🍾'],[/Export/,'🚢'],[/Keller/i,'🛢️'],[/prämierung|wettbewerb/i,'🏅'],[/ernte|vollernter/i,'🚜'],
   [/Weinhandlung/,'🏪'],[/botschafter/i,'🎗️'],[/Hoffest|Weinfest/,'🎉'],[/Kontrolle/,'🔍'],[/Spitzenlage/,'⛰️'],[/Sieg/,'👑']];
 // Version 9.0: Aufstiegs-Szene (FSTUFE -1) vor der Bild-Bühne. Erst das Sommerbild der alten Stufe mit dem alten Rang, dann wechselt der Titel
 // und das Sommerbild der neuen Stufe blendet über, egal welcher Monat ist (Sommer-Regel, Maik 18.11.2026). Ein Tipp zeigt gleich das Ende.
