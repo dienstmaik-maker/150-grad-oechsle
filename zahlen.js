@@ -1459,6 +1459,11 @@ const CHEF_RAT='jung';
 // Spitzenlage als vierter Weinberg (14.4.4): Start beim Kauf mit SL_EP_START Entwicklungspunkten, SL_BODEN_START Bodenpunkten, Erziehungsform SL_FORM,
 // Ansehen beim Grand Cru SL_ANS_GC und beim Terroir SL_ANS_TERROIR (beim Kauf weiter SPITZE_ANS).
 const SL_EP_START=45, SL_BODEN_START=40, SL_FORM='pfahl', SL_ANS_GC=60, SL_ANS_TERROIR=90;
+// Kennung der Spitzenlage: SL_PRE plus Kennung der Spitzen-Sorte (zum Beispiel sl_sp_riesling), Name der Lage hinter der Sorte (SL_NAME).
+// Meldungen beim Grand Cru und beim Terroir mit dem Besuch von Weinkennern und Presse. Platzhalter, Wortlaut in Meilenstein 17.
+const SL_PRE='sl_', SL_NAME='Spitzenlage';
+const SL_BOTE={gc:'🏆 Deine {lage} ist Grand Cru: Weinkenner und Presse kommen zu Besuch, +{ans} Ansehen.',
+  terroir:'🌋 Der Boden deiner {lage} ist Terroir: Weinkenner und Presse kommen zu Besuch, +{ans} Ansehen.'}; // Platzhalter, Wortlaut in Meilenstein 17
 // Land mit weichem Deckel je Lage (14.4.5): bis LAND_SCHWELLE Hektar Besitz in der Lage normaler Preis, darüber steigt der Aufschlag im Quadrat bis zum Deckel
 // LAND_DECKEL auf das (1+LAND_AUFSCHLAG)-fache, bis zum Rang LAND_FRUEH_BIS (Winzer) auf das (1+LAND_AUFSCHLAG_FRUEH)-fache. Je Rang (Index in RAENGE) eine Zahl.
 // Der Südhang zählt ohne die 2 Hektar der Spitzenlage, SUED_MAX bleibt die Obergrenze.

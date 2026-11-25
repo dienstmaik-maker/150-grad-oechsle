@@ -2,6 +2,23 @@
 // Lädt nach zahlen.js und vor oberflaeche.js, alle Namen sind global.
 'use strict';
 for(const [id,[rolle,name,farbe]] of Object.entries(SORTEN_ROLLEN)){const P=ROLLEN[rolle]; SORTEN[id]={name,farbe,rolle,ertrag:P.ertrag,zucker:P.zucker,preis:P.preis,minL:P.minL,maxL:P.maxL,q:P.q,reife:P.reife,...(P.sektStar?{sektStar:true}:{})}}
+// Seit 14.4.4 (Entscheidung 13, Annahme 1): Die Spitzenlage ist ein vierter Weinberg mit eigener Kennung (SL_PRE plus Kennung der Spitzen-Sorte), dieselbe Rebsorte
+// mit allen ihren Werten (stamm zeigt auf sie), eigener Name mit Lagennamen (SL_NAME), damit ihr Wein ein eigener Posten im Keller ist. Die Reihenfolge der Sorten
+// nach Rang bleibt bei drei (R().sorten, sortenFolge, SORTE_RANG), die Liste der Weinberge ist weinberge(): die drei Sorten und, sobald gekauft, die Spitzenlage.
+for(const [id,[rolle]] of Object.entries(SORTEN_ROLLEN)) if(rolle==='spitze') SORTEN[SL_PRE+id]=Object.assign({},SORTEN[id],{name:SORTEN[id].name+' '+SL_NAME,stamm:id,sl:1});
+const stamm=id=>(SORTEN[id]||{}).stamm||id, istSL=id=>!!(SORTEN[id]||{}).sl;
+const slKenn=()=>{const sp=rolleSorte('spitze'); return sp?SL_PRE+sp:null};
+const slFeld=()=>{const k=S&&S.felder&&slKenn(); return k?S.felder[k]||null:null};
+function weinberge(){const L=R().sorten, k=slKenn(); return k&&S.felder[k]?[...L,k]:L}
+// Fläche der Spitzenlage in Reben (fest SPITZE_HA, auch wenn Reben eingegangen sind) und was dort nachgepflanzt werden kann.
+const slFl=()=>slFeld()?SPITZE_HA*HA_REBEN:0, slPlatz=()=>{const f=slFeld(); return f?Math.max(0,slFl()-f.reben):0};
+// Beim Kauf: SPITZE_HA Hektar fertig bepflanzt mit alten Reben (SL_EP_START Punkte, Premier Cru), eigener Boden (SL_BODEN_START, Gutsboden), Einzelpfahl.
+// Kommt sie nach dem Rebschnitt (nach SCHNITT_BIS), gilt sie für dieses Jahr als geschnitten, ohne Zuwachs und ohne Verwildern (schnittWer 'kauf', Annahme der Bau-Sitzung).
+// Der Chef bleibt, wo er ist (chefNorm), in den Lehrjahren teilt das Spiel still nach der Regel neu zu.
+function slKauf(){const k=slKenn(); if(!k||S.felder[k]) return null;
+  const f=S.felder[k]={reben:SPITZE_HA*HA_REBEN,pflSt:0,ep:SL_EP_START,form:SL_FORM,bodenP:SL_BODEN_START}; feldReset(f); f.pflSt=epStufe(k); f.bodenSt=wbBoden(k);
+  if(S.monat>SCHNITT_BIS){f.schnitt=S.jahr; f.schnittWer='kauf'; f.schnittZ=0}
+  chefNorm(); return k}
 // rollenAn: Spielt die Partie mit den Rollen? Ohne Spielstand (Titelbild, Neues Spiel) gilt, was ein neues Spiel bekäme.
 const rollenAn=()=>S?!!S.rollen:!!ROLLEN_NEU;
 // Das Gebiet mit der passenden Sortenliste. neu: true oder false erzwingt die Fassung, ohne Angabe gilt die der laufenden Partie.
@@ -34,7 +51,7 @@ const formMasch=id=>{const m=FORMEN[formVon(id)].masch; return !spitzeId(id)&&(m
 // Darf die Maschine in den Weinberg (Lese und Laubschneider)? Dazu nie an der Mosel (Annahme 18).
 const maschDarf=id=>!R().steil&&formMasch(id);
 // Reben, die von Hand gelesen werden (seit 14.2.4 nach der Form statt nur die Spitzen-Sorte).
-function handLeseReben(){return R().sorten.filter(id=>!maschDarf(id)).reduce((a,id)=>a+S.felder[id].reben,0)}
+function handLeseReben(){return weinberge().filter(id=>!maschDarf(id)).reduce((a,id)=>a+S.felder[id].reben,0)}
 // Rebschnitt je Hektar nach der Form, in der Erziehung bis Rebstock haErz (Annahme 11).
 const schnittHa=id=>{const F=FORMEN[formVon(id)]; return inErziehung(id)?F.haErz:F.ha};
 const epRund=x=>Math.round(x*1000)/1000, epT=x=>String(Math.round(x*10)/10).replace('.',',');
@@ -55,7 +72,7 @@ const pflegePreis=(id,st)=>((PFLEGE_PREIS[rolleK(id)]||[])[st||0])||0;
 function deckel(id){const f=S.felder[id]||{}; return DECKEL_BASIS[rolleK(id)]+BODEN_ST_OE*wbBoden(id)+PFLEGE_ST_OE*(f.pflSt||0)}
 // Obergrenze im Monatsmodell: der Deckel, mit Edelfäulnis bei der Spitzen-Sorte 150°.
 function oeGrenze(id){const f=S.felder[id]; return f&&f.edel&&rolleK(id)==='spitze'?150:deckel(id)}
-const feldId=f=>R().sorten.find(id=>S.felder[id]===f);
+const feldId=f=>weinberge().find(id=>S.felder[id]===f);
 // Seit 13.3.2: Freischaltung nach Rang (FREI) und welche Stufen eine Sorte nach ihrer Rolle machen darf (WEIN_ROLLE).
 const freiAb=k=>(FREI[k]||{r:0}).r;
 // Seit 13.3.4 mit Abstand (ab Jahre nach dem Aufstieg in den Rang r, genau auf den Monat) und Ende (bis).
@@ -137,13 +154,13 @@ const zuwachsVon=(wer,boden)=>boden&&S.schwer==='einfach'?1:wer==='helfer'?(ZUWA
 const helferSchneidet=id=>helferKann(1)&&(S.felder[id]||{}).schneider==='helfer';
 const helferDuengt=()=>helferKann(1)&&(S.schwer==='einfach'||S.duengWer==='helfer');
 // Chef-Grenze: CHEF_SCHNITT_MAX Weinberge je Winter schneidet der Chef selbst (seit 14.4.3 einer, bis 14.2 drei, also keine Grenze).
-const chefSchnitte=()=>R().sorten.filter(id=>{const f=S.felder[id]; return f.schnitt===S.jahr&&f.schnittWer!=='helfer'}).length;
+const chefSchnitte=()=>weinberge().filter(id=>{const f=S.felder[id]; return f.schnitt===S.jahr&&f.schnittWer!=='helfer'&&f.schnittWer!=='kauf'}).length;
 // Seit 14.4.3 (Maiks Entscheidung zur Chef-Grenze, CHEF_RAT 'jung'): Der Chef ist einem Weinberg zugeteilt (f.schneider nicht 'helfer'), die Zuteilung bleibt stehen,
 // bis der Spieler sie ändert. Die Regel: der Weinberg mit der niedrigsten Pflegestufe unter Grand Cru, bei Gleichstand der mit weniger Punkten (alle Grand Cru: der mit
 // weniger Punkten). In den Lehrjahren teilt das Spiel still nach der Regel zu (neu nur, solange der Chef in diesem Winter noch nicht geschnitten hat), in den
 // Gesellenjahren rät der alte Winzer dasselbe, in der Meisterprüfung gibt es keinen Rat. Sind mehr Weinberge beim Chef als erlaubt (zum Beispiel ein neu bepflanzter),
 // bleibt der, den der Chef diesen Winter schon geschnitten hat oder den der Spieler zuletzt zugeteilt hat, die anderen gehen an die Leute (Annahme der Bau-Sitzung).
-const chefKandidaten=()=>R().sorten.filter(id=>(S.felder[id]||{}).reben>0);
+const chefKandidaten=()=>weinberge().filter(id=>(S.felder[id]||{}).reben>0);
 const chefWeinberge=()=>chefKandidaten().filter(id=>S.felder[id].schneider!=='helfer');
 function chefRegel(ids){ids=ids||chefKandidaten(); const P=id=>S.felder[id].pflSt||0, U=ids.filter(id=>P(id)<PFLEGE_STUFEN.length-1);
   return (U.length?U:ids).slice().sort((a,b)=>P(a)-P(b)||(S.felder[a].ep||0)-(S.felder[b].ep||0))}
@@ -153,7 +170,7 @@ function chefNorm(){
   if(!S||!helferKann(1)) return; const K=chefKandidaten(); if(!K.length) return;
   if(chefStill()){if(chefSchnitte()) return; const z=chefRegel(K).slice(0,CHEF_SCHNITT_MAX); for(const id of K) S.felder[id].schneider=z.includes(id)?'chef':'helfer'; return}
   const C=chefWeinberge(); if(C.length<=CHEF_SCHNITT_MAX) return;
-  const vorn=[...C.filter(id=>S.felder[id].schnitt===S.jahr&&S.felder[id].schnittWer!=='helfer'),...C.filter(id=>S.felder[id].schneider==='chef'),...C];
+  const vorn=[...C.filter(id=>S.felder[id].schnitt===S.jahr&&S.felder[id].schnittWer!=='helfer'&&S.felder[id].schnittWer!=='kauf'),...C.filter(id=>S.felder[id].schneider==='chef'),...C];
   const bleibt=[...new Set(vorn)].slice(0,CHEF_SCHNITT_MAX); for(const id of C) if(!bleibt.includes(id)) S.felder[id].schneider='helfer'}
 // Der Spieler teilt den Chef einem Weinberg zu: Der bisherige geht an die Leute. Zurück kommt, wer gegangen ist, für den Hinweis.
 function chefZuteilen(id){const f=S.felder[id]; if(!f) return []; const alt=chefWeinberge().filter(x=>x!==id); f.schneider='chef';
@@ -182,13 +199,13 @@ const lageBodenP=lg=>(S.bodenP||{})[lg]||0, lageBoden=lg=>stufeZu(lageBodenP(lg)
 // dem übrigen Südhang, dann auf dem einfachen Hang, die Menge-Sorte (und Sorten ohne Rolle) zuerst auf dem einfachen Hang, dann auf dem, was frei ist.
 // Was nirgends Platz hat (Rundung), zählt zum einfachen Hang, bei der Spitzen-Sorte zum Südhang. W je Sorte, T je Lage, alles in Reben.
 const BELEG_REIHE={spitze:['sued'],sekt:['hoehe','sued','einfach'],menge:['einfach','hoehe','sued']}, ROLLE_REIHE=['spitze','sekt','menge'];
-function lagenBelegung(){const frei={}, W={}, T={einfach:0,hoehe:0,sued:0}; for(const lg of LAGE_REIHE) frei[lg]=hangHa(lg)*HA_REBEN;
+function lagenBelegung(){const frei={}, W={}, T={einfach:0,hoehe:0,sued:0}; for(const lg of LAGE_REIHE) frei[lg]=hangHa(lg)*HA_REBEN; frei.sued=Math.max(0,frei.sued-slFl()); // seit 14.4.4 ohne die Spitzenlage
   const ids=R().sorten.slice().sort((a,b)=>ROLLE_REIHE.indexOf(rolleK(a))-ROLLE_REIHE.indexOf(rolleK(b)));
   for(const id of ids){let n=(S.felder[id]||{}).reben||0; const w=W[id]={einfach:0,hoehe:0,sued:0};
     for(const lg of BELEG_REIHE[rolleK(id)]){const k=Math.min(n,frei[lg]); w[lg]+=k; frei[lg]-=k; n-=k}
     if(n>0) w[spitzeId(id)?'sued':'einfach']+=n; for(const lg of LAGE_REIHE) T[lg]+=w[lg]}
   return {W,T}}
-function wbBodenP(id){if(!id) return lageBodenP('einfach'); const w=lagenBelegung().W[id], n=w?LAGE_REIHE.reduce((a,lg)=>a+w[lg],0):0;
+function wbBodenP(id){if(!id) return lageBodenP('einfach'); if(istSL(id)) return (S.felder[id]||{}).bodenP||0; const w=lagenBelegung().W[id], n=w?LAGE_REIHE.reduce((a,lg)=>a+w[lg],0):0;
   if(!n) return lageBodenP(spitzeId(id)?'sued':rolleK(id)==='sekt'&&hangHa('hoehe')>0?'hoehe':'einfach');
   return epRund(LAGE_REIHE.reduce((a,lg)=>a+w[lg]*lageBodenP(lg),0)/n)}
 // Seit 14.2.5 (Entscheidungen 38 und 41, Annahme 7): S.bodenFl merkt je Lage die größte bisher bepflanzte Fläche in Reben. Wächst die bepflanzte Fläche
@@ -198,6 +215,10 @@ function bodenVerduennen(){const T=lagenBelegung().T, F=S.bodenFl=S.bodenFl||{ei
 // Zum Jahreswechsel (Entscheidungen 20 und 39): Im guten Bodenjahr bekommt jede bepflanzte Lage ihre BODEN_PUNKTE mal den Zuwachs dessen, der gedüngt hat (zd).
 function bodenJahr(gut,zd,Z){bodenVerduennen(); const T=lagenBelegung().T, P=S.bodenP, L=S.bodenStL=S.bodenStL||{};
   if(gut) for(const lg of LAGE_REIHE) if(T[lg]>0) P[lg]=epRund(Math.min(BODEN_MAX,(P[lg]||0)+BODEN_PUNKTE[lg]*zd));
+  // Seit 14.4.4: Die Spitzenlage hat eigene Bodenpunkte (f.bodenP), sammelt wie der Südhang und wird durch Zukauf nicht verdünnt. Beim Terroir kommen Weinkenner und Presse.
+  const sl=slFeld(); if(sl&&sl.reben>0){const k=slKenn(); if(gut) sl.bodenP=epRund(Math.min(BODEN_MAX,(sl.bodenP||0)+BODEN_PUNKTE.sued*zd)); const st=wbBoden(k);
+    if(st>(sl.bodenSt||0)){sl.bodenSt=st; S.bodenSt=Math.max(S.bodenSt||0,st); Z.push(BODEN_LAGE_BOTE.replace('{lage}',SORTEN[k].name).replace('{stufe}',BODEN_STUFEN[st]));
+      if(st>=BODEN_STUFEN.length-1) Z.push(SL_BOTE.terroir.replace('{lage}',SL_NAME).replace('{ans}',ruhm(SL_ANS_TERROIR)))}}
   for(const lg of LAGE_REIHE){const st=lageBoden(lg); if(st>(L[lg]||0)){L[lg]=st; S.bodenSt=Math.max(S.bodenSt||0,st); Z.push(BODEN_LAGE_BOTE.replace('{lage}',LAGEN[lg].kurz).replace('{stufe}',BODEN_STUFEN[st]))}}}
 const wbBoden=id=>stufeZu(wbBodenP(id),BODEN_SCHWELLE);
 const terroir=id=>wbBoden(id||rolleSorte('spitze'))>=BODEN_STUFEN.length-1;
@@ -207,11 +228,14 @@ function pflegeAuf(Z,id,st){
   if(st===1&&rl==='menge'&&!G.rebstock){G.rebstock=S.jahr; Z.push(GESCH_TEXT.rebstock)}
   if(st===2&&!G.premier){G.premier=S.jahr; Z.push(GESCH_TEXT.premier)}
   if(st===3&&!G['gc_'+rl]){G['gc_'+rl]=S.jahr; if(!(rl==='spitze'&&terroir(id))) feierNachDazu({welt:'gc',k:rl,id})}
+  // Seit 14.4.4: Grand Cru der Spitzenlage bringt einmal SL_ANS_GC Ansehen mit dem Besuch von Weinkennern und Presse.
+  if(st===3&&istSL(id)&&!S.felder[id].gcAns){S.felder[id].gcAns=S.jahr; Z.push(SL_BOTE.gc.replace('{lage}',SL_NAME).replace('{ans}',ruhm(SL_ANS_GC)))}
   if(st===3&&rl==='spitze') vollendetPruef(Z);
 }
 function vollendetPruef(Z){
-  const G=S.gesch=S.gesch||{}; if(G.vollendet||!terroir()) return;
-  const id=R().sorten.find(i=>rolleK(i)==='spitze'); if(!id||((S.felder[id]||{}).pflSt||0)<PFLEGE_STUFEN.length-1) return;
+  // Seit 14.4.4 (Annahme 3): der erste Weinberg der Spitzen-Sorte, der Grand Cru mit Terroir ist, der große oder die Spitzenlage.
+  const G=S.gesch=S.gesch||{}; if(G.vollendet) return;
+  const id=weinberge().find(i=>rolleK(i)==='spitze'&&terroir(i)&&((S.felder[i]||{}).pflSt||0)>=PFLEGE_STUFEN.length-1); if(!id) return;
   G.vollendet=S.jahr; G.gc_spitze=G.gc_spitze||S.jahr; Z.push(GESCH_TEXT.vollendet); feierNachDazu({welt:'vollendet',id});
 }
 // Seit 13.8.7: Feiern, die warten (S.feierNach). Läuft schon eine Feier, etwa ein Aufstieg, kommt die nächste nach dem Anstoßen, sonst gleich nach dem Winzerboten.
@@ -439,7 +463,7 @@ function altLeute(){
   // Teil C2: Löhne aus alten Spielständen (LOHN_ALT, 200 bis 500 €) wandern auf die neue Spanne, wer günstig war, bleibt günstig. Das Angebot des Monats wird neu gewürfelt.
   if(S.loehne){const [a,b]=LOHN_ALT; for(const k of LOHN_ARTEN) S.loehne[k]=(S.loehne[k]||[]).map(n=>n<1000?lohnF(LOHN_MIN+(clamp(n,a,b)-a)*(LOHN_MAX-LOHN_MIN)/(b-a)):n).sort((x,y)=>x-y); neuesLohnAngebot()}
   if(S.ende||S.pleite) return;
-  const haengt=R().sorten.map(id=>S.felder[id]).filter(f=>f&&f.menge>0&&!f.gelesen), reben=rebenGesamt();
+  const haengt=weinberge().map(id=>S.felder[id]).filter(f=>f&&f.menge>0&&!f.gelesen), reben=rebenGesamt();
   const fahrer=S.maschinen.filter(x=>x.zustand>=MASCH_ROT&&mTyp(x).leute==='helfer').reduce((a,x)=>a+mTyp(x).fahrer,0), hand=Math.max(0,...haengt.filter(handFeld).map(handBedarf));
   const lese=h=>alleinReben()+h*HELFER_LEISTUNG+maschEinsatz(h).reduce((a,m)=>a+Math.round(mTyp(m).leist*m.zustand/100),0);
   let h=0, l=0;
@@ -618,7 +642,8 @@ const anr=(m,w)=>frau()?w:m;
 const rangN=i=>frau()&&RAENGE[i].w||RAENGE[i].name, rangK=i=>frau()&&RAENGE[i].kw||RAENGE[i].kurz;
 function famName(){const i=(S.ich||'').trim(); return i.includes(' ')?i.split(/\s+/).pop():''}
 function ratte(){const n=S.ratte||1; return n<2?'Frau Öchsle':`Frau Öchsle ${RATTE_ORD[n]||'die '+n+'.'}`}
-function rebenGesamt(){return R().sorten.reduce((a,id)=>a+S.felder[id].reben,0)}
+// Seit 14.4.4 zählt die Spitzenlage immer mit ihrer ganzen Fläche (slFl), nachgepflanzt wird dort nur auf ihren eigenen Platz (slPlatz).
+function rebenGesamt(){return R().sorten.reduce((a,id)=>a+S.felder[id].reben,0)+slFl()}
 // Bepflanzte Hektar mit einer Nachkommastelle. Zählt für deinen Aufstieg, gekaufte Fläche allein reicht nicht.
 function flaecheBep(){return Math.round(rebenGesamt()/HA_REBEN*10)/10}
 // Seit 13.4.9 (Nachtrag 3): Land je Lage in S.hang (S.lage ist schon Weinskandal und Mode). S.ha bleibt die Summe und wächst nur über landDazu.
@@ -629,7 +654,7 @@ function landDazu(lg,ha){const H=S.hang=S.hang||{einfach:S.ha,hoehe:0,sued:0}; H
 function suedRest(){return Math.max(0,SUED_MAX-hangHa('sued')-(S.spitzeAuk?0:SPITZE_HA))}
 // Freier Platz in Reben. Die Spitzen-Sorte wächst nur auf freiem Südhang, Menge- und Sekt-Sorte dürfen überall stehen.
 function suedPlatz(){return Math.max(0,hangHa('sued')*HA_REBEN-handReben())}
-function platzFuer(id){const f=Math.max(0,S.ha*HA_REBEN-rebenGesamt()); return spitzeId(id)?Math.min(f,suedPlatz()):f}
+function platzFuer(id){const f=Math.max(0,S.ha*HA_REBEN-rebenGesamt()); return istSL(id)?slPlatz():spitzeId(id)?Math.min(f,suedPlatz()):f}
 // Anteil der Sekt-Reben auf dem einfachen Hang. Die Reben bleiben je Sorte, die Lage ergibt sich zu deinen Gunsten: Die Spitzen-Sorte steht auf dem Südhang,
 // der Sekt zuerst auf der Höhenlage, dann auf dem übrigen Südhang, erst der Rest auf dem einfachen Hang. Der Abzug gilt anteilig (Annahme von Claude).
 function sektEinfach(){const s=R().sorten.filter(sektSorte).reduce((a,id)=>a+S.felder[id].reben,0); if(!s) return 0; const gut=Math.max(0,(hangHa('hoehe')+hangHa('sued'))*HA_REBEN-handReben()); return Math.max(0,s-gut)/s}
@@ -779,7 +804,7 @@ function ladenMonat(Z){
   S.lots=S.lots.filter(l=>l.liter>0);
   if(n){ein=erloes(Math.round(ein)); kassiere(ein); Z.push(`Deine Weinhandlung hat ${num(n)} Flaschen für ${eur(ein)} verkauft.`)}
 }
-function ladenPasst(l,r){const w=S.laeden[r].wunsch; return ladenOk(l)&&(w==='sekt'?!!l.sekt:w==='edel'?!l.sekt&&STUFEN[l.stufe].rang>=5:w==='weiss'||w==='rot'?!l.sekt&&SORTEN[l.sorte].farbe===w:!l.sekt&&l.sorte===w)}
+function ladenPasst(l,r){const w=S.laeden[r].wunsch; return ladenOk(l)&&(w==='sekt'?!!l.sekt:w==='edel'?!l.sekt&&STUFEN[l.stufe].rang>=5:w==='weiss'||w==='rot'?!l.sekt&&SORTEN[l.sorte].farbe===w:!l.sekt&&stamm(l.sorte)===w)}
 function ladenPreis(l,r){return Math.round(preis(l)*LADEN_AUF*100)/100}
 
 /* ================= Wettbewerbe ================= */
@@ -977,7 +1002,7 @@ function aukErgebnis(){
 /* ================= Ereignisse ================= */
 // Rund zwei im Jahr, halb gut, halb schlecht. Nur in ruhigen Monaten: kein Wettbewerb, keine Auktion, kein Prüfer und kein großes Thema in der Zeitung.
 // Je Ereignis: ok sagt, ob es gerade passen kann, los führt es aus und meldet es mit Wichtigkeit 80 in der Zeitung.
-function feldHaengt(){return R().sorten.filter(id=>{const f=S.felder[id];return f.reben&&f.menge>0&&!f.gelesen})}
+function feldHaengt(){return weinberge().filter(id=>{const f=S.felder[id];return f.reben&&f.menge>0&&!f.gelesen})}
 function kritikerWein(l){return l.status==='flasche'&&l.stufe&&STUFEN[l.stufe].rang>=3}
 function monatNr(){return (S.jahr-START_JAHR)*12+S.monat}
 function variante(k){S.vz=S.vz||{}; const V=VARIANTEN[k], i=(S.vz[k]=(S.vz[k]||0)+1)-1; return V[i%V.length]}
@@ -1083,7 +1108,7 @@ function helferReben(h){h=h==null?S.helfer:h; return alleinReben()+h*REBEN_JE_HE
 // die Spitzen-Sorte lesen Familie und Erntehelfer immer von Hand, auch Kabinett und Spätlese. leseTeile rechnet, welcher Anteil je Gruppe gelesen wird:
 // Die Maschinen nehmen von Menge und Sekt, was sie schaffen, den Rest und die ganze Spitzen-Sorte lesen die Hände.
 const spitzeId=id=>(SORTEN[id]||{}).rolle==='spitze';
-function handReben(){return R().sorten.filter(spitzeId).reduce((a,id)=>a+S.felder[id].reben,0)}
+function handReben(){return R().sorten.filter(spitzeId).reduce((a,id)=>a+S.felder[id].reben,0)+slFl()} // seit 14.4.4 mit der ganzen Spitzenlage
 function leseTeile(){const sp=handLeseReben(), rest=rebenGesamt()-sp, mT=Math.min(maschLeistung(),rest), need=sp+rest-mT, H=alleinReben()+S.helfer*HELFER_LEISTUNG, hf=need?Math.min(1,H/need):1;
   return {hand:hf,masch:rest?(mT+(rest-mT)*hf)/rest:1,sp,rest}}
 // Erntehelfer, die es ohne Maschinen braucht (nur für die Anzeige).
@@ -1198,19 +1223,20 @@ const wetterText=()=>`${WETTER[S.wetter].join(' ')}, ${S.temp!=null?S.temp:tempF
 function wachse(m){
   const reg=R(), L=[];
   // Seit 8.2: Erntedank-Segen nach der Spende fürs Kirchenfenster, einmal im September SP_SEGEN Öchsle mehr.
-  const segen=m===8&&S.spSegen; if(segen){S.spSegen=0; if(reg.sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)) L.push(`Erntedank-Segen: Deine Trauben bekommen diesen Monat ${SP_SEGEN}° Öchsle extra.`)}
+  const segen=m===8&&S.spSegen; if(segen){S.spSegen=0; if(weinberge().some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)) L.push(`Erntedank-Segen: Deine Trauben bekommen diesen Monat ${SP_SEGEN}° Öchsle extra.`)}
   // Seit 13.4.2: Im Dezember richtet sich das Wetter nach dem Frost-Wagnis, wenn ein Feld darauf wartet (wagnisWetter).
   if(m===11) wagnisWetter();
   const w=S.wetter;
   if(w==='sonnig'&&m>=5&&m<=9) S.sonne++;
-  for(const [si,id] of reg.sorten.entries()){
+  // Seit 14.4.4 alle Weinberge, die Spitzenlage würfelt wie der Weinberg ihrer Sorte (si der Sorte), nur ihre Trauben bekommen SPITZE_OE.
+  for(const [si,id] of weinberge().map(x=>[reg.sorten.indexOf(stamm(x)),x])){
     const f=S.felder[id], so=SORTEN[id]; if(!f.reben) continue;
     if((m===3||m===4)&&w==='frost'){f.frostF=.7; L.push(`Spätfrost schädigt die Blüte beim ${so.name}.`)}
     // Seit 13.2.2: statt der Jungreben der Mengen-Faktor der Rebpflege (pflegeMenge).
     // Seit 14.2.4 mal der Menge der Erziehungsform (formWirk).
     if(m===5) f.menge=Math.round(f.reben*pflegeMenge(f,id)*formWirk(id)[0]*so.ertrag*(reg.ertragF||1)*(.6+.4*S.boden/100)*(1+BODEN_ST_MENGE*wbBoden(id))*f.frostF*festR(.9,1.1,fest(6,si,S.jahr,m)));
     // Seit 13.2.3: Das Wetter-Öchsle zählt höchstens bis zur Grenze des Weinbergs (oeGrenze: Deckel, Edelfäulnis der Spitzen-Sorte bis 150°).
-    if(m===6){f.oe=Math.min(oeGrenze(id),OE_START+zuckerIm(id)+wbonus(w)+festI(-2,2,fest(5,si,S.jahr,m))+(S.spitze?SPITZE_OE:0)); f.reif=5; f.ueber=0; f.plus=0}
+    if(m===6){f.oe=Math.min(oeGrenze(id),OE_START+zuckerIm(id)+wbonus(w)+festI(-2,2,fest(5,si,S.jahr,m))+(istSL(id)?SPITZE_OE:0)); f.reif=5; f.ueber=0; f.plus=0}
     if(m>=7&&f.menge>0&&!f.gelesen){
       // f.plus merkt den Öchsle-Zuwachs des Monats für die Infoseite.
       const vor=f.oe;
@@ -1307,7 +1333,7 @@ function feldWartet(id){const f=S.felder[id], m=S.monat; if(!f||!(f.menge>0)||f.
 // Die Warnung des Weingut-Managers (Maiks Regel): alle wartenden Felder gegen den erwarteten Erlös der ganzen Ernte des Jahres, gelesene Felder mit f.leseW.
 function wagnisWarnung(){
   if(mgrSt('weingut')<1||S.monat<9||S.monat>10) return null;
-  const I=R().sorten, W=I.filter(feldWartet); if(!W.length) return null;
+  const I=weinberge(), W=I.filter(feldWartet); if(!W.length) return null;
   const w=W.reduce((a,id)=>a+feldErloes(id),0), ges=I.reduce((a,id)=>a+feldErloes(id)+(S.felder[id].leseW||0),0);
   return ges>0&&w>mgrWarnAb()*ges?{ids:W,anteil:w/ges}:null;
 }
@@ -1345,7 +1371,7 @@ function wagnisWeg(f,so,art,L){
 }
 // Im Dezember: Wartet ein Feld auf Frost, ist es genau dann frostig, wenn das Wagnis klappt, sonst kommt Tauwetter.
 function wagnisWetter(){
-  if(!R().sorten.some(id=>{const f=S.felder[id]; return f.reben&&f.menge>0&&!f.gelesen&&f.wagnis==='frost'})) return;
+  if(!weinberge().some(id=>{const f=S.felder[id]; return f.reben&&f.menge>0&&!f.gelesen&&f.wagnis==='frost'})) return;
   const w=herbstJahr().uFrost<wegChance('frost')?'frost':S.wetter==='frost'?'mild':S.wetter;
   if(w!==S.wetter){S.wetter=w; S.temp=tempFuer(11,w,fest(8,0,S.jahr,11))}
 }
@@ -1459,7 +1485,7 @@ function lagerBasis(l){
   return {min:Math.max(1,so.minL-K),max:so.maxL,rate:rf};
 }
 // Ein Weinskandal drückt alle Preise, eine Mode im Ausland hebt eine Sorte. S.lage={typ,f,rest,sorte}.
-function lageF(l){const g=S.lage; return !g?1:g.typ==='mode'?(l.sorte===g.sorte?g.f:1):g.f}
+function lageF(l){const g=S.lage; return !g?1:g.typ==='mode'?(stamm(l.sorte)===g.sorte?g.f:1):g.f}
 function preis(l){
   if(l.status!=='flasche') return 0;
   const L=lager(l); if(l.flMonate<L.min) return 0;
@@ -1487,7 +1513,7 @@ for(const st of Object.keys(STUFEN)) KOMP['stufe_'+st]={id:'stufe_'+st,kap:'stuf
   text:()=>kompStufeText(st),get titel(){return kompTitel(this.id)}};
 KOMP.sekt={id:'sekt',kap:'sorte',name:'Sekt',stufe:'sekt',rl:'sekt',w:KOMP_W.rolle.sekt,text:()=>kompSektText(),get titel(){return kompTitel(this.id)}};
 // Die Rebsorten: Wissens-Seiten mit Geschichte und der Zeile "Im Spiel". Die Kennungen aus 11.1 bleiben.
-for(const id of Object.keys(SORTEN)) kompWissen('sorte_'+id,'sorte',SORTEN[id].name,()=>{
+for(const id of Object.keys(SORTEN).filter(id=>!SORTEN[id].sl)) kompWissen('sorte_'+id,'sorte',SORTEN[id].name,()=>{
   const so=SORTEN[id], rl=Object.keys(KOMP_ROLLE_SIEGEL).find(r=>kompRollen()[r]===id), sg=rl&&(rl!=='sekt'||S.rollen)?' '+KOMP_ROLLE_SIEGEL[rl]:'';
   return `${so.farbe==='weiss'?'Weißwein':'Rotwein'}, ${rolleVon(id)?`die ${rolleVon(id).name} im Gebiet ${R().name}`:`im Gebiet ${R().name} ${eigText(eignung(id))}`}. Als Prädikatswein reift er mindestens ${Math.max(1,so.minL-(S.keller||0))} Monate in der Flasche und hält bis zu ${Math.round(so.maxL/12)} Jahre.${so.sektStar?` Als Sekt bringt er ${Math.round((SEKT_STAR-1)*100)} % mehr als andere Sorten.`:''}${sg}`});
 function kompSektText(){
@@ -1637,14 +1663,14 @@ function meisterFreiSetz(){if(window.BOT||meisterFrei()) return false; try{local
 const meisterStand=o=>!!o&&o.schwer===MEISTER_VON&&(Math.floor(+o.gen)||1)>=MEISTER_GEN;
 function meisterAbgleich(){if(window.BOT||meisterFrei()) return; for(let i=0;i<KEYS.length;i++) if(meisterStand(roh(i))){meisterFreiSetz(); return}}
 /* ---- Haken im Spiel ---- */
-function kompLese(id,liter){if(KOMP['sorte_'+id]) kompE('sorte_'+id).l=(kompE('sorte_'+id).l||0)+liter}
+function kompLese(id,liter){id=stamm(id); if(KOMP['sorte_'+id]) kompE('sorte_'+id).l=(kompE('sorte_'+id).l||0)+liter}
 // Verkauf auf jedem Weg (Großhandel, Weinhandlungen, eigenes Regal, Daueraufträge): Jede Flasche zählt einmal, beim Sekt oder bei ihrer Stufe,
 // aber nur, wenn sie aus der Sorte des Eintrags stammt. In Spielständen ohne Rollen zählt beim Sekt jeder Sekt. Gepanschter Wein zählt nie.
 function kompVerkauf(l,n){
   if(!l||!(n>0)||l.pansch) return;
   const so=kompRollen();
   if(l.sekt){if(!S.rollen||l.sorte===so.sekt) komp('sekt',{f:n}); return}
-  const rl=KOMP_STUFE_ROLLE[l.stufe]; if(rl&&l.sorte===so[rl]) komp('stufe_'+l.stufe,{f:n});
+  const rl=KOMP_STUFE_ROLLE[l.stufe]; if(rl&&stamm(l.sorte)===so[rl]) komp('stufe_'+l.stufe,{f:n});
 }
 // Wettbewerb. w ist der Wein oder die Einreichung (sorte, stufe, sekt), platz 0 bis 2. Es zählt nur die Goldmedaille, also Platz 1 (Maik 19.11.2026),
 // und nur bei Auslese bis Eiswein der Spitzen-Sorte und beim Sekt. Eine Goldmedaille bringt nie Bronze, sie wird gemerkt, bis Silber da ist.
@@ -1652,7 +1678,7 @@ function kompMedaille(w,platz){
   if(!w||!w.sorte||platz!==0) return;
   const so=kompRollen();
   if(w.sekt){if(!S.rollen||w.sorte===so.sekt) komp('sekt',{gm:1}); return}
-  if(KOMP_STUFE_ROLLE[w.stufe]==='spitze'&&w.sorte===so.spitze) komp('stufe_'+w.stufe,{gm:1});
+  if(KOMP_STUFE_ROLLE[w.stufe]==='spitze'&&stamm(w.sorte)===so.spitze) komp('stufe_'+w.stufe,{gm:1});
 }
 // Goldmedaillen der Weine, die noch im Keller liegen (für alte Spielstände).
 function kompMedLot(l){if(l&&!l.pansch&&(l.med||[]).some(m=>/^(🥇|🏆|🌍)/u.test(String(m)))) kompMedaille(l,0)}
@@ -1868,7 +1894,7 @@ function rubrikNeu(nr){
   const [text,von]=fuelle(x).split('|');
   return {h:R0.h,text,von:von||''};
 }
-const eisEigen=()=>S.monat===11&&R().sorten.some(id=>S.felder[id].gefroren&&S.felder[id].menge>0);
+const eisEigen=()=>S.monat===11&&weinberge().some(id=>S.felder[id].gefroren&&S.felder[id].menge>0);
 const eisT=(art,n,wo)=>{const L=EIS_TEXT[art], x=L[rint(0,L.length-1)], f=s=>s.replace(/\{n\}/g,n||'').replace(/\{wo\}/g,wo||''); return [f(x[0]),f(x[1])]};
 // Seit 13.4.7: Eiswein-Geschichten nur aus Gebieten, in denen der Frost in diesem Jahr gekommen ist (Jahr und Weg statt EIS_KUEHL).
 function eisGeschichte(){
@@ -1945,7 +1971,7 @@ function monatLauf(){
     // Seit 14.2.5 je Lage mit eigenen Punkten nur für bepflanztes Land (bodenJahr), die Jahrhundertjahre stehen seit dem Start der Partie fest.
     bodenJahr(schnitt>=BODEN_GUT,duengZuwachs(),Z); vollendetPruef(Z);
     S.verlust={};
-    for(const [si,id] of R().sorten.entries()){
+    for(const [si,id] of weinberge().map(x=>[R().sorten.indexOf(stamm(x)),x])){
       const f=S.felder[id]; feldReset(f);
       // Seit 13.2.2: Rebpflege-Zähler der Sorte. Bis Ende April des abgelaufenen Jahres geschnitten (f.schnitt) zählt PFLEGE_GUT, sonst PFLEGE_PATZER zurück.
       if(f.reben){
@@ -1958,7 +1984,7 @@ function monatLauf(){
       }
       if(f.reben){const tot=Math.min(f.reben,Math.round(f.reben*(festR(sp[1],sp[2],fest(7,si))+fp)/1000)*10); if(tot){f.reben-=tot; S.verlust[id]=tot; totAlle+=tot}}
     }
-    if(totAlle) Z.push(`Zum Jahreswechsel sind ${String(Math.round(totAlle/rebVor*1000)/10).replace('.',',')}\u00a0% deiner Reben eingegangen (${R().sorten.filter(id=>S.verlust[id]).map(id=>`${num(S.verlust[id])} ${SORTEN[id].name}`).join(', ')}). Der Boden lag im Jahresschnitt bei ${schnitt}\u00a0%${fp?', dazu kam der Frost'+(spLohn(2)?'. '+FROST_FEUER:''):''}. Bis März kannst du nachpflanzen.`);
+    if(totAlle) Z.push(`Zum Jahreswechsel sind ${String(Math.round(totAlle/rebVor*1000)/10).replace('.',',')}\u00a0% deiner Reben eingegangen (${weinberge().filter(id=>S.verlust[id]).map(id=>`${num(S.verlust[id])} ${SORTEN[id].name}`).join(', ')}). Der Boden lag im Jahresschnitt bei ${schnitt}\u00a0%${fp?', dazu kam der Frost'+(spLohn(2)?'. '+FROST_FEUER:''):''}. Bis März kannst du nachpflanzen.`);
     S.bodenSum=0; S.bodenN=0; S.winterFrost=0; S.spaetFrost=false; S.duengZ=[];
   }
   S.wetter=S.wetterNext; S.temp=tempFuer(S.monat,S.wetter,fest(8,0)); neuePrognose();
@@ -1978,7 +2004,7 @@ function monatLauf(){
   if(S.monat===6){const lb=S.maschinen.find(x=>x.typ==='laub');
     if(lb){const an=bonusMasch('laub');
       // Seit 14.2.4 nur in Weinbergen, in die die Maschine darf (maschDarf), die anderen bekommen den Sommerschnitt von Hand.
-      if(an){S.laubJahr=S.jahr; for(const id of R().sorten){const f=S.felder[id]; if(maschDarf(id)&&f.menge>0&&!f.gelesen){f.laub=S.jahr; f.menge=Math.round(f.menge*(1+LAUB_MENGE))}} abnutz(an,LAUB_ABN); const a=laubAnsehen(); Z.push(`✂️ Dein Laubschneider hat im Juni den Sommerschnitt gemacht: Die Lese ${S.jahr} bekommt ${LAUB_QP} Qualitätspunkte und ${Math.round(LAUB_MENGE*100)} % mehr Menge${a?`, dazu +${a} Ansehen`:''}. Zustand jetzt ${an.zustand} %.`)}
+      if(an){S.laubJahr=S.jahr; for(const id of weinberge()){const f=S.felder[id]; if(maschDarf(id)&&f.menge>0&&!f.gelesen){f.laub=S.jahr; f.menge=Math.round(f.menge*(1+LAUB_MENGE))}} abnutz(an,LAUB_ABN); const a=laubAnsehen(); Z.push(`✂️ Dein Laubschneider hat im Juni den Sommerschnitt gemacht: Die Lese ${S.jahr} bekommt ${LAUB_QP} Qualitätspunkte und ${Math.round(LAUB_MENGE*100)} % mehr Menge${a?`, dazu +${a} Ansehen`:''}. Zustand jetzt ${an.zustand} %.`)}
       else Z.push(`✂️ Dein Laubschneider ${lb.zustand<MASCH_ROT?'ist ausgefallen':'hatte keinen Fahrer'}, einen Sommerschnitt gab es dieses Jahr nicht.`)}}
   // Seit 8.0 nutzen sich Maschinen nur noch bei der Lese ab (maschAbnutzung), die feste Abnutzung je Herbstmonat ist weg.
   // Der Weingut-Manager stellt nach dem Monatswechsel die Helfer für die Handlese ein, sobald Edelfäulnis da ist.
@@ -2282,7 +2308,7 @@ function aufgaben(){
   // Seit 13.6.3: Anmeldung zur Weltweinschau im Januar, rot nur mit einem zugelassenen Wein.
   if(schauAnm()&&!S.schau.ein){const K=KRONEN[S.schau.kl], pass=S.lots.some(l=>schauFaehig(l)); A.push({t:`${K.sym} Weltweinschau, ${K.name}: `+(pass?'diesen Monat einen Wein anmelden':'diesen Monat, du hast aber keinen zugelassenen Wein'),tab:'stadt',sub:'amt',...(pass?{rot:1}:{ruhig:1})})}
   if(fehlText()) A.push({t:`${fehlText()}, vorher geht es nicht in den nächsten Monat`,rot:1,tab:'stadt',sub:'arbeit'});
-  if(m>=5&&m<=10&&leseFaktor()<.75&&R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)) A.push({t:`Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0% der Reben`,rot:1,tab:'stadt',sub:'arbeit'});
+  if(m>=5&&m<=10&&leseFaktor()<.75&&weinberge().some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)) A.push({t:`Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0% der Reben`,rot:1,tab:'stadt',sub:'arbeit'});
   // Seit 8.0: Maschinen unter MASCH_ROT fallen aus (Rot), unter MASCH_GELB lohnt das Warten (Gelb). Wartet der Weingut-Manager nach der Lese, ist Gelb nur ein Hinweis.
   // Dazu Gelb für Maschinen ohne Fahrer und für Felder, denen Helfer für die Handlese fehlen.
   {const mw=aufgabeAktiv('warten');
@@ -2292,7 +2318,7 @@ function aufgaben(){
   const of=maschOhneFahrer().filter(x=>mTyp(x).leute==='helfer').length;
   if(maschOhneFahrer().some(x=>mTyp(x).leute==='lagerarb')) A.push({t:'🍾 Die Abfüllanlage steht still, es fehlt ein Lagerarbeiter',tab:'stadt',sub:'arbeit'});
   if(of&&!fehlText()) A.push({t:`🚜 ${of===1?'Eine Maschine steht':of+' Maschinen stehen'} still, es ${fahrerFehlen()===1?'fehlt ein Fahrer':'fehlen '+fahrerFehlen()+' Fahrer'}`,tab:'stadt',sub:'arbeit'});
-  for(const id of R().sorten){const f=S.felder[id]; if(f.menge>0&&!f.gelesen&&handFehlt(f)) A.push({t:`✋ ${SORTEN[id].name}: für die Handlese fehlen ${handBedarf(f)-S.helfer} Erntehelfer, sonst nur Qualitätswein`,tab:'stadt',sub:'arbeit'})}}
+  for(const id of weinberge()){const f=S.felder[id]; if(f.menge>0&&!f.gelesen&&handFehlt(f)) A.push({t:`✋ ${SORTEN[id].name}: für die Handlese fehlen ${handBedarf(f)-S.helfer} Erntehelfer, sonst nur Qualitätswein`,tab:'stadt',sub:'arbeit'})}}
   for(const l of S.lots) if(l.status==='trauben') A.push(lagerKann(1)&&l.liter<=S.fassraum-fassBelegt()+(aufgabeAktiv('fass')?Infinity:0)?{t:`${SORTEN[l.sorte].name}-Trauben: deine Lagerarbeiter keltern beim Weiterblättern`,tab:'keller',ruhig:1}:{t:`${SORTEN[l.sorte].name}-Trauben müssen diesen Monat gekeltert werden`,rot:1,tab:'keller'});
   // Seit 13.5.8: Sekt von Hand, bis Lagerarbeiter Stufe 3.
   for(const l of S.lots) if(l.status==='sektTr') A.push(lagerKann(3)?{t:`${SORTEN[l.sorte].name}-Sekt: deine Lagerarbeiter legen ihn beim Weiterblättern in den Sektkeller`,tab:'keller',ruhig:1}:{t:`${SORTEN[l.sorte].name}-Sekt muss diesen Monat in den Sektkeller`,rot:1,tab:'keller'});
@@ -2307,12 +2333,12 @@ function aufgaben(){
   for(const l of abf) A.push({t:`${lotName(l)} kann abgefüllt werden`+(S.flaschen<abfFl(l)?` (es fehlen ${num(abfFl(l)-S.flaschen)} Flaschen)`:''),tab:'keller',ruhig:aufgabeAktiv('flaschen')?1:0});
   // Seit 8.2 führt die Warnung ins Kellerbuch (dort ist der Wein markiert und hat die passenden Knöpfe). Steht er im Regal, sagt sie das gleich dazu.
   for(const l of S.lots) if(l.status==='flasche'&&lager(l).max-l.flMonate<=2) A.push({t:`${lotName(l)}: nur noch ${lager(l).max-l.flMonate} Monate haltbar`+(l.regal?', steht im Regal, erst rausnehmen':''),rot:1,tab:'keller',sub:'buch'});
-  if(m<=2&&S.verlust) for(const id of R().sorten) if(S.verlust[id]) A.push({t:`Über den Winter sind ${rbn(S.verlust[id])} ${SORTEN[id].name}-Reben eingegangen. Nachpflanzen`,tab:'gut',sub:'berg',ruhig:aufgabeAktiv('reben')||helferKann(3)?1:0});
+  if(m<=2&&S.verlust) for(const id of weinberge()) if(S.verlust[id]) A.push({t:`Über den Winter sind ${rbn(S.verlust[id])} ${SORTEN[id].name}-Reben eingegangen. Nachpflanzen`,tab:'gut',sub:'berg',ruhig:aufgabeAktiv('reben')||helferKann(3)?1:0});
   if(m<=2&&frei>0) A.push({t:`Pflanzzeit: Platz für ${rbn(frei)} Reben`,tab:'gut',sub:'berg',ruhig:1});
   // Version 7.3: Düngen steht an, sobald der Boden auf 70 % oder weniger fällt (Gelb), seit 7.9 Rot ab DUENG_ROT. Düngt der Weingut-Manager, nur ein ruhiger Hinweis.
   if(S.boden<=70&&S.duengungen<3) A.push(helferDuengt()?{t:`Boden bei ${S.boden}\u00a0%: deine Erntehelfer düngen beim Weiterblättern`,tab:'gut',sub:'berg',ruhig:1}:{t:`🌱 Boden bei ${S.boden}\u00a0%: Düngen ist ${S.boden<=DUENG_ROT?'überfällig':'dran'}`,tab:'gut',sub:'berg',rot:S.boden<=DUENG_ROT?1:0});
   // Seit 13.2.4: Rebschnitt bis Ende April, im April rot.
-  {const sn=R().sorten.filter(id=>schnittOffen(id)&&!helferSchneidet(id)); if(sn.length) A.push({t:`✂️ Rebschnitt bis Ende April: ${sn.map(id=>SORTEN[id].name).join(', ')}`,tab:'gut',sub:'berg',rot:S.monat===SCHNITT_BIS?1:0})}
+  {const sn=weinberge().filter(id=>schnittOffen(id)&&!helferSchneidet(id)); if(sn.length) A.push({t:`✂️ Rebschnitt bis Ende April: ${sn.map(id=>SORTEN[id].name).join(', ')}`,tab:'gut',sub:'berg',rot:S.monat===SCHNITT_BIS?1:0})}
   // Seit 13.4.6: Der Weingut-Manager warnt, wenn zu viel der Ernte im Wagnis hängt (wagnisWarnung), Rot.
   {const ww=wagnisWarnung(); if(ww) A.push({t:`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name} warnt: ${Math.round(ww.anteil*100)} % deiner Ernte hängen im Wagnis (${ww.ids.map(id=>SORTEN[id].name).join(', ')})`,rot:1,tab:'gut',sub:'berg'})}
   if(m===11){const t=steuerSchau(); if(t.steuer>0){
@@ -2322,7 +2348,7 @@ function aufgaben(){
   }}
   // Seit 8.2: gelber Punkt im Rathaus im November und Dezember, solange die Spende des Rangs offen ist. Nie rot.
   {const s=spOffen(); if(s&&m>=10) A.push({t:`🤝 Spende für ${SPENDEN[s].z}: ${vonGeld(spBezahlt(),SPENDEN[s].b)}. Vor Silvester gespendet senkt sie die Steuer`,tab:'stadt',sub:'amt'})}
-  if(m>=7&&R().sorten.some(id=>{const f=S.felder[id];return f.menge>0&&!f.gelesen&&(m<11||f.gefroren||f.edel)})) A.push({t:'Lese möglich',tab:'gut',sub:'berg',...(m===7?{ruhig:1}:{halt:1})});
+  if(m>=7&&weinberge().some(id=>{const f=S.felder[id];return f.menge>0&&!f.gelesen&&(m<11||f.gefroren||f.edel)})) A.push({t:'Lese möglich',tab:'gut',sub:'berg',...(m===7?{ruhig:1}:{halt:1})});
   if(ladenFrei()&&!aufgabeAktiv('regal')&&!regalWeine().length&&S.lots.some(l=>l.status==='flasche'&&preis(l)>0)) A.push({t:'🍷 Das Regal deiner Weinhandlung ist leer',tab:'stadt',sub:'laeden',ruhig:1});
   {const art=festArt(); if(art&&m>=5&&m<=7&&S.festJahr!==S.jahr&&S.geld>=FESTE[art].preis) A.push({t:`🎉 Das Geld reicht für ein ${FESTE[art].name}`,tab:'gut',sub:'betrieb',ruhig:1})}
   const vk=S.lots.filter(l=>preis(l)>0&&!l.regal).length;
@@ -2484,7 +2510,7 @@ function mgrBetrieb(){
   if(!S.manager) return;
   const LW=[], LK=[], m=S.monat, neu={helfer:0,lagerarb:0}, hf=aufgabeAktiv('helfer'), la=aufgabeAktiv('lager');
   const stell=k=>{zahle(VERMITTLUNG); S[k]++; S.loehne[k].push(S.angebot[k]); S.loehne[k].sort((x,y)=>x-y); neu[k]++};
-  if(aufgabeAktiv('reben')&&m<=2&&S.verlust) for(const id of R().sorten){
+  if(aufgabeAktiv('reben')&&m<=2&&S.verlust) for(const id of weinberge()){
     const pr=rebenPreis(id), platz=()=>Math.min(S.verlust[id]||0,platzFuer(id),Math.floor(Math.max(0,S.geld-5000)/pr/10)*10);
     if(hf){let i=0; while(platz()>=10&&helferReben()<rebenGesamt()+platz()&&S.geld>5000+VERMITTLUNG&&i++<20) stell('helfer')}
     const n=Math.floor(Math.min(platz(),helferReben()-rebenGesamt())/10)*10;
@@ -2493,7 +2519,7 @@ function mgrBetrieb(){
   if(aufgabeAktiv('duengen')&&S.duengungen<3&&S.boden<100&&(S.boden<=70||(m===7&&S.boden<90))&&S.geld>=duengKosten()){const st=bonusMasch('duenger'); duenge('helfer'); LW.push(st?'mit dem Düngerstreuer gedüngt':'gedüngt')}
   // Seit 8.0: Maschinen warten (Stufe 1, bis Paket B Stufe 2), alle fünf Maschinen. Nach der Lese, also vor August oder wenn kein Feld mehr hängt, jede Maschine unter MGR_WART_AB auf 100 %.
   // Er lässt mgrPuffer('weingut') auf dem Konto, reicht es nicht ganz, wartet er so weit, wie das Geld reicht.
-  if(aufgabeAktiv('warten')&&(m<7||!R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen))){
+  if(aufgabeAktiv('warten')&&(m<7||!weinberge().some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen))){
     const pu=mgrPuffer('weingut');
     for(const ma of S.maschinen.filter(x=>x.zustand<MGR_WART_AB)){
       const W=mTyp(ma).wart, n=Math.min(100-ma.zustand,Math.floor((S.geld-pu)/W)); if(n<1) continue;
@@ -2545,7 +2571,7 @@ function mgrBetrieb(){
   // Seit 10.3 (B2): Hängt kein Feld mehr, entlässt er wieder, wen er nur für die Handlese geholt hat (S.manager.weingut.handH), die teuersten zuerst.
   // Nie unter den Bedarf für Reben und Fahrer. Wer dann noch gebraucht wird, bleibt als fester Helfer.
   {const mw=S.manager.weingut;
-  if(hf&&mw&&mw.handH&&!R().sorten.some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)){
+  if(hf&&mw&&mw.handH&&!weinberge().some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)){
     const fahrer=S.maschinen.filter(x=>x.zustand>=MASCH_ROT&&mTyp(x).leute==='helfer').reduce((a,x)=>a+mTyp(x).fahrer,0); let k=0;
     while(k<mw.handH&&S.helfer>0&&S.helfer-1>=fahrer&&helferReben(S.helfer-1)>=rebenGesamt()){S.helfer--; S.loehne.helfer.pop(); k++}
     mw.handH=0; if(k) LW.push(`${k===1?'einen Erntehelfer':k+' Erntehelfer'} nach der Handlese entlassen`);
@@ -2560,7 +2586,7 @@ function mgrBetrieb(){
 function mgrHandlese(){
   if(!aufgabeAktiv('helfer')||S.monat<7) return 0;
   let n=0;
-  for(const id of R().sorten){const f=S.felder[id]; if(!(f.menge>0)||f.gelesen||!handFeld(f)) continue;
+  for(const id of weinberge()){const f=S.felder[id]; if(!(f.menge>0)||f.gelesen||!handFeld(f)) continue;
     while(S.helfer<handBedarf(f)&&S.geld>=5000+VERMITTLUNG&&n<40){zahle(VERMITTLUNG); S.helfer++; S.loehne.helfer.push(S.angebot.helfer); S.loehne.helfer.sort((x,y)=>x-y); n++}}
   if(n){const mw=S.manager.weingut; mw.handH=(mw.handH||0)+n}
   return n;
@@ -2619,22 +2645,22 @@ function pflanzAb(id,n){const v=S.verlust||{}, a=Math.min(v[id]||0,n); if(a) v[i
 // bleibt sein Platz frei (pflanzReserve). pflanzPlan sagt ohne Geld und Preis, wie viele Reben einer Sorte so bis März Platz finden.
 const pflanzMitA=id=>(S.felder[id].auftrag||0)>0;
 const pflanzKann=id=>sorteFrei(id)&&!(sektSorte(id)&&!S.sektkeller);
-const pflanzReihe=()=>[...R().sorten.filter(pflanzMitA),...R().sorten.filter(id=>!pflanzMitA(id))];
+const pflanzReihe=()=>[...weinberge().filter(pflanzMitA),...weinberge().filter(id=>!pflanzMitA(id))];
 // Seit 13.4.9: Die Spitzen-Sorte bekommt höchstens den freien Südhang (spitzeDeckel), auch beim Freihalten für ihren Auftrag.
-const spitzeDeckel=id=>spitzeId(id)?suedPlatz():Infinity;
+const spitzeDeckel=id=>istSL(id)?slPlatz():spitzeId(id)?suedPlatz():Infinity; // seit 14.4.4: die Spitzenlage nur auf ihren eigenen Platz
 const pflanzReserve=()=>R().sorten.filter(id=>pflanzMitA(id)&&pflanzKann(id)).reduce((a,id)=>a+Math.min(pflanzSoll(id),spitzeDeckel(id)),0);
-function pflanzPlan(id){let cap=Math.max(0,S.ha*HA_REBEN-rebenGesamt()); for(const x of pflanzReihe()){const n=pflanzKann(x)?Math.floor(Math.min(pflanzSoll(x),cap,spitzeDeckel(x))/10)*10:0; if(x===id) return n; cap-=n} return 0}
+function pflanzPlan(id){let cap=Math.max(0,S.ha*HA_REBEN-rebenGesamt()); for(const x of pflanzReihe()){const n=pflanzKann(x)?Math.floor(Math.min(pflanzSoll(x),istSL(x)?Infinity:cap,spitzeDeckel(x))/10)*10:0; if(x===id) return n; if(!istSL(x)) cap-=n} return 0}
 function helferArbeit(L){
   if(!S.helfer) return; const st=leuteSt('helfer'), m=S.monat; chefNorm();
   // Seit 14.2.3: Düngen und Rebschnitt nur, wo der Spieler sie abgegeben hat, schon ab Stufe 1 (Entscheidung 9).
   if(st>=1&&abgabe('duengen')&&helferDuengt()&&S.duengungen<3&&S.boden<100&&(S.boden<=HELFER_DUENG||(m===7&&S.boden<90))&&S.geld>=duengKosten()){const ma=bonusMasch('duenger'); duenge('helfer'); L.push(ma?'mit dem Düngerstreuer gedüngt':'gedüngt')}
-  if(st>=1&&abgabe('schneiden')) for(const id of R().sorten) if(helferSchneidet(id)&&schnittOffen(id)&&S.geld>=schnittKosten(id)){schneide(id,'helfer'); L.push(`${SORTEN[id].name} geschnitten`)}
+  if(st>=1&&abgabe('schneiden')) for(const id of weinberge()) if(helferSchneidet(id)&&schnittOffen(id)&&S.geld>=schnittKosten(id)){schneide(id,'helfer'); L.push(`${SORTEN[id].name} geschnitten`)}
   // Seit 14.2.4: den Sommerschnitt von Hand, wo der Rebschnitt abgegeben ist (Annahme 18).
-  if(st>=1&&m===6&&abgabe('schneiden')) for(const id of R().sorten) if(helferSchneidet(id)&&laubHandOffen(id)&&S.geld>=laubHandKosten(id)){laubHand(id); L.push(`${SORTEN[id].name} im Sommer von Hand geschnitten`)}
+  if(st>=1&&m===6&&abgabe('schneiden')) for(const id of weinberge()) if(helferSchneidet(id)&&laubHandOffen(id)&&S.geld>=laubHandKosten(id)){laubHand(id); L.push(`${SORTEN[id].name} im Sommer von Hand geschnitten`)}
   if(st>=3&&m<=2&&abgabe('pflanzen')) for(const id of pflanzReihe()){
     const f=S.felder[id], soll=pflanzSoll(id); if(soll<10||!pflanzKann(id)) continue;
     const wm=mgrSt('weingut')>0, pr=rebenPreis(id); if(wm&&m<2&&pr>SORTEN[id].preis) continue;
-    const res=pflanzMitA(id)?0:pflanzReserve(), pu=wm?mgrPuffer('weingut'):0, n=Math.floor(Math.min(soll,S.ha*HA_REBEN-rebenGesamt()-res,spitzeDeckel(id),helferReben()-rebenGesamt(),Math.max(0,S.geld-pu)/pr)/10)*10;
+    const res=pflanzMitA(id)?0:pflanzReserve(), pu=wm?mgrPuffer('weingut'):0, n=Math.floor(Math.min(soll,istSL(id)?slPlatz():S.ha*HA_REBEN-rebenGesamt()-res,spitzeDeckel(id),helferReben()-rebenGesamt(),Math.max(0,S.geld-pu)/pr)/10)*10;
     if(n<10) continue; zahle(Math.round(n*pr*100)/100); rebenDazu(id,n); pflanzAb(id,n); L.push(`${rbn(n)} ${SORTEN[id].name}-Reben gepflanzt`);
   }
 }
@@ -2737,14 +2763,14 @@ function kompLotId(l){
   if(!l||l.pansch||l.status==='fass'||l.status==='trauben') return null;
   const so=kompRollen();
   if(l.sekt) return !S.rollen||l.sorte===so.sekt?'sekt':null;
-  const rl=KOMP_STUFE_ROLLE[l.stufe]; return rl&&l.sorte===so[rl]?'stufe_'+l.stufe:null;
+  const rl=KOMP_STUFE_ROLLE[l.stufe]; return rl&&stamm(l.sorte)===so[rl]?'stufe_'+l.stufe:null;
 }
 const fuMon=id=>!S.ein&&FU_MON_ALT[id]!=null?FU_MON_ALT[id]:FU_MON[id];
 const fuGes=id=>!!(S.fu&&S.fu.ges.includes(id));
 // Seit 12.8: echter Bedarf an Leuten für e1-02, also mehr als die Familie allein schafft, schon eingestellte Leute, eine Maschine (braucht einen Fahrer) oder fehlende Leute.
 function fuLeuteBedarf(){const f=leuteFehlen(); return S.ha>ALLEIN_HA||S.fassraum>ALLEIN_FASS||S.flaschen>ALLEIN_FL||S.helfer>0||S.lagerarb>0||S.maschinen.length>0||f.helfer>0||f.lagerarb>0}
 // Seit 12.6: Fassraum nur, wenn er für die erwartete Menge nicht reicht, Edelfäulnis und Eiswein nur, wenn noch etwas hängt.
-const fuMenge=()=>R().sorten.reduce((a,id)=>a+(S.felder[id].reben&&!S.felder[id].gelesen?S.felder[id].menge||0:0),0);
+const fuMenge=()=>weinberge().reduce((a,id)=>a+(S.felder[id].reben&&!S.felder[id].gelesen?S.felder[id].menge||0:0),0);
 // Rang-Neuheiten: r3 ist der Jungwinzer (Index 1 in RAENGE), r4 der Winzer und so weiter. Die n-te Blase eines Rangs frühestens
 // im n-ten Monat nach der Feier, die Bremse verteilt sie ohnehin auf je einen Monat. S.fu.rm merkt den Monat der Feier je Rang.
 const fuRang=id=>{const m=/^r(\d+)-(\d+)$/.exec(id); return m?{r:+m[1]-2,n:+m[2]}:null};
