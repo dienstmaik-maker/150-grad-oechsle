@@ -397,8 +397,16 @@ function mTyp(ma){return MASCH[ma&&MASCH[ma.typ]?ma.typ:ma&&ma.gross?'gross':'kl
 function pflegeF(z){return PFLEGE.find(p=>z>=p[0])[1]}
 // Fahrer-Verteilung: erst die Erntemaschinen (die großen zuerst), dann die Bonus-Maschinen aus dem Rest. Die Abfüllanlage braucht einen Lagerarbeiter.
 // h ist die Zahl der Erntehelfer (Vorgabe: die angestellten). Liefert alle Maschinen im Einsatz.
+// Seit 14.6.8 (Maik 25.11.2026, Antwort zu D3): Eine Erntemaschine ohne Weinberg mit passender Form (bepflanzt) steht still und belegt keinen Fahrer, in allen
+// Spielstufen. Passend nach der Maschinen-Regel (FORMEN.masch): Flachbogen jede Erntemaschine, Kordon nur der Vollernter, Einzelpfahl keine, an der Mosel keine.
+// Bis 14.6.7 stand sie "im Einsatz" und band einen Fahrer. Die anderen Maschinen passen immer.
+function maschFormReben(T){if(!T.ernte) return null; if(R().steil) return 0;
+  return weinberge().reduce((a,id)=>{const f=S.felder[id], x=FORMEN[formVon(id)].masch; return a+(f&&f.reben&&(x===1||x==='voll'&&T===MASCH.gross)?f.reben:0)},0)}
+const maschPasst=ma=>!mTyp(ma).ernte||maschFormReben(mTyp(ma))>0;
+// Maschinen, die laufen können, sobald ihre Leute da sind: nicht ausgefallen und mit passendem Weinberg.
+const maschBereit=ma=>ma.zustand>=MASCH_ROT&&maschPasst(ma);
 function maschVerteilung(h){
-  let frei=h==null?S.helfer:h, lf=S.lagerarb||0; const E=[], ok=S.maschinen.filter(m=>m.zustand>=MASCH_ROT);
+  let frei=h==null?S.helfer:h, lf=S.lagerarb||0; const E=[], ok=S.maschinen.filter(maschBereit);
   for(const ma of ok.filter(m=>mTyp(m).ernte).sort((a,b)=>mTyp(b).fahrer-mTyp(a).fahrer||b.zustand-a.zustand)){
     const n=mTyp(ma).fahrer; if(frei>=n){frei-=n; E.push(ma)}
   }
@@ -418,12 +426,14 @@ function bonusMasch(typ){const E=maschVerteilung(); return S.maschinen.find(m=>m
 // Abnutzung einer Bonus-Maschine um p Prozentpunkte mal Pflege-Faktor nach dem Zustand vor dem Einsatz. Bruchteile sammelt ma.abn.
 function abnutz(ma,p){ma.abn=(ma.abn||0)+p*pflegeF(ma.zustand); const d=Math.floor(ma.abn); if(d){ma.abn-=d; ma.zustand=Math.max(MASCH_MIN,ma.zustand-d)}}
 // Maschinen, die nur wegen fehlender Leute stillstehen, und wie viele Fahrer (Erntehelfer) ihnen fehlen.
-function maschOhneFahrer(){const E=maschVerteilung(); return S.maschinen.filter(m=>m.zustand>=MASCH_ROT&&!E.includes(m))}
-function fahrerFehlen(){return Math.max(0,S.maschinen.filter(m=>m.zustand>=MASCH_ROT&&mTyp(m).leute==='helfer').reduce((a,m)=>a+mTyp(m).fahrer,0)-S.helfer)}
+// Seit 14.6.8 ohne die Erntemaschinen ohne passenden Weinberg (maschBereit), die brauchen keinen Fahrer.
+function maschOhneFahrer(){const E=maschVerteilung(); return S.maschinen.filter(m=>maschBereit(m)&&!E.includes(m))}
+function fahrerBedarf(){return S.maschinen.filter(m=>maschBereit(m)&&mTyp(m).leute==='helfer').reduce((a,m)=>a+mTyp(m).fahrer,0)}
+function fahrerFehlen(){return Math.max(0,fahrerBedarf()-S.helfer)}
 function maschName(ma){return `${mTyp(ma).name} ${S.maschinen.indexOf(ma)+1}`}
 // Pronomen je Maschine: die Erntemaschine und die Abfüllanlage sind "sie", die anderen "er".
 function maschEr(ma){return mTyp(ma).f?'sie':'er'}
-function maschStatus(ma){const T=mTyp(ma); return ma.zustand<MASCH_ROT?`fällt aus, bis ${maschEr(ma)} gewartet ist`:maschVerteilung().includes(ma)?'im Einsatz':T.leute==='lagerarb'?'steht still, es fehlt ein Kellermensch':'steht still, es fehlt ein Fahrer'}
+function maschStatus(ma){const T=mTyp(ma); return ma.zustand<MASCH_ROT?`fällt aus, bis ${maschEr(ma)} gewartet ist`:!maschPasst(ma)?MASCH_FORM_TEXT.still:maschVerteilung().includes(ma)?'im Einsatz':T.leute==='lagerarb'?'steht still, es fehlt ein Kellermensch':'steht still, es fehlt ein Fahrer'}
 function festArt(){return S.rang>=R_HOFFEST?'hoffest':S.rang>=R_WEINFEST?'weinfest':''}
 // Seit 11.5 (Teil B): Deckel für den Besitz je Rang. Ohne HA_NEU gibt es für dich keinen, die Gegner halten dann bei GEGNER_HA_MAX.
 // Seit 14.4.5 (Entscheidung 5): Für dich gibt es keinen Besitz-Deckel über alles mehr, an seine Stelle tritt der weiche Deckel je Lage (landDeckel). Die Gegner behalten ihren.
@@ -569,7 +579,7 @@ function altLeute(){
   if(S.loehne){const [a,b]=LOHN_ALT; for(const k of LOHN_ARTEN) S.loehne[k]=(S.loehne[k]||[]).map(n=>n<1000?lohnF(LOHN_MIN+(clamp(n,a,b)-a)*(LOHN_MAX-LOHN_MIN)/(b-a)):n).sort((x,y)=>x-y); neuesLohnAngebot()}
   if(S.ende||S.pleite) return;
   const haengt=weinberge().map(id=>S.felder[id]).filter(f=>f&&f.menge>0&&!f.gelesen), reben=rebenGesamt();
-  const fahrer=S.maschinen.filter(x=>x.zustand>=MASCH_ROT&&mTyp(x).leute==='helfer').reduce((a,x)=>a+mTyp(x).fahrer,0), hand=Math.max(0,...haengt.filter(handFeld).map(handBedarf));
+  const fahrer=fahrerBedarf(), hand=Math.max(0,...haengt.filter(handFeld).map(handBedarf));
   const lese=h=>alleinReben()+h*HELFER_LEISTUNG+maschEinsatz(h).reduce((a,m)=>a+Math.round(mTyp(m).leist*m.zustand/100),0);
   let h=0, l=0;
   while(S.helfer>0&&S.helfer-1>=fahrer&&helferReben(S.helfer-1)>=reben&&(!haengt.length||(S.helfer-1>=hand&&lese(S.helfer-1)>=reben))){S.helfer--; S.loehne.helfer.pop(); h++}
@@ -1077,13 +1087,20 @@ function aukLage(){const z=AUK_LAGE.filter(x=>S.rang>=x.r).pop().w, W=LAGE_REIHE
   let r=Math.random()*W.reduce((a,lg)=>a+z[lg],0); for(const lg of W){r-=z[lg]; if(r<0) return lg} return W[W.length-1]}
 // Nachtrag zu 14.5 (Maik 25.11.2026, Annahmen 39 und 41): sichere Auktion. Nach dem Rang AUK_SICHER[i].r kommt AUK_SICHER_JAHRE Jahre später (gewürfelt über fest,
 // Thema 16, fest je Partie) im nächsten Auktionsmonat ohne Chance und ohne Erst-Sperre ein Los dieser Lage, solange keine andere Auktion läuft, unangekündigt.
-// Besitzt der Spieler die Lage danach noch nicht, bringt jede weitere Auktion sie wieder, erst dann wird gewürfelt wie sonst. Höhenlage vor Südhang, die Spitzenlage
-// zählt nicht als Südhang (landBesitz). Passt kein ganzer Hektar bis zum Deckel (landRest), ruht die Garantie dieser Lage. S.aukSicher merkt, welche schon kam.
+// Höhenlage vor Südhang, die Spitzenlage zählt nicht als Südhang (landBesitz). Passt kein ganzer Hektar bis zum Deckel (landRest), ruht die Garantie dieser Lage.
+// Seit 14.6.8 (Maik 25.11.2026, Antwort zu C2): Besitzt der Spieler die Lage nach ihrem sicheren Los noch nicht, kommt sie nur bei jeder AUK_SICHER_WIEDER-ten Auktion
+// wieder (bis 14.6.7 bei jeder, wer die Höhenlage nie kaufte, sah nie wieder einfachen Hang und nie Südhang). Dazwischen wird gewürfelt wie sonst, oder es kommt
+// der Südhang, wenn dessen Garantie offen ist. Der Südhang wartet nur, bis die Höhenlage einmal sicher angeboten wurde, nicht bis zum Kauf.
+// S.aukNr zählt die Lose (ohne Spitzenlage), S.aukSicher merkt je Lage die Nummer ihres letzten sicheren Loses (bis 14.6.7 nur 1).
 function aukSicherTag(i){const x=AUK_SICHER[i], m0=(S.rangMon||{})[x.r]; if(m0==null) return null;
   return m0+12*AUK_SICHER_JAHRE[Math.min(AUK_SICHER_JAHRE.length-1,Math.floor(fest(16,i,Math.floor(m0/12),m0%12)*AUK_SICHER_JAHRE.length))]}
-function aukSicherLage(){for(let i=0;i<AUK_SICHER.length;i++){const x=AUK_SICHER[i]; if(S.rang<x.r||landBesitz(x.lage)>0) continue; const t=aukSicherTag(i);
-    if(t==null||S.jahr*12+S.monat<t) return null; if(landRest(x.lage)<1) continue; return x.lage} return null}
-const aukSicherNeu=()=>{const lg=aukSicherLage(); return !!lg&&!(S.aukSicher||{})[lg]};
+// Lagen, deren Garantie gerade offen ist, in der Reihe von AUK_SICHER. Ist eine Lage noch nicht dran, warten die späteren mit.
+function aukSicherOffen(){const L=[]; for(let i=0;i<AUK_SICHER.length;i++){const x=AUK_SICHER[i]; if(S.rang<x.r||landBesitz(x.lage)>0) continue; const t=aukSicherTag(i);
+    if(t==null||S.jahr*12+S.monat<t) break; if(landRest(x.lage)<1) continue; L.push(x.lage)} return L}
+// Die Lage, die das nächste Los bringt: zuerst eine, die noch nie sicher kam, sonst eine, deren Wiederholung dran ist, sonst null (gewürfelt).
+function aukSicherLage(){const L=aukSicherOffen(), A=S.aukSicher||{}, n=S.aukNr||0;
+  return L.find(lg=>A[lg]==null)||L.find(lg=>n-A[lg]>=AUK_SICHER_WIEDER)||null}
+const aukSicherNeu=()=>aukSicherOffen().some(lg=>(S.aukSicher||{})[lg]==null);
 const aukLageF=lg=>(AUK_PREIS_AKT[RANG_AKT[S.rang]]||1)*(AUK_PREIS_LAGE[lg]||1);
 // Seit 13.7.5: der Landpreis, nur auf Stufen mit DIFF.land, sonst 1.
 const landF=()=>(DIFF[S.schwer]||{}).land?(S.landF||1):1;
@@ -1103,7 +1120,8 @@ function neueAuktion(spitze,haFest){
   // Seit 13.4.9: Lage des Loses nach Rang (aukLage), ein Südhang-Los höchstens so groß, wie suedRest() erlaubt, der Preis mal Faktor je Akt und Lage.
   // Seit 14.4.5: Das Los wird auf deinen Rest bis zum Deckel der Lage gekürzt (landRest). Ist in keiner Lage ein ganzer Hektar frei, bleibt es, wie es ist, und du darfst nicht mitbieten.
   // Nachtrag zu 14.5: Ist eine sichere Lage dran (aukSicherLage), bringt das Los sie, ohne zu würfeln.
-  const sich=aukSicherLage(); if(sich) (S.aukSicher=S.aukSicher||{})[sich]=1;
+  // Seit 14.6.8: S.aukSicher merkt die Nummer des Loses (S.aukNr), die Wiederholung kommt erst AUK_SICHER_WIEDER Lose später.
+  const sich=aukSicherLage(); if(sich) (S.aukSicher=S.aukSicher||{})[sich]=S.aukNr||0; S.aukNr=(S.aukNr||0)+1;
   const lage=sich||aukLage(), ha0=haFest||auktionHa(), rest=Math.floor(landRest(lage)+1e-9), ha=rest>=1?Math.min(ha0,rest):ha0, pf=(R().aukPreisF||1)*aukLageF(lage)*landF(), start=Math.round(ha*8000*pf/500)*500, B=misch(NACHBARN).slice(0,rint(2,3)).map(n=>({name:n,limit:Math.round(ha*rnd(11000,30000)*pf/500)*500}));
   for(const g of S.gegner) if(g.region===S.region){
     const t=GEGNER_TYP[g.typ];
@@ -2857,7 +2875,7 @@ function mgrBetrieb(){
   // Nie unter den Bedarf für Reben und Fahrer. Wer dann noch gebraucht wird, bleibt als fester Helfer.
   {const mw=S.manager.weingut;
   if(hf&&mw&&mw.handH&&!weinberge().some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)){
-    const fahrer=S.maschinen.filter(x=>x.zustand>=MASCH_ROT&&mTyp(x).leute==='helfer').reduce((a,x)=>a+mTyp(x).fahrer,0); let k=0;
+    const fahrer=fahrerBedarf(); let k=0;
     while(k<mw.handH&&S.helfer>0&&S.helfer-1>=fahrer&&helferReben(S.helfer-1)>=rebenGesamt()){S.helfer--; S.loehne.helfer.pop(); k++}
     mw.handH=0; if(k) LW.push(`${k===1?'einen Erntehelfer':k+' Erntehelfer'} nach der Handlese entlassen`);
   }}

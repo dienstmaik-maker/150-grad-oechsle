@@ -579,6 +579,13 @@ const MASCH={duenger:{name:'Düngerstreuer',preis:STREU_PREIS,leist:0,helfer:0,w
   laub:{name:'Laubschneider',preis:LAUB_PREIS,leist:0,helfer:0,wart:LAUB_WARTUNG,rang:R_LAUB,fahrer:1,leute:'helfer',bonus:1,text:'macht im Juni den Sommerschnitt'},
   gross:{name:'Vollernter',preis:VOLL_PREIS,leist:VOLL_LEISTUNG,helfer:VOLL_HELFER,wart:VOLL_WARTUNG,rang:R_VOLL,fahrer:2,leute:'helfer',ernte:1,text:'die große Maschine für weite Lagen'},
   abfuell:{name:'Abfüllanlage',preis:ABF_PREIS,leist:0,helfer:0,wart:ABF_WARTUNG,rang:R_ABF,fahrer:1,leute:'lagerarb',bonus:1,f:1,text:'füllt ab, ohne dass etwas danebengeht'}};
+// Seit 14.6.8 (Maik 25.11.2026, Antwort zu D3): Erntemaschine ohne Weinberg mit passender Form. still: Einsatz im Feld Maschinen, in allen Spielstufen.
+// kauf: Satz im Kauf-Fenster der Erntemaschinen nur in den Spielstufen MASCH_FORM_STUFEN ({n} deine Reben, die sie lesen darf, {g} alle, {formen} die passenden Formen),
+// in der Meisterprüfung steht die Regel nur im Weinkompendium (Entscheidung 42). Platzhalter, Wortlaut in Meilenstein 17.
+const MASCH_FORM_STUFEN=['einfach','mittel'];
+const MASCH_FORM_TEXT={still:'steht still, kein Weinberg mit passender Form',
+  kauf:'Lesen darf {er} nur am {formen}. Von deinen {g} Reben wären das heute {n}.',
+  formen:{klein:'Flachbogen',gross:'Flachbogen und am Kordon'}};
 // Bonus der drei neuen Maschinen, für Fenster und Infotafeln.
 const MASCH_BONUS={duenger:()=>`Düngen kostet ${Math.round(STREU_RABATT*100)} % weniger und bringt ${STREU_PLUS} statt ${DUENG_PLUS} Punkte Boden`,
   laub:()=>`Sommerschnitt im Juni: Jede Lese des Jahres bekommt ${LAUB_QP} Punkte Qualität und ${Math.round(LAUB_MENGE*100)} % mehr Menge, dazu ${LAUB_ANS} Ansehen`,
@@ -698,7 +705,9 @@ const SPENDEN=[null,
 ];
 // Raten in Zwanzigsteln des Betrags. Belohnungen: Frostfeuer mal SP_FROSTFEUER auf den Frost-Anteil beim Reben-Sterben (seit 13.4.8, Startwert für 14.2), Lohn mal SP_LOHN, Segen +SP_SEGEN Öchsle, Großhandel mal SP_MARKT, Weinhandlung mal SP_LADEN, Hoffest-Ansehen mal SP_HOFFEST.
 // Seit 13.5.6 (Bauplan 13.5): worum es gegen die Gegner geht, je Akt (Generation 1 bis 3, aktNr). Wortlaut seit 13.8.
-const GEGNER_AKT=['⚔️ 1. Akt: Deine Rivalen wohnen nebenan. Es geht um Land, um Fässer und darum, wer am Stammtisch zuletzt lacht.','🏅 2. Akt: Jetzt geht es um Medaillen und Ränge. Wer zuerst oben ankommt, sitzt im Festsaal vorn.','🗳️ 3. Akt: Im Verband wird alle fünf Jahre gewählt. Deine Rivalen treten als Gegenkandidaten um den Stuhl im Festsaal an.'];
+// Seit 14.6.8 (Maik 25.11.2026, Antwort zu E3): ohne Akt-Nummer, nur was die Rivalen wollen. Die Gegner zählen intern weiter nach der Generation, dein Akt
+// (Auftakt, Hintertür, Wagnis) nach dem Rang. Bis 14.6.7 stand hier "1. Akt" bis "3. Akt" nach der Generation. Platzhalter, Wortlaut in Meilenstein 17.
+const GEGNER_AKT=['⚔️ Deine Rivalen wohnen nebenan. Es geht um Land, um Fässer und darum, wer am Stammtisch zuletzt lacht.','🏅 Deinen Rivalen geht es jetzt um Medaillen und Ränge. Wer zuerst oben ankommt, sitzt im Festsaal vorn.','🗳️ Im Verband wird alle fünf Jahre gewählt. Deine Rivalen treten als Gegenkandidaten um den Stuhl im Festsaal an.'];
 const SP_TEIL=20, SP_DECKEL=.2, SP_FROSTFEUER=.5, SP_LOHN=.95, SP_SEGEN=4, SP_MARKT=1.05, SP_LADEN=1.25, SP_HOFFEST=1.25, SP_ERBE=.85, SP_STIMM=5;
 // Maiks Bilder seit 17.11.2026: Holzbogen (Spruch steht im Bild) und die Bank als eigene Nahansicht am Wanderweg (sitzbank, nicht bank.jpg, das ist die Bank in der Stadt).
 // Das Spitzenlage-Bild bei den Auktionen bleibt, wie es ist.
@@ -770,7 +779,8 @@ const AUK_LAGE=[{r:0,w:{einfach:1}},{r:4,w:{einfach:.3,hoehe:.7}},{r:6,w:{einfac
 // Nachtrag zu 14.5 (Maik 25.11.2026, Annahmen 39 und 41): Sichere Auktion, damit niemand ohne Land für seine Sorte dasteht. Nach dem Aufstieg in den Rang r kommt
 // nach AUK_SICHER_JAHRE Jahren (eins davon gewürfelt) im nächsten Auktionsmonat sicher ein Los dieser Lage, unangekündigt. Höhenlage vor Südhang, wie die Reihe hier.
 // Startwerte für Meilenstein 15.
-const AUK_SICHER=[{lage:'hoehe',r:4},{lage:'sued',r:6}], AUK_SICHER_JAHRE=[1,2];
+// Seit 14.6.8 (Maik 25.11.2026, Antwort zu C2): Wird die Lage bei ihrem sicheren Los nicht gekauft, kommt sie danach nur bei jeder AUK_SICHER_WIEDER-ten Auktion wieder.
+const AUK_SICHER=[{lage:'hoehe',r:4},{lage:'sued',r:6}], AUK_SICHER_JAHRE=[1,2], AUK_SICHER_WIEDER=2;
 // Landpreis je Akt (RANG_AKT) und je Lage als Faktoren auf Startgebot und Gebote. Neutral auf dem heutigen Preis, die Werte setzt 14.2 (Platzhalter).
 // Seit 14.4.5 (Entscheidung 5): Preisniveau je Lage einfacher Hang 1, Höhenlage 2, Südhang 4, auf Startgebot und alle Gebote (bis 14.4.4 überall 1).
 const AUK_PREIS_AKT={1:1,2:1,3:1}, AUK_PREIS_LAGE={einfach:1,hoehe:2,sued:4};
