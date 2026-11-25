@@ -468,10 +468,13 @@ const WELT_GUETER=['Château Belmont, Frankreich','Tenuta Montefiore, Italien','
 // für die Weinpreise (sonst MARKT_SCHWANK), land wie markt für S.landF auf Startgebot und alle Gebote der Auktionen (sonst fest 1, der Makler bleibt fest),
 // klug: die Gegner bieten bis AUK_KLUG vom Wert des Loses (AUK_WERT_HA), marktSatz: Satz zum Markt im Winzerboten (MARKT_SATZ). 3. Akt: marke Punkte mehr für den
 // Herausforderer beim Amtsantritt und als Untergrenze nach der Abwahl, fav Punkte mehr für die Favoriten der Weltweinschau, form: ihre Form in Worten (WELT_FORM).
+// Seit 15.6.8 (Korrekturplan Runde 1, Maik 26.11.2026): ans gedreht für das Tempo von normal (Präsident, Kurzlauf je 12 Partien über 120 Jahre).
+// Lehrjahre 1,25 auf 0,97 (J74 auf J95, Soll J95), Gesellenjahre 1 auf 0,9 (J100 auf J108,5, Soll J107), Meisterprüfung 1 auf 0,84 (J103 auf 5 von 12 bis J120, Soll um J120 bis J125).
+// Das Bestehen der Meisterprüfung (Präsident bis J120) hat keinen eigenen Regler, es folgt dem ans der Meisterprüfung: 0,85 acht von 12, 0,84 fünf, 0,83 drei, 0,8 einer.
 const DIFF={
-  einfach:{name:'Lehrjahre',kurz:'Einfach',text:'Sonne satt und Zeit zum Lernen. Du startest mit einem dicken Polster, und die Nachbarn lassen es gemütlich angehen. Genau richtig für die erste Partie.',ans:1.25,ki:.45,feld:-4,biet:1,geld:80000,marktMin:1},   // marktMin seit 15.6.7 (Kurzlauf schwach: 0,6 zwölf, 0,8 eine, 1 keine Pleite vor J40)
-  mittel:{name:'Gesellenjahre',kurz:'Mittel',text:'So ist das Winzerleben gedacht. Die Nachbarn sind fleißig, aber mit guter Arbeit bist du vor ihnen an der Spitze.',ans:1,ki:.6,feld:0,biet:1,land:[.03,.85,1.15]},
-  schwer:{name:'Meisterprüfung',kurz:'Schwer',text:'Trau dich! Die Nachbarn sind schnell, die Konkurrenz ist stark, und wer im Herbst wartet, muss die Zeichen lesen. Wer hier Präsident wird, hat es sich verdient.',ans:1,ki:.81,feld:3,biet:1,schaed:1,markt:[.09,.75,1.25],land:[.09,.75,1.25],klug:1,marktSatz:1,marke:5,fav:5,form:1}
+  einfach:{name:'Lehrjahre',kurz:'Einfach',text:'Sonne satt und Zeit zum Lernen. Du startest mit einem dicken Polster, und die Nachbarn lassen es gemütlich angehen. Genau richtig für die erste Partie.',ans:.97,ki:.45,feld:-4,biet:1,geld:80000,marktMin:1},   // marktMin seit 15.6.7 (Kurzlauf schwach: 0,6 zwölf, 0,8 eine, 1 keine Pleite vor J40)
+  mittel:{name:'Gesellenjahre',kurz:'Mittel',text:'So ist das Winzerleben gedacht. Die Nachbarn sind fleißig, aber mit guter Arbeit bist du vor ihnen an der Spitze.',ans:.9,ki:.6,feld:0,biet:1,land:[.03,.85,1.15]},
+  schwer:{name:'Meisterprüfung',kurz:'Schwer',text:'Trau dich! Die Nachbarn sind schnell, die Konkurrenz ist stark, und wer im Herbst wartet, muss die Zeichen lesen. Wer hier Präsident wird, hat es sich verdient.',ans:.84,ki:.81,feld:3,biet:1,schaed:1,markt:[.09,.75,1.25],land:[.09,.75,1.25],klug:1,marktSatz:1,marke:5,fav:5,form:1}
 };
 // Seit 13.7.7 (Entscheidung 11, Maik 22.11.2026): Die Meisterprüfung (MEISTER_STUFE) ist gesperrt, bis auf diesem Gerät einmal in den Gesellenjahren (MEISTER_VON)
 // ein Weingut übergeben wurde. Die Freischaltung liegt beim Gerät unter eigenem Schlüssel wie das Album, nicht im Spielstand, und reist mit der Sicherung.
