@@ -247,7 +247,7 @@ const FORM_WAHL_SATZ='Die Form wählst du einmal für den Weinberg. Wer später 
 // Seit 14.2.5: Winzerbote, wenn eine Lage eine neue Boden-Stufe erreicht. Platzhalter, Wortlaut in Meilenstein 17.
 const BODEN_LAGE_BOTE='🌱 {lage}: Der Boden ist jetzt {stufe}.';
 const LAUB_HAND_BOTE='✂️ Ab jetzt kannst du im Juni den Sommerschnitt von Hand machen, im Weinberg bei jeder Sorte. Eine Maschine kommt in deine steilen Hänge nicht.';
-const VERSION='14.2';
+const VERSION='14.4';
 // Seit 13.3.6 (Maik 21.11.2026): Im Umbau starten neue Partien ohne Spielführer, sonst verspricht er Dinge nach den alten Rängen.
 // Mit neuen Texten muss er am Ende wieder an sein (14.4), dann FU_START=1.
 const FU_START=0;
@@ -1379,10 +1379,11 @@ const IDEE_KEY='oechsle-idee', IDEE_MAX=1000;
 // Für 1.0 bis 10.5 gab es nie Punkte, dort steht der alte Satz aus der Liste vor 11.7.1 als ein Punkt. Unteretappen (dritte Stelle) kommen nicht hierher.
 // Je Version: [Zeichen, Nummer, Titel, Datum, Punkte]. Kommendes ohne Datum und Punkte.
 // Seit 14.2: Block 14.0. Die Punkte von 14.2 sind Platzhalter, Wortlaut in Meilenstein 17. 14.1 und 14.3 haben keine eigene Version (Messlauf, Klären ohne Code),
-// deshalb steht als Nächstes 14.4. Meilenstein 13 ist seit 22.11.2026 fertig, seine Kopfzeile trägt deshalb das ✅ (die Abschlussprobe 13.9 bekam keine Version).
+// deshalb stand als Nächstes 14.4. Seit 14.4.9: Version 14.4 mit Platzhalter-Punkten (Wortlaut in Meilenstein 17), als Nächstes 14.5. Meilenstein 13 ist seit 22.11.2026 fertig, seine Kopfzeile trägt deshalb das ✅ (die Abschlussprobe 13.9 bekam keine Version).
 const WAS_NEU=[
   {k:'🏁 14.0 Pflege-Umbau',d:'in Arbeit',p:['Wie du deine Reben und deinen Boden pflegst, entscheidet über deinen Wein'],v:[
-    ['▶️','14.4','Zeitleiste'],
+    ['▶️','14.5','Qualität und Weinprüfer'],
+    ['','14.4','Zeitleiste','25.11.2026',['Jede Neuheit kommt mit einem Rang, als Gelegenheit oder durch deine eigene Arbeit','Die Spitzenlage wird dein vierter Weinberg mit eigenem Boden und eigener Lese','Land wird teurer, je mehr du in einer Lage schon hast, und die Bank stundet einmal je Generation','Hintertür und Weinkontrolle kommen erst im zweiten Akt','Jeder Aufstieg sagt dir, was neu ist und was du jetzt kaufen oder einstellen darfst']],
     ['','14.2','Pflege und Boden','23.11.2026',['Jeder Weinberg sammelt Entwicklungspunkte, von der Jungrebe bis zum Grand Cru','Rebschnitt und Düngen machst du selbst oder gibst sie an die Erntehelfer ab','Drei Erziehungsformen: Flachbogen, Kordon und Einzelpfahl, jede mit eigener Menge und Güte','Jede Lage hat ihren eigenen Boden bis zum Terroir','Qualitätspunkte bis 100 sind das Maß für jeden Wein']]]},
   {k:'✅ 13.0 Der Umbau',d:'fertig 22.11.2026',p:['Drei Generationen, drei Akte: Das Spiel wird von Grund auf neu gebaut'],v:[
     ['','13.8','Geschichte','22.11.2026',['Drei Akte mit eigenem Satz bei jeder Übergabe: pflanzen, reifen lassen, krönen','Neue Momente vom geschenkten Hang bis zum ersten Etikett mit Premier Cru','Eine eigene Feier für den ersten Grand Cru jeder Sorte und für den vollendeten Weinberg','Die drei Favoriten der Weltweinschau haben Namen und Geschichten','Winzerbote, Zeichen und Feiern mit neuen Texten']],
