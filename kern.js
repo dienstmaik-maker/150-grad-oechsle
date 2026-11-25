@@ -71,11 +71,12 @@ function epJahr(f,id,gutBoden,zs=1,zd=1){
 // Neue Reben verdünnen die Punkte genau um ihren Anteil (Entscheidung 4), auch beim Nachpflanzen. Die Stufe folgt zum Jahreswechsel.
 // Seit 14.2.5 verdünnt neu bepflanzte Fläche auch die Bodenpunkte ihrer Lage (bodenVerduennen).
 function rebenDazu(id,n){const f=S.felder[id]; if(!(n>0)||!f) return; const a=f.reben||0; f.ep=epRund((f.ep||0)*a/(a+n)); f.reben=a+n; bodenVerduennen()}
-const pflegePreis=(id,st)=>((PFLEGE_PREIS[rolleK(id)]||[])[st||0])||0;
+// Seit 14.5.4 (Annahme 14): Grand Cru für alle Sorten, nach der Pflegestufe bei der Lese (bis 14.5.3 nur die Spitzen-Sorte, dort 0).
+const pflegePreis=st=>PFLEGE_PREIS[st||0]||0;
 // Seit 13.2.3: Deckel fürs Öchsle eines Weinbergs aus Rolle, Boden-Stufe und Pflegestufe.
 function deckel(id){const f=S.felder[id]||{}; return DECKEL_BASIS[rolleK(id)]+BODEN_ST_OE*wbBoden(id)+PFLEGE_ST_OE*(f.pflSt||0)}
-// Obergrenze im Monatsmodell: der Deckel, mit Edelfäulnis bei der Spitzen-Sorte 150°.
-function oeGrenze(id){const f=S.felder[id]; return f&&f.edel&&rolleK(id)==='spitze'?150:deckel(id)}
+// Obergrenze im Monatsmodell: der Deckel, mit Edelfäulnis bei der Spitzen-Sorte OE_MAX (seit 14.5.4 175°, bis 14.5.3 150°).
+function oeGrenze(id){const f=S.felder[id]; return f&&f.edel&&rolleK(id)==='spitze'?OE_MAX:deckel(id)}
 const feldId=f=>weinberge().find(id=>S.felder[id]===f);
 // Seit 13.3.2: Freischaltung nach Rang (FREI) und welche Stufen eine Sorte nach ihrer Rolle machen darf (WEIN_ROLLE).
 const freiAb=k=>(FREI[k]||{r:0}).r;
@@ -820,10 +821,11 @@ function ansQ(n,q){return Math.max(1,Math.round(n*(ANS_F[q]||1)))}
 // Seit 13.6.8: end=1 lässt ANS_F aus (Endwert aus dem Bauplan, zum Beispiel KRONE_ANS), die Schwierigkeit wirkt weiter.
 function ruhm(n,still,q,end){if(n>0)n=Math.max(1,Math.round(n*DIFF[S.schwer].ans*(end?1:(ANS_F[q]||1))));S.ansehen=Math.max(0,S.ansehen+n);if(S.amt&&n&&!still)stimmung(n>0?n*STIMM_PLUS:n*STIMM_MINUS);return n}
 function reifeFaktor(l){const L=lager(l);return l.status==='flasche'?Math.min(4,1+Math.max(0,l.flMonate-L.min)/12*L.rate):1}
+// Seit 14.5.4: dieselbe Formel wie preis (weinWert), mit Flaschenreife und dem Abschlag im Fass, ohne Markt, Lage und Gebiet.
 function lotWert(l){
   if(l.status==='trauben') return 0;
   if(!l.stufe) return l.liter*2;
-  return l.liter*STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*(1+pflegePreis(l.sorte,l.pfl))*anspruchF(l.stufe,l.qp)*reifeFaktor(l)*sektF(l)*sternF(l.sorte)*(l.status==='fass'?.7:1);
+  return l.liter*weinWert(l.stufe,l)*reifeFaktor(l)*sektF(l)*(l.status==='fass'?.7:1);
 }
 // Seit 13.3.8 (Nachtrag 3): neue Formel, Konstanten bei VERM_GRUND in zahlen.js.
 const haWert=(rl,pfl,bst)=>VERM_GRUND*(VERM_SORTE[rl]||1)*VERM_PFLEGE[pfl||0]*VERM_BODEN[bst||0];
@@ -1421,7 +1423,10 @@ function herbstWagnis(id,f,so,m,L){
   const H=herbstJahr(), w=feldWeg(id);
   if(m===10){
     if(w==='edel'&&!f.wagnis){
-      if(H.uEdel<wegChance('edel')){f.wagnis='edel'; f.edel=true; f.oe=Math.min(150,Math.max(f.oe,R().min.ba)); f.ueber=clamp(f.ueber+EDEL_UEBER,0,100); L.push(`Edelfäulnis beim ${so.name}! Die Trauben haben jetzt ${f.oe}° Öchsle, genug für eine Beerenauslese. Lies sie von Hand, nur überreife Trauben.`)}
+      // Seit 14.5.4 (Annahmen 35, 36 und 38): Die Edelfäulnis bringt EDEL_OE Grad dazu (bis 14.5.3 fest auf die Schwelle der Beerenauslese) und kostet EDEL_MENGE der Menge,
+      // auch im Jahrhundertsommer. Reicht es mit der überreifen Lese (+5°) nicht für die Beerenauslese, wird es, was die Öchsle hergeben. Text ist Platzhalter, Wortlaut in Meilenstein 17.
+      if(H.uEdel<wegChance('edel')){f.wagnis='edel'; f.edel=true; f.oe=Math.min(OE_MAX,f.oe+EDEL_OE); f.menge=Math.round(f.menge*EDEL_MENGE); f.ueber=clamp(f.ueber+EDEL_UEBER,0,100);
+        L.push(`Edelfäulnis beim ${so.name}! Die Trauben haben jetzt ${f.oe}° Öchsle${feldQ(f,'ueber').oe>=R().min.ba?', genug für eine Beerenauslese. Lies sie von Hand, nur überreife Trauben.':`, für eine Beerenauslese (${R().min.ba}°) reicht es nicht.`}`)}
       else wagnisWeg(f,so,'edel',L);
     }else if(w==='frost'&&!f.wagnis){f.wagnis='frost'; L.push(`Der ${so.name} hängt weiter und wartet auf Frost im Dezember.`)}
     return;
@@ -1435,7 +1440,10 @@ function herbstWagnis(id,f,so,m,L){
   // Seit 13.4.5: Die Beerenauslese wagt ab R8 die zweite Stufe, ohne den Rang verfault sie wie alles andere.
   if(f.wagnis==='edel'&&tbaOffen()){
     // Seit 13.6.2: Im Jahrhundertsommer wird die Trockenbeerenauslese der Jahrhundertwein (f.jh).
-    if(H.uTba<tbaChance()){f.oe=Math.max(f.oe,R().min.tba); if(jhEcht()==='sommer'){f.jh=1; S.jhN=(S.jhN||0)+1} L.push(`${f.jh?'Jahrhundertsommer! ':''}Die edelfaulen Beeren vom ${so.name} sind zu Rosinen eingetrocknet: ${f.oe}° Öchsle, genug für eine Trockenbeerenauslese. Lies sie diesen Monat von Hand, nur überreife Trauben.`)}
+    // Seit 14.5.4 (Annahmen 35, 36 und 38): Die Rosinen bringen ROSIN_OE Grad dazu (bis 14.5.3 fest auf die Schwelle der Trockenbeerenauslese), höchstens OE_MAX,
+    // und kosten noch einmal ROSIN_MENGE der Menge. Text ist Platzhalter, Wortlaut in Meilenstein 17.
+    if(H.uTba<tbaChance()){f.oe=Math.min(OE_MAX,f.oe+ROSIN_OE); f.menge=Math.round(f.menge*ROSIN_MENGE); if(jhEcht()==='sommer'){f.jh=1; S.jhN=(S.jhN||0)+1}
+      L.push(`${f.jh?'Jahrhundertsommer! ':''}Die edelfaulen Beeren vom ${so.name} sind zu Rosinen eingetrocknet: ${f.oe}° Öchsle${feldQ(f,'ueber').oe>=R().min.tba?', genug für eine Trockenbeerenauslese. Lies sie diesen Monat von Hand, nur überreife Trauben.':`, für eine Trockenbeerenauslese (${R().min.tba}°) reicht es nicht.`}`)}
     else wagnisWeg(f,so,'tba',L);
     return;
   }
@@ -1515,10 +1523,8 @@ function pruefeAnmeldung(l,st){
   return g;
 }
 function besteStufe(q){let b=null; for(const st of REIHE) if(!pruefeQualitaet(st,q).length) b=st; return b}
-function eisStufe(oe){const m=R().min; return oe>=m.tba?2:oe>=m.ba?1:0}
-const eisF=l=>l.stufe==='eis'?EIS_WERT[l.eisW||0].f:1;
-// Name der Stufe für die Lese-Hilfe, beim Eiswein mit seiner Wertstufe.
-const stufeText=(st,oe)=>STUFEN[st].name+(st==='eis'?` (Öchsle einer ${EIS_WERT[eisStufe(oe)].name})`:'');
+// Name der Stufe für die Lese-Hilfe (bis 14.5.3 beim Eiswein mit seiner Wertstufe nach den Öchsle).
+const stufeText=st=>STUFEN[st].name;
 // Seit 13.4.2: auch gefrorene Trauben liest die Hand, wie früher, als es Eiswein nur mit Edelfäulnis gab.
 // Seit 13.5.5 liest die Hand jedes Feld der Spitzen-Sorte, eine Maschine springt dort nie mehr ein (handFehlt bleibt leer, q.masch kommt nicht mehr vor).
 // Seit 14.2.4 auch jeder Weinberg, dessen Form keine Maschine erlaubt (formMasch).
@@ -1527,7 +1533,7 @@ const handBedarf=f=>Math.max(0,Math.ceil((f.reben-alleinReben())/HAND_REBEN));
 const handFehlt=f=>false;
 const handlese=f=>handFeld(f)&&!handFehlt(f);
 // Seit 13.2.3: Auch die überreife Lese (+5°) bleibt unter der Grenze des Weinbergs.
-function feldQ(f,la){const id=feldId(f); return {oe:Math.min(id?oeGrenze(id):150,f.oe+(la==='ueber'?5:0)),leseart:la,edel:f.edel,eis:f.gefroren,masch:handFehlt(f)?1:0,sorte:id,...(f.jh?{jh:1}:{})}}
+function feldQ(f,la){const id=feldId(f); return {oe:Math.min(id?oeGrenze(id):OE_MAX,f.oe+(la==='ueber'?5:0)),leseart:la,edel:f.edel,eis:f.gefroren,masch:handFehlt(f)?1:0,sorte:id,...(f.jh?{jh:1}:{})}}
 // Abnutzung bei der Lese (8.0): reben ist der Teil der Lese, den die Maschinen schaffen, M ihre Ernteleistung zusammen. Auslastung reben/M (höchstens 1),
 // je Maschine ABNUTZ_VOLL mal Auslastung mal Pflege-Faktor nach dem Zustand vor der ersten Lese des Jahres (ma.lj, ma.lz). Bruchteile sammelt ma.abn.
 function maschAbnutzung(reben,M){
@@ -1539,8 +1545,9 @@ function maschAbnutzung(reben,M){
   }
 }
 // Version 4.4: ungefährer Listenwert einer Lese als Flaschenwein der Stufe st, ohne Reife und Marktlage.
-function leseWert(id,la,st,liter){const q=feldQ(S.felder[id],la), pfl=S.felder[id].pflSt||0, qp=qualWb(id); // seit 14.5.2 die Qualität des Weinbergs
-  return Math.round(liter*STUFEN[st].preis*(st==='eis'?EIS_WERT[eisStufe(q.oe)].f:1)*(1+qp/100)*(1+pflegePreis(id,pfl))*anspruchF(st,qp)*sternF(id)*(R().preisF||1)/100)*100}
+// Seit 14.5.2 mit der Qualität des Weinbergs, seit 14.5.4 über weinWert (Öchsle der Leseart, Pflegestufe des Weinbergs).
+function leseWert(id,la,st,liter){const q=feldQ(S.felder[id],la);
+  return Math.round(liter*weinWert(st,{qp:qualWb(id),oe:q.oe,sorte:id,pfl:S.felder[id].pflSt||0,sekt:sektSorte(id)})*(R().preisF||1)/100)*100}
 function feldLiter(f,la){const r=f.reif/100,u=f.ueber/100; return Math.round(f.menge*r*(la==='reif'?1-u:la==='ueber'?u*MOST_UEBER:1-u+u*MOST_UEBER)*leseFaktor(feldId(f)))}
 // Ab wann ein Wein frühestens verkauft werden darf, wenn er jetzt gelesen wird.
 // Gekeltert wird im Lesemonat, nach einem Monat im Fass darf er angemeldet und abgefüllt werden, ab Kabinett und beim Eiswein erst im Januar.
@@ -1565,12 +1572,23 @@ function lagerBasis(l){
 }
 // Ein Weinskandal drückt alle Preise, eine Mode im Ausland hebt eine Sorte. S.lage={typ,f,rest,sorte}.
 function lageF(l){const g=S.lage; return !g?1:g.typ==='mode'?(stamm(l.sorte)===g.sorte?g.f:1):g.f}
+// Seit 14.5.4 (Entscheidungen 24, 38, 44 und 49, Annahmen 12 bis 14 und 35 bis 37 im Bauplan 14.5): Wert je Flasche ohne Flaschenreife, Markt und Sekt-Faktor.
+// Listenpreis der Weinstufe (STUFEN.preis) mal Grundpreis der Sorte (SORTE_PREIS, auch für die Spitzenlage) mal Qualitätsfaktor (QUAL_PREIS_AB plus QUAL_PREIS_JE
+// je Punkt, 50 Punkte sind der Listenpreis) mal Grand Cru (pflegePreis nach l.pfl) mal Öchsle-Zuschlag (oePreisF), dazu wie bisher Anspruch und Sterne.
+// w braucht qp, oe, sorte, pfl und sekt, also einen Posten oder die Werte eines Weinbergs (leseWert).
+const qualPreisF=qp=>QUAL_PREIS_AB+QUAL_PREIS_JE*(qp||0);
+const sortePreisF=id=>SORTE_PREIS[rolleK(id)]||1;
+// Schwelle der Weinstufe für den Öchsle-Zuschlag: die Tabelle R().min, beim Eiswein EIS_OE_SCHWELLE (Annahme 37). Federweißer und Sekt haben keine (Annahme der Bau-Sitzung).
+const oeSchwelle=st=>st==='eis'?EIS_OE_SCHWELLE:st==='feder'||!st?null:R().min[st];
+// Grad über der Schwelle, ohne Deckel (die Jury nimmt ihn ab 14.5.7 mit OE_JURY_MAX), beim Sekt 0.
+const oeUeber=(st,w)=>{const s=w.sekt?null:oeSchwelle(st); return s==null?0:Math.max(0,Math.round(w.oe||0)-s)};
+const oePreisF=(st,w)=>1+Math.min(OE_PREIS_MAX,OE_PREIS_JE*oeUeber(st,w));
+function weinWert(st,w){return STUFEN[st].preis*sortePreisF(w.sorte)*qualPreisF(w.qp)*(1+pflegePreis(w.pfl))*oePreisF(st,w)*anspruchF(st,w.qp)*sternF(w.sorte)}
 function preis(l){
   if(l.status!=='flasche') return 0;
   const L=lager(l); if(l.flMonate<L.min) return 0;
   const alter=Math.min(4,1+(l.flMonate-L.min)/12*L.rate);
-  // Seit 13.2.2: Preisbonus der Rebpflege bei der Spitzen-Sorte (pflegePreis), sonst 0.
-  return Math.round(STUFEN[l.stufe].preis*eisF(l)*(1+l.qp/100)*(1+pflegePreis(l.sorte,l.pfl))*anspruchF(l.stufe,l.qp)*alter*S.markt*lageF(l)*sektF(l)*sternF(l.sorte)*(R().preisF||1)*100)/100;
+  return Math.round(weinWert(l.stufe,l)*alter*S.markt*lageF(l)*sektF(l)*(R().preisF||1)*100)/100;
 }
 
 // Die drei Sorten der Partie nach Rolle: {menge, sekt, spitze}.
@@ -1614,7 +1632,8 @@ for(const id of Object.keys(MASCH)) kompWissen('masch_'+id,'technik',MASCH[id].n
   ()=>{const T=MASCH[id]; return `${T.bonus?MASCH_BONUS[id]():`Schafft ${rbn(T.leist)} Reben bei der Lese und deckt übers Jahr ${T.helfer} Hektar Reben ab`}. Zu kaufen ${maschFreiText(id)} für ${eur(T.preis)}.`});
 kompWissen('hagel','gefahr','Hagel',()=>'Zwischen Juni und September kann ein Unwetter einen Teil der Trauben zerschlagen, die noch am Stock hängen.');
 kompWissen('spaetfrost','gefahr','Spätfrost',()=>'Friert es im April oder Mai noch einmal, leidet die Blüte, und die Ernte des Jahres fällt kleiner aus.');
-kompWissen('kaelte','gefahr','Das Wagnis im Herbst',()=>`Wer die Spitzen-Sorte über Oktober hängen lässt, wagt den Weg seines Gebiets. Jeder Monat kostet ${Math.round((1-WARTEN_MENGE)*100)} % Menge, und klappt es nicht, ist die Ernte des Feldes weg, zum Beispiel durch einen Kälteeinbruch im November.`);
+// Seit 14.5.4 mit den Öchsle und der Menge von Edelfäulnis und Rosinen, Platzhalter, Wortlaut in Meilenstein 17.
+kompWissen('kaelte','gefahr','Das Wagnis im Herbst',()=>`Wer die Spitzen-Sorte über Oktober hängen lässt, wagt den Weg seines Gebiets. Jeder Monat kostet ${Math.round((1-WARTEN_MENGE)*100)} % Menge, und klappt es nicht, ist die Ernte des Feldes weg, zum Beispiel durch einen Kälteeinbruch im November. Die Edelfäulnis bringt ${EDEL_OE}° Öchsle dazu und kostet ${Math.round((1-EDEL_MENGE)*100)} % Menge, die Rosinen noch einmal ${ROSIN_OE}° und ${Math.round((1-ROSIN_MENGE)*100)} %, höchstens bis ${OE_MAX}°.`);
 kompWissen('skandal','gefahr','Weinskandal',()=>'Ein Skandal im Land drückt ein paar Monate lang alle Weinpreise. Danach ist erst einmal Ruhe.');
 kompWissen('kontrolle','gefahr','Weinkontrolle',()=>'Der Prüfer kommt unangemeldet, im Schnitt alle drei Jahre. Findet er gepanschten Wein, wird der vernichtet, es gibt Strafe, und fünf Jahre lang kommt er jedes Jahr wieder.');
 kompWissen('maschine','gefahr','Maschinenschaden',()=>`Ein Schaden kostet eine Maschine auf einen Schlag viel Zustand. Unter ${MASCH_ROT} % fällt sie aus, bis sie gewartet ist.`);
@@ -1628,7 +1647,7 @@ kompWissen('regeln','stufe','Reifezeit und Regeln',()=>{
     +`<br><br><b>📜 Gut zu wissen</b><br>Jeder Wein liegt mindestens einen Monat im Fass, höchstens sieben.<br>Ab Kabinett und beim Eiswein darfst du erst im Januar nach der Lese anmelden.<br>Überreife Trauben bringen 5° mehr Öchsle.<br>${edelRegel()}.${S.rollen?'':' Am häufigsten trifft sie die Sorte, die am besten ins Gebiet passt.'} Dann gibt es von dem Feld kein Kabinett und keine Spätlese mehr.<br>Kälteeinbruch im November: im Schnitt jedes vierte Jahr, die Vorhersage warnt meist davor.<br>${frostText()}, nur dann gibt es Eiswein.<br>Bei der Lese zeigt jede Leseart, ab wann der Wein verkaufsfertig ist.`;
 });
 // Die Edelfäulnis ist keine Gefahr, sie ist ein Gütezeichen (Maik 19.11.2026). Ihre Seite steht deshalb bei den Stufen.
-kompWissen('edel','stufe','Edelfäulnis',()=>`${edelRegel()}. Dann reicht der Zucker für eine Beerenauslese. Kabinett und Spätlese gibt es von dem Feld dann nicht mehr.`)
+kompWissen('edel','stufe','Edelfäulnis',()=>`${edelRegel()}. Sie bringt ${EDEL_OE}° Öchsle dazu, ab ${R().min.ba}° reicht es für eine Beerenauslese. Kabinett und Spätlese gibt es von dem Feld dann nicht mehr.`)
 // Seit 13.7.4 (Bauplan 13.7, Entscheidung 3): Was die Zeichen fürs Warten im Herbst bedeuten, damit niemand raten muss. Die Zahlen kommen aus den Konstanten,
 // der Abschnitt zur Spielstufe sagt, welche Zeichen in dieser Partie zählen. Wortlaut seit 13.8.
 kompWissen('zeichen','stufe','Zeichen fürs Warten',()=>{
@@ -2297,7 +2316,7 @@ const maniLegal=(l,st)=>st==='tafel'&&(l.zucker||0)<=ZUCKER_ERLAUBT&&(l.wasser||
 const hinterOffen=()=>frei('hintertuer');
 // Seit 13.7.8 (Entscheidung 12, Maik 22.11.2026): Zucker hebt das Öchsle höchstens bis zum Deckel des Weinbergs, aus dem die Trauben kommen (deckel der Sorte, wie er gerade steht).
 // ZUCKER_MAX bleibt die zweite Grenze. zuckerOe rechnet das Öchsle nach n Prozent Zucker, zuckerBis gibt die meisten Prozent, die noch gehen (0 heißt gesperrt).
-const zuckerOe=(l,n)=>Math.min(150,Math.round(l.oe*(1+n/100)));
+const zuckerOe=(l,n)=>Math.min(OE_MAX,Math.round(l.oe*(1+n/100)));
 function zuckerBis(l){const D=deckel(l.sorte); let n=0; while(n<ZUCKER_MAX-(l.zucker||0)&&zuckerOe(l,n+1)<=D) n++; return n}
 const maniText=l=>[l.zucker?`gezuckert (+${l.zucker}\u00a0%)`:'',l.wasser?`gewässert (+${l.wasser}\u00a0%)`:''].filter(Boolean).join(' und ');
 // Seit 14.5.2 (Entscheidungen 18, 21, 35 und 45, Annahmen 1 bis 5): Qualität je Weinberg von 0 bis 100 aus vier Bausteinen, für alle Weinberge einzeln.
@@ -2314,14 +2333,14 @@ function qualTeile(id,v){const f=Object.assign({},S.felder[id]||{},v||{}), pfleg
 const qualWb=id=>qualTeile(id).q;
 // Schmiergeld für den Beamten: ein Anteil vom Wert des Weins, mindestens SCHMIER_MIN.
 const schmierVon=w=>Math.max(SCHMIER_MIN,Math.round(w*SCHMIER_ANTEIL/100)*100);
-function schmier(l,st){return schmierVon(l.liter*STUFEN[st].preis*(1+(l.qp||0)/100))} // seit 14.5.2 mit der Qualität des Weins (l.qp)
+function schmier(l,st){return schmierVon(l.liter*STUFEN[st].preis*qualPreisF(l.qp))} // seit 14.5.2 mit der Qualität des Weins (l.qp), seit 14.5.4 mit dem Qualitätsfaktor
 const mischbar=l=>l.status==='fass'&&l.stufe&&l.stufe!=='feder';
 const farbe=l=>SORTEN[l.sorte].farbe;
 // Verschnitt zweier Fassweine: Der Wein mit der höheren Stufe gibt den Namen, Öchsle und Qualität werden nach Menge gemittelt.
 function mischung(a,b){
   if(STUFEN[b.stufe].rang>STUFEN[a.stufe].rang) [a,b]=[b,a];
   const L=a.liter+b.liter, o={a,b,liter:L,oe:Math.round((a.oe*a.liter+b.oe*b.liter)/L),qp:Math.round((a.qp*a.liter+b.qp*b.liter)/L)};
-  o.schmier=schmierVon(L*STUFEN[a.stufe].preis*eisF(a)*(1+o.qp/100)); return o;
+  o.schmier=schmierVon(L*STUFEN[a.stufe].preis*qualPreisF(o.qp)); return o;
 }
 /* ---- Version 10.0: Amtszeit und Wahl (Spielende, Paket 1) ---- */
 // S.amt gibt es ab dem Monat, in dem der Spieler Präsident wird: seit (Monat des Amtsantritts als monatNr), stimm (Stimmung im Verband, Kommazahl 0 bis 100),

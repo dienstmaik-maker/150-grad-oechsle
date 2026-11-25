@@ -93,20 +93,19 @@ const EIGNUNG={mosel:{riesling:1,mueller:.85,spaetb:.7},rheingau:{riesling:1,spa
 const STERN_PREIS_3=1, STERN_PREIS_2=1, STERN_PREIS_1=1;
 // Seit 13.3.5 (Bauplan 13.3): ans ist das Ansehen bei der Anmeldung, einmal je Wein (Sorte, Jahrgang, Stufe), dazu ANS_PFLEGE und ANS_TERROIR.
 // Seit 14.5.1 (Annahme 24 im Bauplan 14.5): jury ist der Wert der Weinstufe bei der Jury (bis 14.4 als qp in den Qualitätspunkten), noch ungenutzt bis 14.5.7.
+// Seit 14.5.4 (Entscheidungen 31 und 49): preis ist der Listenpreis bei 50 Punkten Qualität, die alten Preise mal 1,3 (bis 14.5.3: 3, 2,5, 4,5, 7, 10,5, 17, 38, 75, 60).
+// Der Eiswein hat einen Preis, seine drei Wertstufen nach den Öchsle (EIS_WERT, Faktor 1, 1,3, 1,7) sind weg.
 const STUFEN={
-  feder:{name:'Federweißer',rang:0,preis:3,jury:2,geb:0,ans:3},
-  tafel:{name:'Tafelwein',rang:1,preis:2.5,jury:3,geb:0,ans:3},
-  qba:{name:'Qualitätswein',rang:2,preis:4.5,jury:6,geb:0,ans:5},
-  kab:{name:'Kabinett',rang:3,preis:7,jury:10,geb:60,ans:6,lese:'reif',edel:false},
-  spat:{name:'Spätlese',rang:4,preis:10.5,jury:14,geb:90,ans:8,lese:'reif',edel:false},
-  aus:{name:'Auslese',rang:5,preis:17,jury:18,geb:130,ans:14,lese:'reif'},
-  ba:{name:'Beerenauslese',rang:6,preis:38,jury:24,geb:200,ans:22,lese:'ueber',edel:true},
-  tba:{name:'Trockenbeerenauslese',rang:7,preis:75,jury:30,geb:300,ans:34,lese:'ueber',edel:true},
-  eis:{name:'Eiswein',rang:8,preis:60,jury:28,geb:300,ans:28}
+  feder:{name:'Federweißer',rang:0,preis:3.9,jury:2,geb:0,ans:3},
+  tafel:{name:'Tafelwein',rang:1,preis:3.25,jury:3,geb:0,ans:3},
+  qba:{name:'Qualitätswein',rang:2,preis:5.85,jury:6,geb:0,ans:5},
+  kab:{name:'Kabinett',rang:3,preis:9.1,jury:10,geb:60,ans:6,lese:'reif',edel:false},
+  spat:{name:'Spätlese',rang:4,preis:13.65,jury:14,geb:90,ans:8,lese:'reif',edel:false},
+  aus:{name:'Auslese',rang:5,preis:22.1,jury:18,geb:130,ans:14,lese:'reif'},
+  ba:{name:'Beerenauslese',rang:6,preis:52,jury:24,geb:200,ans:22,lese:'ueber',edel:true},
+  tba:{name:'Trockenbeerenauslese',rang:7,preis:110.5,jury:30,geb:300,ans:34,lese:'ueber',edel:true},
+  eis:{name:'Eiswein',rang:8,preis:91,jury:28,geb:300,ans:28}
 };
-// Eiswein in drei Wertstufen nach den Öchsle bei der Lese: wie Auslese, Beerenauslese oder Trockenbeerenauslese des Gebiets.
-// Angemeldet wird immer als Eiswein, f ist der Faktor auf den Preis (der Zuschlag qp auf die Qualitätspunkte ist seit 14.5.2 weg).
-const EIS_WERT=[{name:'Auslese',f:1},{name:'Beerenauslese',f:1.3},{name:'Trockenbeerenauslese',f:1.7}];
 // Seit 13.3.2 (Bauplan 13.3, Maik 21.11.2026): zwei Schlösser je Wein. Der Rang gibt ihn frei (FREI, Schlüssel wein_ und die Stufe), der Deckel muss reichen.
 // Der Deckel wirkt schon übers Öchsle (oeGrenze). Wer mehr Öchsle hat, als sein Rang erlaubt, meldet die höchste erlaubte Stufe an. Die Auslese geht seitdem mit und ohne Edelfäulnis.
 // WEIN_ROLLE: welche Stufen eine Rolle überhaupt machen darf. Die Menge-Sorte hat nie Edelfäulnis und keine Auslese, Auslese und höher gibt es nur von der Spitzen-Sorte.
@@ -186,15 +185,17 @@ const BODEN_STUFEN=['Rohboden','Fruchtboden','Gutsboden','Terroir'], BODEN_SCHWE
 // die bis Ende April geschnitten wurde (f.schnitt), PFLEGE_GUT, sonst geht der Zähler um PFLEGE_PATZER zurück, höchstens bis 0. Die Stufe ist die höchste
 // Schwelle in PFLEGE_SCHWELLE, die der Zähler erreicht, sie fällt also erst, wenn er darunter rutscht. Neue Reben übernehmen die Stufe ihrer Sorte.
 // Menge: Der Setzling trägt SETZ_MENGE nach seinem Zählerstand (0 bis 4), ab Rebstock gilt PFLEGE_MENGE je Rolle für Rebstock, Premier Cru, Grand Cru.
-// Preisbonus PFLEGE_PREIS je Stufe nur bei der Spitzen-Sorte, je Stufe PFLEGE_ST_OE Grad mehr Deckel (ab 13.2.3).
+// Preisbonus PFLEGE_PREIS je Stufe (bis 14.5.3 nur bei der Spitzen-Sorte), je Stufe PFLEGE_ST_OE Grad mehr Deckel (ab 13.2.3).
 const PFLEGE_STUFEN=['Jungrebe','Rebstock','Premier Cru','Grand Cru'], PFLEGE_SCHWELLE=[0,5,12,20], PFLEGE_GUT=1, PFLEGE_PATZER=2, PFLEGE_ST_OE=0;
 // Seit 14.2.6 (Entscheidung 24, Annahme 14): Die Pflege hebt den Deckel nicht mehr (PFLEGE_ST_OE 0, bis 14.2.5: 4), PFLEGE_PREIS steht auf 0 (bis 14.2.5: 0, 0, 5, 15 Prozent).
 const SETZ_MENGE=[.4,.48,.55,.63,.7], PFLEGE_MENGE={menge:[1,1,1],sekt:[1,1,1],spitze:[1,.9,.8]};
-const PFLEGE_PREIS={spitze:[0,0,0,0]};
+// Seit 14.5.4 (Entscheidung 44, Annahme 14): Grand Cru 15 Prozent mehr Preis für alle Sorten, als Sprung nach der Pflegestufe bei der Lese (l.pfl).
+const PFLEGE_PREIS=[0,0,0,.15];
 // Seit 13.2.3 (Bauplan 13.2): Deckel je Weinberg = DECKEL_BASIS der Rolle + BODEN_ST_OE je Boden-Stufe + PFLEGE_ST_OE je Pflegestufe, also höchstens 90° und 104°.
-// Das Monatsmodell bleibt, es zählt der kleinere Wert aus Wetter und Deckel. Nur die Edelfäulnis der Spitzen-Sorte darf darüber, bis 150°.
-// Seit 14.2.6 (Entscheidung 24): fester Deckel je Sorte, Menge und Sekt 90°, Spitze 104° (bis 14.2.5: 66, 66, 80 plus 4° je Boden- und Pflegestufe).
-const DECKEL_BASIS={menge:90,spitze:104,sekt:90};
+// Das Monatsmodell bleibt, es zählt der kleinere Wert aus Wetter und Deckel. Nur die Edelfäulnis der Spitzen-Sorte darf darüber, bis OE_MAX.
+// Seit 14.2.6 (Entscheidung 24): fester Deckel je Sorte (bis 14.2.5: 66, 66, 80 plus 4° je Boden- und Pflegestufe).
+// Seit 14.5.4 (Öchsle-Nachtrag, Annahme 35 im Bauplan 14.5): Menge 105°, Spitze 124°, Sekt bleibt bei 90° (bis 14.5.3: 90°, 104°, 90°).
+const DECKEL_BASIS={menge:105,spitze:124,sekt:90};
 // Seit 13.2.4 (Bauplan 13.2): Rebschnitt von Hand je Sorte von Januar bis SCHNITT_BIS (3 = April), SCHNITT_HA Euro je Hektar der Sorte, so viel wie das Düngen.
 // Wer bis Ende April schneidet, hat ein gutes Pflegejahr (13.2.2). Die Abgabe an die Erntehelfer kommt in 13.5.
 const SCHNITT_HA=DUENGER_HA, SCHNITT_BIS=3;
@@ -783,7 +784,7 @@ const VARIANTEN={
 };
 const EREIGNIS={
   gut:{
-    supersommer:{ok:()=>(S.monat===6||S.monat===7)&&feldHaengt().length,los(){const n=rint(6,9); for(const id of feldHaengt()) S.felder[id].oe=Math.min(150,S.felder[id].oe+n); S.sonne++; schlag(80,'Supersommer!',`Wochenlang Sonne satt ${WO[S.region]}. Deine Trauben legen ${n}° Öchsle zu, und der Sommer zählt als zusätzlicher Sonnenmonat.`,'supersommer',{du:1})}},
+    supersommer:{ok:()=>(S.monat===6||S.monat===7)&&feldHaengt().length,los(){const n=rint(6,9); for(const id of feldHaengt()) S.felder[id].oe=Math.min(OE_MAX,S.felder[id].oe+n); S.sonne++; schlag(80,'Supersommer!',`Wochenlang Sonne satt ${WO[S.region]}. Deine Trauben legen ${n}° Öchsle zu, und der Sommer zählt als zusätzlicher Sonnenmonat.`,'supersommer',{du:1})}},
     mode:{ok:()=>!S.lage,los(){const fr=S.rollen?R().sorten.filter(sorteFrei):null, id=fr?fr[rint(0,fr.length-1)]:R().sorten.slice().sort((a,b)=>eignung(b)-eignung(a))[0], f=1+rnd(.2,.4), n=rint(4,6); S.lage={typ:'mode',f,rest:n,sorte:id}; schlag(80,`${SORTEN[id].name} ist plötzlich in Mode`,`Ein Fernsehkoch schwärmt ${fr?`von der Rebsorte ${SORTEN[id].name} ${WO[S.region]}, und plötzlich wollen alle diesen Wein`:`vom ${SORTEN[id].name} ${WO[S.region]}, und plötzlich wollen ihn alle`}. ${n} Monate lang bringt er ${Math.round((f-1)*100)}\u00a0% mehr.`,'rieslingmode',{du:1})}},
     erbschaft:{ok:()=>true,los(){const b=Math.round(rint(8,20)*1000*(1+S.rang/2)/100)*100; S.geld+=b; fx('kasse'); schlag(80,'Unverhoffte Erbschaft',`${variante('erbschaft').replace('{b}',eur(b))} Das Geld ist steuerfrei.`,'erbschaft',{du:1})}},
     kritiker:{ok:()=>S.lots.some(kritikerWein),los(){const l=S.lots.filter(kritikerWein).sort((a,b)=>b.qp-a.qp)[0], q=rint(3,5); l.qp+=q; const a=ruhm(12); schlag(80,`Kritiker lobt deinen ${lotName(l)}`,`Ein bekannter Weinkritiker hat deinen ${lotName(l)} probiert und schwärmt in seiner Kolumne. Der Wein bekommt ${q} Punkte mehr, dazu +${a} Ansehen.`,'weinkritiker',{du:1})}}
@@ -1533,7 +1534,7 @@ const TITEL_NAMEN=[[['Spielidee &amp;','Entwicklung'],'Maik','Dienst'],[['Chef-T
 // ===== Seit 14.5.1 (Bauplan 14.5 Qualität, Lesereife und Weinprüfer, 25.11.2026). Alle Zahlen sind Startwerte, gemessen wird in Meilenstein 15.
 // In 14.5.1 noch ungenutzt. Bestehende Konstanten, die in 14.5 neue Werte bekommen oder entfallen, ändern sich in ihrer Unteretappe:
 // LAUB_QP (2) und die alten Punkte (QP_MIN, QP_MAX, STUFE_QPF, BODEN_ST_QP, SONNE_QP_MAX, PFLEGE_QP) in 14.5.2, FORM_WIRKUNG und ROLLEN.ertrag in 14.5.3,
-// STUFEN.preis, PFLEGE_PREIS und EIS_WERT in 14.5.4, ANSPRUCH in 14.5.5, ANS_JE_QP (10) in 14.5.6, KRONEN.p und GEGNER_TYP.ws in 14.5.7.
+// STUFEN.preis, PFLEGE_PREIS, EIS_WERT und DECKEL_BASIS in 14.5.4, ANSPRUCH in 14.5.5, ANS_JE_QP (10) in 14.5.6, KRONEN.p und GEGNER_TYP.ws in 14.5.7.
 // Qualität je Weinberg (Entscheidungen 18, 21 und 35): Pflege QUAL_PFLEGE_AB ab dem Rebstock plus QUAL_PFLEGE_EP der Entwicklungspunkte, höchstens QUAL_PFLEGE_MAX.
 // Boden gleitend zwischen QUAL_BODEN an den Schwellen BODEN_SCHWELLE, darüber der letzte Wert. Form aus FORMEN.qual.
 // Sonstiges: Laubschnitt LAUB_QP und Ausdünnen AUSD_QP. Bis zum Nachtrag zu 14.5.2 standen hier 3 Punkte Reserve (QUAL_RESERVE), Höchstwert 97.
@@ -1553,7 +1554,13 @@ const SOMMER_FUSS='Ob die Öchsle auch reichen, zeigt erst die Lese.';
 const AUSD_LINKS='🍇 Ausdünnen: {kosten}, {m} weniger Menge, {qp} Punkte Qualität';
 const AUSD_MELDUNG='Der {sorte} ist für {kosten} ausgedünnt: Die Lese {jahr} bekommt {qp} Punkte Qualität und {m} weniger Menge.';
 // Preis (Entscheidungen 24, 38 und 44): Qualitätsfaktor QUAL_PREIS_AB plus QUAL_PREIS_JE je Punkt, Grundpreis je Sorte, Jahrhundertwein JH_PREIS mehr.
+// Seit 14.5.4 in preis, lotWert, leseWert und schmier (qualPreisF, sortePreisF in kern.js). JH_PREIS wirkt erst ab 14.5.7.
 const QUAL_PREIS_AB=.5, QUAL_PREIS_JE=.01, SORTE_PREIS={menge:1,sekt:1,spitze:1.05}, JH_PREIS=.1;
+// Öchsle-Nachtrag (Maik 25.11.2026, Annahmen 35 bis 38 im Bauplan 14.5), seit 14.5.4. Preis: OE_PREIS_JE je Grad über der Schwelle der Weinstufe
+// (R().min, beim Eiswein EIS_OE_SCHWELLE), höchstens OE_PREIS_MAX, nicht in der Qualität. Jury: derselbe Überschuss, höchstens OE_JURY_MAX Punkte (ab 14.5.7).
+// Wagnis im Herbst: Edelfäulnis EDEL_OE und Rosinen ROSIN_OE Grad dazu, bis höchstens OE_MAX (bis 14.5.3: fest auf 125° und 150°, Obergrenze 150°),
+// dazu EDEL_MENGE und ROSIN_MENGE der Menge (WARTEN_MENGE je Monat bleibt).
+const OE_PREIS_JE=.01, OE_PREIS_MAX=.1, OE_JURY_MAX=10, EIS_OE_SCHWELLE=110, EDEL_OE=30, ROSIN_OE=25, OE_MAX=175, EDEL_MENGE=.7, ROSIN_MENGE=.7;
 // Wagnis beim Weinprüfer (Entscheidungen 20, 26 und 28), nicht zu verwechseln mit WAGNIS und WAGNIS_AUS (Wagnis bei der Lese):
 // ab dem Akt WAGNIS_AB_AKT, je fehlendem Punkt WAGNIS_JE_PUNKT weniger Chance, durchgefallen DURCH_PREIS Abschlag,
 // ab dem Akt DURCH_ANS_AB_AKT kostet Durchfallen DURCH_ANS mal den Grundwert der Weinstufe. Anzeige je Spielstufe nach dem Muster CHANCE_ZEIGE.

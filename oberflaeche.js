@@ -2127,7 +2127,7 @@ const AKT={
     <div class="kv"><span>Noch haltbar</span><span>${fl?(L.max===Infinity?'unbegrenzt':(L.max-l.flMonate)+' Monate'):(8-l.fassMonate)+' Monate im Fass'}</span></div>
     ${fl?`<div class="bar g"><i style="width:${L.max===Infinity?Math.min(100,l.flMonate/(L.min*3)*100):l.flMonate/L.max*100}%"></i></div>`:''}
     <div class="kv"><span>Öchsle bei der Lese</span><span>${l.oe}°</span></div>
-    ${l.stufe==='eis'?`<div class="kv"><span>Wertstufe</span><span>Öchsle einer ${EIS_WERT[l.eisW||0].name}</span></div>`:''}
+    ${l.stufe&&oeUeber(l.stufe,l)?`<div class="kv"><span>Öchsle über der Schwelle</span><span>${oeUeber(l.stufe,l)}° · ${pz(oePreisF(l.stufe,l)-1)} mehr Preis</span></div>`:''}
     <div class="kv"><span>Qualität</span><span>${l.qp}</span></div>
     <div class="kv"><span>Preis je Flasche</span><span>${p?eur2(p):fl?`reif in ${L.min-l.flMonate} Monaten`:'noch im Fass'}</span></div>
     ${p?`<div class="kv"><span>Gesamtwert</span><span>${eur(p*l.liter)}</span></div>`:''}
@@ -2514,7 +2514,7 @@ const AKT={
     const jan=a=>a.g.length&&S.jahr===l.jahrgang&&a.g.every(x=>/Januar/.test(x));
     const ok=A.filter(a=>!a.g.length), spaeter=A.filter(jan), nein=A.filter(a=>a.g.length);
     const zeile=({st,g})=>{const s=STUFEN[st],ill=M&&!maniLegal(l,st);
-      return `<div class="stufe"><div class="row"><b>${g.length?'✗':'✓'} ${s.name}</b>${g.length?'':`<button class="klein ${ill?'wag':''}" data-a="anmeldeJa" data-id="${l.id}" data-st="${st}">${ill?`🤫 Unter der Hand (${eur(s.geb+schmier(l,st))})`:`Anmelden${s.geb?' ('+eur(s.geb)+')':''}`}</button>`}</div>${g.length?`<div class="mut">${g.map(esc).join(' · ')}</div>`:st==='eis'?`<div class="mut">Wertstufe: Öchsle einer ${EIS_WERT[eisStufe(l.oe)].name}${eisStufe(l.oe)?`, Preis +${Math.round((EIS_WERT[eisStufe(l.oe)].f-1)*100)}\u00a0%`:''}</div>`:''}</div>`};
+      return `<div class="stufe"><div class="row"><b>${g.length?'✗':'✓'} ${s.name}</b>${g.length?'':`<button class="klein ${ill?'wag':''}" data-a="anmeldeJa" data-id="${l.id}" data-st="${st}">${ill?`🤫 Unter der Hand (${eur(s.geb+schmier(l,st))})`:`Anmelden${s.geb?' ('+eur(s.geb)+')':''}`}</button>`}</div>${g.length?`<div class="mut">${g.map(esc).join(' · ')}</div>`:oeUeber(st,l)?`<div class="mut">${oeUeber(st,l)}° über der Schwelle, Preis +${pz(oePreisF(st,l)-1)}</div>`:''}</div>`};
     const zeilen=(ok.length?ok.map(zeile).join(''):'<div class="mut">Gerade geht keine Stufe.</div>')
       +(spaeter.length?`<div class="hilfe" style="margin:10px 0">📅 Ab Januar möglich: <b>${spaeter.map(a=>STUFEN[a.st].name).join(', ')}</b>.${ok.length?' Meldest du jetzt an, verschenkst du die bessere Stufe.':''}</div>`:'')
       +(nein.length?`<details class="stz"><summary>Nicht möglich (${nein.length})</summary>${nein.map(zeile).join('')}</details>`:'');
@@ -2527,7 +2527,6 @@ const AKT={
     const ill=mani(l)&&!maniLegal(l,st), sg=ill?schmier(l,st):0;
     if(ill&&S.geld<s.geb+sg) return meldung('Zu wenig Geld',`Der Beamte will ${eur(sg)} Schmiergeld${s.geb?`, dazu kommt die Gebühr von ${eur(s.geb)}`:''}.`);
     zahle(s.geb+sg);l.stufe=st;if(ill)l.pansch=true; const kw=kellerWein(l,st);
-    if(st==='eis') l.eisW=eisStufe(l.oe);
     // Seit 14.5.2 (Annahme 1): Die Qualität hat der Wein seit der Lese (l.qp), die Anmeldung rechnet nichts mehr.
     // Ansehen gibt es je Sorte, Jahrgang und Stufe nur einmal, auch wenn die Lese auf mehrere Fässer verteilt ist. S.ansGeb merkt sich das.
     const ak=l.sorte+'|'+l.jahrgang+'|'+st, AG=S.ansGeb=(S.ansGeb||[]).filter(k=>+k.split('|')[1]>=S.jahr-2), erst=!AG.includes(ak);
