@@ -172,14 +172,16 @@ function rufMeldung(k,nach){
   el.classList.toggle('oben',$('#sheet').classList.contains('an')); el.classList.add('an'); fx('korken');
   clearTimeout(KOMP_AUS); KOMP_AUS=setTimeout(()=>el.classList.remove('an'),4200);
 }
-// Fenster im Büro bei den Erfolgen: Stufe und Zuschlag, die Siegel, der Weg zur nächsten Stufe, darunter die Ehrungen.
+// Karte "Ruf des Hauses" im Büro bei den Erfolgen (seit 16.7.2 im Kartenbaustein, Bauplan 16.7, Entscheidung 2). Zu: Stufe und Zuschlag, Balken der Siegel bis zur nächsten Stufe.
+// Auf: die erreichten Stufen und die nächste, der Knopf zum Siegelbrett. Platzhalter, Wortlaut in Meilenstein 17.
 function rufFenster(){
-  const n=rufStufe(), z=kompZahlen(), S7=RUF_STUFEN.length, nx=RUF_STUFEN[n], J=S.rufJ||[];
-  const kopf=`<div class="gold" style="font-size:17px">${n?`Stufe ${n} von ${S7}, die Händler zahlen ${rufProz(n)} % mehr`:`Noch keine Stufe`}</div>`
-    +`<div class="mut">${num(z.hab)} von ${num(z.max)} Siegeln${nx?`, ${nx-z.hab===1?'noch 1 Siegel':`noch ${nx-z.hab} Siegel`} bis Stufe ${n+1}`:', alle Stufen erreicht'}</div>`;
+  const n=rufStufe(), z=kompZahlen(), S7=RUF_STUFEN.length, nx=RUF_STUFEN[n], J=S.rufJ||[], von=n?RUF_STUFEN[n-1]:0;
+  const kopf=kHin(n?'gruen':'grau',n?`Stufe ${n} von ${S7}: ${rufProz(n)} % mehr beim Verkauf`:'Noch keine Stufe')
+    +kBal('🏅 Siegel',nx?clamp((z.hab-von)/(nx-von)*100,0,100):100,'',`${num(z.hab)} von ${num(z.max)} Siegeln${nx?`, ${nx-z.hab===1?'noch 1 Siegel':`noch ${nx-z.hab} Siegel`} bis Stufe ${n+1}`:', alle Stufen erreicht'}`);
   const zeile=k=>{const da=k<n, j=J[k]; return `<div class="rl"><span>${da?'🏅':'🔒'}</span><div><b>${esc(RUF_NAMEN[k])}</b><span class="mut">${da?(j?`${MON[j.m]} ${j.j}, `:'')+`Stufe ${k+1}`:`ab ${RUF_STUFEN[k]} Siegeln`}, +${rufProz(k+1)} %</span></div></div>`};
   const L=Array.from({length:Math.min(S7,n+1)},(_,k)=>zeile(k)).reverse();
-  return fenster('ruf','Ruf des Hauses',kopf+L.join(''),{buch:'buero',kn:pk('archivGeh','Siegelbrett','',{sec:1,id:'brett'}),
+  return sKarte('ruf','Ruf des Hauses',kopf,L.join('')+kKn(pk('archivGeh','Siegelbrett','',{sec:1,id:'brett'})),{sym:'🏛️',buch:'buero',
+    z:wbKv('Stufe',n?`${n} von ${S7}`:'noch keine')+wbKv('Zuschlag',`${rufProz(n)} %`)+wbKv('Siegel',`${z.hab} von ${z.max}`),
     i:`Je mehr Siegel du auf dem Siegelbrett sammelst, desto besser ist der Ruf deines Hauses. Bei ${RUF_STUFEN.slice(0,-1).join(', ')} und ${RUF_STUFEN[S7-1]} Siegeln steigt er um eine Stufe. Jede bringt eine Ehrung und ${rufProz(1)} % mehr bei jedem Verkauf: Großhandel, Exporthandel, Weinhandlungen, deine eigene Weinhandlung, Sekt und Federweißer. Mit allen sieben sind es ${rufProz(S7)} %. Es zählen die Siegel dieser Partie, das Album über alle Partien wirkt nicht mit.`});
 }
 function stZahle(n){
@@ -525,38 +527,14 @@ function vSlots(){
 function rangLeiter(){const r=S.rang;
   return `<h4 class="gs">🪜 Rang ${r+1} von ${RAENGE.length}</h4><div class="rleiter">${RAENGE.map((x,i)=>{const k=i<r?'ok':i===r?'jetzt':'zu';
     return `<div class="rgl ${k}"><b>${k==='ok'?'✓':k==='jetzt'?'▸':'🔒'}</b><span>${k==='jetzt'?duK():rangK(i)}</span>${k==='zu'?`<small>${LEITER[i]}</small>`:''}</div>`}).join('')}</div>`}
-// Fenster "Aktueller Rang" in Aktuelles (seit 7.4 auf dem Fenster-Baustein). Im Monat des Aufstiegs leuchtet es golden (seit 7.2).
-// Seit 16.3.5 zeigt es kein Ort mehr (Rang-Fenster entfällt im Klemmbrett, Maik 25.11.2026, 18:49 Uhr). Es bleibt als Vorlage für 16.7: Makler-Hinweis,
-// Knopf zum Weinbauverband und Nachpflanz-Zeile ziehen dort ins Rang-Fenster im Büro (16.0, Für spätere Etappen).
-function vRang(){
-  const r=S.rang, n=RAENGE[r+1], v=vermoegen(), bep=flaecheBep(), frei=Math.round((S.ha-bep)*10)/10;
-  const w=(ist,soll)=>soll?clamp(ist/soll*100,0,100):100;
-  const bar=(ist,soll)=>`<div class="bar ${ist>=soll?'':'g'}"><i style="width:${w(ist,soll)}%"></i></div>`;
-  // Fläche: hell die gekaufte, dunkel die bepflanzte. Zählen tut nur die bepflanzte.
-  const barF=soll=>`<div class="bar fl ${bep>=soll?'':'g'}"><i class="hell" style="width:${w(S.ha,soll)}%"></i><i style="width:${w(bep,soll)}%"></i></div>`;
-  const nach=frei>0?`<div class="mut" style="margin:-4px 0 8px">Noch ${rbn(frei*HA_REBEN)} Reben frei zum Nachpflanzen (${frei.toLocaleString('de-DE')} ha).</div>`:'';
-  const neu=S.rangNeu===S.jahr*12+S.monat;
-  const h=(n?`<div class="kv"><span>⭐ Ansehen</span><span>${num(S.ansehen)} von ${num(n.ans)}</span></div>${bar(S.ansehen,n.ans)}
-    <div class="kv"><span>🌱 Bepflanzt</span><span>${bep.toLocaleString('de-DE')} von ${n.ha} Hektar</span></div>${barF(n.ha)}${nach}${S.ha<n.ha&&!maklerGrund()?`<div class="mut" style="margin:-4px 0 8px">Keine Auktion in Sicht? Der Makler im Rathaus verkauft dir einen Hektar für ${eur(MAKLER_PREIS)}.</div>`:''}
-    <div class="kv"><span>💰 Vermögen</span><span>${eur(v)} von ${eur(n.verm)}</span></div>${bar(v,n.verm)}
-    <div class="mut">Der Aufstieg zum Rang ${n.name} ${bringtSatz(r+1)}.${rahmenSatz(r+1)} Dafür brauchst du alles drei zugleich.</div>`
-    :`<div class="kv"><span>⭐ Ansehen</span><span>${num(S.ansehen)}</span></div><div class="kv"><span>💰 Vermögen</span><span>${eur(v)}</span></div>`
-      // Seit 10.0: Am Ziel stehen die Stimmung im Verband und die nächste Wahl.
-      +(S.amt?`<div class="kv"><span>🗳️ Stimmung im Verband</span><span>${stimmZ()} von 100</span></div>${amtBalken()}<div class="mut">${amtSatz()}</div>${weltZeile()}${kz('',`<button class="klein" data-a="tab" data-id="stadt" data-sub="amt">🗳️ Zum Weinbauverband</button>`)}`
-        :`<div class="fleer" style="margin-top:6px">Höher geht es nicht.</div>`))   // Seit 10.2.1 ohne Rangleiter, der Rang steht in der Überschrift (Maik 19.11.2026).
-    +(S.sieger&&!S.amt?`<div class="mut" style="margin-top:6px">🪑 Auf dem Stuhl im Festsaal: ${esc(S.sieger)}</div>`:'');
-  // Seit 10.6 (Maik 20.11.2026): Die drei Regler stehen direkt unter der Überschrift, der übrige Text darunter. Die Generation steht im i.
-  const gen=`Du bist die ${genNr()}. Generation, ${amtEhre()?`die letzte Übergabe ist im Januar ${endeJahr()}`:`die nächste übernimmt im Januar ${genJahr(genNr())}`}.<br><br>`;
-  return fenster('rang',`${neu?'<span class="rneuB">Neu</span> ':''}Aktueller Rang: ${duN()}`,h,{kl:neu?'rneu':'',buch:'ziel',
-    i:gen+'Dein Ziel ist der Stuhl des Präsidenten im Weinbauverband und danach die drei Kronen der Weltweinschau. Gewonnen ist die Partie mit der dritten Krone, dann folgen die letzte Übergabe und die Chronik. Jeder Aufstieg braucht Ansehen, bepflanzte Fläche und Vermögen zugleich. Bei der Fläche zählt nur, was bepflanzt ist: Der helle Balken zeigt dein gekauftes Land, der dunkle das bepflanzte.'+(S.amt?` Wer ${anr('Präsident','Präsidentin')} ist, muss das Amt alle ${WAHL_JAHRE} Jahre in einer Wahl verteidigen. Die Regeln stehen im Rathaus im Fenster „Weinbauverband“.`:'')});
-}
+// Seit 16.7.2 ist vRang() gelöscht (Fenster "Aktueller Rang" aus Aktuelles, seit 16.3.5 ungenutzt), sein Inhalt steht in der Karte "Dein Rang" im Büro (bueroRang).
 // Version 10.0: Balken der Stimmung von 0 bis 100, der Strich ist die Marke des Herausforderers.
 function amtBalken(){const A=S.amt, s=stimmZ(); return `<div class="bar stb ${s>=A.marke?'':'g'}"><i style="width:${s}%"></i><u style="left:${A.marke}%"></u></div>`}
-// Seit 10.1: Zeile zur Weltweinschau in der Rang-Karte und im Fenster "Weinbauverband", erst nach dem Brief.
+// Seit 10.1: Zeile zur Weltweinschau in der Rang-Karte, erst nach dem Brief. Seit 16.7.2 als kleine Zeile (die Wertezeile brach bei 375 Pixeln um).
 function weltZeile(){
   const A=S.amt; if(!A||!A.brief) return '';
   // Seit 13.6.3: Kronen und was gerade ansteht.
-  return `<div class="kv"><span>🌍 Weltweinschau</span><span>${A.ehren?`alle Kronen, die letzte ${A.ehren.j}`:`${kronen().length} von ${KRONEN.length} Kronen · ${schauAnm()?'Anmeldung diesen Monat':S.schau?'Schau im '+MON[WELT_MONAT]:'Anmeldung im '+wettNaechst('welt')}`}</span></div>`;
+  return `<div class="wbklein">🌍 Weltweinschau: ${A.ehren?`alle Kronen, die letzte ${A.ehren.j}`:`${kronen().length} von ${KRONEN.length} Kronen · ${schauAnm()?'Anmeldung diesen Monat':S.schau?'Schau im '+MON[WELT_MONAT]:'Anmeldung im '+wettNaechst('welt')}`}</div>`;
 }
 // Seit 16.6.3 (Bauplan 16.6, Entscheidungen 4 und 5.1, 5.2): Karte "Weltweinschau" im Kartenbaustein, die Schau steht nur noch hier (nicht mehr in "Wettbewerbe").
 // Zu: Hinweis (Rot "Anmelden nur diesen Monat" unter derselben Bedingung wie bisher die rote Zeile), Balken der Kronen. Auf: die drei Kronen mit Jahr und Generation,
@@ -604,19 +582,38 @@ function vVerband(){
 function ranglisteHtml(){
   return rangListe().map((x,i)=>`<div class="rl ${x.du?'du':''}"><span>${i+1}.</span><div><b>${esc(x.name)}</b><span class="mut">${esc(x.sub)}<br>${x.du?duK():x.stuhl?(x.w?'Präsidentin':'Präsident'):x.rang===R_MAX?(x.w?'Herausforderin':'Herausforderer'):x.w&&RAENGE[x.rang].kw||RAENGE[x.rang].kurz} · ${num(x.ans)} Ansehen · ${x.ha} ha · ${eur(x.verm)}<br>${x.du&&S.amt?`🗳️ Stimmung ${stimmZ()} · ${wahlAus()?'keine Wahl mehr':'Wahl im '+monJahr(S.amt.wahl)}`:x.stuhl?'🪑 sitzt auf dem Stuhl im Festsaal':bisZiel(x.rang)}</span></div></div>`).join('');
 }
-// Fenster "Dein Rang" im Büro bei den Erfolgen: der Rang, das nächste Ziel in drei Zeilen und der Platz in der Rangliste.
-// Die Kennung bleibt 'rangliste', damit der Spielführer (k09) weiter das i findet. Die Balken und alles Weitere stehen in Aktuelles (vRang).
+// Seit 16.7.2 (Bauplan 16.7, Entscheidung 3.1, Maik 25.11.2026, 18:49 Uhr): Karte "Dein Rang" im Büro bei den Erfolgen, Kennung 'rangliste' wie das alte Fenster (Spielführer k09, z2-06).
+// Zu: Rang, das nächste Ziel mit den drei Häkchen und der Platz in der Rangliste. Auf: was bis 16.3.5 im Rang-Fenster von Aktuelles stand (vRang, seit 16.7.2 gelöscht): die drei Balken
+// (Bepflanzt als Doppelbalken, hell das gekaufte, dunkel das bepflanzte Land), die Werte je als eigene Zeile darunter, damit nichts umbricht, der Satz zum Aufstieg, die Nachpflanz-Zeile,
+// der Makler-Hinweis (wenn Land fehlt und maklerGrund() leer ist), am Ziel Stimmung im Verband, weltZeile und der Knopf zum Weinbauverband, dazu der Stuhl im Festsaal und der Knopf
+// Rangliste. Im Monat des Aufstiegs leuchtet sie golden wie bisher. Das i nennt die Generation wie vRang und verweist nicht mehr auf Aktuelles. Platzhalter, Wortlaut in Meilenstein 17.
 function bueroRang(){
-  const n=RAENGE[S.rang+1], v=vermoegen(), bep=flaecheBep(), L=rangListe(), platz=L.findIndex(x=>x.du)+1, vor=L[platz-2];
+  const r=S.rang, n=RAENGE[r+1], v=vermoegen(), bep=flaecheBep(), frei=Math.round((S.ha-bep)*10)/10, L=rangListe(), platz=L.findIndex(x=>x.du)+1, vor=L[platz-2];
+  const neu=S.rangNeu===S.jahr*12+S.monat, w=(ist,soll)=>soll?clamp(ist/soll*100,0,100):100;
   const z=(t,ist,soll,txt)=>`<div class="kv"><span>${ist>=soll?'✅':'▫️'} ${t}</span><span>${txt}</span></div>`;
-  const ziel=n?`<div class="mut" style="margin-bottom:2px">Nächstes Ziel: <b>${esc(frau()&&n.w||n.name)}</b></div>
+  const kopf=(n?`<div class="wbunter">Nächstes Ziel: <b>${esc(frau()&&n.w||n.name)}</b></div>
     ${z('Ansehen',S.ansehen,n.ans,`${num(S.ansehen)} von ${num(n.ans)}`)}${z('Bepflanzt',bep,n.ha,`${bep.toLocaleString('de-DE')} von ${n.ha} Hektar`)}${z('Vermögen',v,n.verm,vonGeld(v,n.verm))}`
-    :`<div class="kv"><span>⭐ Ansehen</span><span>${num(S.ansehen)}</span></div><div class="kv"><span>💰 Vermögen</span><span>${eur(v)}</span></div>${S.amt?`<div class="kv"><span>🗳️ Stimmung im Verband</span><span>${stimmZ()} von 100</span></div>`:''}`;
-  return fenster('rangliste',`Dein Rang: ${duN()}`,ziel,{buch:'gegner',
-    hin:[GEGNER_AKT[aktNr()-1],weltFormZeile(),S.sieger&&!S.amt&&`🪑 Auf dem Stuhl im Festsaal: ${esc(S.sieger)}`],
-    links:`📊 Platz ${platz} von ${L.length}${vor?`, vor dir ${esc(vor.name)}`:', du führst'}`,
-    kn:pk('rangliste','Rangliste','',{sec:1}),
-    i:`Für den Aufstieg brauchst du Ansehen, bepflanzte Fläche und Vermögen zugleich. Die Balken dazu und was der nächste Rang bringt, stehen unter „Aktuelles“.<br><br>„Rangliste“ zeigt dich und deine Gegner. ${RANGL_I}`});
+    :kHin('gruen','Höchster Rang erreicht')+`<div class="kv"><span>⭐ Ansehen</span><span>${num(S.ansehen)}</span></div><div class="kv"><span>💰 Vermögen</span><span>${eur(v)}</span></div>${S.amt?`<div class="kv"><span>🗳️ Stimmung im Verband</span><span>${stimmZ()} von 100</span></div>`:''}`)
+    +`<div class="wbunter">📊 Platz ${platz} von ${L.length}${vor?`, vor dir ${esc(vor.name)}`:', du führst'}</div>`;
+  const bar=(ist,soll)=>wbBalken(w(ist,soll),ist>=soll?'':'gelb');
+  const barF=soll=>`<div class="wbbar fl${bep>=soll?'':' gelb'}"><i class="hell" style="width:${w(S.ha,soll)}%"></i><i style="width:${w(bep,soll)}%"></i></div>`;
+  const zl=(t,b,txt)=>`<div class="wbal"><b>${t}</b>${b}</div><div class="wbunter rwert">${txt}</div>`;
+  const auf=(n?zl('⭐ Ansehen',bar(S.ansehen,n.ans),`${num(S.ansehen)} von ${num(n.ans)}`)
+      +zl('🌱 Bepflanzt',barF(n.ha),`${bep.toLocaleString('de-DE')} von ${n.ha} Hektar bepflanzt, ${S.ha.toLocaleString('de-DE')} Hektar gekauft`)
+      +(frei>0?`<div class="wbklein">Noch ${rbn(frei*HA_REBEN)} Reben frei zum Nachpflanzen (${frei.toLocaleString('de-DE')} ha).</div>`:'')
+      +(S.ha<n.ha&&!maklerGrund()?`<div class="wbklein">Keine Auktion in Sicht? Der Makler im Rathaus verkauft dir einen Hektar für ${eur(MAKLER_PREIS)}.</div>`:'')
+      +zl('💰 Vermögen',bar(v,n.verm),`${eur(v)} von ${eur(n.verm)}`)
+      +`<div class="wbklein">Der Aufstieg zum Rang ${n.name} ${bringtSatz(r+1)}.${rahmenSatz(r+1)} Dafür brauchst du alles drei zugleich.</div>`
+    // Seit 10.0: Am Ziel stehen die Stimmung im Verband und die nächste Wahl.
+    :S.amt?`<div class="wbal"><b>🗳️ Stimmung</b>${amtBalken()}</div><div class="wbklein">${amtSatz()}</div>${weltZeile()}${kKn(`<button class="klein" data-a="tab" data-id="stadt" data-sub="amt">🗳️ Zum Weinbauverband</button>`)}`
+    :`<div class="wbklein">Höher geht es nicht.</div>`)
+    +(S.sieger&&!S.amt?`<div class="wbklein">🪑 Auf dem Stuhl im Festsaal: ${esc(S.sieger)}</div>`:'')
+    +[GEGNER_AKT[aktNr()-1],weltFormZeile()].filter(Boolean).map(t=>`<div class="wbklein">${t}</div>`).join('')
+    +kKn(pk('rangliste','Rangliste','',{sec:1}));
+  const gen=`Du bist die ${genNr()}. Generation, ${amtEhre()?`die letzte Übergabe ist im Januar ${endeJahr()}`:`die nächste übernimmt im Januar ${genJahr(genNr())}`}.<br><br>`;
+  return sKarte('rangliste',`${neu?'<span class="rneuB">Neu</span> ':''}Dein Rang`,kopf,auf,{klein:duN(),iName:'Dein Rang',sym:'🪜',buch:'ziel',kl:neu?'rneu':'',
+    z:wbKv('Rang',`${r+1} von ${RAENGE.length}`)+wbKv('Platz',`${platz} von ${L.length}`),
+    i:gen+'Dein Ziel ist der Stuhl des Präsidenten im Weinbauverband und danach die drei Kronen der Weltweinschau. Gewonnen ist die Partie mit der dritten Krone, dann folgen die letzte Übergabe und die Chronik. Jeder Aufstieg braucht Ansehen, bepflanzte Fläche und Vermögen zugleich. Bei der Fläche zählt nur, was bepflanzt ist: Der helle Balken zeigt dein gekauftes Land, der dunkle das bepflanzte.'+(S.amt?` Wer ${anr('Präsident','Präsidentin')} ist, muss das Amt alle ${WAHL_JAHRE} Jahre in einer Wahl verteidigen. Die Regeln stehen im Rathaus in der Karte „Weinbauverband“.`:'')+`<br><br>„Rangliste“ zeigt dich und deine Gegner. ${RANGL_I}`});
 }
 // "Weiter bis etwas ansteht": blättert ruhige Monate am Stück, höchstens zwölf. Hält an, sobald sprungHalt() einen Grund nennt,
 // oder einer Warnung beim Weiterblättern. SPRUNG trägt die Schlagzeilen der übersprungenen Monate in die letzte Zeitung ("Kurz gemeldet").
@@ -1243,17 +1240,23 @@ let BUERO='';
 function bueroKacheln(){const BB=bueroBer();
   if(!BUERO) return `<div class="bgross" role="list" aria-label="Bereiche im Büro">${BB.map(([k,s,n])=>`<button class="bkg" role="listitem" data-a="buero" data-id="${k}" aria-label="${n}" style="background-image:url(bilder/buero-${k}.webp)"></button>`).join('')}</div>`;
   return `<div class="bkach bklein" role="tablist" aria-label="Bereiche im Büro">${BB.map(([k,s,n])=>`<button class="wahl${BUERO===k?' an':''}" role="tab" aria-selected="${BUERO===k}" data-a="buero" data-id="${k}"><i style="background-image:url(bilder/buero-${k}.webp)"></i>${n}</button>`).join('')}</div>`}
+// Seit 16.7.2 (Bauplan 16.7, Entscheidungen 2 und 3): Die Erfolge sind Karten im Kartenbaustein (sKarte), Kennungen wie die alten Fenster, offen ist immer nur eine.
+// Reihenfolge nach Briefing Entscheidung 18: Dein Rang, Ehrungen, Ruf des Hauses, Weinbotschafter, Deine Urkunden, Siegelbrett (16.7.3). Platzhalter, Wortlaut in Meilenstein 17.
 function bueroErfolge(){
-  const E=(S.ehrungen||[]).slice().reverse(), wein=E.filter(e=>!e.a), sz=kompZahlen();
+  const E=(S.ehrungen||[]).slice().reverse(), wein=E.filter(e=>!e.a), sz=kompZahlen(), U=(S.ehrungen||[]).filter(e=>e.a&&urkRang(e)>=0).length;
   const zeile=e=>`<div class="rl"><span>${esc(e.i)}</span><div><b>${esc(e.t)}</b>${e.j?`<span class="mut">${MON[e.m]} ${e.j}</span>`:''}</div></div>`;
   return bueroRang()
-    +fenster('ehrungen','Ehrungen für deine Weine',wein.length?`<div class="gold" style="font-size:17px;margin-bottom:6px">${ehrSumme(wein)}</div><div class="mut">Zuletzt:</div>`+wein.slice(0,3).map(zeile).join(''):[],{
-      leer:'Noch keine Ehrungen.',buch:'wettbewerb',links:`🏅 Siegelbrett: ${sz.hab} von ${sz.max} Siegeln`,kn:pk('archivGeh','Aufschlagen','',{sec:1,id:'brett'}),
+    +sKarte('ehrungen','Ehrungen für deine Weine',wein.length?`<div class="gold" style="font-size:16px">${ehrSumme(wein)}</div>`:kHin('grau','Noch keine Ehrungen'),
+      (wein.length?`<div class="wbklein">Zuletzt:</div>`+wein.slice(0,3).map(zeile).join(''):'')+`<div class="wbklein">🏅 Siegelbrett: ${sz.hab} von ${sz.max} Siegeln</div>`+kKn(pk('archivGeh','Aufschlagen','',{sec:1,id:'brett'})),{
+      sym:'🏅',buch:'wettbewerb',z:wbKv('Ehrungen',wein.length)+wbKv('Siegel',`${sz.hab} von ${sz.max}`),
       i:'Medaillen gibt es bei der Landesprämierung, beim Bundeswettbewerb und als Präsident bei der Weltweinschau. Sie bringen Ansehen und machen den Wein wertvoller. Darunter steht, wie viele Siegel du auf dem Siegelbrett gesammelt hast.'})
     +rufFenster()
-    +(S.rang>=R_BOTSCHAFT?fenster('botschafter','Weinbotschafter',`<div class="kbild" style="background-image:linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.7)),url(bilder/weinbotschafter.jpg);height:150px"><b>🎗️ Weinbotschafter ${WO[S.region]}</b></div>
-      <div class="kv"><span>Jeden Januar</span><span>+${BOTSCHAFT_ANS} Ansehen</span></div>`,{buch:'ziel',i:`Seit dem Rang ${RAENGE[R_BOTSCHAFT].name} bist du Weinbotschafter ${WO[S.region]}. Für deine Reisen bekommst du jeden Januar ${BOTSCHAFT_ANS} Ansehen.`}):'')
-    +fenster('urkunden','Deine Urkunden',urkWand(),{buch:'ziel',i:'Für jeden Aufstieg bekommst du eine Urkunde. Sie hängt hier an der Wand, die erste gibt es mit dem Aufstieg zum zweiten Rang. Darunter hängen die Schilder und Urkunden für deine Spenden im Rathaus.'});
+    +(S.rang>=R_BOTSCHAFT?sKarte('botschafter','Weinbotschafter',kHin('gruen',`Jeden Januar +${BOTSCHAFT_ANS} Ansehen`),
+      `<div class="wbklein">Seit dem Rang ${RAENGE[R_BOTSCHAFT].name} bist du Weinbotschafter ${WO[S.region]}. Für deine Reisen bekommst du jeden Januar ${BOTSCHAFT_ANS} Ansehen.</div>`,{
+      klein:WO[S.region],bild:'weinbotschafter',sym:'🎗️',buch:'ziel',z:wbKv('Jeden Januar',`+${BOTSCHAFT_ANS} Ansehen`),
+      i:`Seit dem Rang ${RAENGE[R_BOTSCHAFT].name} bist du Weinbotschafter ${WO[S.region]}. Für deine Reisen bekommst du jeden Januar ${BOTSCHAFT_ANS} Ansehen.`}):'')
+    +sKarte('urkunden','Deine Urkunden',kHin(U?'gruen':'grau',U?`${U} ${U===1?'Urkunde':'Urkunden'} an der Wand`:'Noch keine Urkunde'),urkWand(),{sym:'📜',buch:'ziel',z:wbKv('Urkunden',U),
+      i:'Für jeden Aufstieg bekommst du eine Urkunde. Sie hängt hier an der Wand, die erste gibt es mit dem Aufstieg zum zweiten Rang. Darunter hängen die Schilder und Urkunden für deine Spenden im Rathaus.'});
 }
 function bueroWissen(){
   return fenster('anleitung','Spielanleitung','',{links:`Alles zum Nachschlagen in ${buchKap().length} kurzen Kapiteln, von der Bedienung bis zum Spielführer.`,kn:pk('buch','Aufschlagen',''),
