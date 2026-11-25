@@ -258,10 +258,13 @@ function wagnisKnoepfe(id){
   const f=S.felder[id], m=S.monat; if(m<7||m>9||f.gelesen||!(f.menge>0)||f.wagnis||!wagnisFeld(id)||wegeOffen().length<2) return [];
   const w=feldWeg(id); return [['edel','🍯 Bis Nov.'],['frost','❄️ Bis Dez.']].map(([k,t])=>`<button class="klein${w===k?'':' sec'}" data-a="wagnisWahl" data-id="${id}" data-w="${k}">${t}</button>`);
 }
+// Seit 16.1.7 (Maik 25.11.2026): die beste Weinstufe, die jetzt gelesen werden kann, über die Lesearten, mit besteStufe und pruefeQualitaet wie die Anmeldung (Öchsle, Qualitätspunkte, Rang, Leseart). Lese-Hilfe und Siegel am Öchsle-Balken rechnen damit.
+function besteJetzt(f){let best=null,bla=null;
+  for(const la of ['alles','reif','ueber']){const b=besteStufe(feldQ(f,la)); if(b&&(!best||STUFEN[b].rang>STUFEN[best].rang)){best=b;bla=la}}
+  return {best,bla}}
 function leseHilfe(f){
   if(sektSorte(feldId(f))) return S.sektkeller?`<b>Jetzt möglich:</b> Sekt, ${num(feldLiter(f,'alles'))} Flaschen. Bei der Lese wählst du ${SEKT_REIFE} oder ${HEFE_LANG} Monate auf der Hefe.`:'<b>Ohne Sektkeller kein Sekt.</b> Die Sekt-Sorte macht nur Sekt.';
-  let best=null,bla=null;
-  for(const la of ['alles','reif','ueber']){const b=besteStufe(feldQ(f,la)); if(b&&(!best||STUFEN[b].rang>STUFEN[best].rang)){best=b;bla=la}}
+  const {best,bla}=besteJetzt(f);
   let h=best?`<b>Jetzt möglich:</b> ${stufeText(best,feldQ(f,bla).oe)}${STUFEN[best].lese||best==='eis'?'':' (jede Leseart)'}${STUFEN[best].lese?` (Leseart: ${LESE[bla]})`:''}${best==='eis'?' (Leseart: nur reife oder nur überreife Trauben, nicht beides zusammen)':''}`:'<b>Jetzt möglich:</b> noch nichts, der Zucker reicht nicht';
   if(f.gefroren){const e=best==='eis'?'':eisFehlt(f); return h+(e?'<br>'+e:'')+handText(f,'<br>')}
   h+=handText(f,'<br>');
@@ -1180,13 +1183,16 @@ function wbStufe(st,z,SW,N,fmt){if(st>=N.length-1) return {p:100,t:wbT(WB_TEXT.t
   const a=SW[st],b=SW[st+1]; return {p:Math.max(0,Math.min(100,(z-a)/(b-a)*100)),t:wbT(WB_TEXT.bis,{st:N[st],n:fmt(Math.max(0,b-z)),next:N[st+1]})}}
 // Öchsle: erreichte Weinstufe nach den Öchsle, nächste Stufe, die diese Sorte erreichen kann (Beeren- und Trockenbeerenauslese nur mit Edelfäulnis wie in der Lese-Hilfe),
 // das Siegel der erreichten Stufe ab Qualitätswein (Entscheidung 15), Eiswein in Platin, wenn er möglich ist.
+// Seit 16.1.7 (Maik 25.11.2026): Das Siegel zeigt die Stufe aus besteJetzt, also dieselbe Rechnung wie Lese-Hilfe und Anmeldung, nicht nur die Öchsle. Der Text "noch X° bis …" bleibt die Öchsle-Angabe.
 const WB_OE=['tafel','qba','kab','spat','aus','ba','tba'];
 function wbOe(id){const f=S.felder[id], M=R().min, oe=f.oe, darf=s=>(s!=='ba'&&s!=='tba'||f.edel)&&rolleDarf(id,s);
   let st=null; for(const s of WB_OE) if(oe>=M[s]&&darf(s)) st=s;
   const next=WB_OE.find(s=>darf(s)&&M[s]>oe&&M[s]<=oeGrenze(id)), g=n=>wbT(WB_TEXT.grad,{n});
   const t=next?(st?wbT(WB_TEXT.bis,{st:STUFEN[st].name,n:g(M[next]-oe),next:STUFEN[next].name}):wbT(WB_TEXT.unter,{n:g(M[next]-oe),next:STUFEN[next].name})):st?wbT(WB_TEXT.top,{st:STUFEN[st].name}):'';
-  const sg=f.gefroren&&!eisFehlt(f)?'eis':st&&STUFEN[st].rang>=STUFEN.qba.rang?st:null;
+  const b=besteJetzt(f).best, sg=b&&(b==='eis'||STUFEN[b].rang>=STUFEN.qba.rang)?b:null;
   return {t,sg,p:Math.min(100,oe/1.5)}}
+// Seit 16.1.7 (Maik 25.11.2026): "Düngen nötig" ab einem Jahresschnitt des Bodens unter der ersten Stufe von VERLUST (darunter steigt das Rebensterben), rot unter DUENG_ROT, statt der eigenen 80 %. Dünger-Balken rot wie der rote Hinweis.
+const wbDuengNoetig=id=>bodenSchnitt(id)<VERLUST[0][0], wbDuengRot=id=>bodenSchnitt(id)<DUENG_ROT;
 const wbBalken=(p,kl)=>`<div class="wbbar${kl?' '+kl:''}"><i style="width:${Math.round(p)}%"></i></div>`;
 // Der Teil, der auch zugeklappt zu sehen ist: Öchsle-Balken ab Juli, davor die Phase, im Juni die erwartete Menge (Entscheidung 5).
 function wbStand(id){const f=S.felder[id], m=S.monat, z=t=>`<div class="wbunter">${t}</div>`;
@@ -1206,7 +1212,7 @@ function wbInfo(t,wer,kl){if(!t) return ''; const s=String(t), m=/^([^\p{L}\d<(�
 function wbBalkenAuf(id){const f=S.felder[id]; if(!f.reben) return '';
   const st=f.pflSt||0, R_=wbStufe(st,f.ep||0,epSchwelle(id),PFLEGE_STUFEN,n=>wbT(WB_TEXT.punkte,{n:epT(n)})), B=wbStufe(wbBoden(id),wbBodenP(id),BODEN_SCHWELLE,BODEN_STUFEN,n=>wbT(WB_TEXT.punkte,{n:epT(n)}));
   const z=(sym,k,t,bar)=>`<div class="wbst"><img src="bilder/${sym}.webp" alt=""><div><div class="wbkv"><b>${k}</b><span>${t}</span></div>${bar}</div></div>`;
-  return z('sym-rebstufe',WB_TEXT.reb,R_.t,wbBalken(R_.p))+z('sym-bodenstufe',WB_TEXT.bod,B.t,wbBalken(B.p))+z('sym-duenger',WB_TEXT.dueng,`${f.boden} %`,wbBalken(f.boden,f.boden<80?'rot':''))}
+  return z('sym-rebstufe',WB_TEXT.reb,R_.t,wbBalken(R_.p))+z('sym-bodenstufe',WB_TEXT.bod,B.t,wbBalken(B.p))+z('sym-duenger',WB_TEXT.dueng,`${f.boden} %`,wbBalken(f.boden,wbDuengRot(id)?'rot':''))}
 function wbFakten(id){const f=S.felder[id], so=SORTEN[id], m=S.monat, F=WB_TEXT.fakt, L=[], add=(k,v,breit)=>L.push(`<div${breit?' class="breit"':''}><dt>${k}</dt><dd>${v}</dd></div>`);
   if(f.reben) add(F.reben,rbn(f.reben));
   if(f.reben&&m>=6&&f.menge>0&&!f.gelesen) add(F.menge,`${num(f.menge)} l`);
@@ -1281,10 +1287,10 @@ function wbBodenKarte(){
   const T=WB_TEXT.boden, H=WB_TEXT.hin, DW=weinberge().filter(id=>S.felder[id].reben>0), an=!einZu('duengung'), fp=frostPlus(), WM=`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name}`;
   const ges=S.ha*HA_REBEN, bep=rebenGesamt(), ant=ges?bep/ges*100:0, lf=leuteFehlen().helfer, knapp=leseFaktor()<1, wer=leuteStName('helfer',leuteSt('helfer'));
   const schnitt=DW.length?Math.round(DW.reduce((a,id)=>a+S.felder[id].boden,0)/DW.length):null, chef=chefWeinberge()[0];
-  const noetig=an&&DW.some(id=>!helferDuengt(id)&&duengOffen(id)&&S.felder[id].boden<80);
-  const hw=lf?['rot',H.leute]:knapp&&feldHaengt().length&&S.monat>=7?['rot',H.leistung]:noetig?['gelb',H.duengen]:['gruen',H.fertig];
+  const DN=an?DW.filter(id=>!helferDuengt(id)&&duengOffen(id)&&wbDuengNoetig(id)):[], noetig=DN.length>0;
+  const hw=lf?['rot',H.leute]:knapp&&feldHaengt().length&&S.monat>=7?['rot',H.leistung]:noetig?[DN.some(wbDuengRot)?'rot':'gelb',H.duengen]:['gruen',H.fertig];
   let kopf=`<div class="hinw ${hw[0]}"><i></i><em>${hw[1]}</em></div>`;
-  kopf+=an&&DW.length?`<div class="wbal"><b>${T.schnitt}</b>${wbBalken(schnitt,schnitt<80?'rot':'')}</div><div class="wbunter"><b class="zahl">${schnitt} %</b> · ${bodenText(schnitt)}</div>`
+  kopf+=an&&DW.length?`<div class="wbal"><b>${T.schnitt}</b>${wbBalken(schnitt,DW.some(wbDuengRot)?'rot':'')}</div><div class="wbunter"><b class="zahl">${schnitt} %</b> · ${bodenText(schnitt)}</div>`
     :`<div class="wbunter">${rbn(bep)} von ${rbn(ges)} Reben bepflanzt</div>`;
   if(DW.length) kopf+=`<div class="wbunter">${T.chef}: ${!helferKann(1)?T.chefKeiner:chef?dot(chef)+esc(SORTEN[chef].name):T.chefAuto}</div>`;
   const I=[], so_=(x,kl)=>I.push(wbInfo(x,'',kl));
@@ -1297,7 +1303,7 @@ function wbBodenKarte(){
   if(S.monat<=2) so_(`🌱 Rebenmarkt: ${rebenMarktText()}.`);
   // Je Weinberg: Boden mit Stufe und Punkten, Zustand, gedüngt X von 3, wer düngt, erwartetes Rebensterben (Entscheidung 10).
   const reihe=id=>{const f=S.felder[id], v=verlustSpanne(bodenSchnitt(id)), lg=lageVon(id), st=wbBoden(id);
-    return `<div class="wbreihe"><div class="wbkv"><b>${dot(id)}${esc(SORTEN[id].name)}</b><span>${BODEN_STUFEN[st]}, ${epT(wbBodenP(id))} von ${BODEN_MAX} Punkten</span></div>${wbBalken(f.boden,f.boden<80?'rot':'')}
+    return `<div class="wbreihe"><div class="wbkv"><b>${dot(id)}${esc(SORTEN[id].name)}</b><span>${BODEN_STUFEN[st]}, ${epT(wbBodenP(id))} von ${BODEN_MAX} Punkten</span></div>${wbBalken(f.boden,wbDuengRot(id)?'rot':'')}
       <div class="wbunter"><b class="zahl">${f.boden} %</b>, ${bodenText(f.boden)}. <span class="${bodenSchnitt(id)<BODEN_GUT?'rot':''}">${wbT(T.jahr,{n:bodenSchnitt(id)})}</span>, ${wbT(T.geduengt,{n:f.duengN||0,max:DUENG_MAX})}.
       ${helferDuengt(id)?`${EINSATZ_TEXT.auto}: ${wer}, ${Math.round(wbZd(id)*100)}\u00a0% Zuwachs`:`${EINSATZ_TEXT.chef}: du selbst`}${istSL(id)?'':`, ${wbT(T.gutJahr,{n:epT(BODEN_PUNKTE[lg]*wbZd(id))})}`}.
       ${wbT(T.sterben,{von:v[1]+fp,bis:v[2]+fp})}.</div></div>`};
@@ -1337,7 +1343,7 @@ function vBerg(){
     const H=WB_TEXT.hin, platz=platzFuer(id)>=10, chefD=f.reben&&!helferDuengt(id), dueng=f.reben&&duengOffen(id), lf=f.reben&&leuteFehlen().helfer;
     const fass=f.gelesen&&S.lots.some(l=>l.status==='trauben'&&l.sorte===id), knapp=kannLesen&&leseFaktor()<1;
     const hw=fass?['rot',H.fass]:lf?['rot',H.leute]:knapp?['rot',H.leistung]
-      :dueng&&chefD&&f.boden<80?['gelb',H.duengen]:schnitt&&!helferSchneidet(id)?['gelb',H.schneiden]
+      :dueng&&chefD&&wbDuengNoetig(id)?[wbDuengRot(id)?'rot':'gelb',H.duengen]:schnitt&&!helferSchneidet(id)?['gelb',H.schneiden]
       :laubHandOffen(id)&&!autoLaub(id)?['gelb',H.laub]:ausdOffen(id)&&!autoAusd(id)?['gelb',H.ausd]:pflanz&&platz&&!f.reben?['gelb',H.pflanzen]
       :kannLesen&&f.gefroren?['gelb',eisFehlt(f)?H.gefroren:H.eis]:kannLesen&&f.ueber>0?['gelb',H.ueber]:kannLesen?['gelb',H.lesen]
       :!f.reben?['grau',H.leer]:f.gelesen?['grau',H.gelesen]:['gruen',H.fertig];
