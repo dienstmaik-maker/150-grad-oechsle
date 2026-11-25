@@ -403,10 +403,10 @@ function ratHtml(b,k){
 const nfZeile=()=>nfName()?`<div class="mut" style="margin-top:8px">Es übernimmt: ${esc(nfName())}.</div>`:'';
 function zeigeNachfolger(){
   const f=S.ende.nf, alt=$('#nfname'), name=alt?alt.value:f.name;
-  openSheet(`${sbild(GEN_BILD.uebergabe)}<h3>Der letzte Schlüssel</h3><p>Zum letzten Mal liegt der alte Kellerschlüssel auf dem Küchentisch. Mit dieser Übergabe endet die Partie, danach kommt die Chronik.</p>
+  pflichtSheet(`${sbild(GEN_BILD.uebergabe)}<h3>Der letzte Schlüssel</h3><p>Zum letzten Mal liegt der alte Kellerschlüssel auf dem Küchentisch. Mit dieser Übergabe endet die Partie, danach kommt die Chronik.</p>
     <h3>Wer übernimmt?</h3><div class="chips">${[['t','Die Tochter'],['s','Der Sohn']].map(([k,t])=>`<button class="chip ${f.art===k?'an':''}" data-a="nfArt" data-id="${k}">${t}</button>`).join('')}</div>
     <input type="text" id="nfname" maxlength="20" placeholder="${esc(nfVorschlag())}" value="${esc(name)}">
-    <div class="btns"><button data-a="nfJa">Zum Küchentisch</button></div>`);
+    <div class="btns"><button class="vb" data-a="nfJa">Zum Küchentisch</button></div>`);
 }
 // Reiter ende: Bild der Übergabe, die Geschichte, die Chronik als Abspann, die Bestenliste und der Knopf für ein neues Spiel.
 // Die Chronik: Generationen, der Weg durch die Ränge, die Wahlen, die Weltweinschauen, Spenden mit Stiftung, Medaillen und das Weingut in seinen Stufen.
@@ -446,11 +446,11 @@ function vEnde(){
 // Das Schriftstück zur Übergabe: Geschichte, Zahlen, dann Tochter oder Sohn und der Vorname. Bis zum Übergeben geht nichts anderes.
 function zeigeErbe(){
   const e=S.erbe, T=GEN_TEXT[e.k]||GEN_TEXT.weiter, alt=$('#erbname'), name=alt?alt.value:e.name;
-  openSheet(`${sbild(GEN_BILD.uebergabe)}<h3>${esc(T.t)}</h3>${T.p().map(x=>`<p>${esc(x)}</p>`).join('')}${e.ratte?'<p>Im Korkenlager wuselt es. Die Kleine heißt natürlich auch Frau Öchsle.</p>':''}
+  pflichtSheet(`${sbild(GEN_BILD.uebergabe)}<h3>${esc(T.t)}</h3>${T.p().map(x=>`<p>${esc(x)}</p>`).join('')}${e.ratte?'<p>Im Korkenlager wuselt es. Die Kleine heißt natürlich auch Frau Öchsle.</p>':''}
     <p class="mut">Erbschaftssteuer: ${eur(e.steuer)}, ${pz(ERB_STEUER)} von ${eur(e.verm)} Vermögen.${e.kredit?` Davon leiht dir die Bank ${eur(e.kredit)} über ${ERB_LAUFZEIT} Monate, das zählt nicht gegen deinen Kreditrahmen.`:''} Ansehen: ${num(e.ansVor)} vorher, ${num(e.ans)} jetzt. Rang, Fläche, Keller, Wein, Leute und Manager bleiben.</p>
     <h3>Wer übernimmt?</h3><div class="chips">${[['t','Die Tochter'],['s','Der Sohn']].map(([k,t])=>`<button class="chip ${e.art===k?'an':''}" data-a="erbeArt" data-id="${k}">${t}</button>`).join('')}</div>
     <input type="text" id="erbname" maxlength="20" placeholder="${esc(erbeVorschlag())}" value="${esc(name)}">
-    <div class="btns"><button data-a="erbeJa">Übergeben</button></div>`);
+    <div class="btns"><button class="vb" data-a="erbeJa">Übergeben</button></div>`);
 }
 // Schriftstück ohne Eingabe (bisher nur der Anfang). S.erz merkt es bis zum nächsten Zeichnen, der Test-Spieler schließt es gleich wieder.
 function zeigeErz(){
@@ -485,10 +485,10 @@ function endeHtml(k){
 }
 function zeigePruefer(){
   const F=panschListe(), max=Math.floor(Math.min(BESTECH_MAX,S.geld)/1000)*1000;
-  openSheet(`${sbild('kontrolle')}<h3>🔍 Weinkontrolle</h3><p>Der Prüfer steht im Keller und will dein Kellerbuch sehen. Darin ${F.length===1?'steht ein gepanschter Wein':`stehen ${F.length} gepanschte Weine`}:</p>
+  pflichtSheet(`${sbild('kontrolle')}<h3>🔍 Weinkontrolle</h3><p>Der Prüfer steht im Keller und will dein Kellerbuch sehen. Darin ${F.length===1?'steht ein gepanschter Wein':`stehen ${F.length} gepanschte Weine`}:</p>
     <ul class="kl">${F.map(l=>`<li>${esc(lotName(l))}, ${num(l.liter)}\u00a0l</li>`).join('')}</ul>
     <p class="mut">${F.length===1?'Findet er ihn, wird er vernichtet':'Findet er sie, werden sie vernichtet'}. ${verwarnOffen()?KONTR_TEXT.verwarnErst:`Dazu kommen ${eur(strafeHoehe())} Strafe${strafeAns()?` und ${strafeAns()} Ansehen Abzug`:''}, und fünf Jahre lang kommt er jedes Jahr wieder.`}</p>
-    <div class="btns"><button class="wag" data-a="pruefBestechen" ${max<BESTECH_MIN?'disabled':''}>Bestechen</button><button data-a="pruefJa">Prüfen lassen</button></div>`);
+    <div class="btns"><button class="vb" data-a="pruefBestechen" ${max<BESTECH_MIN?'disabled':''}>Bestechen</button><button class="vb" data-a="pruefJa">Prüfen lassen</button></div>`);
 }
 // Alle Texte zum Amt an einer Stelle. k ist der Fall, p sind die gemerkten Zahlen und Namen. Fällt eine Übergabe in denselben Monat,
 // schreibt erbeBenennen die Texte mit der neuen Anrede noch einmal (Merkmal amt an der Schlagzeile).
@@ -510,7 +510,7 @@ function amtTxt(k,p){
   return {t:'Im Verband wird jetzt gewählt',text:`Der Weinbauverband hat seine Satzung geändert: Ab sofort wird alle ${WAHL_JAHRE} Jahre gewählt, und auch ${anr('der Präsident','die Präsidentin')} muss sich stellen. Die Stimmung für dich steht bei ${p.s} von 100, deine erste Wahl ist im ${p.wann}. Alles dazu steht im Rathaus im Fenster „Weinbauverband“.`};
 }
 function zeigePleite(){
-  openSheet(`${sbild('pleite')}<h3>Dein Weingut ist pleite</h3><p>Der Gerichtsvollzieher hat gepfändet. Deine Schulden von ${eur(schulden())} lagen dreimal in Folge über dem Kreditrahmen.</p>${(st=>`<h4 class="gk">Was bis hierher geschafft war</h4><div class="kv"><span>Gespielt</span><span>${st.jahre} Jahre, ${genNr()}. Generation</span></div><div class="kv"><span>Rang</span><span>${esc(duN())}</span></div><div class="kv"><span>Platz</span><span>${st.platz}. von ${S.gegner.length+1}</span></div><div class="kv"><span>Ansehen</span><span>${num(st.ans)}</span></div>${S.pleiteP?`<div class="kv"><span>Bestenliste</span><span>Platz ${S.pleiteP}, als pleite</span></div>`:''}`)(endStand())}
+  pflichtSheet(`${sbild('pleite')}<h3>Dein Weingut ist pleite</h3><p>Der Gerichtsvollzieher hat gepfändet. Deine Schulden von ${eur(schulden())} lagen dreimal in Folge über dem Kreditrahmen.</p>${(st=>`<h4 class="gk">Was bis hierher geschafft war</h4><div class="kv"><span>Gespielt</span><span>${st.jahre} Jahre, ${genNr()}. Generation</span></div><div class="kv"><span>Rang</span><span>${esc(duN())}</span></div><div class="kv"><span>Platz</span><span>${st.platz}. von ${S.gegner.length+1}</span></div><div class="kv"><span>Ansehen</span><span>${num(st.ans)}</span></div>${S.pleiteP?`<div class="kv"><span>Bestenliste</span><span>Platz ${S.pleiteP}, als pleite</span></div>`:''}`)(endStand())}
     <h4 class="gk">👪 Die Generationen</h4>${pleiteGen()}
     <p class="mut">Der Spielstand bleibt mit allem liegen, bis du ihn löschst. Ein neues Spiel kannst du auch auf einem freien Platz unter „Spielstände“ beginnen.</p>
     <div class="btns"><button class="sec" data-a="menue">Spielstände</button><button data-a="pleiteNeu">Neues Spiel</button></div>`);
@@ -2525,13 +2525,16 @@ function render(){
 // 'info': Griffstrich, Wischen nach unten oder Tipp daneben schließt. 'frage': ebenso, beides heißt Abbrechen. 'pflicht': kein Griff, nicht wischbar,
 // Hintergrund stark abgedunkelt, ein Tipp daneben tut nichts. zu: was Wischen und Tipp daneben statt closeSheet tun (der neue Manager zählt es als Okay).
 // Die Kurzmeldung ist kein Fenster, sie läuft über meldung() und das Schild unten.
-let SART='', SZU=null;
+let SART='', SZU=null, SUEBER=0;
 const SHEET_ARTEN=['info','frage','pflicht'];
-function openSheet(h,musik,art,zu){const a=SHEET_ARTEN.includes(art)?art:'info', el=$('#sheet'); SART=a; SZU=zu||null;
+function openSheet(h,musik,art,zu){const a=SHEET_ARTEN.includes(art)?art:'info', el=$('#sheet'); SART=a; SZU=zu||null; SUEBER=0;
   el.innerHTML=`<div>${a!=='pflicht'&&!/class="ipanel"/.test(h)?'<i class="igriff"></i>':''}${h}</div>`; el.className='an '+a; SMUSIK=musik||null; musikOrt(musikWahl());
   // Seit 16.8.4: Die letzte Knopfzeile bleibt unten stehen, wenn der Inhalt rollt (.unten), sofern nichts mehr nach ihr kommt.
   const B=el.querySelectorAll('.btns'), u=B[B.length-1]; if(u&&!u.nextElementSibling) u.classList.add('unten')}
-function closeSheet(){$('#sheet').className='';$('#sheet').innerHTML='';SL=null;SMUSIK=null;SART='';SZU=null;musikOrt(musikWahl());setTimeout(fuehrerZeig,0)}
+function closeSheet(){const z=SUEBER; $('#sheet').className='';$('#sheet').innerHTML='';SL=null;SMUSIK=null;SART='';SZU=null;SUEBER=0;musikOrt(musikWahl());setTimeout(fuehrerZeig,0); if(z&&!window.BOT) setTimeout(pflichtWieder,0)}
+// Seit 16.8.6 (Bauplan 16.8, Entscheidung 6): Wer eine Rückfrage über einem Pflichtfenster schließt (SUEBER: Bestechen, Neues Spiel bei der Pleite), landet sofort
+// wieder im Pflichtfenster, in derselben Reihenfolge wie nach dem Monat (kern.js), nicht erst beim nächsten Tipp. Nur, wenn danach kein anderes Fenster offen ist.
+function pflichtWieder(){if(!S||window.BOT||$('#sheet').classList.contains('an')) return; if(S.pleite) zeigePleite(); else if(nfOffen()) zeigeNachfolger(); else if(S.pruefer) zeigePruefer(); else if(erbeOffen()) zeigeErbe()}
 // Kurzformen für die Rückfrage (seit 16.8.4) und die Pflicht-Entscheidung (seit 16.8.6).
 const frageSheet=(h,zu)=>openSheet(h,null,'frage',zu), pflichtSheet=h=>openSheet(h,null,'pflicht');
 // Seit 16.8.5: der Knopf mit Wachssiegel am Ende einer Auswahl in zwei Schritten (AKT.wahlSetz, AKT.wahlOk). vor: schon gewählte Angaben, sonst gesperrt bis zur Wahl.
@@ -2564,7 +2567,7 @@ function mengeSheet(o){
   ${o.wahl?`<div class="chips swahl">${o.wahl.map(([w,x])=>`<button class="chip${w===o.w?' an':''}" data-a="slWahl" data-id="${w}">${x}</button>`).join('')}</div>`:''}
   <div class="btns"><button class="klein" data-a="slMinus">− ${(o.zahl||num)(st)}</button><button class="klein" data-a="slPlus">+ ${(o.zahl||num)(st)}</button></div>
   <div class="btns"><button class="sec" data-a="close">Abbrechen</button><button id="slok" ${o.vb===0?'':'class="vb" '}data-a="slOk">${esc(o.okText)}</button></div>`);
-  $('#slr').addEventListener('input',slUpd); slUpd();
+  $('#slr').addEventListener('input',slUpd); slUpd(); if(o.ueber) SUEBER=1;
 }
 function slUpd(){if(!SL)return;const n=+$('#slr').value;$('#slv').innerHTML=SL.info(n);$('#slok').disabled=n<=0}
 // Hinweis mit dem direkten Weg zum Arbeitsamt, für alles, was an fehlenden Leuten scheitert. text ist fertiges HTML.
@@ -2851,7 +2854,7 @@ const AKT={
   slWahl(d){if(!SL) return; SL.w=+d.id; document.querySelectorAll('[data-a="slWahl"]').forEach(b=>b.classList.toggle('an',+b.dataset.id===SL.w)); slUpd()},
   neuFrage(){frageSheet(`<h3>Neues Spiel beginnen?</h3><p>Spielstand ${SLOT+1} wird dabei gelöscht. Für ein zweites Spiel nimm unter „Spielstände“ einen freien Platz.</p><div class="btns"><button class="sec" data-a="close">Abbrechen</button><button class="warn" data-a="neuJa">Ja, neu anfangen</button></div>`)},
   // Seit 11.7 (A29): Nach der Pleite löscht "Neues Spiel" den Stand erst nach einer Nachfrage, "Zurück" holt das Pleite-Fenster wieder.
-  pleiteNeu(){if(!S||!S.pleite) return; openSheet(`<h3>Neues Spiel beginnen?</h3><p>Spielstand ${SLOT+1} mit ${esc(S.name)} wird dabei gelöscht, auch seine Chronik. Behalten kannst du ihn, wenn du unter „Spielstände“ einen freien Platz nimmst.</p><div class="btns"><button class="sec" data-a="pleiteZurueck">Zurück</button><button class="wag" data-a="neuJa">Ja, neu anfangen</button></div>`)},
+  pleiteNeu(){if(!S||!S.pleite) return; frageSheet(`<h3>Neues Spiel beginnen?</h3><p>Spielstand ${SLOT+1} mit ${esc(S.name)} wird dabei gelöscht, auch seine Chronik. Behalten kannst du ihn, wenn du unter „Spielstände“ einen freien Platz nimmst.</p><div class="btns"><button class="sec" data-a="pleiteZurueck">Zurück</button><button class="warn" data-a="neuJa">Ja, neu anfangen</button></div>`); SUEBER=1},
   pleiteZurueck(){if(S&&S.pleite) zeigePleite()},
   neuJa(){closeSheet();try{localStorage.removeItem(KEYS[SLOT])}catch(e){}S=null;NEU=neuStart();START='neu';render();window.scrollTo(0,0)},
   /* ---- Titelbild und Geschichte ---- */
@@ -3161,7 +3164,7 @@ const AKT={
   pruefBestechen(){
     if(!S.pruefer) return;
     const max=Math.floor(Math.min(BESTECH_MAX,S.geld)/1000)*1000; if(max<BESTECH_MIN) return;
-    mengeSheet({titel:'Prüfer bestechen',text:`Je dicker der Umschlag, desto eher nimmt er ihn. Lehnt er ab, behältst du dein Geld, aber er prüft erst recht${strafeAns(BESTECH_NEIN_ANS)>strafeAns()?` und es kostet ${BESTECH_NEIN_ANS} Ansehen extra`:''}.`,min:BESTECH_MIN,max,step:1000,start:Math.min(max,20000),okText:'Umschlag rüberschieben',bild:'kontrolle',wag:1,
+    mengeSheet({ueber:1,titel:'Prüfer bestechen',text:`Je dicker der Umschlag, desto eher nimmt er ihn. Lehnt er ab, behältst du dein Geld, aber er prüft erst recht${strafeAns(BESTECH_NEIN_ANS)>strafeAns()?` und es kostet ${BESTECH_NEIN_ANS} Ansehen extra`:''}.`,min:BESTECH_MIN,max,step:1000,start:Math.min(max,20000),okText:'Umschlag rüberschieben',bild:'kontrolle',wag:1,
       info:n=>`<b>${eur(n)}</b>Er nimmt mit ${Math.round(bestechChance(n)*100)}\u00a0% an`,
       ok:n=>{
         if(Math.random()<bestechChance(n)){zahle(n); kontrNeu(); S.pruefer=0; meldung('🔍 Glück gehabt','Der Prüfer steckt den Umschlag ein, blättert kurz durchs Kellerbuch und findet nichts.','kontrolle')}
