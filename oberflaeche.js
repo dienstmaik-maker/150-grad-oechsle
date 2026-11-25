@@ -1208,7 +1208,8 @@ function wbStand(id){const f=S.felder[id], m=S.monat, z=t=>`<div class="wbunter"
   return `<div class="wbal"><b>${WB_TEXT.oe}</b>${wbBalken(O.p)}${O.sg?`<img class="siegel" src="bilder/siegel-${O.sg}.webp" alt="${STUFEN[O.sg].name}">`:''}</div>${z(`<b class="zahl">${f.oe}°</b>${f.plus>0?` <span class="plus">+${f.plus}°</span>`:''}${O.t?` · ${O.t}`:''}`)}`}
 // Graue Info-Zeile (Entscheidungen 13, 14 und 21): Leute draußen mit 🧑‍🌾, der Weingut-Manager mit Timos Mitarbeiter-Symbol, sonst das Zeichen am Satzanfang.
 function wbInfo(t,wer,kl){if(!t) return ''; const s=String(t), m=/^([^\p{L}\d<(„"]+)\s+/u.exec(s), rest=m?s.slice(m[0].length):s;
-  const sym=wer==='leute'?'<span class="em">🧑‍🌾</span>':wer==='mgr'?'<img src="bilder/sym-mitarbeiter.webp" alt="">':m?`<span class="em">${m[1].trim()}</span>`:'';
+  // Seit 16.2.6: Leute draußen mit Timos Erntehelferin (Bild 41) statt 🧑‍🌾.
+  const sym=wer==='leute'?'<img src="bilder/leute-erntehelferin.jpg" alt="">':wer==='mgr'?'<img src="bilder/sym-mitarbeiter.webp" alt="">':m?`<span class="em">${m[1].trim()}</span>`:'';
   return `<div class="wbinfo${kl?' '+kl:''}">${sym}<span>${rest}</span></div>`}
 // Aufgeklappt, Teil 1 und 2 (Entscheidung 6): drei Balken mit Timos Symbolen, Boden und Dünger vom Boden dieses Weinbergs (Entscheidung 19), dann die Fakten.
 function wbBalkenAuf(id){const f=S.felder[id]; if(!f.reben) return '';

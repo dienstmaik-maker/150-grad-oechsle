@@ -263,7 +263,7 @@ const FORM_VORAUS='Vorausgewählt ist die Form, die der alte Winzer empfiehlt. D
 // Seit 14.2.5: Winzerbote, wenn eine Lage eine neue Boden-Stufe erreicht. Platzhalter, Wortlaut in Meilenstein 17.
 const BODEN_LAGE_BOTE='🌱 {lage}: Der Boden ist jetzt {stufe}.';
 const LAUB_HAND_BOTE='✂️ Ab jetzt kannst du im Juni den Sommerschnitt von Hand machen, im Weinberg bei jeder Sorte. Eine Maschine kommt in deine steilen Hänge nicht.';
-const VERSION='16.1';
+const VERSION='16.2';
 // Seit 13.3.6 (Maik 21.11.2026): Im Umbau starten neue Partien ohne Spielführer, sonst verspricht er Dinge nach den alten Rängen.
 // Mit neuen Texten muss er am Ende wieder an sein (14.4), dann FU_START=1.
 const FU_START=0;
@@ -1304,8 +1304,9 @@ const Z_TEIL=.12;
 const FU_SPRECHER={winzer:{name:'Der alte Winzer',rolle:'Dein Nachbar',bild:'fuehrer-winzer'},handel:{name:'Die Handels-Managerin',rolle:'Verkauf und Zahlen',bild:'manager-handel'},
   // Seit 14.7.7 (Bauplan 14.7, Annahme 26): keller ist die Figur der Kellerleute mit dem Bild des früheren Kellermeisters, aussen die Figur draußen (Erntehelfer)
   // ohne Bild bis Meilenstein 17, dafür das Symbol sym. Der Name ist der Titel ihrer Stufe (titel, fuTitel), ein Bild je Figur. Platzhalter, Wortlaut in Meilenstein 17.
+  // Seit 16.2.6 (Timos Bilder 37 bis 41): neue Gesichter unter den alten Namen, aussen bekommt Timos Erntehelferin (leute-erntehelferin), sym bleibt als Ersatz.
   keller:{get name(){return fuTitel(this,'lagerarb')},titel:['Der Kellerhelfer','Der Kellergeselle','Der Kellermeister'],get rolle(){return LEUTE_GRUPPE.lagerarb},bild:'manager-keller'},
-  aussen:{get name(){return fuTitel(this,'helfer')},titel:['Die Erntehelferin','Die Winzergesellin','Die Rebmeisterin'],get rolle(){return LEUTE_GRUPPE.helfer},bild:'',sym:'🧑‍🌾'},
+  aussen:{get name(){return fuTitel(this,'helfer')},titel:['Die Erntehelferin','Die Winzergesellin','Die Rebmeisterin'],get rolle(){return LEUTE_GRUPPE.helfer},bild:'leute-erntehelferin',sym:'🧑‍🌾'},
   weingut:{name:'Der Weingut-Manager',rolle:'Plan und Einkauf',bild:'manager-weingut'},
   // Seit 10.3: Tipp ohne Gesicht, falls nach der ersten Übergabe noch kein Manager da ist.
   gut:{name:'Dein Weingut',rolle:'Notiz aus dem Büro',bild:''}};
@@ -1453,8 +1454,11 @@ const IDEE_KEY='oechsle-idee', IDEE_MAX=1000;
 // Regeln aus 14.6 stehen als vier Punkte unter 14.7 (Platzhalter, Wortlaut in Meilenstein 17), die Zeile "als Nächstes 14.6" ist weg. Meilenstein 13 ist seit 22.11.2026 fertig, seine Kopfzeile trägt deshalb das ✅ (die Abschlussprobe 13.9 bekam keine Version).
 // Seit 16.1.6 (Bauplan 16.1, Zweig design-16): Block 16.0 Design mit Version 16.1, Punkte sind Platzhalter, Wortlaut in Meilenstein 17. Das Kommende bekommt
 // erst eine Zeile, wenn 16.2 bis 16.9 aufgeteilt sind. Beim Zusammenführen nach 15.8 die Blöcke 14.0 und 15.0 von Meilenstein 15 übernehmen.
+// Seit 16.2.6 (Bauplan 16.2): Version 16.2 mit Platzhalter-Punkten (Wortlaut in Meilenstein 17), darüber das Kommende 16.3 bis 16.9 nach dem Fahrplan der 16.0.
 const WAS_NEU=[
   {k:'🏁 16.0 Design',d:'in Arbeit',p:['Das Spiel bekommt das neue Aussehen nach Timos Entwürfen'],v:[
+    ['▶️','16.3','Klemmbrett'],['⏳','16.4','Betrieb'],['⏳','16.5','Kellerei'],['⏳','16.6','Stadt'],['⏳','16.7','Büro'],['⏳','16.8','Fenster von unten'],['⏳','16.9','Abschlussprobe'],
+    ['','16.2','Navigation und Kopfzeile','25.11.2026',['Die Leiste unten aus Holz mit Timos Bildern für Weingut, Kellerei und Stadt','Neu das Klemmbrett mit der Zahl deiner Aufgaben, es öffnet vorerst Aktuelles','Die Unterreiter sind Registerzungen über der Leiste','Oben Datum, Wetter und Geld auf Pergament, in der Mitte groß das Gesicht, das gerade spricht','Timo hat den alten Winzer, beide Köpfe, den Kellermann und die Erntehelferin neu gezeichnet']],
     ['','16.1','Weinberg','25.11.2026',['Der Weinberg liegt auf dem Holzbrett, je Sorte ein Zettel zum Auf- und Zuklappen','Ein Hinweis je Weinberg zeigt, was gerade am wichtigsten ist','Öchsle, Rebstufe, Boden und Dünger als Balken mit Siegel und Symbol','Das kleine i öffnet Zustand, Kosten und Tipps, nach unten wischen schließt','Ganz oben die Karte Boden und Düngung mit dem Bild der Jahreszeit']]]},
   {k:'🏁 14.0 Pflege-Umbau',d:'in Arbeit',p:['Wie du deine Reben und deinen Boden pflegst, entscheidet über deinen Wein'],v:[
     ['','14.7','Köpfe und Helfer','25.11.2026',['Zwei Köpfe statt drei: Die Handels-Managerin verkauft, der Weingut-Manager plant und kauft ein','Erntehelfer und Kellerleute lernen je Stufe eine neue Arbeit, die Kellerhelfer warten die Maschinen','Im Einsatzplan wählst du deinen Chef-Weinberg, dazu Laubschnitt und Ausdünnen je Weinberg','Jede Arbeit ist Chefsache oder Automatik, nur die Lese bleibt immer bei dir','Die Handels-Managerin verkauft keine Flasche unter 85 % vom Listenpreis','Die Raritäten-Krone braucht je einen verkauften Jahrgang von Menge, Sekt und Spitze','Sommerschnitt von Hand im Juni, eine Erntemaschine ohne passende Erziehungsform steht still','Nicht gekaufte Höhenlage kommt nur jede zweite Auktion wieder, dazwischen auch Südhang','Rangmeldung und Rangliste nennen nur, was schon da ist: Export und Laden erst mit ihrem Ereignis, die Rivalen ohne Akt-Nummer']],
