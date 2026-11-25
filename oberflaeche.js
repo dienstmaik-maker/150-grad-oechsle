@@ -1540,7 +1540,11 @@ const K_I={
   sekt:()=>{const an=!!S.sektAnlage, ak=!an&&fuR65Zeit(), sektI=`Die ${ROLLEN.sekt.name} macht nur Sekt. Nach der Lese legst du die Trauben noch im selben Monat in den Sektkeller, ohne Grundwein, und ist die Hefezeit um, füllst du ihn ab. Ab dem Kellermeister macht das dein Kellermeister. Er reift ${SEKT_REIFE} Monate, mit ${HEFE_LANG} Monaten auf der Hefe kostet er ${HEFE_LANG_P} % mehr und bekommt bei der Jury ${HEFE_LANG_P} Punkte mehr. Das Hefelager wählst du bei der Lese.`;
     return !S.sektkeller?`Im Sektkeller gärt dein Wein ein zweites Mal, diesmal in der Flasche. Du kaufst ihn einmal für ${eur(SEKTKELLER_PREIS)}, danach machst du hier Sekt. ${sektI} Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche.`
       :`${sektI} Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche${an?`, dank der ${SEKT_ANLAGE_NAME} nur die Hälfte`:ak?`. Mit der ${SEKT_ANLAGE_NAME} wird nicht mehr von Hand degorgiert und verkorkt, dann kostet jede Flasche die Hälfte`:''}.`},
-  vorrat:()=>'Fassraum und leere Flaschen kaufst du im Lager, beides braucht Kellerleute. Fassraum am besten vor der Lese kaufen, Flaschen vor dem Abfüllen.'};
+  vorrat:()=>'Fassraum und leere Flaschen kaufst du im Lager, beides braucht Kellerleute. Fassraum am besten vor der Lese kaufen, Flaschen vor dem Abfüllen.',
+  // Seit 16.5.4 die i-Texte der drei Fenster der Hintertür.
+  zuckern:()=>`Geht nur mit frisch gelesenen Trauben, bevor sie gekeltert sind. Zucker hebt die Öchsle, aber höchstens bis zum Deckel des Weinbergs, aus dem die Trauben kommen. Liegt der Most schon am Deckel, geht kein Zucker mehr. Wasser streckt die Menge und senkt die Öchsle. Beides geht um höchstens ${ZUCKER_MAX} %. Bis ${ZUCKER_ERLAUBT} % sind erlaubt, wenn du den Wein als Tafelwein anmeldest. Alles andere ist Panscherei und geht nur gegen Schmiergeld durchs Rathaus.`,
+  verschneiden:()=>'Zwei angemeldete Fassweine gleicher Farbe werden zu einem. Der bessere Name bleibt, Öchsle und Qualität werden gemittelt. Streng verboten, der Beamte will dafür Schmiergeld.',
+  pruefer:()=>{const C=kKontr(); return `Hinter der unscheinbaren Tür geht es nicht ganz sauber zu. Der Weinprüfer kommt unangemeldet${C.kz!=='nichts'?`, alle ${C.kA[0]} bis ${C.kA[1]} Monate`:''}. Was bis dahin verkauft ist, findet er nicht mehr.`}};
 // Wein keltern (Entscheidung 1.1): Hinweis "N l Most bereit" in Gelb, wenn Trauben warten, in Rot, wenn eine Partie nicht mehr in den freien Fassraum passt
 // (dieselbe Bedingung wie die rote Zeile), Balken belegter Fassraum. Auf: die Trauben je Sorte mit Keltern, darüber die Info-Zeilen, unten der Chefsache-Schalter.
 function kKeltern(){
@@ -1638,6 +1642,11 @@ function wbPanelKeller(k){
       c=wbKv(M.wartung,wbT(M.jeP,{p:eur(T.wart)}))+wbKv(M.verkauf,`${eur(T.preis*.5*ma.zustand/100)}, ${S.monat<=2?'jetzt':'ab Januar'}`)+c}
     if(A.length) t+=`<br><br>${MASCH_WIE.abfuell} ${MASCH_TEXT_I()}<br><br>Warten bringt den Zustand wieder hoch, verkaufen bringt die Hälfte vom Neupreis, je nach Zustand.`}
   else if(k==='vorrat'){z=fr+fl; c=kf+kl; t=K_I.vorrat(); buch='lager'}
+  // Seit 16.5.4 die Karten der Hintertür, Buchkapitel hintertuer wie die alten Fenster.
+  else if(k==='zuckern'){z=wbKv(K.trauben,`${num(tr.reduce((a,l)=>a+l.liter,0))} l`)+wbKv(K.erlaubt,`bis ${ZUCKER_ERLAUBT} %`)+wbKv(K.hoechstens,`${ZUCKER_MAX} %`); t=K_I.zuckern(); buch='hintertuer'}
+  else if(k==='verschneiden'){z=wbKv(K.mischbar,S.lots.filter(mischbar).length)+wbKv(K.hin.paar,kPaare()?'ja':'nein'); t=K_I.verschneiden(); buch='hintertuer'}
+  else if(k==='pruefer'){const P=panschListe().length, C=kKontr(); z=wbKv(K.pansch,P,P?'rot':'')+(C.kz!=='nichts'?wbKv(K.kontrolle,C.abst,C.scharf?'rot':''):'');
+    c=C.kz!=='nichts'?wbKv(K.strafe,C.strafe):''; t=K_I.pruefer(); buch='hintertuer'}
   else return '';
   return wbPanelRahmen(titel,wbAbschnitt('🛢️',WB_TEXT.zustand,z)+wbAbschnitt('🪙',WB_TEXT.kosten,c)+wbAbschnitt('💡',WB_TEXT.tipps,`<p style="margin:0 0 6px">${t}</p>${mib(buch)}`));
 }
@@ -1675,32 +1684,41 @@ function kellerAusHtml(){
   return fenster('ausbau','Kellerausbau',stand,{kn:pk('kellerAus','Ausbauen',eur(pr),{klein:KELLER_NAMEN[K],arm:S.geld<pr}),i:was});
 }
 // Hintertür im Keller (seit 7.4 auf dem Fenster-Baustein): Zuckern und Wässern, Verschneiden, darunter der Weinprüfer als Zustand. Die Sabotage ist seit 13.5.9 raus.
-// Die roten Zeilen zu gepanschtem Wein und zum Prüfer stehen immer sichtbar im Fenster "Weinprüfer", die Erklärungen im i.
+// Seit 16.5.4 (Bauplan 16.5, Entscheidung 2): drei Karten im Kartenbaustein unten im Keller, Kennungen k_zuckern, k_verschneiden, k_pruefer, Befehle unverändert
+// (zuckern mit data-k wasser oder zucker, misch1). Bilder: Bild 23 hat keine dafür, deshalb Ausschnitte aus Timos Bildern sabotage.jpg und kontrolle.jpg (Design
+// entschieden). Die roten Zeilen des Weinprüfers (gepanschte Weine, Kontrolle, Strafe, Warnung, Kieker) stehen immer sichtbar im Kopf und darunter (o.unter),
+// aufgeklappt nur der Erklärtext, das Info-Panel hat das Buchkapitel hintertuer. Freischaltung und ruhiger Einstieg wie bisher. Platzhalter, Wortlaut in Meilenstein 17.
+// Seit 14.4.6: Was der Weinprüfer zeigt, je Spielstufe (KONTR_ZEIGE): Lehrjahre die Warnung des alten Winzers in Zahlen, Gesellenjahre Strafe und Abstand, Meisterprüfung keine Zahlen.
+const kKontr=()=>{const scharf=S.kontr.scharf>0, kA=kontrAbstand();
+  return {kz:KONTR_ZEIGE[S.schwer], kA, scharf, abst:scharf?'jedes Jahr':`alle ${kA[0]} bis ${kA[1]} Monate`, strafe:KONTR_TEXT.strafe.replace('{min}',eur(STRAFE_MIN))+(strafeAns()?`, ${strafeAns()} Ansehen`:'')}};
+const kPaare=()=>{const mi=S.lots.filter(mischbar); return mi.some(a=>mi.some(b=>a!==b&&farbe(a)===farbe(b)))};
+function kZuckern(){
+  const K=WB_TEXT.keller, H=K.hin, tr=S.lots.filter(l=>l.status==='trauben');
+  const kopf=kHin(...(tr.length?['gruen',wbT(H.zuckerMost,{l:num(tr.reduce((a,l)=>a+l.liter,0))})]:['grau',H.keineTr]))+`<div class="wbunter">${wbT(K.zuckerUnter,{erl:ZUCKER_ERLAUBT,max:ZUCKER_MAX})}</div>`;
+  const Z=tr.map(l=>fz(dot(l.sorte)+SORTEN[l.sorte].name,
+      `${num(l.liter)} l Trauben · ${l.oe}° Öchsle${l.oe>=deckel(l.sorte)?' · am Deckel':''}${mani(l)?' · 🤫 '+maniText(l):''}`,'',
+      `<button class="klein wag" data-a="zuckern" data-id="${l.id}" data-k="wasser" ${(l.wasser||0)>=ZUCKER_MAX?'disabled':''}>Wässern</button>`,
+      `<button class="klein wag" data-a="zuckern" data-id="${l.id}" data-k="zucker" ${zuckerBis(l)<1?'disabled':''}>Zuckern</button>`));
+  return kKarte('zuckern',K.zuckern,kopf,kZeilen(Z,'Gerade liegen keine Trauben im Kelterhaus.'));
+}
+function kVerschneiden(){
+  const K=WB_TEXT.keller, H=K.hin, paare=kPaare();
+  const kopf=kHin(...(paare?['gruen',H.paar]:['grau',H.keinPaar]))+`<div class="wbunter">${K.verboten}</div>`;
+  return kKarte('verschneiden',K.verschneiden,kopf,(paare?'':`<div class="wbklein">${K.paarFehlt}</div>`)+kKn(`<button class="klein wag" data-a="misch1" ${paare?'':'disabled'}>Fässer mischen</button>`));
+}
+function kPruefer(){
+  const K=WB_TEXT.keller, H=K.hin, P=panschListe().length, C=kKontr();
+  const kopf=kHin(...(P?['rot',P===1?H.pansch1:wbT(H.panschN,{n:P})]:C.scharf?['rot',H.kieker]:['gruen',H.sauber]))+`<div class="wbunter">${K.pansch}: <b class="zahl${P?' rot':''}">${P}</b></div>`;
+  const unter=(C.kz!=='nichts'?wbInfo(`🔍 ${K.kontrolle}: ${C.abst}`,'',C.scharf?'rot':'')+wbInfo(`⚖️ ${K.strafe}: ${C.strafe}`):'')
+    +(C.kz==='warnung'?wbInfo(`👴 ${kontrWarn()}${verwarnOffen()?' '+KONTR_TEXT.verwarnErst:''}`):'')
+    +(C.scharf?wbInfo(`🔍 ${K.kiekerZ}`,'','rot'):'');
+  return kKarte('pruefer',K.pruefer,kopf,`<div class="wbklein">${K_I.pruefer()}</div>`,{unter});
+}
 function vSabotage(){
-  const tr=S.lots.filter(l=>l.status==='trauben'), mi=S.lots.filter(mischbar), paare=mi.some(a=>mi.some(b=>a!==b&&farbe(a)===farbe(b))), P=panschListe().length, scharf=S.kontr.scharf>0;
   // Seit 14.4.6: Im 1. Akt ist die Hintertür zu, sie geht mit dem Rang FREI.hintertuer auf. Platzhalter, Wortlaut in Meilenstein 17.
   // Seit 16.5.1 steht vorher im Keller nichts davon, auch keine Karte "Die Hintertür ist zu" (KONTR_TEXT.zu bleibt für Buch und Spielführer).
   if(!hinterOffen()) return '';
-  // Seit 14.4.6: Was das Fenster "Weinprüfer" zeigt, je Spielstufe (KONTR_ZEIGE): Lehrjahre die Warnung des alten Winzers in Zahlen,
-  // Gesellenjahre Strafe und Abstand, Meisterprüfung keine Zahlen.
-  const kz=KONTR_ZEIGE[S.schwer], kA=kontrAbstand(), kAbst=scharf?'jedes Jahr':`alle ${kA[0]} bis ${kA[1]} Monate`, kStrafe=KONTR_TEXT.strafe.replace('{min}',eur(STRAFE_MIN))+(strafeAns()?`, ${strafeAns()} Ansehen`:'');
-  if(['zuckern','verschneiden','pruefer'].every(einZu)) return '';
-  // Seit 16.5.1 im Keller: Die Fenster behalten ihr Buchkapitel 'hintertuer' über buch: (bis 16.4 über BUCH_ORT.sabotage).
-  return fenster('zuckern','Most zuckern oder wässern',tr.map(l=>fz(dot(l.sorte)+SORTEN[l.sorte].name,
-      `${num(l.liter)} l Trauben · ${l.oe}° Öchsle${l.oe>=deckel(l.sorte)?' · am Deckel':''}${mani(l)?' · 🤫 '+maniText(l):''}`,'',
-      `<button class="klein wag" data-a="zuckern" data-id="${l.id}" data-k="wasser" ${(l.wasser||0)>=ZUCKER_MAX?'disabled':''}>Wässern</button>`,
-      `<button class="klein wag" data-a="zuckern" data-id="${l.id}" data-k="zucker" ${zuckerBis(l)<1?'disabled':''}>Zuckern</button>`)),{
-    leer:'Gerade liegen keine Trauben im Kelterhaus.', buch:'hintertuer',
-    i:`Geht nur mit frisch gelesenen Trauben, bevor sie gekeltert sind. Zucker hebt die Öchsle, aber höchstens bis zum Deckel des Weinbergs, aus dem die Trauben kommen. Liegt der Most schon am Deckel, geht kein Zucker mehr. Wasser streckt die Menge und senkt die Öchsle. Beides geht um höchstens ${ZUCKER_MAX} %. Bis ${ZUCKER_ERLAUBT} % sind erlaubt, wenn du den Wein als Tafelwein anmeldest. Alles andere ist Panscherei und geht nur gegen Schmiergeld durchs Rathaus.`})
-  +fenster('verschneiden','Fässer verschneiden','',{
-    links:paare?'':'Dafür brauchst du zwei angemeldete Fassweine gleicher Farbe.',
-    kn:`<button class="klein wag" data-a="misch1" ${paare?'':'disabled'}>Fässer mischen</button>`, buch:'hintertuer',
-    i:'Zwei angemeldete Fassweine gleicher Farbe werden zu einem. Der bessere Name bleibt, Öchsle und Qualität werden gemittelt. Streng verboten, der Beamte will dafür Schmiergeld.'})
-  +fenster('pruefer','Weinprüfer',`<div class="kv"><span>Gepanschte Weine im Keller</span><span${P?' class="rot"':''}>${P}</span></div>
-    ${kz!=='nichts'?`<div class="kv"><span>Kontrolle</span><span${scharf?' class="rot"':''}>${kAbst}</span></div><div class="kv"><span>Strafe bei einem Fund</span><span>${kStrafe}</span></div>`:''}
-    ${kz==='warnung'?`<div style="font-size:14px;margin-top:4px">${kontrWarn()}${verwarnOffen()?' '+KONTR_TEXT.verwarnErst:''}</div>`:''}
-    ${scharf?'<div class="rot" style="font-size:14px;margin-top:4px">Der Prüfer hat dich auf dem Kieker.</div>':''}`,{buch:'hintertuer',
-    i:`Hinter der unscheinbaren Tür geht es nicht ganz sauber zu. Der Weinprüfer kommt unangemeldet${kz!=='nichts'?`, alle ${kA[0]} bis ${kA[1]} Monate`:''}. Was bis dahin verkauft ist, findet er nicht mehr.`});
+  return (einZu('zuckern')?'':kZuckern())+(einZu('verschneiden')?'':kVerschneiden())+(einZu('pruefer')?'':kPruefer());
 }
 function vStadt(){
   let h=kopf({amt:'Rathaus',handel:'Großhandel',laeden:ladenFrei()?'Deine Weinhandlung':'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'}[SUB]);
@@ -2114,7 +2132,7 @@ const FU_ZEIG={
   'k05':{tab:'gut',sub:'betrieb',sel:['[data-a="klapp"][data-id="gebiet"]','[data-a="bInfo"][data-id="betrieb"]']},   // seit 16.4.2 in der Karte Dein Betrieb
   'k06':{tab:'gut',sub:'betrieb',sel:['[data-a="bInfo"][data-id^="masch_"]','[data-a="maschKaufen"]']},
   'k07':{tab:'gut',sub:'betrieb',sel:['[data-a="mgr"][data-id="handel"]']},   // seit 16.4.4 die Zeile in "Deine Leute"
-  'k08':{tab:'keller',sub:'start',sel:[fiSel('zuckern'),fiSel('pruefer'),'#subs [data-id="start"]']},   // seit 16.5.1 im Keller, die Hintertür ist kein Unterreiter mehr
+  'k08':{tab:'keller',sub:'start',sel:['[data-a="bInfo"][data-id="k_zuckern"]','[data-a="bInfo"][data-id="k_pruefer"]','#subs [data-id="start"]']},   // seit 16.5.1 im Keller, seit 16.5.4 das i der Karten
   'k09':{tab:'gut',sub:'buero',sel:[fiSel('rangliste')]},
   'k10':{tab:'gut',sub:'buero',sel:[fiSel('urkunden')]},
   'k11':{tab:'gut',sub:'buero',sel:[fiSel('chronik')]},
