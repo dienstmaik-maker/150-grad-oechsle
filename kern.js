@@ -508,8 +508,9 @@ function roh(i){try{const o=JSON.parse(localStorage.getItem(KEYS[i])||'null');re
 // Seit 14.2.1: Marke v14. Stände ohne sie (auch aus 13.1 bis 13.8) werden nicht berücksichtigt, nur freundlich abgewiesen (Entscheidung 22).
 // Seit 14.4.1 (Annahme 17 im Bauplan 14.4): Marke v144. Stände aus 14.2 (nur v14) werden genauso abgewiesen, Album und Bestenliste bleiben.
 // Seit 14.5.1 (Annahme 30 im Bauplan 14.5): Marke v145. Stände aus 14.4 (nur v144) werden genauso abgewiesen.
-function lies(i){const o=roh(i);return o&&o.v145?o:null}
-function liesAlt(i){const o=roh(i);return o&&!o.v145?o:null}
+// Seit 14.7.1 (Annahme 31 im Bauplan 14.7): Marke v147. Stände aus 14.5 (nur v145) werden genauso abgewiesen.
+function lies(i){const o=roh(i);return o&&o.v147?o:null}
+function liesAlt(i){const o=roh(i);return o&&!o.v147?o:null}
 // Übernimmt einen gelesenen Spielstand und bringt alte Stände auf den heutigen Stand.
 function nimm(o){S=o;if(S.zf==null)S.zf=zfNeu();if(S.helfer==null)Object.assign(S,{helfer:1,lagerarb:1,maschinen:[],kredit:null,mahnung:0,pleite:false});if(!S.gegner)etappe3(2,'mittel');if(!S.kontr)S.kontr={in:rint(24,48),scharf:0};altRang();altEdel();lohnAbgleich();altEhrungen();altMasch();altDoppelt();altSpende();altKeller();altZeit();altAmt();if(!S.fu)S.fu=fuAlt(); else fuPaketB(); altKomp(); altAns(); altLeute(); altRuf(); altSchaed(); altSekt(); altFrei(); altHefe(); altJh(); altSchau(); altHang()}
 // Seit 8.3: Spielstände ohne Uhr fangen bei 0 an und merken sich, dass sie erst seit 8.3 zählen.
@@ -574,7 +575,7 @@ function dateiLaden(text,i){
   let o=null; try{o=JSON.parse(text)}catch(e){}
   if(lies(i)) return meldung('Das hat nicht geklappt','Der Speicherplatz ist schon belegt.');
   if(!gueltig(o)) return meldung('Das hat nicht geklappt','Die Datei ist kein Spielstand von 150 Grad Öchsle.');
-  if(!o.v145) return meldung('Das geht leider nicht',ALT_SATZ);
+  if(!o.v147) return meldung('Das geht leider nicht',ALT_SATZ);
   o=saeubern(o);
   // Seit 11.3: Die Sicherung trägt das Album mit (Maik 19.11.2026). Es gehört nicht in den Spielstand und geht ins Album des Geräts.
   const alb=o.album; delete o.album;
@@ -1923,7 +1924,7 @@ function kompAuf(id){
 function neuesSpiel(){
   if(NEU.schwer===MEISTER_STUFE&&!meisterFrei()) NEU.schwer=MEISTER_VON; // seit 13.7.7, gesperrt bis zur ersten Übergabe in den Gesellenjahren
   const reg=REG(NEU.region,!!ROLLEN_NEU);
-  S={v:1,v13:1,v145:1,zf:zfNeu(),name:NEU.name.trim().slice(0,NAME_MAX)||'Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:startGeld(NEU.schwer),ha:3,hang:{einfach:3,hoehe:0,sued:0},boden:80,bodenSt:0,bodenP:{einfach:0,hoehe:0,sued:0},duengungen:0,
+  S={v:1,v13:1,v147:1,zf:zfNeu(),name:NEU.name.trim().slice(0,NAME_MAX)||'Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:startGeld(NEU.schwer),ha:3,hang:{einfach:3,hoehe:0,sued:0},boden:80,bodenSt:0,bodenP:{einfach:0,hoehe:0,sued:0},duengungen:0,
     felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',markt:1,ansehen:0,ansV:1,leuteV:1,
     jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:ALLEIN_HA?0:1,lagerarb:ALLEIN_FASS?0:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,meilen:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],rangMon:{0:START_JAHR*12},freiBote:{},taten:{},komp:{},kompV:3,v121:1,ein:{f:[]},...(ROLLEN_NEU?{rollen:1}:{})};
   for(const id of reg.sorten){S.felder[id]={reben:0,pflSt:0,ep:0}; feldReset(S.felder[id])}

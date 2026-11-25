@@ -1624,3 +1624,26 @@ const JH_JURY=15, SEKT_JURY=11, WETT_FELD_PLUS=40;
 // Der Abzug für Sekt vom einfachen Hang ist mit dem Nachtrag zu 14.5 (jede Lage eine Sorte) ganz weggefallen.
 // Seit 14.5.7: Punkte am Wein außerhalb der Qualität (Medaillen l.medP, Sekt l.sektP) zählen im Preis PUNKT_PREIS je Punkt (1 Punkt gleich 1 Prozent, Annahme 25).
 const PUNKT_PREIS=.01;
+// ===== 14.7 Köpfe und Helfer (Bauplan 14.7, Maik 24. und 25.11.2026), seit 14.7.1 als Startwerte, gedreht wird in Meilenstein 15 =====
+// Verkauf von selbst (Annahme 24, gebaut in 14.7.6): Die Handels-Managerin verkauft in jedem Kanal nur, wenn sie je Flasche im Schnitt
+// mindestens MGR_PREIS_MIN vom Listenpreis bekommt (Listenpreis ist der Preis ohne Tagespreis). Das Regal im eigenen Laden hat keine Grenze (Annahme 25).
+const MGR_PREIS_MIN=.85;
+// Einsatzplan (Annahmen 8 bis 13, gebaut in 14.7.4): Rat zum Chef-Weinberg je Spielstufe nach dem Muster CHANCE_ZEIGE.
+// still: der Weingut-Manager wählt den Chef-Weinberg ohne Frage nach chefRegel (Lehrjahre), rat: der alte Winzer rät (Gesellenjahre), leer: kein Rat (Meisterprüfung).
+const EINSATZ_RAT={einfach:'still',mittel:'rat',schwer:''};
+// Chefsache (Annahmen 14 bis 16, gebaut in 14.7.5): je Arbeit 1 = der Chef macht es selbst, 0 = Automatik. Lesen hat keinen Schalter (Annahme 17).
+// Von sich aus Automatik, nur das Einstellen ist Chefsache (Maik bei der Abnahme, 25.11.2026). Im Spielstand S.chefsache, dazu S.sektWahl für Verfahren und Hefezeit.
+const CHEFSACHE_START={keltern:0,abfuellen:0,sekt:0,warten:0,fass:0,flaschen:0,leute:1};
+// Info-Zeilen an der Arbeit, sobald der Schalter beim Weingut-Manager sitzt (Entscheidung "Delegierte Arbeit zeigt eine Info-Zeile statt Knopf").
+// {wer} ist die Stufe der Leute, die es machen. Platzhalter, Wortlaut in Meilenstein 17.
+const CHEFSACHE_ZEILE={
+  chef:'👤 Chefsache: Das machst du selbst. Umstellen beim Weingut-Manager.',
+  keltern:'🍇 Keltern macht {wer}, eingeteilt vom Weingut-Manager.',
+  abfuellen:'🍾 Abfüllen und Etiketten macht {wer}, eingeteilt vom Weingut-Manager.',
+  sekt:'🥂 Den Sekt macht {wer}, nach deiner Vorwahl beim Weingut-Manager.',
+  warten:'🔧 Die Maschinen wartet {wer}, eingeteilt vom Weingut-Manager.',
+  fass:'🛢️ Fassraum kauft der Weingut-Manager.',
+  flaschen:'🍾 Flaschen kauft der Weingut-Manager.',
+  leute:'🧑‍🌾 Leute stellt der Weingut-Manager ein.'};
+// Namen der zwei Gruppen der Leute (Entscheidung Kellerleute, 24.11.2026). Platzhalter, Wortlaut in Meilenstein 17.
+const LEUTE_GRUPPE={helfer:'Außenbetrieb',lagerarb:'Kellerwirtschaft'};
