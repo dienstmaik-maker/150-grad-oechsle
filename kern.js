@@ -72,7 +72,10 @@ function epJahr(f,id,gutBoden,zs=1,zd=1){
 // Neue Reben verdünnen die Punkte genau um ihren Anteil (Entscheidung 4), auch beim Nachpflanzen. Die Stufe folgt zum Jahreswechsel.
 // Seit 14.2.5 verdünnt neu bepflanzte Fläche auch die Bodenpunkte ihrer Lage (bodenVerduennen).
 // Seit dem Nachtrag zu 14.5 (Maik 25.11.2026, 08:19 Uhr): nie mehr Reben, als die eigene Lage Platz hat (platzFuer), auch kein Rundungsrest.
-function rebenDazu(id,n){const f=S.felder[id]; if(f) n=Math.min(n,platzFuer(id)); if(!(n>0)||!f) return; const a=f.reben||0; f.ep=epRund((f.ep||0)*a/(a+n)); f.reben=a+n; bodenVerduennen()}
+// Seit 15.1.3 (Bauplan 15.1 Annahme 2): Ein neu bepflanzter Weinberg geht gleich an die Leute, sobald es sie gibt, der Chef bleibt, wo er ist (chefNorm).
+// Bis 15.1.2 zählte er bis zum nächsten Aufruf von chefNorm ohne Zuteilung als Chef-Weinberg.
+function rebenDazu(id,n){const f=S.felder[id]; if(f) n=Math.min(n,platzFuer(id)); if(!(n>0)||!f) return; const a=f.reben||0; f.ep=epRund((f.ep||0)*a/(a+n)); f.reben=a+n; bodenVerduennen();
+  if(!a&&helferKann(1)){f.schneider='helfer'; chefNorm()}}
 // Seit 14.5.4 (Annahme 14): Grand Cru für alle Sorten, nach der Pflegestufe bei der Lese (bis 14.5.3 nur die Spitzen-Sorte, dort 0).
 const pflegePreis=st=>PFLEGE_PREIS[st||0]||0;
 // Seit 13.2.3: Deckel fürs Öchsle eines Weinbergs aus Rolle, Boden-Stufe und Pflegestufe.
@@ -224,12 +227,28 @@ const chefKandidaten=()=>weinberge().filter(id=>(S.felder[id]||{}).reben>0);
 const chefWeinberge=()=>chefKandidaten().filter(id=>S.felder[id].schneider!=='helfer');
 function chefRegel(ids){ids=ids||chefKandidaten(); const P=id=>S.felder[id].pflSt||0, U=ids.filter(id=>P(id)<PFLEGE_STUFEN.length-1);
   return (U.length?U:ids).slice().sort((a,b)=>P(a)-P(b)||(S.felder[a].ep||0)-(S.felder[b].ep||0))}
+// Seit 15.1.3 (Maik 25.11.2026, 16:43 Uhr, Bauplan 15.1 Annahme 2): Der Chef bleibt, bis der Spieler ihn umsetzt. Neu nach chefRegel nur, wenn sein Weinberg
+// Grand Cru erreicht (solange es noch einen darunter gibt) oder wegfällt (gerodet, abgegeben, ohne Reben). Bis 15.1.2 galt jeden Winter neu die Regel, der Chef holte
+// dadurch Punkte auf, und im nächsten Winter lag der andere vorn (Pfalz J45 bis J60 fast jedes Jahr ein Wechsel).
+// chefBleibt: die Weinberge beim Chef, die bleiben dürfen, die ausdrücklich zugeteilten (schneider 'chef') zuerst. In den Lehrjahren zählt nur, was das Spiel
+// ausdrücklich zugeteilt hat (vorher teilt es nach der Regel zu), sonst wie chefWeinberge auch ein Weinberg ohne Zuteilung. chefZiel: sie, aufgefüllt nach chefRegel.
+function chefBleibt(){const K=chefKandidaten(), P=id=>S.felder[id].pflSt||0, gc=PFLEGE_STUFEN.length-1, unter=K.some(id=>P(id)<gc), st=chefStill();
+  const C=K.filter(id=>(st?S.felder[id].schneider==='chef':S.felder[id].schneider!=='helfer')&&(P(id)<gc||!unter));
+  return [...C.filter(id=>S.felder[id].schneider==='chef'),...C.filter(id=>S.felder[id].schneider!=='chef')].slice(0,CHEF_SCHNITT_MAX)}
+function chefZiel(){const b=chefBleibt(); return [...b,...chefRegel().filter(id=>!b.includes(id))].slice(0,CHEF_SCHNITT_MAX)}
 // Seit 14.7.4: je Spielstufe nach EINSATZ_RAT (Lehrjahre still, Gesellenjahre Rat, Meisterprüfung nichts), wie bisher nur mit CHEF_RAT 'jung'.
+// Seit 15.1.3 rät der alte Winzer nach chefZiel: zum Weinberg des Chefs, solange er bleibt, sonst nach der Regel (gezeigt wird der Rat nur bei einem anderen Weinberg).
 const chefStill=()=>CHEF_RAT==='jung'&&EINSATZ_RAT[S.schwer]==='still';
-const chefRat=()=>CHEF_RAT==='jung'&&EINSATZ_RAT[S.schwer]==='rat'&&helferKann(1)&&chefKandidaten().length>CHEF_SCHNITT_MAX?chefRegel()[0]:null;
+const chefRat=()=>CHEF_RAT==='jung'&&EINSATZ_RAT[S.schwer]==='rat'&&helferKann(1)&&chefKandidaten().length>CHEF_SCHNITT_MAX?chefZiel()[0]:null;
 function chefNorm(){
-  if(!S||!helferKann(1)) return; const K=chefKandidaten(); if(!K.length) return;
-  if(chefStill()){if(chefSchnitte()) return; const z=chefRegel(K).slice(0,CHEF_SCHNITT_MAX); for(const id of K) S.felder[id].schneider=z.includes(id)?'chef':'helfer'; return}
+  if(!S||!helferKann(1)) return;
+  // Seit 15.1.3: Fällt der Chef-Weinberg weg (keine Reben mehr), geht seine Zuteilung an die Leute. Bis 15.1.2 blieb sie stehen, und neu bepflanzt war er wieder beim Chef.
+  for(const id of weinberge()){const f=S.felder[id]; if(f&&!(f.reben>0)&&f.schneider==='chef') f.schneider='helfer'}
+  const K=chefKandidaten(); if(!K.length) return;
+  // Lehrjahre: still nach chefZiel (seit 15.1.3, bis 15.1.2 jeden Winter nach chefRegel).
+  // Seit 15.1.3: Hat der Chef diesen Winter schon geschnitten, geht ein neuer Weinberg ohne Zuteilung (zum Beispiel die gekaufte Spitzenlage) an die Leute,
+  // bis 15.1.2 zählte er bis zum nächsten Winter als zweiter Chef-Weinberg.
+  if(chefStill()){if(chefSchnitte()){for(const id of K) if(S.felder[id].schneider!=='chef'&&S.felder[id].schneider!=='helfer') S.felder[id].schneider='helfer'; return} const z=chefZiel(); for(const id of K) S.felder[id].schneider=z.includes(id)?'chef':'helfer'; return}
   const C=chefWeinberge(); if(C.length<=CHEF_SCHNITT_MAX) return;
   const vorn=[...C.filter(id=>S.felder[id].schnitt===S.jahr&&S.felder[id].schnittWer!=='helfer'&&S.felder[id].schnittWer!=='kauf'),...C.filter(id=>S.felder[id].schneider==='chef'),...C];
   const bleibt=[...new Set(vorn)].slice(0,CHEF_SCHNITT_MAX); for(const id of C) if(!bleibt.includes(id)) S.felder[id].schneider='helfer'}
