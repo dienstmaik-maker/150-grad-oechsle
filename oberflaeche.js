@@ -1139,7 +1139,7 @@ function hoffestHtml(){
 // arm (Geld fehlt: grau, aber antippbar, die Aktion erklärt es), klein (kleine Zeile unter dem Preis, etwa der Preis je Stück).
 function pk(a,t,p,o={}){
   const at=['id','n'].filter(x=>o[x]!=null).map(x=>` data-${x}="${o[x]}"`).join('');
-  return `<button class="pk${o.sec?' sec':''}${o.wag?' wag':''}${o.arm?' arm':''}" data-a="${a}"${at}${o.aus?' disabled':''}><span>${t}</span>${p?`<b>${p}</b>`:''}${o.klein?`<small>${o.klein}</small>`:''}</button>`;
+  return `<button class="pk${o.sec?' sec':''}${o.wag?' wag':''}${o.arm?' arm':''}${o.vb?' vb':''}" data-a="${a}"${at}${o.aus?' disabled':''}><span>${t}</span>${p?`<b>${p}</b>`:''}${o.klein?`<small>${o.klein}</small>`:''}</button>`;
 }
 // Zeile unten in der Karte: links eine kurze Erklärung, rechts die Knöpfe untereinander.
 function kz(links,...kn){return `<div class="kz${links?'':' reihe'}"><div>${links||''}</div><div class="kzk">${kn.join('')}</div></div>`}
@@ -1257,11 +1257,11 @@ function maschKaufFenster(){
       // Seit 14.6.8 (Antwort zu D3): in Lehr- und Gesellenjahren ein Satz, wie viele deiner Reben die Erntemaschine lesen darf.
       +(T.ernte&&MASCH_FORM_STUFEN.includes(S.schwer)?' '+MASCH_FORM_TEXT.kauf.replace('{er}',maschEr({typ:id})).replace('{formen}',MASCH_FORM_TEXT.formen[id]).replace('{g}',rbn(rebenGesamt())).replace('{n}',rbn(maschFormReben(T))):'');
     Z.push(`<div class="mkz" id="mk_${id}">${bild}<div><b>${T.name}</b><span>${was}</span>${hat?`<span class="mut">${wbT(M.hat,{ein:T.f?'eine':'einen'})}</span>`:''}</div>
-      <div class="mkkn">${pk('maschKauf','Kaufen',eur(T.preis),{id,aus:!saison||hat,arm:S.geld<T.preis})}</div></div>`);
+      <div class="mkkn">${pk('maschKauf','Kaufen',eur(T.preis),{id,aus:!saison||hat,arm:S.geld<T.preis,vb:1})}</div></div>`);
   }
   const A=S.maschinen.filter(x=>x.typ==='abfuell'), ein=A.find(x=>abfStufe(x)<2), was=`Stufe 2: ${Math.round(ABF_PLUS2*100)} statt ${Math.round(ABF_PLUS*100)} % mehr Flaschen aus jedem Fass, ein Kellermensch betreut ${num(ABF_FLASCHEN2)} statt ${num(ABF_FLASCHEN)} leere Flaschen.`;
   if(A.length) Z.push(!frei('masch_abfuell2')?`<div class="mkz gesperrt"><img src="bilder/maschkarte-abfuell.webp" alt=""><div><b>🔒 ${M.ausbau}</b><span>${freiText('masch_abfuell2')}</span></div></div>`
-    :`<div class="mkz" id="mk_ausbau"><img src="bilder/maschkarte-abfuell.webp" alt=""><div><b>${M.ausbau}</b><span>${was}</span>${ein?'':`<span class="mut">${M.schonStufe2}</span>`}</div><div class="mkkn">${pk('abfAusbau','Ausbauen',eur(ABF_PREIS2),{aus:!saison||!ein,arm:S.geld<ABF_PREIS2})}</div></div>`);
+    :`<div class="mkz" id="mk_ausbau"><img src="bilder/maschkarte-abfuell.webp" alt=""><div><b>${M.ausbau}</b><span>${was}</span>${ein?'':`<span class="mut">${M.schonStufe2}</span>`}</div><div class="mkkn">${pk('abfAusbau','Ausbauen',eur(ABF_PREIS2),{aus:!saison||!ein,arm:S.geld<ABF_PREIS2,vb:1})}</div></div>`);
   return `<div class="mkfen"><h3>⚙️ ${M.kaufen}</h3><p class="mut">${M.kaufKopf}</p>${Z.join('')}<details class="mkregel"><summary>${M.regeln}</summary><p>${MASCH_TEXT_I()}</p></details>${mib('maschinen')}<div class="btns"><button class="sec" data-a="close">Zurück</button></div></div>`;
 }
 function ehrSumme(wein){
@@ -2528,8 +2528,12 @@ function render(){
 let SART='', SZU=null;
 const SHEET_ARTEN=['info','frage','pflicht'];
 function openSheet(h,musik,art,zu){const a=SHEET_ARTEN.includes(art)?art:'info', el=$('#sheet'); SART=a; SZU=zu||null;
-  el.innerHTML=`<div>${a!=='pflicht'&&!/class="ipanel"/.test(h)?'<i class="igriff"></i>':''}${h}</div>`; el.className='an '+a; SMUSIK=musik||null; musikOrt(musikWahl())}
+  el.innerHTML=`<div>${a!=='pflicht'&&!/class="ipanel"/.test(h)?'<i class="igriff"></i>':''}${h}</div>`; el.className='an '+a; SMUSIK=musik||null; musikOrt(musikWahl());
+  // Seit 16.8.4: Die letzte Knopfzeile bleibt unten stehen, wenn der Inhalt rollt (.unten), sofern nichts mehr nach ihr kommt.
+  const B=el.querySelectorAll('.btns'), u=B[B.length-1]; if(u&&!u.nextElementSibling) u.classList.add('unten')}
 function closeSheet(){$('#sheet').className='';$('#sheet').innerHTML='';SL=null;SMUSIK=null;SART='';SZU=null;musikOrt(musikWahl());setTimeout(fuehrerZeig,0)}
+// Kurzformen für die Rückfrage (seit 16.8.4) und die Pflicht-Entscheidung (seit 16.8.6).
+const frageSheet=(h,zu)=>openSheet(h,null,'frage',zu), pflichtSheet=h=>openSheet(h,null,'pflicht');
 // Wischen nach unten oder Tipp neben das Fenster, nie beim Pflichtfenster.
 function sheetWeg(){if(SART==='pflicht'||!$('#sheet').classList.contains('an')) return; const f=SZU; if(f) f(); else closeSheet()}
 // Seit dem Nachtrag zu 14.5.2 (Annahme 34): Nachfrage im Sommer, Lehrjahre mit Rat in Zahlen, Gesellenjahre mit kurzem Hinweis (SOMMER_FRAGE).
@@ -2537,7 +2541,7 @@ function sheetWeg(){if(SART==='pflicht'||!$('#sheet').classList.contains('an')) 
 function zeigeSommerFrage(F){const A=SOMMER_ARBEIT[F[0].art], rat=SOMMER_FRAGE[S.schwer]==='rat', pz=x=>`${Math.round(x*100)} %`;
   const satz=x=>(rat?SOMMER_RAT:SOMMER_HINWEIS).replace('{sorte}',SORTEN[x.id].name).replace('{arbeit}',A.name).replace('{q}',x.q).replace('{vor}',x.vor)
     .replace('{stufe}',STUFEN[x.st].name).replace('{ans}',ANSPRUCH[x.st]).replace('{kosten}',eur(x.kosten)).replace('{menge}',A.menge.replace('{m}',pz(x.art==='laub'?LAUB_MENGE:AUSD_MENGE)));
-  openSheet(`<h3>${esc(A.titel)}?</h3>${F.map(x=>`<p>${esc(satz(x))}</p><div class="mitte"><button class="klein" data-a="${x.art==='laub'?'sommerHand':'ausduennen'}" data-id="${x.id}" ${S.geld<x.kosten?'disabled':''}>${esc(A.name)}: ${esc(SORTEN[x.id].name)}</button></div>`).join('')}
+  frageSheet(`<h3>${esc(A.titel)}?</h3>${F.map(x=>`<p>${esc(satz(x))}</p><div class="mitte"><button class="klein vb" data-a="${x.art==='laub'?'sommerHand':'ausduennen'}" data-id="${x.id}" ${S.geld<x.kosten?'disabled':''}>${esc(A.name)}: ${esc(SORTEN[x.id].name)}</button></div>`).join('')}
     ${rat?`<p class="mut">${esc(SOMMER_FUSS)}</p>`:''}<div class="btns"><button class="sec" data-a="close">Zurück</button><button data-a="sommerOhne">Weiter ohne</button></div>`)}
 // Seit 16.8.2 (Bauplan 16.8, Entscheidung 2): Kurze Meldungen ohne Bild werden das Schild unten (schild), lange und solche mit Bild ein Info-Panel
 // mit schlichtem Okay ohne Siegel. Wie bis 16.7, als jede Meldung das offene Fenster ersetzte, schließt das Schild ein offenes Fenster, nur ein Pflichtfenster bleibt.
@@ -2551,11 +2555,13 @@ function meldung(t,text,bild){
 let SL=null;
 function mengeSheet(o){
   SL=o; const st=o.step||1, rs=o.rangeStep||st, max=Math.floor(o.max/rs)*rs;
-  openSheet(`${o.bild?sbild(o.bild):''}<h3>${esc(o.titel)}</h3>${o.text?`<p class="mut">${o.text}</p>`:''}<div class="slval" id="slv"></div>
+  // Seit 16.8.4 (Bauplan 16.8, Entscheidung 9): Rückfrage im neuen Stil, Kennungen und Befehle wie bisher. Der Knopf trägt das Wachssiegel, weil er
+  // etwas Verbindliches auslöst, nur beim Zwischenschritt (o.vb 0, Kreditbetrag) nicht.
+  frageSheet(`${o.bild?sbild(o.bild):''}<h3>${esc(o.titel)}</h3>${o.text?`<p class="mut">${o.text}</p>`:''}<div class="slval" id="slv"></div>
   <input type="range" id="slr" min="${o.min||0}" max="${max}" step="${rs}" data-st="${st}" value="${Math.min(max,o.start==null?max:o.start)}">
   ${o.wahl?`<div class="chips swahl">${o.wahl.map(([w,x])=>`<button class="chip${w===o.w?' an':''}" data-a="slWahl" data-id="${w}">${x}</button>`).join('')}</div>`:''}
   <div class="btns"><button class="klein" data-a="slMinus">− ${(o.zahl||num)(st)}</button><button class="klein" data-a="slPlus">+ ${(o.zahl||num)(st)}</button></div>
-  <div class="btns"><button class="sec" data-a="close">Abbrechen</button><button id="slok" ${o.wag?'class="wag" ':''}data-a="slOk">${esc(o.okText)}</button></div>`);
+  <div class="btns"><button class="sec" data-a="close">Abbrechen</button><button id="slok" ${o.vb===0?'':'class="vb" '}data-a="slOk">${esc(o.okText)}</button></div>`);
   $('#slr').addEventListener('input',slUpd); slUpd();
 }
 function slUpd(){if(!SL)return;const n=+$('#slr').value;$('#slv').innerHTML=SL.info(n);$('#slok').disabled=n<=0}
@@ -2806,7 +2812,7 @@ const AKT={
   slotNeu(d){SLOT=+d.id;START='neu';NEU=neuStart();render();window.scrollTo(0,0)},
   slotWegFrage(d){
     const o=lies(+d.id); if(!o) return;
-    openSheet(`<h3>Spielstand ${+d.id+1} löschen?</h3><p>${esc(o.name)}, ${esc(MON[o.monat]||'')} ${esc(o.jahr)}. Das lässt sich nicht rückgängig machen. Sichere ihn vorher als Datei, wenn du ihn behalten willst.</p><div class="btns"><button class="sec" data-a="close">Abbrechen</button><button class="wag" data-a="slotWeg" data-id="${+d.id}">Ja, löschen</button></div>`);
+    frageSheet(`<h3>Spielstand ${+d.id+1} löschen?</h3><p>${esc(o.name)}, ${esc(MON[o.monat]||'')} ${esc(o.jahr)}. Das lässt sich nicht rückgängig machen. Sichere ihn vorher als Datei, wenn du ihn behalten willst.</p><div class="btns"><button class="sec" data-a="close">Abbrechen</button><button class="warn" data-a="slotWeg" data-id="${+d.id}">Ja, löschen</button></div>`);
   },
   slotWeg(d){closeSheet();try{localStorage.removeItem(KEYS[+d.id])}catch(e){}render()},
   slotSichern(d){
@@ -2824,7 +2830,7 @@ const AKT={
   bInfo(d){openSheet(wbPanel(d.id))},
   // Seit 16.7.5: die graue Aufgabe "Trag deinen Namen ein" im Klemmbrett führt in die Familie und klappt die Karte "Deine Namen" auf.
   namenGeh(){bueroKarte('familie','namen')},
-  maschKaufen(){openSheet(maschKaufFenster())},
+  maschKaufen(){frageSheet(maschKaufFenster())},
   // Seit 16.5.2: Sprung aus der Karte "Wein abfüllen" zum Knopf "Maschine kaufen" im Betrieb, gekauft wird nur dort (Entscheidung 1.4).
   abfZumKauf(){closeSheet(); geh('gut','betrieb'); render(); setTimeout(()=>fuLeuchte({sel:['[data-a="maschKaufen"]']}),120)},   // seit 16.4.6, das Fenster mit allen Maschinen (Annahme 4)
   bMehr(d){const L=wbMehrListe(d.id); if(!L.length) return; openSheet(`<h3>${dot(d.id)}${wbT(WB_TEXT.mehrKopf,{sorte:esc(SORTEN[d.id].name)})}</h3><div class="wbmehr">${L.join('')}</div><div class="btns"><button class="sec" data-a="close">Zurück</button></div>`)},
@@ -2836,7 +2842,7 @@ const AKT={
   slOk(){const n=+$('#slr').value,f=SL.ok,w=SL.w;closeSheet();f(n,w);save();render()},
   // Seit 12.1: Wahl im Mengen-Fenster (o.wahl, o.w), zum Beispiel 9 oder 24 Monate Hefelager beim Sekt.
   slWahl(d){if(!SL) return; SL.w=+d.id; document.querySelectorAll('[data-a="slWahl"]').forEach(b=>b.classList.toggle('an',+b.dataset.id===SL.w)); slUpd()},
-  neuFrage(){openSheet(`<h3>Neues Spiel beginnen?</h3><p>Spielstand ${SLOT+1} wird dabei gelöscht. Für ein zweites Spiel nimm unter „Spielstände“ einen freien Platz.</p><div class="btns"><button class="sec" data-a="close">Abbrechen</button><button class="wag" data-a="neuJa">Ja, neu anfangen</button></div>`)},
+  neuFrage(){frageSheet(`<h3>Neues Spiel beginnen?</h3><p>Spielstand ${SLOT+1} wird dabei gelöscht. Für ein zweites Spiel nimm unter „Spielstände“ einen freien Platz.</p><div class="btns"><button class="sec" data-a="close">Abbrechen</button><button class="warn" data-a="neuJa">Ja, neu anfangen</button></div>`)},
   // Seit 11.7 (A29): Nach der Pleite löscht "Neues Spiel" den Stand erst nach einer Nachfrage, "Zurück" holt das Pleite-Fenster wieder.
   pleiteNeu(){if(!S||!S.pleite) return; openSheet(`<h3>Neues Spiel beginnen?</h3><p>Spielstand ${SLOT+1} mit ${esc(S.name)} wird dabei gelöscht, auch seine Chronik. Behalten kannst du ihn, wenn du unter „Spielstände“ einen freien Platz nimmst.</p><div class="btns"><button class="sec" data-a="pleiteZurueck">Zurück</button><button class="wag" data-a="neuJa">Ja, neu anfangen</button></div>`)},
   pleiteZurueck(){if(S&&S.pleite) zeigePleite()},
@@ -2854,7 +2860,7 @@ const AKT={
   // Seit 11.0: Ideen-Knopf im Büro. Der Entwurf bleibt auf dem Gerät liegen, bis die Idee rausgegangen ist.
   idee(){
     let alt=''; try{alt=localStorage.getItem(IDEE_KEY)||''}catch(e){}
-    openSheet(`<h3>💡 Deine Idee</h3><p class="mut">Tipp ins Feld und schreib los. Mit dem Mikrofon 🎤 deiner Tastatur kannst du auch einfach sprechen.</p>
+    frageSheet(`<h3>💡 Deine Idee</h3><p class="mut">Tipp ins Feld und schreib los. Mit dem Mikrofon 🎤 deiner Tastatur kannst du auch einfach sprechen.</p>
       <textarea id="ideeT" maxlength="${IDEE_MAX}" placeholder="Was fehlt dir, was stört dich, was wäre schön?">${esc(alt)}</textarea>
       <p class="mut" style="margin-top:8px">Danach wählst du Maik aus deinen Kontakten. Das Spiel selbst verschickt nichts.</p>
       <div class="btns"><button data-a="ideeWa">WhatsApp</button>${navigator.share?'<button data-a="ideeTeilen">Teilen</button>':''}</div>
@@ -2883,7 +2889,7 @@ const AKT={
     // Seit dem Nachtrag zu 14.5.2 (Annahme 34): Nachfrage zum Sommerschnitt und zum Ausdünnen, nur wenn die Arbeit die nächste Weinstufe bringt.
     const sf=sommerFrage(); if(sf.length) return zeigeSommerFrage(sf);
     const v=verfallListe(), t=S.monat===11?steuerSchau():null, st=!!(t&&t.steuer>0);
-    if(v.length||st) openSheet(`<h3>⚠️ Letzte Warnung</h3>${v.length?`<p>Wenn du jetzt weiterblätterst, geht das verloren:</p><ul class="kl">${v.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}${st?`<p>💶 Zum Jahreswechsel zahlst du rund ${eur(t.steuer)} Steuer auf rund ${eur(t.gew)} Gewinn. Was du jetzt noch kaufst, senkt die Steuer.</p>`:''}<div class="btns"><button class="sec" data-a="close">Zurück</button><button ${v.length?'class="wag" ':''}data-a="weiterJa">${v.length?'Trotzdem weiter':'Weiter'}</button></div>`);
+    if(v.length||st) frageSheet(`<h3>⚠️ Letzte Warnung</h3>${v.length?`<p>Wenn du jetzt weiterblätterst, geht das verloren:</p><ul class="kl">${v.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}${st?`<p>💶 Zum Jahreswechsel zahlst du rund ${eur(t.steuer)} Steuer auf rund ${eur(t.gew)} Gewinn. Was du jetzt noch kaufst, senkt die Steuer.</p>`:''}<div class="btns"><button ${v.length?'':'class="sec" '}data-a="close">Zurück</button><button ${v.length?'class="leise" ':''}data-a="weiterJa">${v.length?'Trotzdem weiter':'Weiter'}</button></div>`);
     else monatWeiter();
   },
   weiterJa(){closeSheet();monatWeiter()},
@@ -2927,7 +2933,7 @@ const AKT={
   makler(){
     const g=maklerGrund(); if(g) return meldung('Der Makler hat nichts für dich',g);
     if(S.geld<MAKLER_PREIS) return meldung('Zu wenig Geld',`Ein Hektar kostet beim Makler ${eur(MAKLER_PREIS)}. Einen Kredit gibt es bei der Bank.`);
-    openSheet(`<h3>🏠 Einen Hektar kaufen?</h3><p>Der Makler hat einen Weinberg mit 1\u00a0Hektar ${WO[S.region]} für ${eur(MAKLER_PREIS)}.</p><p class="mut">Für den Aufstieg zählt er erst, wenn er bepflanzt ist. Gepflanzt wird von Januar bis März.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button data-a="maklerJa">Kaufen</button></div>`);
+    frageSheet(`<h3>🏠 Einen Hektar kaufen?</h3><p>Der Makler hat einen Weinberg mit 1\u00a0Hektar ${WO[S.region]} für ${eur(MAKLER_PREIS)}.</p><p class="mut">Für den Aufstieg zählt er erst, wenn er bepflanzt ist. Gepflanzt wird von Januar bis März.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button class="vb" data-a="maklerJa">Kaufen</button></div>`);
   },
   maklerJa(){
     if(maklerGrund()||S.geld<MAKLER_PREIS) return;
@@ -2938,7 +2944,7 @@ const AKT={
     const K=S.keller||0, pr=KELLER_PREISE[K];
     if(pr==null||!kellerFrei(K)) return;
     if(S.geld<pr) return meldung('Zu wenig Geld',`Die nächste Stufe kostet ${eur(pr)}.`,'fassgang');
-    openSheet(`${sbild('fassgang')}<h3>🏗️ Keller ausbauen?</h3><p>Stufe ${K+1} von ${KELLER_PREISE.length}, ${KELLER_NAMEN[K]}, kostet ${eur(pr)}.</p><p class="mut">Danach dürfen Prädikatsweine und Eiswein ${K+1} ${K?'Monate':'Monat'} früher aus dem Keller, und jeder Wein gewinnt beim Reifen schneller an Wert.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button data-a="kellerAusJa">Ausbauen</button></div>`);
+    frageSheet(`${sbild('fassgang')}<h3>🏗️ Keller ausbauen?</h3><p>Stufe ${K+1} von ${KELLER_PREISE.length}, ${KELLER_NAMEN[K]}, kostet ${eur(pr)}.</p><p class="mut">Danach dürfen Prädikatsweine und Eiswein ${K+1} ${K?'Monate':'Monat'} früher aus dem Keller, und jeder Wein gewinnt beim Reifen schneller an Wert.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button class="vb" data-a="kellerAusJa">Ausbauen</button></div>`);
   },
   kellerAusJa(){
     const K=S.keller||0, pr=KELLER_PREISE[K];
@@ -2951,7 +2957,7 @@ const AKT={
     if(!art||S.festJahr===S.jahr||S.monat<5||S.monat>7) return;
     if(S.geld<F.preis) return meldung('Zu wenig Geld',`Das ${F.name} kostet ${eur(F.preis)}.`,'hoffest');
     const a=Math.round(festAns(F)*(HOFFEST_WETTER[S.wetter]||1)*DIFF[S.schwer].ans);
-    openSheet(`${sbild('hoffest')}<h3>🎉 ${F.name} feiern?</h3><p>${F.kurz}. Das kostet ${eur(F.preis)}.</p><p class="mut">Gefeiert wird Ende ${MON[S.monat]}, das Wetter: ${WETTER[S.wetter].join(' ')}. Damit bringt das Fest rund ${a} Ansehen.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button data-a="hoffestJa">Feiern</button></div>`);
+    frageSheet(`${sbild('hoffest')}<h3>🎉 ${F.name} feiern?</h3><p>${F.kurz}. Das kostet ${eur(F.preis)}.</p><p class="mut">Gefeiert wird Ende ${MON[S.monat]}, das Wetter: ${WETTER[S.wetter].join(' ')}. Damit bringt das Fest rund ${a} Ansehen.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button class="vb" data-a="hoffestJa">Feiern</button></div>`);
   },
   hoffestJa(){
     const art=festArt(); if(!art||S.festJahr===S.jahr||S.geld<FESTE[art].preis) return;
@@ -2960,7 +2966,7 @@ const AKT={
   },
   anreg(d){
     const g=S.gegner[+d.id]; if(!g||S.rang<R_KONTROLLE||S.anregJahr===S.jahr) return;
-    openSheet(`${sbild('kontrolle')}<h3>🔍 Prüfer zu ${esc(g.name)} schicken?</h3><p>Du gibst dem Prüfer einen Hinweis auf ${esc(g.name)} ${WO[g.region]}. Er kommt im Lauf des Monats, das Ergebnis steht im nächsten Winzerboten.</p><p class="mut">Gepanschter Wein: ${esc(g.name)} verliert ${ANREG_ANS} Ansehen und zahlt Strafe. Nichts gefunden: Du verlierst ${ANREG_FEHL} Ansehen.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button class="wag" data-a="anregJa" data-id="${g.id}">Prüfer schicken</button></div>`);
+    frageSheet(`${sbild('kontrolle')}<h3>🔍 Prüfer zu ${esc(g.name)} schicken?</h3><p>Du gibst dem Prüfer einen Hinweis auf ${esc(g.name)} ${WO[g.region]}. Er kommt im Lauf des Monats, das Ergebnis steht im nächsten Winzerboten.</p><p class="mut">Gepanschter Wein: ${esc(g.name)} verliert ${ANREG_ANS} Ansehen und zahlt Strafe. Nichts gefunden: Du verlierst ${ANREG_FEHL} Ansehen.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button class="vb" data-a="anregJa" data-id="${g.id}">Prüfer schicken</button></div>`);
   },
   anregJa(d){
     const g=S.gegner[+d.id]; if(!g||S.rang<R_KONTROLLE||S.anregJahr===S.jahr) return;
@@ -3160,9 +3166,9 @@ const AKT={
     const A=S.amt; if(!amtKampf()||A.kauf>=KAUF_MAX) return;
     if(S.geld<KAUF_PREIS) return meldung('Zu wenig Geld',`Stimmen kosten ${eur(KAUF_PREIS)}. So viel liegt gerade nicht auf deinem Konto, und einen Kredit gibt es dafür nicht.`,'wahl');
     const frei=KAUF_MAX-A.kauf;
-    openSheet(`${sbild('wahl')}<h3>🗳️ Stimmen kaufen</h3><p>Ein paar dicke Umschläge an den richtigen Tischen, und der Verband sieht dich gleich freundlicher. Ein Präsident spielt keine schmutzigen Spiele. Offiziell. Das kostet ${eur(KAUF_PREIS)} und hebt die Stimmung um ${KAUF_PLUS}.</p>
+    frageSheet(`${sbild('wahl')}<h3>🗳️ Stimmen kaufen</h3><p>Ein paar dicke Umschläge an den richtigen Tischen, und der Verband sieht dich gleich freundlicher. Ein Präsident spielt keine schmutzigen Spiele. Offiziell. Das kostet ${eur(KAUF_PREIS)} und hebt die Stimmung um ${KAUF_PLUS}.</p>
       <p class="mut">Mit ${pz(KAUF_SKANDAL)} fliegt es auf. Dann ist das Geld weg, die Stimmung fällt um ${KAUF_STRAFE} und der Winzerbote bringt den Skandal. ${frei===1?'Das ist dein letzter Kauf vor dieser Wahl.':`Vor dieser Wahl gehen noch ${frei} Käufe.`}</p>
-      <div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button class="wag" data-a="stimmKaufJa">Umschläge verteilen</button></div>`);
+      <div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button class="vb" data-a="stimmKaufJa">Umschläge verteilen</button></div>`);
   },
   stimmKaufJa(){
     const A=S.amt; if(!amtKampf()||A.kauf>=KAUF_MAX||S.geld<KAUF_PREIS) return;
@@ -3180,7 +3186,7 @@ const AKT={
   keltern(d){
     const l=lot(d.id), frei=S.fassraum-fassBelegt();
     if(frei<=0) return meldung('Kein Fassraum frei','Kauf erst Fassraum dazu, sonst kannst du nicht keltern.','fassgang');
-    if(l.liter>frei) return openSheet(`${sbild('fassgang')}<h3>Fassraum reicht nicht</h3><p>Frei sind ${num(frei)}\u00a0l, du hast ${num(l.liter)}\u00a0l Trauben. Wenn du jetzt kelterst, gehen ${num(l.liter-frei)}\u00a0l verloren.</p><div class="btns"><button data-a="close">Erst Fassraum kaufen</button><button class="wag" data-a="kelternJa" data-id="${l.id}">Trotzdem keltern</button></div>`);
+    if(l.liter>frei) return frageSheet(`${sbild('fassgang')}<h3>Fassraum reicht nicht</h3><p>Frei sind ${num(frei)}\u00a0l, du hast ${num(l.liter)}\u00a0l Trauben. Wenn du jetzt kelterst, gehen ${num(l.liter-frei)}\u00a0l verloren.</p><div class="btns"><button data-a="close">Erst Fassraum kaufen</button><button class="leise" data-a="kelternJa" data-id="${l.id}">Trotzdem keltern</button></div>`);
     AKT.kelternJa(d);
   },
   kelternJa(d){const l=lot(d.id);closeSheet();l.liter=Math.min(l.liter,S.fassraum-fassBelegt());l.status='fass';l.fassMonate=0;save();render()},
@@ -3208,14 +3214,14 @@ const AKT={
     const wag=A.filter(a=>a.g.length&&pruefFehlt(l,a.st)), ok=A.filter(a=>!a.g.length), spaeter=A.filter(jan), nein=A.filter(a=>a.g.length&&!wag.includes(a));
     const zeig=PRUEFER_ZEIGE[S.schwer]||'';
     // Seit 14.5.6: die Presse beim Präsidenten als eigener Knopf unter der Stufe, in den Lehrjahren mit Rat ab PRESSE_RAT_AB Chance. Platzhalter, Wortlaut in Meilenstein 17.
-    const presseZeile=(st,p,wg)=>presseGeht(l,st)?`<div class="row"><span class="mut">${zeig==='chance'&&presseRat(p)?PRESSE_RAT:''}</span><button class="klein wag" data-a="anmeldeJa" data-id="${l.id}" data-st="${st}" data-presse="1"${wg?' data-wag="1"':''}>${PRESSE_KNOPF}</button></div>`:'';
+    const presseZeile=(st,p,wg)=>presseGeht(l,st)?`<div class="row"><span class="mut">${zeig==='chance'&&presseRat(p)?PRESSE_RAT:''}</span><button class="klein vb wag" data-a="anmeldeJa" data-id="${l.id}" data-st="${st}" data-presse="1"${wg?' data-wag="1"':''}>${PRESSE_KNOPF}</button></div>`:'';
     const zeile=({st,g})=>{const s=STUFEN[st],ill=M&&!maniLegal(l,st);
-      return `<div class="stufe"><div class="row"><b>${g.length?'✗':'✓'} ${s.name}</b>${g.length?'':`<button class="klein ${ill?'wag':''}" data-a="anmeldeJa" data-id="${l.id}" data-st="${st}">${ill?`🤫 Unter der Hand (${eur(s.geb+schmier(l,st))})`:`Anmelden${s.geb?' ('+eur(s.geb)+')':''}`}</button>`}</div>${g.length?`<div class="mut">${g.map(esc).join(' · ')}</div>`:oeUeber(st,l)?`<div class="mut">${oeUeber(st,l)}° über der Schwelle, Preis +${pz(oePreisF(st,l)-1)}</div>`:''}${g.length?'':presseZeile(st,1,0)}</div>`};
+      return `<div class="stufe"><div class="row"><b>${g.length?'✗':'✓'} ${s.name}</b>${g.length?'':`<button class="klein vb${ill?' wag':''}" data-a="anmeldeJa" data-id="${l.id}" data-st="${st}">${ill?`🤫 Unter der Hand (${eur(s.geb+schmier(l,st))})`:`Anmelden${s.geb?' ('+eur(s.geb)+')':''}`}</button>`}</div>${g.length?`<div class="mut">${g.map(esc).join(' · ')}</div>`:oeUeber(st,l)?`<div class="mut">${oeUeber(st,l)}° über der Schwelle, Preis +${pz(oePreisF(st,l)-1)}</div>`:''}${g.length?'':presseZeile(st,1,0)}</div>`};
     // Seit 14.5.6: das Wagnis je Spielstufe (PRUEFER_ZEIGE): Lehrjahre Chance und Rat, Gesellenjahre die fehlenden Punkte, Meisterprüfung nur das Urteil.
     const wagZeile=({st})=>{const s=STUFEN[st], n=pruefFehlt(l,st), p=pruefChance(n), an=ansNeu(l,st)?ansDurch(st):0;
       const info=WAGNIS_INFO[zeig].replace('{p}',pz(p)).replace('{fehlt}',`Es ${n===1?'fehlt 1 Punkt':`fehlen ${n} Punkte`} Qualität (ab ${ANSPRUCH[st]} Punkten)`)
         .replace('{tiefer}',STUFEN[herabStufe(l,st)].name).replace('{abschlag}',pz(DURCH_PREIS)).replace('{ans}',an?WAGNIS_ANS.replace('{n}',an):'')+(zeig==='chance'?' '+(pruefRat(l,st,n)?WAGNIS_RAT_JA:WAGNIS_RAT_NEIN):'');
-      return `<div class="stufe"><div class="row"><b>⚖️ ${s.name}</b><button class="klein wag" data-a="anmeldeJa" data-id="${l.id}" data-st="${st}" data-wag="1">${WAGNIS_KNOPF}${s.geb?' ('+eur(s.geb)+')':''}</button></div><div class="mut">${esc(info)}</div>${presseZeile(st,p,1)}</div>`};
+      return `<div class="stufe"><div class="row"><b>⚖️ ${s.name}</b><button class="klein vb wag" data-a="anmeldeJa" data-id="${l.id}" data-st="${st}" data-wag="1">${WAGNIS_KNOPF}${s.geb?' ('+eur(s.geb)+')':''}</button></div><div class="mut">${esc(info)}</div>${presseZeile(st,p,1)}</div>`};
     const presseKopf=presseFrei()&&[...ok,...wag].some(a=>presseGeht(l,a.st))?`<div class="hilfe" style="margin:10px 0">${PRESSE_INFO}</div>`:presseRecht()&&!presseFrei()?`<div class="mut" style="margin:10px 0">${PRESSE_SCHON}</div>`:'';
     // Seit 14.5.5: Der Weinprüfer nennt, welcher Schlüssel zur nächsten Stufe fehlt (Rang, Öchsle, Punkte), in allen Spielstufen.
     // Gepanschter Most geht an ihm vorbei (unter der Hand, Entscheidungen 53 und 59). Platzhalter, Wortlaut in Meilenstein 17.
@@ -3224,7 +3230,7 @@ const AKT={
     const zeilen=presseKopf+(ok.length?ok.map(zeile).join(''):'<div class="mut">Gerade geht keine Stufe.</div>')+(wag.length?`<div style="margin-top:10px"><b>${WAGNIS_KOPF}</b></div>${wag.map(wagZeile).join('')}`:'')+pruefer
       +(spaeter.length?`<div class="hilfe" style="margin:10px 0">📅 Ab Januar möglich: <b>${spaeter.map(a=>STUFEN[a.st].name).join(', ')}</b>.${ok.length?' Meldest du jetzt an, verschenkst du die bessere Stufe.':''}</div>`:'')
       +(nein.length?`<details class="stz"><summary>Nicht möglich (${nein.length})</summary>${nein.map(zeile).join('')}</details>`:'');
-    openSheet(`${sbild('amt')}<h3>${esc(lotName(l))} anmelden</h3><p class="mut">${num(l.liter)}\u00a0l · ${l.oe}° Öchsle · ${LESE[l.leseart]} · Edelfäulnis ${l.edel?'ja':'nein'} · ${l.fassMonate} Monate im Fass</p>${M?`<p class="hilfe" style="margin:0 0 10px">🤫 Dieser Most ist ${maniText(l)}. Erlaubt ist das nur beim Tafelwein bis ${ZUCKER_ERLAUBT}\u00a0%. Alles andere geht nur unter der Hand gegen Schmiergeld, und der Wein gilt dann als gepanscht.</p>`:''}${zeilen}${mib('keller')}<div class="btns"><button class="sec" data-a="close">Schließen</button></div>`);
+    frageSheet(`${sbild('amt')}<h3>${esc(lotName(l))} anmelden</h3><p class="mut">${num(l.liter)}\u00a0l · ${l.oe}° Öchsle · ${LESE[l.leseart]} · Edelfäulnis ${l.edel?'ja':'nein'} · ${l.fassMonate} Monate im Fass</p>${M?`<p class="hilfe" style="margin:0 0 10px">🤫 Dieser Most ist ${maniText(l)}. Erlaubt ist das nur beim Tafelwein bis ${ZUCKER_ERLAUBT}\u00a0%. Alles andere geht nur unter der Hand gegen Schmiergeld, und der Wein gilt dann als gepanscht.</p>`:''}${zeilen}${mib('keller')}<div class="btns"><button class="sec" data-a="close">Schließen</button></div>`);
   },
   anmeldeJa(d){
     const l=lot(d.id), st=d.st, s=STUFEN[st]; if(!l||!s) return;
@@ -3265,7 +3271,7 @@ const AKT={
   sektKeller(){
     if(!sektRang()||S.sektkeller) return;
     if(S.geld<SEKTKELLER_PREIS) return meldung('Zu wenig Geld',`Der Sektkeller kostet ${eur(SEKTKELLER_PREIS)}.`,'fassgang');
-    openSheet(`${sbild('sektkeller')}<h3>🍾 Sektkeller kaufen?</h3><p>Ein Gewölbe mit Rüttelpulten für deinen Sekt, einmal ${eur(SEKTKELLER_PREIS)}.</p><p class="mut">Danach wird die Lese deiner Sekt-Sorte hier zu Sekt. Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button data-a="sektKellerJa">Kaufen</button></div>`);
+    frageSheet(`${sbild('sektkeller')}<h3>🍾 Sektkeller kaufen?</h3><p>Ein Gewölbe mit Rüttelpulten für deinen Sekt, einmal ${eur(SEKTKELLER_PREIS)}.</p><p class="mut">Danach wird die Lese deiner Sekt-Sorte hier zu Sekt. Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button class="vb" data-a="sektKellerJa">Kaufen</button></div>`);
   },
   sektKellerJa(){
     if(!sektRang()||S.sektkeller||S.geld<SEKTKELLER_PREIS) return;
@@ -3277,7 +3283,7 @@ const AKT={
   sektAnlage(){
     if(!S.sektkeller||S.sektAnlage||!frei('sekt_anlage')) return;
     if(S.geld<SEKT_ANLAGE_PREIS) return meldung('Zu wenig Geld',`Die ${SEKT_ANLAGE_NAME} kostet ${eur(SEKT_ANLAGE_PREIS)}.`,'fassgang');
-    openSheet(`${sbild('fassgang')}<h3>🍾 Sektkeller ausbauen?</h3><p>Die ${SEKT_ANLAGE_NAME} kostet einmal ${eur(SEKT_ANLAGE_PREIS)}.</p><p class="mut">Degorgieren und Verkorken laufen dann nicht mehr von Hand. Jede Flasche Sekt kostet die Hälfte, ${eur2(Math.round(SEKT_KOSTEN*SEKT_ANLAGE_F*100)/100)} statt ${eur2(SEKT_KOSTEN)}. Sie braucht keine Leute und keine Wartung.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button data-a="sektAnlageJa">Ausbauen</button></div>`);
+    frageSheet(`${sbild('fassgang')}<h3>🍾 Sektkeller ausbauen?</h3><p>Die ${SEKT_ANLAGE_NAME} kostet einmal ${eur(SEKT_ANLAGE_PREIS)}.</p><p class="mut">Degorgieren und Verkorken laufen dann nicht mehr von Hand. Jede Flasche Sekt kostet die Hälfte, ${eur2(Math.round(SEKT_KOSTEN*SEKT_ANLAGE_F*100)/100)} statt ${eur2(SEKT_KOSTEN)}. Sie braucht keine Leute und keine Wartung.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button class="vb" data-a="sektAnlageJa">Ausbauen</button></div>`);
   },
   sektAnlageJa(){
     if(!S.sektkeller||S.sektAnlage||!frei('sekt_anlage')||S.geld<SEKT_ANLAGE_PREIS) return;
@@ -3287,7 +3293,7 @@ const AKT={
   kredit(){
     if(S.kredit) return;
     if(rahmen()<5000) return meldung('Kein Kredit','Die Bank vergibt Kredite erst ab 5.000 €, dein Rahmen reicht dafür noch nicht.','bank');
-    mengeSheet({titel:'Kredit aufnehmen',bild:'bank',text:`Dein Kreditrahmen: ${eur(rahmen())}. Mindestens 5.000 €.`,min:5000,max:rahmen(),step:1000,start:Math.min(10000,rahmen()),okText:'Weiter',
+    mengeSheet({titel:'Kredit aufnehmen',bild:'bank',text:`Dein Kreditrahmen: ${eur(rahmen())}. Mindestens 5.000 €.`,min:5000,max:rahmen(),step:1000,start:Math.min(10000,rahmen()),okText:'Weiter',vb:0,
       info:n=>`<b>${eur(n)}</b>Die Laufzeit wählst du im nächsten Schritt`,
       ok:n=>{
         if(n<5000) return meldung('Zu wenig','Die Bank vergibt Kredite erst ab 5.000 €.');

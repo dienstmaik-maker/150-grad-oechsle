@@ -829,6 +829,10 @@ html.brett main{padding-top:18px}
 /* Wachssiegel auf verbindlichen Knöpfen (Entscheidung 4): Hauptknopf mit dem Siegel links, die Schrift bleibt stehen. */
 button.vb{position:relative;padding-left:58px}
 button.vb::before{content:'';position:absolute;left:2px;top:50%;width:50px;height:50px;margin-top:-25px;background:url(bilder/siegel.webp) center/contain no-repeat;filter:drop-shadow(0 2px 2px rgba(0,0,0,.45))}
+button.vb.klein{padding-left:46px}button.vb.klein::before{width:40px;height:40px;margin-top:-20px}
+button.pk.vb{padding-left:60px}
+/* Seit 16.8.4: Die letzte Knopfzeile eines Fensters bleibt unten stehen, auch wenn der Inhalt rollt, damit Abbrechen und der Aktionsknopf ohne Rollen sichtbar sind. */
+#sheet .btns.unten{position:sticky;bottom:calc(-18px - env(safe-area-inset-bottom));z-index:2;margin:10px -16px calc(-18px - env(safe-area-inset-bottom));padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(rgba(240,205,140,0),#f0cd8c 12px)}
 /* Warnknopf für Löschen und Neu anfangen (Entscheidung 4.1): rotes Schild ohne Siegel. */
 button.warn{--schild:url(bilder/knopf-rot.webp);--kschrift:#f8e6bf;--kschatten:0 1px 2px #3a0a16}
 /* Unauffälliger Knopf für riskante Nebenwege (Entscheidung 4.4): nur Text, kursiv, der sichere Weg ist der auffällige. */
