@@ -1813,6 +1813,9 @@ const WB_TEXT={
   // Seit 16.4.4 (Maiks Entscheidung 2, Annahmen 5 und 6): Karte "Deine Leute" mit den zwei Köpfen und den zwei Leitern. Platzhalter, Wortlaut in Meilenstein 17.
   leute:{titel:'Deine Leute', klein:'Köpfe und Leute im Betrieb', hin:{fehlen:'Leute fehlen', leistung:'Ernteleistung reicht nicht', fertig:'Alle an Bord'},
     stufe:'Stufe {st} von {n}', lohn:'{lohn} im Monat', kommt:'kommt mit dem nächsten Monat', keiner:'Noch keiner angestellt', fehlt1:'Es fehlt einer', fehltN:'Es fehlen {n}',
+    // Seit 16.9.6 (Bauplan 16.9, Entscheidung 14): weibliche Stufennamen der Leiter draußen, nur für die Anzeige als Titel im Arbeitsamt und in "Deine Leute"
+    // (leuteTitel). Die Zahl steht dann in der Zeile darunter (anzahl), damit keine falsche Mehrzahl entsteht. LEUTE_ST bleibt für Sätze und Spielführer.
+    weiblich:{helfer:['Erntehelferin','Winzergesellin','Rebmeisterin']}, anzahl:'{n} angestellt',
     reichen:'Reichen für {n} Reben', leistung:'Ernteleistung {n} Reben', draussen:'Draußen', drinnen:'Drinnen', angestellt:'Angestellt', stufeL:'Stufe', lohnL:'Lohn im Monat',
     sperre:'vorher geht es nicht in den nächsten Monat', koepfe:'Köpfe', loehne:'Löhne der Leute', mgrLohn:'Löhne der Köpfe'},
   // Seit 16.4.5 (Maiks Entscheidung 3): Abschnitte im Fenster der zwei Köpfe. Platzhalter, Wortlaut in Meilenstein 17.

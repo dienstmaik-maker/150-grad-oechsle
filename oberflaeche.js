@@ -1004,11 +1004,14 @@ function leuteKopf(b){
   return `<div class="lzeile" role="button" tabindex="0" data-a="mgr" data-id="${b}" id="lk_${b}"><img src="bilder/${M.bild}" alt=""><div><b>${st?G.Dein+' '+M.name:M.name}</b>
     <span>${st?`${wbT(T.stufe,{st,n:E.length})} · ${wbT(T.lohn,{lohn:eur(mgrEintrag(b,st).lohn)})}`:T.kommt}</span></div><i class="pf">›</i></div>`;
 }
+// Seit 16.9.6 (Bauplan 16.9, Entscheidung 14): Titel einer Leiter, draußen mit dem weiblichen Stufennamen (WB_TEXT.leute.weiblich), ohne Stufe der ersten.
+// Gilt im Arbeitsamt (Karten Draußen und Drinnen) und in "Deine Leute" gleich. Nur Anzeige, Platzhalter, Wortlaut in Meilenstein 17.
+function leuteTitel(k){const st=leuteSt(k), W=WB_TEXT.leute.weiblich[k]; return W?W[Math.max(1,st)-1]||W[0]:st?leuteStName(k,st):LEUTE_ST[k].name}
 function leuteLeiter(k){
-  const T=WB_TEXT.leute, fe=leuteFehlen()[k], st=leuteSt(k), name=st?leuteStName(k,st):LEUTE_ST[k].name, knapp=k==='helfer'&&leseFaktor()<1;
-  const unter=[S[k]?wbT(T.lohn,{lohn:eur(lohnSumme(k))}):T.keiner];
+  const T=WB_TEXT.leute, fe=leuteFehlen()[k], name=leuteTitel(k), knapp=k==='helfer'&&leseFaktor()<1;
+  const unter=[S[k]?`${wbT(T.anzahl,{n:S[k]})} · ${wbT(T.lohn,{lohn:eur(lohnSumme(k))})}`:T.keiner];
   if(k==='helfer') unter.push(`<span class="${fe?'rot':''}">${wbT(T.reichen,{n:rbn(helferReben())})}</span>`,`<span class="${knapp?'rot':''}">${wbT(T.leistung,{n:rbn(leistung())})}</span>`);
-  return `<div class="lzeile leiter"><img src="bilder/${LEUTE_BILD[k]}" alt=""><div><b>${S[k]} ${name}</b><span>${unter.join(' · ')}</span>
+  return `<div class="lzeile leiter"><img src="bilder/${LEUTE_BILD[k]}" alt=""><div><b>${name}</b><span>${unter.join(' · ')}</span>
     ${fe?`<span class="rot">${fe===1?T.fehlt1:wbT(T.fehltN,{n:fe})}, ${T.sperre}.</span>`:''}</div></div>`;
 }
 function leuteHtml(){
@@ -2067,7 +2070,7 @@ function vStadt(){
     const lohnKnoepfe=k=>{const a=S.loehne[k];
       return [pk('helfer','Einstellen',eur(VERMITTLUNG),{id:k,n:1,arm:S.geld<VERMITTLUNG&&!leuteFehlen()[k],klein:`+${eur(S.angebot[k])} Lohn`}),pk('helfer','Entlassen','',{id:k,n:-1,sec:1,aus:S[k]<1,klein:a.length?`−${eur(a[a.length-1])} Lohn`:''})]};
     const amtI=`Der Lohn beim Arbeitsamt schwankt jeden Monat zwischen ${eur(lohnF(LOHN_MIN))} und ${eur(lohnF(LOHN_MAX))}. Wer eingestellt ist, behält seinen Lohn. Die Vermittlung kostet einmalig ${eur(VERMITTLUNG)}. Entlassen wird immer der teuerste. Deine Leute brauchst du das ganze Jahr: Fehlt jemand, geht es nicht in den nächsten Monat.`;
-    const lb=k=>LEUTE_BILD[k].replace(/\.\w+$/,''), la=k=>(LEUTE_BILD[k].match(/\.(\w+)$/)||[])[1]||'jpg', nm=k=>{const st=leuteSt(k); return st?leuteStName(k,st):LEUTE_ST[k].name};
+    const lb=k=>LEUTE_BILD[k].replace(/\.\w+$/,''), la=k=>(LEUTE_BILD[k].match(/\.(\w+)$/)||[])[1]||'jpg', nm=leuteTitel;   // seit 16.9.6 (Entscheidung 14): draußen weiblich
     const fehlt=k=>fe[k]===1?L.fehlt1:wbT(L.fehltN,{n:fe[k]});
     const kz_=k=>`<div class="wkzu"><div><b class="zahl">${S[k]}</b> ${A.angestellt}${S[k]?`<div class="wbunter">${wbT(L.lohn,{lohn:eur(lohnSumme(k))})}</div>`:''}</div></div>`;
     // Draußen
