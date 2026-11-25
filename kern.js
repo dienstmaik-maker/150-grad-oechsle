@@ -2770,7 +2770,8 @@ function vGut(){
   const T={berg:'Weinberg',betrieb:S.name,buero:'Büro'};
   // Seit 16.1 (Bauplan 16.1, Entscheidung 1): Im Weinberg entfällt das große Bild oben, die Karten liegen auf dem Holzbrett. Seit 16.3.1 auch im Klemmbrett.
   // Seit 16.4.2 (Bild 22) auch im Betrieb, der Name des Weinguts steht als Titel der Karte "Dein Betrieb".
-  return (SUB==='berg'||SUB==='aktuell'||SUB==='betrieb'?'':kopf(T[SUB]))+{berg:vBerg,betrieb:vBetrieb,aktuell:vKlemm,buero:vBuero}[SUB]();
+  // Seit 16.7.1 (Bild 09) auch im Büro, die vier Kacheln stehen gleich oben, die Zunge nennt den Ort. Teil 5 des Panoramas zeigt damit keinen Ort mehr.
+  return (SUB==='berg'||SUB==='aktuell'||SUB==='betrieb'||SUB==='buero'?'':kopf(T[SUB]))+{berg:vBerg,betrieb:vBetrieb,aktuell:vKlemm,buero:vBuero}[SUB]();
 }
 // Seit 13.3.1 nur noch ein Schild, warm wirkt nicht mehr.
 const gebietArt=r=>r.warm>0?['🔥','Warm']:r.warm<0?['🧊','Kühl']:['⛰️','Mitte'];
@@ -3051,11 +3052,12 @@ function einKey(id){return id==='weine'&&SUB==='handel'?'weine_gh':id}
 function einPruef(){if(!S||!S.ein) return; for(const k of Object.keys(EIN_REGEL)) if(!S.ein.f.includes(k)) try{if(EIN_REGEL[k]()) S.ein.f.push(k)}catch(e){}}
 function einFrei(k){return !S||!S.ein||!EIN_REGEL[k]||S.ein.f.includes(k)}
 function einZu(id){const k=einKey(id); return !!(S&&S.ein&&EIN_REGEL[k]&&!S.ein.f.includes(k))}
-// Seit 12.6.4: Bei einer neuen Partie fehlen Erfolge und Familie, bis dort das erste Fenster frei ist. Dann öffnet das Büro auf Wissen.
+// Seit 12.6.4: Bei einer neuen Partie fehlen Erfolge und Familie, bis dort das erste Fenster frei ist. Seit 16.7.1 stehen dann nur die Kacheln, die es gibt.
 function bueroBer(){return BUERO_B.filter(([k])=>k==='erfolge'?['rangliste','ehrungen','ruf','urkunden'].some(einFrei):k==='familie'?['meingut','chronik','besten'].some(einFrei):true)}
 function vBuero(){
-  const BB=bueroBer(); if(!BB.some(b=>b[0]===BUERO)) BUERO=BB[0][0];
-  return bueroKacheln()+namenFenster()+{erfolge:bueroErfolge,wissen:bueroWissen,familie:bueroFamilie,einst:bueroEinst}[BUERO]();
+  // Seit 16.7.1: BUERO '' sind die großen Kacheln, ein Bereich, den es (noch) nicht gibt, führt auch dorthin.
+  const BB=bueroBer(); if(BUERO&&!BB.some(b=>b[0]===BUERO)) BUERO='';
+  return bueroKacheln()+namenFenster()+(BUERO?{erfolge:bueroErfolge,wissen:bueroWissen,familie:bueroFamilie,einst:bueroEinst}[BUERO]():'');
 }
 function bueroFamilie(){
   const L=bestenZeilen();

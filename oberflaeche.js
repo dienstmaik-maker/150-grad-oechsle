@@ -1236,8 +1236,13 @@ function namenFenster(){
     buch:'',hin:[S.ein?'✍️ Beim Start ist dein Name leer geblieben, trag ihn hier ein.':'✍️ Seit Version 7.9 gibt es zwei Namen: deinen eigenen und den des Weinguts. Trag hier beide ein.'],kn:'<button class="klein" data-a="namenJa">Speichern</button>',
     i:'Dein Name steht künftig auf Urkunden, in der Bestenliste, in der Chronik und im Winzerboten. Der Name des Weinguts steht am Hof und in den Schlagzeilen. Urkunden, die schon an der Wand hängen, bleiben, wie sie sind.'});
 }
-let BUERO='erfolge';
-function bueroKacheln(){return `<div class="bkach" role="tablist" aria-label="Bereiche im Büro">${bueroBer().map(([k,s,n])=>`<button class="wahl${BUERO===k?' an':''}" role="tab" aria-selected="${BUERO===k}" data-a="buero" data-id="${k}"><i>${s}</i>${n}</button>`).join('')}</div>`}
+// Seit 16.7.1 (Bauplan 16.7, Entscheidung 1, Timos Bild 09): Das Büro öffnet mit den Kacheln groß zwei mal zwei (BUERO ''), ein Tipp öffnet den Bereich.
+// Im Bereich steht oben eine schmale Leiste mit den Kacheln klein zum Wechseln, der offene Bereich hervorgehoben. Die Zunge Büro führt zurück zu den großen Kacheln (AKT.sub).
+// Die Bilder sind die Kacheln aus Bild 09 (bilder/buero-<Bereich>.webp), in der Leiste nur ihr Motiv. Fehlen Bereiche (bueroBer), stehen nur die Kacheln, die es gibt.
+let BUERO='';
+function bueroKacheln(){const BB=bueroBer();
+  if(!BUERO) return `<div class="bgross" role="list" aria-label="Bereiche im Büro">${BB.map(([k,s,n])=>`<button class="bkg" role="listitem" data-a="buero" data-id="${k}" aria-label="${n}" style="background-image:url(bilder/buero-${k}.webp)"></button>`).join('')}</div>`;
+  return `<div class="bkach bklein" role="tablist" aria-label="Bereiche im Büro">${BB.map(([k,s,n])=>`<button class="wahl${BUERO===k?' an':''}" role="tab" aria-selected="${BUERO===k}" data-a="buero" data-id="${k}"><i style="background-image:url(bilder/buero-${k}.webp)"></i>${n}</button>`).join('')}</div>`}
 function bueroErfolge(){
   const E=(S.ehrungen||[]).slice().reverse(), wein=E.filter(e=>!e.a), sz=kompZahlen();
   const zeile=e=>`<div class="rl"><span>${esc(e.i)}</span><div><b>${esc(e.t)}</b>${e.j?`<span class="mut">${MON[e.m]} ${e.j}</span>`:''}</div></div>`;
@@ -2214,7 +2219,7 @@ const FU_ZEIG={
   'z2-03':{tab:'keller',sub:'lager',karte:()=>fuWeinKarte(),sel:['.bzeile[data-a="buchDetail"]','.wkband']},   // seit 16.5.5 Deine Weine im Lager
   'z2-04':{tab:'stadt',sub:'bank',sel:[fiSel('kredit')]},
   'z2-05':{tab:'stadt',sub:'laeden',sel:[fiSel('laeden'),'#subs [data-id="laeden"]']},
-  'z2-06':{tab:'gut',sub:'buero',sel:[fiSel('rangliste')]},   // seit 16.3.5 der Rang im Büro, das Rang-Fenster im Klemmbrett entfällt
+  'z2-06':{tab:'gut',sub:'buero',buero:'erfolge',sel:[fiSel('rangliste')]},   // seit 16.3.5 der Rang im Büro, das Rang-Fenster im Klemmbrett entfällt
   'z2-07':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'z2-08':{tab:'keller',sub:'lager',karte:()=>fuWeinKarte(),sel:['.bzeile[data-a="buchDetail"]','.wkband']},
   // Paket B: Rang-Neuheiten. Beim Befördern leuchtet der Knopf des Managers im Arbeitsamt.
@@ -2241,14 +2246,14 @@ const FU_ZEIG={
   'r8-1':{tab:'stadt',sub:'laeden',sel:[fiSel('regalRein'),fiSel('regal')]},
   'r8-2':{tab:'gut',sub:'betrieb',sel:['[data-a="maschKaufen"]']},
   'r8-3':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="weingut"]',fiSel('mgr_amt')]},
-  'r8-4':{tab:'gut',sub:'buero',sel:[fiSel('botschafter')]},
+  'r8-4':{tab:'gut',sub:'buero',buero:'erfolge',sel:[fiSel('botschafter')]},
   'r9-1':{tab:'gut',sub:'betrieb',sel:[fiSel('fest')]},
   'r9-2':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="handel"]',fiSel('mgr_amt')]},
   'r9-3':{tab:'stadt',sub:'amt',sel:[fiSel('anreg')]},
   'r10-1':{tab:'stadt',sub:'amt',sel:[fiSel('auktionen')]},
   'p1':{tab:'stadt',sub:'amt',sel:[fiSel('wettb')]},
   'a1':{tab:'stadt',sub:'amt',sel:[fiSel('verband')]},
-  'm1':{tab:'gut',sub:'buero',sel:[fiSel('urkunden')]},
+  'm1':{tab:'gut',sub:'buero',buero:'erfolge',sel:[fiSel('urkunden')]},
   'm2':{tab:'stadt',sub:'amt',sel:[fiSel('makler'),fiSel('auktionen')]},
   'm3':{tab:'keller',sub:'lager',karte:()=>fuWeinKarte(),sel:['.bzeile[data-a="buchDetail"]','.wkband']},
   'm4':{tab:'stadt',sub:'amt',sel:[fiSel('wettb')]},
@@ -2283,9 +2288,10 @@ const FU_ZEIG={
   'k06':{tab:'gut',sub:'betrieb',sel:['[data-a="bInfo"][data-id^="masch_"]','[data-a="maschKaufen"]']},
   'k07':{tab:'gut',sub:'betrieb',sel:['[data-a="mgr"][data-id="handel"]']},   // seit 16.4.4 die Zeile in "Deine Leute"
   'k08':{tab:'keller',sub:'start',sel:['[data-a="bInfo"][data-id="k_zuckern"]','[data-a="bInfo"][data-id="k_pruefer"]','#subs [data-id="start"]']},   // seit 16.5.1 im Keller, seit 16.5.4 das i der Karten
-  'k09':{tab:'gut',sub:'buero',sel:[fiSel('rangliste')]},
-  'k10':{tab:'gut',sub:'buero',sel:[fiSel('urkunden')]},
-  'k11':{tab:'gut',sub:'buero',sel:[fiSel('chronik')]},
+  // Seit 16.7.1 (Bauplan 16.7, Entscheidung 10): Ziele im Büro tragen ihren Bereich (buero), weil das Büro sonst mit den großen Kacheln öffnet.
+  'k09':{tab:'gut',sub:'buero',buero:'erfolge',sel:[fiSel('rangliste')]},
+  'k10':{tab:'gut',sub:'buero',buero:'erfolge',sel:[fiSel('urkunden')]},
+  'k11':{tab:'gut',sub:'buero',buero:'familie',sel:[fiSel('chronik')]},
   'k12':{sel:['#top .wtr']}
 };
 // Je zwei Sätze ein Absatz, damit lange Tipps am Handy lesbar bleiben.
@@ -2421,7 +2427,7 @@ function render(){
   // Kellerbuch und Aktuelles öffnen sich mit einem eigenen Geräusch.
   ortFarbe(SUBS[TAB]?TAB:'gut');
   // Seit 16.1: Im Weinberg liegt das Holzbrett hinter den Karten. Seit 16.3.2 auch hinter dem Klemmbrett (Bild 05).
-  document.documentElement.classList.toggle('brett',TAB==='gut'&&(SUB==='berg'||SUB==='aktuell'||SUB==='betrieb')||TAB==='keller'&&(SUB==='start'||SUB==='lager')||stadtBrett());   // seit 16.4.2 auch im Betrieb (Bild 22), seit 16.5.2 im Keller (Bild 23), seit 16.5.6 im Lager, seit 16.6.1 auf dem Stadtplatz
+  document.documentElement.classList.toggle('brett',TAB==='gut'&&(SUB==='berg'||SUB==='aktuell'||SUB==='betrieb'||SUB==='buero')||TAB==='keller'&&(SUB==='start'||SUB==='lager')||stadtBrett());   // seit 16.4.2 auch im Betrieb (Bild 22), seit 16.5.2 im Keller (Bild 23), seit 16.5.6 im Lager, seit 16.6.1 auf dem Stadtplatz
   const ort=SUBS[TAB]?TAB+'/'+SUB:TAB; if(ort!==ORT_ALT){FI_AUF.clear(); if(ORT_ALT&&(ort==='keller/buch'||ort==='gut/aktuell')) fx('menue'); ORT_ALT=ort}
   musikOrt(musikWahl());
   if(ort==='stadt/laeden') S.ladenSeh=S.jahr*12+S.monat;
@@ -2489,7 +2495,7 @@ const AKT={
     meldung('Tipps von vorn','Warnungen und Kniffe kommen wieder, sobald sie passen. In den ersten zwei Jahren kommt auch der Rest des Fahrplans.')},
   // Seit 10.2.1: "Zeig mir, wo" klappt die Blase zum Kopf zusammen, statt sie abzuhaken. Weg ist sie erst mit "Verstanden" oder wenn die Aufgabe erledigt ist.
   // Seit 12.7: "Zeig mir, wo" geht auch bei älteren Tipps aus dem Verlauf. Beim neuen Tipp gilt er damit als gelesen (FU_WO).
-  fuWo(d){const id=d&&d.id||FU_AKT, z=FU_ZEIG[id]; if(!z) return; fuBlaseZu(); if(id===FU_AKT) FU_WO=true; FU_PAUSE=true; fuKopfStell(); if(z.tab){geh(z.tab,z.sub); if(z.sub==='buch') ARCHIV=z.archiv||'brett'; if(z.sub==='buero'){const m=/data-id="(\w+)"/.exec((z.sel||[])[0]||''); if(m&&BUERO_WO[m[1]]) BUERO=BUERO_WO[m[1]]} render();
+  fuWo(d){const id=d&&d.id||FU_AKT, z=FU_ZEIG[id]; if(!z) return; fuBlaseZu(); if(id===FU_AKT) FU_WO=true; FU_PAUSE=true; fuKopfStell(); if(z.tab){geh(z.tab,z.sub); if(z.sub==='buch') ARCHIV=z.archiv||'brett'; if(z.sub==='buero'){const m=/data-id="(\w+)"/.exec((z.sel||[])[0]||''); BUERO=z.buero||m&&BUERO_WO[m[1]]||''} render();
     // Seit 16.5.2: z.karte klappt die Karte auf, in der der Knopf steht (Keller), offen ist wie beim Tipp nur diese eine.
     // Seit 16.5.5 darf z.karte eine Funktion sein (die Weinkarte im Lager hängt am Wein).
     const ka=typeof z.karte==='function'?z.karte():z.karte;
@@ -2669,9 +2675,9 @@ const AKT={
   },
   spBank(){openSheet(`<h3>🪑 Die Bank am Wanderweg</h3><div class="spbogen" style="background-image:url(bilder/${bankBild()}.jpg)"></div>${spBankTafel()}<p class="mut">Über der Spitzenlage, mit Blick über den Fluss ins Tal.</p><div class="btns"><button data-a="close">Schließen</button></div>`)},
   spBogen(){openSheet(`<h3>🪵 Der Holzbogen</h3>${spBogenHtml()}<div class="btns"><button data-a="close">Schließen</button></div>`)},
-  sub(d){SUB=TAB==='stadt'&&d.id===SUB?'platz':d.id;render();window.scrollTo(0,0)},   // seit 16.6.1: zweiter Tipp auf die aktive Zunge der Stadt führt auf den Platz
+  sub(d){SUB=TAB==='stadt'&&d.id===SUB?'platz':d.id; if(TAB==='gut'&&d.id==='buero') BUERO=''; render();window.scrollTo(0,0)},   // seit 16.6.1: zweiter Tipp auf die aktive Zunge der Stadt führt auf den Platz, seit 16.7.1 die Zunge Büro zu den großen Kacheln
   // Seit 11.2: Bereich im Büro wählen und die ganze Rangliste als Fenster von unten.
-  buero(d){if(BUERO===d.id) return; BUERO=d.id; FI_AUF.clear(); render()},
+  buero(d){if(BUERO===d.id) return; const gross=!BUERO; BUERO=d.id; FI_AUF.clear(); render(); if(gross) window.scrollTo(0,0)},   // seit 16.7.1 auch aus den großen Kacheln
   rangliste(){openSheet(`<h3>Rangliste</h3><p class="mut">${GEGNER_AKT[aktNr()-1]}</p>${weltForm()?`<p class="mut">${weltFormZeile()}</p>`:''}<p class="mut">${RANGL_I}</p>${ranglisteHtml()}<div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`)},
   arbeitsamt(){closeSheet();geh('stadt','arbeit');render();window.scrollTo(0,0)},
   // Seit 11.1 öffnet der Knopf im Kellerbuch das Weinkompendium. Der Name der Aktion bleibt, die Sprechblasen zeigen darauf.

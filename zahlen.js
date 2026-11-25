@@ -1291,6 +1291,7 @@ const MED_NAME={'🌍':'Weltweinschau','🏆':'Bundessieg','🥇':'Gold','🥈':
 // BUERO hält die Wahl, bis das Spiel neu geladen wird. BUERO_WO sagt je Fenster, in welchem Bereich es steht (für "Zeig mir, wo" im Spielführer).
 // Reihenfolge je Bereich: Erfolge (Rang mit Platz, Ehrungen mit Siegeln, Weinbotschafter, Urkunden mit Spenden), Wissen (Anleitung, Kompendium, Spielführer),
 // Familie (Mein Weingut, Chronik, Bestenliste), Einstellungen (Ton, Dein Spiel, Deine Idee). Das Fenster "Deine Namen" steht in jedem Bereich oben, bis es erledigt ist.
+// Seit 16.7.1 (Bauplan 16.7, Entscheidung 1): Das Büro öffnet mit den vier Kacheln groß (BUERO ''), das Symbol hier bleibt für Bildschirmleser und Buch, die Kacheln zeigen Bild 09.
 const BUERO_B=[['erfolge','🏆','Erfolge'],['wissen','📖','Wissen'],['familie','👪','Familie'],['einst','⚙️','Einstellungen']];
 const BUERO_WO={rangliste:'erfolge',ehrungen:'erfolge',ruf:'erfolge',botschafter:'erfolge',urkunden:'erfolge',anleitung:'wissen',komp:'wissen',fuehrer:'wissen',meingut:'familie',chronik:'familie',besten:'familie',ton:'einst',spiel:'einst',idee:'einst'};
 const BSORT_F={dringend:(a,b)=>lotRest(a)-lotRest(b)||a.jahrgang-b.jahrgang};
