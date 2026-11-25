@@ -1070,7 +1070,10 @@ function kbNeu(){
 function vKlemm(){
   const A=aufgaben(), K=A.filter(a=>!a.ruhig), H=A.filter(a=>a.ruhig), an=stehtAn()||fuSperre(), auf=FI_AUF.has('ansteht');
   const i='Hier steht, was diesen Monat zu tun ist. Ein Tipp führt dich direkt an den Ort. <b>Rot</b> kann nicht warten, <b>Gelb</b> hat Zeit, <b>Grau</b> ist nur ein Hinweis. Die Punkte an den Reitern zeigen dasselbe, Hinweise bekommen keinen Punkt.<br><br>⏩ „Weiter bis etwas ansteht“ blättert am Stück, höchstens zwölf Monate. Es hält nur bei Rot und bei Schlagzeilen, die dich selbst betreffen. Bei Gelb und bei Hinweisen blättert es weiter. Ausnahme ist die Lese: Von September bis November hält es einmal im Monat, solange Trauben hängen, im Dezember nur bei gefrorenen Trauben.<br><br>Geboten und eingereicht wird im Rathaus, der Tipp hier führt dich hin. „Winzerbote“ zeigt die letzte Ausgabe noch einmal. Tipps gibt dir der Spielführer in der Sprechblase.'+(fuSperre()?(S.ein?'<br><br>Mit dem Spielführer gibt es ⏩ ab April, bis dahin zeigt dir der alte Winzer das Pflanzen.':'<br><br>Mit dem Spielführer gibt es ⏩ erst ab dem Januar des zweiten Jahres, im ersten Jahr kommt fast jeden Monat ein Tipp.'):'');
-  const kn=an?'':`<button class="klein" data-a="weiterBis">⏩ Weiter bis etwas ansteht</button>`;
+  // Seit 16.3.4 (Bauplan 16.3, Annahme 3): Die Monatsknöpfe sitzen unten im Klemmbrett. "Nächster Monat" (#weiter, AKT.weiter) immer, bei fehlText() gesperrt
+  // mit "Leute fehlen" wie bisher in der Leiste, "Weiter, bis was passiert" ist das heutige ⏩ (AKT.weiterBis), nur wenn nichts ansteht und der Spielführer es erlaubt.
+  const fehlt=fehlText();
+  const kn=`<div class="kbknoepfe"><button id="weiter" class="kbnm${fehlt?' zu':''}" data-a="weiter">${fehlt?'<span class="kbschloss">🔒</span>Leute fehlen':'<img src="bilder/kopf-kalender.webp" alt="">Nächster Monat'}</button>${an?'':`<button class="kbbis" data-a="weiterBis"><b>»</b><span>Weiter, bis was passiert</span></button>`}</div>`;
   // Die i-Taste behält die Kennung 'ansteht', damit Spielführer (e1-05) und Buch sie weiter finden. fi() sucht das nächste .fen.
   return `<section class="fen klemmbrett"><div class="kbklemme"></div><div class="kbpapier">
     <header class="kbband"><h2>Klemmbrett, ${MON[S.monat]}</h2></header>
@@ -1080,7 +1083,7 @@ function vKlemm(){
     <div class="kbliste">${K.map(kbZeile).join('')}${!K.length?`<div class="kbleer">${H.length?'Diesen Monat ist nichts dringend.':'Diesen Monat steht nichts an. Du kannst weiterblättern.'}</div>`:''}${H.length?`<div class="kbhin">${H.map(kbZeile).join('')}</div>`:''}</div>
     <div class="kbtrenn">❦</div>
     ${kbNeu()}
-    ${kn?`<div class="kbalt">${kn}</div>`:''}
+    ${kn}
   </div></section>`+vRang();
 }
 // Maschinen (seit 7.4 auf dem Fenster-Baustein): "Deine Maschinen" mit einer Zeile je Maschine, darunter je Bauart ein Fenster zum Kaufen.
@@ -1850,7 +1853,7 @@ const FU_ZEIG={
   'e1-01':{tab:'gut',sub:'berg',sel:['#subs [data-id="berg"]']},
   'e1-02':{tab:'stadt',sub:'arbeit',sel:[fiSel('helfer'),fiSel('lagerarb')]},
   'e1-03':{tab:'gut',sub:'berg',sel:['[data-a="bInfo"][data-id^="feld_"]']},
-  'e1-04':{sel:['#weiter']},
+  'e1-04':{tab:'gut',sub:'aktuell',sel:['#weiter']},   // seit 16.3.4 sitzt "Nächster Monat" im Klemmbrett
   'e1-05':{tab:'gut',sub:'aktuell',sel:[fiSel('ansteht')]},
   'e1-06':{sel:['#top .geld']},
   'e1-07':{tab:'gut',sub:'berg',sel:['[data-a="pflanzen"]','[data-a="bInfo"][data-id^="feld_"]']},
@@ -2083,9 +2086,10 @@ function render(){
   const ort=SUBS[TAB]?TAB+'/'+SUB:TAB; if(ort!==ORT_ALT){FI_AUF.clear(); if(ORT_ALT&&(ort==='keller/buch'||ort==='gut/aktuell')) fx('menue'); ORT_ALT=ort}
   musikOrt(musikWahl());
   if(ort==='stadt/laeden') S.ladenSeh=S.jahr*12+S.monat;
-  const fehlt=fehlText(), v={monat:vMonat,feier:vFeier,gut:vGut,keller:vKeller,stadt:vStadt,ende:vEnde}[TAB]();
+  const v={monat:vMonat,feier:vFeier,gut:vGut,keller:vKeller,stadt:vStadt,ende:vEnde}[TAB]();
   if(TAB==='ende'){$('#app').innerHTML=v; return}
   if(TAB==='feier'){$('#app').innerHTML=v; feierStart(); return}
+  // Seit 16.3.4 steht "Nächster Monat" nicht mehr in der Leiste, sondern unten im Klemmbrett (Fahrplan 16.0, Maik 25.11.2026, 18:49 Uhr, Abweichung vom Grundaufbau).
   // Seit 16.2.2 (Bild 06): Timos Symbole statt 🏡, Fass und 🏛️, dazu der Reiter Klemmbrett. Bis 16.3 öffnet er "Aktuelles" (Maik 25.11.2026, 18:18 Uhr),
   // seine Zahl sind die Einträge in "Das steht an" ohne die grauen Hinweise, rot, sobald einer davon rot ist (Annahme 1 im Bauplan 16.2).
   const tabs=[['gut','tab-weingut','Weingut'],['keller','tab-kellerei','Kellerei'],['stadt','tab-stadt','Stadt']], B=badges();
@@ -2094,7 +2098,7 @@ function render(){
   // Seit 12.7 (Maik 21.11.2026): Gebiet und Ansehen fliegen aus der Statusleiste, rechts steht nur noch der Rang, in der Mitte sitzt der Kopf des Spielführers.
   $('#app').innerHTML=`<div id="top"><div class="wtr" data-a="wetterInfo"><b>${MON[S.monat]} ${S.jahr}</b><small>${wetterText()}</small></div>${fuBereit()?'<button id="tkopf" data-a="fuKopf"></button>':''}<div class="geld" data-a="geldInfo"><b>${geldKurz(S.geld)}</b><small>${duK()}</small></div></div>
   <main>${v}</main>
-  <nav id="dock">${SUBS[TAB]&&!klemmAn?`<div id="subs">${SUBS[TAB].map(s=>`<button class="${SUB===s[0]?'an':''}" data-a="sub" data-id="${s[0]}"><i>${s[1]}</i><b>${SUB_NAME[s[0]]}</b>${SUB===s[0]?'':badge(B[TAB+'/'+s[0]])}</button>`).join('')}</div>`:''}<div id="tabs">${tabs.map(t=>`<button class="${TAB===t[0]&&!klemmAn?'an':''}" data-a="tab" data-id="${t[0]}"><img src="bilder/${t[1]}.webp" alt=""><b>${t[2]}</b>${badge(B[t[0]])}</button>`).join('')}<button id="klemm" class="${klemmAn?'an':''}" data-a="tab" data-id="gut" data-sub="aktuell" aria-label="Klemmbrett, ${kn} Aufgaben"><img src="bilder/tab-klemmbrett.webp" alt="">${kn?`<em class="kzahl${krot?' rot':''}">${kn}</em>`:''}</button><button id="weiter" class="${fehlt?'zu':''}" data-a="weiter"><span>${fehlt?'🔒':'▶'}</span>${fehlt?'Leute fehlen':'Nächster Monat'}</button></div></nav>`;
+  <nav id="dock">${SUBS[TAB]&&!klemmAn?`<div id="subs">${SUBS[TAB].map(s=>`<button class="${SUB===s[0]?'an':''}" data-a="sub" data-id="${s[0]}"><i>${s[1]}</i><b>${SUB_NAME[s[0]]}</b>${SUB===s[0]?'':badge(B[TAB+'/'+s[0]])}</button>`).join('')}</div>`:''}<div id="tabs">${tabs.map(t=>`<button class="${TAB===t[0]&&!klemmAn?'an':''}" data-a="tab" data-id="${t[0]}"><img src="bilder/${t[1]}.webp" alt=""><b>${t[2]}</b>${badge(B[t[0]])}</button>`).join('')}<button id="klemm" class="${klemmAn?'an':''}" data-a="tab" data-id="gut" data-sub="aktuell" aria-label="Klemmbrett, ${kn} Aufgaben"><img src="bilder/tab-klemmbrett.webp" alt="">${kn?`<em class="kzahl${krot?' rot':''}">${kn}</em>`:''}</button></div></nav>`;
   panoStell(); wgStart();
   fuKopfStell(); fuTopMess(); if(FU_OFFEN) fuLage();
   fuehrerZeig(); fuPunkt();

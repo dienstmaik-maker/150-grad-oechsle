@@ -839,6 +839,17 @@ html.brett main{padding-top:18px}
 .kbn.gold b,.kbn.gold em{color:#8a5a06}
 .kbmehr{display:block;width:auto;min-height:44px;margin:4px auto 0;padding:6px 14px;border:0;border-image:none;border-radius:0;background:none;box-shadow:none;filter:none;text-shadow:none;transform:none;color:#2f5a1c;font:italic 600 17px/1.2 var(--schrift);font-variant-caps:normal;letter-spacing:0;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:4px}
 .kbmehr>b{text-decoration:none;display:inline-block;margin-left:3px}
+/* Seit 16.3.4: Monatsknöpfe unten im Klemmbrett wie in Bild 05. "Nächster Monat" als Hauptknopf mit Timos Kalender (wie in 16.2 der goldene Knopf der Leiste),
+   daneben hell und kleiner "Weiter, bis was passiert". Die Leiste hat nur noch die vier Reiter, alle gleich breit. */
+#tabs #klemm{flex:1 1 0}
+.kbknoepfe{display:flex;gap:8px;align-items:stretch;margin:12px 0 2px}
+.kbknoepfe>button{margin:0;min-width:0;min-height:58px;border-image-width:50% 16px}
+.kbnm{flex:1.45 1 0;display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 10px;border-image-source:url(bilder/knopf-aktiv.webp);color:#5a1424;font-size:18.5px;white-space:nowrap}
+.kbnm>img{flex:none;width:30px;height:auto;filter:drop-shadow(0 1px 1px rgba(60,30,5,.45))}
+.kbnm>.kbschloss{font-size:18px}
+.kbnm.zu{filter:grayscale(1) brightness(.92)}
+.kbbis{flex:1 1 0;display:flex;align-items:center;gap:4px;padding:6px 8px;font:italic 600 14px/1.15 var(--schrift);font-variant-caps:normal;letter-spacing:0;text-align:left}
+.kbbis>b{flex:none;font:700 24px/1 var(--schrift);font-style:normal}
 </style>
 </head>
 <body>
