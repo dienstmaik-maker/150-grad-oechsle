@@ -179,7 +179,7 @@ function schildNaechst(){
   clearTimeout(SCHILD_T); SCHILD_T=0; const el=$('#ksiegel'), x=SCHILD_Q.shift(); if(!el||!x){SCHILD_AN=0; return}
   SCHILD_AN=1; el.dataset.id=x.id||''; el.dataset.art=x.art||''; el.innerHTML=x.h;
   // Liegt ein Fenster von unten offen, kommt das Schild oben, sonst verdeckt es dessen Knöpfe.
-  el.classList.toggle('oben',$('#sheet').classList.contains('an')); el.classList.toggle('kurz',x.art==='kurz'); el.classList.add('an'); if(x.ton) fx(x.ton);
+  el.classList.toggle('oben',$('#sheet').classList.contains('an')); el.classList.toggle('kurz',x.art==='kurz'); el.classList.toggle('lang',!!x.lang); el.classList.add('an'); if(x.ton) fx(x.ton);
   SCHILD_T=setTimeout(schildWeg,x.ms||3500);
 }
 function schildWeg(){clearTimeout(SCHILD_T); const el=$('#ksiegel'); if(el) el.classList.remove('an'); SCHILD_AN=SCHILD_Q.length?1:0; SCHILD_T=SCHILD_AN?setTimeout(schildNaechst,450):0}
@@ -2550,12 +2550,14 @@ function zeigeSommerFrage(F){const A=SOMMER_ARBEIT[F[0].art], rat=SOMMER_FRAGE[S
     ${rat?`<p class="mut">${esc(SOMMER_FUSS)}</p>`:''}<div class="btns"><button class="sec" data-a="close">Zurück</button><button data-a="sommerOhne">Weiter ohne</button></div>`)}
 // Seit 16.8.2 (Bauplan 16.8, Entscheidung 2): Kurze Meldungen ohne Bild werden das Schild unten (schild), lange und solche mit Bild ein Info-Panel
 // mit schlichtem Okay ohne Siegel. Wie bis 16.7, als jede Meldung das offene Fenster ersetzte, schließt das Schild ein offenes Fenster, nur ein Pflichtfenster bleibt.
+// Seit 16.8.9 (Entscheidung 11.3): "Zu wenig Geld" ist immer eine Kurzmeldung, auch mit Bild, ein längerer Text darf dann zwei Zeilen haben und bleibt länger stehen.
 function meldung(t,text,bild){
   MELD_N++;
-  if(bild||!schildPasst(t,text)) return openSheet(`${bild?sbild(bild):''}<h3>${esc(t)}</h3><p>${esc(text)}</p><div class="btns"><button class="sec" data-a="close">Okay</button></div>`);
+  const zwg=t==='Zu wenig Geld', passt=schildPasst(t,text);
+  if(!zwg&&(bild||!passt)) return openSheet(`${bild?sbild(bild):''}<h3>${esc(t)}</h3><p>${esc(text)}</p><div class="btns"><button class="sec" data-a="close">Okay</button></div>`);
   if($('#sheet').classList.contains('an')&&SART!=='pflicht') closeSheet();
   if(window.BOT) return;
-  schild({h:`<div><b>${esc(t)}</b><small>${esc(text)}</small></div>`,ms:3500,art:'kurz'});
+  schild({h:`<div><b>${esc(t)}</b><small>${esc(text)}</small></div>`,ms:passt?3500:5000,art:'kurz',lang:!passt});
 }
 let SL=null;
 function mengeSheet(o){

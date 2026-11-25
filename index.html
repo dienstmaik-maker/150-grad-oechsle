@@ -954,6 +954,20 @@ button.spgeb:active,button.spgeb:focus-visible{transform:none;background:rgba(25
 .kbnm.zu{filter:grayscale(1) brightness(.92)}
 .kbbis{flex:1 1 0;display:flex;align-items:center;gap:4px;padding:6px 8px;font:italic 600 14px/1.15 var(--schrift);font-variant-caps:normal;letter-spacing:0;text-align:left}
 .kbbis>b{flex:none;font:700 24px/1 var(--schrift);font-style:normal}
+/* Seit 16.8.9 (Bauplan 16.8, Entscheidung 11.2 bis 11.4): Bedienung nach der Stilfibel. Zahl am Klemmbrett dunkel auf Orange (5,5:1, auf Rot hell 5:1),
+   Preisknopf ohne genug Geld grau, aber voll lesbar, Rangknöpfe in "Mein Weingut" und "Mehr im Buch" mit Tippflächen ab 44 x 44, Text ab 13 Pixel
+   (Unterreiter, Büro-Leiste, "Neu", Preiszeile im Knopf, Reife und Haltbarkeit), Hinweistexte mit etwas dunklerem Farbton auf mindestens 4,5:1. */
+#tabs .kzahl{min-width:22px;height:22px;font-size:13px;line-height:19px;color:#2b2118}#tabs .kzahl.rot{color:#fbf0d8}
+button.pk.arm{filter:grayscale(1) brightness(.94)}
+.wgst{flex-wrap:wrap;gap:6px}.wgst button{flex:0 0 44px;width:44px;min-width:44px;min-height:44px;padding:0}
+.mib{line-height:18px;padding:13px 12px 13px 0;margin:-6px 0 -13px}
+#subs button{font-size:13px}
+.bkach .wahl{font-size:13px}.lneu,.bkach .wahl .lneu{font-size:13px;line-height:17px}
+button.pk>small{font-size:13px}
+.bzeile .bz3{font-size:13px}
+.hinw{color:#7a400c}.hinw.rot{color:#a0221a}.hinw.gruen{color:#36601f}.hinw.grau{color:#5e4e3a}
+/* "Zu wenig Geld" als Kurzmeldung, auch mit längerem Text (dann bis zu zwei Zeilen). */
+#ksiegel.kurz.lang{width:min(92vw,520px)}#ksiegel.kurz.lang small{white-space:normal}
 </style>
 </head>
 <body>
