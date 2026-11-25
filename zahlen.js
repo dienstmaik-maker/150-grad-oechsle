@@ -151,6 +151,10 @@ const FREI={wein_feder:{r:0},wein_tafel:{r:0},wein_qba:{r:1},wein_kab:{r:2},wein
     boteEv:'🚢 Ein Händler aus dem Ausland klopft an und will deinen Wein. Der Export ist offen, er zahlt mehr, vor allem für die guten Stufen.'},
   laden:{r:5,ab:[LADEN_AB,LADEN_BIS],ev:1,name:'die eigene Weinhandlung',bote:'🏪 Ein Laden in der Stadt wird frei, und du bekommst den Schlüssel. Ab jetzt hast du eine eigene Weinhandlung, das Regal füllst du im Weinhandel.'},
   spitzenlage:{r:6,ab:10,ev:1,name:'die Spitzenlage unter dem Hammer'}};
+// Seit 14.6.2 (Prüfregel A2, Maik 25.11.2026): Weine ohne eigenen Eintrag in FREI hängen am Rang ihres Wegs, so wie es oben steht: Beerenauslese und Eiswein
+// am eigenen Weg des Gebiets oder am fremden Weg, die Trockenbeerenauslese an weg_tba. Bis 14.6.1 fragte die Anmeldung nach wein_ba, wein_eis und wein_tba,
+// die es nicht gibt, und bekam "frei". Ein Schlüssel ohne Eintrag ist seit 14.6.2 gesperrt (frei in kern.js).
+const STUFE_WEG={ba:['weg_eigen','weg_fremd'],eis:['weg_eigen','weg_fremd'],tba:['weg_tba']};
 // Wann etwas Verdientes oder ein Ereignis kommt, für freiText (Platzhalter, Wortlaut in Meilenstein 17).
 const TAT_TEXT={qba:'mit deinem ersten Qualitätswein',medaille:'mit deiner ersten Medaille bei der Landesprämierung',sekt:'mit deinem ersten eigenen Sekt'};
 const EV_TEXT={export:'mit deiner ersten Medaille bei der Landesprämierung, sonst irgendwann ab dem Rang {rang}',laden:'irgendwann ab dem Rang {rang}, wenn in der Stadt ein Laden frei wird',spitzenlage:'irgendwann ab dem Rang {rang}'};

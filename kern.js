@@ -91,6 +91,9 @@ function klimaText(id){const A=klimaLagen(id), L=Object.keys(A).map(lg=>`${lg===
 const feldId=f=>weinberge().find(id=>S.felder[id]===f);
 // Seit 13.3.2: Freischaltung nach Rang (FREI) und welche Stufen eine Sorte nach ihrer Rolle machen darf (WEIN_ROLLE).
 const freiAb=k=>(FREI[k]||{r:0}).r;
+// Seit 14.6.2: Rang eines Weins, auch für Beerenauslese, Eiswein und Trockenbeerenauslese über ihren Weg (STUFE_WEG). stufeFreiAb ist der früheste Rang.
+const stufeFrei=st=>FREI['wein_'+st]?frei('wein_'+st):(STUFE_WEG[st]||[]).some(k=>frei(k));
+const stufeFreiAb=st=>FREI['wein_'+st]?freiAb('wein_'+st):Math.min(...(STUFE_WEG[st]||[]).map(freiAb));
 // Seit 13.3.4 mit Abstand (ab Jahre nach dem Aufstieg in den Rang r, genau auf den Monat) und Ende (bis).
 // Seit 14.4.2 (Grundsatz der drei Sorten): am Rang (r), verdient (tat, S.taten) oder als Ereignis (ev mit r und ab). Pflegestufe (pfl) und Fläche (ha) sind weg.
 // Ein Eintrag mit Tat und Ereignis (der Export) ist frei, sobald eins davon gilt. Einen Abstand ohne ev haben nur noch die Manager (Annahme 28).
@@ -100,7 +103,10 @@ const tatDa=t=>!!(S.taten||{})[t];
 function tatMerk(t){const T=S.taten=S.taten||{}; if(T[t]==null) T[t]=S.jahr*12+S.monat}
 // Abstand in Jahren eines Eintrags. Als Liste [von, bis] je Partie fest gewürfelt (fest Thema 14, nr ist die Stelle des Schlüssels in FREI).
 function freiAbstand(k){const a=(FREI[k]||{}).ab; return Array.isArray(a)?festI(a[0],a[1],fest(14,Object.keys(FREI).indexOf(k),START_JAHR,0)):a||0}
-function frei(k){const e=FREI[k]; if(!e) return true; if(e.tat&&tatDa(e.tat)) return true; if(e.r==null) return false;
+// Seit 14.6.2 (Prüfregel A2, Maik 25.11.2026): Ein Schlüssel ohne Eintrag in FREI ist gesperrt, ein Tippfehler darf nichts öffnen (bis 14.6.1 hieß das "frei").
+// Jede Frage danach merkt FREI_UNBEKANNT (nur im Arbeitsspeicher), Prüfskript und Logik-Bericht melden sie als Fehler (🛑). Die Kniffe im Spielführer haben eine eigene Funktion.
+const FREI_UNBEKANNT={};
+function frei(k){const e=FREI[k]; if(!e){FREI_UNBEKANNT[k]=(FREI_UNBEKANNT[k]||0)+1; return false} if(e.tat&&tatDa(e.tat)) return true; if(e.r==null) return false;
   if(S.rang<e.r||(e.bis!=null&&S.rang>=e.bis)) return false; const ab=freiAbstand(k); if(!ab) return !e.tat;
   const m=(S.rangMon||{})[e.r]; return m!=null&&S.jahr*12+S.monat>=m+12*ab}
 // "ab dem Rang Winzer", "mit deinem ersten Qualitätswein" oder bei Managern "4 Jahre nach dem Rang Winzermeister", für Texte.
@@ -1567,7 +1573,8 @@ function pruefeQualitaet(st,q){
   // Seit 13.3.2: die zwei Schlösser. Die Rolle muss die Stufe machen dürfen und der Rang muss reichen, der Deckel wirkt schon übers Öchsle.
   if(!rolleDarf(q.sorte,st)) g.push(`${d.name} gibt es nicht von der ${ROLLEN[SORTEN[q.sorte].rolle].name}`);
   // Seit 13.6.7: Ein Jahrhundertwein (q.jh) darf vor R8 Trockenbeerenauslese werden, wenn der eigene Weg offen ist (Entscheidung 6).
-  else if(!frei('wein_'+st)&&!(st==='tba'&&q.jh&&frei('weg_eigen'))) g.push(`${d.name} erst ab dem Rang ${rangN(freiAb('wein_'+st))}`);
+  // Seit 14.6.2 auch Beerenauslese, Eiswein und Trockenbeerenauslese über ihren Weg (stufeFrei), bis 14.6.1 galten sie ohne Eintrag als frei.
+  else if(!stufeFrei(st)&&!(st==='tba'&&q.jh&&frei('weg_eigen'))) g.push(`${d.name} erst ab dem Rang ${rangN(stufeFreiAb(st))}`);
   if(q.oe<min) g.push(`es fehlen ${min-q.oe}° Öchsle (Minimum ${min}°)`);
   // Seit 14.5.5 (Entscheidungen 19 und 34, Annahme 16): der dritte Schlüssel, die Qualität des Weins (l.qp, bei der Lese feldQ mit qualWb) gegen ANSPRUCH,
   // nach Rang und Öchsle. Platzhalter, Wortlaut in Meilenstein 17.
