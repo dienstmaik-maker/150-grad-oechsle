@@ -137,7 +137,6 @@ function leuteKommen(Z){
   }
   if(S.leuteErstOffen&&L.helfer>=1&&leuteErstGebraucht('helfer')){delete S.leuteErstOffen; if(!S.helfer) leuteErst('helfer',Z)}
 }
-// Für den Aufstiegstext: Stufen der Leute, die mit dem Rang i kommen (ohne Abstand, die anderen nennt abBringt).
 // Seit 14.4.3: Name einer Stufe, bei den Erntehelfern Erntehelfer, Winzergesellen, Rebmeister, sonst "Lagerarbeiter Stufe 2".
 const leuteStName=(k,n)=>(LEUTE_ST[k].stufen||[])[n-1]||`${LEUTE_ST[k].name} Stufe ${n}`;
 const leuteBringt=i=>LEUTE_K.flatMap(k=>[1,2,3].filter(n=>FREI[k+n].r===i&&!FREI[k+n].ab&&!FREI[k+n].tat).map(n=>`${leuteStName(k,n)}: ${LEUTE_ST[k].kann[n-1]}`));
@@ -292,7 +291,6 @@ function sorteFrei(id){return S.rang>=sorteAb(id)}
 // Seit 12.1 (Maik 20.11.2026): sektRang heißt, der Rang reicht und die Karte Sektkeller ist zu sehen. Sekt machen (sektFrei) geht erst mit eigenem Sektkeller.
 function sektRang(){return S.rang>=R_SEKT}
 function sektFrei(){return sektRang()&&!!S.sektkeller}
-function mgrReife(){return mgrSt('keller')>=3?{rate:MGR_REIFE,min:MGR_REIFE_MIN}:{rate:0,min:0}}
 function mgrG(b){return MGR_G[MGR_BEREICHE[b].w?1:0]}
 function mgrSt(b){return ((S.manager||{})[b]||{}).stufe||0}
 function mgrEintrag(b,st){return MANAGER.find(e=>e.bereich===b&&e.stufe===st)}
@@ -321,25 +319,16 @@ function mgrKommen(){
   }}
   return neu;
 }
-// Für den Aufstiegstext: neue Manager und Beförderungen des Rangs i, gleiche Stufen zusammengefasst.
-function mgrBringt(i){
-  const E=MANAGER.filter(e=>e.rang===i&&!FREI[mgrK(e)].ab), g={};
-  for(const e of E.filter(e=>e.stufe>1)) (g[e.stufe]=g[e.stufe]||[]).push(e.bereich);
-  const N=b=>MGR_BEREICHE[b].name;
-  return [...E.filter(e=>e.stufe===1).map(e=>`${mgrG(e.bereich).ein} ${N(e.bereich)}`),...Object.entries(g).map(([s,n])=>n.length>1?`Stufe ${s} für ${n.map(N).join(' und ')}`:`Stufe ${s} für ${mgrG(n[0]).den} ${N(n[0])}`)];
-}
 // Was ein Aufstieg bringt: die Freischaltungen des Rangs, höchstens drei. Seit 5.1 (Paket 10) steht der Kreditrahmen als eigener Satz dahinter (rahmenSatz), nur wenn er wächst.
-// Seit 7.0 steht {sorte} für die Rebsorte, die mit dem Rang kommt, mit ihrem Namen im Gebiet. Die Manager hängt mgrBringt an.
+// Seit 7.0 steht {sorte} für die Rebsorte, die mit dem Rang kommt, mit ihrem Namen im Gebiet.
 // Seit 7.2 liefert bringtTeile die einzelnen Punkte für die Urkunde, bringt fügt sie für Zeitung und Rang-Karte zusammen.
-// Seit 13.3.4 dazu, was mit Abstand kommt: "in 4 Jahren der Exporthandel".
-// Seit 14.4.2: nur noch die Manager, Ereignisse (ev) kommen unangekündigt.
-const abBringt=i=>Object.values(FREI).filter(e=>e.r===i&&e.ab&&!e.ev&&e.name).map(e=>`in ${e.ab} Jahren ${e.name}`);
+// Seit 14.7.2 kommt nichts mehr mit Abstand (bis 14.7.1 abBringt und mgrBringt, zum Beispiel "in 3 Jahren die Handels-Managerin"), die Köpfe stehen als Stück in RAENGE.neu.
 // Seit 14.4.8: zwei Teile nach dem Abschnitt Rangtexte, neu ("Neu für dich") und kauf ("Das darfst du jetzt kaufen oder einstellen").
-// Die Leute nennt der Rangtext selbst (leuteBringt nicht mehr), die Manager hängen bis zur Etappe für Köpfe und Helfer mit "in x Jahren" an neu.
+// Die Leute und seit 14.7.2 auch die Köpfe nennt der Rangtext selbst (leuteBringt, mgrBringt und abBringt nicht mehr).
 // Beim Verbandsvorstand und Vizepräsidenten hängt neu am Weg des Gebiets (R().weg: edel, frost, beide).
 function rangTeile(i){const n=SORTE_RANG.indexOf(i), id=n>0&&S?sortenFolge()[n]:null, ri=RAENGE[i], nu=ri.neu||[], so=`die ${n===1?'zweite':'dritte'} Rebsorte${id?' '+SORTEN[id].name:''}`;
   const N=Array.isArray(nu)?nu:nu[S?R().weg:'edel']||[];
-  return {neu:[...N.map(t=>t.replace('{sorte}',so)),...abBringt(i),...mgrBringt(i)],kauf:(ri.kauf||[]).slice()}}
+  return {neu:N.map(t=>t.replace('{sorte}',so)),kauf:(ri.kauf||[]).slice()}}
 function bringtTeile(i){const t=rangTeile(i); return [...t.neu,...t.kauf]}
 // Seit 14.4.8: der Satz für Ehrung und Zeitung, "Neu für dich: … Das darfst du jetzt kaufen oder einstellen: …"
 function rangSatz(i){const t=rangTeile(i); return `${RANG_KOPF.neu}: ${t.neu.join(', ')}.${t.kauf.length?` ${RANG_KOPF.kauf}: ${t.kauf.join(', ')}.`:''}`}
@@ -361,7 +350,6 @@ function erbRest(){const k=S.kredit; return k&&k.erb?Math.min(k.erb,k.rest):0}
 function erbSchaetzung(){return Math.max(0,Math.round(vermoegen()*ERB_STEUER/100)*100)}
 function exportArt(l){return l.sekt?'sekt':STUFEN[l.stufe].rang>=6?'edel':STUFEN[l.stufe].rang>=4?'spaet':'einfach'}
 function exportStufen(){return frei('export')?clamp(S.rang-R_EXPORT+1,1,EXPORT_STUFEN):0}
-function mgrAbnutzF(){return MGR_ABNUTZ&&mgrSt('weingut')>=3?1-MGR_ABNUTZ:1}
 function mTyp(ma){return MASCH[ma&&MASCH[ma.typ]?ma.typ:ma&&ma.gross?'gross':'klein']}
 function pflegeF(z){return PFLEGE.find(p=>z>=p[0])[1]}
 // Fahrer-Verteilung: erst die Erntemaschinen (die großen zuerst), dann die Bonus-Maschinen aus dem Rest. Die Abfüllanlage braucht einen Lagerarbeiter.
@@ -385,7 +373,7 @@ function maschErnte(){return S.maschinen.filter(m=>mTyp(m).ernte)}
 // Die Bonus-Maschine dieses Typs, wenn sie im Einsatz ist, sonst null.
 function bonusMasch(typ){const E=maschVerteilung(); return S.maschinen.find(m=>m.typ===typ&&E.includes(m))||null}
 // Abnutzung einer Bonus-Maschine um p Prozentpunkte mal Pflege-Faktor nach dem Zustand vor dem Einsatz. Bruchteile sammelt ma.abn.
-function abnutz(ma,p){ma.abn=(ma.abn||0)+p*pflegeF(ma.zustand)*mgrAbnutzF(); const d=Math.floor(ma.abn); if(d){ma.abn-=d; ma.zustand=Math.max(MASCH_MIN,ma.zustand-d)}}
+function abnutz(ma,p){ma.abn=(ma.abn||0)+p*pflegeF(ma.zustand); const d=Math.floor(ma.abn); if(d){ma.abn-=d; ma.zustand=Math.max(MASCH_MIN,ma.zustand-d)}}
 // Maschinen, die nur wegen fehlender Leute stillstehen, und wie viele Fahrer (Erntehelfer) ihnen fehlen.
 function maschOhneFahrer(){const E=maschVerteilung(); return S.maschinen.filter(m=>m.zustand>=MASCH_ROT&&!E.includes(m))}
 function fahrerFehlen(){return Math.max(0,S.maschinen.filter(m=>m.zustand>=MASCH_ROT&&mTyp(m).leute==='helfer').reduce((a,m)=>a+mTyp(m).fahrer,0)-S.helfer)}
@@ -1614,7 +1602,7 @@ function maschAbnutzung(reben,M){
   const a=Math.min(1,reben/M);
   for(const ma of maschEinsatz()){
     if(ma.lj!==S.jahr){ma.lj=S.jahr; ma.lz=ma.zustand}
-    ma.abn=(ma.abn||0)+ABNUTZ_VOLL*a*pflegeF(ma.lz)*mgrAbnutzF(); const d=Math.floor(ma.abn);
+    ma.abn=(ma.abn||0)+ABNUTZ_VOLL*a*pflegeF(ma.lz); const d=Math.floor(ma.abn);
     if(d){ma.abn-=d; ma.zustand=Math.max(MASCH_MIN,ma.zustand-d)}
   }
 }
@@ -1637,8 +1625,8 @@ function verkaufAb(sorte,st){
 // Seit 12.1: Sekt mit langem Hefelager ruht länger und hält um genauso viele Monate länger.
 function lager(l){const b=lagerBasis(l), h=l.hefe||SEKT_REIFE;return l.sekt?{min:h,max:b.max+h-SEKT_REIFE,rate:b.rate}:b}
 function lagerBasis(l){
-  // Seit 7.0 (Schritt E) zählt der Kellermeister auf Stufe 3 wie ein Stück Kellerausbau dazu (mgrReife, bis Schritt H neutral).
-  const so=SORTEN[l.sorte], mr=mgrReife(), K=(S.keller||0)+mr.min, rf=so.reife*(1+KELLER_REIFE*(S.keller||0)+mr.rate)*(R().reifeF||1);
+  // Bis 14.7.1 zählte der Kellermeister als Kopf auf Stufe 3 wie ein Stück Kellerausbau dazu (mgrReife), seit 14.7.2 ist er kein Kopf mehr.
+  const so=SORTEN[l.sorte], K=S.keller||0, rf=so.reife*(1+KELLER_REIFE*(S.keller||0))*(R().reifeF||1);
   if(l.stufe==='feder') return {min:0,max:3,rate:0};
   if(l.stufe==='tafel'||l.stufe==='qba') return {min:2,max:Math.max(24,Math.round(so.maxL/3)),rate:rf/2};
   if(l.stufe==='eis') return {min:Math.max(1,Math.round(so.minL*1.5)-K),max:Infinity,rate:rf};
@@ -1953,7 +1941,7 @@ function neuesSpiel(){
 function verfallListe(){
   const v=[];
   for(const l of S.lots){
-    if(l.status==='trauben') v.push(`${num(l.liter)}\u00a0l ${SORTEN[l.sorte].name}-Trauben sind nicht gekeltert${l.mgrNot&&aufgabeAktiv('keltern')?(l.mgrNot==='geld'?`, dein ${MGR_BEREICHE.keller.name} kauft keinen Fassraum unter deiner Geldgrenze`:`, deinem ${MGR_BEREICHE.keller.name} fehlen Lagerarbeiter für mehr Fassraum`):''}`);
+    if(l.status==='trauben') v.push(`${num(l.liter)}\u00a0l ${SORTEN[l.sorte].name}-Trauben sind nicht gekeltert${l.mgrNot&&aufgabeAktiv('fass')?(l.mgrNot==='geld'?`, dein ${MGR_BEREICHE.weingut.name} kauft keinen Fassraum unter deiner Geldgrenze`:`, deinem ${MGR_BEREICHE.weingut.name} fehlen Lagerarbeiter für mehr Fassraum`):''}`);
     else if(l.status==='sektTr') v.push(`${num(l.liter)} Flaschen ${SORTEN[l.sorte].name}-Sekt sind nicht im Sektkeller`);
     else if(l.status==='fass'&&l.stufe==='feder') v.push(`Federweißer ${l.jahrgang} ${SORTEN[l.sorte].name} ist nicht abgefüllt`);
     else if(l.status==='fass'&&l.fassMonate>=7) v.push(`${lotName(l)} liegt zu lange im Fass`);
@@ -2122,7 +2110,7 @@ function monatLauf(){
     // Maik 20.11.2026: gekürzt, die Lager-Regel und die Begründung für den Deckel stehen nur noch im Buch.
     const dk=haDeckel(), dkT=dk<Infinity?` Als ${rangK(S.rang)} darfst du höchstens ${dk} ha Land besitzen${S.ha>dk?', was du schon darüber hast, behältst du':''}.`:'';
     schlag(60,'Neue Regeln für dein Weingut',`Der Weinbauverband hat neue Regeln. Ansehen zählt jetzt doppelt${S.ansehen?`, du hast ${num(S.ansehen)}`:''}, Präsident wird man mit ${num(RAENGE[RAENGE.length-1].ans)}.${dkT} Leute verdienen rund ${eur(lohnF(LOHN_START))} im Monat, Manager ${eur(lohnF(MGR_LOHN[0]))} bis ${eur(lohnF(MGR_LOHN[MGR_LOHN.length-1]))}. ${helferRegel()}.${weg?` ${weg} ${n.h+n.l===1?'ist':'sind'} deshalb ohne Abfindung gegangen.`:''} Deine Manager kommen jetzt mit dem Rang von selbst und steigen mit dir auf.${n.m?' Wer noch gefehlt hat, hat sich schon vorgestellt.':''}`,'arbeit'); S.leuteNeu=null}
-  if(S.mgrLog){const T=['weingut','keller'].filter(b=>(S.mgrLog[b]||[]).length).map(b=>`Dein ${MGR_BEREICHE[b].name} meldet: ${S.mgrLog[b].join(', ')}.`); if(T.length) schlag(15,'Aus dem Gutsbüro',T.join(' '))}
+  if(S.mgrLog){const T=['weingut'].filter(b=>(S.mgrLog[b]||[]).length).map(b=>`Dein ${MGR_BEREICHE[b].name} meldet: ${S.mgrLog[b].join(', ')}.`); if(T.length) schlag(15,'Aus dem Gutsbüro',T.join(' '))}
   S.mgrLog=null;
   if(S.dauerLog&&S.dauerLog.length) Z.push(`📋 ${mgrG('handel').Dein} ${MGR_BEREICHE.handel.name}: ${S.dauerLog.join(', ')}.`);
   S.dauerLog=null;
@@ -2695,12 +2683,16 @@ function dauerAuftrag(){
     if(la.rest<=0) break; const n=Math.min(frei(l),la.rest); if(n<=0) continue;
     const p=ladenPreis(l,r), e=erloes(Math.round(n*p)); kassiere(e); la.rest-=n; l.liter-=n; nL+=n; eL+=e; kompVerkauf(l,n);
   }
-  if(aH) for(const l of ls()){
-    const w=wege(l).filter(x=>aufgabeAktiv('export')||x.name!=='Exporthandel')[0]; if(!w) continue; const fw=federHandel(l), n=fw?l.liter:Math.min(frei(l),Math.floor(marktRest()/w.p)); if(n<=0) continue;
-    const e=erloes(Math.round(n*w.p)); kassiere(e); if(!fw) S.absatz=(S.absatz||0)+n*w.p; l.liter-=n; nH+=n; eH+=e; kompVerkauf(l,n);
+  // Seit 14.7.2 (Annahme 19): Den Federweißen bringt die Handels-Managerin schon auf Stufe 1 mit den Weinhandlungen zum Weinhändler, ganz und sofort.
+  let nF=0,eF=0;
+  if(aL) for(const l of ls().filter(federHandel)){const w=wege(l)[0]; if(!w) continue; const n=l.liter, e=erloes(Math.round(n*w.p)); kassiere(e); l.liter-=n; nF+=n; eF+=e; kompVerkauf(l,n)}
+  if(aH) for(const l of ls().filter(l=>!federHandel(l))){
+    const w=wege(l).filter(x=>aufgabeAktiv('export')||x.name!=='Exporthandel')[0]; if(!w) continue; const n=Math.min(frei(l),Math.floor(marktRest()/w.p)); if(n<=0) continue;
+    const e=erloes(Math.round(n*w.p)); kassiere(e); S.absatz=(S.absatz||0)+n*w.p; l.liter-=n; nH+=n; eH+=e; kompVerkauf(l,n);
   }
   S.lots=S.lots.filter(l=>l.liter>0);
   if(nL) L.push(`${num(nL)} Flaschen an Weinhandlungen für ${eur(eL)} verkauft`);
+  if(nF) L.push(`${num(nF)} Flaschen Federweißer an den Weinhändler für ${eur(eF)} verkauft`);   // Platzhalter, Wortlaut in Meilenstein 17
   if(nH) L.push(`${num(nH)} Flaschen an den Großhandel für ${eur(eH)} verkauft`);
   handelMelde(L);
 }
@@ -2726,14 +2718,13 @@ function mgrHtml(){
   const B=Object.keys(MGR_BEREICHE), da=b=>mgrSt(b)>0||frei(mgrK(mgrEintrag(b,1)));
   return {h:B.filter(da).map(mgrPersonal).join(''),zu:B.filter(b=>!da(b)).map(mgrPersonal).join('')};
 }
-// Was eine Stufe ohne Schalter bringt: der Kellermeister auf Stufe 3 lässt Wein schneller reifen, aber erst, wenn Schritt H einen Wert setzt.
-function mgrExtra(e){return e.bereich==='keller'&&e.stufe===3&&(MGR_REIFE||MGR_REIFE_MIN)?['Wein reift schneller']:e.bereich==='weingut'&&e.stufe===3&&MGR_ABNUTZ?[`Maschinen nutzen sich ${Math.round(MGR_ABNUTZ*100)} % weniger ab`]:[]}
-function mgrStufenText(e,st){const t=[...mgrAufg(e).map(k=>MGR_AUFGABEN[k].kurz),...mgrExtra(e)]; return `${e.stufe<=st?'✅':frei(mgrK(e))?'⬜':'🔒'} Stufe ${e.stufe} (${freiText(mgrK(e))})${t.length?': '+t.join(', '):''}`}
+function mgrStufenText(e,st){const t=mgrAufg(e).map(k=>MGR_AUFGABEN[k].kurz); return `${e.stufe<=st?'✅':frei(mgrK(e))?'⬜':'🔒'} Stufe ${e.stufe} (${freiText(mgrK(e))})${t.length?': '+t.join(', '):''}`}
 // Was früher der Gutsverwalter tat, seit 7.0 (Schritt D) aufgeteilt: Weingut-Manager (Reben, Düngen, Erntehelfer) und Kellermeister (Keltern, Lagerarbeiter, ab Stufe 2 Abfüllen und Sekt).
 // Läuft beim Weiterblättern vor der Leute-Sperre, in derselben Reihenfolge wie beim Verwalter. Berichte stehen in S.mgrLog für die nächste Zeitung.
+// Seit 14.7.2 (Annahmen 3 und 5): alles beim Weingut-Manager, Stufe 2 kauft Fassraum und Flaschen, Stufe 3 stellt ein, beides mit seiner Geldgrenze (pu).
 function mgrBetrieb(){
   if(!S.manager) return;
-  const LW=[], LK=[], m=S.monat, neu={helfer:0,lagerarb:0}, hf=aufgabeAktiv('helfer'), la=aufgabeAktiv('lager');
+  const LW=[], LK=LW, m=S.monat, neu={helfer:0,lagerarb:0}, hf=aufgabeAktiv('helfer'), la=aufgabeAktiv('lager'), pu=mgrPuffer('weingut');
   const stell=k=>{zahle(VERMITTLUNG); S[k]++; S.loehne[k].push(S.angebot[k]); S.loehne[k].sort((x,y)=>x-y); neu[k]++};
   if(aufgabeAktiv('reben')&&m<=2&&S.verlust) for(const id of weinberge()){
     const pr=rebenPreis(id), platz=()=>Math.min(S.verlust[id]||0,platzFuer(id),Math.floor(Math.max(0,S.geld-5000)/pr/10)*10);
@@ -2742,31 +2733,14 @@ function mgrBetrieb(){
     if(n>0){zahle(Math.round(n*pr*100)/100); const f=S.felder[id]; rebenDazu(id,n); S.verlust[id]-=n; LW.push(`${rbn(n)} ${SORTEN[id].name}-Reben nachgepflanzt`)}
   }
   if(aufgabeAktiv('duengen')&&S.duengungen<3&&S.boden<100&&(S.boden<=70||(m===7&&S.boden<90))&&S.geld>=duengKosten()){const st=bonusMasch('duenger'); duenge('helfer'); LW.push(st?'mit dem Düngerstreuer gedüngt':'gedüngt')}
-  // Seit 8.0: Maschinen warten (Stufe 1, bis Paket B Stufe 2), alle fünf Maschinen. Nach der Lese, also vor August oder wenn kein Feld mehr hängt, jede Maschine unter MGR_WART_AB auf 100 %.
-  // Er lässt mgrPuffer('weingut') auf dem Konto, reicht es nicht ganz, wartet er so weit, wie das Geld reicht.
-  if(aufgabeAktiv('warten')&&(m<7||!weinberge().some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen))){
-    const pu=mgrPuffer('weingut');
-    for(const ma of S.maschinen.filter(x=>x.zustand<MGR_WART_AB)){
-      const W=mTyp(ma).wart, n=Math.min(100-ma.zustand,Math.floor((S.geld-pu)/W)); if(n<1) continue;
-      zahle(n*W); ma.zustand+=n; LW.push(`${maschName(ma)} auf ${ma.zustand} % gewartet`);
-    }
-  }
-  // Seit 10.3 (B1): Eine ausgefallene Erntemaschine wartet er sofort, auch mitten in der Lese, bevor er weiter unten Leute für die Lücke einstellt.
-  // Reicht das Geld über dem Puffer nicht bis MASCH_ROT, lässt er es und stellt wie bisher ein.
-  if(aufgabeAktiv('warten')){
-    const pu=mgrPuffer('weingut');
-    for(const ma of S.maschinen.filter(x=>mTyp(x).ernte&&x.zustand<MASCH_ROT)){
-      const W=mTyp(ma).wart, n=Math.min(100-ma.zustand,Math.floor((S.geld-pu)/W)); if(ma.zustand+n<MASCH_ROT) continue;
-      zahle(n*W); ma.zustand+=n; LW.push(`${maschName(ma)} nach dem Ausfall auf ${ma.zustand} % gewartet`);
-    }
-  }
+  // Bis 14.7.1 wartete hier der Weingut-Manager die Maschinen (Aufgabe warten), seit 14.7.3 machen das die Kellerhelfer.
   if(hf){const nh=mgrHandlese(); if(nh) LW.push(`${nh===1?'einen Erntehelfer':nh+' Erntehelfer'} für die Handlese eingestellt`)}
   // Schritt F: Kellermeister (seit 8.5 ab Stufe 1, vorher Stufe 2) keltert die Lese beim Weiterblättern und kauft fehlenden Fassraum in Schritten von 500 l wie von Hand.
   // Für den Kauf lässt er mgrPuffer auf dem Konto, fehlende Lagerarbeiter stellt er nur mit der Aufgabe 'lager' ein. Reicht es nicht, bleiben die Trauben liegen
   // und die "Letzte Warnung" nennt den Grund (l.mgrNot). Mit Verlust keltern ("Trotzdem keltern") entscheidet nur der Spieler.
   // Seit 13.5.4: Stufe 1 kauft nur noch den Fassraum (fass), gekeltert wird danach von den Lagerarbeitern (leuteArbeit).
   if(aufgabeAktiv('fass')){
-    const pu=mgrPuffer('keller'), fp=fassPreis(); let kauf=0, rest=S.fassraum-fassBelegt();
+    const fp=fassPreis(); let kauf=0, rest=S.fassraum-fassBelegt();
     for(const l of S.lots.filter(l=>l.status==='trauben')){
       const fehlt=l.liter-rest;
       if(fehlt>0){
@@ -2784,14 +2758,14 @@ function mgrBetrieb(){
   if(aufgabeAktiv('flaschen')){let bed=0, kauf=0; for(const l of S.lots.filter(l=>l.status==='fass'&&l.stufe)){
     bed+=abfFl(l); const fehlt=bed-S.flaschen, fp=flaschePreis();
     if(fehlt>0){
-      if(la){let i=0; while(flKap()<S.flaschen+fehlt&&S.geld>VERMITTLUNG+fehlt*fp&&i++<20) stell('lagerarb')}
-      if(flKap()>=S.flaschen+fehlt&&S.geld>=fehlt*fp){zahle(Math.round(fehlt*fp*100)/100); S.flaschen+=fehlt; kauf+=fehlt} else bed-=abfFl(l);
+      if(la){let i=0; while(flKap()<S.flaschen+fehlt&&S.geld-pu>VERMITTLUNG+fehlt*fp&&i++<20) stell('lagerarb')}
+      if(flKap()>=S.flaschen+fehlt&&S.geld-pu>=fehlt*fp){zahle(Math.round(fehlt*fp*100)/100); S.flaschen+=fehlt; kauf+=fehlt} else bed-=abfFl(l);
     }}
     if(kauf) LK.push(`${num(kauf)} leere Flaschen gekauft`)}
-  {const fe=leuteFehlen(); if(hf) for(let i=0;i<fe.helfer;i++) stell('helfer'); if(la) for(let i=0;i<fe.lagerarb;i++) stell('lagerarb')}
-  // Seit Paket B: Fahrer für Düngerstreuer und Laubschneider (Stufe 3), den Bediener der Abfüllanlage stellt der Kellermeister mit 'lager' ein.
-  if(hf){const n=fahrerFehlen(); for(let i=0;i<n;i++) stell('helfer')}
-  if(la&&S.maschinen.some(x=>mTyp(x).leute==='lagerarb'&&x.zustand>=MASCH_ROT)&&!S.lagerarb) stell('lagerarb')
+  {const fe=leuteFehlen(), geht=()=>S.geld-pu>=VERMITTLUNG; if(hf) for(let i=0;i<fe.helfer&&geht();i++) stell('helfer'); if(la) for(let i=0;i<fe.lagerarb&&geht();i++) stell('lagerarb')}
+  // Seit Paket B: Fahrer für Düngerstreuer und Laubschneider, den Bediener der Abfüllanlage stellt seit 14.7.2 der Weingut-Manager mit 'lager' ein.
+  if(hf){const n=fahrerFehlen(); for(let i=0;i<n&&S.geld-pu>=VERMITTLUNG;i++) stell('helfer')}
+  if(la&&S.maschinen.some(x=>mTyp(x).leute==='lagerarb'&&x.zustand>=MASCH_ROT)&&!S.lagerarb&&S.geld-pu>=VERMITTLUNG) stell('lagerarb')
   if(neu.helfer) LW.unshift(`${neu.helfer} Erntehelfer eingestellt`);
   // Seit 10.3 (B2): Hängt kein Feld mehr, entlässt er wieder, wen er nur für die Handlese geholt hat (S.manager.weingut.handH), die teuersten zuerst.
   // Nie unter den Bedarf für Reben und Fahrer. Wer dann noch gebraucht wird, bleibt als fester Helfer.
@@ -2802,8 +2776,8 @@ function mgrBetrieb(){
     mw.handH=0; if(k) LW.push(`${k===1?'einen Erntehelfer':k+' Erntehelfer'} nach der Handlese entlassen`);
   }}
   if(neu.lagerarb) LK.unshift(`${neu.lagerarb} Lagerarbeiter eingestellt`);
-  mgrMelde('weingut',LW); mgrMelde('keller',LK);
-  if(LW.length||LK.length) save();
+  mgrMelde('weingut',LW);
+  if(LW.length) save();
 }
 // Seit 8.0: Weingut-Manager Stufe 3 (Aufgabe helfer) stellt ab August für jedes hängende Feld mit Edelfäulnis
 // so viele Erntehelfer ein, wie die Handlese braucht, solange 5.000 € plus Vermittlung auf dem Konto sind. Liefert die Zahl der Eingestellten.

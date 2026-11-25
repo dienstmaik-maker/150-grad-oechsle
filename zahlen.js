@@ -133,15 +133,14 @@ const FREI={wein_feder:{r:0},wein_tafel:{r:0},wein_qba:{r:1},wein_kab:{r:2},wein
   // Stufen der Leute: Erntehelfer am Rang, Lagerarbeiter Stufe 2 am Rang (Annahme 26), Stufe 1 und 3 verdient. Eine höhere Stufe bringt die fehlenden mit,
   // Leute fallen nie zurück (S.leuteSt). Namen und Arbeiten bleiben bis zur Etappe für Köpfe und Helfer, wie sie sind.
   helfer1:{r:1},helfer2:{r:3},helfer3:{r:5},lagerarb1:{tat:'qba'},lagerarb2:{r:2},lagerarb3:{tat:'sekt'},
-  mgr_handel1:{r:2,ab:3,name:'die Handels-Managerin',bote:'🤝 Ab heute arbeitet eine Handels-Managerin für dich. Sie verkauft an den Großhandel, auch den Federweißer.'},
-  mgr_handel2:{r:4,ab:3,name:'Stufe 2 für die Handels-Managerin',bote:'🤝 Deine Handels-Managerin kann jetzt mehr: Weinhandlungen und Export übernimmt sie ab sofort.'},
-  mgr_handel3:{r:6,ab:4,name:'Stufe 3 für die Handels-Managerin',bote:'🤝 Das Regal füllt ab jetzt deine Handels-Managerin. Nur volle Regale verkaufen.'},
-  mgr_keller1:{r:2,ab:5,name:'der Kellermeister',bote:'🍷 Ab heute arbeitet ein Kellermeister für dich. Er kauft Fassraum und stellt Lagerarbeiter ein.'},
-  mgr_keller2:{r:4,ab:9,name:'Stufe 2 für den Kellermeister',bote:'🍷 Die Flaschen kauft ab jetzt dein Kellermeister. Immer mit der Ruhe, es fehlt keine mehr.'},
-  mgr_keller3:{r:7,ab:7,name:'Stufe 3 für den Kellermeister',bote:'🍷 Beim Kellermeister reift der Wein jetzt schneller. Guter Wein braucht Zeit, aber weniger.'},
-  mgr_weingut1:{r:2,ab:10,name:'der Weingut-Manager',bote:'🌿 Ab heute arbeitet ein Weingut-Manager für dich. Er stellt Erntehelfer und Fahrer ein.'},
-  mgr_weingut2:{r:5,ab:3,name:'Stufe 2 für den Weingut-Manager',bote:'🌿 Die Maschinen lässt ab jetzt dein Weingut-Manager warten. Du musst nicht mehr dran denken.'},
-  mgr_weingut3:{r:8,ab:4,name:'Stufe 3 für den Weingut-Manager',bote:'🌿 Beim Weingut-Manager nutzen sich die Maschinen jetzt weniger ab.'},
+  // Seit 14.7.2 (Bauplan 14.7, Annahmen 1 bis 3): zwei Köpfe, jede Stufe kommt genau mit ihrem Rang, ohne Abstand. Der Kellermeister ist kein Kopf mehr.
+  // Die Rangmeldung nennt sie (RAENGE.neu). bote ist Platzhalter (Wortlaut in Meilenstein 17), der Winzerbote meldet Einträge ohne ab, tat und ev nicht (boteArt).
+  mgr_handel1:{r:2,name:'die Handels-Managerin',bote:'🤝 Ab heute arbeitet eine Handels-Managerin für dich. Sie beliefert die Weinhandlungen, auch mit dem Federweißen.'},
+  mgr_handel2:{r:4,name:'Stufe 2 für die Handels-Managerin',bote:'🤝 Deine Handels-Managerin verkauft jetzt auch an Großhandel und Export.'},
+  mgr_handel3:{r:6,name:'Stufe 3 für die Handels-Managerin',bote:'🤝 Das Regal im eigenen Laden füllt ab jetzt deine Handels-Managerin.'},
+  mgr_weingut1:{r:3,name:'der Weingut-Manager',bote:'🌿 Ab heute arbeitet ein Weingut-Manager für dich. Er schreibt den Einsatzplan fürs Düngen und Schneiden.'},
+  mgr_weingut2:{r:4,name:'Stufe 2 für den Weingut-Manager',bote:'🌿 Fassraum und Flaschen kauft ab jetzt dein Weingut-Manager.'},
+  mgr_weingut3:{r:5,name:'Stufe 3 für den Weingut-Manager',bote:'🌿 Dein Weingut-Manager stellt ab jetzt die Leute ein.'},
   masch_duenger:{r:2,name:'der Düngerstreuer',bote:'🚜 Neu bei den Maschinen: der Düngerstreuer. Er spart dir Helfer beim Düngen. Kaufen kannst du ihn von Januar bis März.'},
   masch_klein:{r:3},masch_abfuell:{r:3,name:'die Abfüllanlage'},masch_gross:{r:5},masch_abfuell2:{r:6,name:'der Ausbau der Abfüllanlage'},masch_laub:{r:7,name:'der Laubschneider'},
   // Die Sektanlage kommt mit dem ersten eigenen Sekt, zusammen mit Lagerarbeiter Stufe 3. Preis und Wirkung bleiben.
@@ -302,16 +301,17 @@ const WO={mosel:'an der Mosel',rheingau:'im Rheingau',rheinhessen:'in Rheinhesse
 // Seit 13.3.5 (Bauplan 13.3, Startwerte aus dem Bauauftrag): Vizepräsident 6.000 Ansehen und 29 Hektar (bis 13.2: 8.000 und 33), Präsident 8.500 und 33 (bis 13.2: 12.000 und 40).
 // Der höchste Besitz deckel ist nach der Regel neu gerechnet: Verbandsvorstand 36 statt 41, Vizepräsident 41 statt 50. R0 bis R7 bleiben.
 // Seit 13.3.7: neu nennt die Hauptsachen der Wunschstrategie (Nachtrag 3), schlicht formuliert, Wortlaut seit 13.8.
+// Seit 14.7.2: dazu die Stücke mit (K) aus dem Bauplan 14.4 (Köpfe), Wort für Wort, nur klein am Anfang und ohne Punkt, weil die Stücke mit Komma aneinanderhängen.
 // Seit 13.3.8 (Nachtrag 3, Maik 22.11.2026): Flächen-Hürden fest 3, 7, 14, 18, 24, 27, 28, 28, 28 Hektar bepflanzt, Besitz-Deckel 5, 9, 17, 32, 42, 47, ab dem Weinbaurat 50
 // (Wunschfläche des nächsten Ziels mal 1,25). ans und verm sind hier die heutigen Werte, die Hürde rechnet RANG_HUERDE unten daraus.
 const RAENGE=[
   {name:'Neuling',kurz:'Neuling',ans:0,ha:0,verm:0,rahmen:20000,haAlt:0,deckel:5},
   {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:30,ha:3,verm:100000,rahmen:40000,haAlt:3,deckel:9,neu:['ein geschenkter Hang vom alten Winzer','Qualitätswein','Erntehelfer'],kauf:['Land beim Makler im Rathaus']},
-  {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:7,verm:250000,rahmen:80000,haAlt:4,deckel:17,neu:['Kabinett','Spenden fürs Dorf','dein Kellergeselle füllt ab und klebt die Etiketten'],kauf:['der Düngerstreuer']},
-  {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:210,ansW:300,ha:14,verm:600000,rahmen:160000,haAlt:5,deckel:32,neu:['Spätlese','die Landesprämierung','Winzergesellen mit dem Laubschnitt von Hand'],kauf:['die Erntemaschine','die Abfüllanlage','mit der ersten Spätlese der Edelstahltank im Keller']},
-  {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:18,verm:1500000,rahmen:300000,haAlt:6,deckel:42,neu:['{sorte} für den Sekt','das Weinfest','kühle Höhenlagen bei den Auktionen'],kauf:['der Sektkeller']},
-  {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:24,verm:3500000,rahmen:300000,haAlt:8,deckel:47,neu:['Rebmeister','das Ausdünnen im August'],kauf:['die Schatzkammer mit dem Großen Holzfass im Keller','der große Vollernter']},
-  {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:24,verm:6000000,rahmen:300000,haAlt:10,deckel:50,neu:['{sorte} für den steilen Südhang mit Südhang bei den Auktionen','das Amt des Weinbotschafters'],kauf:['der Ausbau der Abfüllanlage']},
+  {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:7,verm:250000,rahmen:80000,haAlt:4,deckel:17,neu:['Kabinett','Spenden fürs Dorf','dein Kellergeselle füllt ab und klebt die Etiketten','die Handels-Managerin verkauft an die Weinhandlungen'],kauf:['der Düngerstreuer']},
+  {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:210,ansW:300,ha:14,verm:600000,rahmen:160000,haAlt:5,deckel:32,neu:['Spätlese','die Landesprämierung','Winzergesellen mit dem Laubschnitt von Hand','der Weingut-Manager schreibt den Einsatzplan fürs Düngen und Schneiden'],kauf:['die Erntemaschine','die Abfüllanlage','mit der ersten Spätlese der Edelstahltank im Keller']},
+  {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:18,verm:1500000,rahmen:300000,haAlt:6,deckel:42,neu:['{sorte} für den Sekt','das Weinfest','kühle Höhenlagen bei den Auktionen','deine Handels-Managerin verkauft an Großhandel und Export, dein Weingut-Manager kauft Fassraum und Flaschen'],kauf:['der Sektkeller']},
+  {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:24,verm:3500000,rahmen:300000,haAlt:8,deckel:47,neu:['Rebmeister','das Ausdünnen im August','dein Weingut-Manager stellt die Leute ein'],kauf:['die Schatzkammer mit dem Großen Holzfass im Keller','der große Vollernter']},
+  {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:24,verm:6000000,rahmen:300000,haAlt:10,deckel:50,neu:['{sorte} für den steilen Südhang mit Südhang bei den Auktionen','das Amt des Weinbotschafters','deine Handels-Managerin verkauft im eigenen Laden'],kauf:['der Ausbau der Abfüllanlage']},
   {name:'Verbandsvorstand',kurz:'Vorstand',w:'Verbandsvorständin',kw:'Vorständin',ans:4000,ha:28,verm:12000000,rahmen:300000,haAlt:13,deckel:50,neu:{edel:['Auslese und Beerenauslese','das Hoffest','der Bundeswettbewerb'],frost:['Auslese und Eiswein','das Hoffest','der Bundeswettbewerb'],beide:['Auslese sowie Beerenauslese und Eiswein','das Hoffest','der Bundeswettbewerb']},kauf:['der Laubschneider','mit der ersten Auslese der Barrique-Keller']},
   {name:'Vizepräsident',kurz:'Vizepräsident',w:'Vizepräsidentin',kw:'Vizepräsidentin',ans:6000,ha:28,verm:16000000,rahmen:300000,haAlt:16,deckel:50,neu:{edel:['Trockenbeerenauslese','in besonderen Jahren Eiswein','du kannst Kontrollen anregen'],frost:['in besonderen Jahren Beerenauslese und Trockenbeerenauslese','du kannst Kontrollen anregen'],beide:['Trockenbeerenauslese','du kannst Kontrollen anregen']},kauf:[]},
   {name:'Präsident des Weinbauverbands',kurz:'Präsident',w:'Präsidentin des Weinbauverbands',kw:'Präsidentin',ans:8500,ha:28,verm:30000000,rahmen:300000,haAlt:20,deckel:50,neu:['der Stuhl im Festsaal','das Amt an der Spitze des Verbands','der Weg zur Weltweinschau','die Presse, einmal im Jahr für einen deiner Weine'],kauf:[]}
@@ -343,54 +343,48 @@ const R_SORTE2=FREI.sorte_sekt.r, R_SORTE3=FREI.sorte_spitze.r, R_SEKT=FREI.sekt
 // MANAGER: je Stufe der Bereich, die Stufe und welche Aufgaben (seit 13.5.1 kommt die Stufe über FREI, Schlüssel mgr_ mit Bereich und Stufe, rang liest dort nach) (Schlüssel aus MGR_AUFGABEN) sie dazubringt.
 // kosten: Einstellen (Stufe 1) oder Befördern, aus MGR_KOSTEN. lohn: Monatslohn auf dieser Stufe, aus MGR_LOHN, läuft über die Löhne.
 // Kosten und Lohn stehen bis Schritt H auf 0 (neutral, wie der frühere Verwalter). Startwerte für Schritt H: 5.000 / 20.000 / 60.000 € und 500 / 1.000 / 2.000 € im Monat.
-// Schritt E: Handel 3 (Regal, Wettbewerb, Fest), Keller 2 (Sekt, seit 8.5 dazu Abfüllen, Keltern ist seit 8.5 Stufe 1), Keller 3 (schnellere Reife, über MGR_REIFE und MGR_REIFE_MIN, kein Schalter).
-// Spielstand: S.manager={handel|keller|weingut:{stufe,an:{aufgabe:1},zuletzt,puffer}}, die Reserve der Daueraufträge wie bisher in S.dauer.reserve.
+// Seit 14.7.2 (Bauplan 14.7): zwei Köpfe statt drei, Handels-Managerin und Weingut-Manager, der Kellermeister als Kopf und seine schnellere Reife sind weg.
+// Spielstand: S.manager={handel|weingut:{stufe,an:{aufgabe:1},zuletzt,puffer}}, die Reserve der Daueraufträge wie bisher in S.dauer.reserve.
 // Seit 11.5 (Teil C1, Maik 20.11.2026): Manager sind Pflicht. Sie kommen mit dem Rang von selbst (mgrKommen), Einstellen, Befördern und Entlassen gibt es nicht mehr,
 // und die Kosten dafür entfallen (bis 11.4: 5.000, 20.000 und 60.000 €). Für Messläufe: hSet({code:'MANAGER.forEach(e=>e.kosten=[5000,20000,60000][e.stufe-1])'}).
 // MGR_GLEICH=1: Der Manager kommt im Monat des Aufstiegs. 0 nur für Messläufe: erst beim nächsten Weiterblättern, so hat ihn der Test-Spieler bis 11.4 eingestellt.
 // Seit 11.5 (Teil C2, Maik 20.11.2026): Löhne je Stufe 2.200, 3.500 und 5.500 € (bis 11.4: 500, 1.000 und 2.000), mal LOHN_F. e.lohn liest beides erst beim Abruf.
 const MGR_KOSTEN=[0,0,0], MGR_LOHN=[2200,3500,5500];
 const MGR_GLEICH=1;
-// Schritt E: Geldgrenze für Sekt (Kellermeister) und Fest (Handels-Manager). So viel bleibt mindestens auf dem Konto, Auswahl im Manager-Fenster.
+// Schritt E: Geldgrenze je Kopf, so viel bleibt mindestens auf dem Konto, Auswahl im Fenster des Kopfs. Seit 14.7.2 (Annahme 5) nimmt der Weingut-Manager seine
+// für Fassraum, Flaschen und das Einstellen, die Handels-Managerin ihre wie bisher. Ohne Weingut-Manager gilt MGR_PUFFER_START (Wartung durch die Kellerhelfer ab 14.7.3).
 const MGR_PUFFER=[0,20000,50000,100000,250000], MGR_PUFFER_START=20000;
-// Schritt E: Kellermeister Stufe 3, Wein reift bei ihm schneller und besser. Wirkt wie eine zusätzliche Stufe Kellerausbau:
-// MGR_REIFE auf die Reife-Rate (wie KELLER_REIFE), MGR_REIFE_MIN Monate früher verkaufsreif. Seit Schritt H 0,1 und 1 (vorher neutral auf 0).
-const MGR_REIFE=.1, MGR_REIFE_MIN=1;
 // Schritt F: tab ist der Hauptreiter, in dem die Zeile des Managers oben steht. bild ist das Porträt in bilder/ (seit Schritt I), ohne Bild zeigt die Zeile das Symbol.
 // w:1 heißt weiblich (seit Schritt I macht eine Frau den Handel, Maik 16.11.2026), mgrG(b) liefert dann "Deine", "sie", "eine" und so weiter.
 const MGR_BEREICHE={
   handel:{name:'Handels-Managerin',sym:'🤝',ort:'Stadt',tab:'stadt',bild:'manager-handel.jpg',w:1},
-  keller:{name:'Kellermeister',sym:'🍷',ort:'Keller',tab:'keller',bild:'manager-keller.jpg'},
   weingut:{name:'Weingut-Manager',sym:'🌿',ort:'Weingut',tab:'gut',bild:'manager-weingut.jpg'}
 };
 const MGR_G=[{Dein:'Dein',dein:'dein',Er:'Er',er:'er',ihn:'ihn',ein:'ein',den:'den'},{Dein:'Deine',dein:'deine',Er:'Sie',er:'sie',ihn:'sie',ein:'eine',den:'die'}];
+// Seit 14.7.2 (Bauplan 14.7): Aufgaben der zwei Köpfe. Die Handels-Managerin nimmt nur den Verkauf ab, der Weingut-Manager plant, kauft ein und stellt ein.
+// plan ist der Einsatzplan, sein Fenster kommt in 14.7.4. warten ist keine Aufgabe eines Kopfs mehr, die Maschinen warten ab 14.7.3 die Kellerhelfer.
+// Seit 13.5.4 (Bauplan 13.5) machen die Köpfe nur Büro, Wettbewerbswein und Hoffest wählt immer der Spieler. Neue Texte sind Platzhalter, Wortlaut in Meilenstein 17.
 const MGR_AUFGABEN={
-  laeden:{kurz:'Weinhandlungen beliefern',text:'Jeden Monat die Weinhandlungen mit passenden Weinen beliefern'},
-  handel:{kurz:'an den Großhandel verkaufen',text:'Jeden Monat an den Großhandel verkaufen, so viel er zum vollen Preis nimmt, auch den Federweißer an den Weinhändler'},
-  // Seit 13.5.4 (Bauplan 13.5): Die Manager machen nur noch Büro. Keltern und Abfüllen machen die Lagerarbeiter, Düngen und Nachpflanzen die Erntehelfer (13.5.2, 13.5.3),
-  // Wettbewerbswein und Hoffest wählt immer der Spieler. Weg sind keltern, reben, duengen, wett und fest, neu sind fass und export.
+  laeden:{kurz:'Weinhandlungen beliefern',text:'Jeden Monat die Weinhandlungen mit passenden Weinen beliefern, dazu den Federweißen an den Weinhändler'},
+  handel:{kurz:'an den Großhandel verkaufen',text:'Jeden Monat an den Großhandel verkaufen, so viel er zum vollen Preis nimmt'},
   export:{kurz:'auch in den Export verkaufen',text:'Beim Verkauf auch den Exporthandel nutzen, wenn er mehr zahlt als das Inland'},
-  fass:{kurz:'Fassraum kaufen',text:'Nach der Lese fehlenden Fassraum kaufen, damit die Lagerarbeiter keltern können'},
-  flaschen:{kurz:'Flaschen kaufen',text:'Leere Flaschen für angemeldete Fässer kaufen, abfüllen tun die Lagerarbeiter'},
-  lager:{kurz:'Lagerarbeiter einstellen',text:'Fehlende Lagerarbeiter einstellen'},
-  // Seit 8.0. Der Text liest MGR_WART_AB erst beim Zeichnen, die Zahl steht weiter unten bei den Maschinen.
-  warten:{kurz:'Maschinen warten',get text(){return `Nach der Lese jede Maschine unter ${MGR_WART_AB} % auf 100 % warten, ausgefallene Erntemaschinen sofort`}},
+  plan:{kurz:'Einsatzplan',text:'Den Einsatzplan fürs Düngen und Schneiden schreiben, je Weinberg'},
+  fass:{kurz:'Fassraum kaufen',text:'Nach der Lese fehlenden Fassraum kaufen, damit deine Kellerleute keltern können'},
+  flaschen:{kurz:'Flaschen kaufen',text:'Leere Flaschen für angemeldete Fässer kaufen, abfüllen tun deine Kellerleute'},
   helfer:{kurz:'Erntehelfer einstellen',text:'Fehlende Erntehelfer einstellen, auch Fahrer für die Maschinen. Vor der Lese die Helfer für die Handlese, danach gehen sie wieder'},
+  lager:{kurz:'Kellerleute einstellen',text:'Fehlende Kellerleute einstellen'},
   regal:{kurz:'Regal füllen',text:'Das Regal deiner Weinhandlung füllen'}
 };
 // Reihenfolge je Rang wie im Freischalt-Plan, so stehen sie auch im Aufstiegstext.
 const MANAGER=[
-  {bereich:'handel',stufe:1,aufgaben:['handel']},
-  // Seit 8.5 (Maik 18.11.2026): Stufe 1 keltert, Stufe 2 füllt ab. Vorher war es umgekehrt, Keltern fühlt sich mehr nach Kellermeister an.
-  // Seit 13.3.3 macht niemand mehr Sekt von Hand oder als Manager, er entsteht bei der Lese der Sekt-Sorte.
-  {bereich:'keller',stufe:1,aufgaben:['fass','lager']},
-  {bereich:'weingut',stufe:1,aufgaben:['helfer']},
-  {bereich:'handel',stufe:2,aufgaben:['laeden','export']},
-  {bereich:'keller',stufe:2,aufgaben:['flaschen']},
-  {bereich:'weingut',stufe:2,aufgaben:['warten']},
-  {bereich:'handel',stufe:3,aufgaben:['regal']},
-  {bereich:'weingut',stufe:3,aufgaben:[]},
-  {bereich:'keller',stufe:3,aufgaben:[]}
+  // Seit 14.7.2 (Annahme 3): Handels-Managerin Weinhandlungen samt Federweißem, dann Großhandel und Export, dann das Regal.
+  // Weingut-Manager Einsatzplan, dann Fassraum und Flaschen, dann Erntehelfer, Fahrer, Helfer für die Handlese und Kellerleute einstellen.
+  {bereich:'handel',stufe:1,aufgaben:['laeden']},
+  {bereich:'weingut',stufe:1,aufgaben:['plan']},
+  {bereich:'handel',stufe:2,aufgaben:['handel','export']},
+  {bereich:'weingut',stufe:2,aufgaben:['fass','flaschen']},
+  {bereich:'weingut',stufe:3,aufgaben:['helfer','lager']},
+  {bereich:'handel',stufe:3,aufgaben:['regal']}
 ].map(e=>Object.defineProperty(Object.defineProperty(Object.assign(e,{kosten:MGR_KOSTEN[e.stufe-1]}),'lohn',{get:()=>lohnF(MGR_LOHN[e.stufe-1]),enumerable:true}),'rang',{get:()=>FREI['mgr_'+e.bereich+e.stufe].r}));
 // Schummelei: Kälteeinbruch im November, Panschen, Weinkontrolle. Alle Zahlen an einer Stelle. Die Sabotage ist seit 13.5.9 raus (bis 13.6: SAB_ und WSAB_).
 // Seit 13.4.1: Frost im Winterwetter (Dezember bis Februar) für alle Gebiete gleich, der alte Wert der Mitte (Annahme von Claude, frost je Gebiet ist weg).
@@ -574,10 +568,8 @@ const MASCH_BONUS={duenger:()=>`Düngen kostet ${Math.round(STREU_RABATT*100)} 
   laub:()=>`Sommerschnitt im Juni: Jede Lese des Jahres bekommt ${LAUB_QP} Punkte Qualität und ${Math.round(LAUB_MENGE*100)} % mehr Menge, dazu ${LAUB_ANS} Ansehen`,
   abfuell:()=>{const z=S&&S.maschinen.some(x=>x.typ==='abfuell'&&x.stufe>=2); return `${Math.round((z?ABF_PLUS2:ABF_PLUS)*100)} % mehr Flaschen aus jedem Fass, ein Lagerarbeiter betreut ${num(z?ABF_FLASCHEN2:ABF_FLASCHEN)} statt ${num(FLASCHEN_JE_LAGERARB)} leere Flaschen`}};
 // Abnutzung je Lese: ABNUTZ_VOLL Prozentpunkte bei voller Auslastung im Jahr, anteilig darunter, mal Pflege-Faktor aus PFLEGE nach dem Zustand vor der ersten Lese des Jahres.
-// Nie unter MASCH_MIN. Der Weingut-Manager wartet ab Stufe 1 (seit Paket B, vorher 2) nach der Lese jede Maschine unter MGR_WART_AB auf 100 %.
+// Nie unter MASCH_MIN. Gewartet wird nach der Lese jede Maschine unter MGR_WART_AB auf 100 % (bis 14.7.1 vom Weingut-Manager, ab 14.7.3 von den Kellerhelfern).
 const MASCH_GELB=60, MASCH_ROT=30, MASCH_MIN=10, ABNUTZ_VOLL=35, PFLEGE=[[80,.8],[60,1],[0,1.4]], MGR_WART_AB=80;
-// Seit 11.5 (Teil C2, Maik 20.11.2026): Vorteil des Weingut-Managers auf Stufe 3. Alle Maschinen nutzen sich um MGR_ABNUTZ weniger ab (0 = kein Vorteil).
-const MGR_ABNUTZ=.2;
 // Was beim Maschinenschaden passiert ist, je Maschine.
 const MASCH_SCHADEN={klein:'hat einen Felsbrocken erwischt',gross:'hat einen Felsbrocken erwischt',duenger:'ist an einem Weinbergspfahl hängen geblieben',laub:'hat sich im Drahtrahmen verheddert',abfuell:'hat sich an einer zersprungenen Flasche verschluckt'};
 const AUK_ZU_GROSS='Das Los ist zu groß für deinen Rang.';
