@@ -2057,9 +2057,10 @@ function neuesSpiel(){
 
 /* ================= Monatswechsel ================= */
 function verfallListe(){
-  const v=[];
+  const v=[], KT=kellerTeil();
   for(const l of S.lots){
-    if(l.status==='trauben') v.push(`${num(l.liter)}\u00a0l ${SORTEN[l.sorte].name}-Trauben sind nicht gekeltert${l.mgrNot&&aufgabeAktiv('fass')?(l.mgrNot==='geld'?`, dein ${MGR_BEREICHE.weingut.name} kauft keinen Fassraum unter deiner Geldgrenze`:`, deinem ${MGR_BEREICHE.weingut.name} fehlen Kellerleute für mehr Fassraum`):''}`);
+    if(l.status==='trauben'&&KT.has(l.id)) v.push(`${num(l.liter-KT.get(l.id))}\u00a0l ${SORTEN[l.sorte].name}-Trauben finden keinen Fassraum, deine Kellerleute keltern ${num(KT.get(l.id))}\u00a0l`);   // seit 15.6.4, Platzhalter
+    else if(l.status==='trauben') v.push(`${num(l.liter)}\u00a0l ${SORTEN[l.sorte].name}-Trauben sind nicht gekeltert${l.mgrNot&&aufgabeAktiv('fass')?(l.mgrNot==='geld'?`, dein ${MGR_BEREICHE.weingut.name} kauft keinen Fassraum unter deiner Geldgrenze`:`, deinem ${MGR_BEREICHE.weingut.name} fehlen Kellerleute für mehr Fassraum`):''}`);
     else if(l.status==='sektTr') v.push(`${num(l.liter)} Flaschen ${SORTEN[l.sorte].name}-Sekt sind nicht im Sektkeller`);
     else if(l.status==='fass'&&l.stufe==='feder') v.push(`Federweißer ${l.jahrgang} ${SORTEN[l.sorte].name} ist nicht abgefüllt`);
     else if(l.status==='fass'&&l.fassMonate>=7) v.push(`${lotName(l)} liegt zu lange im Fass`);
@@ -2239,6 +2240,7 @@ function monatLauf(){
   if(S.wett){if(!S.wett.fertig) wettAuswerten(); S.wett=null}
   // Seit 13.6.3: Die Weltweinschau im Juni wird beim Monatswechsel danach gewertet.
   if(S.schau&&S.monat===WELT_MONAT&&S.amt) schauAuswerten();
+  kellerTeilKeltern();   // seit 15.6.4, vor dem Verderben
   if(weg.length){Z.push('Verdorben: '+weg.join('; ')+'.')}
   S.lots=S.lots.filter(l=>!(l.status==='trauben'||l.status==='sektTr'||(l.status==='fass'&&(l.stufe==='feder'||l.fassMonate>=7))||(l.status==='flasche'&&l.flMonate>=lager(l).max)));
   for(const l of S.lots){if(l.status==='fass')l.fassMonate++; else if(l.status==='flasche'||l.status==='hefe')l.flMonate++}
@@ -2654,7 +2656,7 @@ function aufgaben(){
   if(maschOhneFahrer().some(x=>mTyp(x).leute==='lagerarb')) A.push({t:'🍾 Die Abfüllanlage steht still, es fehlt ein Kellermensch',tab:'stadt',sub:'arbeit'});
   if(of&&!fehlText()) A.push({t:`🚜 ${of===1?'Eine Maschine steht':of+' Maschinen stehen'} still, es ${fahrerFehlen()===1?'fehlt ein Fahrer':'fehlen '+fahrerFehlen()+' Fahrer'}`,tab:'stadt',sub:'arbeit'});
   for(const id of weinberge()){const f=S.felder[id]; if(f.menge>0&&!f.gelesen&&handFehlt(f)) A.push({t:`✋ ${SORTEN[id].name}: für die Handlese fehlen ${handBedarf(f)-S.helfer} Erntehelfer, sonst nur Qualitätswein`,tab:'stadt',sub:'arbeit'})}}
-  for(const l of S.lots) if(l.status==='trauben') A.push(kellerMacht('keltern')&&l.liter<=S.fassraum-fassBelegt()+(aufgabeAktiv('fass')?Infinity:0)?{t:`${SORTEN[l.sorte].name}-Trauben: deine Kellerleute keltern beim Weiterblättern`,tab:'keller',ruhig:1}:{t:`${SORTEN[l.sorte].name}-Trauben müssen diesen Monat gekeltert werden`,rot:1,tab:'keller'});
+  for(const l of S.lots) if(l.status==='trauben') A.push(kellerMacht('keltern')&&l.liter<=S.fassraum-fassBelegt()+(aufgabeAktiv('fass')?Infinity:0)?{t:`${SORTEN[l.sorte].name}-Trauben: deine Kellerleute keltern beim Weiterblättern`,tab:'keller',ruhig:1}:kellerTeil().has(l.id)?{t:`${SORTEN[l.sorte].name}-Trauben: der Fassraum reicht nicht, deine Kellerleute keltern beim Weiterblättern nur, was passt`,rot:1,tab:'keller'}:{t:`${SORTEN[l.sorte].name}-Trauben müssen diesen Monat gekeltert werden`,rot:1,tab:'keller'});
   // Seit 13.5.8: Sekt von Hand, bis Lagerarbeiter Stufe 3.
   for(const l of S.lots) if(l.status==='sektTr') A.push(kellerMacht('sekt')?{t:`${SORTEN[l.sorte].name}-Sekt: deine Kellerleute legen ihn beim Weiterblättern in den Sektkeller`,tab:'keller',ruhig:1}:{t:`${SORTEN[l.sorte].name}-Sekt muss diesen Monat in den Sektkeller`,rot:1,tab:'keller'});
     else if(sektFertig(l)&&!kellerMacht('sekt')) A.push({t:`🍾 ${lotName(l)}: die Hefezeit ist um, jetzt abfüllen`,tab:'keller'});
@@ -3019,6 +3021,12 @@ function lagerArbeit(L){
     for(const l of sektAufHefe()) if(l.flMonate+1>=lager(l).min){sektAbfuellen(l); L.push(`${lotName(l)} abgefüllt`)}}
 }
 const lagerKann=n=>!!S.lagerarb&&leuteSt('lagerarb')>=n;
+// Seit 15.6.4 (Bauplan 15.6, Maik zu 15.5): Passt eine Partie nicht ganz in den freien Fassraum, keltern die Kellerleute auf Automatik beim Monatswechsel,
+// was noch passt, nur der Rest verdirbt wie bisher. Erst beim Monatswechsel, damit die "Letzte Warnung" bleibt und der Spieler vorher Fassraum kaufen kann.
+// kellerTeil() gibt je Partie die Liter, die so gekeltert werden (der freie Fassraum reicht der Reihe nach), ohne Kellerleute oder auf Chefsache leer.
+function kellerTeil(){const M=new Map(); if(!S.lagerarb||leuteSt('lagerarb')<1||!abgabe('keltern')||!kellerMacht('keltern')) return M;
+  let frei=S.fassraum-fassBelegt(); for(const l of S.lots.filter(l=>l.status==='trauben')){if(frei<=0) break; const n=Math.min(l.liter,frei); if(n>0){M.set(l.id,n); frei-=n}} return M}
+function kellerTeilKeltern(){const M=kellerTeil(); for(const l of S.lots) if(M.has(l.id)){l.liter=M.get(l.id); delete l.mgrNot; l.status='fass'; l.fassMonate=0}}
 // Seit 14.7.3 (Annahme 21): Die Kellerhelfer warten die Maschinen, sobald einer angestellt ist, nach der Regel des Weingut-Managers bis 14.7.2: nach der Lese
 // (vor August oder wenn kein Feld mehr hängt) jede Maschine unter MGR_WART_AB auf 100 %, eine ausgefallene Erntemaschine (unter MASCH_ROT) sofort, auch mitten in der Lese.
 // Sie lassen die Geldgrenze des Weingut-Managers auf dem Konto (mgrPuffer, ohne ihn MGR_PUFFER_START), reicht es nicht ganz, warten sie so weit, wie das Geld reicht.
