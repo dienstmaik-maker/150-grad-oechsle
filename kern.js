@@ -2523,7 +2523,7 @@ const anregChance=g=>g.geruecht?ANREG_CHANCE_GERUECHT:PANSCH[g.typ]||0, anregLoh
 function anregZeichen(g){const z=ANREG_ZEIGE[S.schwer], c=anregChance(g);
   if(z==='chance') return KONTR_TEXT.chance.replace('{p}',Math.round(c*100))+'. '+(anregLohnt(g)?KONTR_TEXT.ratJa:KONTR_TEXT.ratNein);
   if(z==='wort') return `Chance ${CHANCE_WORT.find(x=>c>=x[0])[1]}.`; return ''}
-/* ---- Panschen: Most zuckern oder wässern, Fässer verschneiden ---- */
+/* ---- Panschen: Most zuckern oder wässern (Fässer verschneiden seit 15.6.9 raus, Maik 22.11.2026) ---- */
 const mani=l=>(l.zucker||0)+(l.wasser||0)>0;
 // Seit 14.4.6: Im 1. Akt ist die Hintertür zu (FREI.hintertuer), auch das erlaubte Strecken beim Tafelwein geht dann nicht.
 const maniLegal=(l,st)=>st==='tafel'&&(l.zucker||0)<=ZUCKER_ERLAUBT&&(l.wasser||0)<=ZUCKER_ERLAUBT;
@@ -2550,16 +2550,6 @@ const qualWb=id=>qualTeile(id).q;
 // Schmiergeld für den Beamten: ein Anteil vom Wert des Weins, mindestens SCHMIER_MIN.
 const schmierVon=w=>Math.max(SCHMIER_MIN,Math.round(w*SCHMIER_ANTEIL/100)*100);
 function schmier(l,st){return schmierVon(l.liter*STUFEN[st].preis*qualPreisF(l.qp))} // seit 14.5.2 mit der Qualität des Weins (l.qp), seit 14.5.4 mit dem Qualitätsfaktor
-const mischbar=l=>l.status==='fass'&&l.stufe&&l.stufe!=='feder';
-const farbe=l=>SORTEN[l.sorte].farbe;
-// Verschnitt zweier Fassweine: Der Wein mit der höheren Stufe gibt den Namen, Öchsle und Qualität werden nach Menge gemittelt.
-function mischung(a,b){
-  if(STUFEN[b.stufe].rang>STUFEN[a.stufe].rang) [a,b]=[b,a];
-  const L=a.liter+b.liter, o={a,b,liter:L,oe:Math.round((a.oe*a.liter+b.oe*b.liter)/L),qp:Math.round((a.qp*a.liter+b.qp*b.liter)/L)};
-  // Seit dem Nachtrag zu 14.7.1: Ist einer der beiden gezuckert, trägt der Verschnitt die Öchsle der Trauben vor dem Zuckern mit (oeTraube im Schnitt).
-  if(a.oeT!=null||b.oeT!=null) o.oeT=Math.round((oeTraube(a)*a.liter+oeTraube(b)*b.liter)/L);
-  o.schmier=schmierVon(L*STUFEN[a.stufe].preis*qualPreisF(o.qp)); return o;
-}
 /* ---- Version 10.0: Amtszeit und Wahl (Spielende, Paket 1) ---- */
 // S.amt gibt es ab dem Monat, in dem der Spieler Präsident wird: seit (Monat des Amtsantritts als monatNr), stimm (Stimmung im Verband, Kommazahl 0 bis 100),
 // marke (so viel braucht es am Wahltag), wahl (Monat der nächsten Wahl), im (1 im Amt, 0 abgewählt), zeit (laufende Amtszeit), siege (gewonnene Wahlen),
@@ -3084,7 +3074,6 @@ const EIN_REGEL={
   meingut:()=>S.rang>=1, chronik:()=>S.rang>=1, besten:()=>S.rang>=1&&bestenZeilen().length>0,   // Die Bestenliste gilt über alle Partien, deshalb erst mit dem ersten Aufstieg (Annahme Claude).
   weine:()=>S.lots.length>0,
   zuckern:()=>S.lots.length>0, keltern:()=>S.lots.length>0,
-  verschneiden:()=>{const mi=S.lots.filter(mischbar); return mi.some(a=>mi.some(b=>a!==b&&farbe(a)===farbe(b)))},
   pruefer:()=>S.lots.some(l=>l.pansch),
   abfuellen:einFass, vorrat:einFass, flaschen:einFass, anmelden:einFass,
   faesser:()=>monatNr()>=5||S.lots.length>0,
