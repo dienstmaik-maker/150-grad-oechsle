@@ -1233,7 +1233,8 @@ const SPAET_JAHR=8;
 const BUCH_ORT={berg:'berg',betrieb:'betrieb',aktuell:'aktuell',maschinen:'maschinen',buero:'buero',buch:'buch',sabotage:'hintertuer',start:'keller',lager:'lager',amt:'rathaus',handel:'handel',laeden:'weinhandel',bank:'bank',arbeit:'arbeit'};
 // Daueraufträge für den Verkauf (seit 4.4, seit 7.0 beim Handels-Manager: Weinhandlungen ab Stufe 1, Großhandel ab Stufe 2).
 // Sie laufen beim Weiterblättern vor dem Monatswechsel: erst die Weinhandlungen (sie zahlen mehr), dann der Großhandel. Seit 14.7.6 (Annahme 24) in jedem Kanal nie unter
-// MGR_PREIS_MIN vom Listenpreis (listenPreis), der Großhandel auch über das Budget hinaus, bis der Schnitt je Flasche auf diese Grenze fällt (bis 14.7.5 nie unter dem vollen Preis).
+// MGR_PREIS_MIN vom Listenpreis (listenPreis), der Großhandel auch über das Budget hinaus, bis die letzte Flasche auf diese Grenze fällt (bis 14.7.5 nie unter dem vollen Preis,
+// in 14.7.6 der Schnitt je Flasche, seit dem Nachtrag vor 14.7.8 jede einzelne Flasche, Maik 25.11.2026).
 // Was am ehesten verdirbt, geht zuerst. Je Wein bleiben S.dauer.reserve Flaschen liegen, außer er hält nur noch zwei Monate. Bericht über S.dauerLog im Winzerboten.
 const DAUER_RESERVE=[0,100,500,1000];
 // Seit 7.5: Logbuch je Manager in S.manager[b].log=[{z,t}], ein Eintrag je Monat (z=Jahr*12+Monat), die letzten MGR_LOG Monate mit Arbeit.
@@ -1639,14 +1640,14 @@ const JH_JURY=15, SEKT_JURY=11, WETT_FELD_PLUS=40;
 // Seit 14.5.7: Punkte am Wein außerhalb der Qualität (Medaillen l.medP, Sekt l.sektP) zählen im Preis PUNKT_PREIS je Punkt (1 Punkt gleich 1 Prozent, Annahme 25).
 const PUNKT_PREIS=.01;
 // ===== 14.7 Köpfe und Helfer (Bauplan 14.7, Maik 24. und 25.11.2026), seit 14.7.1 als Startwerte, gedreht wird in Meilenstein 15 =====
-// Verkauf von selbst (Annahme 24, gebaut in 14.7.6): Die Handels-Managerin verkauft in jedem Kanal nur, wenn sie je Flasche im Schnitt
-// mindestens MGR_PREIS_MIN vom Listenpreis bekommt (Listenpreis ist der Preis ohne Tagespreis). Das Regal im eigenen Laden hat keine Grenze (Annahme 25).
+// Verkauf von selbst (Annahme 24, gebaut in 14.7.6): Die Handels-Managerin verkauft in keinem Kanal eine Flasche unter MGR_PREIS_MIN vom Listenpreis
+// (seit dem Nachtrag vor 14.7.8 jede einzelne Flasche, vorher im Schnitt, Maik 25.11.2026) (Listenpreis ist der Preis ohne Tagespreis). Das Regal im eigenen Laden hat keine Grenze (Annahme 25).
 const MGR_PREIS_MIN=.85;
-// Seit 14.7.6: Sätze der Handels-Managerin zur Grenze, {p} ist MGR_PREIS_MIN in Prozent, {n} Flaschen. Platzhalter, Wortlaut in Meilenstein 17.
+// Seit 14.7.6, seit dem Nachtrag vor 14.7.8 je Flasche: Sätze der Handels-Managerin zur Grenze, {p} ist MGR_PREIS_MIN in Prozent, {n} Flaschen. Platzhalter, Wortlaut in Meilenstein 17.
 const VERKAUF_TEXT={
   grenze:'💶 Verkauft wird von selbst nie unter {p} % vom Listenpreis, dem Preis deines Weins ohne den Tagespreis. Fürs Regal deiner Weinhandlung gilt die Grenze nicht.',
-  handel:'Jeden Monat an den Großhandel verkaufen, auch über sein Budget hinaus, solange im Schnitt mindestens {p} % vom Listenpreis ankommen',
-  info:'verkauft bei jedem Weiterblättern an den Großhandel, auch über sein Budget hinaus, solange im Schnitt mindestens {p} % vom Listenpreis ankommen',
+  handel:'Jeden Monat an den Großhandel verkaufen, auch über sein Budget hinaus, solange jede Flasche mindestens {p} % vom Listenpreis bringt',
+  info:'verkauft bei jedem Weiterblättern an den Großhandel, auch über sein Budget hinaus, solange jede Flasche mindestens {p} % vom Listenpreis bringt',
   wartet:'{n} Flaschen warten im Keller, der Tagespreis liegt unter {p} % vom Listenpreis'};
 const verkaufText=(k,n)=>VERKAUF_TEXT[k].replace('{p}',Math.round(MGR_PREIS_MIN*100)).replace('{n}',n);
 MGR_AUFGABEN.handel.text=verkaufText('handel');   // seit 14.7.6, MGR_AUFGABEN steht weiter oben vor MGR_PREIS_MIN

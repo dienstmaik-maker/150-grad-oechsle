@@ -727,7 +727,9 @@ function marktFrei(){return Math.round((MARKT_FREI+MARKT_RANG*S.rang+MARKT_EXPOR
 // Bepflanzte Hektar über HA_FREI: daran hängen das Budget des Großhandels und die Menge der Weinhandlungen.
 function haUeber(){return Math.max(0,flaecheBep()-HA_FREI)}
 function marktRest(){return Math.max(0,marktFrei()-(S.absatz||0))}
-function marktF(n){n=Math.max(0,n);const Q=marktFrei(),a=S.absatz||0,f=x=>x<=Q?1:Math.max(MARKT_MIN,1-(1-MARKT_MIN)*(x-Q)/(Q*MARKT_BREIT)); if(n<=0) return f(a); let s=0; for(let i=0;i<40;i++) s+=f(a+n*(i+.5)/40); return s/40}
+// Seit dem Nachtrag vor 14.7.8 (Maik 25.11.2026, 12:16 Uhr): marktFBei ist der Faktor der Flasche an der Stelle x im Absatz (in €), marktF mittelt ihn über n.
+function marktFBei(x,Q=marktFrei()){return x<=Q?1:Math.max(MARKT_MIN,1-(1-MARKT_MIN)*(x-Q)/(Q*MARKT_BREIT))}
+function marktF(n){n=Math.max(0,n);const Q=marktFrei(),a=S.absatz||0,f=x=>marktFBei(x,Q); if(n<=0) return f(a); let s=0; for(let i=0;i<40;i++) s+=f(a+n*(i+.5)/40); return s/40}
 function R(){return S.rollen?REGIONEN_ROLLEN[S.region]:REGIONEN[S.region]}
 // Seit 7.9: zwei Namen und Anrede. S.name ist das Weingut, S.ich der eigene Name, S.anrede 'm' oder 'w'. Bei der Übergabe ersetzt der Erbe beides
 // (erbeBenennen). Alte Spielstände ohne S.ich behalten die alten Texte, bis die Namen im Büro nachgetragen sind.
@@ -2735,7 +2737,7 @@ function dauerAuftrag(){
   const d=S.dauer||{}, aL=aufgabeAktiv('laeden'), aH=aufgabeAktiv('handel'); if(!aL&&!aH) return;
   const res=DAUER_RESERVE.includes(+d.reserve)?+d.reserve:0, frei=l=>lotRest(l)<=2?l.liter:Math.max(0,l.liter-res), L=[];
   const ls=()=>S.lots.filter(l=>l.status==='flasche'&&!l.regal&&l.liter>0&&preis(l)>0).sort(BSORT_F.dringend);
-  // Seit 14.7.6 (Annahme 24): in jedem Kanal nur, wenn je Flasche im Schnitt mindestens mgrGrenze ankommt. Was nur wegen des Tagespreises liegen bleibt, zählt warte.
+  // Seit 14.7.6 (Annahme 24), seit dem Nachtrag vor 14.7.8 für jede einzelne Flasche (Maik 25.11.2026): in keinem Kanal eine Flasche unter mgrGrenze. Was nur wegen des Tagespreises liegen bleibt, zählt warte.
   let nL=0,eL=0,nH=0,eH=0; const warte=new Set(), wartet=(l,p)=>p<mgrGrenze(l)&&!!warte.add(l);
   if(aL) for(const [r,la] of Object.entries(S.laeden)) for(const l of ls().filter(l=>ladenPasst(l,r))){
     if(la.rest<=0) break; if(wartet(l,ladenPreis(l,r))) continue; const n=Math.min(frei(l),la.rest); if(n<=0) continue;
@@ -2745,9 +2747,10 @@ function dauerAuftrag(){
   let nF=0,eF=0;
   if(aL) for(const l of ls().filter(federHandel)){const w=wege(l)[0]; if(!w||wartet(l,w.p)) continue; const n=l.liter, e=erloes(Math.round(n*w.p)); kassiere(e); l.liter-=n; nF+=n; eF+=e; kompVerkauf(l,n); warte.delete(l)}
   if(aH) for(const l of ls().filter(l=>!federHandel(l))){
-    // Seit 14.7.6: auch über das Budget hinaus, so viele Flaschen, dass der Schnitt w.p*marktF nicht unter die Grenze fällt (marktF fällt mit der Menge, also halbieren).
+    // Seit 14.7.6 auch über das Budget hinaus. Seit dem Nachtrag vor 14.7.8 (Maik 25.11.2026, "verschleudert nie"): so viele Flaschen, dass auch die letzte
+    // (Faktor marktFBei am Ende der Menge) nicht unter die Grenze fällt, bis dahin galt der Schnitt w.p*marktF. Der Faktor fällt mit der Menge, also halbieren.
     const w=wege(l).filter(x=>aufgabeAktiv('export')||x.name!=='Exporthandel')[0]; if(!w||wartet(l,w.p)) continue;
-    const G=mgrGrenze(l), geht=n=>w.p*marktF(n*w.p)>=G; let lo=0, hi=frei(l); if(geht(hi)) lo=hi; else while(hi-lo>1){const m=(lo+hi)>>1; if(geht(m)) lo=m; else hi=m}
+    const G=mgrGrenze(l), a0=S.absatz||0, geht=n=>w.p*marktFBei(a0+n*w.p)>=G; let lo=0, hi=frei(l); if(geht(hi)) lo=hi; else while(hi-lo>1){const m=(lo+hi)>>1; if(geht(m)) lo=m; else hi=m}
     const n=lo; if(n<=0) continue;
     const e=erloes(Math.round(n*w.p*marktF(n*w.p))); kassiere(e); S.absatz=(S.absatz||0)+n*w.p; l.liter-=n; nH+=n; eH+=e; kompVerkauf(l,n); warte.delete(l);
   }
