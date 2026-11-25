@@ -760,6 +760,20 @@ html.brett main{padding-top:18px}
 .iab .kv>span:first-child{font-size:12.5px;color:var(--mut)}
 .iab .kv:last-child{border-bottom:0}
 .iwisch{margin:4px 0 0;text-align:center;font:italic 13.5px var(--schrift);color:var(--mut)}
+/* Seit 16.2.2 (Bild 06): Leiste aus dunklem Holz mit goldener Kante, Reiter mit Timos Symbolen und dünnen goldenen Trennstrichen, der aktive Reiter liegt auf goldenem Schein.
+   Rechts der Reiter Klemmbrett mit Zahl (öffnet bis 16.3 "Aktuelles"), daneben bleibt "Nächster Monat" bis 16.3 in der Leiste (Maik 25.11.2026, 18:18 Uhr). */
+#tabs{gap:0;padding:3px 3px calc(3px + env(safe-area-inset-bottom));background:url(bilder/brett-dunkel.jpg) center/cover;border-top:2px solid #b88a3a;box-shadow:inset 0 2px 0 rgba(0,0,0,.45)}
+#tabs button{flex:1 1 0;min-width:0;margin:2px 0;padding:4px 1px 3px;min-height:58px;border:0;border-image:none;border-radius:12px;background:none;box-shadow:none;transform:none;filter:none;color:#f3dfb4;font:800 14px/1.05 var(--schrift);font-variant-caps:normal;letter-spacing:0;text-shadow:0 1px 0 #2a1305,0 0 3px #1a0a02;gap:2px;justify-content:flex-end}
+#tabs button>img{height:31px;width:auto;max-width:100%;margin:0;object-fit:contain;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}
+#tabs button>b{font-weight:700;white-space:nowrap}
+#tabs>button+button::before{content:'';position:absolute;left:0;top:16%;bottom:16%;width:1.5px;background:linear-gradient(transparent,#c9973f 25%,#c9973f 75%,transparent);opacity:.75}
+#tabs button.an{border:0;border-image:none;border-radius:12px;background:radial-gradient(ellipse 62% 70% at 50% 48%,rgba(255,230,140,.98),rgba(244,182,66,.72) 55%,rgba(214,134,30,0) 100%);color:#4a0f1a;text-shadow:0 0 5px rgba(255,240,200,.95);box-shadow:none;transform:none}
+#tabs button.an::before,#tabs button.an+button::before,#tabs #weiter::before{opacity:0}
+#tabs #klemm{flex:.75 1 0;justify-content:center}
+#tabs #klemm>img{height:42px}
+#tabs .kzahl{position:absolute;top:2px;right:calc(50% - 25px);min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:10px;background:#cf8a1e;border:1.5px solid #f8e6bf;color:#fff;font:800 12px/17px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-style:normal;text-shadow:0 1px 1px rgba(0,0,0,.5);box-shadow:0 1px 3px rgba(0,0,0,.6)}
+#tabs .kzahl.rot{background:#c62828}
+#tabs #weiter{flex:1.4 1 0;margin:4px 1px 5px 3px}
 </style>
 </head>
 <body>

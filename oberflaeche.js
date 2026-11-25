@@ -2052,12 +2052,15 @@ function render(){
   const fehlt=fehlText(), v={monat:vMonat,feier:vFeier,gut:vGut,keller:vKeller,stadt:vStadt,ende:vEnde}[TAB]();
   if(TAB==='ende'){$('#app').innerHTML=v; return}
   if(TAB==='feier'){$('#app').innerHTML=v; feierStart(); return}
-  const tabs=[['gut','🏡','Weingut'],['keller',FASS,'Kellerei'],['stadt','🏛️','Stadt']], B=badges();
+  // Seit 16.2.2 (Bild 06): Timos Symbole statt 🏡, Fass und 🏛️, dazu der Reiter Klemmbrett. Bis 16.3 öffnet er "Aktuelles" (Maik 25.11.2026, 18:18 Uhr),
+  // seine Zahl sind die Einträge in "Das steht an" ohne die grauen Hinweise, rot, sobald einer davon rot ist (Annahme 1 im Bauplan 16.2).
+  const tabs=[['gut','tab-weingut','Weingut'],['keller','tab-kellerei','Kellerei'],['stadt','tab-stadt','Stadt']], B=badges();
+  const klemmAn=TAB==='gut'&&SUB==='aktuell', KA=aufgaben().filter(a=>!a.ruhig), kn=KA.length, krot=KA.some(a=>a.rot);
   if(TAB==='monat'){$('#app').innerHTML=v; zWehen(); return}
   // Seit 12.7 (Maik 21.11.2026): Gebiet und Ansehen fliegen aus der Statusleiste, rechts steht nur noch der Rang, in der Mitte sitzt der Kopf des Spielführers.
   $('#app').innerHTML=`<div id="top"><div class="wtr" data-a="wetterInfo"><b>${MON[S.monat]} ${S.jahr}</b><small>${wetterText()}</small></div>${fuBereit()?'<button id="tkopf" data-a="fuKopf"></button>':''}<div class="geld" data-a="geldInfo"><b>${geldKurz(S.geld)}</b><small>${duK()}</small></div></div>
   <main>${v}</main>
-  <nav id="dock">${SUBS[TAB]?`<div id="subs">${SUBS[TAB].map(s=>`<button class="${SUB===s[0]?'an':''}" data-a="sub" data-id="${s[0]}"><i>${s[1]}</i><b>${SUB_NAME[s[0]]}</b>${SUB===s[0]?'':badge(B[TAB+'/'+s[0]])}</button>`).join('')}</div>`:''}<div id="tabs">${tabs.map(t=>`<button class="${TAB===t[0]?'an':''}" data-a="tab" data-id="${t[0]}"><span>${t[1]}</span>${t[2]}${badge(B[t[0]])}</button>`).join('')}<button id="weiter" class="${fehlt?'zu':''}" data-a="weiter"><span>${fehlt?'🔒':'▶'}</span>${fehlt?'Leute fehlen':'Nächster Monat'}</button></div></nav>`;
+  <nav id="dock">${SUBS[TAB]?`<div id="subs">${SUBS[TAB].map(s=>`<button class="${SUB===s[0]?'an':''}" data-a="sub" data-id="${s[0]}"><i>${s[1]}</i><b>${SUB_NAME[s[0]]}</b>${SUB===s[0]?'':badge(B[TAB+'/'+s[0]])}</button>`).join('')}</div>`:''}<div id="tabs">${tabs.map(t=>`<button class="${TAB===t[0]&&!klemmAn?'an':''}" data-a="tab" data-id="${t[0]}"><img src="bilder/${t[1]}.webp" alt=""><b>${t[2]}</b>${badge(B[t[0]])}</button>`).join('')}<button id="klemm" class="${klemmAn?'an':''}" data-a="tab" data-id="gut" data-sub="aktuell" aria-label="Klemmbrett, ${kn} Aufgaben"><img src="bilder/tab-klemmbrett.webp" alt="">${kn?`<em class="kzahl${krot?' rot':''}">${kn}</em>`:''}</button><button id="weiter" class="${fehlt?'zu':''}" data-a="weiter"><span>${fehlt?'🔒':'▶'}</span>${fehlt?'Leute fehlen':'Nächster Monat'}</button></div></nav>`;
   panoStell(); wgStart();
   fuKopfStell(); fuTopMess(); if(FU_OFFEN) fuLage();
   fuehrerZeig(); fuPunkt();
@@ -2223,7 +2226,8 @@ const AKT={
       info:n=>`<b>${num(n)} Flaschen</b>bringt dir ${eur(erloes(n*p))}${rufTxt()}`,
       ok:n=>{kassiere(erloes(n*p));kompVerkauf(l,n);la.rest-=n;l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l)}});
   },
-  tab(d,e){if(d.id===TAB&&!d.sub&&window.scrollY>20){window.scrollTo({top:0,behavior:'smooth'});return} geh(d.id,d.sub);render();window.scrollTo(0,0)},
+  // Seit 16.2.2: Aus dem Klemmbrett (Aktuelles) führt der Reiter Weingut zum Start des Weinguts, er springt dort nicht nur nach oben.
+  tab(d,e){if(d.id===TAB&&!d.sub&&!(TAB==='gut'&&SUB==='aktuell')&&window.scrollY>20){window.scrollTo({top:0,behavior:'smooth'});return} geh(d.id,d.sub);render();window.scrollTo(0,0)},
   infoWeiter(){
     const el=$('#info'); if(!el||el.classList.contains('aus')) return;
     el.classList.add('aus');
