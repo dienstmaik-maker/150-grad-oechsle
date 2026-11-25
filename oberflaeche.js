@@ -2515,7 +2515,10 @@ const AKT={
     const ok=A.filter(a=>!a.g.length), spaeter=A.filter(jan), nein=A.filter(a=>a.g.length);
     const zeile=({st,g})=>{const s=STUFEN[st],ill=M&&!maniLegal(l,st);
       return `<div class="stufe"><div class="row"><b>${g.length?'✗':'✓'} ${s.name}</b>${g.length?'':`<button class="klein ${ill?'wag':''}" data-a="anmeldeJa" data-id="${l.id}" data-st="${st}">${ill?`🤫 Unter der Hand (${eur(s.geb+schmier(l,st))})`:`Anmelden${s.geb?' ('+eur(s.geb)+')':''}`}</button>`}</div>${g.length?`<div class="mut">${g.map(esc).join(' · ')}</div>`:oeUeber(st,l)?`<div class="mut">${oeUeber(st,l)}° über der Schwelle, Preis +${pz(oePreisF(st,l)-1)}</div>`:''}</div>`};
-    const zeilen=(ok.length?ok.map(zeile).join(''):'<div class="mut">Gerade geht keine Stufe.</div>')
+    // Seit 14.5.5: Der Weinprüfer nennt, welcher Schlüssel zur nächsten Stufe fehlt (Rang, Öchsle, Punkte), in allen Spielstufen.
+    // Gepanschter Most geht an ihm vorbei (unter der Hand, Entscheidungen 53 und 59). Platzhalter, Wortlaut in Meilenstein 17.
+    const PN=M?null:prueferNaechste(l), pruefer=PN&&PN.g.length?`<div class="hilfe" style="margin:10px 0">${PRUEFER_NAECHSTE.replace('{stufe}',STUFEN[PN.st].name).replace('{fehlt}',PN.g.map(esc).join(' · '))}</div>`:'';
+    const zeilen=(ok.length?ok.map(zeile).join(''):'<div class="mut">Gerade geht keine Stufe.</div>')+pruefer
       +(spaeter.length?`<div class="hilfe" style="margin:10px 0">📅 Ab Januar möglich: <b>${spaeter.map(a=>STUFEN[a.st].name).join(', ')}</b>.${ok.length?' Meldest du jetzt an, verschenkst du die bessere Stufe.':''}</div>`:'')
       +(nein.length?`<details class="stz"><summary>Nicht möglich (${nein.length})</summary>${nein.map(zeile).join('')}</details>`:'');
     openSheet(`${sbild('amt')}<h3>${esc(lotName(l))} anmelden</h3><p class="mut">${num(l.liter)}\u00a0l · ${l.oe}° Öchsle · ${LESE[l.leseart]} · Edelfäulnis ${l.edel?'ja':'nein'} · ${l.fassMonate} Monate im Fass</p>${M?`<p class="hilfe" style="margin:0 0 10px">🤫 Dieser Most ist ${maniText(l)}. Erlaubt ist das nur beim Tafelwein bis ${ZUCKER_ERLAUBT}\u00a0%. Alles andere geht nur unter der Hand gegen Schmiergeld, und der Wein gilt dann als gepanscht.</p>`:''}${zeilen}${mib('keller')}<div class="btns"><button class="sec" data-a="close">Schließen</button></div>`);
@@ -2523,19 +2526,20 @@ const AKT={
   anmeldeJa(d){
     const l=lot(d.id), st=d.st, s=STUFEN[st];
     if(pruefeAnmeldung(l,st).length) return;
-    // Gepanschter Most: nur unter der Hand, mit Schmiergeld und ohne Ansehen.
-    const ill=mani(l)&&!maniLegal(l,st), sg=ill?schmier(l,st):0;
+    // Gepanschter Most: nur unter der Hand, mit Schmiergeld und ohne Ansehen. Seit 14.5.5 bringt jeder gezuckerte oder gewässerte Wein kein Ansehen (ohneAns),
+    // auch der erlaubte Tafelwein (Entscheidungen 53 und 59), und bekommt nur, was seine Qualität sicher hergibt (dritter Schlüssel in pruefeQualitaet).
+    const ill=mani(l)&&!maniLegal(l,st), sg=ill?schmier(l,st):0, ohneAns=mani(l);
     if(ill&&S.geld<s.geb+sg) return meldung('Zu wenig Geld',`Der Beamte will ${eur(sg)} Schmiergeld${s.geb?`, dazu kommt die Gebühr von ${eur(s.geb)}`:''}.`);
     zahle(s.geb+sg);l.stufe=st;if(ill)l.pansch=true; const kw=kellerWein(l,st);
     // Seit 14.5.2 (Annahme 1): Die Qualität hat der Wein seit der Lese (l.qp), die Anmeldung rechnet nichts mehr.
     // Ansehen gibt es je Sorte, Jahrgang und Stufe nur einmal, auch wenn die Lese auf mehrere Fässer verteilt ist. S.ansGeb merkt sich das.
     const ak=l.sorte+'|'+l.jahrgang+'|'+st, AG=S.ansGeb=(S.ansGeb||[]).filter(k=>+k.split('|')[1]>=S.jahr-2), erst=!AG.includes(ak);
-    if(s.ans&&!ill&&erst) AG.push(ak);
+    if(s.ans&&!ohneAns&&erst) AG.push(ak);
     // Seit 13.6.2: Der Jahrhundertwein bringt bei der Anmeldung einmal JH_ANS Ansehen dazu, je Jahrgang einmal (S.jhAns).
-    const jhA=jhWein(l)&&!ill&&!(S.jhAns=S.jhAns||[]).includes(l.jahrgang); if(jhA) S.jhAns.push(l.jahrgang);
-    // Seit 14.2.6: plus 1 Ansehen je ANS_JE_QP Qualitätspunkte, minus ANSPRUCH_ANS je fehlendem Punkt zum Anspruch (ausgeschaltet).
-    const ans=(s.ans&&!ill&&erst?ruhm(s.ans+ansZuschlag(l)-ANSPRUCH_ANS*anspruchFehlt(st,l.qp),0,'Weine'):0)+(jhA?ruhm(JH_ANS,0,'Weine'):0);closeSheet();save();render();fx('stempel');
-    meldung('Angemeldet',`${lotName(l)} steht jetzt mit Qualität ${l.qp} im Kellerbuch.`+(ill?` Der Beamte hat ${eur(sg)} eingesteckt. Bis der Wein verkauft ist, darf ihn kein Prüfer finden.`:'')+(ans?` +${ans} Ansehen.`:s.ans&&!ill?' Ansehen gab es für diesen Jahrgang und diese Stufe schon.':'')+(st==='feder'?' Federweißer muss noch diesen Monat in die Flasche.':' Jetzt darf er abgefüllt werden.')+kw,'kellerbuch');
+    const jhA=jhWein(l)&&!ohneAns&&!(S.jhAns=S.jhAns||[]).includes(l.jahrgang); if(jhA) S.jhAns.push(l.jahrgang);
+    // Seit 14.2.6: plus 1 Ansehen je ANS_JE_QP Qualitätspunkte (bis 14.5.4 dazu minus ANSPRUCH_ANS je fehlendem Punkt, ausgeschaltet).
+    const ans=(s.ans&&!ohneAns&&erst?ruhm(s.ans+ansZuschlag(l),0,'Weine'):0)+(jhA?ruhm(JH_ANS,0,'Weine'):0);closeSheet();save();render();fx('stempel');
+    meldung('Angemeldet',`${lotName(l)} steht jetzt mit Qualität ${l.qp} im Kellerbuch.`+(ill?` Der Beamte hat ${eur(sg)} eingesteckt. Bis der Wein verkauft ist, darf ihn kein Prüfer finden.`:'')+(ans?` +${ans} Ansehen.`:s.ans&&!ohneAns?' Ansehen gab es für diesen Jahrgang und diese Stufe schon.':s.ans&&!ill?PANSCH_OHNE_ANS:'')+(st==='feder'?' Federweißer muss noch diesen Monat in die Flasche.':' Jetzt darf er abgefüllt werden.')+kw,'kellerbuch');
   },
   abfuellen(d){
     const l=lot(d.id); closeSheet();

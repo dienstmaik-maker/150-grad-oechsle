@@ -159,7 +159,7 @@ const ausdFrei=()=>frei('ausduennen'), ausdKosten=id=>Math.round(AUSD_HAND_HA*(S
 const ausdOffen=id=>{const f=S.felder[id]; return !!f&&f.reben>0&&S.monat===AUSD_MONAT&&ausdFrei()&&f.ausd!==S.jahr&&f.menge>0&&!f.gelesen};
 function ausduennen(id){const f=S.felder[id]; zahle(ausdKosten(id)); f.ausd=S.jahr; f.menge=Math.round(f.menge*(1-AUSD_MENGE))}
 // Nachfrage nach Annahme 34: Welche offene Sommerarbeit dieses Monats bringt einem Weinberg die nächste Weinstufe, die der Rang schon erlaubt?
-// Die Öchsle zählen nicht, nur der Anspruch (ANSPRUCH, bis 14.5.5 noch die alte Leiter). Beerenauslese und Trockenbeerenauslese zählen mit ihrem Weg
+// Die Öchsle zählen nicht, nur der Anspruch (ANSPRUCH, seit 14.5.5 die Leiter des dritten Schlüssels wie bei der Anmeldung). Beerenauslese und Trockenbeerenauslese zählen mit ihrem Weg
 // (weg_eigen, weg_tba), der Eiswein nicht, er hängt am Frost. Der Sommerschnitt wird nur gefragt, wo der Chef selbst schneidet (nicht abgegeben).
 // Einmal "ohne" gewählt, fragt das Spiel in diesem Monat nicht mehr (S.sommerGefragt). Meisterprüfung ohne Nachfrage (SOMMER_FRAGE).
 const stufeRangDarf=st=>FREI['wein_'+st]?frei('wein_'+st):st==='ba'?frei('weg_eigen'):st==='tba'?frei('weg_tba'):false;
@@ -1252,9 +1252,8 @@ function sektAnsText(){return S.sektJahr===S.jahr?`Die ${ansQ(SEKT_ANS,'Weine')}
 // Seit 13.3.5: Zuschlag für Pflegestufe und Terroir aufs Ansehen bei der Anmeldung.
 // Seit 14.2.6 (Annahme 15): 1 Ansehen je ANS_JE_QP Qualitätspunkte statt der festen Zuschläge für Pflegestufe und Terroir.
 const ansZuschlag=l=>Math.floor((l.qp||0)/ANS_JE_QP);
-// Seit 14.2.6 (Entscheidung 32): Anspruch je Weinstufe, ausgeschaltet (ANSPRUCH_PREIS und ANSPRUCH_ANS 0). Fehlende Punkte kosten Preis und Ansehen.
+// Seit 14.5.5: Punkte, die dem Wein zum Anspruch seiner Weinstufe fehlen (dritter Schlüssel). Bis 14.5.4 kosteten sie über anspruchF Preis und Ansehen (ausgeschaltet).
 const anspruchFehlt=(st,qp)=>Math.max(0,((ANSPRUCH||{})[st]||0)-(qp||0));
-const anspruchF=(st,qp)=>Math.max(0,1-ANSPRUCH_PREIS*anspruchFehlt(st,qp));
 function sektAnmelden(l){if(l.pansch||S.sektJahr===S.jahr) return 0; S.sektJahr=S.jahr; return ruhm(SEKT_ANS+ansZuschlag(l),0,'Weine')}
 const sektSorte=id=>!!S.rollen&&(SORTEN[id]||{}).rolle==='sekt';
 // Sekt, der noch auf der Hefe liegt, für den Sektkeller.
@@ -1499,6 +1498,9 @@ function pruefeQualitaet(st,q){
   // Seit 13.6.7: Ein Jahrhundertwein (q.jh) darf vor R8 Trockenbeerenauslese werden, wenn der eigene Weg offen ist (Entscheidung 6).
   else if(!frei('wein_'+st)&&!(st==='tba'&&q.jh&&frei('weg_eigen'))) g.push(`${d.name} erst ab dem Rang ${rangN(freiAb('wein_'+st))}`);
   if(q.oe<min) g.push(`es fehlen ${min-q.oe}° Öchsle (Minimum ${min}°)`);
+  // Seit 14.5.5 (Entscheidungen 19 und 34, Annahme 16): der dritte Schlüssel, die Qualität des Weins (l.qp, bei der Lese feldQ mit qualWb) gegen ANSPRUCH,
+  // nach Rang und Öchsle. Platzhalter, Wortlaut in Meilenstein 17.
+  {const n=anspruchFehlt(st,q.qp); if(n>0) g.push(`es ${n===1?'fehlt 1 Punkt':`fehlen ${n} Punkte`} Qualität (ab ${ANSPRUCH[st]} Punkten)`)}
   if(q.masch&&(st==='eis'||d.rang>STUFEN.qba.rang)) g.push('mit der Maschine gelesen gibt es höchstens Qualitätswein');
   if(st==='eis'){
     if(!q.eis) g.push('nur aus gefrorenen Trauben der Dezember-Lese');
@@ -1523,6 +1525,11 @@ function pruefeAnmeldung(l,st){
   return g;
 }
 function besteStufe(q){let b=null; for(const st of REIHE) if(!pruefeQualitaet(st,q).length) b=st; return b}
+// Seit 14.5.5: die nächste Stufe über der besten sicheren, die der Wein überhaupt werden kann: Die Rolle darf sie machen, gefrorene Trauben gehen nur
+// zum Eiswein (oder bis Qualitätswein), der Eiswein nur aus gefrorenen Trauben, mit Edelfäulnis kein Kabinett und keine Spätlese. Dazu, was ihr fehlt,
+// pruefeQualitaet nennt zuerst den Rang, dann die Öchsle, dann die Punkte (Annahme 16).
+const kannWerden=(q,st)=>rolleDarf(q.sorte,st)&&(q.eis?st==='eis'||STUFEN[st].rang<3:st!=='eis')&&!(q.edel&&STUFEN[st].edel===false);
+function prueferNaechste(q){const b=besteStufe(q), st=REIHE.slice(b?REIHE.indexOf(b)+1:0).find(st=>kannWerden(q,st)); return st?{st,g:pruefeQualitaet(st,q)}:null}
 // Name der Stufe für die Lese-Hilfe (bis 14.5.3 beim Eiswein mit seiner Wertstufe nach den Öchsle).
 const stufeText=st=>STUFEN[st].name;
 // Seit 13.4.2: auch gefrorene Trauben liest die Hand, wie früher, als es Eiswein nur mit Edelfäulnis gab.
@@ -1533,7 +1540,8 @@ const handBedarf=f=>Math.max(0,Math.ceil((f.reben-alleinReben())/HAND_REBEN));
 const handFehlt=f=>false;
 const handlese=f=>handFeld(f)&&!handFehlt(f);
 // Seit 13.2.3: Auch die überreife Lese (+5°) bleibt unter der Grenze des Weinbergs.
-function feldQ(f,la){const id=feldId(f); return {oe:Math.min(id?oeGrenze(id):OE_MAX,f.oe+(la==='ueber'?5:0)),leseart:la,edel:f.edel,eis:f.gefroren,masch:handFehlt(f)?1:0,sorte:id,...(f.jh?{jh:1}:{})}}
+// Seit 14.5.5 mit der Qualität des Weinbergs (qp), dem dritten Schlüssel.
+function feldQ(f,la){const id=feldId(f); return {oe:Math.min(id?oeGrenze(id):OE_MAX,f.oe+(la==='ueber'?5:0)),leseart:la,edel:f.edel,eis:f.gefroren,masch:handFehlt(f)?1:0,sorte:id,qp:id?qualWb(id):0,...(f.jh?{jh:1}:{})}}
 // Abnutzung bei der Lese (8.0): reben ist der Teil der Lese, den die Maschinen schaffen, M ihre Ernteleistung zusammen. Auslastung reben/M (höchstens 1),
 // je Maschine ABNUTZ_VOLL mal Auslastung mal Pflege-Faktor nach dem Zustand vor der ersten Lese des Jahres (ma.lj, ma.lz). Bruchteile sammelt ma.abn.
 function maschAbnutzung(reben,M){
@@ -1574,7 +1582,7 @@ function lagerBasis(l){
 function lageF(l){const g=S.lage; return !g?1:g.typ==='mode'?(stamm(l.sorte)===g.sorte?g.f:1):g.f}
 // Seit 14.5.4 (Entscheidungen 24, 38, 44 und 49, Annahmen 12 bis 14 und 35 bis 37 im Bauplan 14.5): Wert je Flasche ohne Flaschenreife, Markt und Sekt-Faktor.
 // Listenpreis der Weinstufe (STUFEN.preis) mal Grundpreis der Sorte (SORTE_PREIS, auch für die Spitzenlage) mal Qualitätsfaktor (QUAL_PREIS_AB plus QUAL_PREIS_JE
-// je Punkt, 50 Punkte sind der Listenpreis) mal Grand Cru (pflegePreis nach l.pfl) mal Öchsle-Zuschlag (oePreisF), dazu wie bisher Anspruch und Sterne.
+// je Punkt, 50 Punkte sind der Listenpreis) mal Grand Cru (pflegePreis nach l.pfl) mal Öchsle-Zuschlag (oePreisF), dazu wie bisher die Sterne (bis 14.5.4 auch anspruchF).
 // w braucht qp, oe, sorte, pfl und sekt, also einen Posten oder die Werte eines Weinbergs (leseWert).
 const qualPreisF=qp=>QUAL_PREIS_AB+QUAL_PREIS_JE*(qp||0);
 const sortePreisF=id=>SORTE_PREIS[rolleK(id)]||1;
@@ -1583,7 +1591,7 @@ const oeSchwelle=st=>st==='eis'?EIS_OE_SCHWELLE:st==='feder'||!st?null:R().min[s
 // Grad über der Schwelle, ohne Deckel (die Jury nimmt ihn ab 14.5.7 mit OE_JURY_MAX), beim Sekt 0.
 const oeUeber=(st,w)=>{const s=w.sekt?null:oeSchwelle(st); return s==null?0:Math.max(0,Math.round(w.oe||0)-s)};
 const oePreisF=(st,w)=>1+Math.min(OE_PREIS_MAX,OE_PREIS_JE*oeUeber(st,w));
-function weinWert(st,w){return STUFEN[st].preis*sortePreisF(w.sorte)*qualPreisF(w.qp)*(1+pflegePreis(w.pfl))*oePreisF(st,w)*anspruchF(st,w.qp)*sternF(w.sorte)}
+function weinWert(st,w){return STUFEN[st].preis*sortePreisF(w.sorte)*qualPreisF(w.qp)*(1+pflegePreis(w.pfl))*oePreisF(st,w)*sternF(w.sorte)}
 function preis(l){
   if(l.status!=='flasche') return 0;
   const L=lager(l); if(l.flMonate<L.min) return 0;
@@ -1665,8 +1673,9 @@ kompWissen('zeichen','stufe','Zeichen fürs Warten',()=>{
 function kompStufeText(st){
   const m=R().min, d=STUFEN[st];
   if(st==='feder') return `Ab ${m.tafel}° Öchsle, jede Leseart. Nur im Monat nach der Lese anmelden und abfüllen, gleich verkaufbar, hält 3 Monate. Der Weinhändler nimmt ihn in jeder Menge zum vollen Preis, schnelles Geld für den Notfall. Reich wird damit keiner.`;
-  if(st==='eis') return `Ab ${m.tafel}° Öchsle, nur gefrorene Trauben der Dezember-Lese, ${LESE.reif} oder ${LESE.ueber}, nicht gemischt. Nur im Januar anmelden. Die Öchsle bestimmen den Wert wie bei Auslese (ab ${m.aus}°), Beerenauslese (ab ${m.ba}°) oder Trockenbeerenauslese (ab ${m.tba}°).`;
-  return `Ab ${mindest(st)}° Öchsle, ${d.lese?LESE[d.lese]:'jede Leseart'}${d.edel===true?', mit Edelfäulnis':d.edel===false?', ohne Edelfäulnis':''}.`;
+  // Seit 14.5.4 ein Eiswein, ein Preis (bis 14.5.3 drei Wertstufen nach den Öchsle), seit 14.5.5 mit dem Anspruch an die Qualität. Platzhalter, Wortlaut in Meilenstein 17.
+  if(st==='eis') return `Ab ${m.tafel}° Öchsle und ${ANSPRUCH.eis} Punkten Qualität, nur gefrorene Trauben der Dezember-Lese, ${LESE.reif} oder ${LESE.ueber}, nicht gemischt. Nur im Januar anmelden. Ab ${EIS_OE_SCHWELLE}° bringt jeder Grad mehr Preis.`;
+  return `Ab ${mindest(st)}° Öchsle${ANSPRUCH[st]?` und ${ANSPRUCH[st]} Punkten Qualität`:''}, ${d.lese?LESE[d.lese]:'jede Leseart'}${d.edel===true?', mit Edelfäulnis':d.edel===false?', ohne Edelfäulnis':''}.`;
 }
 // Die zehn Einträge mit Siegeln je Kapitel: der Sekt bei den Sorten, die neun Stufen bei den Stufen. Nur sie zählen.
 function kompIds(kap){

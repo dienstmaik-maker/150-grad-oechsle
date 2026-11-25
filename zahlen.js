@@ -243,8 +243,9 @@ const ANS_JE_QP=5;
 const JH_ERST=91, JH_STREU=2;
 // Sommerschnitt von Hand LAUB_HAND_HA Euro je Hektar. Die Skala der Qualitätspunkte (QP_MIN, QP_MAX, QP_MAX_JH, JH_ZUSCHLAG, SONNE_QP_MAX) ist seit 14.5.2 weg.
 const LAUB_HAND_HA=500;
-// Anspruch je Weinstufe in Qualitätspunkten (Entscheidung 32), ausgeschaltet: ANSPRUCH_PREIS und ANSPRUCH_ANS je fehlendem Punkt stehen auf 0.
-const ANSPRUCH={feder:0,tafel:0,qba:15,kab:30,spat:40,aus:50,ba:60,tba:70,eis:50}, ANSPRUCH_PREIS=0, ANSPRUCH_ANS=0;
+// Seit 14.5.5 (Entscheidungen 19 und 34, Bauplan 14.5): der dritte Schlüssel je Wein, so viele Punkte Qualität braucht die Weinstufe (pruefeQualitaet).
+// Bis 14.5.4 war es der Anspruch aus 14.2.6 (Entscheidung 32: 0, 0, 15, 30, 40, 50, 60, 70, Eiswein 50), ausgeschaltet mit ANSPRUCH_PREIS und ANSPRUCH_ANS 0, beide sind weg.
+const ANSPRUCH={feder:0,tafel:5,qba:10,kab:25,spat:40,aus:55,ba:70,tba:85,eis:70};
 // Seit 14.2.4: Texte zur Erziehungsform und zum Sommerschnitt von Hand. Platzhalter, Wortlaut in Meilenstein 17.
 const FORM_RAT={menge:'Der alte Winzer rät zum Flachbogen: „Der trägt viel, der Schnitt ist billig, und die Maschine darf lesen. Genau das will die Menge-Sorte.“',
   sekt:'Der alte Winzer rät zum Kordon: „Am Kordon hängen die Trauben gleichmäßig und luftig, das gibt den feinsten Grundwein. Er ist teurer im Schnitt und hält Spätfrost und Oktoberregen besser aus. Lesen darf ihn nur der Vollernter, bis dahin liest die Hand.“',
@@ -1534,7 +1535,7 @@ const TITEL_NAMEN=[[['Spielidee &amp;','Entwicklung'],'Maik','Dienst'],[['Chef-T
 // ===== Seit 14.5.1 (Bauplan 14.5 Qualität, Lesereife und Weinprüfer, 25.11.2026). Alle Zahlen sind Startwerte, gemessen wird in Meilenstein 15.
 // In 14.5.1 noch ungenutzt. Bestehende Konstanten, die in 14.5 neue Werte bekommen oder entfallen, ändern sich in ihrer Unteretappe:
 // LAUB_QP (2) und die alten Punkte (QP_MIN, QP_MAX, STUFE_QPF, BODEN_ST_QP, SONNE_QP_MAX, PFLEGE_QP) in 14.5.2, FORM_WIRKUNG und ROLLEN.ertrag in 14.5.3,
-// STUFEN.preis, PFLEGE_PREIS, EIS_WERT und DECKEL_BASIS in 14.5.4, ANSPRUCH in 14.5.5, ANS_JE_QP (10) in 14.5.6, KRONEN.p und GEGNER_TYP.ws in 14.5.7.
+// STUFEN.preis, PFLEGE_PREIS, EIS_WERT und DECKEL_BASIS in 14.5.4, ANSPRUCH (ohne ANSPRUCH_PREIS und ANSPRUCH_ANS) in 14.5.5, ANS_JE_QP (10) in 14.5.6, KRONEN.p und GEGNER_TYP.ws in 14.5.7.
 // Qualität je Weinberg (Entscheidungen 18, 21 und 35): Pflege QUAL_PFLEGE_AB ab dem Rebstock plus QUAL_PFLEGE_EP der Entwicklungspunkte, höchstens QUAL_PFLEGE_MAX.
 // Boden gleitend zwischen QUAL_BODEN an den Schwellen BODEN_SCHWELLE, darüber der letzte Wert. Form aus FORMEN.qual.
 // Sonstiges: Laubschnitt LAUB_QP und Ausdünnen AUSD_QP. Bis zum Nachtrag zu 14.5.2 standen hier 3 Punkte Reserve (QUAL_RESERVE), Höchstwert 97.
@@ -1566,6 +1567,8 @@ const OE_PREIS_JE=.01, OE_PREIS_MAX=.1, OE_JURY_MAX=10, EIS_OE_SCHWELLE=110, EDE
 // ab dem Akt DURCH_ANS_AB_AKT kostet Durchfallen DURCH_ANS mal den Grundwert der Weinstufe. Anzeige je Spielstufe nach dem Muster CHANCE_ZEIGE.
 const WAGNIS_AB_AKT=2, WAGNIS_JE_PUNKT=.1, DURCH_PREIS=.25, DURCH_ANS_AB_AKT=3, DURCH_ANS=.5;
 const PRUEFER_ZEIGE={einfach:'chance',mittel:'punkte',schwer:''}, PRESSE_RAT_AB=.8;
+// Seit 14.5.5: Der Weinprüfer im Fenster der Anmeldung nennt in allen Spielstufen, welcher Schlüssel zur nächsten Stufe fehlt. Platzhalter, Wortlaut in Meilenstein 17.
+const PRUEFER_NAECHSTE='🔍 Weinprüfer, zur nächsten Stufe ({stufe}): {fehlt}.', PANSCH_OHNE_ANS=' Gezuckerter oder gewässerter Wein bringt kein Ansehen.';
 // Presse beim Präsidenten (FREI.presse): Erfolg PRESSE_ERFOLG mal, Durchfallen PRESSE_DURCH mal der Grundwert, PRESSE_JE_JAHR Einsatz im Jahr.
 const PRESSE_ERFOLG=2, PRESSE_DURCH=3, PRESSE_JE_JAHR=1;
 // Jury (Entscheidung 36, Maik 25.11.2026): Jahrhundertwein JH_JURY mehr, Sekt mit dem Wert SEKT_JURY, die Felder WETT_FELD_PLUS höher.
