@@ -565,7 +565,7 @@ function vWeltschau(){
   return fenster('weltschau','Weltweinschau',z+`<div class="mut">${satz}</div>${K?`<div class="kv"><span>⭐ Der Favorit</span><span>${esc(K.fav.split(',')[0])}</span></div><div class="mut"><small>${esc(K.gesch||'')}</small></div>${A.schauB||(s&&s.ein)?'':`<div class="mut">Die erste Krone gibt es im ${MON[WELT_MONAT]} nach deiner ersten Anmeldung im ${MON[WELT_ANM]}.</div>`}`:''}`,{
     stand:K?`${kronen().length} von ${KRONEN.length} Kronen`:'',
     kn:schauAnm()?[pk('schau',s.ein?'Tauschen':n?'Wein anmelden':'Ansehen','',{sec:!!s.ein||!n})]:[],
-    i:`Jedes Jahr im ${MON[WELT_MONAT]} ist Weltweinschau auf dem Dorfplatz, angemeldet wird im ${MON[WELT_ANM]}. Es geht um eine Krone nach der anderen: ${KRONEN.map(X=>`die ${X.name} mit ${X.was}`).join(', ')}. Verlierst du, ist im nächsten Jahr dieselbe Krone dran, gewonnene Kronen bleiben, auch nach einer Abwahl. Jede Krone bringt ${KRONE_ANS} Ansehen. Mit der dritten wirst du ${ehrP()}, danach kommen die letzte Übergabe und die Chronik.`});
+    i:`Jedes Jahr im ${MON[WELT_MONAT]} ist Weltweinschau auf dem Dorfplatz, angemeldet wird im ${MON[WELT_ANM]}. Es geht um eine Krone nach der anderen: ${KRONEN.map(X=>`die ${X.name} mit ${X.was}`).join(', ')}. Verlierst du, ist im nächsten Jahr dieselbe Krone dran, gewonnene Kronen bleiben, auch nach einer Abwahl. Jede Krone bringt ${KRONE_ANS} Ansehen.${KRONEN.filter(X=>X.sorten).map(X=>KRONE_SORTE_TEXT.info.replace('{krone}',X.name)).join('')} Mit der dritten wirst du ${ehrP()}, danach kommen die letzte Übergabe und die Chronik.`});
 }
 // Fenster "Weinbauverband" im Rathaus, nur mit Amt (im Amt oder abgewählt): Balken mit Marke, Amtszeiten, nächste Wahl, im Wahlkampf der Herausforderer
 // und der Knopf "Stimmen kaufen". Die Regeln stehen im i.
@@ -1402,7 +1402,7 @@ function vStadt(){
         const s=S.schau, K=KRONEN[s?s.kl:kroneKl()];
         if(!schauAnm()) return fz(`🌍 ${WETTNAME.welt} · ${K.name}`,s?`${s.ein?'Angemeldet: '+esc(s.ein.name):'Kein Wein angemeldet'}. Die Schau ist im ${MON[WELT_MONAT]}.`:`Als Nächstes Anmeldung im ${wettNaechst('welt')}.`);
         const n=S.lots.filter(l=>schauFaehig(l)).length;
-        return fz(`🌍 ${WETTNAME.welt} ${S.jahr} · ${K.name}`,s.ein?`Angemeldet: ${esc(s.ein.name)}`:n?`${n} ${n===1?'Wein ist':'Weine sind'} zugelassen`:'Du hast gerade keinen zugelassenen Wein.',
+        return fz(`🌍 ${WETTNAME.welt} ${S.jahr} · ${K.name}`,s.ein?`Angemeldet: ${esc(s.ein.name)}`:n?`${n} ${n===1?'Wein ist':'Weine sind'} zugelassen`:esc(kroneFehltText(s.kl))||'Du hast gerade keinen zugelassenen Wein.',
           s.ein?'Tauschen geht bis zum Monatsende.':n?'<span class="rot">Anmelden geht nur diesen Monat.</span>':'',
           `<button class="klein${s.ein||!n?' sec':''}" data-a="schau">${s.ein?'Tauschen':n?'Anmelden':'Ansehen'}</button>`)};
       h+=fenster('wettb','Wettbewerbe',[wz('land'),wz('bund'),...(S.amt&&S.amt.brief?[sz()]:[])],{hin:[mb&&`${MGR_BEREICHE[mb].sym} ${mgrG(mb).Dein} ${MGR_BEREICHE[mb].name} reicht beim Weiterblättern deinen besten Wein ein.${S.amt&&S.amt.brief?' Den Wein für die Weltweinschau wählst du selbst.':''}`],i:wI});
@@ -2067,7 +2067,8 @@ const AKT={
     wettSheet(`${sbild('weltweinschau')}<h3>${K.sym} ${WETTNAME.welt} ${S.jahr}: ${K.name}</h3>
       ${e?`<p>Angemeldet: <b>${esc(e.name)}</b>. Die Schau ist im ${MON[WELT_MONAT]}, das Ergebnis steht im Winzerboten danach.${an?' Bis zum Monatsende kannst du noch tauschen.':''}</p>`:''}
       <p class="mut">${kroneText(K)} Zugelassen sind verkaufsreife Weine aus der Flasche, nicht gepanscht und lange genug gelagert, auch gereifte und schon prämierte. Es zählen die Punkte. Als Favorit gilt ${esc(s.feld.find(x=>x.fav).name)}.</p>
-      ${!an?'':ls.length?ls.map(l=>`<button class="wahl ${e&&e.id===l.id?'an':''}" data-a="schauJa" data-id="${l.id}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${juryText(l,1)}</span></button>`).join(''):`<div class="card mut">Du hast gerade keinen zugelassenen Wein für die ${K.name}.</div>`}
+      ${kroneFehlt(s.kl).length?`<div class="card rot">${esc(kroneFehltText(s.kl))}</div>`:''}
+      ${!an?'':ls.length?ls.map(l=>`<button class="wahl ${e&&e.id===l.id?'an':''}" data-a="schauJa" data-id="${l.id}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${juryText(l,1)}</span></button>`).join(''):kroneFehlt(s.kl).length?'':`<div class="card mut">Du hast gerade keinen zugelassenen Wein für die ${K.name}.</div>`}
       <div class="btns"><button class="sec" data-a="close">${e||!ls.length?'Schließen':'Später entscheiden'}</button></div>`);
   },
   schauJa(d){

@@ -986,8 +986,15 @@ const kroneHat=k=>kronen().some(x=>x.k===k);
 // Die Klasse, die dran ist: die erste ohne Krone in der festen Reihenfolge, nach der dritten Krone null.
 function kroneKl(){const i=KRONEN.findIndex(K=>!kroneHat(K.k)); return i<0?null:i}
 const kroneWein=(l,kl)=>{const K=KRONEN[kl]; return K.sekt?!!l.sekt:!l.sekt&&K.stufen.includes(l.stufe)};
-// Regeln wie bisher: abgefüllt, nicht gepanscht, lange genug gelagert, dazu die Klasse.
-function schauFaehig(l,s=S.schau){return !!(s&&l&&l.stufe&&!l.pansch&&l.status==='flasche'&&l.flMonate>=lager(l).min&&kroneWein(l,s.kl))}
+// Nachtrag vor 14.6.1 (Maik 25.11.2026): S.sorteVerk merkt je Rolle (menge, sekt, spitze) das Jahr, in dem zum ersten Mal ein eigener Jahrgang verkauft wurde,
+// auf jedem Weg über kompVerkauf, gepanschter Wein zählt nie. Ein Sekt zählt bei der Sekt-Sorte. kroneFehlt nennt die Rollen, die der Krone kl noch fehlen.
+function sorteVerkMerk(l,so=kompRollen()){const id=stamm(l.sorte), rl=l.sekt?'sekt':Object.keys(so).find(r=>r!=='sekt'&&so[r]===id)||rolleK(id), V=S.sorteVerk=S.sorteVerk||{}; if(V[rl]==null) V[rl]=S.jahr}
+function kroneFehlt(kl){const K=KRONEN[kl]; if(!K||!K.sorten) return []; const V=S.sorteVerk||{}; return K.sorten.filter(rl=>V[rl]==null)}
+// Die fehlenden Sorten in Worten, zum Beispiel "deiner Sekt-Sorte (Elbling)". art: lang (Anmeldung), kurz (Das steht an). Leer, wenn nichts fehlt.
+function kroneFehltText(kl,art='lang'){const f=kroneFehlt(kl); if(!f.length) return ''; const so=kompRollen(), n=f.map(rl=>`deiner ${ROLLEN[rl].name}${so[rl]&&SORTEN[so[rl]]?` (${SORTEN[so[rl]].name})`:''}`);
+  return KRONE_SORTE_TEXT[art].replace('{krone}',KRONEN[kl].name).replace('{fehlt}',n.join(', ').replace(/, ([^,]*)$/,' und $1'))}
+// Regeln wie bisher: abgefüllt, nicht gepanscht, lange genug gelagert, dazu die Klasse. Seit dem Nachtrag vor 14.6.1 für die Raritäten-Krone alle drei Sorten verkauft.
+function schauFaehig(l,s=S.schau){return !!(s&&l&&l.stufe&&!l.pansch&&l.status==='flasche'&&l.flMonate>=lager(l).min&&kroneWein(l,s.kl)&&!kroneFehlt(s.kl).length)}
 // Es zählen die Punkte wie bisher (mit Reife), seit 14.2.6 auch beim Jahrhundertwein seine eigenen. Sie stehen beim Einreichen fest.
 function schauPunkte(l,s=S.schau){return juryGrund(l,1)+s.zufall+(R().wettPlus||0)}
 function schauNeu(){
@@ -1892,6 +1899,7 @@ function kompLese(id,liter){id=stamm(id); if(KOMP['sorte_'+id]) kompE('sorte_'+i
 function kompVerkauf(l,n){
   if(!l||!(n>0)||l.pansch) return;
   const so=kompRollen();
+  sorteVerkMerk(l,so);
   if(l.sekt){if(!S.rollen||l.sorte===so.sekt) komp('sekt',{f:n}); return}
   const rl=KOMP_STUFE_ROLLE[l.stufe]; if(rl&&stamm(l.sorte)===so[rl]) komp('stufe_'+l.stufe,{f:n});
 }
@@ -2570,7 +2578,7 @@ function aufgaben(){
   // Seit 13.6.4: Nach der dritten Krone steht die letzte Übergabe an.
   if(amtEhre()&&!S.ende) A.push({t:`👪 Im Januar ${endeJahr()} übergibst du ${S.name} am Küchentisch, danach kommt die Chronik`,tab:'stadt',sub:'amt',ruhig:1});
   // Seit 13.6.3: Anmeldung zur Weltweinschau im Januar, rot nur mit einem zugelassenen Wein.
-  if(schauAnm()&&!S.schau.ein){const K=KRONEN[S.schau.kl], pass=S.lots.some(l=>schauFaehig(l)); A.push({t:`${K.sym} Weltweinschau, ${K.name}: `+(pass?'diesen Monat einen Wein anmelden':'diesen Monat, du hast aber keinen zugelassenen Wein'),tab:'stadt',sub:'amt',...(pass?{rot:1}:{ruhig:1})})}
+  if(schauAnm()&&!S.schau.ein){const K=KRONEN[S.schau.kl], pass=S.lots.some(l=>schauFaehig(l)); A.push({t:`${K.sym} Weltweinschau, ${K.name}: `+(pass?'diesen Monat einen Wein anmelden':'diesen Monat, '+(kroneFehltText(S.schau.kl,'kurz')||'du hast aber keinen zugelassenen Wein')),tab:'stadt',sub:'amt',...(pass?{rot:1}:{ruhig:1})})}
   if(fehlText()) A.push({t:`${fehlText()}, vorher geht es nicht in den nächsten Monat`,rot:1,tab:'stadt',sub:'arbeit'});
   if(m>=5&&m<=10&&leseFaktor()<.75&&weinberge().some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen)) A.push({t:`Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0% der Reben`,rot:1,tab:'stadt',sub:'arbeit'});
   // Seit 8.0: Maschinen unter MASCH_ROT fallen aus (Rot), unter MASCH_GELB lohnt das Warten (Gelb). Wartet der Weingut-Manager nach der Lese, ist Gelb nur ein Hinweis.
