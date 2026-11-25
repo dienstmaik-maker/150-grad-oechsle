@@ -744,6 +744,18 @@ html.brett main{padding-top:18px}
 .wbzl>b{flex:none;font-weight:700;font-variant-numeric:lining-nums tabular-nums;white-space:nowrap}
 .wbgebiet{margin-top:10px;padding-top:8px;border-top:1px solid rgba(120,80,40,.3)}
 .wbgebiet .fklapp{margin-top:6px}
+/* Seit 16.4.4: Zeilen der Köpfe und Leitern in Deine Leute */
+.lzeile{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid rgba(120,80,40,.22);cursor:pointer}
+.lzeile>img{flex:none;width:46px;height:46px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px #c9a45c,0 1px 3px rgba(0,0,0,.35)}
+.lzeile>div{flex:1;min-width:0}
+.lzeile b{display:block;font:700 16px/1.2 var(--schrift);color:var(--ink)}
+.lzeile span{display:block;font:italic 14px/1.3 var(--schrift);color:var(--mut)}
+.lzeile span>span{display:inline}
+.lzeile .rot{color:var(--rot)}
+.lzeile>.pf{flex:none;font:700 24px/1 var(--schrift);font-style:normal;color:#8a5a2a;padding-right:4px}
+.lzeile.leiter{cursor:inherit}
+.lzeile.gesperrt{cursor:default;opacity:.8}.lzeile.gesperrt>img{filter:grayscale(1) brightness(.9)}
+.wbk.gesperrt .lzeile{opacity:1}
 .wbk.gesperrt{opacity:.82}
 .wbk.gesperrt .wbkopf{cursor:default}
 .wbk.gesperrt .wbbild{filter:grayscale(1) brightness(.85)}

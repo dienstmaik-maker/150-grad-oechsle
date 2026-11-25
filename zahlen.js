@@ -1766,4 +1766,10 @@ const WB_TEXT={
   betrieb:{klein:'Anbaugebiet {gebiet}', fass:'Fassraum', fassUnter:'{bel} von {ges} l', flaschen:'Leere Flaschen', loehne:'Löhne im Monat',
     hin:{leute:'Leute fehlen', fass:'Fassraum reicht nicht', fertig:'Alles im Lot'},
     flaeche:'Fläche', bepflanzt:'Bepflanzt', platz:'Platz frei', lage:'Lagen', spitze:'Spitzenlage', kosten:'Feste Kosten im Monat', kredit:'Kredit, Restschuld',
-    gebiet:'Dein Gebiet', zeigen:'Steckbrief zeigen', zuklappen:'Zuklappen', frei:'frei', einsatz:'im Einsatz', masch:'Maschinen', basis:'Betriebskosten', rate:'Kreditrate'}};
+    gebiet:'Dein Gebiet', zeigen:'Steckbrief zeigen', zuklappen:'Zuklappen', frei:'frei', einsatz:'im Einsatz', masch:'Maschinen', basis:'Betriebskosten', rate:'Kreditrate',
+    familie:'Deine Leute', familieW:'Familie, schafft {ha} Hektar'},
+  // Seit 16.4.4 (Maiks Entscheidung 2, Annahmen 5 und 6): Karte "Deine Leute" mit den zwei Köpfen und den zwei Leitern. Platzhalter, Wortlaut in Meilenstein 17.
+  leute:{titel:'Deine Leute', klein:'Köpfe und Leute im Betrieb', hin:{fehlen:'Leute fehlen', leistung:'Ernteleistung reicht nicht', fertig:'Alle an Bord'},
+    stufe:'Stufe {st} von {n}', lohn:'{lohn} im Monat', kommt:'kommt mit dem nächsten Monat', keiner:'Noch keiner angestellt', fehlt1:'Es fehlt einer', fehltN:'Es fehlen {n}',
+    reichen:'Reichen für {n} Reben', leistung:'Ernteleistung {n} Reben', draussen:'Draußen', drinnen:'Drinnen', angestellt:'Angestellt', stufeL:'Stufe', lohnL:'Lohn im Monat',
+    sperre:'vorher geht es nicht in den nächsten Monat', koepfe:'Köpfe', loehne:'Löhne der Leute', mgrLohn:'Löhne der Köpfe'}};

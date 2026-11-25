@@ -919,6 +919,7 @@ function wbBetriebKarte(){
   const L=[], add=(k_,v,kl)=>L.push(`<div${kl?` class="${kl}"`:''}><dt>${k_}</dt><dd>${v}</dd></div>`);
   add(T.flaeche,`${wbHa(S.ha)} Hektar`); add(T.bepflanzt,`${rbn(bep)} Reben, ${Math.round(ges?bep/ges*100:0)} %`); add(T.platz,`${rbn(ges-bep)} Reben`);
   add(T.kosten,eur(k.basis+k.loehne+k.tilgung+k.zins));
+  if(!einFrei('leute')) add(T.familie,wbT(T.familieW,{ha:ALLEIN_HA}));
   add(T.lage,hangZeile(),'breit');
   if(S.spitze) add(T.spitze,`${SPITZE_HA} Hektar Südhang, ${KLIMA_WORT.spitzenlage}`,'breit');
   if(S.kredit) add(T.kredit,eur(S.kredit.rest),'breit');
@@ -939,23 +940,55 @@ function wbPanelBetrieb(){
   return wbPanelRahmen(S.name,wbAbschnitt('🏡',WB_TEXT.zustand,z)+wbAbschnitt('💶',WB_TEXT.kosten,ko)+wbAbschnitt('💡',WB_TEXT.tipps,tipp));
 }
 function vBetrieb(){
-  const F=hoffestHtml(), M=mgrHtml();
+  const F=hoffestHtml();
+  // Seit 16.4.4: Die Manager-Karten p_weingut und p_handel entfallen, die zwei Köpfe stehen oben in "Deine Leute" (mgrHtml bleibt ungenutzt stehen).
   return (F.jetzt?F.h:'')+wbBetriebKarte()
-    +M.h+leuteHtml()+(F.jetzt?'':F.h||'')+M.zu+(F.zu||'')+vMaschinen();   // seit 16.4.1: die Maschinen unten im Betrieb (bis 16.3 eigener Unterreiter)
+    +leuteHtml()+(F.jetzt?'':F.h||'')+(F.zu||'')+vMaschinen();   // seit 16.4.1: die Maschinen unten im Betrieb (bis 16.3 eigener Unterreiter)
 }
 // Seit 7.5: Erntehelfer und Lagerarbeiter im Betrieb, je eine Zeile mit Anzahl, Aufgabe und Lohn. Eingestellt und entlassen wird im Arbeitsamt.
+// Seit 16.4.4 (Maiks Entscheidung 2, Annahmen 5 und 6): Karte "Deine Leute" im Kartenbaustein. Immer zu sehen: oben die zwei Köpfe mit Porträt (Tipp öffnet ihr Fenster,
+// data-a="mgr" wie bisher), noch nicht da ausgegraut mit Schloss und Freischalt-Text, darunter die zwei Leitern mit Bild, Anzahl, Stufenname, Lohn und der Warnung.
+// Draußen dazu, für wie viele Reben die Leute reichen, und die Ernteleistung (bis 16.4.3 in der Boden-Karte). Aufgeklappt die Texte des alten Fensters je Leiter,
+// die Zeilen zum Weingut-Manager und der Weg ins Arbeitsamt. Platzhalter, Wortlaut in Meilenstein 17.
+const LEUTE_BILD={helfer:'leute-erntehelferin.jpg',lagerarb:'manager-keller.jpg'};
+function leuteKopf(b){
+  const M=MGR_BEREICHE[b], T=WB_TEXT.leute, st=mgrSt(b), E=MANAGER.filter(e=>e.bereich===b), G=mgrG(b);
+  if(einZu('p_'+b)) return '';
+  if(!st&&!frei(mgrK(E[0]))) return `<div class="lzeile gesperrt"><img src="bilder/${M.bild}" alt=""><div><b>🔒 ${M.name}</b><span>${freiText(mgrK(E[0]))}</span></div></div>`;
+  return `<div class="lzeile" role="button" tabindex="0" data-a="mgr" data-id="${b}" id="lk_${b}"><img src="bilder/${M.bild}" alt=""><div><b>${st?G.Dein+' '+M.name:M.name}</b>
+    <span>${st?`${wbT(T.stufe,{st,n:E.length})} · ${wbT(T.lohn,{lohn:eur(mgrEintrag(b,st).lohn)})}`:T.kommt}</span></div><i class="pf">›</i></div>`;
+}
+function leuteLeiter(k){
+  const T=WB_TEXT.leute, fe=leuteFehlen()[k], st=leuteSt(k), name=st?leuteStName(k,st):LEUTE_ST[k].name, knapp=k==='helfer'&&leseFaktor()<1;
+  const unter=[S[k]?wbT(T.lohn,{lohn:eur(lohnSumme(k))}):T.keiner];
+  if(k==='helfer') unter.push(`<span class="${fe?'rot':''}">${wbT(T.reichen,{n:rbn(helferReben())})}</span>`,`<span class="${knapp?'rot':''}">${wbT(T.leistung,{n:rbn(leistung())})}</span>`);
+  return `<div class="lzeile leiter"><img src="bilder/${LEUTE_BILD[k]}" alt=""><div><b>${S[k]} ${name}</b><span>${unter.join(' · ')}</span>
+    ${fe?`<span class="rot">${fe===1?T.fehlt1:wbT(T.fehltN,{n:fe})}, ${T.sperre}.</span>`:''}</div></div>`;
+}
 function leuteHtml(){
-  const fe=leuteFehlen(), ms=maschHelfer();
-  const z=(k,name,aufg)=>`<div class="fz"><b>${name}</b><div class="mut">${aufg}</div><div class="kv"><span>Angestellt</span><span>${S[k]}</span></div>
-    <div class="kv"><span>Stufe</span><span>${leuteSt(k)} von 3</span></div><div class="mut">${leuteStufeText(k)}</div>
-    ${S[k]?`<div class="kv"><span>Lohn im Monat</span><span>${eur(lohnSumme(k))}</span></div>`:''}${fe[k]?`<div class="rot" style="font-size:14px;margin-top:4px">${fe[k]===1?'Es fehlt einer':'Es fehlen '+fe[k]}, vorher geht es nicht in den nächsten Monat.</div>`:''}</div>`;
-  return fenster('leute','Deine Leute',[
-    z('helfer','Erntehelfer',`Fest angestellt, pflegen die Reben und lesen die Trauben. Einer je ${haWort(REBEN_JE_HELFER/HA_REBEN)} Reben${ALLEIN_HA?`, die ersten ${ALLEIN_HA} Hektar schafft deine Familie`:''}${ms?`, deine Erntemaschinen im Einsatz decken ${haWort(ms)} ab`:''}. ${S.rang>=R_STREU?'Sie fahren auch die Maschinen und lesen':'Sie lesen auch'} Edelfäulnis und Eiswein von Hand.`),
-    z('lagerarb','Kellerleute',`Betreuen Fassraum und leere Flaschen. Einer je ${num(FASS_JE_LAGERARB)} l Fassraum und ${num(flJeLager())} Flaschen${bonusMasch('abfuell')?', mit der Abfüllanlage':''}${ALLEIN_FASS||ALLEIN_FL?`, ${num(ALLEIN_FASS)} l und ${num(ALLEIN_FL)} Flaschen betreust du selbst`:''}.${maschFrei('abfuell')||S.maschinen.some(x=>x.typ==='abfuell')?' Einer bedient auch die Abfüllanlage.':''}`)],{
-    hin:[aufgabeAktiv('helfer')&&`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name} stellt fehlende Erntehelfer beim Weiterblättern ein.`,
-      aufgabeAktiv('lager')&&`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name} stellt fehlende Kellerleute beim Weiterblättern ein.`,csChef('leute')],
-    kn:pk('arbeitsamt','Zum Arbeitsamt','',{sec:1}),buch:'arbeit',
-    i:`${helferRegel()}. ${lagerRegel()}. Deine Leute brauchst du das ganze Jahr: Fehlt jemand, geht es nicht in den nächsten Monat. Einstellen und entlassen kannst du im Arbeitsamt. Dort schwankt der Lohn jeden Monat zwischen ${eur(lohnF(LOHN_MIN))} und ${eur(lohnF(LOHN_MAX))}, wer eingestellt ist, behält seinen Lohn.`});
+  const T=WB_TEXT.leute, fe=leuteFehlen(), ms=maschHelfer(), lz=einFrei('leute');
+  const koepfe=Object.keys(MGR_BEREICHE).sort((a,b)=>a==='weingut'?-1:b==='weingut'?1:0).map(leuteKopf).join('');
+  if(!lz&&!koepfe) return '';
+  const knapp=leseFaktor()<1&&feldHaengt().length&&S.monat>=7;
+  const hw=fe.helfer||fe.lagerarb?['rot',T.hin.fehlen]:knapp?['rot',T.hin.leistung]:['gruen',T.hin.fertig];
+  const unter=koepfe+(lz?leuteLeiter('helfer')+leuteLeiter('lagerarb'):'');
+  const det=(k,name,aufg)=>`<div class="wbreihe"><div class="wbkv"><b>${name}</b><span>${wbT(T.stufe,{st:leuteSt(k),n:3})}</span></div><div class="wbunter">${aufg}</div><div class="wbklein">${leuteStufeText(k)}</div></div>`;
+  const WM=`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name}`;
+  const I=[aufgabeAktiv('helfer')&&`${WM} stellt fehlende Erntehelfer beim Weiterblättern ein.`,aufgabeAktiv('lager')&&`${WM} stellt fehlende Kellerleute beim Weiterblättern ein.`,csChef('leute')].filter(Boolean).map(x=>wbInfo(x,'mgr')).join('');
+  const auf=lz?I+det('helfer',T.draussen+': '+LEUTE_ST.helfer.name,`Fest angestellt, pflegen die Reben und lesen die Trauben. Einer je ${haWort(REBEN_JE_HELFER/HA_REBEN)} Reben${ALLEIN_HA?`, die ersten ${ALLEIN_HA} Hektar schafft deine Familie`:''}${ms?`, deine Erntemaschinen im Einsatz decken ${haWort(ms)} ab`:''}. ${S.rang>=R_STREU?'Sie fahren auch die Maschinen und lesen':'Sie lesen auch'} Edelfäulnis und Eiswein von Hand.`)
+    +det('lagerarb',T.drinnen+': '+LEUTE_ST.lagerarb.name,`Betreuen Fassraum und leere Flaschen. Einer je ${num(FASS_JE_LAGERARB)} l Fassraum und ${num(flJeLager())} Flaschen${bonusMasch('abfuell')?', mit der Abfüllanlage':''}${ALLEIN_FASS||ALLEIN_FL?`, ${num(ALLEIN_FASS)} l und ${num(ALLEIN_FL)} Flaschen betreust du selbst`:''}.${maschFrei('abfuell')||S.maschinen.some(x=>x.typ==='abfuell')?' Einer bedient auch die Abfüllanlage.':''}`)
+    +`<div class="wbkn">${pk('arbeitsamt','Zum Arbeitsamt','',{sec:1})}</div>`:'';
+  return wbKarte('leute',T.titel,T.klein,`<div class="hinw ${hw[0]}"><i></i><em>${hw[1]}</em></div>`,auf,{ohneBild:1,iId:'leute',iName:T.titel,unter,gesperrt:!lz});
+}
+// Info-Panel der Karte "Deine Leute": Zustand, Löhne und als Tipp der i-Text des alten Fensters.
+function wbPanelLeute(){
+  const T=WB_TEXT.leute, fe=leuteFehlen();
+  const z=wbKv(LEUTE_ST.helfer.name,`${S.helfer}, ${wbT(T.reichen,{n:rbn(helferReben())})}`,fe.helfer?'rot':'')+wbKv(T.leistung.replace(' {n} Reben',''),`${rbn(leistung())} Reben`,leseFaktor()<1?'rot':'')
+    +wbKv(LEUTE_ST.lagerarb.name,String(S.lagerarb),fe.lagerarb?'rot':'');
+  const k=wbKv(T.loehne,eur(lohnSumme('helfer')+lohnSumme('lagerarb')))+wbKv(T.mgrLohn,eur(mgrLohn()));
+  const tipp=`<p style="margin:0 0 6px">${helferRegel()}. ${lagerRegel()}. Deine Leute brauchst du das ganze Jahr: Fehlt jemand, geht es nicht in den nächsten Monat. Einstellen und entlassen kannst du im Arbeitsamt. Dort schwankt der Lohn jeden Monat zwischen ${eur(lohnF(LOHN_MIN))} und ${eur(lohnF(LOHN_MAX))}, wer eingestellt ist, behält seinen Lohn.</p>`
+    +`<p style="margin:0 0 6px">Deine zwei Köpfe, ${MGR_BEREICHE.weingut.name} und ${MGR_BEREICHE.handel.name}, kommen mit deinem Rang von selbst. Ein Tipp auf ihre Zeile öffnet ihr Fenster mit allen Schaltern.</p>${mib('arbeit')} ${mib('manager')}`;
+  return wbPanelRahmen(T.titel,wbAbschnitt('<img src="bilder/sym-mitarbeiter.webp" alt="">',WB_TEXT.zustand,einFrei('leute')?z:'')+wbAbschnitt('💶',WB_TEXT.kosten,k)+wbAbschnitt('💡',WB_TEXT.tipps,tipp));
 }
 function reserveChips(){const d=S.dauer||{}; return `<div class="chips" style="flex-wrap:wrap">${DAUER_RESERVE.map(n=>`<button class="chip ${(+d.reserve||0)===n?'an':''}" data-a="dauerRes" data-id="${n}">${n?num(n):'keine'}</button>`).join('')}</div>`}
 function mgrLogHtml(b){
@@ -1022,7 +1055,7 @@ function mgrFenster(b){
   ${st?`<div class="kv"><span>Lohn im Monat</span><span>${lohn}</span></div>`:''}
   ${m.zuletzt?`<div class="kv"><span>Zuletzt</span><span>${esc(m.zuletzt)}</span></div>`:''}
   ${mgrSchalter(b)}
-  ${n&&st&&!neu?`<div class="mut" style="margin:8px 0">Stufe ${n.stufe} kommt ${freiText(mgrK(n))}.</div>`:''}${mib('manager')}
+  ${n&&st&&!neu?`<div class="mut" style="margin:8px 0">Stufe ${n.stufe} kommt ${freiText(mgrK(n))}.</div>`:''}${st&&!neu?mgrLogHtml(b):''}${mib('manager')}
   ${neu?`<div class="mitte"><button class="siegel" data-a="mgrDa">Okay</button></div>`:`<div class="btns"><button class="sec" data-a="close">Zurück</button></div>`}`;
 }
 // Stellt den nächsten Manager aus S.mgrNeu vor, sobald Zeitung und Feier vorbei sind und kein Fenster offen ist. Läuft am Ende von render.
@@ -1287,15 +1320,15 @@ function wbFakten(id){const f=S.felder[id], so=SORTEN[id], m=S.monat, F=WB_TEXT.
     add(F.plan,P.join('<br>'),1)}
   return `<dl class="wbfakt">${L.join('')}</dl>`}
 // Die Karte selbst. kopf ist der immer sichtbare Teil rechts vom Bild, auf der aufgeklappte Teil darunter. Gesperrte Karten klappen nicht auf.
-// Seit 16.4.2: o.unter steht immer sichtbar unter Bild und Kopf über die ganze Breite (Zeilen, die neben dem Bild umbrechen würden).
+// Seit 16.4.2: o.unter steht immer sichtbar unter Bild und Kopf über die ganze Breite (Zeilen, die neben dem Bild umbrechen würden). Seit 16.4.4 o.ohneBild.
 function wbKarte(id,titel,klein,kopf,auf,o={}){
   const iId=o.iId||'feld_'+id, zu=!o.gesperrt, offen=zu&&wbAuf(id);
   const kl=`${zu?` data-a="karte" data-id="${id}" role="button" aria-expanded="${offen}"`:''}`;
   return `<section class="card fen wbk${o.gesperrt?' gesperrt':''}${offen?' auf':''}" id="wb_${id}"><i class="pin"></i>
-    <div class="wbkopf"${kl}><div class="wbbild" style="background-image:url(bilder/${o.bild||wbBild(id)}.${o.bildArt||'jpg'})"></div>
+    <div class="wbkopf"${kl}>${o.ohneBild?'':`<div class="wbbild" style="background-image:url(bilder/${o.bild||wbBild(id)}.${o.bildArt||'jpg'})"></div>`}
       <div class="wbtext"><h3>${titel}<small>${klein}</small></h3>${kopf}</div>
       <button class="fi" data-a="bInfo" data-id="${iId}" aria-label="Erklärung zu ${esc(o.iName||'')}"><i>i</i></button></div>
-    ${o.unter?`<div class="wbunterz" data-a="karte" data-id="${id}">${o.unter}</div>`:''}${offen?`<div class="fin wbauf"><div class="wbtrenn">❦</div>${auf}</div>`:''}${zu?`<span class="wbzu" data-a="karte" data-id="${id}" aria-hidden="true">${offen?'▴':'▾'}</span>`:''}</section>`}
+    ${o.unter?`<div class="wbunterz"${zu?` data-a="karte" data-id="${id}"`:''}>${o.unter}</div>`:''}${offen?`<div class="fin wbauf"><div class="wbtrenn">❦</div>${auf}</div>`:''}${zu?`<span class="wbzu" data-a="karte" data-id="${id}" aria-hidden="true">${offen?'▴':'▾'}</span>`:''}</section>`}
 // Seit 16.1.3 (Entscheidung 9): Pflanzen und Roden gehen von Januar bis März, wenn die Sorte frei ist (Bedingung wie bis 16.0).
 const wbPflanz=id=>S.monat<=2&&sorteFrei(id)&&!(sektSorte(id)&&!S.sektkeller)&&!(istSL(id)&&slPlatz()<10);
 // Inhalt von "Mehr": Form ändern, der Einsatzplan dieses Weinbergs (beim Weingut-Manager nur der Weg dorthin) und Roden. Platzhalter, Wortlaut in Meilenstein 17.
@@ -1318,6 +1351,7 @@ function wbAbschnitt(sym,titel,inhalt){return inhalt?`<section class="iab"><div 
 function wbPanel(iId){
   if(iId==='duengung') return wbPanelBoden();
   if(iId==='betrieb') return wbPanelBetrieb();   // seit 16.4.2
+  if(iId==='leute') return wbPanelLeute();   // seit 16.4.4
   const id=iId.replace(/^feld_/,''), f=S.felder[id], so=SORTEN[id], m=S.monat, P=WB_TEXT;
   if(!f||!so) return '';
   let z='', k='';
@@ -1942,8 +1976,8 @@ const FU_ZEIG={
   'r10-3':{tab:'stadt',sub:'arbeit',sel:[fiSel('lagerarb')]},
   // Seit 14.7.7: die Figur draußen und Einsatzplan und Chefsache beim Weingut-Manager.
   'l1':{tab:'stadt',sub:'arbeit',sel:[fiSel('helfer')]},
-  'l4':{tab:'gut',sub:'betrieb',sel:[fiSel('p_weingut')]},
-  'l5':{tab:'gut',sub:'betrieb',sel:[fiSel('p_weingut')]},
+  'l4':{tab:'gut',sub:'betrieb',sel:['[data-a="mgr"][data-id="weingut"]']},   // seit 16.4.4 die Zeile in "Deine Leute"
+  'l5':{tab:'gut',sub:'betrieb',sel:['[data-a="mgr"][data-id="weingut"]']},
   // Warnungen: sel darf eine Funktion sein, dann leuchtet genau das betroffene Fass.
   'w1':{tab:'stadt',sub:'amt',sel:()=>{const l=S.lots.find(fuKabFrueh); return [l?`[data-a="anmelden"][data-id="${l.id}"]`:'',fiSel('anmelden')]}},
   'w2':{tab:'stadt',sub:'amt',sel:[fiSel('auktionen')]},
@@ -1963,7 +1997,7 @@ const FU_ZEIG={
   'k04':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'k05':{tab:'gut',sub:'betrieb',sel:['[data-a="klapp"][data-id="gebiet"]','[data-a="bInfo"][data-id="betrieb"]']},   // seit 16.4.2 in der Karte Dein Betrieb
   'k06':{tab:'gut',sub:'betrieb',sel:[fiSel('maschinen')]},
-  'k07':{tab:'gut',sub:'betrieb',sel:[fiSel('p_handel')]},
+  'k07':{tab:'gut',sub:'betrieb',sel:['[data-a="mgr"][data-id="handel"]']},   // seit 16.4.4 die Zeile in "Deine Leute"
   'k08':{tab:'keller',sub:'sabotage',sel:[fiSel('zuckern'),'#subs [data-id="sabotage"]']},
   'k09':{tab:'gut',sub:'buero',sel:[fiSel('rangliste')]},
   'k10':{tab:'gut',sub:'buero',sel:[fiSel('urkunden')]},
