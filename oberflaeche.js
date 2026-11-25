@@ -1053,10 +1053,24 @@ const KB_SYM={berg:'traube',gut:'traktor',keller:'fass',stadt:'haendler'};
 const kbSym=a=>KB_SYM[a.tab==='gut'&&a.sub==='berg'?'berg':a.tab]||'traktor';
 const kbZeile=a=>`<button class="kbz ${a.rot?'rot':a.ruhig?'hin':'gelb'}" data-a="${a.akt||'tab'}" data-id="${a.tab||''}" data-sub="${a.sub||''}"><img src="bilder/aufg-${kbSym(a)}.webp" alt=""><i></i><span>${esc(a.t)}</span><b>›</b></button>`;
 const kbTitel=t=>`<div class="kbtitel"><span class="kbranke">❧</span><h3>${t}</h3><span class="kbranke r">❧</span></div>`;
+// Seit 16.3.3 (Maik 25.11.2026, 18:49 Uhr): Neuigkeiten. Ganz oben das Wetter von heute mit der Vorhersage für den nächsten Monat (dieselben Texte wie Kopfzeile
+// und Winzerbote), im Monat eines Aufstiegs "Aufgestiegen zum …", darunter die wichtigsten Schlagzeilen der aktuellen Ausgabe, zusammen höchstens drei Zeilen.
+// Die Schlagzeilen kommen aus S.bericht (Schlagzeile und Artikel, schon nach p sortiert wie TOP in zeitung()), weil TOP beim Neuladen leer ist. Nur lesen,
+// ohne Zufall: Die Füllzeile eines ruhigen Monats (p 0) zählt nicht, die Aufstiegs-Schlagzeile steht schon als eigene Zeile da (Annahme 4).
+// "Mehr anzeigen" öffnet den ganzen Winzerboten, der eigene Knopf dafür entfällt. Texte sind Platzhalter, Wortlaut in Meilenstein 17.
+function kbNeu(){
+  const b=S.bericht||{}, auf=S.rangNeu===S.jahr*12+S.monat, Z=[];
+  const zeile=(sym,was,text,kl)=>`<div class="kbn${kl?' '+kl:''}"><span class="kbsym">${sym}</span><div><b>${was}</b> <em>${text}</em></div></div>`;
+  Z.push(zeile(WETTER[S.wetter][0],'Wetter:',`${esc(wetterText().replace(/^\S+ /,''))}<small>Vorhersage ${MON[(S.monat+1)%12]}: ${esc(progText())}</small>`));
+  if(auf) Z.push(zeile('🎖️','Aufstieg:',`Aufgestiegen zum Rang ${esc(rangN(S.rang))}`,'gold'));
+  const T=[b.kopf,...(b.art||[])].filter(x=>x&&x.t&&x.p>0&&!(auf&&/^Aufstieg/.test(x.t))).slice(0,auf?2:3);
+  for(const x of T) Z.push(zeile('📰','Winzerbote:',esc(x.t)));
+  return kbTitel('Neuigkeiten')+`<div class="kbneu">${Z.join('')}</div><button class="kbmehr" data-a="tab" data-id="monat">Mehr anzeigen <b>›</b></button>`;
+}
 function vKlemm(){
   const A=aufgaben(), K=A.filter(a=>!a.ruhig), H=A.filter(a=>a.ruhig), an=stehtAn()||fuSperre(), auf=FI_AUF.has('ansteht');
   const i='Hier steht, was diesen Monat zu tun ist. Ein Tipp führt dich direkt an den Ort. <b>Rot</b> kann nicht warten, <b>Gelb</b> hat Zeit, <b>Grau</b> ist nur ein Hinweis. Die Punkte an den Reitern zeigen dasselbe, Hinweise bekommen keinen Punkt.<br><br>⏩ „Weiter bis etwas ansteht“ blättert am Stück, höchstens zwölf Monate. Es hält nur bei Rot und bei Schlagzeilen, die dich selbst betreffen. Bei Gelb und bei Hinweisen blättert es weiter. Ausnahme ist die Lese: Von September bis November hält es einmal im Monat, solange Trauben hängen, im Dezember nur bei gefrorenen Trauben.<br><br>Geboten und eingereicht wird im Rathaus, der Tipp hier führt dich hin. „Winzerbote“ zeigt die letzte Ausgabe noch einmal. Tipps gibt dir der Spielführer in der Sprechblase.'+(fuSperre()?(S.ein?'<br><br>Mit dem Spielführer gibt es ⏩ ab April, bis dahin zeigt dir der alte Winzer das Pflanzen.':'<br><br>Mit dem Spielführer gibt es ⏩ erst ab dem Januar des zweiten Jahres, im ersten Jahr kommt fast jeden Monat ein Tipp.'):'');
-  const kn=an?`<button class="klein" data-a="tab" data-id="monat">📰 Winzerbote</button>`:`<div class="zweikn"><button class="klein" data-a="tab" data-id="monat">📰 Winzerbote</button><button class="klein" data-a="weiterBis">⏩ Weiter bis etwas ansteht</button></div>`;
+  const kn=an?'':`<button class="klein" data-a="weiterBis">⏩ Weiter bis etwas ansteht</button>`;
   // Die i-Taste behält die Kennung 'ansteht', damit Spielführer (e1-05) und Buch sie weiter finden. fi() sucht das nächste .fen.
   return `<section class="fen klemmbrett"><div class="kbklemme"></div><div class="kbpapier">
     <header class="kbband"><h2>Klemmbrett, ${MON[S.monat]}</h2></header>
@@ -1064,7 +1078,9 @@ function vKlemm(){
     <div class="kbkopf">${kbTitel(`Aufgaben (${K.length})`)}<button class="fi${auf?' an':''}" data-a="fi" data-id="ansteht" aria-label="Erklärung zu Aufgaben" aria-expanded="${auf}"><i>i</i></button></div>
     <div class="finfo"${auf?'':' hidden'}>${i}${mib(BUCH_ORT.aktuell)}</div>
     <div class="kbliste">${K.map(kbZeile).join('')}${!K.length?`<div class="kbleer">${H.length?'Diesen Monat ist nichts dringend.':'Diesen Monat steht nichts an. Du kannst weiterblättern.'}</div>`:''}${H.length?`<div class="kbhin">${H.map(kbZeile).join('')}</div>`:''}</div>
-    <div class="kbalt">${kn}</div>
+    <div class="kbtrenn">❦</div>
+    ${kbNeu()}
+    ${kn?`<div class="kbalt">${kn}</div>`:''}
   </div></section>`+vRang();
 }
 // Maschinen (seit 7.4 auf dem Fenster-Baustein): "Deine Maschinen" mit einer Zeile je Maschine, darunter je Bauart ein Fenster zum Kaufen.
