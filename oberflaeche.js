@@ -1370,11 +1370,9 @@ function wbBodenKarte(){
       <div class="wbunter"><b class="zahl">${f.boden} %</b>, ${bodenText(f.boden)}. <span class="${bodenSchnitt(id)<BODEN_GUT?'rot':''}">${wbT(T.jahr,{n:bodenSchnitt(id)})}</span>, ${wbT(T.geduengt,{n:f.duengN||0,max:DUENG_MAX})}.
       ${helferDuengt(id)?`${EINSATZ_TEXT.auto}: ${wer}, ${Math.round(wbZd(id)*100)}\u00a0% Zuwachs`:`${EINSATZ_TEXT.chef}: du selbst`}${istSL(id)?'':`, ${wbT(T.gutJahr,{n:epT(BODEN_PUNKTE[lg]*wbZd(id))})}`}.
       ${wbT(T.sterben,{von:v[1]+fp,bis:v[2]+fp})}.</div></div>`};
-  const F=WB_TEXT.boden, L=[], add=(k,v,kl)=>L.push(`<div${kl?` class="${kl}"`:''}><dt>${k}</dt><dd>${v}</dd></div>`);
-  add(F.flaeche,`${String(S.ha).replace('.',',')} Hektar`); add(F.bepflanzt,`${rbn(bep)} Reben, ${Math.round(ant)} %`); add(F.platz,`${rbn(ges-bep)} Reben`);
-  add(F.leute,`<span class="${lf?'rot':''}">${rbn(helferReben())} Reben</span>`); add(F.leistung,`<span class="${knapp?'rot':''}">${rbn(leistung())} Reben</span>`);
-  add(F.lage,LAGE_REIHE.filter(lg=>hangHa(lg)>0).map(lg=>`${LAGEN[lg].sym} ${LAGEN[lg].kurz} ${String(hangHa(lg)).replace('.',',')}\u00a0ha${lg==='sued'&&S.spitze?`, davon ${SPITZE_HA} Spitzenlage`:''}`).join('<br>'),'breit');
-  const auf=I.join('')+(an&&DW.length?DW.map(reihe).join(''):'')+`<dl class="wbfakt">${L.join('')}</dl>`;
+  // Seit 16.4.3 (Annahme 4.2): Fläche, Bepflanzt, Platz frei und Lagen stehen in der Karte "Dein Betrieb", Leute und Ernteleistung in "Deine Leute".
+  // Die roten Zeilen zu fehlenden Erntehelfern und zur Ernteleistung bleiben hier, weil sie das Weiterblättern sperren beziehungsweise die Lese betreffen.
+  const auf=I.join('')+(an&&DW.length?DW.map(reihe).join(''):'');
   return wbKarte('boden',T.titel,wbT(T.klein,{ha:String(S.ha).replace('.',',')}),kopf,auf,{bild:'jz-'+WB_JZ[S.monat],bildArt:'webp',iId:'duengung',iName:T.titel});
 }
 // Info-Panel der Karte: Zustand mit den Lagen, Kosten des Düngens je Weinberg, Tipps aus den i-Texten der alten Fenster Düngung und Übersicht.
@@ -1385,7 +1383,7 @@ function wbPanelBoden(){
   const k=DW.map(id=>wbKv(`Düngen: ${esc(SORTEN[id].name)}`,`${eur(duengKosten(id))}, ${helferDuengt(id)?EINSATZ_TEXT.auto:EINSATZ_TEXT.chef}`)).join('')
     +(bonusMasch('duenger')?wbKv('Düngerstreuer',`${STREU_PLUS} statt ${DUENG_PLUS} Punkte, ${Math.round(STREU_RABATT*100)} % billiger`):'');
   const tipp=`<p style="margin:0 0 6px">Jeder Weinberg hat seinen eigenen Boden. Er verliert jeden Monat ${BODEN_MONAT} Punkte, in einem Regenmonat ${BODEN_REGEN}, und mit jeder Lese 4. Einmal Düngen bringt ${DUENG_PLUS}, mit dem Düngerstreuer ${STREU_PLUS} und ${Math.round(STREU_RABATT*100)} % billiger, höchstens ${DUENG_MAX} Mal im Jahr je Weinberg, bezahlt nach seinen Hektar. Ein guter Boden bringt mehr Trauben, bessere Weine und weniger tote Reben: Je besser der Bodenschnitt des Jahres, desto weniger Reben gehen zum Jahreswechsel ein. Deinen Chef-Weinberg düngst du selbst auf seiner Karte, die Weinberge auf Automatik düngen deine Erntehelfer, sobald der Boden auf ${HELFER_DUENG} % fällt, im August schon unter 90 %.</p>`
-    +`<p style="margin:0 0 6px">Für den Aufstieg zählt nur die bepflanzte Fläche. ${helferRegel()}, fehlt einer, geht es nicht in den nächsten Monat. Die Ernteleistung zählt bei der Lese: Reicht sie nicht für alle Reben, bleibt ein Teil der Trauben hängen. Leute stellst du im Arbeitsamt ein, Maschinen kaufst du unter „Maschinen“.</p>${mib('berg')}`;
+    +`<p style="margin:0 0 6px">Für den Aufstieg zählt nur die bepflanzte Fläche. ${helferRegel()}, fehlt einer, geht es nicht in den nächsten Monat. Die Ernteleistung zählt bei der Lese: Reicht sie nicht für alle Reben, bleibt ein Teil der Trauben hängen. Leute stellst du im Arbeitsamt ein, Maschinen kaufst du im Betrieb.</p>${mib('berg')}`;   // seit 16.4.3 im Betrieb statt unter „Maschinen“
   return wbPanelRahmen(WB_TEXT.boden.titel,wbAbschnitt('<img src="bilder/sym-bodenstufe.webp" alt="">',WB_TEXT.zustand,einZu('duengung')?'':z)+wbAbschnitt('<img src="bilder/sym-duenger.webp" alt="">',WB_TEXT.kosten,einZu('duengung')?'':k)+wbAbschnitt('💡',WB_TEXT.tipps,tipp));
 }
 // Weinberg (seit 7.4 auf dem Fenster-Baustein): je Sorte ein Fenster (seit 4.4 oben), dann Düngung und Übersicht, darunter zugeklappt der Steckbrief des Gebiets.
