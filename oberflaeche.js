@@ -361,9 +361,11 @@ function kompEintragHtml(id){
 function archivGeh(teil){
   if(!S) return; if($('#sheet').classList.contains('an')) closeSheet();
   // Seit 16.7.4 'lexikon' nach Wissen zur Karte Weinlexikon.
-  if(teil==='brett'||teil==='lexikon'){const lx=teil==='lexikon'; geh('gut','buero'); BUERO=lx?'wissen':'erfolge'; FI_AUF.clear(); FI_AUF.add('wb:'+teil); render(); bueroRoll(teil); return}
+  if(teil==='brett'||teil==='lexikon'){bueroKarte(teil==='lexikon'?'wissen':'erfolge',teil); return}
   const da=TAB==='keller'&&SUB==='buch'; ARCHIV=ARCHIV_B.some(b=>b[0]===teil)?teil:'brett'; FI_AUF.clear(); geh('keller','buch'); render(); if(!da) window.scrollTo(0,0);
 }
+// Öffnet im Büro einen Bereich mit genau dieser Karte offen (seit 16.7.5). Erst zeichnen, denn render() schließt beim Ortswechsel alle offenen Karten.
+function bueroKarte(bereich,id){geh('gut','buero'); BUERO=bereich; render(); FI_AUF.clear(); FI_AUF.add('wb:'+id); render(); bueroRoll(id)}
 // Rollt eine Karte im Büro an den oberen Rand unter die Kopfzeile (seit 16.7.3).
 function bueroRoll(id){const el=$('#wb_'+id); if(!el) return; const top=($('#top')||{}).offsetHeight||0; window.scrollBy(0,el.getBoundingClientRect().top-top-14)}
 // Fenster im Büro: Zähler und die Wege aufs Siegelbrett und ins Lexikon (seit 11.8).
@@ -442,9 +444,10 @@ function zeigeErz(){
 // Generationen-Chronik im Büro.
 function chronikHtml(){
   const C=S.chronik||[], n=genNr(), e=S.erbe, wer=(nr,name,art)=>nr===1?(name?`${esc(name)}, ${art==='t'?'die Gründerin':'der Gründer'}`:'die Gründung'):name?`${esc(name)}, ${art==='s'?'der Sohn':'die Tochter'}`:'die nächste Generation';
-  return fenster('chronik','Generationen-Chronik',`${C.map(c=>`<div class="rl"><span>${c.n}.</span><div><b>${c.von} bis ${c.bis}: ${wer(c.n,c.name,c.art)}</b><span class="mut">übergeben als ${c.ehr?(c.art==='t'?'Ehrenpräsidentin':'Ehrenpräsident'):c.alt?(c.art==='t'?'Altpräsidentin':'Altpräsident'):c.art==='t'&&RAENGE[c.rang].kw||RAENGE[c.rang].kurz} mit ${num(c.ans)} Ansehen${c.ende?'':`, Erbschaftssteuer ${eur(c.steuer)}`}</span></div></div>`).join('')}
+  // Seit 16.7.5 (Bauplan 16.7, Entscheidung 7): Karte in der Familie, zu die Generation und seit wann.
+  return bKarte('chronik','Generationen-Chronik',`${C.map(c=>`<div class="rl"><span>${c.n}.</span><div><b>${c.von} bis ${c.bis}: ${wer(c.n,c.name,c.art)}</b><span class="mut">übergeben als ${c.ehr?(c.art==='t'?'Ehrenpräsidentin':'Ehrenpräsident'):c.alt?(c.art==='t'?'Altpräsidentin':'Altpräsident'):c.art==='t'&&RAENGE[c.rang].kw||RAENGE[c.rang].kurz} mit ${num(c.ans)} Ansehen${c.ende?'':`, Erbschaftssteuer ${eur(c.steuer)}`}</span></div></div>`).join('')}
     ${S.ende?'':`<div class="rl du"><span>${n}.</span><div><b>seit ${genJahr(n-1)}: ${wer(n,S.ich||(e&&e.name),S.anrede?(S.anrede==='w'?'t':'s'):e&&e.art)}</b><span class="mut">${S.flascheAuf?'Die Flasche vom ersten Jahrgang ist getrunken. ':S.gesch&&S.gesch.flasche?'Die Flasche vom ersten Jahrgang liegt noch im Regal. ':''}${amtEhre()?`Letzte Übergabe im Januar ${endeJahr()}`:`Nächste Übergabe im Januar ${genJahr(n)}`}</span></div></div>`}${S.ende?nfZeile():''}`,{
-    buch:'generationen',i:`Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation. Vom Ansehen bleiben ${pz(ERB_ANSEHEN)}, als Ehrenbürger ${pz(SP_ERBE)}, ${pz(ERB_STEUER)} vom Vermögen gehen als Erbschaftssteuer weg, alles andere bleibt. Zu Ende ist die Partie erst mit allen ${KRONEN.length} Kronen der Weltweinschau: Danach übergibst du ein letztes Mal, ohne Erbschaftssteuer, und es folgt die Chronik.`});
+    sym:'📜',kopf:`<div class="wbunter">${S.ende?`${C.length} Generationen, die Partie ist zu Ende`:`Du bist die ${n}. Generation, seit ${genJahr(n-1)}`}</div>`,buch:'generationen',i:`Alle ${GEN_JAHRE} Jahre übernimmt die nächste Generation. Vom Ansehen bleiben ${pz(ERB_ANSEHEN)}, als Ehrenbürger ${pz(SP_ERBE)}, ${pz(ERB_STEUER)} vom Vermögen gehen als Erbschaftssteuer weg, alles andere bleibt. Zu Ende ist die Partie erst mit allen ${KRONEN.length} Kronen der Weltweinschau: Danach übergibst du ein letztes Mal, ohne Erbschaftssteuer, und es folgt die Chronik.`});
 }
 function bestenZeilen(){
   return besten().map((e,i)=>({platz:i+1,du:S&&e.d===S.bestenD,name:e.ich||e.name,
@@ -852,10 +855,11 @@ let WG_SICHT=null;
 // Seit 10.2.1 "Dein Rang": nur die erreichten Ränge und der nächste mit Schloss, dahinter "+ x weitere" und darunter der Name des nächsten Rangs (Maik 19.11.2026).
 function wgFenster(){
   const max=S.rang+1, n=Math.min(10,max+1), rest=10-n, nx=max<10?RAENGE[max]:null;
-  return fenster('meingut','Mein Weingut',`<div class="wgbild"><div class="wgl"></div><div class="wgsch"></div><div class="wgtxt"></div></div>
+  // Seit 16.7.5: Karte in der Familie, zu die Stufe des Weinguts, aufgeklappt Bild und Knöpfe wie bisher (wgStart zeichnet das Bild nach dem Aufklappen).
+  return bKarte('meingut','Mein Weingut',`<div class="wgbild"><div class="wgl"></div><div class="wgsch"></div><div class="wgtxt"></div></div>
     <div class="wgregler"><b>Dein Rang</b></div><div class="wgst">${Array.from({length:n},(_,k)=>`<button class="klein" data-a="wgSt" data-st="${k+1}">${k+1>max?'🔒':k+1}</button>`).join('')}${rest>0?`<span class="mut wgrest">+ ${rest} weitere</span>`:''}</div>
     ${nx?`<div class="mut wgnx">Nächster Rang: 🔒 <b>${esc(frau()&&nx.w||nx.name)}</b></div>`:''}`,
-    {buch:'ziel',i:'Mit jedem Rang wächst dein Weingut. Unten tippst du auf einen Rang und siehst, wie dein Weingut damals aussah. Der nächste Rang bleibt im Dunkeln, bis du aufsteigst.'});
+    {sym:'🏡',buch:'ziel',kopf:`<div class="wbunter">Stufe ${max} von 10${nx?` · als Nächstes ${esc(frau()&&nx.w||nx.name)}`:''}</div>`,i:'Mit jedem Rang wächst dein Weingut. Unten tippst du auf einen Rang und siehst, wie dein Weingut damals aussah. Der nächste Rang bleibt im Dunkeln, bis du aufsteigst.'});
 }
 // Zeichnet Bild, Text und Knöpfe der gewählten Stufe, ohne das Büro neu aufzubauen (die Seite springt nicht).
 function wgZeig(){
@@ -865,6 +869,12 @@ function wgZeig(){
   b.querySelector('.wgtxt').innerHTML=zu?`<i>🔒</i><b>${rn}</b>Nächster Rang`:`<b>${rn}</b>Stufe ${st} · ${wgSeit(st-1)}`;
   (b.closest('.fen')||b.parentNode).querySelectorAll('.wgst button[data-st]').forEach(x=>x.classList.toggle('sec',+x.dataset.st!==st));
 }
+// Seit 16.7.5 (Bauplan 16.7, Entscheidung 7.1): die Namenstafel oben in der Familie, Teil 3 des Weingut-Panoramas mit dem Schild-Text aus tafelText (PANO_TAFEL.gut.familie).
+// Das Bild steht still, ohne Gleiten und Zoomen, so vergrößert, dass die Tafel vier Fünftel der Breite füllt.
+function ntafelZeig(){const b=document.querySelector('.ntafel>i'); if(!b||b.dataset.ok) return; b.dataset.ok=1;
+  const T=PANO_TAFEL.gut.familie, W=b.parentNode.clientWidth, H=b.parentNode.clientHeight, k=W*.8/(T[2]-T[0]);
+  b.style.cssText=`width:${PANO_BILD[0]*k}px;height:${PANO_BILD[1]*k}px;left:${W/2-(T[0]+T[2])/2*k}px;top:${H/2-(T[1]+T[3])/2*k}px;background-image:url(bilder/${PANO_TEILE.gut.aktuell}.jpg)`;
+  tafelText(b,T)}
 function wgStart(){const b=document.querySelector('.wgbild'); if(!b||b.dataset.ok) return; b.dataset.ok=1; wgZeig()}
 // Seit 8.2: unter den Urkunden die Ehrungen für die Spenden, Schilder rund, ab Stufe 5 als kleine Urkunde.
 function spWand(){
@@ -1244,10 +1254,12 @@ function ehrSumme(wein){
 function namenFenster(){
   if(S.ich) return '';
   const w=frau(), e=S.erbe&&S.erbe.name||'';
-  return fenster('namen','Deine Namen',`<label class="feld">Dein Name<input type="text" id="bnI" maxlength="30" placeholder="Vorname Nachname" autocomplete="off" value="${esc(e)}"></label>
+  // Seit 16.7.5 (Bauplan 16.7, Entscheidung 7.2): Karte in der Familie unter der Namenstafel. Solange S.ich fehlt, steht im Klemmbrett die graue Aufgabe "Trag deinen Namen ein"
+  // (ruhig, ohne Punkt und ohne Halt), ein Tipp darauf (namenGeh) öffnet diese Karte. Befehle namenJa und bAnrede unverändert.
+  return bKarte('namen','Deine Namen',`<label class="feld">Dein Name<input type="text" id="bnI" maxlength="30" placeholder="Vorname Nachname" autocomplete="off" value="${esc(e)}"></label>
     <label class="feld">Name des Weinguts<input type="text" id="bnG" maxlength="${NAME_MAX}" autocomplete="off" value="${esc(S.name)}"></label>
     <div class="feld">Anrede</div><div class="zwei" id="bnA">${[['m','Herr'],['w','Frau']].map(([k,x])=>`<button class="wahl ${(k==='w')===w?'an':''}" data-a="bAnrede" data-v="${k}"><b>${x}</b></button>`).join('')}</div>`,{
-    buch:'',hin:[S.ein?'✍️ Beim Start ist dein Name leer geblieben, trag ihn hier ein.':'✍️ Seit Version 7.9 gibt es zwei Namen: deinen eigenen und den des Weinguts. Trag hier beide ein.'],kn:'<button class="klein" data-a="namenJa">Speichern</button>',
+    sym:'✍️',kopf:kHin('','Dein Name fehlt noch'),buch:'',hin:[S.ein?'✍️ Beim Start ist dein Name leer geblieben, trag ihn hier ein.':'✍️ Seit Version 7.9 gibt es zwei Namen: deinen eigenen und den des Weinguts. Trag hier beide ein.'],kn:'<button class="klein" data-a="namenJa">Speichern</button>',
     i:'Dein Name steht künftig auf Urkunden, in der Bestenliste, in der Chronik und im Winzerboten. Der Name des Weinguts steht am Hof und in den Schlagzeilen. Urkunden, die schon an der Wand hängen, bleiben, wie sie sind.'});
 }
 // Seit 16.7.1 (Bauplan 16.7, Entscheidung 1, Timos Bild 09): Das Büro öffnet mit den Kacheln groß zwei mal zwei (BUERO ''), ein Tipp öffnet den Bereich.
@@ -2484,7 +2496,7 @@ function render(){
   $('#app').innerHTML=`<div id="top"><div class="wtr" data-a="wetterInfo"><b>${MON[S.monat]} ${S.jahr}</b><small>${wetterText()}</small></div>${fuBereit()?'<button id="tkopf" data-a="fuKopf"></button>':''}<div class="geld" data-a="geldInfo"><b>${geldKurz(S.geld)}</b><small>${duK()}</small></div></div>
   <main>${v}</main>
   <nav id="dock">${SUBS[TAB]&&!klemmAn?`<div id="subs">${SUBS[TAB].map(s=>`<button class="${SUB===s[0]?'an':''}" data-a="sub" data-id="${s[0]}"><i>${s[1]}</i><b>${SUB_NAME[s[0]]}</b>${SUB===s[0]?'':badge(B[TAB+'/'+s[0]])}</button>`).join('')}</div>`:''}<div id="tabs">${tabs.map(t=>`<button class="${TAB===t[0]&&!klemmAn?'an':''}" data-a="tab" data-id="${t[0]}"><img src="bilder/${t[1]}.webp" alt=""><b>${t[2]}</b>${badge(B[t[0]])}</button>`).join('')}<button id="klemm" class="${klemmAn?'an':''}" data-a="tab" data-id="gut" data-sub="aktuell" aria-label="Klemmbrett, ${kn} Aufgaben"><img src="bilder/tab-klemmbrett.webp" alt="">${kn?`<em class="kzahl${krot?' rot':''}">${kn}</em>`:''}</button></div></nav>`;
-  panoStell(); wgStart();
+  panoStell(); wgStart(); ntafelZeig();
   fuKopfStell(); fuTopMess(); if(FU_OFFEN) fuLage();
   fuehrerZeig(); fuPunkt();
   mgrVorstellen();
@@ -2776,6 +2788,8 @@ const AKT={
   karte(d){const k='wb:'+d.id, auf=FI_AUF.has(k); for(const x of [...FI_AUF]) if(x.startsWith('wb:')) FI_AUF.delete(x); if(!auf) FI_AUF.add(k);
     render(); const el=$('#wb_'+d.id); if(el&&!auf){const r=el.getBoundingClientRect(), top=($('#top')||{}).offsetHeight||0; if(r.top<top+8||r.top>innerHeight*.45) window.scrollBy(0,r.top-top-14)}},
   bInfo(d){openSheet(wbPanel(d.id))},
+  // Seit 16.7.5: die graue Aufgabe "Trag deinen Namen ein" im Klemmbrett führt in die Familie und klappt die Karte "Deine Namen" auf.
+  namenGeh(){bueroKarte('familie','namen')},
   maschKaufen(){openSheet(maschKaufFenster())},
   // Seit 16.5.2: Sprung aus der Karte "Wein abfüllen" zum Knopf "Maschine kaufen" im Betrieb, gekauft wird nur dort (Entscheidung 1.4).
   abfZumKauf(){closeSheet(); geh('gut','betrieb'); render(); setTimeout(()=>fuLeuchte({sel:['[data-a="maschKaufen"]']}),120)},   // seit 16.4.6, das Fenster mit allen Maschinen (Annahme 4)

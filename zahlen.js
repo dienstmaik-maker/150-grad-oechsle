@@ -659,7 +659,9 @@ const PANO_TEILE={gut:{berg:'panorama-weingut-sommer-teil-1',betrieb:'panorama-w
 const PANO_BILD=[1536,1024];
 // Seit 16.3.1 zeigt kein Ort mehr Teil 3 mit der Tafel (Aktuelles entfällt). Die Einträge bleiben, bis die Namenstafel einen neuen Platz hat (offen).
 // PANO_TAFEL: die leere Fläche der Anschlagtafel in Bildpixeln (links, oben, rechts, unten). Darauf steht der Schild-Text, dorthin zoomt das Bild nach der Ankunft.
-const PANO_TAFEL={gut:{aktuell:[418,312,848,574]}};
+// Seit 16.7.5 (Bauplan 16.7, Entscheidung 7.1): Die Tafel steht oben in der Familie im Büro (ntafelZeig), der Eintrag heißt deshalb familie statt aktuell.
+// Kein Panorama-Ort heißt familie, Gleiten und Zoomen greifen also nicht. Das Bild bleibt Teil 3 (PANO_TEILE.gut.aktuell).
+const PANO_TAFEL={gut:{familie:[418,312,848,574]}};
 // Zeiten in Millisekunden (Maik 18.11.2026, Testseite _stationen.html): Gleiten, Ruhe vor dem Zoom, Zoom auf die Tafel, Zoom zurück vor dem Weggehen.
 const GLEIT_MS=700, TAFEL_RUHE=300, TAFEL_REIN=900, TAFEL_RAUS=350, TAFEL_ZOOM=1.75, PANO_KURVE='cubic-bezier(.45,.05,.3,1)';
 // Bild oben in einem Fenster (Weinkontrolle, Auktion, Prämierung, Rathaus, Kellerbuch, Pleite).

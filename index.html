@@ -217,14 +217,16 @@ ul.kl{margin:4px 0 0;padding-left:18px;font-size:14px}
    --pk ist die weiche Kante, die beim Wechsel übers neue Bild wandert. .tafel ist der Schild-Text auf der Anschlagtafel, 1em ist ein Hundertstel der Tafelbreite. */
 @property --pk{syntax:'<percentage>';inherits:false;initial-value:130%}
 .pano.teile>i{left:-14%;right:-14%;background-size:cover;background-position:center;will-change:transform}
-.pano .tafel{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1.08;color:#2a1608;pointer-events:none}
-.pano .tafel>*{display:block;white-space:nowrap;font-weight:400;font-style:normal;text-decoration:none;margin:0}
-.pano .tafel i{font-family:Alegreya,serif;font-style:italic;font-size:6.2em;margin-bottom:.2em;color:#4a2a12}
-.pano .tafel b{font-family:"Alegreya SC",Alegreya,serif;font-weight:700;font-size:13.5em;letter-spacing:.04em;color:#2a1206;text-shadow:0 .04em 0 rgba(255,240,200,.55),0 0 .06em rgba(60,20,0,.35)}
-.pano .tafel em{font-family:Alegreya,serif;font-style:italic;font-size:9.5em;margin-top:.1em;color:#6b1a2e}
-.pano .tafel .orn{font-size:7em;line-height:1;margin:.25em 0 .2em;color:#6b1a2e;letter-spacing:.2em}
-.pano .tafel s{font-family:Alegreya,serif;font-style:italic;font-size:6.4em}
-.pano .tafel u{font-family:"Alegreya SC",Alegreya,serif;letter-spacing:.05em;font-size:6em;margin-top:.35em}
+:is(.pano,.ntafel) .tafel{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1.08;color:#2a1608;pointer-events:none}
+:is(.pano,.ntafel) .tafel>*{display:block;white-space:nowrap;font-weight:400;font-style:normal;text-decoration:none;margin:0}
+:is(.pano,.ntafel) .tafel i{font-family:Alegreya,serif;font-style:italic;font-size:6.2em;margin-bottom:.2em;color:#4a2a12}
+:is(.pano,.ntafel) .tafel b{font-family:"Alegreya SC",Alegreya,serif;font-weight:700;font-size:13.5em;letter-spacing:.04em;color:#2a1206;text-shadow:0 .04em 0 rgba(255,240,200,.55),0 0 .06em rgba(60,20,0,.35)}
+:is(.pano,.ntafel) .tafel em{font-family:Alegreya,serif;font-style:italic;font-size:9.5em;margin-top:.1em;color:#6b1a2e}
+:is(.pano,.ntafel) .tafel .orn{font-size:7em;line-height:1;margin:.25em 0 .2em;color:#6b1a2e;letter-spacing:.2em}
+:is(.pano,.ntafel) .tafel s{font-family:Alegreya,serif;font-style:italic;font-size:6.4em}
+:is(.pano,.ntafel) .tafel u{font-family:"Alegreya SC",Alegreya,serif;letter-spacing:.05em;font-size:6em;margin-top:.35em}
+/* Seit 16.7.5: die Namenstafel oben in der Familie, stehendes Bild mit dem Schild-Text (ntafelZeig). */
+.ntafel{position:relative;height:190px;margin:0 0 16px;overflow:hidden;border-radius:12px;background:#3d2312;box-shadow:0 4px 10px rgba(0,0,0,.45)}.ntafel>i{position:absolute;display:block;background-size:100% 100%}
 .ptitel{position:absolute;left:0;right:0;bottom:0;padding:28px 12px 8px;background:linear-gradient(transparent,rgba(0,0,0,.66));color:#fff;text-align:center;pointer-events:none}
 .ptitel b{display:block;font-size:18px;text-shadow:0 1px 3px rgba(0,0,0,.8)}
 .punkte{display:flex;gap:6px;justify-content:center;margin-top:5px;pointer-events:auto}

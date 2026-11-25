@@ -2666,6 +2666,9 @@ function aufgaben(){
   {const art=festArt(); if(art&&m>=5&&m<=7&&S.festJahr!==S.jahr&&S.geld>=FESTE[art].preis) A.push({t:`🎉 Das Geld reicht für ein ${FESTE[art].name}`,tab:'gut',sub:'betrieb',ruhig:1})}
   const vk=S.lots.filter(l=>preis(l)>0&&!l.regal).length;
   if(vk) A.push({t:`${vk} ${vk===1?'Wein ist':'Weine sind'} verkaufsreif`,tab:'stadt',sub:'handel',ruhig:1});
+  // Seit 16.7.5 (Bauplan 16.7, Entscheidung 7.2, Briefing Entscheidung 18): Solange der eigene Name fehlt, eine graue Aufgabe. Nur ruhig, nie rot und nie halt,
+  // damit sie weder die Zahl am Reiter noch sprungHalt() und stehtAn() berührt. Ein Tipp (namenGeh) öffnet die Karte "Deine Namen" in der Familie. Platzhalter, Wortlaut in Meilenstein 17.
+  if(!S.ich) A.push({t:'✍️ Trag deinen Namen ein',tab:'gut',sub:'buero',akt:'namenGeh',ruhig:1});
   return A;
 }
 
@@ -3057,14 +3060,19 @@ function bueroBer(){return BUERO_B.filter(([k])=>k==='erfolge'?['rangliste','ehr
 function vBuero(){
   // Seit 16.7.1: BUERO '' sind die großen Kacheln, ein Bereich, den es (noch) nicht gibt, führt auch dorthin.
   const BB=bueroBer(); if(BUERO&&!BB.some(b=>b[0]===BUERO)) BUERO='';
-  return bueroKacheln()+namenFenster()+(BUERO?{erfolge:bueroErfolge,wissen:bueroWissen,familie:bueroFamilie,einst:bueroEinst}[BUERO]():'');
+  // Seit 16.7.5 steht "Deine Namen" in der Familie (Entscheidung 7.2), nicht mehr oben in jedem Bereich.
+  return bueroKacheln()+(BUERO?{erfolge:bueroErfolge,wissen:bueroWissen,familie:bueroFamilie,einst:bueroEinst}[BUERO]():'');
 }
+// Seit 16.7.5 (Bauplan 16.7, Entscheidung 7): oben die Namenstafel (ntafelZeig zeichnet sie nach dem Aufbau), darunter "Deine Namen", solange der Name fehlt,
+// dann Mein Weingut, Chronik und Bestenliste als Karten. Platzhalter, Wortlaut in Meilenstein 17.
 function bueroFamilie(){
   const L=bestenZeilen();
-  return wgFenster()
+  return `<section class="ntafel" aria-label="Namenstafel: ${esc(S.name)}"><i></i></section>`
+    +namenFenster()
+    +wgFenster()
     +chronikHtml()
-    +fenster('besten','Bestenliste',L.length?L.map(bestenZeile).join(''):[],{
-      leer:'Noch leer.',buch:'ende',i:BESTEN_I});
+    +bKarte('besten','Bestenliste',L.length?L.map(bestenZeile).join(''):[],{sym:'🏆',
+      kopf:`<div class="wbunter">${L.length?`${L.length} ${L.length===1?'Partie':'Partien'}, vorn ${esc(L[0].name)}`:'Noch leer'}</div>`,leer:'Noch leer.',buch:'ende',i:BESTEN_I});
 }
 function vKeller(){
   // Seit 16.5.1 (Bauplan 16.5, Entscheidung 2): Die Hintertür ist kein Unterreiter mehr, ihre Karten stehen unten im Keller (vSabotage in vKellerStart).
