@@ -93,15 +93,15 @@ const EIGNUNG={mosel:{riesling:1,mueller:.85,spaetb:.7},rheingau:{riesling:1,spa
 const STERN_PREIS_3=1, STERN_PREIS_2=1, STERN_PREIS_1=1;
 // Seit 13.3.5 (Bauplan 13.3): ans ist das Ansehen bei der Anmeldung, einmal je Wein (Sorte, Jahrgang, Stufe), dazu ANS_PFLEGE und ANS_TERROIR.
 const STUFEN={
-  feder:{name:'Federweißer',rang:0,preis:3,qp:2,geb:0,ans:3},
-  tafel:{name:'Tafelwein',rang:1,preis:2.5,qp:3,geb:0,ans:3},
-  qba:{name:'Qualitätswein',rang:2,preis:4.5,qp:6,geb:0,ans:5},
-  kab:{name:'Kabinett',rang:3,preis:7,qp:10,geb:60,ans:6,lese:'reif',edel:false},
-  spat:{name:'Spätlese',rang:4,preis:10.5,qp:14,geb:90,ans:8,lese:'reif',edel:false},
-  aus:{name:'Auslese',rang:5,preis:17,qp:18,geb:130,ans:14,lese:'reif'},
-  ba:{name:'Beerenauslese',rang:6,preis:38,qp:24,geb:200,ans:22,lese:'ueber',edel:true},
-  tba:{name:'Trockenbeerenauslese',rang:7,preis:75,qp:30,geb:300,ans:34,lese:'ueber',edel:true},
-  eis:{name:'Eiswein',rang:8,preis:60,qp:28,geb:300,ans:28}
+  feder:{name:'Federweißer',rang:0,preis:3,qp:2,jury:2,geb:0,ans:3},
+  tafel:{name:'Tafelwein',rang:1,preis:2.5,qp:3,jury:3,geb:0,ans:3},
+  qba:{name:'Qualitätswein',rang:2,preis:4.5,qp:6,jury:6,geb:0,ans:5},
+  kab:{name:'Kabinett',rang:3,preis:7,qp:10,jury:10,geb:60,ans:6,lese:'reif',edel:false},
+  spat:{name:'Spätlese',rang:4,preis:10.5,qp:14,jury:14,geb:90,ans:8,lese:'reif',edel:false},
+  aus:{name:'Auslese',rang:5,preis:17,qp:18,jury:18,geb:130,ans:14,lese:'reif'},
+  ba:{name:'Beerenauslese',rang:6,preis:38,qp:24,jury:24,geb:200,ans:22,lese:'ueber',edel:true},
+  tba:{name:'Trockenbeerenauslese',rang:7,preis:75,qp:30,jury:30,geb:300,ans:34,lese:'ueber',edel:true},
+  eis:{name:'Eiswein',rang:8,preis:60,qp:28,jury:28,geb:300,ans:28}
 };
 // Eiswein in drei Wertstufen nach den Öchsle bei der Lese: wie Auslese, Beerenauslese oder Trockenbeerenauslese des Gebiets.
 // Angemeldet wird immer als Eiswein, f ist der Faktor auf den Preis, qp der Zuschlag auf die Qualitätspunkte.
@@ -213,7 +213,9 @@ const VERLUST=[[70,0,1],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPA
 const EP_MAX=100, EP_PREMIER=40, EP_GRAND=90, EP_REBSTOCK_JAHRE=3; // EP_PREMIER seit 14.4.3 40 (bis 14.2 45)
 // Erziehungsform je Weinberg: Punkte je Jahr mit dem Chef (ep), Rebschnitt je Hektar in der Erziehung bis Rebstock (haErz) und danach (ha),
 // Maschine (masch: 1 immer, 'rebstock' erst ab Rebstock, 0 nie), nur für eine Rolle (nur).
-const FORMEN={flach:{name:'Flachbogen',ep:2.5,haErz:250,ha:250,masch:1},kordon:{name:'Kordon',ep:2.5,haErz:500,ha:375,masch:'rebstock'},pfahl:{name:'Einzelpfahl',ep:4,haErz:750,ha:750,masch:0,nur:'spitze'}};
+// Seit 14.5.1 (Bauplan 14.5, Entscheidungen 30, 32 und 39): qual Punkte der Form in der Qualität, menge Anteil der Menge für jede Sorte,
+// schutz am Kordon der Anteil, den Spätfrost und Regen im Oktober noch kosten. Noch ungenutzt, qual ab 14.5.2, menge und schutz ab 14.5.3.
+const FORMEN={flach:{name:'Flachbogen',ep:2.5,haErz:250,ha:250,masch:1,qual:5,menge:1},kordon:{name:'Kordon',ep:2.5,haErz:500,ha:375,masch:'rebstock',qual:10,menge:.95,schutz:.5},pfahl:{name:'Einzelpfahl',ep:4,haErz:750,ha:750,masch:0,nur:'spitze',qual:15,menge:.9}};
 const FORM_PASST={menge:'flach',sekt:'kordon',spitze:'pfahl'};
 // Faktoren für Menge und Qualitätspunkte je Rolle und Form, die passende Form hat 1 und 1.
 const FORM_WIRKUNG={menge:{flach:[1,1],kordon:[.85,1.15]},sekt:{kordon:[1,1],flach:[1.1,.85]},spitze:{pfahl:[1,1],kordon:[1.1,.85],flach:[1.2,.7]}};
@@ -1520,3 +1522,24 @@ const RANG_KOPF={neu:'Neu für dich',kauf:'Das darfst du jetzt kaufen oder einst
 const AKT_AUFTAKT={2:{t:'Der zweite Akt beginnt',text:'Ab jetzt steht dir die Hintertür offen, aber die Weinkontrolle schaut genauer hin.'},
   3:{t:'Der dritte Akt beginnt',text:'Ab jetzt setzt du deinen Ruf ein, wenn du etwas wagst.'}};
 const TITEL_NAMEN=[[['Spielidee &amp;','Entwicklung'],'Maik','Dienst'],[['Chef-Tester &amp;','Visuelle Effekte'],'Timo','Dienst']];
+
+// ===== Seit 14.5.1 (Bauplan 14.5 Qualität, Lesereife und Weinprüfer, 25.11.2026). Alle Zahlen sind Startwerte, gemessen wird in Meilenstein 15.
+// In 14.5.1 noch ungenutzt. Bestehende Konstanten, die in 14.5 neue Werte bekommen oder entfallen, ändern sich in ihrer Unteretappe:
+// LAUB_QP (2) und die alten Punkte (QP_MIN, QP_MAX, STUFE_QPF, BODEN_ST_QP, SONNE_QP_MAX, PFLEGE_QP) in 14.5.2, FORM_WIRKUNG und ROLLEN.ertrag in 14.5.3,
+// STUFEN.preis, PFLEGE_PREIS und EIS_WERT in 14.5.4, ANSPRUCH in 14.5.5, ANS_JE_QP (10) in 14.5.6, KRONEN.p und GEGNER_TYP.ws in 14.5.7.
+// Qualität je Weinberg (Entscheidungen 18, 21 und 35): Pflege QUAL_PFLEGE_AB ab dem Rebstock plus QUAL_PFLEGE_EP der Entwicklungspunkte, höchstens QUAL_PFLEGE_MAX.
+// Boden gleitend zwischen QUAL_BODEN an den Schwellen BODEN_SCHWELLE, darüber der letzte Wert. Form aus FORMEN.qual, QUAL_RESERVE bleibt frei.
+const QUAL_PFLEGE_AB=10, QUAL_PFLEGE_EP=1/3, QUAL_PFLEGE_MAX=40, QUAL_BODEN=[0,10,20,40], QUAL_RESERVE=3;
+// Preis (Entscheidungen 24, 38 und 44): Qualitätsfaktor QUAL_PREIS_AB plus QUAL_PREIS_JE je Punkt, Grundpreis je Sorte, Jahrhundertwein JH_PREIS mehr.
+const QUAL_PREIS_AB=.5, QUAL_PREIS_JE=.01, SORTE_PREIS={menge:1,sekt:1,spitze:1.05}, JH_PREIS=.1;
+// Wagnis beim Weinprüfer (Entscheidungen 20, 26 und 28), nicht zu verwechseln mit WAGNIS und WAGNIS_AUS (Wagnis bei der Lese):
+// ab dem Akt WAGNIS_AB_AKT, je fehlendem Punkt WAGNIS_JE_PUNKT weniger Chance, durchgefallen DURCH_PREIS Abschlag,
+// ab dem Akt DURCH_ANS_AB_AKT kostet Durchfallen DURCH_ANS mal den Grundwert der Weinstufe. Anzeige je Spielstufe nach dem Muster CHANCE_ZEIGE.
+const WAGNIS_AB_AKT=2, WAGNIS_JE_PUNKT=.1, DURCH_PREIS=.25, DURCH_ANS_AB_AKT=3, DURCH_ANS=.5;
+const PRUEFER_ZEIGE={einfach:'chance',mittel:'punkte',schwer:''}, PRESSE_RAT_AB=.8;
+// Presse beim Präsidenten (FREI.presse): Erfolg PRESSE_ERFOLG mal, Durchfallen PRESSE_DURCH mal der Grundwert, PRESSE_JE_JAHR Einsatz im Jahr.
+const PRESSE_ERFOLG=2, PRESSE_DURCH=3, PRESSE_JE_JAHR=1;
+// Jury (Entscheidung 36, Maik 25.11.2026): Jahrhundertwein JH_JURY mehr, Sekt mit dem Wert SEKT_JURY, die Felder WETT_FELD_PLUS höher.
+const JH_JURY=15, SEKT_JURY=11, WETT_FELD_PLUS=40;
+// Sekt (Maik 25.11.2026, Frage 2): langes Hefelager HEFE_LANG_P Punkte, einfacher Hang bis SEKT_EINFACH_P weniger, im Preis 1 Punkt gleich 1 Prozent.
+const HEFE_LANG_P=6, SEKT_EINFACH_P=5;
