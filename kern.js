@@ -3296,7 +3296,7 @@ function fuAblegen(){
   if(!FU_WO&&(b.k||b.a==='warnung')&&fuNochDran(id)){FU_SPAET[id]=FU_ZM; fuehrerWeg(); return}
   fuFertig();
 }
-function wettSheet(h){openSheet(h,'wett')}
+function wettSheet(h,art){openSheet(h,'wett',art)}   // seit 16.8.7 mit der Art des Fensters (Bauplan 16.8)
 function lot(id){return S.lots.find(l=>l.id===+id)}
 // Liest den Anteil p (0 bis 1) eines Feldes. Bei p<1 bleibt der Rest hängen. Der Boden verliert je Feld und Jahr nur einmal 4 Punkte, seit 14.7.4 der Boden dieses Weinbergs.
 // Seit 8.0: Felder mit Edelfäulnis oder gefrorenen Trauben liest die Hand, wenn genug Erntehelfer da sind (handlese), sonst die Maschine mit q.masch (höchstens Qualitätswein).
