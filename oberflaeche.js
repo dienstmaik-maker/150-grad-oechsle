@@ -883,7 +883,7 @@ const mib=id=>`<span class="mib" data-a="buch" data-id="${id}">📖 Mehr im Buch
 function gebieteGenauer(){
   const h=m=>REIHE.filter(st=>m[st]).map(st=>`${STUFEN[st].name} ${m[st]}°`).join(', ');
   return `<details open><summary>Genauer</summary><ul><li>Hürden in allen Gebieten: ${h(MIN_NORMAL)}.</li>
-    <li>${rollenAn()?`Jedes Gebiet hat drei Rebsorten mit festen Rollen. Die ${ROLLEN.spitze.name} startet mit dem vollen Zucker, die ${ROLLEN.sekt.name} ${-ROLLEN.sekt.zucker}° und die ${ROLLEN.menge.name} ${-ROLLEN.menge.zucker}° darunter. Spielstände von vor Version 11.4 behalten ihre alten Sorten mit Sternen.`:`Die Sorte mit ★★★ startet mit dem vollen Zucker, die anderen mindestens 1° darunter.${sternPreisText()}`}</li></ul>${Object.keys(REGIONEN).map(id=>steckbrief(id)).join('')}</details>`;
+    <li>${rollenAn()?`Jedes Gebiet hat drei Rebsorten mit festen Rollen. Wie viel Zucker die Trauben bilden, hängt an Lage und Sorte, mehr im Weinkompendium unter „Klima je Weinberg“ (seit dem Nachtrag zu 14.5.4, Platzhalter, Wortlaut in Meilenstein 17). Spielstände von vor Version 11.4 behalten ihre alten Sorten mit Sternen.`:`Die Sorte mit ★★★ startet mit dem vollen Zucker, die anderen mindestens 1° darunter.${sternPreisText()}`}</li></ul>${Object.keys(REGIONEN).map(id=>steckbrief(id)).join('')}</details>`;
 }
 function buchZeig(){
   const b=$('#buch'); if(BUCH==null){b.className=''; b.innerHTML=''; return}
@@ -903,7 +903,7 @@ function vBetrieb(){
     <div class="kv"><span>Fläche</span><span>${S.ha} Hektar, ${Math.round(rebenGesamt()/(S.ha*HA_REBEN)*100)} % bepflanzt</span></div>
     <div class="kv"><span>Lagen</span><span>${hangZeile()}</span></div>
     <div class="kv"><span>Bepflanzt</span><span>${rbn(rebenGesamt())} von ${rbn(S.ha*HA_REBEN)} Reben</span></div>
-    ${S.spitze?`<div class="kv"><span>Spitzenlage</span><span>${SPITZE_HA} Hektar Südhang, +${SPITZE_OE}° im Juli</span></div>`:''}
+    ${S.spitze?`<div class="kv"><span>Spitzenlage</span><span>${SPITZE_HA} Hektar Südhang, ${KLIMA_WORT.spitzenlage}</span></div>`:''}
     <div class="kv"><span>Fassraum belegt</span><span>${num(fassBelegt())} von ${num(S.fassraum)} l</span></div>
     <div class="kv"><span>Leere Flaschen</span><span>${num(S.flaschen)}</span></div>
     ${einFrei('leute')?'':`<div class="kv"><span>Deine Leute</span><span>Familie, schafft ${ALLEIN_HA} Hektar</span></div>`}
@@ -1142,9 +1142,11 @@ function vBerg(){
     let z=`<div class="kv"><span>Reben</span><span>${rbn(f.reben)}</span></div><div class="kv"><span>${rolleVon(id)?'Rolle':'Eignung'}</span><span>${rolleVon(id)?rolleVon(id).name:eigText(eignung(id))}</span></div>`;
     // Seit 13.4.9: Lage der Sorte. Die Spitzen-Sorte nur auf dem Südhang, beim Sekt der Anteil auf dem einfachen Hang mit seinem Abzug.
     // Seit 14.4.4: Die Spitzenlage mit ihrer Fläche und ihrem eigenen Boden. Platzhalter, Wortlaut in Meilenstein 17.
-    if(istSL(id)) z+=`<div class="kv"><span>Lage</span><span>${LAGEN.sued.sym} ${SL_NAME}, ${SPITZE_HA} Hektar Südhang, +${SPITZE_OE}° im Juli</span></div><div class="kv"><span>Boden</span><span>${BODEN_STUFEN[wbBoden(id)]}, ${epT(wbBodenP(id))} von ${BODEN_MAX} Punkten</span></div>`;
+    if(istSL(id)) z+=`<div class="kv"><span>Lage</span><span>${LAGEN.sued.sym} ${SL_NAME}, ${SPITZE_HA} Hektar Südhang</span></div><div class="kv"><span>Boden</span><span>${BODEN_STUFEN[wbBoden(id)]}, ${epT(wbBodenP(id))} von ${BODEN_MAX} Punkten</span></div>`;
     else if(spitzeId(id)) z+=`<div class="kv"><span>Lage</span><span>${LAGEN.sued.sym} nur Südhang, Platz für ${rbn(suedPlatz())} Reben</span></div>`;
     else if(sektSorte(id)&&f.reben){const a=Math.round(sektEinfach()*100); z+=`<div class="kv"><span>Lage</span><span${a?' class="rot"':''}>${a?`${a}\u00a0% auf dem einfachen Hang, −${sektAbzug()} Punkte`:`${LAGEN.hoehe.sym} Höhenlage oder Südhang`}</span></div>`}
+    // Seit dem Nachtrag zu 14.5.4: das Klima des Weinbergs in Worten (klimaText), ohne Zahlen. Platzhalter, Wortlaut in Meilenstein 17.
+    if(f.reben) z+=`<div class="kv"><span>Klima</span><span>${klimaText(id)}</span></div>`;
     // Seit 13.2.6: Pflegestufe mit Zähler, Deckel und Rebschnitt. Wortlaut seit 13.8.
     // Seit 14.2.2: Entwicklungspunkte mit der nächsten Schwelle und der Wirkung der Stufe. Platzhalter, Wortlaut in Meilenstein 17.
     if(f.reben){const st=f.pflSt||0, SW=epSchwelle(id); z+=`<div class="kv"><span>Pflege</span><span>${st>=PFLEGE_STUFEN.length-1?`${PFLEGE_STUFEN[st]}, höher geht es nicht`:`${PFLEGE_STUFEN[st]}, ab ${epT(SW[st+1])} Punkten ${PFLEGE_STUFEN[st+1]}`}</span></div>
@@ -1993,7 +1995,7 @@ const AKT={
       a.gebot=x; a.fuehrer='du'; a.ende='du'; S.geld-=px; a.preisDu=px; landDazu(a.lage||'einfach',a.ha); if(a.lage==='sued') aukGlueck(); fx('hammer',3);
       a.text=`Zum Ersten, zum Zweiten, zum Dritten! ${losText(a)} gehören dir für ${eur(px)}. +${ruhm(2*(3+Math.min(a.ha,7)))} Ansehen. Dein Weingut hat jetzt ${S.ha}\u00a0Hektar.`;
       // Seit 14.4.4: Die Spitzenlage ist ein eigener Weinberg (slKauf), fertig bepflanzt. Platzhalter, Wortlaut in Meilenstein 17.
-      if(a.spitze){S.spitze=1; slKauf(); a.text+=` Die Spitzenlage gehört dir: +${ruhm(SPITZE_ANS)} Ansehen. Sie steht fertig bepflanzt als eigener Weinberg da, ihre Trauben starten jeden Juli mit ${SPITZE_OE}° mehr.`}
+      if(a.spitze){S.spitze=1; slKauf(); a.text+=` Die Spitzenlage gehört dir: +${ruhm(SPITZE_ANS)} Ansehen. Sie steht fertig bepflanzt als eigener Weinberg da, dort ist es ${KLIMA_WORT.spitzenlage} als am einfachen Hang.`}
       if(S.geld<0) a.text+=` Dein Konto steht jetzt im Minus, das kostet 1 % Zinsen im Monat. Ein Kredit bei der Bank kostet nur ${Math.round(ZINS*100)} % im Jahr.`;
     }
     save();render();AKT.auktion();

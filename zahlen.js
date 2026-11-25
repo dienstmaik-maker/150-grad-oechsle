@@ -16,9 +16,9 @@ const SORTEN={
 // gemessen werden also drei Profile statt 15 Sorten. Menge startet mit den Werten des alten Müller-Thurgau, Spitze mit denen des alten Rieslings,
 // die Sekt-Sorte liegt dazwischen und ist als einzige Sekt-Star. Die sechs alten Sorten oben bleiben für Spielstände von vor 11.4 unberührt.
 const ROLLEN={
-  menge:{name:'Menge-Sorte',satz:'trägt viel und ist früh verkaufsreif',ertrag:5.6,zucker:-4,preis:3,minL:6,maxL:96,reife:.05},
-  sekt:{name:'Sekt-Sorte',satz:'gibt den Regional-Sekt',ertrag:5.05,zucker:-2,preis:4.5,minL:9,maxL:144,reife:.08,sektStar:true},
-  spitze:{name:'Spitzen-Sorte',satz:'trägt wenig, bringt die beste Qualität und reift lange',ertrag:4.44,zucker:0,preis:9,minL:18,maxL:360,reife:.12}
+  menge:{name:'Menge-Sorte',satz:'trägt viel und ist früh verkaufsreif',ertrag:5.6,preis:3,minL:6,maxL:96,reife:.05},
+  sekt:{name:'Sekt-Sorte',satz:'gibt den Regional-Sekt',ertrag:5.05,preis:4.5,minL:9,maxL:144,reife:.08,sektStar:true},
+  spitze:{name:'Spitzen-Sorte',satz:'trägt wenig, bringt die beste Qualität und reift lange',ertrag:4.44,preis:9,minL:18,maxL:360,reife:.12}
 };
 // 17 neue Kennungen für 15 Namen (Riesling und Silvaner gibt es in zwei Rollen). Kennungen nie umbenennen, sie stehen in Spielständen und ab 11.4 im Album.
 const SORTEN_ROLLEN={
@@ -191,11 +191,7 @@ const PFLEGE_STUFEN=['Jungrebe','Rebstock','Premier Cru','Grand Cru'], PFLEGE_SC
 const SETZ_MENGE=[.4,.48,.55,.63,.7], PFLEGE_MENGE={menge:[1,1,1],sekt:[1,1,1],spitze:[1,.9,.8]};
 // Seit 14.5.4 (Entscheidung 44, Annahme 14): Grand Cru 15 Prozent mehr Preis für alle Sorten, als Sprung nach der Pflegestufe bei der Lese (l.pfl).
 const PFLEGE_PREIS=[0,0,0,.15];
-// Seit 13.2.3 (Bauplan 13.2): Deckel je Weinberg = DECKEL_BASIS der Rolle + BODEN_ST_OE je Boden-Stufe + PFLEGE_ST_OE je Pflegestufe, also höchstens 90° und 104°.
-// Das Monatsmodell bleibt, es zählt der kleinere Wert aus Wetter und Deckel. Nur die Edelfäulnis der Spitzen-Sorte darf darüber, bis OE_MAX.
-// Seit 14.2.6 (Entscheidung 24): fester Deckel je Sorte (bis 14.2.5: 66, 66, 80 plus 4° je Boden- und Pflegestufe).
-// Seit 14.5.4 (Öchsle-Nachtrag, Annahme 35 im Bauplan 14.5): Menge 105°, Spitze 124°, Sekt bleibt bei 90° (bis 14.5.3: 90°, 104°, 90°).
-const DECKEL_BASIS={menge:105,spitze:124,sekt:90};
+// DECKEL_BASIS steht seit dem Nachtrag zu 14.5.4 beim Klima je Weinberg (unten, Abschnitt 14.5).
 // Seit 13.2.4 (Bauplan 13.2): Rebschnitt von Hand je Sorte von Januar bis SCHNITT_BIS (3 = April), SCHNITT_HA Euro je Hektar der Sorte, so viel wie das Düngen.
 // Wer bis Ende April schneidet, hat ein gutes Pflegejahr (13.2.2). Die Abgabe an die Erntehelfer kommt in 13.5.
 const SCHNITT_HA=DUENGER_HA, SCHNITT_BIS=3;
@@ -504,12 +500,12 @@ const PREISE={
 // LAGER_SCHWANK: so weit schwanken Fassraum und Flaschen. REBEN_ANGEBOT: Rabatt auf eine Sorte je Monat in der Pflanzzeit.
 // Eigene Weinhandlung: verkauft im Monat Regalwein bis LADEN_EIGEN Euro Listenwert zum LADEN_EIGEN_F-Fachen. Weinbotschafter: BOTSCHAFT_ANS jeden Januar.
 // Hoffest: kostet HOFFEST_PREIS, bringt HOFFEST_ANS Ansehen mal Wetter-Faktor. Kontrolle anregen: Fund kostet den Gegner ANREG_ANS, Fehlalarm dich ANREG_FEHL.
-// PANSCH: so oft panschen die Gegner im Oktober. Spitzenlage: SPITZE_HA Hektar ab SPITZE_START, bringt SPITZE_ANS Ansehen und SPITZE_OE Grad mehr im Juli.
+// PANSCH: so oft panschen die Gegner im Oktober. Spitzenlage: SPITZE_HA Hektar ab SPITZE_START, bringt SPITZE_ANS Ansehen. Ihr Klima steht seit dem Nachtrag zu 14.5.4 in KLIMA_LAGE (bis dahin SPITZE_OE 5).
 const LAGER_SCHWANK=.2, REBEN_ANGEBOT=.15, LADEN_EIGEN=6000, LADEN_EIGEN_F=1.45, BOTSCHAFT_ANS=20, HOFFEST_PREIS=180000, HOFFEST_ANS=32;
 const HOFFEST_WETTER={sonnig:1.25,mild:1,regen:.7,kalt:.85,frost:.85};
 const BESTEN_KEY='oechsle-besten';
 // Seit 14.4.6 (Entscheidung 58): ANREG_ANS 150 und ANREG_FEHL 50 (bis 14.4.5 60 und 6).
-const ANREG_ANS=150, ANREG_FEHL=50, PANSCH={zocker:.4,vorsicht:.08,qualitaet:.04}, SPITZE_HA=2, SPITZE_START=200000, SPITZE_OE=5, SPITZE_ANS=30, LOHN_BILLIG=1900;
+const ANREG_ANS=150, ANREG_FEHL=50, PANSCH={zocker:.4,vorsicht:.08,qualitaet:.04}, SPITZE_HA=2, SPITZE_START=200000, SPITZE_ANS=30, LOHN_BILLIG=1900;
 // Paket 4 (15.11.2026): Ziele fürs Geld und Land ohne Auktionsglück.
 // Makler: ab Jungwinzer Land zum MAKLER_PREIS je Hektar, nur wenn für den nächsten Rang allein noch Land fehlt. Auktionen bleiben deutlich billiger.
 // Seit 11.5 (Teil B) wächst sein Angebot mit dem Rang: MAKLER_HA Hektar im Jahr je Rang (Idee Maik 20.11.2026, Zahlen von Claude). Bis 11.4 war es immer einer.
@@ -1562,6 +1558,23 @@ const QUAL_PREIS_AB=.5, QUAL_PREIS_JE=.01, SORTE_PREIS={menge:1,sekt:1,spitze:1.
 // Wagnis im Herbst: Edelfäulnis EDEL_OE und Rosinen ROSIN_OE Grad dazu, bis höchstens OE_MAX (bis 14.5.3: fest auf 125° und 150°, Obergrenze 150°),
 // dazu EDEL_MENGE und ROSIN_MENGE der Menge (WARTEN_MENGE je Monat bleibt).
 const OE_PREIS_JE=.01, OE_PREIS_MAX=.1, OE_JURY_MAX=10, EIS_OE_SCHWELLE=110, EDEL_OE=30, ROSIN_OE=25, OE_MAX=175, EDEL_MENGE=.7, ROSIN_MENGE=.7;
+// Nachtrag zu 14.5.4 (Maik 25.11.2026): Die Edelfäulnis bringt EDEL_OE Grad, aber höchstens EDEL_OE_MAX (bis dahin bis OE_MAX, mit Deckel 124° also 154°).
+// Die Trockenbeerenauslese gibt es damit nur mit den Rosinen im Dezember, ab dem Vizepräsidenten (FREI.weg_tba). Erst die Rosinen öffnen den Weg bis OE_MAX.
+const EDEL_OE_MAX=149;
+// Klima je Weinberg (Nachtrag zu 14.5.4, Maik 25.11.2026), alle Werte des Klimas an dieser Stelle. Die Öchsle starten im Juli bei OE_START plus Lage plus Sorte plus Gebiet.
+// Lage (KLIMA_LAGE): einfacher Hang 0, Höhenlage -2, Südhang +2, Spitzenlage +7 (bis dahin SPITZE_OE 5). Steht ein Weinberg auf mehreren Lagen, zählt der Schnitt
+// nach Reben wie beim Boden (wbBodenP), auf ganze Grad gerundet. Sorte (KLIMA_SORTE): Menge -4, weil sie viel trägt und weniger Zucker bildet, Sekt 0, Spitze -2,
+// weil sie spät reift (bis dahin ROLLEN.zucker -4, -2, 0). Gebiet (KLIMA_GEBIET) kühl, mittel, warm nach dem Feld warm in REGIONEN (gebietKlima), alle 0, die Zahlen
+// entscheidet Maik in Meilenstein 15. Die üblichen Paare bleiben wie vorher: Menge am Hang -4, Sekt in der Höhenlage -2, Spitze am Südhang 0, Spitzenlage +5.
+// Lage plus Sorte gilt auch für eine Sorte in fremder Lage (Menge am Südhang -2). Der Deckel bleibt an der Sorte (DECKEL_BASIS): Menge 105°, Spitze 124°, Sekt 90°
+// (seit 14.5.4, Öchsle-Nachtrag, Annahme 35, bis 14.5.3: 90°, 104°, 90°). Das Monatsmodell zählt den kleineren Wert aus Wetter und Deckel.
+const KLIMA_LAGE={einfach:0,hoehe:-2,sued:2,spitzenlage:7}, KLIMA_SORTE={menge:-4,sekt:0,spitze:-2}, KLIMA_GEBIET={kuehl:0,mittel:0,warm:0};
+const DECKEL_BASIS={menge:105,spitze:124,sekt:90};
+// Im Spiel nur in Worten, keine Zahlen. Ein Gebiet mit Wert 0 bekommt keinen Satz. Platzhalter, Wortlaut in Meilenstein 17.
+const KLIMA_WORT={einfach:'in Ordnung',hoehe:'etwas kühler',sued:'etwas wärmer',spitzenlage:'sehr viel wärmer'},
+  KLIMA_SORTE_WORT={menge:'die Sorte bildet weniger Zucker, weil sie viel trägt',sekt:'',spitze:'die Sorte reift spät'},
+  KLIMA_GEBIET_WORT={kuehl:'das Gebiet ist kühl',mittel:'',warm:'das Gebiet ist warm'},
+  KLIMA_KOMP='Jeder Weinberg hat sein eigenes Klima, die Öchsle hängen an Lage und Sorte. Der einfache Hang ist {einfach}, die kühle Höhenlage {hoehe}, der steile Südhang {sued} und die Spitzenlage {spitzenlage}. Die Menge-Sorte bildet weniger Zucker, weil sie viel trägt, die Spitzen-Sorte reift spät. Wie hoch die Öchsle steigen können, bestimmt weiter die Sorte.';
 // Wagnis beim Weinprüfer (Entscheidungen 20, 26 und 28), nicht zu verwechseln mit WAGNIS und WAGNIS_AUS (Wagnis bei der Lese):
 // ab dem Akt WAGNIS_AB_AKT, je fehlendem Punkt WAGNIS_JE_PUNKT weniger Chance, durchgefallen DURCH_PREIS Abschlag,
 // ab dem Akt DURCH_ANS_AB_AKT kostet Durchfallen DURCH_ANS mal den Grundwert der Weinstufe. Anzeige je Spielstufe nach dem Muster CHANCE_ZEIGE.

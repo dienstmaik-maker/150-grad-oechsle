@@ -1,7 +1,7 @@
 // 150 Grad Öchsle: Kern. Rechenregeln, Jahr, Wetter, Speichern. Seit 13.1 eigene Datei, vorher in index.html.
 // Lädt nach zahlen.js und vor oberflaeche.js, alle Namen sind global.
 'use strict';
-for(const [id,[rolle,name,farbe]] of Object.entries(SORTEN_ROLLEN)){const P=ROLLEN[rolle]; SORTEN[id]={name,farbe,rolle,ertrag:P.ertrag,zucker:P.zucker,preis:P.preis,minL:P.minL,maxL:P.maxL,reife:P.reife,...(P.sektStar?{sektStar:true}:{})}}
+for(const [id,[rolle,name,farbe]] of Object.entries(SORTEN_ROLLEN)){const P=ROLLEN[rolle]; SORTEN[id]={name,farbe,rolle,ertrag:P.ertrag,preis:P.preis,minL:P.minL,maxL:P.maxL,reife:P.reife,...(P.sektStar?{sektStar:true}:{})}}
 // Seit 14.4.4 (Entscheidung 13, Annahme 1): Die Spitzenlage ist ein vierter Weinberg mit eigener Kennung (SL_PRE plus Kennung der Spitzen-Sorte), dieselbe Rebsorte
 // mit allen ihren Werten (stamm zeigt auf sie), eigener Name mit Lagennamen (SL_NAME), damit ihr Wein ein eigener Posten im Keller ist. Die Reihenfolge der Sorten
 // nach Rang bleibt bei drei (R().sorten, sortenFolge, SORTE_RANG), die Liste der Weinberge ist weinberge(): die drei Sorten und, sobald gekauft, die Spitzenlage.
@@ -28,7 +28,8 @@ const gebietText=(r,neu)=>(neu??rollenAn())?{...GEBIET_TEXT[r],lohnt:GEBIET_ROLL
 const eignung=(id,r)=>(SORTEN[id]||{}).rolle?1:(EIGNUNG[r||S.region]||{})[id]||.85;
 // Zucker der Sorte im Gebiet: Die beste Sorte startet überall gleich. Die anderen behalten ihren Abzug und liegen mindestens 1° darunter.
 // Seit 11.4: Sorten mit Rolle bringen den Zucker ihres Profils mit (ROLLEN), in jedem Gebiet gleich.
-const zuckerIm=(id,r)=>SORTEN[id].rolle?SORTEN[id].zucker:eignung(id,r)>=1?0:Math.min(-1,SORTEN[id].zucker);
+// Seit dem Nachtrag zu 14.5.4 (Klima je Weinberg): Sorten mit Rolle rechnen mit dem Klima ihres Weinbergs (klimaOe), bis dahin ROLLEN.zucker und SPITZE_OE.
+const zuckerIm=(id,r)=>SORTEN[id].rolle?klimaOe(id):eignung(id,r)>=1?0:Math.min(-1,SORTEN[id].zucker);
 const eigText=e=>e>=1?'★★★ sehr gut geeignet':e>=.85?'★★ gut geeignet':'★ geht noch';
 // Seit 11.4: das Schild einer Sorte. Mit Rolle steht dort die Rolle und was sie kann, sonst die Sterne im Gebiet.
 const rolleVon=id=>ROLLEN[(SORTEN[id]||{}).rolle];
@@ -76,7 +77,18 @@ const pflegePreis=st=>PFLEGE_PREIS[st||0]||0;
 // Seit 13.2.3: Deckel fürs Öchsle eines Weinbergs aus Rolle, Boden-Stufe und Pflegestufe.
 function deckel(id){const f=S.felder[id]||{}; return DECKEL_BASIS[rolleK(id)]+BODEN_ST_OE*wbBoden(id)+PFLEGE_ST_OE*(f.pflSt||0)}
 // Obergrenze im Monatsmodell: der Deckel, mit Edelfäulnis bei der Spitzen-Sorte OE_MAX (seit 14.5.4 175°, bis 14.5.3 150°).
-function oeGrenze(id){const f=S.felder[id]; return f&&f.edel&&rolleK(id)==='spitze'?OE_MAX:deckel(id)}
+// Seit dem Nachtrag zu 14.5.4: mit Edelfäulnis höchstens EDEL_OE_MAX, erst nach den Rosinen (f.rosin) OE_MAX.
+function oeGrenze(id){const f=S.felder[id]; return f&&f.edel&&rolleK(id)==='spitze'?(f.rosin?OE_MAX:EDEL_OE_MAX):deckel(id)}
+// Klima je Weinberg (Nachtrag zu 14.5.4, Maik 25.11.2026): Lage als Schnitt nach Reben wie wbBodenP, die Spitzenlage mit ihrem eigenen Wert, dazu Sorte und Gebiet.
+// Ohne Reben die Lage, auf der der Weinberg wachsen würde. Gerundet auf ganze Grad (Math.round), die Öchsle bleiben ganze Zahlen.
+const gebietKlima=r=>r.warm>0?'warm':r.warm<0?'kuehl':'mittel';
+function klimaLagen(id){if(istSL(id)) return {spitzenlage:1}; const w=lagenBelegung().W[id], n=w?LAGE_REIHE.reduce((a,lg)=>a+w[lg],0):0;
+  if(!n) return {[spitzeId(id)?'sued':rolleK(id)==='sekt'&&hangHa('hoehe')>0?'hoehe':'einfach']:1};
+  const A={}; for(const lg of LAGE_REIHE) if(w[lg]>0) A[lg]=w[lg]/n; return A}
+function klimaOe(id){const A=klimaLagen(id); return Math.round(Object.keys(A).reduce((a,lg)=>a+A[lg]*KLIMA_LAGE[lg],0)+KLIMA_SORTE[rolleK(id)]+KLIMA_GEBIET[gebietKlima(R())])}
+// In Worten für den Weinberg, ohne Zahlen. Platzhalter, Wortlaut in Meilenstein 17.
+function klimaText(id){const A=klimaLagen(id), L=Object.keys(A).map(lg=>`${lg==='spitzenlage'?SL_NAME:LAGEN[lg].kurz} ${KLIMA_WORT[lg]}`);
+  return [L.join(', '),KLIMA_SORTE_WORT[rolleK(id)],KLIMA_GEBIET[gebietKlima(R())]?KLIMA_GEBIET_WORT[gebietKlima(R())]:''].filter(Boolean).join(', ')}
 const feldId=f=>weinberge().find(id=>S.felder[id]===f);
 // Seit 13.3.2: Freischaltung nach Rang (FREI) und welche Stufen eine Sorte nach ihrer Rolle machen darf (WEIN_ROLLE).
 const freiAb=k=>(FREI[k]||{r:0}).r;
@@ -1308,15 +1320,15 @@ function wachse(m){
   // Seit 13.4.2: Im Dezember richtet sich das Wetter nach dem Frost-Wagnis, wenn ein Feld darauf wartet (wagnisWetter).
   if(m===11) wagnisWetter();
   const w=S.wetter;
-  // Seit 14.4.4 alle Weinberge, die Spitzenlage würfelt wie der Weinberg ihrer Sorte (si der Sorte), nur ihre Trauben bekommen SPITZE_OE.
+  // Seit 14.4.4 alle Weinberge, die Spitzenlage würfelt wie der Weinberg ihrer Sorte (si der Sorte). Seit dem Nachtrag zu 14.5.4 steckt ihr Klima in zuckerIm (KLIMA_LAGE).
   for(const [si,id] of weinberge().map(x=>[reg.sorten.indexOf(stamm(x)),x])){
     const f=S.felder[id], so=SORTEN[id]; if(!f.reben) continue;
     if((m===3||m===4)&&w==='frost'){f.frostF=formSchutz(id,SPAETFROST_MENGE); L.push(`Spätfrost schädigt die Blüte beim ${so.name}.`)}
     // Seit 13.2.2: statt der Jungreben der Mengen-Faktor der Rebpflege (pflegeMenge).
     // Seit 14.2.4 mal der Menge der Erziehungsform, seit 14.5.3 für jede Sorte gleich (formMenge).
     if(m===5) f.menge=Math.round(f.reben*pflegeMenge(f,id)*formMenge(id)*so.ertrag*(reg.ertragF||1)*(.6+.4*S.boden/100)*(1+BODEN_ST_MENGE*wbBoden(id))*f.frostF*festR(.9,1.1,fest(6,si,S.jahr,m)));
-    // Seit 13.2.3: Das Wetter-Öchsle zählt höchstens bis zur Grenze des Weinbergs (oeGrenze: Deckel, Edelfäulnis der Spitzen-Sorte bis 150°).
-    if(m===6){f.oe=Math.min(oeGrenze(id),OE_START+zuckerIm(id)+wbonus(w)+festI(-2,2,fest(5,si,S.jahr,m))+(istSL(id)?SPITZE_OE:0)); f.reif=5; f.ueber=0; f.plus=0}
+    // Seit 13.2.3: Das Wetter-Öchsle zählt höchstens bis zur Grenze des Weinbergs (oeGrenze: Deckel, Edelfäulnis der Spitzen-Sorte bis EDEL_OE_MAX, nach den Rosinen bis OE_MAX).
+    if(m===6){f.oe=Math.min(oeGrenze(id),OE_START+zuckerIm(id)+wbonus(w)+festI(-2,2,fest(5,si,S.jahr,m))); f.reif=5; f.ueber=0; f.plus=0}
     if(m>=7&&f.menge>0&&!f.gelesen){
       // f.plus merkt den Öchsle-Zuwachs des Monats für die Infoseite.
       const vor=f.oe;
@@ -1424,7 +1436,8 @@ function herbstWagnis(id,f,so,m,L){
     if(w==='edel'&&!f.wagnis){
       // Seit 14.5.4 (Annahmen 35, 36 und 38): Die Edelfäulnis bringt EDEL_OE Grad dazu (bis 14.5.3 fest auf die Schwelle der Beerenauslese) und kostet EDEL_MENGE der Menge,
       // auch im Jahrhundertsommer. Reicht es mit der überreifen Lese (+5°) nicht für die Beerenauslese, wird es, was die Öchsle hergeben. Text ist Platzhalter, Wortlaut in Meilenstein 17.
-      if(H.uEdel<wegChance('edel')){f.wagnis='edel'; f.edel=true; f.oe=Math.min(OE_MAX,f.oe+EDEL_OE); f.menge=Math.round(f.menge*EDEL_MENGE); f.ueber=clamp(f.ueber+EDEL_UEBER,0,100);
+      // Seit dem Nachtrag zu 14.5.4: höchstens EDEL_OE_MAX (149°), die Trockenbeerenauslese kommt erst mit den Rosinen.
+      if(H.uEdel<wegChance('edel')){f.wagnis='edel'; f.edel=true; f.oe=Math.min(EDEL_OE_MAX,f.oe+EDEL_OE); f.menge=Math.round(f.menge*EDEL_MENGE); f.ueber=clamp(f.ueber+EDEL_UEBER,0,100);
         L.push(`Edelfäulnis beim ${so.name}! Die Trauben haben jetzt ${f.oe}° Öchsle${feldQ(f,'ueber').oe>=R().min.ba?', genug für eine Beerenauslese. Lies sie von Hand, nur überreife Trauben.':`, für eine Beerenauslese (${R().min.ba}°) reicht es nicht.`}`)}
       else wagnisWeg(f,so,'edel',L);
     }else if(w==='frost'&&!f.wagnis){f.wagnis='frost'; L.push(`Der ${so.name} hängt weiter und wartet auf Frost im Dezember.`)}
@@ -1441,7 +1454,7 @@ function herbstWagnis(id,f,so,m,L){
     // Seit 13.6.2: Im Jahrhundertsommer wird die Trockenbeerenauslese der Jahrhundertwein (f.jh).
     // Seit 14.5.4 (Annahmen 35, 36 und 38): Die Rosinen bringen ROSIN_OE Grad dazu (bis 14.5.3 fest auf die Schwelle der Trockenbeerenauslese), höchstens OE_MAX,
     // und kosten noch einmal ROSIN_MENGE der Menge. Text ist Platzhalter, Wortlaut in Meilenstein 17.
-    if(H.uTba<tbaChance()){f.oe=Math.min(OE_MAX,f.oe+ROSIN_OE); f.menge=Math.round(f.menge*ROSIN_MENGE); if(jhEcht()==='sommer'){f.jh=1; S.jhN=(S.jhN||0)+1}
+    if(H.uTba<tbaChance()){f.rosin=true; f.oe=Math.min(OE_MAX,f.oe+ROSIN_OE); f.menge=Math.round(f.menge*ROSIN_MENGE); if(jhEcht()==='sommer'){f.jh=1; S.jhN=(S.jhN||0)+1}
       L.push(`${f.jh?'Jahrhundertsommer! ':''}Die edelfaulen Beeren vom ${so.name} sind zu Rosinen eingetrocknet: ${f.oe}° Öchsle${feldQ(f,'ueber').oe>=R().min.tba?', genug für eine Trockenbeerenauslese. Lies sie diesen Monat von Hand, nur überreife Trauben.':`, für eine Trockenbeerenauslese (${R().min.tba}°) reicht es nicht.`}`)}
     else wagnisWeg(f,so,'tba',L);
     return;
@@ -1461,7 +1474,8 @@ function wagnisWetter(){
   const w=herbstJahr().uFrost<wegChance('frost')?'frost':S.wetter==='frost'?'mild':S.wetter;
   if(w!==S.wetter){S.wetter=w; S.temp=tempFuer(11,w,fest(8,0,S.jahr,11))}
 }
-function feldReset(f){Object.assign(f,{oe:0,plus:0,menge:0,reif:0,ueber:0,edel:false,edelGeprueft:false,gelesen:false,teil:false,gefroren:false,frostF:1,wagnis:0,weg:null,leseW:0,jh:0})}
+// Seit dem Nachtrag zu 14.5.4: f.rosin (Rosinen eingetrocknet) steht nur, wenn es sie gab, und fällt hier weg.
+function feldReset(f){delete f.rosin; Object.assign(f,{oe:0,plus:0,menge:0,reif:0,ueber:0,edel:false,edelGeprueft:false,gelesen:false,teil:false,gefroren:false,frostF:1,wagnis:0,weg:null,leseW:0,jh:0})}
 
 /* ================= Schädlingsjahr (seit 13.7.2) ================= */
 // Die Schädlingsjahre der Partie, fest aus der Startzahl, einmal je Startzahl gerechnet. Nur in der Meisterprüfung (schaedAn).
@@ -1627,7 +1641,9 @@ function kompSektText(){
 }
 // Wissens-Seiten: Geschichte und die Zeile "Im Spiel", ohne Siegel. Die Kennungen aus 11.1 bleiben, neu ist helferweg.
 for(const r of Object.keys(REGIONEN)) kompWissen('gebiet_'+r,'gebiet',REGIONEN[r].name,()=>`${REGIONEN[r].text} ${r===S.region?'Hier steht dein Weingut.':`So spielt es sich in einer Partie ${WO[r]}.`}`);
-kompWissen('spitze','gebiet','Spitzenlage',()=>`Die beste Lage weit und breit: ${SPITZE_HA} Hektar Steilhang in voller Südsonne. Wem sie gehört, dessen Trauben starten jeden Juli mit ${SPITZE_OE}° Öchsle mehr. Sie ist steiler Südhang, und unter den Hammer kommt sie nur einmal, ${freiText('spitzenlage')}.`);
+kompWissen('spitze','gebiet','Spitzenlage',()=>`Die beste Lage weit und breit: ${SPITZE_HA} Hektar Steilhang in voller Südsonne. Dort ist es ${KLIMA_WORT.spitzenlage} als am einfachen Hang, die Trauben bekommen mehr Öchsle. Sie ist steiler Südhang, und unter den Hammer kommt sie nur einmal, ${freiText('spitzenlage')}.`);
+// Seit dem Nachtrag zu 14.5.4: Klima je Weinberg, nur in Worten (KLIMA_KOMP). Platzhalter, Wortlaut in Meilenstein 17.
+kompWissen('klima','gebiet','Klima je Weinberg',()=>KLIMA_KOMP.replace(/\{(\w+)\}/g,(m,k)=>KLIMA_WORT[k]));
 for(let k=1;k<=KELLER_PREISE.length;k++) kompWissen('keller'+k,'technik',KELLER_NAMEN[k-1],
   ()=>`Stufe ${k} im Kellerausbau. Kostet ${eur(KELLER_PREISE[k-1])} und geht mit ${kellerMit(k-1)} im Kellerbuch. Prädikatsweine und Eiswein sind damit ${k} ${k===1?'Monat':'Monate'} früher verkaufsreif, und jeder Wein gewinnt beim Reifen schneller an Wert.`);
 // Seit 12.1: der Sektkeller mit der Flaschengärung als kleine Geschichte (KOMP_TEXT.sektkeller).
@@ -1641,7 +1657,7 @@ for(const id of Object.keys(MASCH)) kompWissen('masch_'+id,'technik',MASCH[id].n
 kompWissen('hagel','gefahr','Hagel',()=>'Zwischen Juni und September kann ein Unwetter einen Teil der Trauben zerschlagen, die noch am Stock hängen.');
 kompWissen('spaetfrost','gefahr','Spätfrost',()=>'Friert es im April oder Mai noch einmal, leidet die Blüte, und die Ernte des Jahres fällt kleiner aus.');
 // Seit 14.5.4 mit den Öchsle und der Menge von Edelfäulnis und Rosinen, Platzhalter, Wortlaut in Meilenstein 17.
-kompWissen('kaelte','gefahr','Das Wagnis im Herbst',()=>`Wer die Spitzen-Sorte über Oktober hängen lässt, wagt den Weg seines Gebiets. Jeder Monat kostet ${Math.round((1-WARTEN_MENGE)*100)} % Menge, und klappt es nicht, ist die Ernte des Feldes weg, zum Beispiel durch einen Kälteeinbruch im November. Die Edelfäulnis bringt ${EDEL_OE}° Öchsle dazu und kostet ${Math.round((1-EDEL_MENGE)*100)} % Menge, die Rosinen noch einmal ${ROSIN_OE}° und ${Math.round((1-ROSIN_MENGE)*100)} %, höchstens bis ${OE_MAX}°.`);
+kompWissen('kaelte','gefahr','Das Wagnis im Herbst',()=>`Wer die Spitzen-Sorte über Oktober hängen lässt, wagt den Weg seines Gebiets. Jeder Monat kostet ${Math.round((1-WARTEN_MENGE)*100)} % Menge, und klappt es nicht, ist die Ernte des Feldes weg, zum Beispiel durch einen Kälteeinbruch im November. Die Edelfäulnis bringt ${EDEL_OE}° Öchsle dazu, höchstens bis ${EDEL_OE_MAX}°, und kostet ${Math.round((1-EDEL_MENGE)*100)} % Menge, die Rosinen noch einmal ${ROSIN_OE}° und ${Math.round((1-ROSIN_MENGE)*100)} %, höchstens bis ${OE_MAX}°.`);
 kompWissen('skandal','gefahr','Weinskandal',()=>'Ein Skandal im Land drückt ein paar Monate lang alle Weinpreise. Danach ist erst einmal Ruhe.');
 kompWissen('kontrolle','gefahr','Weinkontrolle',()=>'Der Prüfer kommt unangemeldet, im Schnitt alle drei Jahre. Findet er gepanschten Wein, wird der vernichtet, es gibt Strafe, und fünf Jahre lang kommt er jedes Jahr wieder.');
 kompWissen('maschine','gefahr','Maschinenschaden',()=>`Ein Schaden kostet eine Maschine auf einen Schlag viel Zustand. Unter ${MASCH_ROT} % fällt sie aus, bis sie gewartet ist.`);
@@ -1655,7 +1671,7 @@ kompWissen('regeln','stufe','Reifezeit und Regeln',()=>{
     +`<br><br><b>📜 Gut zu wissen</b><br>Jeder Wein liegt mindestens einen Monat im Fass, höchstens sieben.<br>Ab Kabinett und beim Eiswein darfst du erst im Januar nach der Lese anmelden.<br>Überreife Trauben bringen 5° mehr Öchsle.<br>${edelRegel()}.${S.rollen?'':' Am häufigsten trifft sie die Sorte, die am besten ins Gebiet passt.'} Dann gibt es von dem Feld kein Kabinett und keine Spätlese mehr.<br>Kälteeinbruch im November: im Schnitt jedes vierte Jahr, die Vorhersage warnt meist davor.<br>${frostText()}, nur dann gibt es Eiswein.<br>Bei der Lese zeigt jede Leseart, ab wann der Wein verkaufsfertig ist.`;
 });
 // Die Edelfäulnis ist keine Gefahr, sie ist ein Gütezeichen (Maik 19.11.2026). Ihre Seite steht deshalb bei den Stufen.
-kompWissen('edel','stufe','Edelfäulnis',()=>`${edelRegel()}. Sie bringt ${EDEL_OE}° Öchsle dazu, ab ${R().min.ba}° reicht es für eine Beerenauslese. Kabinett und Spätlese gibt es von dem Feld dann nicht mehr.`)
+kompWissen('edel','stufe','Edelfäulnis',()=>`${edelRegel()}. Sie bringt ${EDEL_OE}° Öchsle dazu, höchstens bis ${EDEL_OE_MAX}°, ab ${R().min.ba}° reicht es für eine Beerenauslese. Die Trockenbeerenauslese gibt es nur mit den Rosinen im Dezember. Kabinett und Spätlese gibt es von dem Feld dann nicht mehr.`)
 // Seit 13.7.4 (Bauplan 13.7, Entscheidung 3): Was die Zeichen fürs Warten im Herbst bedeuten, damit niemand raten muss. Die Zahlen kommen aus den Konstanten,
 // der Abschnitt zur Spielstufe sagt, welche Zeichen in dieser Partie zählen. Wortlaut seit 13.8.
 kompWissen('zeichen','stufe','Zeichen fürs Warten',()=>{
@@ -1687,7 +1703,7 @@ function kompIds(kap){
 function kompSeiten(kap){
   if(kap==='sorte') return [...kompIds(kap),...sortenFolge().map(id=>'sorte_'+id)];
   if(kap==='stufe') return [...kompIds(kap),'edel','zeichen','regeln'];
-  if(kap==='gebiet') return ['gebiet_'+S.region,'spitze',...Object.keys(REGIONEN).filter(r=>r!==S.region).map(r=>'gebiet_'+r)];
+  if(kap==='gebiet') return ['gebiet_'+S.region,'spitze','klima',...Object.keys(REGIONEN).filter(r=>r!==S.region).map(r=>'gebiet_'+r)];
   if(kap==='technik') return [...KELLER_PREISE.map((p,i)=>'keller'+(i+1)),'sektkeller','reife','zuckern',...Object.keys(MASCH).map(id=>'masch_'+id)];
   if(kap==='gefahr') return ['hagel','spaetfrost','kaelte','skandal','kontrolle','maschine','helferweg',...Object.keys(SCHAED).filter(a=>schaedAn()&&(S.schaedGes||{})[a])];
   return kompIds(kap);
