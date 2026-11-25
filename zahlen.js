@@ -164,8 +164,9 @@ const HELFER_DUENG=80;
 // Seit 14.4.3: Die Stufen der Erntehelfer haben eigene Namen (stufen), Platzhalter, Wortlaut in Meilenstein 17.
 // Seit 14.7.3 (Bauplan 14.7, Annahme 20): Aus den Lagerarbeitern werden die Kellerleute mit Kellerhelfern, Kellergesellen und Kellermeister, der Schlüssel lagerarb bleibt.
 // Kellerhelfer keltern und warten die Maschinen (Annahme 21), Kellergesellen füllen ab, der Kellermeister macht den Sekt. Neue Texte sind Platzhalter, Wortlaut in Meilenstein 17.
-const LEUTE_ST={helfer:{name:'Erntehelfer',stufen:['Erntehelfer','Winzergesellen','Rebmeister'],kann:['schneiden und düngen, halten aber nur den Stand','schneiden und düngen mit halbem Zuwachs','schneiden und düngen fast wie du, dazu nachpflanzen']},lagerarb:{name:'Kellerleute',stufen:['Kellerhelfer','Kellergesellen','Kellermeister'],kann:['keltern und die Maschinen warten','abfüllen und Etiketten kleben','den Sekt machen']}};
-const LEUTE_BOTE={helfer:['🧑‍🌾 Deine Erntehelfer können ab jetzt schneiden und düngen. Abgeben kannst du im Weinberg und bei der Düngung, sie halten aber nur den Stand.','✂️ Aus deinen Erntehelfern sind Winzergesellen geworden: Wer bei ihnen abgibt, bekommt den halben Zuwachs.','🌱 Deine Rebmeister schneiden und düngen fast wie du und pflanzen jetzt auch nach. Die Reben dafür kauft der Weingut-Manager.'],
+// Seit 14.7.4 (Annahme 22): Draußen bringt jede Stufe eine neue Arbeit, Winzergesellen den Laubschnitt, Rebmeister das Ausdünnen. Platzhalter, Wortlaut in Meilenstein 17.
+const LEUTE_ST={helfer:{name:'Erntehelfer',stufen:['Erntehelfer','Winzergesellen','Rebmeister'],kann:['lesen, düngen und schneiden, beim Schnitt halten sie nur den Stand','dazu der Laubschnitt, beim Schnitt halber Zuwachs','dazu das Ausdünnen und das Nachpflanzen, beim Schnitt fast wie du']},lagerarb:{name:'Kellerleute',stufen:['Kellerhelfer','Kellergesellen','Kellermeister'],kann:['keltern und die Maschinen warten','abfüllen und Etiketten kleben','den Sekt machen']}};
+const LEUTE_BOTE={helfer:['🧑‍🌾 Deine Erntehelfer schneiden und düngen ab jetzt jeden Weinberg auf Automatik, nur deinen Chef-Weinberg machst du selbst. Sie halten aber nur den Stand.','✂️ Aus deinen Erntehelfern sind Winzergesellen geworden: halber Zuwachs beim Schnitt, dazu der Laubschnitt auf Automatik.','🌱 Deine Rebmeister schneiden fast wie du, dünnen auf Automatik aus und pflanzen nach. Die Reben dafür kauft der Weingut-Manager.'],  // Platzhalter, Wortlaut in Meilenstein 17
   lagerarb:['🛢️ Dein erster Qualitätswein ist angemeldet. Ab jetzt keltern deine Kellerhelfer und warten nach der Lese die Maschinen.','🍾 Aus deinen Kellerhelfern sind Kellergesellen geworden: Sie füllen ab jetzt ab und kleben die Etiketten.','🥂 Dein erster Sekt ist fertig. Ab jetzt macht dein Kellermeister den Sekt, Verfahren und Hefezeit wählst du.']};
 const LEUTE_ERST={helfer:'🧑‍🌾 Der alte Winzer bringt eine junge Frau aus dem Dorf mit, die jeden Hang hier seit der Kindheit kennt. „Die weiß, wo der Dünger hingehört“, sagt er. Das ist deine erste Erntehelferin.',
   lagerarb:'🛢️ Der alte Winzer kommt mit einem großen, stillen Mann durchs Hoftor. „Der kann anpacken. Und er redet wenig.“ Das ist dein erster Kellerhelfer.'};
@@ -175,6 +176,9 @@ const WETTER={sonnig:['☀️','sonnig'],mild:['⛅','mild'],regen:['🌧️','R
 // Seit 11.5 (Teil D, Maik 20.11.2026): Die Anzeige zeigt 4.000 Reben je Hektar statt 1.000. Im Spielstand und in der Rechnung bleibt alles, wie es ist,
 // nur Zahl, Preis und Ertrag je Rebe rechnen bei der Anzeige mit STOCK_F um. So ändert sich am Geld nichts, und alte Spielstände brauchen keinen Umbau.
 const STOCK_F=4; const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MONAT=3, BODEN_REGEN=5;
+// Seit 14.7.4 (Bauplan 14.7, Annahme 10): Bodenstand in Prozent je Weinberg, BODEN_START beim Start (wie bis 14.7.3 der Stand fürs Gut), höchstens DUENG_MAX Düngungen
+// je Weinberg und Jahr (bis 14.7.3 drei fürs Gut). Gezahlt wird DUENGER_HA je Hektar des Weinbergs.
+const BODEN_START=80, DUENG_MAX=3;
 // Seit 13.2.1 (Bauplan 13.2, Maik 21.11.2026): Boden-Stufen für das ganze Weingut, auch für neu gekauftes Land. Am Jahresende zählt ein Bodenschnitt
 // ab BODEN_GUT Prozent als gutes Jahr (S.bodenZ +1), ein schlechtes zählt 0, der Boden fällt nie. Die Stufe S.bodenSt steigt, sobald der Zähler
 // ihre Schwelle in BODEN_SCHWELLE erreicht. Je Stufe BODEN_ST_OE Grad mehr Deckel (ab 13.2.3) und BODEN_ST_MENGE mehr Menge.
@@ -1558,7 +1562,8 @@ const QUAL_PFLEGE_AB=10, QUAL_PFLEGE_EP=1/3, QUAL_PFLEGE_MAX=40, QUAL_BODEN=[0,1
 const AUSD_QP=3, AUSD_MENGE=.05, AUSD_HAND_HA=500, AUSD_MONAT=7;
 // Nachfrage beim Weiterblättern im Monat des Sommerschnitts von Hand und im Monat des Ausdünnens, nur wenn die Arbeit einem Weinberg die nächste Weinstufe bringt,
 // die der Rang schon erlaubt (Öchsle zählen nicht). Je Spielstufe nach dem Muster CHANCE_ZEIGE: Lehrjahre Rat in Zahlen, Gesellenjahre kurzer Hinweis,
-// Meisterprüfung keine Nachfrage. Ab 14.7 ersetzt der Schalter beim Weingut-Manager die Nachfrage. Texte sind Platzhalter, Wortlaut in Meilenstein 17.
+// Meisterprüfung keine Nachfrage. Seit 14.7.4 ist die Nachfrage die Stellung Chefsache im Einsatzplan (Annahme 18), auf Automatik fragt niemand.
+// Texte sind Platzhalter, Wortlaut in Meilenstein 17.
 const SOMMER_FRAGE={einfach:'rat',mittel:'hinweis',schwer:''};
 const SOMMER_ARBEIT={laub:{titel:'✂️ Sommerschnitt',name:'Sommerschnitt',menge:'bringt {m} mehr Menge'},
   ausd:{titel:'🍇 Ausdünnen',name:'Ausdünnen',menge:'{m} Menge'}};
@@ -1641,3 +1646,18 @@ const CHEFSACHE_ZEILE={
   leute:'🧑‍🌾 Leute stellt der Weingut-Manager ein.'};
 // Namen der zwei Gruppen der Leute (Entscheidung Kellerleute, 24.11.2026). Platzhalter, Wortlaut in Meilenstein 17.
 const LEUTE_GRUPPE={helfer:'Außenbetrieb',lagerarb:'Kellerwirtschaft'};
+// Einsatzplan (gebaut in 14.7.4): Namen der Stellungen und Arbeiten, Sätze im Fenster und im Weinberg. {wer} ist die Stufe der Leute, {sorte} der Weinberg.
+// Platzhalter, Wortlaut in Meilenstein 17.
+const EINSATZ_TEXT={
+  chef:'Chefsache', auto:'Automatik',
+  schnitt:'Rebschnitt und Düngen', laub:'Laubschnitt', ausd:'Ausdünnen',
+  kopf:'📋 Je Weinberg: Chefsache machst du selbst, Automatik machen deine Leute. Rebschnitt und Düngen hat nur ein Weinberg als Chefsache, dein Chef-Weinberg. Laubschnitt und Ausdünnen machen deine Leute nur, wo es die nächste Weinstufe bringt.',
+  ohneLeute:'Ohne Erntehelfer machst du alles selbst.',
+  still:'Den Chef-Weinberg wählt der Weingut-Manager.',
+  abLaub:'Automatik ab den Winzergesellen',
+  abAusd:'Automatik ab den Rebmeistern',
+  zeile:'📋 {arbeit}: {stellung}. Umstellen im Einsatzplan beim Weingut-Manager.',
+  autoLaub:'✂️ Laubschnitt auf Automatik: Deine {wer} machen ihn, wenn er die nächste Weinstufe bringt.',
+  autoAusd:'🍇 Ausdünnen auf Automatik: Deine {wer} dünnen aus, wenn es die nächste Weinstufe bringt.',
+  neuChef:'Den {sorte} machst du ab jetzt selbst, Rebschnitt und Düngen.',
+  weg:'{sorte} schneiden und düngen ab jetzt deine {wer}.'};

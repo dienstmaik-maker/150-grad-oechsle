@@ -641,7 +641,7 @@ function vMonat(){
   const art=(b.art||[]).map(a=>{const f=(frei||a.foto)&&a.bild&&a.bild!==k.bild?(a.foto||(frei=0),foto(a,'klein')):''; return `<div class="zart">${f}<h3>${esc(a.t)}</h3>${a.text?`<p>${esc(a.text)}</p>`:''}${liste(a)}</div>`}).join('');
   const haengt=S.monat>=7&&weinberge().some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen);
   const nah=wg?nahBild(st):null;
-  const rechts=`<h4>Dein Weingut</h4>${nah?`<div class="zluft gross" style="background-image:url(bilder/${nah[0]}.jpg)"></div><div class="znah">${nah[2]}</div>`:wg?`<div class="zluft${wgGross(st)?' gross':''}" style="background-image:url(bilder/${bild}.jpg)"></div>`:''}<div class="zvier"><div class="zz"><b>Rang</b>${duK()}</div><div class="zz"><b>Boden</b><span class="${S.boden<80?'rot':''}">${S.boden}\u00a0%${S.boden<80&&S.duengungen<3?', Düngen ist dran':''}</span></div>
+  const rechts=`<h4>Dein Weingut</h4>${nah?`<div class="zluft gross" style="background-image:url(bilder/${nah[0]}.jpg)"></div><div class="znah">${nah[2]}</div>`:wg?`<div class="zluft${wgGross(st)?' gross':''}" style="background-image:url(bilder/${bild}.jpg)"></div>`:''}<div class="zvier"><div class="zz"><b>Rang</b>${duK()}</div><div class="zz"><b>Boden</b><span class="${bodenMin()<80?'rot':''}">${bodenMin()}\u00a0%${weinberge().some(id=>duengOffen(id)&&!helferDuengt(id)&&S.felder[id].boden<80)?', Düngen ist dran':''}</span></div>
     <div class="zz"><b>Ansehen</b>${num(S.ansehen)}</div><div class="zz"><b>Konto</b><span class="${S.geld<0?'rot':''}">${eur(S.geld)}</span></div></div>`;   // Seit 10.2.1 zwei Spalten: Rang und Ansehen links, Boden und Konto rechts (Maik 19.11.2026)
   return `<div id="info" class="${wg?'wg'+(wgGross(st)?' gross':'')+(wech?' jzw':''):bild}">${hinten}<div class="iverl"></div>
   <div class="zt"><div class="zkopf"></div><div class="zmitte">
@@ -967,6 +967,7 @@ function mgrSchalter(b){
   const teil=e=>e.stufe>st?`<div class="mut" style="margin:0 0 8px">${mgrStufenText(e,st)}</div>`
     :mgrAufg(e).map(k=>{const an=aufgabeAktiv(k); return `<button class="wahl schalter ${an?'an':''}" data-a="mgrAn" data-id="${k}">${an?'✅':'⬜'} ${k==='laeden'||k==='handel'?'📋 ':''}${MGR_AUFGABEN[k].text}</button>`}).join('');
   return E.map(teil).join('')
+    +(b==='weingut'&&aufgabeAktiv('plan')?`<div class="mitte" style="margin:2px 0 8px"><button class="klein" data-a="einsatz">📋 Einsatzplan öffnen</button></div>`:'') // seit 14.7.4
     +(b==='handel'&&(aufgabeAktiv('laeden')||aufgabeAktiv('handel')||aufgabeAktiv('regal'))?`<div class="mut" style="margin:8px 0 6px">Je Wein bleiben im Keller, außer kurz vorm Verderben:</div>${reserveChips()}`:'')
     +(b==='handel'&&aufgabeAktiv('fest')||b==='weingut'&&mgrPufferFuer().length?`<div class="mut" style="margin:8px 0 6px">${b==='weingut'?'Für '+wortListe(mgrPufferFuer()):'Für das Fest'} gibt ${G.er} nur so viel aus, dass mindestens das auf dem Konto bleibt:</div>${pufferChips(b)}`:'');
 }
@@ -1131,12 +1132,27 @@ const formFrage=id=>!(S.felder[id]||{}).reben&&formenFuer(id).length>1;
 const formLese=(id,fm)=>{const F=FORMEN[fm]; return R().steil?'von Hand, an der Mosel fährt keine Maschine':F.masch===1?'jede Erntemaschine erlaubt':F.masch==='voll'?(vollDa()?'der Vollernter liest':'von Hand, bis der Vollernter kommt'):'nur von Hand'};
 // Steckbrief einer Form für die Wahl und das Umstellen.
 const formSteck=(id,fm)=>{const F=FORMEN[fm]; return `${Math.round(F.menge*100)} % Menge${F.schutz!=null?`, halber Verlust bei Spätfrost und Oktoberregen`:''}, ${F.qual} Punkte Qualität, ${epT(F.ep)} Punkte im Jahr, Rebschnitt ${eur(F.haErz)} je Hektar${F.ha!==F.haErz?` bis zum Rebstock, danach ${eur(F.ha)}`:''}, Lese ${formLese(id,fm)}`};
+// Seit 14.7.4 (Bauplan 14.7, Annahmen 8 bis 16): Inhalt des Einsatzplans, je Weinberg mit Reben Rebschnitt und Düngen (der Chef-Weinberg), Laubschnitt
+// ab dem Winzermeister und Ausdünnen ab dem Gutsherrn, je Chefsache oder Automatik. Ohne Erntehelfer und in den Lehrjahren ohne Wahl beim Chef-Weinberg,
+// ohne die Stufe der Leute Chefsache ohne Wahl. Steht im Weinberg und als Sheet aus dem Fenster des Weingut-Managers. Platzhalter, Wortlaut in Meilenstein 17.
+function einsatzInhalt(){
+  const T=EINSATZ_TEXT, chip=(id,art,w,an)=>`<button class="chip ${an?'an':''}" data-a="planSetz" data-id="${id}" data-art="${art}" data-w="${w}">${T[w]}</button>`, wahl=(id,art,a)=>`<div class="chips">${chip(id,art,'chef',a==='chef')}${chip(id,art,'auto',a==='auto')}</div>`;
+  return chefKandidaten().map(id=>{const sa=helferSchneidet(id)?'auto':'chef', frei_=helferKann(1)&&!chefStill();
+    let z=`<div style="margin-top:8px"><b>${dot(id)}${esc(SORTEN[id].name)}</b></div><div class="kv"><span>${T.schnitt}</span><span>${!helferKann(1)?`${T.chef}. ${T.ohneLeute}`:chefStill()?`${T[sa]}. ${T.still}`:''}</span></div>`;
+    if(frei_) z+=wahl(id,'schnitt',sa);
+    if(chefRat()===id&&helferSchneidet(id)) z+=`<div class="mut">👴 ${CHEF_RAT_SATZ.replace('{sorte}',SORTEN[id].name)}</div>`;
+    for(const [art,da,ab] of [['laub',frei('laub_hand'),T.abLaub],['ausd',ausdFrei(),T.abAusd]]) if(da){
+      z+=`<div class="kv"><span>${T[art]}</span><span>${planAutoKann(art)?'':`${T.chef}, ${ab}`}</span></div>`; if(planAutoKann(art)) z+=wahl(id,art,planArt(id,art))}
+    return z}).join('')||'<div class="fleer">Noch kein Weinberg mit Reben.</div>';
+}
+const einsatzSheet=()=>`<div class="einsatzSh"><h3>📋 Einsatzplan</h3><p class="mut">${EINSATZ_TEXT.kopf}</p>${einsatzInhalt()}<div class="btns"><button class="sec" data-a="close">Zurück</button></div></div>`;
+const einsatzAuf=()=>$('#sheet').classList.contains('an')&&!!$('#sheet .einsatzSh');
 // Weinberg (seit 7.4 auf dem Fenster-Baustein): je Sorte ein Fenster (seit 4.4 oben), dann Düngung und Übersicht, darunter zugeklappt der Steckbrief des Gebiets.
 // Sorten, die der Rang noch sperrt, sind seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten). Lese-Hinweise und rote Warnungen bleiben sichtbar, die Erklärungen stehen im i.
 function vBerg(){
   const m=S.monat, ges=S.ha*HA_REBEN, bep=rebenGesamt(), frei=ges-bep, ant=ges?bep/ges*100:0;
-  const phase=PHASE, vs=verlustSpanne(bodenSchnitt()), fp=frostPlus(), WM=`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name}`, wm=`Dein ${MGR_BEREICHE.weingut.name}`;
-  const mr=aufgabeAktiv('reben'), md=aufgabeAktiv('duengen'), mh=aufgabeAktiv('helfer'), rot=t=>`<div class="rot" style="font-size:14px;margin-top:4px">${t}</div>`;
+  const phase=PHASE, fp=frostPlus(), WM=`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name}`, wm=`Dein ${MGR_BEREICHE.weingut.name}`;
+  const mr=aufgabeAktiv('reben'), mh=aufgabeAktiv('helfer'), rot=t=>`<div class="rot" style="font-size:14px;margin-top:4px">${t}</div>`;
   const feldI=`Gepflanzt und gerodet wird nur von Januar bis März, gelesen ab August. Je länger die Trauben hängen, desto mehr Öchsle und desto höher die Weinstufe. Aber Regen, Kälteeinbruch und fehlender Frost können alles kosten. ${S.rollen?'Jede Sorte hat ihre Rolle: Die Menge-Sorte trägt viel, die Sekt-Sorte gibt den besten Sekt, die Spitzen-Sorte die besten Weine.':'Die Sterne zeigen, wie gut die Sorte in dein Gebiet passt.'}${mr?` ${wm} pflanzt von Januar bis März nach, was über den Winter eingegangen ist.`:''}`;
   let h='', zu='';
   for(const id of weinberge()){
@@ -1154,7 +1170,8 @@ function vBerg(){
     if(f.reben){const st=f.pflSt||0, SW=epSchwelle(id); z+=`<div class="kv"><span>Pflege</span><span>${st>=PFLEGE_STUFEN.length-1?`${PFLEGE_STUFEN[st]}, höher geht es nicht`:`${PFLEGE_STUFEN[st]}, ab ${epT(SW[st+1])} Punkten ${PFLEGE_STUFEN[st+1]}`}</span></div>
       <div class="kv"><span>Entwicklungspunkte</span><span>${epT(f.ep||0)} von ${EP_MAX}</span></div>
       <div class="kv"><span>Wirkung der Stufe</span><span>${Math.round(STUFE_MENGE[st]*100)}\u00a0% Menge</span></div>
-      <div class="kv"><span>Rebschnitt durch</span><span>${helferSchneidet(id)?leuteStName('helfer',leuteSt('helfer')):'dich selbst'}, +${epT(epJahrSoll(id))} Punkte im guten Jahr</span></div>`}
+      <div class="kv"><span>${EINSATZ_TEXT.schnitt}</span><span>${helferSchneidet(id)?`${EINSATZ_TEXT.auto}, ${leuteStName('helfer',leuteSt('helfer'))}`:`${EINSATZ_TEXT.chef}, du selbst`}, +${epT(epJahrSoll(id))} Punkte im guten Jahr</span></div>
+      <div class="kv"><span>Boden</span><span class="${f.boden<80?'rot':''}">${f.boden} %, Jahresschnitt bisher ${bodenSchnitt(id)} %</span></div><div class="bar"><i style="width:${f.boden}%"></i></div>`}
     // Seit 14.5.2 (Annahmen 5 und 8): Qualität des Weinbergs mit ihren Bausteinen, in allen Spielstufen. Seit dem Nachtrag zu 14.5.2 mit "von 100" und,
     // sobald das Ausdünnen frei ist, mit dem Baustein Ausdünnen. Platzhalter, Wortlaut in Meilenstein 17.
     if(f.reben){const Q=qualTeile(id); z+=`<div class="kv"><span>Qualität</span><span>${Q.q} von 100 Punkten: Pflege ${Math.round(Q.pflege)}, Boden ${Math.round(Q.boden)}, Form ${Q.form}, Laubschnitt ${Q.laub}${ausdFrei()?`, Ausdünnen ${Q.ausd}`:''}</span></div>`}
@@ -1183,25 +1200,31 @@ function vBerg(){
     const sektOhne=sektSorte(id)&&!S.sektkeller, kannLesen=m>=7&&f.menge>0&&!f.gelesen&&(m<11||f.gefroren||f.edel)&&!sektOhne, pflanz=m<=2&&sorteFrei(id)&&!sektOhne&&!(istSL(id)&&slPlatz()<10), schnitt=schnittOffen(id), haengt=f.reben&&f.menge>0&&!f.gelesen&&m>5&&m<7;
     h+=fenster('feld_'+id,titel,z,{buch:m>=7?'lese':'berg',
       hin:[mr&&m<=2&&S.verlust&&S.verlust[id]>0&&`${WM} pflanzt beim Weiterblättern nach.`,helferKann(3)&&pflanzPlan(id)>=10&&`🌱 Deine Erntehelfer pflanzen bis März ${rbn(pflanzPlan(id))} Reben nach.${pflanzPlan(id)<pflanzSoll(id)&&!pflanzMitA(id)?' Den übrigen Platz bekommt dein Auftrag.':''}`,
-        helferSchneidet(id)&&schnitt&&`✂️ Deine ${leuteStName('helfer',leuteSt('helfer'))} schneiden beim Weiterblättern, sobald das Geld reicht.`,chefRat()===id&&helferSchneidet(id)&&`👴 ${CHEF_RAT_SATZ.replace('{sorte}',SORTEN[id].name)}`,helferSchneidet(id)&&laubHandOffen(id)&&'✂️ Deine Erntehelfer machen den Sommerschnitt von Hand, sobald das Geld reicht.',(()=>{const ww=wagnisWarnung(); return ww&&ww.ids.includes(id)&&`${WM} warnt: ${Math.round(ww.anteil*100)} % deiner Ernte hängen im Wagnis.`})()],
+        helferSchneidet(id)&&schnitt&&`✂️ Deine ${leuteStName('helfer',leuteSt('helfer'))} schneiden beim Weiterblättern, sobald das Geld reicht.`,chefRat()===id&&helferSchneidet(id)&&`👴 ${CHEF_RAT_SATZ.replace('{sorte}',SORTEN[id].name)}`,
+        // Seit 14.7.4 (Annahme 16): Schreibt der Weingut-Manager den Plan, steht hier nur die Info-Zeile, die Automatik von Laubschnitt und Ausdünnen als Hinweis.
+        f.reben&&planBeiMgr()&&helferKann(1)&&!chefStill()&&EINSATZ_TEXT.zeile.replace('{arbeit}',EINSATZ_TEXT.schnitt).replace('{stellung}',EINSATZ_TEXT[helferSchneidet(id)?'auto':'chef']),
+        laubHandOffen(id)&&autoLaub(id)&&EINSATZ_TEXT.autoLaub.replace('{wer}',leuteStName('helfer',2)),ausdOffen(id)&&autoAusd(id)&&EINSATZ_TEXT.autoAusd.replace('{wer}',leuteStName('helfer',3)),(()=>{const ww=wagnisWarnung(); return ww&&ww.ids.includes(id)&&`${WM} warnt: ${Math.round(ww.anteil*100)} % deiner Ernte hängen im Wagnis.`})()],
       // Seit 13.4.6: Am Lese-Knopf steht die Chance des Wagnisses in Worten.
       links:kannLesen&&wagnisChance(id)!=null&&chanceZeige(wagnisChance(id))?`🎲 Warten: Chance ${chanceZeige(wagnisChance(id))}${chanceRat(wagnisChance(id))?`, der alte Winzer würde ${chanceRat(wagnisChance(id))}`:''}`:sektOhne?'Die Sekt-Sorte macht nur Sekt, erst den Sektkeller kaufen.':pflanz&&platzFuer(id)<10?(istSL(id)?'Auf deinem Land ist kein Platz mehr frei.':LAGE_SATZ.voll.replace('{lage}',LAGE_SATZ.auf[lageVon(id)])):laubHandOffen(id)?`✂️ Sommerschnitt von Hand: ${eur(laubHandKosten(id))}`:ausdOffen(id)?AUSD_LINKS.replace('{kosten}',eur(ausdKosten(id))).replace('{m}',`${Math.round(AUSD_MENGE*100)} %`).replace('{qp}',AUSD_QP):haengt?'Lese ab August.':schnitt?`✂️ Rebschnitt bis Ende April: ${eur(schnittKosten(id))}`:'',
-      kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,...wagnisKnoepfe(id),schnitt&&!helferSchneidet(id)&&`<button class="klein" data-a="schneiden" data-id="${id}" ${S.geld<schnittKosten(id)?'disabled':''}>Schneiden</button>`,laubHandOffen(id)&&!helferSchneidet(id)&&`<button class="klein" data-a="sommerHand" data-id="${id}" ${S.geld<laubHandKosten(id)?'disabled':''}>Sommerschnitt</button>`,ausdOffen(id)&&`<button class="klein" data-a="ausduennen" data-id="${id}" ${S.geld<ausdKosten(id)?'disabled':''}>Ausdünnen</button>`,f.reben&&!istSL(id)&&m<=SCHNITT_BIS&&formenFuer(id).length>1&&`<button class="klein" data-a="formAendern" data-id="${id}">Form ändern</button>`,helferKann(1)&&f.reben&&S.schwer!=='einfach'&&`<button class="klein" data-a="schneider" data-id="${id}">${helferSchneidet(id)?'Selbst schneiden':'Schnitt abgeben'}</button>`,pflanz&&(helferKann(3)?`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzAuftrag'}" data-id="${id}" data-weiter="pflanzAuftrag">Auftrag</button>`:`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzen'}" data-id="${id}" data-weiter="pflanzen" ${platzFuer(id)<10?'disabled':''}>Pflanzen</button>`),pflanz&&f.reben&&!istSL(id)&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
+      kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,...wagnisKnoepfe(id),schnitt&&!helferSchneidet(id)&&`<button class="klein" data-a="schneiden" data-id="${id}" ${S.geld<schnittKosten(id)?'disabled':''}>Schneiden</button>`,laubHandOffen(id)&&`<button class="klein" data-a="sommerHand" data-id="${id}" ${S.geld<laubHandKosten(id)?'disabled':''}>Sommerschnitt</button>`,ausdOffen(id)&&`<button class="klein" data-a="ausduennen" data-id="${id}" ${S.geld<ausdKosten(id)?'disabled':''}>Ausdünnen</button>`,f.reben&&!istSL(id)&&m<=SCHNITT_BIS&&formenFuer(id).length>1&&`<button class="klein" data-a="formAendern" data-id="${id}">Form ändern</button>`,helferKann(1)&&f.reben&&!chefStill()&&!planBeiMgr()&&`<button class="klein" data-a="schneider" data-id="${id}">${helferSchneidet(id)?'Selbst schneiden und düngen':'Schnitt und Düngen abgeben'}</button>`,
+        ...['laub','ausd'].map(art=>f.reben&&!planBeiMgr()&&planAutoKann(art)&&(art==='laub'?frei('laub_hand'):ausdFrei())&&`<button class="klein" data-a="planSetz" data-id="${id}" data-art="${art}" data-w="${planArt(id,art)==='auto'?'chef':'auto'}">${EINSATZ_TEXT[art]}: ${planArt(id,art)==='auto'?'selbst machen':EINSATZ_TEXT.auto}</button>`),pflanz&&(helferKann(3)?`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzAuftrag'}" data-id="${id}" data-weiter="pflanzAuftrag">Auftrag</button>`:`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzen'}" data-id="${id}" data-weiter="pflanzen" ${platzFuer(id)<10?'disabled':''}>Pflanzen</button>`),pflanz&&f.reben&&!istSL(id)&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
   }
+  // Seit 14.7.4 (Bauplan 14.7, Annahmen 8 bis 16): das Fenster Einsatzplan, sobald der Weingut-Manager den Plan schreibt.
+  if(planBeiMgr()) h+=fenster('einsatz','📋 Einsatzplan',einsatzInhalt(),{i:EINSATZ_TEXT.kopf});
   // Seit 14.2.5: die drei Lagen einzeln mit Stufe, Punkten und dem, was ein gutes Bodenjahr bringt. Platzhalter, Wortlaut in Meilenstein 17.
-  const BT=lagenBelegung().T, bzd=zuwachsVon(helferDuengt()?'helfer':'chef',1);
+  // Seit 14.7.4 (Annahme 10): Bodenstand, Düngen und Zuwachs je Weinberg, je Weinberg ein Knopf, der Chef kann jeden Weinberg düngen (Annahme 23).
+  const BT=lagenBelegung().T, wbLage=lg=>R().sorten.find(id=>lageVon(id)===lg), zdVon=id=>zuwachsVon(id&&helferDuengt(id)?'helfer':'chef',1);
+  const DW=weinberge().filter(id=>S.felder[id].reben>0), BSW=DW.map(bodenSchnitt), vGut=verlustSpanne(BSW.length?Math.max(...BSW):BODEN_START), vMag=verlustSpanne(BSW.length?Math.min(...BSW):BODEN_START);
   h+=fenster('duengung','Düngung',`${LAGE_REIHE.filter(lg=>hangHa(lg)>0||lageBodenP(lg)>0).map(lg=>{const st=lageBoden(lg), P=lageBodenP(lg); return `<div class="kv"><span>${LAGEN[lg].sym} ${LAGEN[lg].kurz}</span><span>${BODEN_STUFEN[st]}${st<BODEN_STUFEN.length-1?`, ab ${BODEN_SCHWELLE[st+1]} Punkten ${BODEN_STUFEN[st+1]}`:''}</span></div>
-    <div class="mut">${epT(P)} von ${BODEN_MAX} Punkten, ${BT[lg]>0?`+${epT(BODEN_PUNKTE[lg]*bzd)} im guten Bodenjahr`:'ohne Reben, sammelt nichts'}</div>`}).join('')}
-    <div class="mut">Ein Jahresschnitt ab ${BODEN_GUT} % zählt als gutes Bodenjahr. Punkte sammelt nur bepflanztes Land, neu bepflanztes Land verdünnt sie.</div>
-    <div class="kv"><span>Boden</span><span>${S.boden} %</span></div><div class="bar"><i style="width:${S.boden}%"></i></div>
-    <div class="mut ${S.boden<80?'rot':''}">Zustand: ${bodenText(S.boden)}</div>
+    <div class="mut">${epT(P)} von ${BODEN_MAX} Punkten, ${BT[lg]>0?`+${epT(BODEN_PUNKTE[lg]*zdVon(wbLage(lg)))} im guten Bodenjahr`:'ohne Reben, sammelt nichts'}</div>`}).join('')}
+    <div class="mut">Ein Jahresschnitt ab ${BODEN_GUT} % zählt als gutes Bodenjahr. Punkte sammelt nur bepflanztes Land, neu bepflanztes Land verdünnt sie.</div>
+    ${DW.map(id=>{const f=S.felder[id]; return `<div class="kv" style="margin-top:6px"><span>${dot(id)}${SORTEN[id].name}</span><span class="${f.boden<80?'rot':''}">${f.boden} %, ${bodenText(f.boden)}</span></div><div class="bar"><i style="width:${f.boden}%"></i></div>
+    <div class="mut"><span class="${bodenSchnitt(id)<BODEN_GUT?'rot':''}">Jahresschnitt bisher ${bodenSchnitt(id)} %</span>, gedüngt ${f.duengN||0} von ${DUENG_MAX} Mal, ${helferDuengt(id)?`${EINSATZ_TEXT.auto}: ${leuteStName('helfer',leuteSt('helfer'))}, ${Math.round(zdVon(id)*100)}&nbsp;% Zuwachs`:`${EINSATZ_TEXT.chef}: du selbst, voller Zuwachs`}</div>`}).join('')}
     ${S.nass!=null?rot(`🌧️ Der Regen im ${MON[S.nass]} hat den Boden ausgewaschen.`):''}
-    <div class="kv"><span>Bodenschnitt dieses Jahr</span><span class="${bodenSchnitt()<BODEN_GUT?'rot':''}">${bodenSchnitt()} %</span></div>
-    ${helferKann(1)&&S.schwer!=='einfach'?`<div class="kv"><span>Düngen durch</span><span>${helferDuengt()?`${leuteStName('helfer',leuteSt('helfer'))}, ${Math.round(zuwachsVon('helfer',1)*100)}&nbsp;% Zuwachs`:'dich selbst, voller Zuwachs'}</span></div><button class="klein" data-a="duengWer">${helferDuengt()?'Selbst düngen':'Düngen abgeben'}</button>`:''}
-    <div class="mut">Zum Jahreswechsel gehen voraussichtlich ${vs[1]+fp} bis ${vs[2]+fp} % der Reben ein${fp?(spLohn(2)?' (mit Frost, die Frostfeuer der Feuerwehr retten die Hälfte)':' (mit Frost)'):''}.</div>`,{
-    hin:[helferDuengt()&&'🧑‍🌾 Deine Erntehelfer düngen beim Weiterblättern, wenn der Boden mager wird.',bonusMasch('duenger')&&`🚜 Mit dem Düngerstreuer: ${STREU_PLUS} statt ${DUENG_PLUS} Punkte Boden und ${Math.round(STREU_RABATT*100)} % billiger.`],
-    links:`Gedüngt: ${S.duengungen} von 3 Mal`,kn:pk('duengen','Düngen',eur(duengKosten()),{aus:S.duengungen>=3||S.boden>=100,arm:S.geld<duengKosten()}),
-    i:`Der Boden verliert jeden Monat ${BODEN_MONAT} Punkte, in einem Regenmonat ${BODEN_REGEN}, und mit jeder Lese 4. Einmal Düngen bringt ${DUENG_PLUS}, mit dem Düngerstreuer ${STREU_PLUS} und ${Math.round(STREU_RABATT*100)} % billiger, höchstens dreimal im Jahr. Ein guter Boden bringt mehr Trauben, bessere Weine und weniger tote Reben: Je besser der Bodenschnitt des Jahres, desto weniger Reben gehen zum Jahreswechsel ein.${md?` ${wm} düngt, sobald der Boden auf 70 % fällt, im August schon unter 90 %.`:''}`});
+    <div class="mut">Zum Jahreswechsel gehen voraussichtlich ${vGut[1]+fp} bis ${vMag[2]+fp} % der Reben ein, je nach Boden des Weinbergs${fp?(spLohn(2)?' (mit Frost, die Frostfeuer der Feuerwehr retten die Hälfte)':' (mit Frost)'):''}.</div>`,{
+    hin:[DW.some(helferDuengt)&&'🧑‍🌾 Deine Erntehelfer düngen die Weinberge auf Automatik beim Weiterblättern, wenn der Boden mager wird.',bonusMasch('duenger')&&`🚜 Mit dem Düngerstreuer: ${STREU_PLUS} statt ${DUENG_PLUS} Punkte Boden und ${Math.round(STREU_RABATT*100)} % billiger.`],
+    kn:DW.map(id=>pk('duengen',`Düngen: ${SORTEN[id].name}`,eur(duengKosten(id)),{id,aus:!duengOffen(id),arm:S.geld<duengKosten(id)})),
+    i:`Jeder Weinberg hat seinen eigenen Boden. Er verliert jeden Monat ${BODEN_MONAT} Punkte, in einem Regenmonat ${BODEN_REGEN}, und mit jeder Lese 4. Einmal Düngen bringt ${DUENG_PLUS}, mit dem Düngerstreuer ${STREU_PLUS} und ${Math.round(STREU_RABATT*100)} % billiger, höchstens ${DUENG_MAX} Mal im Jahr je Weinberg, bezahlt nach seinen Hektar. Ein guter Boden bringt mehr Trauben, bessere Weine und weniger tote Reben: Je besser der Bodenschnitt des Jahres, desto weniger Reben gehen zum Jahreswechsel ein. Deinen Chef-Weinberg düngst du selbst, die Weinberge auf Automatik düngen deine Erntehelfer, sobald der Boden auf ${HELFER_DUENG} % fällt, im August schon unter 90 %.`});
   h+=fenster('uebersicht','Übersicht',`<div class="kv"><span>Bepflanzt</span><span>${rbn(bep)} von ${rbn(ges)} Reben</span></div><div class="bar"><i style="width:${ant}%"></i></div>
     <div class="kv"><span>Fläche</span><span>${S.ha} Hektar, ${Math.round(ant)} % bepflanzt</span></div>
     ${LAGE_REIHE.filter(lg=>hangHa(lg)>0).map(lg=>`<div class="kv"><span>${LAGEN[lg].sym} ${LAGEN[lg].kurz}</span><span>${String(hangHa(lg)).replace('.',',')}\u00a0ha${lg==='sued'?`${S.spitze?`, davon ${SPITZE_HA} Spitzenlage`:''}, Spitzen-Sorte ${String(Math.round((handReben()-slFl())/HA_REBEN*10)/10).replace('.',',')}\u00a0ha`:''}</span></div>`).join('')}
@@ -1615,7 +1638,7 @@ Object.assign(FU_WANN,{
   'w2':()=>TAB==='stadt'&&SUB==='amt'&&fuLandZuViel(),
   'w3':()=>S.fu.w3===monatNr(),
   'w4':()=>TAB==='stadt'&&SUB==='amt'&&S.lots.some(fuReiht),
-  'w5':()=>S.monat===4&&(monatNr()>=12||!!S.ein)&&S.boden<80,
+  'w5':()=>S.monat===4&&(monatNr()>=12||!!S.ein)&&bodenMin()<80,
   'w6':()=>S.lots.some(fuLange),
   'w7':()=>S.geld<0,
   'w8':()=>S.monat===5&&monatNr()>=12&&weinberge().reduce((a,id)=>a+(S.felder[id].reben?S.felder[id].menge||0:0),0)>S.fassraum-fassBelegt(),
@@ -2305,10 +2328,11 @@ const AKT={
       ok:n=>{fx('korken'); regalStellen(l,n)}});
   },
   regalRaus(d){const l=lot(d.id); if(!l) return; l.regal=false; weinZusammen(l); closeSheet(); save(); render()},
-  duengen(){
-    const k=duengKosten();
+  // Seit 14.7.4 je Weinberg (d.id).
+  duengen(d){
+    const id=d&&d.id; if(!id||!duengOffen(id)) return; const k=duengKosten(id);
     if(S.geld<k) return meldung('Zu wenig Geld',`Düngen kostet ${eur(k)}.`);
-    duenge();fx('stempel');save();render();
+    duenge(id);fx('stempel');save();render();
   },
   // Seit 13.2.4: Rebschnitt von Hand, je Sorte einmal von Januar bis April.
   // Seit 13.4.3: Weg des Wagnisses wählen, solange es noch nicht entschieden ist.
@@ -2323,11 +2347,19 @@ const AKT={
   // Seit 14.2.3: Rebschnitt je Weinberg abgeben oder selbst machen, Düngen für das ganze Weingut.
   // Seit 14.4.3 (Chef-Grenze): "Selbst schneiden" teilt den Chef diesem Weinberg zu, der bisherige geht mit einem Hinweis an die Leute. Hat der Chef diesen Winter
   // schon geschnitten, kommt der neue erst im nächsten Winter dran (Platzhalter, Wortlaut in Meilenstein 17). In den Lehrjahren teilt das Spiel selbst zu.
-  schneider(d){const f=S.felder[d.id]; if(!f||!helferKann(1)||chefStill()) return;
-    if(f.schneider==='helfer'){const weg=chefZuteilen(d.id), voll=chefSchnitte()>=CHEF_SCHNITT_MAX&&schnittOffen(d.id); save(); render();
-      if(weg.length||voll) meldung('Neue Zuteilung',`${weg.length?`Den ${weg.map(x=>SORTEN[x].name).join(' und ')} schneiden ab jetzt deine ${leuteStName('helfer',leuteSt('helfer'))}. `:''}Den ${SORTEN[d.id].name} schneidest du selbst${voll?', aber erst im nächsten Winter, diesen hast du schon geschnitten':''}.`); return}
-    f.schneider='helfer'; save(); render()},
-  duengWer(){if(!helferKann(1)) return; S.duengWer=S.duengWer==='helfer'?'chef':'helfer'; save(); render()},
+  // Seit 14.7.4 (Annahme 9): Rebschnitt und Düngen zusammen, der Chef-Weinberg. Der Hinweis nennt den abgegebenen Weinberg (Platzhalter, Wortlaut in Meilenstein 17).
+  // Aus dem Einsatzplan aufgerufen, kommt das Sheet danach wieder, wenn es keinen Hinweis gibt. Das Düngen fürs ganze Gut (duengWer) ist weg.
+  schneider(d){const f=S.felder[d.id]; if(!f||!helferKann(1)||chefStill()) return; const y=window.scrollY, sh=einsatzAuf();
+    if(f.schneider==='helfer'){const weg=chefZuteilen(d.id), voll=chefSchnitte()>=CHEF_SCHNITT_MAX&&schnittOffen(d.id); save(); render(); window.scrollTo(0,y);
+      if(weg.length||voll) meldung('Neuer Chef-Weinberg',`${weg.length?EINSATZ_TEXT.weg.replace('{sorte}',`Den ${weg.map(x=>SORTEN[x].name).join(' und ')}`).replace('{wer}',leuteStName('helfer',leuteSt('helfer')))+' ':''}${EINSATZ_TEXT.neuChef.replace('{sorte}',SORTEN[d.id].name)}${voll?' Schneiden kannst du ihn erst im nächsten Winter, diesen hast du schon geschnitten.':''}`);
+      else if(sh) openSheet(einsatzSheet()); return}
+    f.schneider='helfer'; save(); render(); window.scrollTo(0,y); if(sh) openSheet(einsatzSheet())},
+  // Seit 14.7.4: Schalter des Einsatzplans (art 'schnitt', 'laub' oder 'ausd', w 'chef' oder 'auto'). Automatik nur, wenn die Stufe der Leute die Arbeit kann.
+  planSetz(d){const f=S.felder[d.id]; if(!f||!f.reben) return; const w=d.w==='auto'?'auto':'chef';
+    if(d.art==='schnitt'){if((w==='auto')!==helferSchneidet(d.id)) AKT.schneider({id:d.id}); return}
+    if(!['laub','ausd'].includes(d.art)||(w==='auto'&&!planAutoKann(d.art))) return;
+    const y=window.scrollY, sh=einsatzAuf(); (f.plan=f.plan||{})[d.art]=w; save(); render(); window.scrollTo(0,y); if(sh) openSheet(einsatzSheet())},
+  einsatz(){if(!planBeiMgr()) return; MGR_OFFEN=null; openSheet(einsatzSheet())},
   // Seit 14.2.4: Wahl der Erziehungsform beim ersten Pflanzen, als halbhohes Fenster. Seit 14.5.3 (Annahme 11) je Spielstufe: In den Lehrjahren ist die
   // empfohlene Form vorausgewählt (d.sel, änderbar), der alte Winzer nennt Empfehlung, Wahl fürs Leben und Maschinen-Regel. In den Gesellenjahren nennt das
   // Fenster Wahl fürs Leben und Maschinen-Regel mit dem Rat, ohne Vorauswahl. In der Meisterprüfung nur die Steckbriefe, beides steht im Weinkompendium.

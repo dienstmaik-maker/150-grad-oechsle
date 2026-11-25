@@ -16,7 +16,7 @@ const slFl=()=>slFeld()?SPITZE_HA*HA_REBEN:0, slPlatz=()=>{const f=slFeld(); ret
 // Kommt sie nach dem Rebschnitt (nach SCHNITT_BIS), gilt sie für dieses Jahr als geschnitten, ohne Zuwachs und ohne Verwildern (schnittWer 'kauf', Annahme der Bau-Sitzung).
 // Der Chef bleibt, wo er ist (chefNorm), in den Lehrjahren teilt das Spiel still nach der Regel neu zu.
 function slKauf(){const k=slKenn(); if(!k||S.felder[k]) return null;
-  const f=S.felder[k]={reben:SPITZE_HA*HA_REBEN,pflSt:0,ep:SL_EP_START,form:SL_FORM,bodenP:SL_BODEN_START}; feldReset(f); f.pflSt=epStufe(k); f.bodenSt=wbBoden(k);
+  const f=S.felder[k]={reben:SPITZE_HA*HA_REBEN,pflSt:0,ep:SL_EP_START,form:SL_FORM,bodenP:SL_BODEN_START,boden:BODEN_START}; feldReset(f); f.pflSt=epStufe(k); f.bodenSt=wbBoden(k);
   if(S.monat>SCHNITT_BIS){f.schnitt=S.jahr; f.schnittWer='kauf'; f.schnittZ=0}
   chefNorm(); return k}
 // rollenAn: Spielt die Partie mit den Rollen? Ohne Spielstand (Titelbild, Neues Spiel) gilt, was ein neues Spiel bekäme.
@@ -170,26 +170,40 @@ const ausdOffen=id=>{const f=S.felder[id]; return !!f&&f.reben>0&&S.monat===AUSD
 function ausduennen(id){const f=S.felder[id]; zahle(ausdKosten(id)); f.ausd=S.jahr; f.menge=Math.round(f.menge*(1-AUSD_MENGE))}
 // Nachfrage nach Annahme 34: Welche offene Sommerarbeit dieses Monats bringt einem Weinberg die nächste Weinstufe, die der Rang schon erlaubt?
 // Die Öchsle zählen nicht, nur der Anspruch (ANSPRUCH, seit 14.5.5 die Leiter des dritten Schlüssels wie bei der Anmeldung). Beerenauslese und Trockenbeerenauslese zählen mit ihrem Weg
-// (weg_eigen, weg_tba), der Eiswein nicht, er hängt am Frost. Der Sommerschnitt wird nur gefragt, wo der Chef selbst schneidet (nicht abgegeben).
+// (weg_eigen, weg_tba), der Eiswein nicht, er hängt am Frost. Seit 14.7.4 (Annahmen 13 und 18) ist die Nachfrage die Stellung Chefsache im Einsatzplan:
+// gefragt wird nur bei Weinbergen, deren Laubschnitt oder Ausdünnen nicht auf Automatik läuft (autoLaub, autoAusd). Dieselbe Rechnung (sommerLohnt) nimmt die Automatik.
 // Einmal "ohne" gewählt, fragt das Spiel in diesem Monat nicht mehr (S.sommerGefragt). Meisterprüfung ohne Nachfrage (SOMMER_FRAGE).
 const stufeRangDarf=st=>FREI['wein_'+st]?frei('wein_'+st):st==='ba'?frei('weg_eigen'):st==='tba'?frei('weg_tba'):false;
 const naechsteStufe=(id,q)=>REIHE.find(st=>st!=='eis'&&rolleDarf(id,st)&&stufeRangDarf(st)&&ANSPRUCH[st]>q)||null;
+// Bringt die Arbeit (art 'laub' oder 'ausd') diesem Weinberg die nächste Weinstufe, die der Rang erlaubt? Dann {vor, q, st}, sonst null.
+function sommerLohnt(id,art){const vor=qualWb(id), q=qualTeile(id,{[art]:S.jahr}).q, st=naechsteStufe(id,vor); return st&&q>=ANSPRUCH[st]?{vor,q,st}:null}
 function sommerFrage(){
   if(!SOMMER_FRAGE[S.schwer]||S.sommerGefragt===monatNr()) return [];
   const art=S.monat===6?'laub':S.monat===AUSD_MONAT?'ausd':null; if(!art) return [];
   const F=[]; for(const id of weinberge()){
-    if(art==='laub'?!(laubHandOffen(id)&&!helferSchneidet(id)):!ausdOffen(id)) continue;
-    const vor=qualWb(id), q=qualTeile(id,{[art]:S.jahr}).q, st=naechsteStufe(id,vor);
-    if(st&&q>=ANSPRUCH[st]) F.push({id,art,vor,q,st,kosten:art==='laub'?laubHandKosten(id):ausdKosten(id)});
+    if(art==='laub'?!(laubHandOffen(id)&&!autoLaub(id)):!(ausdOffen(id)&&!autoAusd(id))) continue;
+    const L=sommerLohnt(id,art); if(L) F.push({id,art,...L,kosten:art==='laub'?laubHandKosten(id):ausdKosten(id)});
   }
   return F;
 }
 // Seit 14.2.3: Zuwachs nach dem, der schneidet oder düngt (ZUWACHS). In den Lehrjahren zählt das Düngen immer voll (Annahme 13, boden=1).
 const zuwachsVon=(wer,boden)=>boden&&S.schwer==='einfach'?1:wer==='helfer'?(ZUWACHS.helfer[leuteSt('helfer')]||0):ZUWACHS.chef;
-// Einstellung je Weinberg (f.schneider) und für das Düngen (S.duengWer): 'helfer' gibt ab, sobald Erntehelfer da sind, sonst macht es der Chef.
-// Annahme von Claude: Ohne Einstellung macht es der Chef, auch das Düngen. In den Lehrjahren düngen die Erntehelfer wie bisher von selbst.
+// Seit 14.7.4 (Bauplan 14.7, Annahmen 8 bis 13): der Einsatzplan je Weinberg mit zwei Stellungen, Chefsache oder Automatik.
+// Der Chef-Weinberg (f.schneider nicht 'helfer'): Rebschnitt und Düngen zusammen, dort macht der Chef beides selbst mit vollem Zuwachs. Auf Automatik ('helfer')
+// schneiden und düngen die Erntehelfer mit dem Zuwachs ihrer Stufe (ZUWACHS). Ohne Erntehelfer gibt es keine Automatik, der Chef macht alles (Annahme 11).
+// Bis 14.7.3 galt f.schneider nur für den Rebschnitt, gedüngt wurde fürs ganze Gut (S.duengWer, entfällt). In den Lehrjahren düngt der Chef seinen
+// Chef-Weinberg seitdem selbst, die Automatik zählt dort beim Düngen voll (zuwachsVon mit boden, Annahme 12).
+// Laubschnitt und Ausdünnen je Weinberg in f.plan.laub und f.plan.ausd, 'chef' (Chefsache, Voreinstellung, das Spiel fragt nach sommerFrage) oder 'auto'
+// (Automatik: Winzergesellen machen den Laubschnitt, Rebmeister das Ausdünnen, nur wo es die nächste Weinstufe bringt, sommerLohnt). Kann die Stufe der Leute
+// die Arbeit noch nicht, gilt Chefsache (planAutoKann). Bis der Weingut-Manager den Plan schreibt (planBeiMgr), sitzen die Schalter an der Arbeit im Weinberg,
+// danach im Fenster Einsatzplan, im Weinberg steht dann nur eine Info-Zeile (Annahme 16).
 const helferSchneidet=id=>helferKann(1)&&(S.felder[id]||{}).schneider==='helfer';
-const helferDuengt=()=>helferKann(1)&&(S.schwer==='einfach'||S.duengWer==='helfer');
+const helferDuengt=id=>helferSchneidet(id);
+const planArt=(id,art)=>((S.felder[id]||{}).plan||{})[art]==='auto'?'auto':'chef';
+const planAutoKann=art=>art==='laub'?helferKann(2):art==='ausd'?helferKann(3):helferKann(1);
+const autoLaub=id=>planAutoKann('laub')&&planArt(id,'laub')==='auto';
+const autoAusd=id=>planAutoKann('ausd')&&planArt(id,'ausd')==='auto';
+const planBeiMgr=()=>aufgabeAktiv('plan');
 // Chef-Grenze: CHEF_SCHNITT_MAX Weinberge je Winter schneidet der Chef selbst (seit 14.4.3 einer, bis 14.2 drei, also keine Grenze).
 const chefSchnitte=()=>weinberge().filter(id=>{const f=S.felder[id]; return f.schnitt===S.jahr&&f.schnittWer!=='helfer'&&f.schnittWer!=='kauf'}).length;
 // Seit 14.4.3 (Maiks Entscheidung zur Chef-Grenze, CHEF_RAT 'jung'): Der Chef ist einem Weinberg zugeteilt (f.schneider nicht 'helfer'), die Zuteilung bleibt stehen,
@@ -201,8 +215,9 @@ const chefKandidaten=()=>weinberge().filter(id=>(S.felder[id]||{}).reben>0);
 const chefWeinberge=()=>chefKandidaten().filter(id=>S.felder[id].schneider!=='helfer');
 function chefRegel(ids){ids=ids||chefKandidaten(); const P=id=>S.felder[id].pflSt||0, U=ids.filter(id=>P(id)<PFLEGE_STUFEN.length-1);
   return (U.length?U:ids).slice().sort((a,b)=>P(a)-P(b)||(S.felder[a].ep||0)-(S.felder[b].ep||0))}
-const chefStill=()=>S.schwer==='einfach'&&CHEF_RAT==='jung';
-const chefRat=()=>S.schwer==='mittel'&&CHEF_RAT==='jung'&&helferKann(1)&&chefKandidaten().length>CHEF_SCHNITT_MAX?chefRegel()[0]:null;
+// Seit 14.7.4: je Spielstufe nach EINSATZ_RAT (Lehrjahre still, Gesellenjahre Rat, Meisterprüfung nichts), wie bisher nur mit CHEF_RAT 'jung'.
+const chefStill=()=>CHEF_RAT==='jung'&&EINSATZ_RAT[S.schwer]==='still';
+const chefRat=()=>CHEF_RAT==='jung'&&EINSATZ_RAT[S.schwer]==='rat'&&helferKann(1)&&chefKandidaten().length>CHEF_SCHNITT_MAX?chefRegel()[0]:null;
 function chefNorm(){
   if(!S||!helferKann(1)) return; const K=chefKandidaten(); if(!K.length) return;
   if(chefStill()){if(chefSchnitte()) return; const z=chefRegel(K).slice(0,CHEF_SCHNITT_MAX); for(const id of K) S.felder[id].schneider=z.includes(id)?'chef':'helfer'; return}
@@ -212,10 +227,11 @@ function chefNorm(){
 // Der Spieler teilt den Chef einem Weinberg zu: Der bisherige geht an die Leute. Zurück kommt, wer gegangen ist, für den Hinweis.
 function chefZuteilen(id){const f=S.felder[id]; if(!f) return []; const alt=chefWeinberge().filter(x=>x!==id); f.schneider='chef';
   const weg=alt.slice(0,Math.max(0,alt.length+1-CHEF_SCHNITT_MAX)); for(const x of weg) S.felder[x].schneider='helfer'; return weg}
-// Zuwachs beim Düngen in diesem Jahr: Schnitt über alle Düngungen (Annahme 6), ohne Düngung zählt er voll.
-const duengZuwachs=()=>{const D=S.duengZ||[]; return D.length?D.reduce((a,b)=>a+b,0)/D.length:1};
+// Zuwachs beim Düngen eines Weinbergs in diesem Jahr: Schnitt über seine Düngungen (Annahme 6, seit 14.7.4 je Weinberg in f.duengZ).
+// Ohne Düngung zählt der Zuwachs dessen, der dort gerade düngen würde (bis 14.7.3 voll, Annahme der Bau-Sitzung, damit Automatik nie mehr bringt als die Helfer).
+const duengZuwachs=id=>{const D=(S.felder[id]||{}).duengZ||[]; return D.length?D.reduce((a,b)=>a+b,0)/D.length:zuwachsVon(helferDuengt(id)?'helfer':'chef',1)};
 // Punkte, die ein Weinberg in einem guten Jahr bekäme, mit den heutigen Einstellungen (für die Anzeige).
-const epJahrSoll=id=>epPlus(id,true,zuwachsVon(helferSchneidet(id)?'helfer':'chef'),zuwachsVon(helferDuengt()?'helfer':'chef',1));
+const epJahrSoll=id=>epPlus(id,true,zuwachsVon(helferSchneidet(id)?'helfer':'chef'),zuwachsVon(helferDuengt(id)?'helfer':'chef',1));
 const sorteSchild=(id,r)=>rolleVon(id)?`${rolleVon(id).name}: ${rolleVon(id).satz}`:eigText(eignung(id,r));
 const sternZahl=(id,r)=>{const e=eignung(id,r); return e>=1?3:e>=.85?2:1};
 const sternF=(id,r)=>[0,STERN_PREIS_1,STERN_PREIS_2,STERN_PREIS_3][sternZahl(id,r)];
@@ -246,10 +262,11 @@ function wbBodenP(id){if(!id) return lageBodenP('einfach'); if(istSL(id)) return
 function bodenVerduennen(){const T=lagenBelegung().T, F=S.bodenFl=S.bodenFl||{einfach:0,hoehe:0,sued:0}, P=S.bodenP=S.bodenP||{einfach:0,hoehe:0,sued:0};
   for(const lg of LAGE_REIHE) if(T[lg]>(F[lg]||0)){P[lg]=epRund((P[lg]||0)*(F[lg]||0)/T[lg]); F[lg]=T[lg]}}
 // Zum Jahreswechsel (Entscheidungen 20 und 39): Im guten Bodenjahr bekommt jede bepflanzte Lage ihre BODEN_PUNKTE mal den Zuwachs dessen, der gedüngt hat (zd).
-function bodenJahr(gut,zd,Z){bodenVerduennen(); const T=lagenBelegung().T, P=S.bodenP, L=S.bodenStL=S.bodenStL||{};
-  if(gut) for(const lg of LAGE_REIHE) if(T[lg]>0) P[lg]=epRund(Math.min(BODEN_MAX,(P[lg]||0)+BODEN_PUNKTE[lg]*zd));
+// Seit 14.7.4 (Annahme 10) je Weinberg: G[id] = {gut, zd} aus seinem eigenen Bodenschnitt und seinen Düngungen. Jede Lage trägt genau eine Sorte (lageVon).
+function bodenJahr(G,Z){bodenVerduennen(); const T=lagenBelegung().T, P=S.bodenP, L=S.bodenStL=S.bodenStL||{};
+  for(const id of R().sorten){const lg=lageVon(id), g=G[id]; if(g&&g.gut&&T[lg]>0) P[lg]=epRund(Math.min(BODEN_MAX,(P[lg]||0)+BODEN_PUNKTE[lg]*g.zd))}
   // Seit 14.4.4: Die Spitzenlage hat eigene Bodenpunkte (f.bodenP), sammelt wie der Südhang und wird durch Zukauf nicht verdünnt. Beim Terroir kommen Weinkenner und Presse.
-  const sl=slFeld(); if(sl&&sl.reben>0){const k=slKenn(); if(gut) sl.bodenP=epRund(Math.min(BODEN_MAX,(sl.bodenP||0)+BODEN_PUNKTE.sued*zd)); const st=wbBoden(k);
+  const sl=slFeld(); if(sl&&sl.reben>0){const k=slKenn(), g=G[k]||{}; if(g.gut) sl.bodenP=epRund(Math.min(BODEN_MAX,(sl.bodenP||0)+BODEN_PUNKTE.sued*g.zd)); const st=wbBoden(k);
     if(st>(sl.bodenSt||0)){sl.bodenSt=st; S.bodenSt=Math.max(S.bodenSt||0,st); Z.push(BODEN_LAGE_BOTE.replace('{lage}',SORTEN[k].name).replace('{stufe}',BODEN_STUFEN[st]));
       if(st>=BODEN_STUFEN.length-1) Z.push(SL_BOTE.terroir.replace('{lage}',SL_NAME).replace('{ans}',ruhm(SL_ANS_TERROIR)))}}
   for(const lg of LAGE_REIHE){const st=lageBoden(lg); if(st>(L[lg]||0)){L[lg]=st; S.bodenSt=Math.max(S.bodenSt||0,st); Z.push(BODEN_LAGE_BOTE.replace('{lage}',LAGEN[lg].kurz).replace('{stufe}',BODEN_STUFEN[st]))}}}
@@ -732,7 +749,10 @@ function altHang(){if(S.hang) return; const sued=Math.min(SUED_MAX-(S.spitze||S.
   S.hang={einfach:Math.round((S.ha-sued)*10)/10,hoehe:0,sued}; S.suedMax=sued; if(S.spitze||S.spitzeVers) S.spitzeAuk=S.spitzeVers||S.jahr}
 const verlustSpanne=b=>VERLUST.find(v=>b>=v[0]);
 // Bodenschnitt des laufenden Jahres: die Monatsenden bisher und der heutige Stand.
-function bodenSchnitt(){return Math.round(((S.bodenSum||0)+S.boden)/((S.bodenN||0)+1))}
+// Seit 14.7.4 (Annahme 10) je Weinberg: Bodenstand f.boden in Prozent, Monatsstände f.bodenSum und f.bodenN, nur solange Reben stehen.
+// Ohne Reben bleibt der Bodenstand stehen (Annahme der Bau-Sitzung). bodenMin ist der magerste bepflanzte Weinberg (für Übersicht und Einstieg).
+function bodenSchnitt(id){const f=S.felder[id]; return Math.round(((f.bodenSum||0)+f.boden)/((f.bodenN||0)+1))}
+const bodenMin=()=>{const B=weinberge().filter(id=>S.felder[id].reben>0).map(id=>S.felder[id].boden); return B.length?Math.min(...B):BODEN_START};
 // Seit 13.4.8: Mit der Spende an die Feuerwehr (spLohn(2)) zählt der Frost-Anteil nur mal SP_FROSTFEUER.
 function frostPlus(){const w=S.winterFrost||0;return ((w>=3?FROST_3:w>=2?FROST_2:0)+(S.spaetFrost?SPAETFROST:0))*(spLohn(2)?SP_FROSTFEUER:1)}
 function rebenPreis(id){return Math.round(SORTEN[id].preis*(S.rebenF||1)*(S.rebenAng===id?1-REBEN_ANGEBOT:1)*100)/100}
@@ -1234,9 +1254,15 @@ function lagerRegel(fl){const was=`${num(FASS_JE_LAGERARB)}\u00a0l Fassraum und 
 function abfFl(l){const p=abfPlus(); return p?Math.round(l.liter*(1+p)):l.liter}
 function fuelleAb(l){const ma=bonusMasch('abfuell'), n=abfFl(l); S.flaschen-=n; l.liter=n; l.status='flasche'; l.flMonate=0; if(ma) abnutz(ma,ABF_ABN*n/ABF_NORM); return n}
 // Düngen (von Hand und beim Weingut-Manager): mit dem Düngerstreuer im Einsatz billiger und mehr Boden, er nutzt sich je Düngung um STREU_ABN ab.
-function duengKosten(){return Math.round(DUENGER_HA*S.ha*(bonusMasch('duenger')?1-STREU_RABATT:1))}
+// Seit 14.7.4 (Annahme 10): Düngen je Weinberg nach seinen Hektar (bis 14.7.3 nach der ganzen Fläche), höchstens DUENG_MAX Mal im Jahr je Weinberg (f.duengN).
+// Der Düngerstreuer nutzt sich je Düngung nach dem Anteil des Weinbergs an allen Reben ab, so wie bis 14.7.3 eine Düngung fürs Gut (Annahme der Bau-Sitzung).
+// S.duengungen zählt weiter alle Düngungen des Jahres (Spielführer e1-09).
+function duengKosten(id){return Math.round(DUENGER_HA*((S.felder[id]||{}).reben||0)/HA_REBEN*(bonusMasch('duenger')?1-STREU_RABATT:1))}
+const duengOffen=id=>{const f=S.felder[id]; return !!f&&f.reben>0&&(f.duengN||0)<DUENG_MAX&&f.boden<100};
+const duengAnteil=id=>{const a=weinberge().reduce((s,x)=>s+(S.felder[x].reben||0),0); return a?(S.felder[id].reben||0)/a:1};
 function duengPlus(){return bonusMasch('duenger')?STREU_PLUS:DUENG_PLUS}
-function duenge(wer='chef'){const ma=bonusMasch('duenger'), p=duengPlus(); zahle(duengKosten()); S.duengungen++; (S.duengZ=S.duengZ||[]).push(zuwachsVon(wer,1)); S.boden=Math.min(100,S.boden+p); if(ma) abnutz(ma,STREU_ABN); return p}
+function duenge(id,wer='chef'){const f=S.felder[id], ma=bonusMasch('duenger'), p=duengPlus(); zahle(duengKosten(id)); S.duengungen++; f.duengN=(f.duengN||0)+1;
+  (f.duengZ=f.duengZ||[]).push(zuwachsVon(wer,1)); f.boden=Math.min(100,f.boden+p); if(ma) abnutz(ma,STREU_ABN*duengAnteil(id)); return p}
 function leuteFehlen(){return {helfer:helferFehlen(),lagerarb:Math.max(0,lagerBedarf()-S.lagerarb)}}
 // "Es fehlen 2 Erntehelfer und 1 Lagerarbeiter" oder leer, wenn niemand fehlt. Seit 8.0 mit dem Hinweis auf Fahrer, wenn Maschinen stillstehen.
 function fehlText(){
@@ -1333,7 +1359,7 @@ function wachse(m){
     if((m===3||m===4)&&w==='frost'){f.frostF=formSchutz(id,SPAETFROST_MENGE); L.push(`Spätfrost schädigt die Blüte beim ${so.name}.`)}
     // Seit 13.2.2: statt der Jungreben der Mengen-Faktor der Rebpflege (pflegeMenge).
     // Seit 14.2.4 mal der Menge der Erziehungsform, seit 14.5.3 für jede Sorte gleich (formMenge).
-    if(m===5) f.menge=Math.round(f.reben*pflegeMenge(f,id)*formMenge(id)*so.ertrag*(reg.ertragF||1)*(.6+.4*S.boden/100)*(1+BODEN_ST_MENGE*wbBoden(id))*f.frostF*festR(.9,1.1,fest(6,si,S.jahr,m)));
+    if(m===5) f.menge=Math.round(f.reben*pflegeMenge(f,id)*formMenge(id)*so.ertrag*(reg.ertragF||1)*(.6+.4*f.boden/100)*(1+BODEN_ST_MENGE*wbBoden(id))*f.frostF*festR(.9,1.1,fest(6,si,S.jahr,m)));
     // Seit 13.2.3: Das Wetter-Öchsle zählt höchstens bis zur Grenze des Weinbergs (oeGrenze: Deckel, Edelfäulnis der Spitzen-Sorte bis EDEL_OE_MAX, nach den Rosinen bis OE_MAX).
     if(m===6){f.oe=Math.min(oeGrenze(id),OE_START+zuckerIm(id)+wbonus(w)+festI(-2,2,fest(5,si,S.jahr,m))); f.reif=5; f.ueber=0; f.plus=0}
     if(m>=7&&f.menge>0&&!f.gelesen){
@@ -1916,10 +1942,10 @@ function kompAuf(id){
 function neuesSpiel(){
   if(NEU.schwer===MEISTER_STUFE&&!meisterFrei()) NEU.schwer=MEISTER_VON; // seit 13.7.7, gesperrt bis zur ersten Übergabe in den Gesellenjahren
   const reg=REG(NEU.region,!!ROLLEN_NEU);
-  S={v:1,v13:1,v147:1,zf:zfNeu(),name:NEU.name.trim().slice(0,NAME_MAX)||'Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:startGeld(NEU.schwer),ha:3,hang:{einfach:3,hoehe:0,sued:0},boden:80,bodenSt:0,bodenP:{einfach:0,hoehe:0,sued:0},duengungen:0,
+  S={v:1,v13:1,v147:1,zf:zfNeu(),name:NEU.name.trim().slice(0,NAME_MAX)||'Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:startGeld(NEU.schwer),ha:3,hang:{einfach:3,hoehe:0,sued:0},bodenSt:0,bodenP:{einfach:0,hoehe:0,sued:0},duengungen:0,
     felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',markt:1,ansehen:0,ansV:1,leuteV:1,
     jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:ALLEIN_HA?0:1,lagerarb:ALLEIN_FASS?0:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,meilen:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],rangMon:{0:START_JAHR*12},freiBote:{},taten:{},komp:{},kompV:3,v121:1,ein:{f:[]},...(ROLLEN_NEU?{rollen:1}:{})};
-  for(const id of reg.sorten){S.felder[id]={reben:0,pflSt:0,ep:0}; feldReset(S.felder[id])}
+  for(const id of reg.sorten){S.felder[id]={reben:0,pflSt:0,ep:0,boden:BODEN_START}; feldReset(S.felder[id])}
   etappe3(3,NEU.schwer);
   lohnAbgleich();
   neuePrognose();
@@ -2127,11 +2153,11 @@ function monatLauf(){
   const K=kosten(); zahle(K.basis+K.loehne+K.zins); S.geld-=K.tilgung;
   if(S.kredit){S.kredit.rest-=K.tilgung; if(S.kredit.erb) S.kredit.erb=Math.max(0,S.kredit.erb-K.tilgung); if(S.kredit.rest<=0){S.kredit=null; Z.push('Dein Kredit ist abbezahlt.')}}
   if(S.geld<0){uz=Math.round(-S.geld*.01); zahle(uz)}
-  // Für den Bodenschnitt zählt der Stand am Monatsende. S.nass merkt den Regenmonat für den Hinweis im Weinberg.
-  S.bodenSum=(S.bodenSum||0)+S.boden; S.bodenN=(S.bodenN||0)+1;
+  // Für den Bodenschnitt zählt der Stand am Monatsende. S.nass merkt den Regenmonat für den Hinweis im Weinberg. Seit 14.7.4 je bepflanztem Weinberg.
+  for(const id of weinberge()){const f=S.felder[id]; if(f.reben>0){f.bodenSum=(f.bodenSum||0)+f.boden; f.bodenN=(f.bodenN||0)+1}}
   S.nass=S.wetter==='regen'?S.monat:null;
   S.monat++;
-  S.boden=Math.max(0,S.boden-(S.nass!=null?BODEN_REGEN:BODEN_MONAT));
+  for(const id of weinberge()){const f=S.felder[id]; if(f.reben>0) f.boden=Math.max(0,f.boden-(S.nass!=null?BODEN_REGEN:BODEN_MONAT))}
   if(S.monat>11){
     const ein=S.jahrEin, aus=S.jahrAus, gew=ein-aus;
     let jb=`Einnahmen ${eur(ein)}, Ausgaben ${eur(aus)}, ${gew>=0?'Gewinn':'Verlust'} ${eur(Math.abs(gew))}.`;
@@ -2142,26 +2168,33 @@ function monatLauf(){
     schlag(50,`Jahresbilanz ${S.jahr}: ${gew>=0?'Gewinn':'Verlust'} von ${eur(Math.abs(gew))}`,jb,'amt',{archiv:1});
     S.monat=0; S.jahr++; S.jahrEin=0; S.jahrAus=0; S.spJahr=0; S.duengungen=0; zahle(steuer);
     // Reben-Abnutzung: je Sorte ein gewürfelter Anteil aus der Spanne des Bodenschnitts, Frost kommt obendrauf. S.verlust merkt die Zahlen für Aktuelles.
-    const schnitt=Math.round(S.bodenSum/S.bodenN), sp=verlustSpanne(schnitt), fp=frostPlus(), rebVor=rebenGesamt(); let totAlle=0;
+    // Seit 14.7.4 (Annahme 10): Bodenschnitt, gutes Bodenjahr und Zuwachs beim Düngen je Weinberg (BS, G). schnitt ist für den Winzerboten der Schnitt
+    // über alle bepflanzten Weinberge nach ihren Reben. Ohne Monatsstände (gerade erst bepflanzt) zählt der Stand von heute.
+    const BS={}, G={}; let bsR=0, bsS=0;
+    for(const id of weinberge()){const f=S.felder[id]; BS[id]=f.bodenN?Math.round(f.bodenSum/f.bodenN):f.boden; G[id]={gut:BS[id]>=BODEN_GUT,zd:duengZuwachs(id)};
+      if(f.reben>0){bsR+=f.reben; bsS+=BS[id]*f.reben}}
+    const schnitt=bsR?Math.round(bsS/bsR):BODEN_START, fp=frostPlus(), rebVor=rebenGesamt(); let totAlle=0;
     // Seit 13.2.1: Boden-Zähler. Ein Jahresschnitt ab BODEN_GUT zählt +1, sonst bleibt er stehen. Die Stufe fällt nie.
     // Seit 14.2.5 je Lage mit eigenen Punkten nur für bepflanztes Land (bodenJahr), die Jahrhundertjahre stehen seit dem Start der Partie fest.
-    bodenJahr(schnitt>=BODEN_GUT,duengZuwachs(),Z); vollendetPruef(Z);
+    bodenJahr(G,Z); vollendetPruef(Z);
     S.verlust={};
     for(const [si,id] of weinberge().map(x=>[R().sorten.indexOf(stamm(x)),x])){
       const f=S.felder[id]; feldReset(f);
       // Seit 13.2.2: Rebpflege-Zähler der Sorte. Bis Ende April des abgelaufenen Jahres geschnitten (f.schnitt) zählt PFLEGE_GUT, sonst PFLEGE_PATZER zurück.
       if(f.reben){
         // Seit 14.2.2: Entwicklungspunkte (epJahr), die Stufe folgt den Punkten und fällt mit ihnen.
-        const vor=f.pflSt||0, gs=f.schnitt===S.jahr-1; epJahr(f,id,schnitt>=BODEN_GUT,f.schnittZ!=null?f.schnittZ:1,duengZuwachs()); f.pflSt=epStufe(id);
+        const vor=f.pflSt||0, gs=f.schnitt===S.jahr-1; epJahr(f,id,G[id].gut,f.schnittZ!=null?f.schnittZ:1,G[id].zd); f.pflSt=epStufe(id);
         if(f.pflSt>vor) pflegeAuf(Z,id,f.pflSt);
         // Seit 14.4.3: Haben nur Erntehelfer (Stufe 1, ohne Zuwachs) geschnitten, sagt es der Winzerbote, nicht in den Lehrjahren (Platzhalter).
         if(gs&&f.schnittWer==='helfer'&&f.schnittZ===0&&S.schwer!=='einfach') Z.push(HELFER_NUR_BOTE.replace('{sorte}',SORTEN[id].name));
         else if(f.pflSt<vor) Z.push(gs?`✂️ Dein ${SORTEN[id].name} fällt durch die vielen neuen Reben auf ${PFLEGE_STUFEN[f.pflSt]} zurück.`:`✂️ Dein ${SORTEN[id].name} fällt auf ${PFLEGE_STUFEN[f.pflSt]} zurück, er wurde nicht rechtzeitig geschnitten.`); // Platzhalter, Wortlaut in Meilenstein 17
       }
-      if(f.reben){const tot=Math.min(f.reben,Math.round(f.reben*(festR(sp[1],sp[2],fest(7,si))+fp)/1000)*10); if(tot){f.reben-=tot; S.verlust[id]=tot; totAlle+=tot}}
+      // Seit 14.7.4 nach dem Bodenschnitt des Weinbergs selbst.
+      if(f.reben){const sp=verlustSpanne(BS[id]), tot=Math.min(f.reben,Math.round(f.reben*(festR(sp[1],sp[2],fest(7,si))+fp)/1000)*10); if(tot){f.reben-=tot; S.verlust[id]=tot; totAlle+=tot}}
     }
-    if(totAlle) Z.push(`Zum Jahreswechsel sind ${String(Math.round(totAlle/rebVor*1000)/10).replace('.',',')}\u00a0% deiner Reben eingegangen (${weinberge().filter(id=>S.verlust[id]).map(id=>`${num(S.verlust[id])} ${SORTEN[id].name}`).join(', ')}). Der Boden lag im Jahresschnitt bei ${schnitt}\u00a0%${fp?', dazu kam der Frost'+(spLohn(2)?'. '+FROST_FEUER:''):''}. Bis März kannst du nachpflanzen.`);
-    S.bodenSum=0; S.bodenN=0; S.winterFrost=0; S.spaetFrost=false; S.duengZ=[];
+    if(totAlle) Z.push(`Zum Jahreswechsel sind ${String(Math.round(totAlle/rebVor*1000)/10).replace('.',',')}\u00a0% deiner Reben eingegangen (${weinberge().filter(id=>S.verlust[id]).map(id=>`${num(S.verlust[id])} ${SORTEN[id].name}`).join(', ')}). Der Boden deiner Weinberge lag im Jahresschnitt bei ${schnitt}\u00a0%${fp?', dazu kam der Frost'+(spLohn(2)?'. '+FROST_FEUER:''):''}. Bis März kannst du nachpflanzen.`);
+    for(const id of weinberge()) Object.assign(S.felder[id],{bodenSum:0,bodenN:0,duengZ:[],duengN:0});
+    S.winterFrost=0; S.spaetFrost=false;
   }
   S.wetter=S.wetterNext; S.temp=tempFuer(S.monat,S.wetter,fest(8,0)); neuePrognose();
   // Frost fürs Reben-Sterben mitzählen: Wintermonate und Spätfrost zur Blüte. Der Kälteeinbruch im November zählt nicht.
@@ -2545,14 +2578,18 @@ function aufgaben(){
   if(m<=2&&S.verlust) for(const id of weinberge()) if(S.verlust[id]) A.push({t:`Über den Winter sind ${rbn(S.verlust[id])} ${SORTEN[id].name}-Reben eingegangen. Nachpflanzen`,tab:'gut',sub:'berg',ruhig:aufgabeAktiv('reben')||helferKann(3)?1:0});
   if(m<=2&&frei>0) A.push({t:`Pflanzzeit: Platz für ${rbn(frei)} Reben`,tab:'gut',sub:'berg',ruhig:1});
   // Version 7.3: Düngen steht an, sobald der Boden auf 70 % oder weniger fällt (Gelb), seit 7.9 Rot ab DUENG_ROT. Düngt der Weingut-Manager, nur ein ruhiger Hinweis.
-  if(S.boden<=70&&S.duengungen<3) A.push(helferDuengt()?{t:`Boden bei ${S.boden}\u00a0%: deine Erntehelfer düngen beim Weiterblättern`,tab:'gut',sub:'berg',ruhig:1}:{t:`🌱 Boden bei ${S.boden}\u00a0%: Düngen ist ${S.boden<=DUENG_ROT?'überfällig':'dran'}`,tab:'gut',sub:'berg',rot:S.boden<=DUENG_ROT?1:0});
+  // Seit 14.7.4 je Weinberg: der Chef-Weinberg (und ohne Erntehelfer jeder) gelb oder rot, Weinberge auf Automatik als ruhiger Hinweis. Platzhalter, Wortlaut in Meilenstein 17.
+  {const D=weinberge().filter(id=>duengOffen(id)&&S.felder[id].boden<=70), bt=id=>`${SORTEN[id].name} ${S.felder[id].boden}\u00a0%`;
+    const dh=D.filter(helferDuengt), dc=D.filter(id=>!helferDuengt(id)), r=dc.some(id=>S.felder[id].boden<=DUENG_ROT);
+    if(dh.length) A.push({t:`Boden mager (${dh.map(bt).join(', ')}): deine Erntehelfer düngen beim Weiterblättern`,tab:'gut',sub:'berg',ruhig:1});
+    if(dc.length) A.push({t:`🌱 Düngen ist ${r?'überfällig':'dran'}: ${dc.map(bt).join(', ')}`,tab:'gut',sub:'berg',rot:r?1:0})}
   // Seit 13.2.4: Rebschnitt bis Ende April, im April rot.
   {const sn=weinberge().filter(id=>schnittOffen(id)&&!helferSchneidet(id)); if(sn.length) A.push({t:`✂️ Rebschnitt bis Ende April: ${sn.map(id=>SORTEN[id].name).join(', ')}`,tab:'gut',sub:'berg',rot:S.monat===SCHNITT_BIS?1:0})}
   // Seit 13.4.6: Der Weingut-Manager warnt, wenn zu viel der Ernte im Wagnis hängt (wagnisWarnung), Rot.
   {const ww=wagnisWarnung(); if(ww) A.push({t:`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name} warnt: ${Math.round(ww.anteil*100)} % deiner Ernte hängen im Wagnis (${ww.ids.map(id=>SORTEN[id].name).join(', ')})`,rot:1,tab:'gut',sub:'berg'})}
   if(m===11){const t=steuerSchau(); if(t.steuer>0){
     A.push({t:`💶 Im Januar rund ${eur(t.steuer)} Steuer auf ${eur(t.gew)} Gewinn. Fassraum oder Flaschen kaufen senkt sie`,tab:'keller',sub:'lager',ruhig:1});
-    if(S.duengungen<3&&S.boden<100) A.push({t:`💶 Steuer senken: noch düngen (${S.duengungen} von 3 Mal)`,tab:'gut',sub:'berg',ruhig:1});
+    if(weinberge().some(duengOffen)) A.push({t:'💶 Steuer senken: noch düngen',tab:'gut',sub:'berg',ruhig:1});
     if(S.maschinen.some(x=>x.zustand<100)) A.push({t:'💶 Steuer senken: Maschinen warten',tab:'gut',sub:'maschinen',ruhig:1});
   }}
   // Seit 8.2: gelber Punkt im Rathaus im November und Dezember, solange die Spende des Rangs offen ist. Nie rot.
@@ -2732,7 +2769,7 @@ function mgrBetrieb(){
     const n=Math.floor(Math.min(platz(),helferReben()-rebenGesamt())/10)*10;
     if(n>0){zahle(Math.round(n*pr*100)/100); const f=S.felder[id]; rebenDazu(id,n); S.verlust[id]-=n; LW.push(`${rbn(n)} ${SORTEN[id].name}-Reben nachgepflanzt`)}
   }
-  if(aufgabeAktiv('duengen')&&S.duengungen<3&&S.boden<100&&(S.boden<=70||(m===7&&S.boden<90))&&S.geld>=duengKosten()){const st=bonusMasch('duenger'); duenge('helfer'); LW.push(st?'mit dem Düngerstreuer gedüngt':'gedüngt')}
+  // Bis 14.7.3 stand hier das Düngen als Aufgabe des Weingut-Managers (seit 13.5 ohne Wirkung), seit 14.7.4 düngen die Erntehelfer nach dem Einsatzplan.
   // Bis 14.7.1 wartete hier der Weingut-Manager die Maschinen (Aufgabe warten), seit 14.7.3 machen das die Kellerhelfer (kellerWarten).
   if(hf){const nh=mgrHandlese(); if(nh) LW.push(`${nh===1?'einen Erntehelfer':nh+' Erntehelfer'} für die Handlese eingestellt`)}
   // Schritt F: Kellermeister (seit 8.5 ab Stufe 1, vorher Stufe 2) keltert die Lese beim Weiterblättern und kauft fehlenden Fassraum in Schritten von 500 l wie von Hand.
@@ -2853,11 +2890,15 @@ function pflanzPlan(id){const cap={}; for(const lg of LAGE_REIHE) cap[lg]=lagePl
   for(const x of pflanzReihe()){const lg=lageVon(x), n=pflanzKann(x)?Math.floor(Math.min(pflanzSoll(x),istSL(x)?slPlatz():cap[lg])/10)*10:0; if(x===id) return n; if(!istSL(x)) cap[lg]-=n} return 0}
 function helferArbeit(L){
   if(!S.helfer) return; const st=leuteSt('helfer'), m=S.monat; chefNorm();
-  // Seit 14.2.3: Düngen und Rebschnitt nur, wo der Spieler sie abgegeben hat, schon ab Stufe 1 (Entscheidung 9).
-  if(st>=1&&abgabe('duengen')&&helferDuengt()&&S.duengungen<3&&S.boden<100&&(S.boden<=HELFER_DUENG||(m===7&&S.boden<90))&&S.geld>=duengKosten()){const ma=bonusMasch('duenger'); duenge('helfer'); L.push(ma?'mit dem Düngerstreuer gedüngt':'gedüngt')}
+  // Seit 14.2.3: Düngen und Rebschnitt nur, wo der Spieler sie abgegeben hat, schon ab Stufe 1 (Entscheidung 9). Seit 14.7.4 beides je Weinberg auf Automatik (Annahme 9).
+  if(st>=1&&abgabe('duengen')) for(const id of weinberge()){const f=S.felder[id];
+    if(helferDuengt(id)&&duengOffen(id)&&(f.boden<=HELFER_DUENG||(m===7&&f.boden<90))&&S.geld>=duengKosten(id)){const ma=bonusMasch('duenger'); duenge(id,'helfer'); L.push(`${SORTEN[id].name} ${ma?'mit dem Düngerstreuer gedüngt':'gedüngt'}`)}}
   if(st>=1&&abgabe('schneiden')) for(const id of weinberge()) if(helferSchneidet(id)&&schnittOffen(id)&&S.geld>=schnittKosten(id)){schneide(id,'helfer'); L.push(`${SORTEN[id].name} geschnitten`)}
-  // Seit 14.2.4: den Sommerschnitt von Hand, wo der Rebschnitt abgegeben ist (Annahme 18).
-  if(st>=1&&m===6&&abgabe('schneiden')) for(const id of weinberge()) if(helferSchneidet(id)&&laubHandOffen(id)&&S.geld>=laubHandKosten(id)){laubHand(id); L.push(`${SORTEN[id].name} im Sommer von Hand geschnitten`)}
+  // Seit 14.7.4 (Annahmen 13 und 22): Draußen bringt jede Stufe ihre Arbeit. Winzergesellen machen auf Automatik den Laubschnitt (bis 14.7.3 machten die Erntehelfer
+  // den Sommerschnitt von Hand, wo der Rebschnitt abgegeben war), Rebmeister das Ausdünnen, beides nur, wo es die nächste Weinstufe bringt (sommerLohnt),
+  // mit den Kosten wie von Hand. Was der Chef oder der Laubschneider schon gemacht hat, läuft nicht doppelt (laubHandOffen, ausdOffen). Testschalter wie der Rebschnitt.
+  if(m===6&&abgabe('schneiden')) for(const id of weinberge()) if(autoLaub(id)&&laubHandOffen(id)&&sommerLohnt(id,'laub')&&S.geld>=laubHandKosten(id)){laubHand(id); L.push(`${SORTEN[id].name}: Laubschnitt gemacht`)} // Platzhalter, Wortlaut in Meilenstein 17
+  if(m===AUSD_MONAT&&abgabe('schneiden')) for(const id of weinberge()) if(autoAusd(id)&&ausdOffen(id)&&sommerLohnt(id,'ausd')&&S.geld>=ausdKosten(id)){ausduennen(id); L.push(`${SORTEN[id].name} ausgedünnt`)} // Platzhalter, Wortlaut in Meilenstein 17
   if(st>=3&&m<=2&&abgabe('pflanzen')) for(const id of pflanzReihe()){
     const f=S.felder[id], soll=pflanzSoll(id); if(soll<10||!pflanzKann(id)) continue;
     const wm=mgrSt('weingut')>0, pr=rebenPreis(id); if(wm&&m<2&&pr>SORTEN[id].preis) continue;
@@ -2905,7 +2946,7 @@ function leuteStufeText(k){const st=leuteSt(k), T=LEUTE_ST[k], n=st+1;
 const einFass=()=>S.lots.some(l=>l.status!=='trauben'), einFlasche=()=>S.lots.some(l=>l.status==='flasche');
 const EIN_REGEL={
   // Der Boden fällt jeden Monat um 3 Punkte, unter 80 ist er schon im Februar. Deshalb erst ab Mai oder sobald "Das steht an" ab 70 % zum Düngen ruft (Annahme Claude).
-  duengung:()=>monatNr()>=4||S.boden<=70,
+  duengung:()=>monatNr()>=4||bodenMin()<=70,
   gebiet:()=>monatNr()>=12,
   helfer:()=>S.ha>ALLEIN_HA||S.rang>=R_AUKTION||S.helfer>0||S.maschinen.length>0||!!leuteFehlen().helfer,
   lagerarb:()=>S.fassraum>ALLEIN_FASS||S.flaschen>ALLEIN_FL||S.lagerarb>0||!!leuteFehlen().lagerarb||fassKap()-S.fassraum<500||flKap()-S.flaschen<100,
@@ -3170,7 +3211,7 @@ function fuAblegen(){
 }
 function wettSheet(h){openSheet(h,'wett')}
 function lot(id){return S.lots.find(l=>l.id===+id)}
-// Liest den Anteil p (0 bis 1) eines Feldes. Bei p<1 bleibt der Rest hängen. Der Boden verliert je Feld und Jahr nur einmal 4 Punkte.
+// Liest den Anteil p (0 bis 1) eines Feldes. Bei p<1 bleibt der Rest hängen. Der Boden verliert je Feld und Jahr nur einmal 4 Punkte, seit 14.7.4 der Boden dieses Weinbergs.
 // Seit 8.0: Felder mit Edelfäulnis oder gefrorenen Trauben liest die Hand, wenn genug Erntehelfer da sind (handlese), sonst die Maschine mit q.masch (höchstens Qualitätswein).
 // Alle anderen Felder lesen Helfer und Maschinen zusammen, die Maschinen nach ihrem Anteil an der Ernteleistung. Das nutzt sie ab (maschAbnutzung).
 function lese(id,la,p,hefe){
@@ -3180,7 +3221,7 @@ function lese(id,la,p,hefe){
   const f=S.felder[id], q=feldQ(f,la), l=Math.round(feldLiter(f,la)*p); if(l<=0) return;
   const L=leistung(), M=maschLeistung();
   if(M>0&&maschDarf(id)) maschAbnutzung(f.reben*Math.min(1,M/Math.max(1,rebenGesamt()-handLeseReben())),M);
-  const neu={id:S.nextId++,sorte:id,jahrgang:S.jahr,liter:l,oe:q.oe,leseart:la,edel:f.edel,eis:f.gefroren,...(q.masch?{masch:1}:{}),status:'trauben',stufe:null,qp:qualWb(id),fassMonate:0,flMonate:0,...(f.laub===S.jahr?{laub:1}:{}),boden:S.boden+4*R().sorten.filter(x=>S.felder[x].gelesen||S.felder[x].teil).length,bst:wbBoden(id),pfl:f.pflSt||0,...(f.jh?{jh:1}:{})};
+  const neu={id:S.nextId++,sorte:id,jahrgang:S.jahr,liter:l,oe:q.oe,leseart:la,edel:f.edel,eis:f.gefroren,...(q.masch?{masch:1}:{}),status:'trauben',stufe:null,qp:qualWb(id),fassMonate:0,flMonate:0,...(f.laub===S.jahr?{laub:1}:{}),boden:f.boden,bst:wbBoden(id),pfl:f.pflSt||0,...(f.jh?{jh:1}:{})};
   // Seit 13.5.8: Die Sekt-Trauben liegen erst im Keller (sektTr), Kosten und Ansehen kommen mit dem Umlagern in den Sektkeller (sektUmlagern).
   if(sk){const h=hefe===HEFE_LANG?HEFE_LANG:SEKT_REIFE; Object.assign(neu,{status:'sektTr',stufe:SEKT_GRUND,sekt:true,edel:false,eis:false,...(h>SEKT_REIFE?{hefe:h}:{}),med:[],bund:false});
     // Seit 14.5.7 (Maik 25.11.2026, Frage 2): das lange Hefelager (HEFE_LANG_P) als Punkte am Sekt (l.sektP), die Qualität bleibt die des Weinbergs.
@@ -3189,7 +3230,7 @@ function lese(id,la,p,hefe){
   // Seit 13.4.6: Erlös der Lese für die Warnung des Weingut-Managers.
   {const st=sk?SEKT_GRUND:besteStufe(q); f.leseW=(f.leseW||0)+(st?leseWert(id,la,st,l):0)}
   S.lots.push(neu);
-  if(!f.teil) S.boden=Math.max(0,S.boden-4);
+  if(!f.teil) f.boden=Math.max(0,f.boden-4);
   if(p>=1){f.gelesen=true;f.menge=0}else{f.teil=true;f.menge=Math.round(f.menge*(1-p))}
   kompLese(id,l); fx('schere'); geh('keller');
   return neu;
