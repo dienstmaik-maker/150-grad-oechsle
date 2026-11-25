@@ -71,7 +71,8 @@ function epJahr(f,id,gutBoden,zs=1,zd=1){
 }
 // Neue Reben verdünnen die Punkte genau um ihren Anteil (Entscheidung 4), auch beim Nachpflanzen. Die Stufe folgt zum Jahreswechsel.
 // Seit 14.2.5 verdünnt neu bepflanzte Fläche auch die Bodenpunkte ihrer Lage (bodenVerduennen).
-function rebenDazu(id,n){const f=S.felder[id]; if(!(n>0)||!f) return; const a=f.reben||0; f.ep=epRund((f.ep||0)*a/(a+n)); f.reben=a+n; bodenVerduennen()}
+// Seit dem Nachtrag zu 14.5 (Maik 25.11.2026, 08:19 Uhr): nie mehr Reben, als die eigene Lage Platz hat (platzFuer), auch kein Rundungsrest.
+function rebenDazu(id,n){const f=S.felder[id]; if(f) n=Math.min(n,platzFuer(id)); if(!(n>0)||!f) return; const a=f.reben||0; f.ep=epRund((f.ep||0)*a/(a+n)); f.reben=a+n; bodenVerduennen()}
 // Seit 14.5.4 (Annahme 14): Grand Cru für alle Sorten, nach der Pflegestufe bei der Lese (bis 14.5.3 nur die Spitzen-Sorte, dort 0).
 const pflegePreis=st=>PFLEGE_PREIS[st||0]||0;
 // Seit 13.2.3: Deckel fürs Öchsle eines Weinbergs aus Rolle, Boden-Stufe und Pflegestufe.
@@ -234,9 +235,11 @@ const stufeSatz=(s,z,SW,N)=>{if(s>=N.length-1) return `${N[s]}, höher geht es n
 const lageBodenP=lg=>(S.bodenP||{})[lg]||0, lageBoden=lg=>stufeZu(lageBodenP(lg),BODEN_SCHWELLE);
 // Welche Reben auf welcher Lage stehen. Seit dem Nachtrag zu 14.5 (Maik 25.11.2026, jede Lage eine Sorte) eins zu eins: jede Sorte ganz auf ihrer Lage (lageVon),
 // auch ein Rundungsrest. Bis dahin wurden die Reben zu deinen Gunsten über fremde Lagen verteilt. W je Sorte, T je Lage, alles in Reben, ohne die Spitzenlage.
-function lagenBelegung(){const W={}, T={einfach:0,hoehe:0,sued:0};
-  for(const id of R().sorten){const w=W[id]={einfach:0,hoehe:0,sued:0}, lg=lageVon(id); w[lg]=(S.felder[id]||{}).reben||0; T[lg]+=w[lg]}
+// Ein Rest über dem Land der Lage zählt nicht (Maik 25.11.2026, 08:19 Uhr), lageKappen nimmt ihn zum Monatswechsel ganz weg, ohne Ausweichen auf andere Lagen.
+function lagenBelegung(){const W={}, T={einfach:0,hoehe:0,sued:0}, frei={}; for(const lg of LAGE_REIHE) frei[lg]=Math.max(0,hangHa(lg)*HA_REBEN-(lg==='sued'?slFl():0));
+  for(const id of R().sorten){const w=W[id]={einfach:0,hoehe:0,sued:0}, lg=lageVon(id), k=Math.min((S.felder[id]||{}).reben||0,frei[lg]); w[lg]=k; frei[lg]-=k; T[lg]+=k}
   return {W,T}}
+function lageKappen(){const W=lagenBelegung().W; for(const id of R().sorten){const f=S.felder[id], k=W[id][lageVon(id)]; if(f&&(f.reben||0)>k) f.reben=k}}
 // Boden eines Weinbergs: die Bodenpunkte seiner Lage, die Spitzenlage ihre eigenen (f.bodenP). Ohne id der einfache Hang. Seit dem Nachtrag zu 14.5 ohne Schnitt über Lagen.
 function wbBodenP(id){if(!id) return lageBodenP('einfach'); if(istSL(id)) return (S.felder[id]||{}).bodenP||0; return lageBodenP(lageVon(id))}
 // Seit 14.2.5 (Entscheidungen 38 und 41, Annahme 7): S.bodenFl merkt je Lage die größte bisher bepflanzte Fläche in Reben. Wächst die bepflanzte Fläche
@@ -2099,6 +2102,7 @@ function monatWeiter(){
   KOMP_LEISE++; try{monatLauf()}finally{KOMP_LEISE--}
 }
 function monatLauf(){
+  lageKappen(); // Nachtrag zu 14.5: überzählige Reben über dem Land ihrer Lage fallen weg
   const Z=[], weg=verfallListe(); let uz=0, steuer=0;
   TOP=[]; FUSS=[];
   // Hoffest und Manager-Berichte aus dem alten Monat kommen in diese Ausgabe. Beim Hoffest zählt das Wetter des Festmonats.
