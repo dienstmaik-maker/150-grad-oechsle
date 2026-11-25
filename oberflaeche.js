@@ -330,11 +330,16 @@ function vBrett(){
     z:wbKv('Siegel in dieser Partie',`${z.hab} von ${z.max}`)+wbKv('Album',`${an} von ${KOMP_ALBUM.length} Weinen`),
     i:`Für die neun Stufen und den Sekt gibt es je drei Siegel, und jeder Eintrag hängt an einer deiner Rebsorten: Federweißer bis Spätlese an der Menge-Sorte, Auslese bis Eiswein an der Spitzen-Sorte, der Sekt an der Sekt-Sorte. Bronze und Silber bringen verkaufte Flaschen, Gold viele Flaschen oder eine Goldmedaille. Mit allen drei Siegeln bekommt der Wein sein Gold-Etikett${fr?', ein Silvaner in Franken den Bocksbeutel':''}. Bei ${RUF_STUFEN.slice(0,-1).join(', ')} und ${RUF_STUFEN[S7-1]} Siegeln steigt der Ruf des Hauses um eine Stufe, jede bringt ${rufProz(1)} % mehr bei jedem Verkauf. Ein Tipp auf ein Siegel zeigt die Geschichte des Weins und was noch fehlt. Die Siegel zählen je Partie, das Album merkt sich deine besten über alle Partien.`});
 }
+// Seit 16.7.4 (Bauplan 16.7, Entscheidung 5): Das Weinlexikon ist eine Karte unter Wissen im Büro (Kennung 'lexikon'), aufgeklappt die Kapitel-Chips (kompKap) und die Seiten
+// (kompZeile) wie bis 16.7.3 im Weinarchiv. Neue Seiten zeigen "Neu" am Titel der Karte und klein an der Kachel Wissen. Platzhalter, Wortlaut in Meilenstein 17.
 function vLexikon(){
+  lexInit();
   if(!KOMP_KAP.some(k=>k[0]===KOMP_AKT)) KOMP_AKT='sorte';
-  const K=KOMP_KAP.find(k=>k[0]===KOMP_AKT), L=lexSeiten(K[0]);
-  return fenster('lexikon',`Lexikon<small>${lexAlle().length} Seiten zum Nachlesen, ohne Siegel</small>`,`<div class="chips kchips">${KOMP_KAP.map(k=>`<button class="chip ${k[0]===KOMP_AKT?'an':''}" data-a="kompKap" data-id="${k[0]}">${k[1]} ${k[2]}${lexSeiten(k[0]).some(lexNeu)?'<i class="lpunkt"></i>':''}</button>`).join('')}</div>
-    <h4 class="gk">${K[1]} ${K[3]} · ${L.length} ${L.length===1?'Seite':'Seiten'}</h4><div class="fzl">${L.map(kompZeile).join('')}</div>`,{
+  const K=KOMP_KAP.find(k=>k[0]===KOMP_AKT), L=lexSeiten(K[0]), nz=lexNeuZahl();
+  return sKarte('lexikon',`${nz?'<span class="lneu">Neu</span> ':''}Weinlexikon`,`<div class="wbunter">${lexAlle().length} Seiten zum Nachlesen, ohne Siegel</div>`+(nz?kHin('',`${nz} ${nz===1?'neue Seite':'neue Seiten'}`):''),
+    `<div class="chips kchips">${KOMP_KAP.map(k=>`<button class="chip ${k[0]===KOMP_AKT?'an':''}" data-a="kompKap" data-id="${k[0]}">${k[1]} ${k[2]}${lexSeiten(k[0]).some(lexNeu)?'<i class="lpunkt"></i>':''}</button>`).join('')}</div>
+    <h4 class="gk">${K[1]} ${K[3]} · ${L.length} ${L.length===1?'Seite':'Seiten'}</h4><div class="fzl">${L.map(kompZeile).join('')}</div>`,{sym:'📚',buch:'buch',iName:'Weinlexikon',
+    z:wbKv('Seiten',lexAlle().length)+(nz?wbKv('Neu',nz):''),
     i:'Alles zum Nachlesen, ohne Siegel: deine Rebsorten, die Edelfäulnis und die Regeln zur Reifezeit, Gebiet und Lagen, Keller und Technik und die Gefahren. Oben wählst du ein Kapitel, ein Tipp auf eine Seite zeigt ihre Geschichte und was im Spiel gilt. Neue Seiten, zum Beispiel ein Schädling nach dem ersten Schädlingsjahr, tragen ein gelbes „Neu“, bis du sie einmal geöffnet hast.'});
 }
 // Eine Seite: Geschichte, die Zeile "Im Spiel" und bei Einträgen mit Siegeln die drei Bedingungen. Die Geschichte gibt es mit dem ersten Siegel, auf Wissens-Seiten sofort.
@@ -355,7 +360,8 @@ function kompEintragHtml(id){
 // (Ehrungen "Aufschlagen", Ruf des Hauses, Zurück im Eintrag). Der Name des Befehls bleibt.
 function archivGeh(teil){
   if(!S) return; if($('#sheet').classList.contains('an')) closeSheet();
-  if(teil==='brett'){geh('gut','buero'); BUERO='erfolge'; FI_AUF.clear(); FI_AUF.add('wb:brett'); render(); bueroRoll('brett'); return}
+  // Seit 16.7.4 'lexikon' nach Wissen zur Karte Weinlexikon.
+  if(teil==='brett'||teil==='lexikon'){const lx=teil==='lexikon'; geh('gut','buero'); BUERO=lx?'wissen':'erfolge'; FI_AUF.clear(); FI_AUF.add('wb:'+teil); render(); bueroRoll(teil); return}
   const da=TAB==='keller'&&SUB==='buch'; ARCHIV=ARCHIV_B.some(b=>b[0]===teil)?teil:'brett'; FI_AUF.clear(); geh('keller','buch'); render(); if(!da) window.scrollTo(0,0);
 }
 // Rollt eine Karte im Büro an den oberen Rand unter die Kopfzeile (seit 16.7.3).
@@ -1249,8 +1255,10 @@ function namenFenster(){
 // Die Bilder sind die Kacheln aus Bild 09 (bilder/buero-<Bereich>.webp), in der Leiste nur ihr Motiv. Fehlen Bereiche (bueroBer), stehen nur die Kacheln, die es gibt.
 let BUERO='';
 function bueroKacheln(){const BB=bueroBer();
-  if(!BUERO) return `<div class="bgross" role="list" aria-label="Bereiche im Büro">${BB.map(([k,s,n])=>`<button class="bkg" role="listitem" data-a="buero" data-id="${k}" aria-label="${n}" style="background-image:url(bilder/buero-${k}.webp)"></button>`).join('')}</div>`;
-  return `<div class="bkach bklein" role="tablist" aria-label="Bereiche im Büro">${BB.map(([k,s,n])=>`<button class="wahl${BUERO===k?' an':''}" role="tab" aria-selected="${BUERO===k}" data-a="buero" data-id="${k}"><i style="background-image:url(bilder/buero-${k}.webp)"></i>${n}</button>`).join('')}</div>`}
+  if(!BUERO) return `<div class="bgross" role="list" aria-label="Bereiche im Büro">${BB.map(([k,s,n])=>`<button class="bkg" role="listitem" data-a="buero" data-id="${k}" aria-label="${n}" style="background-image:url(bilder/buero-${k}.webp)">${bueroNeu(k)}</button>`).join('')}</div>`;
+  return `<div class="bkach bklein" role="tablist" aria-label="Bereiche im Büro">${BB.map(([k,s,n])=>`<button class="wahl${BUERO===k?' an':''}" role="tab" aria-selected="${BUERO===k}" data-a="buero" data-id="${k}"><i style="background-image:url(bilder/buero-${k}.webp)"></i>${n}${bueroNeu(k)}</button>`).join('')}</div>`}
+// Seit 16.7.4 (Entscheidung 5): neue Seiten im Weinlexikon zeigen "Neu" klein an der Kachel Wissen.
+const bueroNeu=k=>k==='wissen'&&(lexInit(),lexNeuZahl())?'<span class="lneu">Neu</span>':'';
 // Seit 16.7.2 (Bauplan 16.7, Entscheidungen 2 und 3): Die Erfolge sind Karten im Kartenbaustein (sKarte), Kennungen wie die alten Fenster, offen ist immer nur eine.
 // Reihenfolge nach Briefing Entscheidung 18: Dein Rang, Ehrungen, Ruf des Hauses, Weinbotschafter, Deine Urkunden, Siegelbrett (16.7.3). Platzhalter, Wortlaut in Meilenstein 17.
 function bueroErfolge(){
@@ -1270,21 +1278,36 @@ function bueroErfolge(){
       i:'Für jeden Aufstieg bekommst du eine Urkunde. Sie hängt hier an der Wand, die erste gibt es mit dem Aufstieg zum zweiten Rang. Darunter hängen die Schilder und Urkunden für deine Spenden im Rathaus.'})
     +vBrett();   // seit 16.7.3 das Siegelbrett (Entscheidung 4)
 }
-function bueroWissen(){
-  return fenster('anleitung','Spielanleitung','',{links:`Alles zum Nachschlagen in ${buchKap().length} kurzen Kapiteln, von der Bedienung bis zum Spielführer.`,kn:pk('buch','Aufschlagen',''),
-      i:'Das Büro hat vier Bereiche, oben wählst du einen aus. <b>Erfolge:</b> dein Rang mit dem Platz in der Rangliste, Ehrungen und Urkunden. <b>Wissen:</b> Spielanleitung, Weinarchiv und Spielführer. <b>Familie:</b> Mein Weingut, Chronik und Bestenliste. <b>Einstellungen:</b> Ton, dein Spiel mit den Spielständen und deine Idee. Das kleine i erklärt jedes Fenster kurz, „Mehr im Buch“ schlägt das passende Kapitel auf.'})
-    +kompFenster()
-    +fuFenster();
+// Seit 16.7.4 (Bauplan 16.7, Entscheidung 2): Büro-Fenster im Kartenbaustein. Nimmt die Angaben wie fenster() (Inhalt, hin, links, kn, i, buch, leer, zu) und baut daraus
+// eine Karte (sKarte): zu o.kopf (sonst o.links als kleine Zeile), auf die Hilfe-Zeilen, der Inhalt und die Knöpfe, o.unter immer sichtbar, das i wird zum Info-Panel.
+function bKarte(id,titel,inhalt,o={}){
+  if(o.zu) return '';
+  const kern=Array.isArray(inhalt)?(inhalt.length?`<div class="fzl">${inhalt.join('')}</div>`:`<div class="fleer">${o.leer||'Gerade gibt es hier nichts zu tun.'}</div>`):(inhalt||'');
+  const auf=(o.hin||[]).filter(Boolean).map(t=>`<div class="wbklein">${t}</div>`).join('')+kern+(o.kopf&&o.links?`<div class="wbklein">${o.links}</div>`:'')+kKn([].concat(o.kn||[]));
+  return sKarte(id,titel,o.kopf||(o.links?`<div class="wbunter">${o.links}</div>`:''),auf,{sym:o.sym,buch:o.buch,i:o.i,z:o.z,unter:o.unter,klein:o.klein,kl:o.kl,iName:o.iName});
 }
+// Seit 16.7.4 (Bauplan 16.7, Entscheidung 5, Briefing Konflikt 2): Wissen hat die Spielanleitung und das Weinlexikon. Die Karte "Weinarchiv" (kompFenster) entfällt,
+// ihr Siegel-Zähler steht beim Siegelbrett, das Lexikon ist hier eine Karte (vLexikon). Der Spielführer steht in den Einstellungen. Platzhalter, Wortlaut in Meilenstein 17.
+function bueroWissen(){
+  return bKarte('anleitung','Spielanleitung',`<div class="wbklein">„Aufschlagen“ öffnet das Buch vorn, „Mehr im Buch“ in den Info-Panels schlägt das passende Kapitel auf.</div>`,{sym:'📖',
+      kopf:`<div class="wbunter">Alles zum Nachschlagen in ${buchKap().length} kurzen Kapiteln, von der Bedienung bis zum Spielführer.</div>`,unter:kKn(pk('buch','Aufschlagen','')),
+      i:'Das Büro öffnet mit vier Kacheln, ein Tipp öffnet den Bereich, oben wechselst du zwischen ihnen, die Zunge Büro bringt dich zu den Kacheln zurück. <b>Erfolge:</b> dein Rang mit dem Platz in der Rangliste, Ehrungen, Ruf des Hauses, Urkunden und das Siegelbrett. <b>Wissen:</b> Spielanleitung und Weinlexikon. <b>Familie:</b> Mein Weingut, Chronik und Bestenliste. <b>Einstellungen:</b> Ton, Spielführer, dein Spiel mit den Spielständen und deine Idee. Das kleine i erklärt jede Karte kurz, „Mehr im Buch“ schlägt das passende Kapitel auf.'})
+    +vLexikon();
+}
+// Seit 16.7.4 (Bauplan 16.7, Entscheidungen 6 und 8): Einstellungen als Karten in der Reihenfolge Ton, Spielführer, Dein Spiel, Deine Idee, darunter die Fußnote zu den Bildern.
+// "Neues Spiel" bleibt der Knopf neuFrage, den roten Warnknopf baut 16.8. Platzhalter, Wortlaut in Meilenstein 17.
 function bueroEinst(){
-  return fenster('ton','Ton',tonZeilen(),{i:'Musik „an“ spielt durchgehend, „kurz“ spielt beim Wechsel zwischen Weingut, Kellerei und Stadt ein paar Sekunden, „aus“ ist still. Feiern, Wettbewerbe und Pfändung laufen auch bei „kurz“ in voller Länge. Mit den Reglern stellst du Musik und Geräusche getrennt leiser oder lauter.'})
-    +fenster('spiel','Dein Spiel',`<div class="kv"><span>Speicherplatz</span><span>Spielstand ${SLOT+1}</span></div><div class="kv"><span>Schwierigkeit</span><span>${DIFF[S.schwer].name} (${DIFF[S.schwer].kurz.toLowerCase()})</span></div>`
+  return bKarte('ton','Ton',tonZeilen(),{sym:'🎵',kopf:`<div class="wbunter">🎵 Musik ${musikText()} · 🔔 Geräusche ${TON.fx?'an':'aus'}</div>`,
+      i:'Musik „an“ spielt durchgehend, „kurz“ spielt beim Wechsel zwischen Weingut, Kellerei und Stadt ein paar Sekunden, „aus“ ist still. Feiern, Wettbewerbe und Pfändung laufen auch bei „kurz“ in voller Länge. Mit den Reglern stellst du Musik und Geräusche getrennt leiser oder lauter.'})
+    +fuFenster()
+    +bKarte('spiel','Dein Spiel',`<div class="kv"><span>Speicherplatz</span><span>Spielstand ${SLOT+1}</span></div><div class="kv"><span>Schwierigkeit</span><span>${DIFF[S.schwer].name}</span></div><div class="wbklein">${DIFF[S.schwer].kurz}</div>`
       // Seit 8.5.1: Knopf "Spiel laden" statt "Spielstände", die Erklärung steht sichtbar beim passenden Knopf.
-      +`<div class="fzl">${fz('Spiel laden','Hier lädst du einen anderen oder älteren Spielstand oder sicherst ihn als Datei.','',pk('menue','Spiel laden','',{sec:1}))}${fz('Neues Spiel','Löscht diesen Spielstand und fängt von vorn an.','',pk('neuFrage','Neues Spiel','',{sec:1}))}</div>`,{buch:'bedienung',
+      +`<div class="fzl">${fz('Spiel laden','Hier lädst du einen anderen oder älteren Spielstand oder sicherst ihn als Datei.','',pk('menue','Spiel laden','',{sec:1}))}${fz('Neues Spiel','Löscht diesen Spielstand und fängt von vorn an.','',pk('neuFrage','Neues Spiel','',{sec:1}))}</div>`,{sym:'💾',buch:'bedienung',
+      kopf:`<div class="wbunter">Spielstand ${SLOT+1} · ${DIFF[S.schwer].name}</div>`,z:wbKv('Speicherplatz',`Spielstand ${SLOT+1}`)+wbKv('Schwierigkeit',DIFF[S.schwer].name),
       i:'Gespeichert wird von selbst nach jedem Monat.'})
     // Seit 11.0 (Idee A, Maik 19.11.2026): Ideen der Spieler gehen als Text über WhatsApp oder "Teilen" raus, ohne Nummer oder Adresse im Code.
-    +fenster('idee','💡 Deine Idee','<div class="mut">Dir fehlt etwas im Spiel, oder etwas stört dich? Sag es uns.</div>',{buch:'buero',
-      kn:[pk('idee','Ich gebe meine Idee weiter',''),pk('ausblick','Was geplant ist','',{sec:1})],
+    +bKarte('idee','💡 Deine Idee','<div class="wbklein">Schreib oder sprich deine Idee ins Textfeld, danach schickst du sie über WhatsApp oder „Teilen“ weiter.</div>',{sym:'💡',buch:'buero',
+      kopf:'<div class="wbunter">Dir fehlt etwas im Spiel, oder etwas stört dich? Sag es uns.</div>',unter:kKn(pk('idee','Ich gebe meine Idee weiter',''),pk('ausblick','Was geplant ist','',{sec:1})),
       i:'Schreib oder sprich deine Idee ins Textfeld, das Mikrofon deiner Tastatur schreibt mit. Danach schickst du sie über WhatsApp oder „Teilen“ an Maik. Das Spiel selbst verschickt nichts und kennt keine Nummer, den Empfänger wählst du aus deinen Kontakten. „Was geplant ist“ zeigt, woran schon gearbeitet wird.'})
     +`<div class="fussnote">Bilder, Musik und Geräusche sind mit KI erstellt (Musik mit Treblo, Geräusche mit ElevenLabs, elevenlabs.io).</div>`;
 }
@@ -2420,8 +2443,9 @@ function fuehrerZeig(){
 function fuFenster(){
   const f=S.fu||fuNeu(), st=!f.an?'aus':f.nur?'neu':'alle';
   const W=[['alle','💬 Alle Tipps'],['neu','🎓 Nur Neuheiten und Warnungen'],['aus','🔕 Aus']];
-  return fenster('fuehrer','Spielführer',W.map(([k,x])=>`<button class="wahl schalter ${st===k?'an':''}" data-a="fuStell" data-id="${k}">${st===k?'✅':'⬜'} ${x}</button>`).join(''),{
-    links:'Warnungen und Kniffe noch einmal',kn:pk('fuVorn','Tipps von vorn','',{sec:1,aus:!f.an}),buch:'fuehrer',
+  // Seit 16.7.4 (Bauplan 16.7, Entscheidung 6): Karte in den Einstellungen unter Ton, zu die Stellung des Schalters.
+  return bKarte('fuehrer','Spielführer',W.map(([k,x])=>`<button class="wahl schalter ${st===k?'an':''}" data-a="fuStell" data-id="${k}">${st===k?'✅':'⬜'} ${x}</button>`).join(''),{
+    kopf:kHin(f.an?'gruen':'grau',W.find(w=>w[0]===st)[1]),sym:'💬',links:'Warnungen und Kniffe noch einmal',kn:pk('fuVorn','Tipps von vorn','',{sec:1,aus:!f.an}),buch:'fuehrer',
     i:'Der alte Winzer und, sobald sie da sind, deine zwei Manager und deine Leute draußen und im Keller melden sich in einer Sprechblase: wenn etwas zum ersten Mal ansteht, nach jedem Aufstieg, bei typischen Fehlern und ab dem dritten Jahr ab und zu mit einem Kniff. Der alte Winzer verabschiedet sich nach der ersten Übergabe an dein Kind, danach sprechen nur noch die Manager. Das Gesicht dessen, der zuletzt gesprochen hat, sitzt oben in der Mitte der Leiste, mit 💬, solange ein neuer Tipp ungelesen ist. Ein Tipp darauf öffnet die Blase jederzeit, noch ein Tipp, ein Tipp daneben oder „Zeig mir, wo“ klappt sie zu. Unten in der Blase blätterst du mit ‹ und › durch alle Tipps, die schon dran waren, ab zwei Sprechern zeigen die Gesichter oben in der Blase nur die Tipps von einem. „Alle Tipps“ ist für Neulinge, „Nur Neuheiten und Warnungen“ für alle, die das Spiel kennen. Mit allen Tipps gibt es ⏩ „Weiter bis etwas ansteht“ erst ab dem zweiten Jahr. „Tipps von vorn“ holt Warnungen und Kniffe zurück, in den ersten zwei Jahren auch den Rest des Fahrplans, und leert den Verlauf. Bei „Aus“ verschwindet auch das Gesicht oben.'});
 }
 function fuLeuchte(z){
