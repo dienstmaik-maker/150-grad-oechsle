@@ -526,6 +526,8 @@ function rangLeiter(){const r=S.rang;
   return `<h4 class="gs">🪜 Rang ${r+1} von ${RAENGE.length}</h4><div class="rleiter">${RAENGE.map((x,i)=>{const k=i<r?'ok':i===r?'jetzt':'zu';
     return `<div class="rgl ${k}"><b>${k==='ok'?'✓':k==='jetzt'?'▸':'🔒'}</b><span>${k==='jetzt'?duK():rangK(i)}</span>${k==='zu'?`<small>${LEITER[i]}</small>`:''}</div>`}).join('')}</div>`}
 // Fenster "Aktueller Rang" in Aktuelles (seit 7.4 auf dem Fenster-Baustein). Im Monat des Aufstiegs leuchtet es golden (seit 7.2).
+// Seit 16.3.5 zeigt es kein Ort mehr (Rang-Fenster entfällt im Klemmbrett, Maik 25.11.2026, 18:49 Uhr). Es bleibt als Vorlage für 16.7: Makler-Hinweis,
+// Knopf zum Weinbauverband und Nachpflanz-Zeile ziehen dort ins Rang-Fenster im Büro (16.0, Für spätere Etappen).
 function vRang(){
   const r=S.rang, n=RAENGE[r+1], v=vermoegen(), bep=flaecheBep(), frei=Math.round((S.ha-bep)*10)/10;
   const w=(ist,soll)=>soll?clamp(ist/soll*100,0,100):100;
@@ -1084,7 +1086,7 @@ function vKlemm(){
     <div class="kbtrenn">❦</div>
     ${kbNeu()}
     ${kn}
-  </div></section>`+vRang();
+  </div></section>`;   // seit 16.3.5 ohne Rang-Fenster (Maik 25.11.2026, 18:49 Uhr), der Rang steht im Büro (bueroRang)
 }
 // Maschinen (seit 7.4 auf dem Fenster-Baustein): "Deine Maschinen" mit einer Zeile je Maschine, darunter je Bauart ein Fenster zum Kaufen.
 // Was der Rang noch sperrt, ist seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten): die kleine Maschine ab Winzermeister, der Vollernter ab Gutsherr.
@@ -1875,7 +1877,7 @@ const FU_ZEIG={
   'z2-03':{tab:'keller',sub:'buch',sel:['.bzeile[data-a="buchDetail"]','[data-a="archiv"][data-id="brett"]']},
   'z2-04':{tab:'stadt',sub:'bank',sel:[fiSel('kredit')]},
   'z2-05':{tab:'stadt',sub:'laeden',sel:[fiSel('laeden'),'#subs [data-id="laeden"]']},
-  'z2-06':{tab:'gut',sub:'aktuell',sel:[fiSel('rang')]},
+  'z2-06':{tab:'gut',sub:'buero',sel:[fiSel('rangliste')]},   // seit 16.3.5 der Rang im Büro, das Rang-Fenster im Klemmbrett entfällt
   'z2-07':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'z2-08':{tab:'keller',sub:'buch',sel:['.bzeile[data-a="buchDetail"]','[data-a="archiv"][data-id="brett"]']},
   // Paket B: Rang-Neuheiten. Beim Befördern leuchtet der Knopf des Managers im Arbeitsamt.
