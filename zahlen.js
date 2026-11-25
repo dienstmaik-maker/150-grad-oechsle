@@ -602,7 +602,7 @@ const FASS='<img class="fass" src="bilder/fass.png" alt="">';
 const SUBS={
   // Seit 16.3.1 (Bauplan 16.3): Aktuelles ist keine Zunge mehr. Der Ort 'aktuell' bleibt als Klemmbrett (imKlemm), erreichbar nur über den Reiter Klemmbrett.
   gut:[['berg','🍇'],['betrieb','🏡'],['buero','🏆']],   // seit 16.4.1 ohne Maschinen, sie stehen im Betrieb
-  keller:[['buch','📜'],['start',FASS],['lager','📦']],   // seit 16.5.1 ohne Hintertür, ihre Karten stehen unten im Keller
+  keller:[['start',FASS],['lager','📦']],   // seit 16.5.1 ohne Hintertür, ihre Karten stehen unten im Keller, seit 16.7.6 ohne Weinarchiv (Siegelbrett und Lexikon stehen im Büro)
   // Seit 10.6 (Maik 20.11.2026): Großhandel mit Waage statt Laden, Arbeitsamt mit Winzer statt Bauarbeiter.
   stadt:[['amt','🏛️'],['handel','⚖️'],['laeden','🍷'],['bank','🏦'],['arbeit','🧑‍🌾']]
 };
@@ -613,7 +613,7 @@ const START_SUB={gut:'betrieb',keller:'start',stadt:'amt'};
 const STADT_PLATZ=[['amt',41,3.9,27.4,43.6],['handel',0,18.9,41,32.5],['laeden',68.4,19.5,31.6,39.1],['bank',0,51.4,50.8,28],['arbeit',51.8,59.2,48.2,33.3]];
 const STADT_SCHILD={amt:[68,25.2],handel:[37.4,29.8],laeden:[96.5,39.2],bank:[35.6,56.8],arbeit:[89,67.2]};
 // Kurze Namen für die Unterreiter-Leiste unten.
-const SUB_NAME={berg:'Weinberg',betrieb:'Betrieb',aktuell:'Klemmbrett',buero:'Büro',buch:'Weinarchiv',start:'Keller',lager:'Lager',amt:'Rathaus',handel:'Großhandel',laeden:'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'};
+const SUB_NAME={berg:'Weinberg',betrieb:'Betrieb',aktuell:'Klemmbrett',buero:'Büro',start:'Keller',lager:'Lager',amt:'Rathaus',handel:'Großhandel',laeden:'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'};
 // Seit 13.1 (Maik 21.11.2026): Spielstände von vor dem großen Umbau (bis 12.9.5, Marke v7) laufen nicht weiter. Neue tragen v13, lies gibt nur diese zurück.
 // liesAlt findet alle älteren. Sie bleiben liegen, bis ein neues Spiel den Platz überschreibt oder der Spieler sie löscht. Album und Bestenliste liegen getrennt und bleiben.
 // Davor (seit 7.0, Maik 16.11.2026) galt dasselbe mit der Marke v7 für Stände aus 5.1 und älter.
@@ -654,7 +654,7 @@ const NETZ=location.protocol!=='file:';
 // S.zeitAb = Spielmonat, ab dem gezählt wird (alte Spielstände: ab dem Laden in 8.3, dazu S.zeitAlt).
 const ZEIT_LEER=60;
 const PANO_TEILE={gut:{berg:'panorama-weingut-sommer-teil-1',betrieb:'panorama-weingut-sommer-teil-2',aktuell:'panorama-weingut-sommer-teil-3',buero:'panorama-weingut-sommer-teil-5'},
-  keller:{buch:'panorama-keller-teil-1',start:'panorama-keller-teil-3',lager:'panorama-keller-teil-4'},   // seit 16.5.1 ohne Teil 2 (Hintertür)
+  keller:{start:'panorama-keller-teil-3',lager:'panorama-keller-teil-4'},   // seit 16.5.1 ohne Teil 2 (Hintertür), seit 16.7.6 ohne Teil 1 (Weinarchiv)
   stadt:{amt:'panorama-stadt-teil-1',handel:'panorama-stadt-teil-2',laeden:'panorama-stadt-teil-3',bank:'panorama-stadt-teil-4',arbeit:'panorama-stadt-teil-5'}};
 const PANO_BILD=[1536,1024];
 // Seit 16.3.1 zeigt kein Ort mehr Teil 3 mit der Tafel (Aktuelles entfällt). Die Einträge bleiben, bis die Namenstafel einen neuen Platz hat (offen).
@@ -1299,8 +1299,8 @@ const BUERO_B=[['erfolge','🏆','Erfolge'],['wissen','📖','Wissen'],['familie
 const BUERO_WO={rangliste:'erfolge',ehrungen:'erfolge',ruf:'erfolge',botschafter:'erfolge',urkunden:'erfolge',brett:'erfolge',anleitung:'wissen',lexikon:'wissen',meingut:'familie',chronik:'familie',besten:'familie',ton:'einst',fuehrer:'einst',spiel:'einst',idee:'einst'};
 const BSORT_F={dringend:(a,b)=>lotRest(a)-lotRest(b)||a.jahrgang-b.jahrgang};
 // Seit 11.8 (Maik 20.11.2026): Der Unterreiter heißt Weinarchiv und hat drei Kacheln wie das Büro (W1): Deine Weine, Siegelbrett, Lexikon.
-// ARCHIV hält die Wahl, bis das Spiel neu geladen wird. Die Kennung buch des Unterreiters bleibt.
-const ARCHIV_B=[['brett','🏅','Siegelbrett'],['lexikon','📚','Lexikon']];   // seit 16.5.5 ohne Deine Weine (Bauplan 16.5, Entscheidung 6), die stehen oben im Lager
+// Seit 16.7.6 (Bauplan 16.7, Entscheidung 9, Briefing Konflikt 1) gibt es das Weinarchiv nicht mehr, ARCHIV_B ist gelöscht. Das Siegelbrett steht in den Erfolgen,
+// das Weinlexikon unter Wissen im Büro. BUCH_ORT.buch bleibt als Kapitel der Spielanleitung (Wortlaut in Meilenstein 17).
 // Version 9.0: Beim Jahreszeiten-Wechsel rollt der Winzerbote nur einen schmalen Streifen herunter (Z_TEIL, Maik 18.11.2026), damit das neue Bild zu sehen bleibt.
 // Den Rest holt ein Tipp oder Wischen irgendwo auf der Seite (Maik 18.11.2026). Der Knopf "Weiter" geht trotzdem sofort.
 const Z_TEIL=.12;

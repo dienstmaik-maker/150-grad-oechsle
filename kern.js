@@ -3076,10 +3076,9 @@ function bueroFamilie(){
 }
 function vKeller(){
   // Seit 16.5.1 (Bauplan 16.5, Entscheidung 2): Die Hintertür ist kein Unterreiter mehr, ihre Karten stehen unten im Keller (vSabotage in vKellerStart).
-  const T={start:'Weinkeller',buch:'Weinarchiv',lager:'Lager'};
   // Seit 16.5.2 (Bild 23): Der Keller liegt wie Weinberg und Betrieb auf dem Holzbrett ohne großes Bild oben.
-  // Seit 16.5.6 auch das Lager (Karten unter Deine Weine).
-  return (SUB==='start'||SUB==='lager'?'':kopf(T[SUB]))+{start:vKellerStart,buch:vBuch,lager:vLager}[SUB]();
+  // Seit 16.5.6 auch das Lager (Karten unter Deine Weine). Seit 16.7.6 ohne Weinarchiv (vBuch gelöscht, Bauplan 16.7, Entscheidung 9).
+  return {start:vKellerStart,lager:vLager}[SUB]();
 }
 // Kellerausbau in drei Stufen. Seit 13.5.8 (Entscheidung 9) gibt der erste angemeldete Wein der Stufe in KELLER_WEIN sie frei, nicht mehr der Rang.
 // S.kellerW ist der höchste Rang (STUFEN.rang) eines angemeldeten Weins ohne Sekt, ein höherer Wein gibt die Stufen darunter mit frei.
@@ -3104,11 +3103,6 @@ function kellerRangText(){return ` Stufe 1 (${KELLER_NAMEN[0]}) gibt es mit ${ke
 const lotRest=l=>l.status==='fass'?8-l.fassMonate:lager(l).max-l.flMonate;
 // Haltbarkeit als kurzer Text, wie im Kellerbuch.
 function haltText(l){const fl=l.status==='flasche', r=fl?(lager(l).max===Infinity?Infinity:lager(l).max-l.flMonate):8-l.fassMonate; return {r,t:r===Infinity?'unbegrenzt haltbar':`noch ${r} ${r===1?'Monat':'Monate'} haltbar${fl?'':' im Fass'}`}}
-function vBuch(){
-  if(!ARCHIV_B.some(b=>b[0]===ARCHIV)) ARCHIV='brett';
-  lexInit();
-  return archivKacheln()+{brett:vBrett,lexikon:vLexikon}[ARCHIV]();
-}
 // Für welchen Eintrag auf dem Siegelbrett ein Wein zählt (seit 11.8, D1), nach denselben Regeln wie kompVerkauf. Wein im Fass und gepanschter Wein zählen nie.
 function kompLotId(l){
   if(!l||l.pansch||l.status==='fass'||l.status==='trauben') return null;

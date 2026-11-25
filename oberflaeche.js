@@ -360,21 +360,14 @@ function kompEintragHtml(id){
 // (Ehrungen "Aufschlagen", Ruf des Hauses, Zurück im Eintrag). Der Name des Befehls bleibt.
 function archivGeh(teil){
   if(!S) return; if($('#sheet').classList.contains('an')) closeSheet();
-  // Seit 16.7.4 'lexikon' nach Wissen zur Karte Weinlexikon.
-  if(teil==='brett'||teil==='lexikon'){bueroKarte(teil==='lexikon'?'wissen':'erfolge',teil); return}
-  const da=TAB==='keller'&&SUB==='buch'; ARCHIV=ARCHIV_B.some(b=>b[0]===teil)?teil:'brett'; FI_AUF.clear(); geh('keller','buch'); render(); if(!da) window.scrollTo(0,0);
+  // Seit 16.7.4 'lexikon' nach Wissen zur Karte Weinlexikon. Seit 16.7.6 gibt es das Weinarchiv nicht mehr, alles andere führt aufs Siegelbrett.
+  bueroKarte(teil==='lexikon'?'wissen':'erfolge',teil==='lexikon'?'lexikon':'brett');
 }
 // Öffnet im Büro einen Bereich mit genau dieser Karte offen (seit 16.7.5). Erst zeichnen, denn render() schließt beim Ortswechsel alle offenen Karten.
 function bueroKarte(bereich,id){geh('gut','buero'); BUERO=bereich; render(); FI_AUF.clear(); FI_AUF.add('wb:'+id); render(); bueroRoll(id)}
 // Rollt eine Karte im Büro an den oberen Rand unter die Kopfzeile (seit 16.7.3).
 function bueroRoll(id){const el=$('#wb_'+id); if(!el) return; const top=($('#top')||{}).offsetHeight||0; window.scrollBy(0,el.getBoundingClientRect().top-top-14)}
-// Fenster im Büro: Zähler und die Wege aufs Siegelbrett und ins Lexikon (seit 11.8).
-function kompFenster(){
-  const z=kompZahlen();
-  return fenster('komp','Weinarchiv',`<div class="kv"><span>Siegel in dieser Partie</span><span>${z.hab} von ${z.max}</span></div><div class="bar g"><i style="width:${z.hab/z.max*100}%"></i></div>`,{buch:'buch',kn:[pk('archivGeh','Siegelbrett','',{id:'brett'}),pk('archivGeh','Lexikon','',{sec:1,id:'lexikon'})],
-    i:`Dein Weinarchiv steht in der Kellerei: deine Weine, das Siegelbrett und das Lexikon. Für die neun Stufen und den Sekt gibt es je drei Siegel, und jeder Eintrag hängt an einer deiner Rebsorten, zum Beispiel „${esc(KOMP.stufe_kab.titel)}“. Bronze und Silber bringen verkaufte Flaschen, Gold viele Flaschen oder eine Goldmedaille. Mit den Siegeln steigt der Ruf des Hauses. Über deine Rebsorten, Gebiet, Keller, Technik und Gefahren liest du im Lexikon nach, ohne Siegel. Die Siegel zählen je Partie, das Album merkt sich deine besten über alle Partien.`});
-}
-
+// Seit 16.7.6 (Bauplan 16.7, Entscheidung 9) ist das Fenster "Weinarchiv" im Büro (kompFenster) gelöscht, der Zähler steht beim Siegelbrett.
 // Der Winzerbote: Themen melden sich mit schlag() in TOP, das wichtigste wird Schlagzeile, der Rest Artikel. FUSS sammelt Kurzes für ganz unten.
 let TOP=[], FUSS=[];
 // p ist die Wichtigkeit, bild ein Foto aus bilder/, o weitere Angaben (archiv, sonder, gold, ende, liste, stand, wett).
@@ -2087,8 +2080,7 @@ function vStadt(){
   }
   return h;
 }
-let ARCHIV='brett';   // seit 16.5.5 ohne Deine Weine, die stehen oben im Lager
-function archivKacheln(){return `<div class="bkach" role="tablist" aria-label="Teile im Weinarchiv">${ARCHIV_B.map(([k,s,n])=>`<button class="wahl${ARCHIV===k?' an':''}" role="tab" aria-selected="${ARCHIV===k}" data-a="archiv" data-id="${k}"><i>${s}</i>${n}${k==='lexikon'&&lexNeuZahl()?'<span class="lneu">Neu</span>':''}</button>`).join('')}</div>`}
+// Seit 16.7.6 (Bauplan 16.7, Entscheidung 9) sind ARCHIV und archivKacheln() gelöscht, das Weinarchiv gibt es nicht mehr.
 function kompLotZeile(l){const id=kompLotId(l); return id?`<div class="kv"><span>Zählt für</span><span>${esc(KOMP[id].titel)} ${kompSiegel(kompSt(id),'klein')}</span></div>`:''}
 // Deine Weine (seit 7.4 auf dem Fenster-Baustein, bis 16.5.4 ein Teil im Weinarchiv): Zahl und geschätzter Wert, darunter je Wein eine kurze Zeile, fest nach Dringlichkeit.
 // Seit 16.5.5 (Bauplan 16.5, Entscheidungen 4 bis 6, Timos Bild 07) oben im Lager: je Sorte eine Karte im Kartenbaustein, immer nur eine offen (karte schließt die
@@ -2333,7 +2325,7 @@ const FU_ZEIG={
   'h3':{tab:'stadt',sub:'amt',sel:[fiSel('auktionen')]},
   // Kniffe
   'k02':{tab:'keller',sub:'lager',sel:['[data-a="bInfo"][data-id="l_fassraum"]']},
-  'k03':{tab:'keller',sub:'buch',sel:['[data-a="archiv"][data-id="brett"]']},
+  'k03':{tab:'gut',sub:'buero',buero:'erfolge',sel:[fiSel('brett'),'[data-a="buero"][data-id="erfolge"]']},   // seit 16.7.6 die Karte Siegelbrett, das Weinarchiv gibt es nicht mehr
   'k04':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'k05':{tab:'gut',sub:'betrieb',sel:['[data-a="klapp"][data-id="gebiet"]','[data-a="bInfo"][data-id="betrieb"]']},   // seit 16.4.2 in der Karte Dein Betrieb
   'k06':{tab:'gut',sub:'betrieb',sel:['[data-a="bInfo"][data-id^="masch_"]','[data-a="maschKaufen"]']},
@@ -2480,7 +2472,7 @@ function render(){
   ortFarbe(SUBS[TAB]?TAB:'gut');
   // Seit 16.1: Im Weinberg liegt das Holzbrett hinter den Karten. Seit 16.3.2 auch hinter dem Klemmbrett (Bild 05).
   document.documentElement.classList.toggle('brett',TAB==='gut'&&(SUB==='berg'||SUB==='aktuell'||SUB==='betrieb'||SUB==='buero')||TAB==='keller'&&(SUB==='start'||SUB==='lager')||stadtBrett());   // seit 16.4.2 auch im Betrieb (Bild 22), seit 16.5.2 im Keller (Bild 23), seit 16.5.6 im Lager, seit 16.6.1 auf dem Stadtplatz
-  const ort=SUBS[TAB]?TAB+'/'+SUB:TAB; if(ort!==ORT_ALT){FI_AUF.clear(); if(ORT_ALT&&(ort==='keller/buch'||ort==='gut/aktuell')) fx('menue'); ORT_ALT=ort}
+  const ort=SUBS[TAB]?TAB+'/'+SUB:TAB; if(ort!==ORT_ALT){FI_AUF.clear(); if(ORT_ALT&&ort==='gut/aktuell') fx('menue'); ORT_ALT=ort}   // seit 16.7.6 ohne keller/buch
   musikOrt(musikWahl());
   if(ort==='stadt/laeden') S.ladenSeh=S.jahr*12+S.monat;
   const v={monat:vMonat,feier:vFeier,gut:vGut,keller:vKeller,stadt:vStadt,ende:vEnde}[TAB]();
@@ -2547,7 +2539,7 @@ const AKT={
     meldung('Tipps von vorn','Warnungen und Kniffe kommen wieder, sobald sie passen. In den ersten zwei Jahren kommt auch der Rest des Fahrplans.')},
   // Seit 10.2.1: "Zeig mir, wo" klappt die Blase zum Kopf zusammen, statt sie abzuhaken. Weg ist sie erst mit "Verstanden" oder wenn die Aufgabe erledigt ist.
   // Seit 12.7: "Zeig mir, wo" geht auch bei älteren Tipps aus dem Verlauf. Beim neuen Tipp gilt er damit als gelesen (FU_WO).
-  fuWo(d){const id=d&&d.id||FU_AKT, z=FU_ZEIG[id]; if(!z) return; fuBlaseZu(); if(id===FU_AKT) FU_WO=true; FU_PAUSE=true; fuKopfStell(); if(z.tab){geh(z.tab,z.sub); if(z.sub==='buch') ARCHIV=z.archiv||'brett'; if(z.sub==='buero'){const m=/data-id="(\w+)"/.exec((z.sel||[])[0]||''); BUERO=z.buero||m&&BUERO_WO[m[1]]||''} render();
+  fuWo(d){const id=d&&d.id||FU_AKT, z=FU_ZEIG[id]; if(!z) return; fuBlaseZu(); if(id===FU_AKT) FU_WO=true; FU_PAUSE=true; fuKopfStell(); if(z.tab){geh(z.tab,z.sub); if(z.sub==='buero'){const m=/data-id="(\w+)"/.exec((z.sel||[])[0]||''); BUERO=z.buero||m&&BUERO_WO[m[1]]||''} render();
     // Seit 16.5.2: z.karte klappt die Karte auf, in der der Knopf steht (Keller), offen ist wie beim Tipp nur diese eine.
     // Seit 16.5.5 darf z.karte eine Funktion sein (die Weinkarte im Lager hängt am Wein).
     const ka=typeof z.karte==='function'?z.karte():z.karte;
@@ -2736,7 +2728,6 @@ const AKT={
   weinQual(){archivGeh('brett')},
   kompAuf(d){const el=$('#ksiegel'); if(el) el.classList.remove('an'); if(S) kompAuf(d&&d.id)},
   kompKap(d){if(!KOMP_KAP.some(k=>k[0]===d.id)||KOMP_AKT===d.id) return; KOMP_AKT=d.id; render()},
-  archiv(d){if(ARCHIV===d.id) return; ARCHIV=d.id; FI_AUF.clear(); render()},
   archivGeh(d){archivGeh(d.id)},
   kompEintrag(d){if(S&&KOMP[d.id]) kompAuf(d.id)},
   // Ein Wein aus dem Kellerbuch mit allen Angaben und den Knöpfen, die gerade passen.
