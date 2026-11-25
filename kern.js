@@ -369,7 +369,9 @@ function mgrKommen(){
 // Beim Verbandsvorstand und Vizepräsidenten hängt neu am Weg des Gebiets (R().weg: edel, frost, beide).
 function rangTeile(i){const n=SORTE_RANG.indexOf(i), id=n>0&&S?sortenFolge()[n]:null, ri=RAENGE[i], nu=ri.neu||[], so=`die ${n===1?'zweite':'dritte'} Rebsorte${id?' '+SORTEN[id].name:''}`;
   const N=Array.isArray(nu)?nu:nu[S?R().weg:'edel']||[];
-  return {neu:N.map(t=>t.replace('{sorte}',so)),kauf:(ri.kauf||[]).slice()}}
+  // Seit 14.6.7 (Prüfregel F1): Ein Stück, das ein Ereignis nennt, steht erst, wenn es da ist, sonst das Stück ohne (RANG_EV_STUECK).
+  const ev=t=>{const x=S&&S.rangMon?RANG_EV_STUECK.find(x=>x.t===t&&!frei(x.ev)):null; return x?x.ohne:t};
+  return {neu:N.map(t=>ev(t).replace('{sorte}',so)),kauf:(ri.kauf||[]).slice()}}
 function bringtTeile(i){const t=rangTeile(i); return [...t.neu,...t.kauf]}
 // Seit 14.4.8: der Satz für Ehrung und Zeitung, "Neu für dich: … Das darfst du jetzt kaufen oder einstellen: …"
 function rangSatz(i){const t=rangTeile(i); return `${RANG_KOPF.neu}: ${t.neu.join(', ')}.${t.kauf.length?` ${RANG_KOPF.kauf}: ${t.kauf.join(', ')}.`:''}`}

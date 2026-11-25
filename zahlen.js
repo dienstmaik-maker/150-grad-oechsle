@@ -1355,7 +1355,14 @@ const FU_EIGEN={
   'l1':()=>leuteSt('helfer')>=1&&S.helfer>0, 'l2':()=>leuteSt('helfer')>=2&&fuGes('l1'), 'l3':()=>leuteSt('helfer')>=3&&fuGes('l2'),
   'r6-1':()=>mgrSt('weingut')>=1, 'r8-3':()=>mgrSt('weingut')>=2&&fuGes('r6-1'), 'r10-2':()=>mgrSt('weingut')>=3&&fuGes('r8-3'),
   'r9-2':()=>mgrSt('handel')>=3&&fuGes('r6-4'),
-  'l4':()=>aufgabeAktiv('plan')&&fuGes('r6-1'), 'l5':()=>mgrSt('weingut')>=1&&fuGes('l4')};
+  'l4':()=>aufgabeAktiv('plan')&&fuGes('r6-1'), 'l5':()=>mgrSt('weingut')>=1&&fuGes('l4'),
+  // Seit 14.6.7 (Prüfregel F4, jede Blase erst, wenn ihr Thema da ist): Blasen, deren Thema seit 14.4 an einem anderen Rang, einer Tat oder einem Ereignis hängt,
+  // kommen mit ihrer Freischaltung (FREI) statt mit dem Rang aus ihrer Kennung. Kauf-Tipp Laubschneider nur von Januar bis März. Inhalt bleibt, Wortlaut in Meilenstein 17.
+  'r3-2':()=>frei('sorte_sekt'), 'r3-3':()=>kellerFrei(0), 'r3-4':()=>frei('spende'), 'r4-2':()=>frei('export'), 'r4-3':()=>sektRang(), 'r5-3':()=>frei('weinfest'),
+  'r6-2':()=>frei('sorte_spitze'), 'r6-3':()=>frei('masch_laub')&&fuKauf(monatNr()), 'r7-1':()=>frei('bund'), 'r8-1':()=>frei('laden'), 'r9-3':()=>frei('kontrolle'),
+  'r10-1':()=>frei('spitzenlage'),
+  // Monats-Blasen der ersten zwei Jahre mit Themen, die erst später kommen: Anmelden ab dem Kabinett (im Januar), Edelfäulnis mit offenem Weg (im Oktober).
+  'z2-01':()=>S.monat===0&&stufeFrei('kab'), 'z2-07':()=>S.monat===9&&wegeOffen().includes('edel')};
 Object.assign(FU_WANN,FU_EIGEN);
 // Warnungen (Paket B): jede nur beim ersten Mal, danach reichen die Punkte. Gesperrte Manager lässt fuSprecher den alten Winzer vertreten.
 // w1: ein Fass, das ab Januar Kabinett wird, und du stehst im Rathaus. w2: Auktion läuft, und nach dem nächsten Gebot reicht das Geld nicht für die Reben.
@@ -1374,11 +1381,12 @@ const FU_KNIFF={
   'k12':()=>S.monat>=7&&S.monat<=10&&feldHaengt().length>0,
   'k02':()=>S.monat===11&&steuerSchau().steuer>0,
   'k03':()=>true,
-  'k04':()=>S.monat>=7&&S.monat<=9&&R().sorten.filter(id=>S.felder[id].reben>0).length>=2,
+  // Seit 14.6.7 (Prüfregel F4): k04 erst mit der Auslese, k08 erst mit offener Hintertür (Weingutsbesitzer).
+  'k04':()=>S.monat>=7&&S.monat<=9&&R().sorten.filter(id=>S.felder[id].reben>0).length>=2&&stufeFrei('aus'),
   'k05':()=>true,
   'k06':()=>(S.monat===5||S.monat===6)&&S.maschinen.some(m=>MASCH[m.typ]&&MASCH[m.typ].ernte),
   'k07':()=>mgrSt('handel')>=1&&(aufgabeAktiv('laeden')||aufgabeAktiv('handel')||aufgabeAktiv('regal')),
-  'k08':()=>true,
+  'k08':()=>frei('hintertuer'),
   'k09':()=>true,
   'k10':()=>S.rang>=1,
   'k11':()=>fuGenAnk()
@@ -1571,6 +1579,11 @@ const CHEF_RAT_SATZ='Der alte Winzer rät: Schneide den {sorte} selbst, er brauc
 // Seit 14.4.8: Rangmeldung in zwei Teilen (Maik 24.11.2026), RAENGE[i].neu und RAENGE[i].kauf, beim Verbandsvorstand und Vizepräsidenten je Weg des Gebiets.
 // Die Überschriften sind Platzhalter, Wortlaut in Meilenstein 17. Ohne Kauf-Stücke fällt der zweite Teil weg.
 const RANG_KOPF={neu:'Neu für dich',kauf:'Das darfst du jetzt kaufen oder einstellen'};
+// Seit 14.6.7 (Prüfregel F1, der Rangtext nennt Ereignisse nicht vorab): Stücke, die ein Ereignis nennen (ev), stehen erst, wenn es da ist.
+// Wer schneller aufsteigt, als das Ereignis kommt, liest ohne (Platzhalter, Wortlaut in Meilenstein 17).
+const RANG_EV_STUECK=[
+  {t:'deine Handels-Managerin verkauft an Großhandel und Export, dein Weingut-Manager kauft Fassraum und Flaschen',ev:'export',ohne:'deine Handels-Managerin verkauft an den Großhandel, dein Weingut-Manager kauft Fassraum und Flaschen'},
+  {t:'deine Handels-Managerin verkauft im eigenen Laden',ev:'laden',ohne:'Stufe 3 für die Handels-Managerin'}];
 // Seit 14.5.6 (Annahme 23): Der Auftakt zum 2. Akt nennt das Wagnis beim Weinprüfer. Platzhalter, Wortlaut in Meilenstein 17.
 const AKT_AUFTAKT={2:{t:'Der zweite Akt beginnt',text:'Ab jetzt steht dir die Hintertür offen, aber die Weinkontrolle schaut genauer hin. Beim Weinprüfer darfst du jetzt auch über deiner Qualität anmelden, jeder fehlende Punkt kostet Chance.'},
   3:{t:'Der dritte Akt beginnt',text:'Ab jetzt setzt du deinen Ruf ein, wenn du etwas wagst.'}};
