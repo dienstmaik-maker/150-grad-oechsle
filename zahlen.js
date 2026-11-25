@@ -259,7 +259,7 @@ const FORM_VORAUS='Vorausgewählt ist die Form, die der alte Winzer empfiehlt. D
 // Seit 14.2.5: Winzerbote, wenn eine Lage eine neue Boden-Stufe erreicht. Platzhalter, Wortlaut in Meilenstein 17.
 const BODEN_LAGE_BOTE='🌱 {lage}: Der Boden ist jetzt {stufe}.';
 const LAUB_HAND_BOTE='✂️ Ab jetzt kannst du im Juni den Sommerschnitt von Hand machen, im Weinberg bei jeder Sorte. Eine Maschine kommt in deine steilen Hänge nicht.';
-const VERSION='14.5';
+const VERSION='14.7';
 // Seit 13.3.6 (Maik 21.11.2026): Im Umbau starten neue Partien ohne Spielführer, sonst verspricht er Dinge nach den alten Rängen.
 // Mit neuen Texten muss er am Ende wieder an sein (14.4), dann FU_START=1.
 const FU_START=0;
@@ -1420,11 +1420,12 @@ const IDEE_KEY='oechsle-idee', IDEE_MAX=1000;
 // Je Version: [Zeichen, Nummer, Titel, Datum, Punkte]. Kommendes ohne Datum und Punkte.
 // Seit 14.2: Block 14.0. Die Punkte von 14.2 sind Platzhalter, Wortlaut in Meilenstein 17. 14.1 und 14.3 haben keine eigene Version (Messlauf, Klären ohne Code),
 // deshalb stand als Nächstes 14.4. Seit 14.4.9: Version 14.4 mit Platzhalter-Punkten (Wortlaut in Meilenstein 17), als Nächstes 14.5. Seit 14.5.9: Version 14.5 mit
-// Platzhalter-Punkten (Wortlaut in Meilenstein 17), als Nächstes 14.7, danach 14.6 wie im Fahrplan der 14.0. Meilenstein 13 ist seit 22.11.2026 fertig, seine Kopfzeile trägt deshalb das ✅ (die Abschlussprobe 13.9 bekam keine Version).
+// Platzhalter-Punkten (Wortlaut in Meilenstein 17), als Nächstes 14.7, danach 14.6 wie im Fahrplan der 14.0. Seit 14.7.9: Version 14.7 mit Platzhalter-Punkten
+// (Wortlaut in Meilenstein 17), als Nächstes 14.6. Meilenstein 13 ist seit 22.11.2026 fertig, seine Kopfzeile trägt deshalb das ✅ (die Abschlussprobe 13.9 bekam keine Version).
 const WAS_NEU=[
   {k:'🏁 14.0 Pflege-Umbau',d:'in Arbeit',p:['Wie du deine Reben und deinen Boden pflegst, entscheidet über deinen Wein'],v:[
-    ['▶️','14.7','Köpfe und Helfer'],
-    ['⏳','14.6','Logikprüfung'],
+    ['▶️','14.6','Logikprüfung'],
+    ['','14.7','Köpfe und Helfer','25.11.2026',['Zwei Köpfe statt drei: Die Handels-Managerin verkauft, der Weingut-Manager plant und kauft ein','Erntehelfer und Kellerleute lernen je Stufe eine neue Arbeit, die Kellerhelfer warten die Maschinen','Im Einsatzplan wählst du deinen Chef-Weinberg, dazu Laubschnitt und Ausdünnen je Weinberg','Jede Arbeit ist Chefsache oder Automatik, nur die Lese bleibt immer bei dir','Die Handels-Managerin verkauft keine Flasche unter 85 % vom Listenpreis']],
     ['','14.5','Qualität und Weinprüfer','25.11.2026',['Jeder Weinberg hat seine Qualität von 0 bis 100: Pflege, Boden, Form, Laubschnitt und Ausdünnen','Jeder Wein braucht drei Schlüssel: Rang, Lesereife und Qualität','Ab dem 2. Akt darfst du beim Weinprüfer wagen, als Präsident lädst du die Presse ein','Der Preis folgt der Qualität, die Jury wertet Qualität, Weinstufe, Flaschenreife und Öchsle','Jede Lage hat ihre Sorte, Höhenlage und Südhang kommen sicher unter den Hammer']],
     ['','14.4','Zeitleiste','25.11.2026',['Jede Neuheit kommt mit einem Rang, als Gelegenheit oder durch deine eigene Arbeit','Die Spitzenlage wird dein vierter Weinberg mit eigenem Boden und eigener Lese','Land wird teurer, je mehr du in einer Lage schon hast, und die Bank stundet einmal je Generation','Hintertür und Weinkontrolle kommen erst im zweiten Akt','Jeder Aufstieg sagt dir, was neu ist und was du jetzt kaufen oder einstellen darfst']],
     ['','14.2','Pflege und Boden','23.11.2026',['Jeder Weinberg sammelt Entwicklungspunkte, von der Jungrebe bis zum Grand Cru','Rebschnitt und Düngen machst du selbst oder gibst sie an die Erntehelfer ab','Drei Erziehungsformen: Flachbogen, Kordon und Einzelpfahl, jede mit eigener Menge und Güte','Jede Lage hat ihren eigenen Boden bis zum Terroir','Qualitätspunkte bis 100 sind das Maß für jeden Wein']]]},
