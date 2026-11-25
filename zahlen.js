@@ -607,6 +607,11 @@ const SUBS={
   stadt:[['amt','🏛️'],['handel','⚖️'],['laeden','🍷'],['bank','🏦'],['arbeit','🧑‍🌾']]
 };
 const START_SUB={gut:'betrieb',keller:'start',stadt:'amt'};
+// Seit 16.6.1 (Bauplan 16.6, Entscheidungen 1 und 2, Timos Bild 08): Der Reiter Stadt landet auf dem Stadtplatz (SUB 'platz', keine Zunge, amPlatz), direkte Sprünge
+// gehen weiter über START_SUB ins Gebäude. Je Gebäude die Tippfläche in Prozent des Bilds (links, oben, Breite, Höhe) in der Reihenfolge der Zungen und die Stelle
+// rechts oben am Schild, wo der Punkt aus badges() sitzt. Die Schilder malt das Bild, das Spiel malt keine eigenen darüber.
+const STADT_PLATZ=[['amt',41,3.9,27.4,43.6],['handel',0,18.9,41,32.5],['laeden',68.4,19.5,31.6,39.1],['bank',0,51.4,50.8,28],['arbeit',51.8,59.2,48.2,33.3]];
+const STADT_SCHILD={amt:[68,25.2],handel:[37.4,29.8],laeden:[96.5,39.2],bank:[35.6,56.8],arbeit:[89,67.2]};
 // Kurze Namen für die Unterreiter-Leiste unten.
 const SUB_NAME={berg:'Weinberg',betrieb:'Betrieb',aktuell:'Klemmbrett',buero:'Büro',buch:'Weinarchiv',start:'Keller',lager:'Lager',amt:'Rathaus',handel:'Großhandel',laeden:'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'};
 // Seit 13.1 (Maik 21.11.2026): Spielstände von vor dem großen Umbau (bis 12.9.5, Marke v7) laufen nicht weiter. Neue tragen v13, lies gibt nur diese zurück.

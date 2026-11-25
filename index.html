@@ -837,6 +837,13 @@ html.brett main{padding-top:18px}
 #top .geld b::after,#top .wtr small::after{opacity:.55}
 #tkopf{width:54px;height:54px;margin:-27px 0 0 -27px;border:3px solid #d9a845;box-shadow:0 0 0 1.5px #4a2a10,0 0 0 3px rgba(255,214,120,.35),0 3px 6px rgba(0,0,0,.65);font:24px/48px system-ui,sans-serif}
 #tkopf.offen{box-shadow:0 0 0 1.5px #4a2a10,0 0 0 5px rgba(242,199,102,.6),0 3px 6px rgba(0,0,0,.65)}
+/* Seit 16.6.1 (Bauplan 16.6, Timos Bild 08): der Stadtplatz auf dem Holzbrett, das Bild über die volle Breite, die Gebäude als unsichtbare Tippflächen
+   mit hellem Rand beim Antippen, der Punkt am Schild wie an den Zungen. */
+.stadtplatz{margin:0 0 18px;border:0;border-radius:12px;background:none;box-shadow:0 5px 12px rgba(0,0,0,.55)}
+.spbild{position:relative;aspect-ratio:750/1125;background:#6b5a45 url(bilder/stadtplatz.webp) center/100% 100% no-repeat}
+button.spgeb{position:absolute;min-height:44px;margin:0;padding:0;border:0;border-image:none;border-radius:10px;background:none;filter:none;transition:background-color .1s}
+button.spgeb:active,button.spgeb:focus-visible{transform:none;background:rgba(255,236,190,.22);outline:2px solid rgba(255,236,190,.75);outline-offset:-2px}
+.stadtplatz .spdot{width:16px;height:16px;right:auto;transform:translate(-50%,-50%);box-shadow:0 0 0 2px #f5ebd6,0 1px 3px rgba(0,0,0,.5);pointer-events:none}
 /* Seit 16.3.2 (Bild 05 und 13): Klemmbrett aus Holz mit Metallklemme, darauf Papier mit Banner und Weingut-Streifen, Aufgaben mit Timos Symbolen.
    Rot, Gelb und Grau wie bisher als Punkt und Schriftfarbe, rechts der Pfeil. Keine Kästchen zum Abhaken. */
 .klemmbrett{position:relative;margin:14px 0 18px;padding:13px 11px 12px;border-radius:18px;background:#6b3f1d url(bilder/brett-honig.jpg) center/cover;box-shadow:inset 0 0 0 2px rgba(255,214,140,.25),inset 0 0 18px rgba(40,18,4,.55),0 5px 12px rgba(0,0,0,.55)}

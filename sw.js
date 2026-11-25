@@ -175,6 +175,7 @@ const DATEIEN = [
   'bilder/lagerkarte-flaschen.webp',
   'bilder/lagerkarte-ausbau.webp',
   'bilder/maschkarte-abfuell.webp',
+  'bilder/stadtplatz.webp',
   'schrift/alegreya-kursiv.woff2',
   'schrift/alegreya-sc-fett.woff2',
   'schrift/alegreya-sc.woff2',

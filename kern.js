@@ -529,6 +529,8 @@ function ladenPunkt(){
 function geh(tab,sub){TAB=tab; SUB=sub||START_SUB[tab]||SUB}
 // Seit 16.3.1: Das Klemmbrett ist der alte Ort gut/aktuell, ohne Zunge und ohne Bild oben. Spielführer, Buch und Monatswechsel führen weiter dorthin.
 function imKlemm(){return TAB==='gut'&&SUB==='aktuell'}
+// Seit 16.6.1: Der Stadtplatz ist der Ort stadt/platz, ohne Zunge. Der Reiter Stadt und ein zweiter Tipp auf die aktive Zunge der Stadt führen hin (AKT.tab, AKT.sub).
+function amPlatz(){return TAB==='stadt'&&SUB==='platz'}
 // Ehrungen für das Büro: Medaillen und Aufstiege. a=1 kennzeichnet einen Aufstieg, x ist ein Zusatz für die Infoseite (was die Ehrung bringt).
 // S.ehrZeig zählt, wie viele Ehrungen die Infoseite schon gezeigt hat. Neue blendet sie beim nächsten Monatswechsel ein.
 // Seit 7.2 merkt sich ein Aufstieg seinen Rang in r, für die Urkundenwand im Büro.

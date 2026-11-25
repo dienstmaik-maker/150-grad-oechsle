@@ -1744,7 +1744,17 @@ function vSabotage(){
   if(!hinterOffen()) return '';
   return (einZu('zuckern')?'':kZuckern())+(einZu('verschneiden')?'':kVerschneiden())+(einZu('pruefer')?'':kPruefer());
 }
+// Seit 16.6.1 (Bauplan 16.6, Entscheidungen 1, 2 und 10, Timos Bild 08): der Stadtplatz als Startansicht der Stadt. Das Bild über die volle Breite, darauf je Gebäude
+// eine Tippfläche (STADT_PLATZ, mindestens 44 Pixel hoch) mit dem Namen für Bildschirmleser, ein Tipp öffnet das Gebäude wie die Zunge (data-a="sub").
+// Wartet dort etwas, sitzt am Schild der Punkt aus badges(), Rot oder Gelb wie an den Zungen. Platzhalter, Wortlaut in Meilenstein 17.
+function vPlatz(){
+  const B=badges();
+  return `<section class="fen stadtplatz" aria-label="Stadtplatz"><div class="spbild">${STADT_PLATZ.map(([s,x,y,w,h])=>{const b=B['stadt/'+s];
+    return `<button class="spgeb" data-a="sub" data-id="${s}" style="left:${x}%;top:${y}%;width:${w}%;height:${h}%" aria-label="${SUB_NAME[s]}${b?b==='rot'?', dringend':', es wartet etwas':''}"></button>`}).join('')}
+    ${STADT_PLATZ.map(([s])=>{const b=B['stadt/'+s], p=STADT_SCHILD[s]; return b?`<span class="badge spdot ${b==='rot'?'rot':''}" style="left:${p[0]}%;top:${p[1]}%"></span>`:''}).join('')}</div></section>`;
+}
 function vStadt(){
+  if(SUB==='platz') return vPlatz();
   let h=kopf({amt:'Rathaus',handel:'Großhandel',laeden:ladenFrei()?'Deine Weinhandlung':'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'}[SUB]);
   // Rathaus (seit 7.4 auf dem Fenster-Baustein): festes Fenster "Wein anmelden" mit der Anzahl, darunter Makler und Kontrolle anregen.
   // Was der Rang noch sperrt, ist seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten). Am Ziel (Präsident) gibt es keinen Makler mehr.
@@ -2321,11 +2331,11 @@ function render(){
   einPruef(); fuehrerPruef(); fuErlCheck();
   // Seit 10.3: Beim Monatswechsel wird ein Kopf abgelegt (fuAblegen), Kern-Blasen und Warnungen kommen danach wieder. Eine offene Blase kommt ohnehin wieder.
   if(!SUBS[TAB]){if(FU_AKT&&!FU_OFFEN) fuAblegen(); else fuehrerWeg()}
-  if(SUBS[TAB]&&!SUBS[TAB].some(s=>s[0]===SUB)&&!imKlemm()) SUB=START_SUB[TAB];
+  if(SUBS[TAB]&&!SUBS[TAB].some(s=>s[0]===SUB)&&!imKlemm()&&!amPlatz()) SUB=START_SUB[TAB];
   // Kellerbuch und Aktuelles öffnen sich mit einem eigenen Geräusch.
   ortFarbe(SUBS[TAB]?TAB:'gut');
   // Seit 16.1: Im Weinberg liegt das Holzbrett hinter den Karten. Seit 16.3.2 auch hinter dem Klemmbrett (Bild 05).
-  document.documentElement.classList.toggle('brett',TAB==='gut'&&(SUB==='berg'||SUB==='aktuell'||SUB==='betrieb')||TAB==='keller'&&(SUB==='start'||SUB==='lager'));   // seit 16.4.2 auch im Betrieb (Bild 22), seit 16.5.2 im Keller (Bild 23), seit 16.5.6 im Lager
+  document.documentElement.classList.toggle('brett',TAB==='gut'&&(SUB==='berg'||SUB==='aktuell'||SUB==='betrieb')||TAB==='keller'&&(SUB==='start'||SUB==='lager')||amPlatz());   // seit 16.4.2 auch im Betrieb (Bild 22), seit 16.5.2 im Keller (Bild 23), seit 16.5.6 im Lager, seit 16.6.1 auf dem Stadtplatz
   const ort=SUBS[TAB]?TAB+'/'+SUB:TAB; if(ort!==ORT_ALT){FI_AUF.clear(); if(ORT_ALT&&(ort==='keller/buch'||ort==='gut/aktuell')) fx('menue'); ORT_ALT=ort}
   musikOrt(musikWahl());
   if(ort==='stadt/laeden') S.ladenSeh=S.jahr*12+S.monat;
@@ -2512,7 +2522,8 @@ const AKT={
       ok:n=>{kassiere(erloes(n*p));kompVerkauf(l,n);la.rest-=n;l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l)}});
   },
   // Seit 16.2.2: Aus dem Klemmbrett (Aktuelles) führt der Reiter Weingut zum Start des Weinguts, er springt dort nicht nur nach oben.
-  tab(d,e){if(d.id===TAB&&!d.sub&&!imKlemm()&&window.scrollY>20){window.scrollTo({top:0,behavior:'smooth'});return} geh(d.id,d.sub);render();window.scrollTo(0,0)},
+  // Seit 16.6.1 (Bauplan 16.6, Entscheidung 1): Der Reiter Stadt landet auf dem Stadtplatz, nicht im Rathaus.
+  tab(d,e){if(d.id===TAB&&!d.sub&&!imKlemm()&&window.scrollY>20){window.scrollTo({top:0,behavior:'smooth'});return} geh(d.id,d.sub||(d.id==='stadt'?'platz':''));render();window.scrollTo(0,0)},
   infoWeiter(){
     const el=$('#info'); if(!el||el.classList.contains('aus')) return;
     el.classList.add('aus');
@@ -2572,7 +2583,7 @@ const AKT={
   },
   spBank(){openSheet(`<h3>🪑 Die Bank am Wanderweg</h3><div class="spbogen" style="background-image:url(bilder/${bankBild()}.jpg)"></div>${spBankTafel()}<p class="mut">Über der Spitzenlage, mit Blick über den Fluss ins Tal.</p><div class="btns"><button data-a="close">Schließen</button></div>`)},
   spBogen(){openSheet(`<h3>🪵 Der Holzbogen</h3>${spBogenHtml()}<div class="btns"><button data-a="close">Schließen</button></div>`)},
-  sub(d){SUB=d.id;render();window.scrollTo(0,0)},
+  sub(d){SUB=TAB==='stadt'&&d.id===SUB?'platz':d.id;render();window.scrollTo(0,0)},   // seit 16.6.1: zweiter Tipp auf die aktive Zunge der Stadt führt auf den Platz
   // Seit 11.2: Bereich im Büro wählen und die ganze Rangliste als Fenster von unten.
   buero(d){if(BUERO===d.id) return; BUERO=d.id; FI_AUF.clear(); render()},
   rangliste(){openSheet(`<h3>Rangliste</h3><p class="mut">${GEGNER_AKT[aktNr()-1]}</p>${weltForm()?`<p class="mut">${weltFormZeile()}</p>`:''}<p class="mut">${RANGL_I}</p>${ranglisteHtml()}<div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`)},
