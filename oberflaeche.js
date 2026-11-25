@@ -303,26 +303,32 @@ function kompZeile(id){
   if(D.wissen) return `<button class="bzeile" data-a="kompEintrag" data-id="${id}"><div class="bz1"><b>${esc(D.titel)}${id==='gebiet_'+S.region?' (dein Gebiet)':''}${lexNeu(id)?'<span class="lneu">Neu</span>':''}</b><span class="kpf">›</span></div><div class="bz2">${esc(kompKurz(id))}</div></button>`;
   return `<button class="bzeile${st?'':' kzu'}" data-a="kompEintrag" data-id="${id}"><div class="bz1"><b>${esc(D.titel)}</b>${kompSiegel(st)}</div>${D.immer?`<div class="bz2">${D.text()}</div>`:''}<div class="${D.immer?'bz3':'bz2'}">${esc(kompNaechst(id))}</div></button>`;
 }
-const kompEtikett=id=>`<span class="getik${kompBocks(id)?' bb':''}">${kompBocks(id)?'Bocksbeutel':'Gold-Etikett'}</span>`;
-function kompBrettZeile(id){
-  const D=KOMP[id], e=(S.komp||{})[id]||{st:0}, st=e.st||0, W=D.w, name=id==='sekt'?(S.rollen?'Regional-Sekt':'Sekt'):D.name;
-  const lauf=st<3&&(st<2||W[2]);
-  return `<button class="bzeile sz${st?'':' leer'}${st>=3?' gold':''}" data-a="kompEintrag" data-id="${id}"><div class="bz1"><b>${esc(name)}</b>${kompSiegel(st)}</div>`
-    +`<div class="bz2">${st>=3?`<span>✔ Alle drei Siegel</span>${kompEtikett(id)}`:esc(kompNaechst(id))}</div>${lauf?`<div class="bar g"><i style="width:${Math.min(100,(e.f||0)/W[st]*100)}%"></i></div>`:''}</button>`;
+// Seit 16.7.3 (Bauplan 16.7, Entscheidung 4, Timos Bild 16): Das Siegelbrett ist eine Karte in den Erfolgen (Kennung 'brett' wie das alte Fenster, Spielführer m5, m6).
+// Zu: Siegel in dieser Partie mit Balken. Auf: das Brett mit Holzrahmen und Banner aus Bild 16 (bilder/siegelbrett-rahmen.webp als Rahmen, die Felder zeichnet das Spiel).
+// Je Sorte aus KOMP_BRETT ein Abschnitt mit einem Raster runder Felder, je Eintrag eins: das höchste Siegel als Wachs- (Bronze rot, Silber violett, darunter die drei kleinen Siegel)
+// beziehungsweise Gold-Siegel, noch keins als leere Prägung. Ein Tipp öffnet den Eintrag (kompEintrag, unverändert). Unter jedem Raster "Als Nächstes" mit kompNaechst() des
+// nächsten Eintrags, die Balken je Eintrag stehen im Eintrag. Der Ruf des Hauses steht nur in seiner Karte direkt darüber (Entscheidung 3.2), die Album-Fußnote bleibt unten.
+// Bis 16.7.3 war jeder Eintrag eine Zeile mit Balken (kompBrettZeile, kompEtikett), das Gold-Etikett steht im Eintrag. Platzhalter, Wortlaut in Meilenstein 17.
+// Das Motiv im Feld: das Qualitätssiegel der Stufe aus Bild 24 (bilder/siegel-<Stufe>.webp), ohne eigenes Siegel ein Zeichen (SB_SYM).
+const SB_BILD=['qba','kab','spat','aus','ba','tba','eis'], SB_SYM={feder:'🍇',tafel:'🍷',sekt:'🍾'}, SB_KURZ={qba:'Qualitäts&shy;wein',ba:'Beeren&shy;auslese',tba:'Trocken&shy;beeren&shy;auslese'};
+const sbName=id=>id==='sekt'?(S.rollen?'Regional-Sekt':'Sekt'):KOMP[id].name;
+function sbFeld(id){
+  const st=kompSt(id), k=id.replace(/^stufe_/,'');
+  return `<button class="sbfeld s${st}" data-a="kompEintrag" data-id="${id}" aria-label="${esc(sbName(id))}, ${st?KOMP_ST[st]:'noch kein Siegel'}"><span class="sbrund">${SB_BILD.includes(k)?`<img src="bilder/siegel-${k}.webp" alt="">`:`<i>${SB_SYM[k]||'🍷'}</i>`}</span><small>${SB_KURZ[k]||esc(sbName(id))}</small>${st?kompSiegel(st,'klein'):''}</button>`;
 }
 function vBrett(){
-  const z=kompZahlen(), n=rufStufe(), S7=RUF_STUFEN.length, nx=RUF_STUFEN[n], RL=kompRollen(), fr=S.region==='franken';
-  const marken=RUF_STUFEN.map(x=>`<u style="left:${(x/z.max*100).toFixed(2)}%"></u>`).join('');
-  const ruf=(n?`${RUF_NAMEN[n-1]}: Die Händler zahlen ${rufProz(n)} % mehr.`:'Noch keine Stufe.')+(nx?` Noch ${nx-z.hab===1?'1 Siegel':`${nx-z.hab} Siegel`} bis Stufe ${n+1}, ${RUF_NAMEN[n]}.`:' Alle Stufen erreicht.');
-  let h=fenster('brett','Siegelbrett',`<div class="kv"><span>Siegel in dieser Partie</span><span>${z.hab} von ${z.max}</span></div><div class="bar g stb"><i style="width:${z.hab/z.max*100}%"></i>${marken}</div>
-    <div class="kv"><span>🏛️ Ruf des Hauses</span><span>${n?`Stufe ${n} von ${S7}`:'noch keine Stufe'}</span></div><div class="fstand ruf">${ruf}</div>`,{
-    i:`Für die neun Stufen und den Sekt gibt es je drei Siegel, und jeder Eintrag hängt an einer deiner Rebsorten: Federweißer bis Spätlese an der Menge-Sorte, Auslese bis Eiswein an der Spitzen-Sorte, der Sekt an der Sekt-Sorte. Bronze und Silber bringen verkaufte Flaschen, Gold viele Flaschen oder eine Goldmedaille. Mit allen drei Siegeln bekommt der Wein sein Gold-Etikett${fr?', ein Silvaner in Franken den Bocksbeutel':''}. Bei ${RUF_STUFEN.slice(0,-1).join(', ')} und ${RUF_STUFEN[S7-1]} Siegeln steigt der Ruf des Hauses um eine Stufe, jede bringt ${rufProz(1)} % mehr bei jedem Verkauf. Ein Tipp auf einen Wein zeigt seine Geschichte und was noch fehlt. Die Siegel zählen je Partie, das Album merkt sich deine besten über alle Partien.`});
+  const z=kompZahlen(), RL=kompRollen(), fr=S.region==='franken', S7=RUF_STUFEN.length;
+  let h='';
   for(const [rl,rn] of KOMP_BRETT){
-    const I=kompBrettIds(rl), hab=I.reduce((a,id)=>a+kompSt(id),0), alt=rl==='sekt'&&!S.rollen;
-    h+=fenster('brett_'+rl,`${esc(alt?'Sekt':SORTEN[RL[rl]].name)}<small>${alt?'jede Sorte zählt':rn} · ${hab} von ${I.length*3} Siegeln</small>`,`<div class="fzl">${I.map(kompBrettZeile).join('')}</div>`,{buch:false});
+    const I=kompBrettIds(rl), hab=I.reduce((a,id)=>a+kompSt(id),0), alt=rl==='sekt'&&!S.rollen, nx=I.find(id=>kompSt(id)<3);
+    h+=`<section class="sbteil"><h4>${esc(alt?'Sekt':SORTEN[RL[rl]].name)}<small>${alt?'jede Sorte zählt':rn} · ${hab} von ${I.length*3}</small></h4><div class="sbraster">${I.map(sbFeld).join('')}</div>`
+      +`<div class="sbnext">${nx?`<b>Als Nächstes</b> · ${esc(sbName(nx))}: ${esc(kompNaechst(nx))}`:'✔ Alle Siegel dieser Sorte'}</div></section>`;
   }
   const A=kompAlbumLies(), an=KOMP_ALBUM.filter(id=>A[id]).length, sg=KOMP_ALBUM.reduce((s,id)=>s+Math.min(3,Math.max(0,Math.floor(+A[id]||0))),0), alt=KOMP_ALBUM_ALT.filter(id=>A[id]).length;
-  return h+`<p class="fussnote album">📚 Album über alle Partien: ${an} von ${KOMP_ALBUM.length} Weinen entdeckt, ${sg} von ${KOMP_ALBUM.length*3} Siegeln.${alt?`<br>Aus der Zeit vor Version 11.4: ${alt} von ${KOMP_ALBUM_ALT.length} Einträgen.`:''}</p>`;
+  const auf=`<div class="sbrett">${h}</div><p class="fussnote album">📚 Album über alle Partien: ${an} von ${KOMP_ALBUM.length} Weinen entdeckt, ${sg} von ${KOMP_ALBUM.length*3} Siegeln.${alt?`<br>Aus der Zeit vor Version 11.4: ${alt} von ${KOMP_ALBUM_ALT.length} Einträgen.`:''}</p>`;
+  return sKarte('brett','Siegelbrett',kBal('🏅 Siegel',z.hab/z.max*100,'',`${z.hab} von ${z.max} in dieser Partie`),auf,{sym:'🏅',buch:'buch',kl:'sbkarte',
+    z:wbKv('Siegel in dieser Partie',`${z.hab} von ${z.max}`)+wbKv('Album',`${an} von ${KOMP_ALBUM.length} Weinen`),
+    i:`Für die neun Stufen und den Sekt gibt es je drei Siegel, und jeder Eintrag hängt an einer deiner Rebsorten: Federweißer bis Spätlese an der Menge-Sorte, Auslese bis Eiswein an der Spitzen-Sorte, der Sekt an der Sekt-Sorte. Bronze und Silber bringen verkaufte Flaschen, Gold viele Flaschen oder eine Goldmedaille. Mit allen drei Siegeln bekommt der Wein sein Gold-Etikett${fr?', ein Silvaner in Franken den Bocksbeutel':''}. Bei ${RUF_STUFEN.slice(0,-1).join(', ')} und ${RUF_STUFEN[S7-1]} Siegeln steigt der Ruf des Hauses um eine Stufe, jede bringt ${rufProz(1)} % mehr bei jedem Verkauf. Ein Tipp auf ein Siegel zeigt die Geschichte des Weins und was noch fehlt. Die Siegel zählen je Partie, das Album merkt sich deine besten über alle Partien.`});
 }
 function vLexikon(){
   if(!KOMP_KAP.some(k=>k[0]===KOMP_AKT)) KOMP_AKT='sorte';
@@ -345,10 +351,15 @@ function kompEintragHtml(id){
     <div class="btns"><button class="sec" data-a="archivGeh" data-id="${w?'lexikon':'brett'}">Zurück</button></div>`;
 }
 // Seit 11.8: Alle Wege ins frühere Weinkompendium führen ins Weinarchiv, aufs Siegelbrett oder ins Lexikon.
+// Seit 16.7.3 (Bauplan 16.7, Entscheidung 9): 'brett' führt ins Büro zu den Erfolgen, klappt die Karte Siegelbrett auf und rollt sie ins Bild
+// (Ehrungen "Aufschlagen", Ruf des Hauses, Zurück im Eintrag). Der Name des Befehls bleibt.
 function archivGeh(teil){
   if(!S) return; if($('#sheet').classList.contains('an')) closeSheet();
+  if(teil==='brett'){geh('gut','buero'); BUERO='erfolge'; FI_AUF.clear(); FI_AUF.add('wb:brett'); render(); bueroRoll('brett'); return}
   const da=TAB==='keller'&&SUB==='buch'; ARCHIV=ARCHIV_B.some(b=>b[0]===teil)?teil:'brett'; FI_AUF.clear(); geh('keller','buch'); render(); if(!da) window.scrollTo(0,0);
 }
+// Rollt eine Karte im Büro an den oberen Rand unter die Kopfzeile (seit 16.7.3).
+function bueroRoll(id){const el=$('#wb_'+id); if(!el) return; const top=($('#top')||{}).offsetHeight||0; window.scrollBy(0,el.getBoundingClientRect().top-top-14)}
 // Fenster im Büro: Zähler und die Wege aufs Siegelbrett und ins Lexikon (seit 11.8).
 function kompFenster(){
   const z=kompZahlen();
@@ -1256,7 +1267,8 @@ function bueroErfolge(){
       klein:WO[S.region],bild:'weinbotschafter',sym:'🎗️',buch:'ziel',z:wbKv('Jeden Januar',`+${BOTSCHAFT_ANS} Ansehen`),
       i:`Seit dem Rang ${RAENGE[R_BOTSCHAFT].name} bist du Weinbotschafter ${WO[S.region]}. Für deine Reisen bekommst du jeden Januar ${BOTSCHAFT_ANS} Ansehen.`}):'')
     +sKarte('urkunden','Deine Urkunden',kHin(U?'gruen':'grau',U?`${U} ${U===1?'Urkunde':'Urkunden'} an der Wand`:'Noch keine Urkunde'),urkWand(),{sym:'📜',buch:'ziel',z:wbKv('Urkunden',U),
-      i:'Für jeden Aufstieg bekommst du eine Urkunde. Sie hängt hier an der Wand, die erste gibt es mit dem Aufstieg zum zweiten Rang. Darunter hängen die Schilder und Urkunden für deine Spenden im Rathaus.'});
+      i:'Für jeden Aufstieg bekommst du eine Urkunde. Sie hängt hier an der Wand, die erste gibt es mit dem Aufstieg zum zweiten Rang. Darunter hängen die Schilder und Urkunden für deine Spenden im Rathaus.'})
+    +vBrett();   // seit 16.7.3 das Siegelbrett (Entscheidung 4)
 }
 function bueroWissen(){
   return fenster('anleitung','Spielanleitung','',{links:`Alles zum Nachschlagen in ${buchKap().length} kurzen Kapiteln, von der Bedienung bis zum Spielführer.`,kn:pk('buch','Aufschlagen',''),
@@ -2261,8 +2273,9 @@ const FU_ZEIG={
   'm3':{tab:'keller',sub:'lager',karte:()=>fuWeinKarte(),sel:['.bzeile[data-a="buchDetail"]','.wkband']},
   'm4':{tab:'stadt',sub:'amt',sel:[fiSel('wettb')]},
   // Seit 12.8: archiv schlägt im Weinarchiv gleich das Siegelbrett auf.
-  'm5':{tab:'keller',sub:'buch',archiv:'brett',sel:[fiSel('brett')]},
-  'm6':{tab:'keller',sub:'buch',archiv:'brett',sel:['.album',fiSel('brett')]},
+  // Seit 16.7.3: Das Siegelbrett ist eine Karte in den Erfolgen im Büro, m6 klappt sie auf, damit das Album zu sehen ist.
+  'm5':{tab:'gut',sub:'buero',buero:'erfolge',sel:[fiSel('brett')]},
+  'm6':{tab:'gut',sub:'buero',buero:'erfolge',karte:'brett',sel:['.album',fiSel('brett')]},
   'p2':{tab:'stadt',sub:'amt',sel:[fiSel('verband')]},
   'r10-2':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="weingut"]',fiSel('mgr_amt')]},
   'r10-3':{tab:'stadt',sub:'arbeit',sel:[fiSel('lagerarb')]},
