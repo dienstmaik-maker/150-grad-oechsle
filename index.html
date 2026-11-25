@@ -774,6 +774,15 @@ html.brett main{padding-top:18px}
 #tabs .kzahl{position:absolute;top:2px;right:calc(50% - 25px);min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:10px;background:#cf8a1e;border:1.5px solid #f8e6bf;color:#fff;font:800 12px/17px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-style:normal;text-shadow:0 1px 1px rgba(0,0,0,.5);box-shadow:0 1px 3px rgba(0,0,0,.6)}
 #tabs .kzahl.rot{background:#c62828}
 #tabs #weiter{flex:1.4 1 0;margin:4px 1px 5px 3px}
+/* Seit 16.2.3 (Bild 06): Die Unterreiter sind Registerzungen aus Pergament über der Leiste, oben rund, unten offen zur Leiste hin.
+   Die aktive Zunge ist heller, goldumrandet und steht etwas höher. Symbol und kurzes Wort bleiben (Grundaufbau), alle 14 Orte bleiben. */
+#subs{gap:3px;padding:6px 5px 0;border:0;border-radius:0;background:linear-gradient(rgba(20,9,3,.15),rgba(20,9,3,.35)),url(bilder/brett-dunkel.jpg) center/cover;box-shadow:none}
+#subs button{align-self:flex-end;min-height:44px;margin:0;padding:4px 1px 4px;border:1.5px solid #7a4b22;border-bottom:0;border-image:none;border-radius:11px 11px 0 0;background:linear-gradient(#e6d0a0,#cfb07a);color:#57301a;text-shadow:0 1px 0 rgba(255,245,220,.55);font:800 11.5px/1.1 var(--schrift);font-variant-caps:normal;letter-spacing:0;box-shadow:inset 0 1px 0 rgba(255,248,225,.6),inset 0 -6px 8px -6px rgba(60,30,10,.35)}
+#subs button>i{font-size:17px;line-height:20px}
+#subs button>b{font-weight:800}
+#subs button.an{min-height:50px;border:1.5px solid #d9a845;border-bottom:0;border-image:none;border-radius:12px 12px 0 0;background:linear-gradient(#fdf3d8,#f0dcab);color:#4a0f1a;text-shadow:none;box-shadow:0 -2px 6px rgba(255,205,100,.45),inset 0 0 0 1px rgba(255,236,180,.7)}
+#subs button.an>i{transform:scale(1.12) translateY(-1px)}
+#subs .badge{top:3px;right:calc(50% - 20px);box-shadow:0 0 0 2px #e6d0a0}
 </style>
 </head>
 <body>
