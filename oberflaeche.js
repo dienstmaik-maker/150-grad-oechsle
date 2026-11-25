@@ -1160,7 +1160,9 @@ function maschHin(ma){const H=WB_TEXT.masch.hin, st=maschStatus(ma);
   return ma.zustand<MASCH_ROT?['rot',H.rot]:!maschPasst(ma)?['grau',H.still]:st!=='im Einsatz'?['rot',mTyp(ma).leute==='lagerarb'?H.keller:H.fahrer]:ma.zustand<MASCH_GELB?['gelb',H.gelb]:['gruen',H.einsatz]}
 // Zeile der Kellerhelfer zum Warten (bis 16.4.5 einmal im Fenster "Deine Maschinen", seit 16.4.6 auf jeder Karte) und der Schalter vor dem Weingut-Manager.
 const maschWartZeile=()=>csBeiMgr()?csZeile('warten'):kellerWartet()?`🔧 Deine Kellerhelfer warten nach der Lese jede Maschine unter ${MGR_WART_AB} % auf 100 %, eine ausgefallene Erntemaschine sofort.`:csIst('warten');
-function maschKarte(ma,i){
+// Seit 16.5.3: Kopf und aufgeklappter Teil einer Maschine in maschKarteTeile (nicht maschTeile aus kern.js), damit die Karte "Wein abfüllen" im Keller die Abfüllanlage mit denselben Zeilen zeigt.
+function maschKarte(ma,i){const m=maschKarteTeile(ma,i); return wbKarte('masch'+i,m.titel,'',m.kopf,m.auf,{bild:'maschkarte-'+m.typ,bildArt:'webp',iId:'masch_'+i,iName:m.titel})}
+function maschKarteTeile(ma,i){
   const T=mTyp(ma), M=WB_TEXT.masch, st=maschStatus(ma), ein=st==='im Einsatz', saison=S.monat<=2, gl=S.maschinen.filter(x=>mTyp(x)===T), nr=gl.length>1?' '+(gl.indexOf(ma)+1):'', hw=maschHin(ma);
   const typ=Object.keys(MASCH).find(k=>MASCH[k]===T)||'klein';
   const kopf=`<div class="hinw ${hw[0]}"><i></i><em>${hw[1]}</em></div><div class="wbal"><b>${M.zustand}</b>${wbBalken(ma.zustand,ma.zustand<MASCH_ROT?'rot':ma.zustand<MASCH_GELB?'gelb':'')}</div><div class="wbunter"><b class="zahl">${ma.zustand} %</b></div>`;
@@ -1176,7 +1178,7 @@ function maschKarte(ma,i){
   if(typ==='abfuell'&&abfStufe(ma)<2&&frei('masch_abfuell2')) K.push(pk('abfAusbau',M.verbessern,eur(ABF_PREIS2),{aus:!saison,arm:S.geld<ABF_PREIS2,sec:1}));
   const cs=csKnopf('warten');
   const auf=wbInfo(maschWartZeile())+`<dl class="wbfakt">${L.join('')}</dl>`+(saison?'':`<div class="wbklein">${M.abJan}</div>`)+`<div class="wbkn">${K.join('')}${cs}</div>`;
-  return wbKarte('masch'+i,T.name+nr,'',kopf,auf,{bild:'maschkarte-'+typ,bildArt:'webp',iId:'masch_'+i,iName:T.name+nr});
+  return {titel:T.name+nr,typ,kopf,auf};
 }
 // Info-Panel einer Maschine: Zustand, Kosten, als Tipp die Regeln aus dem i des alten Fensters.
 function wbPanelMasch(i){
@@ -1189,7 +1191,8 @@ function wbPanelMasch(i){
 function vMaschinen(){
   const M=WB_TEXT.masch, kn=`<div class="mkauf"><button class="mkaufkn" data-a="maschKaufen">⚙️ ${M.kaufen}</button></div>`;
   if(einZu('maschinen')) return einKarte('maschinen','Noch alles von Hand',`Am Anfang machst du alles von Hand. Maschinen kommen nach und nach, der Düngerstreuer ${maschFreiText('duenger')}.`)+kn;
-  return S.maschinen.map(maschKarte).join('')+kn;
+  // Seit 16.5.3 (Bauplan 16.5, Entscheidung 1.4): Die Abfüllanlage steht nur noch in der Karte "Wein abfüllen" im Keller. Die Nummer i bleibt die Stelle in S.maschinen.
+  return S.maschinen.map((ma,i)=>ma.typ==='abfuell'?'':maschKarte(ma,i)).join('')+kn;
 }
 // Fenster von unten "Maschine kaufen" (Annahme 4): je Typ eine Zeile mit Bild, Angaben und Kaufen-Knopf, gesperrte mit Schloss und Freischalt-Text,
 // der Ausbau der Abfüllanlage als eigene Zeile. Dieselben Bedingungen wie die Kauf-Karten bis 16.4.5 (Januar bis März, schon vorhanden, Geld).
@@ -1591,12 +1594,15 @@ function kSekt(){
   return kKarte('sekt',K.sekt,kopf,auf);
 }
 // Wein abfüllen (Entscheidung 1.4): Schalter oder Chefsache-Zeile zum Abfüllen und die Info-Zeilen dazu. Ohne Abfüllanlage "Von Hand" und ein Sprung zu
-// "Maschine kaufen" im Betrieb, gekauft wird nur dort.
+// "Maschine kaufen" im Betrieb, gekauft wird nur dort. Seit 16.5.3 steht die Abfüllanlage hier (bis 16.5.2 als Maschinen-Karte im Betrieb): Hinweis und
+// Zustandsbalken wie auf der Maschinen-Karte, aufgeklappt ihre Zeilen mit Warten (maschWarten), Verkaufen (maschVerkauf) und Verbessern (abfAusbau).
+const kAnlagen=()=>S.maschinen.map((ma,i)=>[ma,i]).filter(([ma])=>ma.typ==='abfuell');
 function kAbfuellen(){
-  const K=WB_TEXT.keller, H=K.hin, KM=MGR_BEREICHE.weingut.name;
-  const kopf=kHin('grau',H.vonHand)+`<div class="wbunter">${K.flaschen}: <b class="zahl">${num(S.flaschen)}</b></div>`;
+  const K=WB_TEXT.keller, H=K.hin, KM=MGR_BEREICHE.weingut.name, A=kAnlagen().map(([ma,i])=>maschKarteTeile(ma,i)), fl=`<div class="wbunter">${K.flaschen}: <b class="zahl">${num(S.flaschen)}</b></div>`;
+  const kopf=A.length?A[0].kopf+fl:kHin('grau',H.vonHand)+fl;
   const auf=kInfo([aufgabeAktiv('flaschen')&&`🍷 Dein ${KM} kauft fehlende Flaschen dazu.`,csBeiMgr()?csZeile('abfuellen'):kellerMacht('abfuellen')?'🍾 Deine Kellerleute füllen angemeldete Weine beim Weiterblättern ab, sobald genug leere Flaschen da sind.':csIst('abfuellen'),bonusMasch('abfuell')&&`🍾 Mit der Abfüllanlage kommen ${Math.round(abfPlus()*100)} % mehr Flaschen aus jedem Fass.`])
-    +`<div class="wbklein">${K.ohneAnlage}</div>`+kKn(csKnopf('abfuellen'),`<button class="sec" data-a="abfZumKauf">${K.zumKauf}</button>`);
+    +kKn(csKnopf('abfuellen'))
+    +(A.length?A.map(m=>`<div class="wbtrenn">❦</div><h4 class="kanl">${m.titel}</h4>${m.auf}`).join(''):`<div class="wbklein">${K.ohneAnlage}</div>`+kKn(`<button class="sec" data-a="abfZumKauf">${K.zumKauf}</button>`));
   return kKarte('abfuellen',K.abfuellen,kopf,auf,{bild:'maschkarte-abfuell'});
 }
 // Vorrat (Entscheidung 1.5, Briefing Entscheidung 18): kleine Karte ohne Bild mit Fassraum und leeren Flaschen, auf ein Sprung ins Lager.
@@ -1624,7 +1630,13 @@ function wbPanelKeller(k){
   else if(k==='faesser'){z=wbKv(K.weine,fa.length)+wbKv(K.angemeldet,fa.filter(l=>l.stufe).length)+fr; c=kl; t=K_I.abfuellen()}
   else if(k==='sekt'){const A=sektAufHefe(); z=wbKv(K.sekt,S.sektkeller?'gekauft':'noch nicht gekauft')+wbKv(K.sektHefe,A.length)+(S.sektAnlage?wbKv(SEKT_ANLAGE_NAME,'gebaut'):'');
     c=(S.sektkeller?'':wbKv(K.sektPreis,eur(SEKTKELLER_PREIS)))+wbKv(K.sektFlasche,eur2(sektKosten()))+(S.sektkeller&&!S.sektAnlage&&fuR65Zeit()?wbKv(wbT(K.anlagePreis,{name:SEKT_ANLAGE_NAME}),eur(SEKT_ANLAGE_PREIS)):''); t=K_I.sekt()}
-  else if(k==='abfuellen'){z=wbKv(K.anlage,K.hin.vonHand)+fl; c=kl; t=K_I.abfuellen()}
+  else if(k==='abfuellen'){const A=kAnlagen(), M=WB_TEXT.masch; z=fl; c=kl; t=K_I.abfuellen();
+    if(!A.length) z=wbKv(K.anlage,K.hin.vonHand)+fl;
+    // Seit 16.5.3 mit der Abfüllanlage: Zustand, Einsatz, Stufe, Wartung und Verkauf wie im Panel der Maschinen-Karte, als Tipp dazu ihre Regeln.
+    for(const [ma] of A){const T=mTyp(ma), st=maschStatus(ma);
+      z=wbKv(M.zustand,`${ma.zustand} %${ma.zustand<MASCH_ROT?'':ma.zustand<MASCH_GELB?', '+M.hin.gelb:''}`,ma.zustand<MASCH_ROT?'rot':'')+wbKv(M.einsatzL,st,st==='im Einsatz'?'':'rot')+wbKv(M.stufe,`${abfStufe(ma)} von 2`)+z;
+      c=wbKv(M.wartung,wbT(M.jeP,{p:eur(T.wart)}))+wbKv(M.verkauf,`${eur(T.preis*.5*ma.zustand/100)}, ${S.monat<=2?'jetzt':'ab Januar'}`)+c}
+    if(A.length) t+=`<br><br>${MASCH_WIE.abfuell} ${MASCH_TEXT_I()}<br><br>Warten bringt den Zustand wieder hoch, verkaufen bringt die Hälfte vom Neupreis, je nach Zustand.`}
   else if(k==='vorrat'){z=fr+fl; c=kf+kl; t=K_I.vorrat(); buch='lager'}
   else return '';
   return wbPanelRahmen(titel,wbAbschnitt('🛢️',WB_TEXT.zustand,z)+wbAbschnitt('🪙',WB_TEXT.kosten,c)+wbAbschnitt('💡',WB_TEXT.tipps,`<p style="margin:0 0 6px">${t}</p>${mib(buch)}`));

@@ -2592,6 +2592,8 @@ function amtWahl(){
   }
 }
 function kontoKnapp(){const k=kosten(); return 2*(k.basis+k.loehne+k.tilgung+k.zins)}
+// Seit 16.5.3: Die Abfüllanlage steht in der Karte "Wein abfüllen" im Keller, ihre Aufgaben führen dorthin, die anderen Maschinen in den Betrieb.
+const maschOrt=ma=>ma.typ==='abfuell'?{tab:'keller',sub:'start'}:{tab:'gut',sub:'betrieb'};
 function aufgaben(){
   const A=[], m=S.monat, frei=S.ha*HA_REBEN-rebenGesamt();
   // Seit 7.9 drei Arten: rot:1 kann nicht warten und hält das Weiterblättern an. Ohne Merkmal ist es Gelb (Punkt am Reiter, kein Halt).
@@ -2618,8 +2620,8 @@ function aufgaben(){
   // Dazu Gelb für Maschinen ohne Fahrer und für Felder, denen Helfer für die Handlese fehlen.
   {const mw=kellerWartet();
   // Seit Paket B: Bei den Bonus-Maschinen ist Rot nur ein gelber Hinweis, es fällt nur der Bonus weg.
-  for(const ma of S.maschinen) if(ma.zustand<MASCH_ROT) A.push({t:`🔧 ${maschName(ma)} bei ${ma.zustand} %: fällt aus, bis ${maschEr(ma)} gewartet ist${mTyp(ma).bonus?', solange fehlt der Bonus':''}`,...(mTyp(ma).bonus?{}:{rot:1}),tab:'gut',sub:'betrieb'});
-    else if(ma.zustand<MASCH_GELB) A.push({t:`🔧 ${maschName(ma)} bei ${ma.zustand} %: `+(mw?'deine Kellerhelfer warten nach der Lese':'Warten lohnt sich'),tab:'gut',sub:'betrieb',...(mw?{ruhig:1}:{})});
+  for(const ma of S.maschinen) if(ma.zustand<MASCH_ROT) A.push({t:`🔧 ${maschName(ma)} bei ${ma.zustand} %: fällt aus, bis ${maschEr(ma)} gewartet ist${mTyp(ma).bonus?', solange fehlt der Bonus':''}`,...(mTyp(ma).bonus?{}:{rot:1}),...maschOrt(ma)});
+    else if(ma.zustand<MASCH_GELB) A.push({t:`🔧 ${maschName(ma)} bei ${ma.zustand} %: `+(mw?'deine Kellerhelfer warten nach der Lese':'Warten lohnt sich'),...maschOrt(ma),...(mw?{ruhig:1}:{})});
   const of=maschOhneFahrer().filter(x=>mTyp(x).leute==='helfer').length;
   if(maschOhneFahrer().some(x=>mTyp(x).leute==='lagerarb')) A.push({t:'🍾 Die Abfüllanlage steht still, es fehlt ein Kellermensch',tab:'stadt',sub:'arbeit'});
   if(of&&!fehlText()) A.push({t:`🚜 ${of===1?'Eine Maschine steht':of+' Maschinen stehen'} still, es ${fahrerFehlen()===1?'fehlt ein Fahrer':'fehlen '+fahrerFehlen()+' Fahrer'}`,tab:'stadt',sub:'arbeit'});
