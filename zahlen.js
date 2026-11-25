@@ -744,29 +744,43 @@ const AUK_MONATE=[2,3,6,10], AUK_CHANCE=.22;
 // Ab dem Jungwinzer kommt das erste Angebot per Zufall, spätestens AUK_ERST_JAHRE Jahre nach dem Aufstieg (S.aukErst merkt den Monat, in dem es kam).
 const AUK_FRUEH_HA=1, AUK_FRUEH_JAHRE=3, AUK_ERST_JAHRE=4;
 // Seit 13.4.9 (Nachtrag 3, Maik 22.11.2026): Land mit Lage. Jedes Stück Land ist einfacher Hang, kühle Höhenlage oder steiler Südhang (S.hang, S.ha bleibt die Summe).
-// Die Spitzen-Sorte wächst nur auf dem Südhang. Sekt auf dem einfachen Hang bekommt bis SEKT_EINFACH_P weniger, seit 14.5.7 (Maik 25.11.2026, Frage 2) nicht mehr
-// in der Qualität, sondern als Punkte am Sekt (l.sektP): im Preis 1 Punkt gleich 1 Prozent, bei der Jury die Punkte direkt (bis 14.5.6 SEKT_EINFACH_QP auf die Punkte).
+// Nachtrag zu 14.5 (Maik 25.11.2026): Jede Lage trägt genau eine Sorte (SORTE_LAGE): einfacher Hang nur die Menge-Sorte, Höhenlage nur die Sekt-Sorte, Südhang nur
+// die Spitzen-Sorte, die Spitzenlage nur die Spitzen-Sorte. Kein Ausweichen in fremde Lagen, kein Mischen, kein Mitteln von Klima und Boden. Damit ist auch der
+// Abzug für Sekt vom einfachen Hang ganz weg (seit 13.4.9 auf die Punkte, in 14.5.7 als Punkte am Sekt), das Hefelager HEFE_LANG_P bleibt.
 // SUED_MAX: höchstens so viele Hektar Südhang besitzt du in der ganzen Partie, die Spitzenlage eingerechnet. Bis sie unter den Hammer kam, bleiben ihre SPITZE_HA dafür frei.
 // satz steht bei der Auktion (Platzhalter bis 14.4).
-const LAGEN={einfach:{name:'einfacher Hang',kurz:'Einfacher Hang',sym:'🌄',satz:'Auf dem einfachen Hang trägt die Menge-Sorte gut, der Sekt verliert dort ein paar Punkte.'},
-  hoehe:{name:'kühle Höhenlage',kurz:'Kühle Höhenlage',sym:'🏔️',satz:'Oben in der kühlen Höhenlage wird der Sekt am feinsten.'},
+// Seit dem Nachtrag zu 14.5 nennen die Sätze die eine Sorte der Lage (Platzhalter, Wortlaut in Meilenstein 17).
+const LAGEN={einfach:{name:'einfacher Hang',kurz:'Einfacher Hang',sym:'🌄',satz:'Auf dem einfachen Hang wächst die Menge-Sorte, jede Lage hat ihre Sorte.'},
+  hoehe:{name:'kühle Höhenlage',kurz:'Kühle Höhenlage',sym:'🏔️',satz:'Oben in der kühlen Höhenlage wächst die Sekt-Sorte, jede Lage hat ihre Sorte.'},
   sued:{name:'steiler Südhang',kurz:'Steiler Südhang',sym:'☀️',satz:'Nur auf dem steilen Südhang wächst die Spitzen-Sorte, und mehr als 8 Hektar davon bekommt kein Weingut.'}};
-const LAGE_REIHE=['einfach','hoehe','sued'], SUED_MAX=8, SEKT_EINFACH_P=5;
+const LAGE_REIHE=['einfach','hoehe','sued'], SUED_MAX=8;
+// Nachtrag zu 14.5 (Maik 25.11.2026): die eine Lage je Rolle. Die Spitzenlage ist ein eigener Weinberg und steht nicht hier.
+const SORTE_LAGE={menge:'einfach',sekt:'hoehe',spitze:'sued'};
 // Lagen der Lose bei der Auktion je Rang, als Anteile (Platzhalter bis 14.2): im ersten Akt nur einfacher Hang, ab dem Weingutsbesitzer vor allem kühle Höhenlage,
 // seit 14.4.2 ab dem Weinbaurat auch Südhang (bis 14.2 ab dem Gutsherrn). Es gilt die letzte Zeile, deren Rang erreicht ist.
 const AUK_LAGE=[{r:0,w:{einfach:1}},{r:4,w:{einfach:.3,hoehe:.7}},{r:6,w:{einfach:.2,hoehe:.5,sued:.3}}];
+// Nachtrag zu 14.5 (Maik 25.11.2026, Annahmen 39 und 41): Sichere Auktion, damit niemand ohne Land für seine Sorte dasteht. Nach dem Aufstieg in den Rang r kommt
+// nach AUK_SICHER_JAHRE Jahren (eins davon gewürfelt) im nächsten Auktionsmonat sicher ein Los dieser Lage, unangekündigt. Höhenlage vor Südhang, wie die Reihe hier.
+// Startwerte für Meilenstein 15.
+const AUK_SICHER=[{lage:'hoehe',r:4},{lage:'sued',r:6}], AUK_SICHER_JAHRE=[1,2];
 // Landpreis je Akt (RANG_AKT) und je Lage als Faktoren auf Startgebot und Gebote. Neutral auf dem heutigen Preis, die Werte setzt 14.2 (Platzhalter).
 // Seit 14.4.5 (Entscheidung 5): Preisniveau je Lage einfacher Hang 1, Höhenlage 2, Südhang 4, auf Startgebot und alle Gebote (bis 14.4.4 überall 1).
 const AUK_PREIS_AKT={1:1,2:1,3:1}, AUK_PREIS_LAGE={einfach:1,hoehe:2,sued:4};
 // Seit 13.7.5 (Entscheidung 9, Platzhalter bis 14.2): Wert des Loses = Hektar × AUK_WERT_HA × Gebiet × Lage × Akt × Landpreis (S.landF). Auf Stufen mit DIFF.klug
 // gehen die Gegner bis AUK_KLUG[0] bis [1] davon, statt wie sonst 14.000 bis 26.000 € je Hektar nach Laune. AUK_WERT_HA ist die alte Obergrenze der Laune.
 const AUK_WERT_HA=26000, AUK_KLUG=[.9,1];
-// Sätze zur Lage im Weinberg und beim Pflanzen (Platzhalter bis 14.4).
-const SUED_SATZ={
-  keinPlatz:`Die Spitzen-Sorte wächst nur auf dem steilen Südhang, und dort ist kein Platz frei. Südhang gibt es bei den Auktionen ab dem Rang ${RAENGE[AUK_LAGE[AUK_LAGE.length-1].r].name} und einmal mit der Spitzenlage.`,
-  spitze:'Sie wächst nur auf dem steilen Südhang.',
-  sekt:`Sekt wird am besten auf der kühlen Höhenlage, vom einfachen Hang kostet er bis ${SEKT_EINFACH_P} % weniger und bekommt bei der Jury bis ${SEKT_EINFACH_P} Punkte weniger.`, // seit 14.5.7, Platzhalter, Wortlaut in Meilenstein 17
-  umpflanzen:'Rodest du die Menge-Sorte, um Sekt zu pflanzen, sind die gerodeten Reben samt ihrer Pflege weg. Die neuen übernehmen die Pflegestufe der Sekt-Sorte, und auf dem einfachen Hang wird der Sekt schlechter.'};
+// Sätze zur Lage im Weinberg und beim Pflanzen. Seit dem Nachtrag zu 14.5 (Maik 25.11.2026) für alle drei Lagen gleich gebaut, statt der alten Sätze nur für den Südhang
+// und den Sekt. Platzhalter, Wortlaut in Meilenstein 17.
+const LAGE_SATZ={
+  auf:{einfach:'dem einfachen Hang',hoehe:'der kühlen Höhenlage',sued:'dem steilen Südhang'},
+  nur:'Sie wächst nur auf {lage}, jede Lage hat ihre Sorte.',
+  kein:'{sorte} wächst nur auf {lage}, und dort ist kein Platz frei. Jede Lage hat ihre Sorte. {woher}',
+  woher:{einfach:'Einfachen Hang gibt es bei den Auktionen und beim Makler.',
+    hoehe:`Höhenlage gibt es bei den Auktionen ab dem Rang ${RAENGE[AUK_SICHER[0].r].name}.`,
+    sued:`Südhang gibt es bei den Auktionen ab dem Rang ${RAENGE[AUK_SICHER[1].r].name} und einmal mit der Spitzenlage.`},
+  voll:'Auf {lage} ist kein Platz frei.',
+  roden:'Die Fläche bleibt {lage}, nachgepflanzt wird dort wieder nur die Sorte dieser Lage.',
+  komp:'Jede Lage hat ihre Sorte: Auf dem einfachen Hang wächst die Menge-Sorte, auf der kühlen Höhenlage die Sekt-Sorte, auf dem steilen Südhang und in der Spitzenlage die Spitzen-Sorte. Gepflanzt wird nur, so weit die eigene Lage freies Land hat. Damit niemand ohne Land dasteht, kommt nach dem Rang {hoehe} und nach dem Rang {sued} je einmal sicher ein Los der neuen Lage unter den Hammer.'};
 // Version 7.0 (Schritt I): In der langen Partie kommt der Weinskandal rund alle anderthalb Jahre, die Erbschaft alle drei.
 // Damit nicht immer derselbe Text steht, wechseln die Varianten der Reihe nach durch (S.vz), ohne Zufall.
 // Version 7.0 (Schritt J, Maik 16.11.2026): Nach einem Weinskandal ist SKANDAL_PAUSE Monate Ruhe (S.skAb), sonst füllt er spät die Lücke der schlechten Ereignisse.
@@ -1568,11 +1582,11 @@ const OE_PREIS_JE=.01, OE_PREIS_MAX=.1, OE_JURY_MAX=10, EIS_OE_SCHWELLE=110, EDE
 // Die Trockenbeerenauslese gibt es damit nur mit den Rosinen im Dezember, ab dem Vizepräsidenten (FREI.weg_tba). Erst die Rosinen öffnen den Weg bis OE_MAX.
 const EDEL_OE_MAX=149;
 // Klima je Weinberg (Nachtrag zu 14.5.4, Maik 25.11.2026), alle Werte des Klimas an dieser Stelle. Die Öchsle starten im Juli bei OE_START plus Lage plus Sorte plus Gebiet.
-// Lage (KLIMA_LAGE): einfacher Hang 0, Höhenlage -2, Südhang +2, Spitzenlage +7 (bis dahin SPITZE_OE 5). Steht ein Weinberg auf mehreren Lagen, zählt der Schnitt
-// nach Reben wie beim Boden (wbBodenP), auf ganze Grad gerundet. Sorte (KLIMA_SORTE): Menge -4, weil sie viel trägt und weniger Zucker bildet, Sekt 0, Spitze -2,
+// Lage (KLIMA_LAGE): einfacher Hang 0, Höhenlage -2, Südhang +2, Spitzenlage +7 (bis dahin SPITZE_OE 5). Seit dem Nachtrag zu 14.5 steht jeder Weinberg auf genau
+// seiner Lage (SORTE_LAGE), bis dahin zählte der Schnitt nach Reben. Sorte (KLIMA_SORTE): Menge -4, weil sie viel trägt und weniger Zucker bildet, Sekt 0, Spitze -2,
 // weil sie spät reift (bis dahin ROLLEN.zucker -4, -2, 0). Gebiet (KLIMA_GEBIET) kühl, mittel, warm nach dem Feld warm in REGIONEN (gebietKlima), alle 0, die Zahlen
 // entscheidet Maik in Meilenstein 15. Die üblichen Paare bleiben wie vorher: Menge am Hang -4, Sekt in der Höhenlage -2, Spitze am Südhang 0, Spitzenlage +5.
-// Lage plus Sorte gilt auch für eine Sorte in fremder Lage (Menge am Südhang -2). Der Deckel bleibt an der Sorte (DECKEL_BASIS): Menge 105°, Spitze 124°, Sekt 90°
+// Fremde Lagen gibt es seit dem Nachtrag zu 14.5 nicht mehr. Der Deckel bleibt an der Sorte (DECKEL_BASIS): Menge 105°, Spitze 124°, Sekt 90°
 // (seit 14.5.4, Öchsle-Nachtrag, Annahme 35, bis 14.5.3: 90°, 104°, 90°). Das Monatsmodell zählt den kleineren Wert aus Wetter und Deckel.
 const KLIMA_LAGE={einfach:0,hoehe:-2,sued:2,spitzenlage:7}, KLIMA_SORTE={menge:-4,sekt:0,spitze:-2}, KLIMA_GEBIET={kuehl:0,mittel:0,warm:0};
 const DECKEL_BASIS={menge:105,spitze:124,sekt:90};
@@ -1603,7 +1617,7 @@ const WAGNIS_KOPF='⚖️ Wagnis beim Weinprüfer', WAGNIS_KNOPF='Wagen', PRESSE
   URTEIL_ANS_MINUS=' {n} Ansehen.', PRESSE_JA=' 📰 Die Presse feiert den Wein.', PRESSE_NEIN=' 📰 Die Presse schreibt über die Pleite.', DURCH_NAME=' (herabgestuft)';
 // Jury (Entscheidung 36, Maik 25.11.2026): Jahrhundertwein JH_JURY mehr, Sekt mit dem Wert SEKT_JURY, die Felder WETT_FELD_PLUS höher.
 const JH_JURY=15, SEKT_JURY=11, WETT_FELD_PLUS=40;
-// Sekt (Maik 25.11.2026, Frage 2): langes Hefelager HEFE_LANG_P Punkte, einfacher Hang bis SEKT_EINFACH_P weniger. Seit 14.5.7 stehen beide bei ihren Vorgängern
-// (HEFE_LANG beim Sektkeller, LAGE_REIHE bei den Lagen), weil Texte dort beim Laden schon gebaut werden.
+// Sekt (Maik 25.11.2026, Frage 2): langes Hefelager HEFE_LANG_P Punkte, seit 14.5.7 beim Sektkeller (HEFE_LANG), weil Texte dort beim Laden schon gebaut werden.
+// Der Abzug für Sekt vom einfachen Hang ist mit dem Nachtrag zu 14.5 (jede Lage eine Sorte) ganz weggefallen.
 // Seit 14.5.7: Punkte am Wein außerhalb der Qualität (Medaillen l.medP, Sekt l.sektP) zählen im Preis PUNKT_PREIS je Punkt (1 Punkt gleich 1 Prozent, Annahme 25).
 const PUNKT_PREIS=.01;

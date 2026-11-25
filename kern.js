@@ -79,12 +79,10 @@ function deckel(id){const f=S.felder[id]||{}; return DECKEL_BASIS[rolleK(id)]+BO
 // Obergrenze im Monatsmodell: der Deckel, mit Edelfäulnis bei der Spitzen-Sorte OE_MAX (seit 14.5.4 175°, bis 14.5.3 150°).
 // Seit dem Nachtrag zu 14.5.4: mit Edelfäulnis höchstens EDEL_OE_MAX, erst nach den Rosinen (f.rosin) OE_MAX.
 function oeGrenze(id){const f=S.felder[id]; return f&&f.edel&&rolleK(id)==='spitze'?(f.rosin?OE_MAX:EDEL_OE_MAX):deckel(id)}
-// Klima je Weinberg (Nachtrag zu 14.5.4, Maik 25.11.2026): Lage als Schnitt nach Reben wie wbBodenP, die Spitzenlage mit ihrem eigenen Wert, dazu Sorte und Gebiet.
-// Ohne Reben die Lage, auf der der Weinberg wachsen würde. Gerundet auf ganze Grad (Math.round), die Öchsle bleiben ganze Zahlen.
+// Klima je Weinberg (Nachtrag zu 14.5.4, Maik 25.11.2026): Lage plus Sorte plus Gebiet, die Spitzenlage mit ihrem eigenen Wert. Gerundet auf ganze Grad.
+// Seit dem Nachtrag zu 14.5 (jede Lage eine Sorte) steht jeder Weinberg auf genau seiner Lage (lageVon), bis dahin zählte der Schnitt nach Reben.
 const gebietKlima=r=>r.warm>0?'warm':r.warm<0?'kuehl':'mittel';
-function klimaLagen(id){if(istSL(id)) return {spitzenlage:1}; const w=lagenBelegung().W[id], n=w?LAGE_REIHE.reduce((a,lg)=>a+w[lg],0):0;
-  if(!n) return {[spitzeId(id)?'sued':rolleK(id)==='sekt'&&hangHa('hoehe')>0?'hoehe':'einfach']:1};
-  const A={}; for(const lg of LAGE_REIHE) if(w[lg]>0) A[lg]=w[lg]/n; return A}
+function klimaLagen(id){return istSL(id)?{spitzenlage:1}:{[lageVon(id)]:1}}
 function klimaOe(id){const A=klimaLagen(id); return Math.round(Object.keys(A).reduce((a,lg)=>a+A[lg]*KLIMA_LAGE[lg],0)+KLIMA_SORTE[rolleK(id)]+KLIMA_GEBIET[gebietKlima(R())])}
 // In Worten für den Weinberg, ohne Zahlen. Platzhalter, Wortlaut in Meilenstein 17.
 function klimaText(id){const A=klimaLagen(id), L=Object.keys(A).map(lg=>`${lg==='spitzenlage'?SL_NAME:LAGEN[lg].kurz} ${KLIMA_WORT[lg]}`);
@@ -234,19 +232,13 @@ const stufeSatz=(s,z,SW,N)=>{if(s>=N.length-1) return `${N[s]}, höher geht es n
 // Seit 14.2.5 (Annahme 8): der nach Reben gewichtete Schnitt der Lagen, auf denen der Weinberg steht (lagenBelegung). Ohne Reben die Lage, auf die er käme,
 // ohne id der einfache Hang. S.bodenSt merkt die höchste gemeldete Stufe aller Lagen, je Lage S.bodenStL.
 const lageBodenP=lg=>(S.bodenP||{})[lg]||0, lageBoden=lg=>stufeZu(lageBodenP(lg),BODEN_SCHWELLE);
-// Welche Reben auf welcher Lage stehen, zu deinen Gunsten wie bisher: die Spitzen-Sorte auf dem Südhang, die Sekt-Sorte zuerst auf der Höhenlage, dann auf
-// dem übrigen Südhang, dann auf dem einfachen Hang, die Menge-Sorte (und Sorten ohne Rolle) zuerst auf dem einfachen Hang, dann auf dem, was frei ist.
-// Was nirgends Platz hat (Rundung), zählt zum einfachen Hang, bei der Spitzen-Sorte zum Südhang. W je Sorte, T je Lage, alles in Reben.
-const BELEG_REIHE={spitze:['sued'],sekt:['hoehe','sued','einfach'],menge:['einfach','hoehe','sued']}, ROLLE_REIHE=['spitze','sekt','menge'];
-function lagenBelegung(){const frei={}, W={}, T={einfach:0,hoehe:0,sued:0}; for(const lg of LAGE_REIHE) frei[lg]=hangHa(lg)*HA_REBEN; frei.sued=Math.max(0,frei.sued-slFl()); // seit 14.4.4 ohne die Spitzenlage
-  const ids=R().sorten.slice().sort((a,b)=>ROLLE_REIHE.indexOf(rolleK(a))-ROLLE_REIHE.indexOf(rolleK(b)));
-  for(const id of ids){let n=(S.felder[id]||{}).reben||0; const w=W[id]={einfach:0,hoehe:0,sued:0};
-    for(const lg of BELEG_REIHE[rolleK(id)]){const k=Math.min(n,frei[lg]); w[lg]+=k; frei[lg]-=k; n-=k}
-    if(n>0) w[spitzeId(id)?'sued':'einfach']+=n; for(const lg of LAGE_REIHE) T[lg]+=w[lg]}
+// Welche Reben auf welcher Lage stehen. Seit dem Nachtrag zu 14.5 (Maik 25.11.2026, jede Lage eine Sorte) eins zu eins: jede Sorte ganz auf ihrer Lage (lageVon),
+// auch ein Rundungsrest. Bis dahin wurden die Reben zu deinen Gunsten über fremde Lagen verteilt. W je Sorte, T je Lage, alles in Reben, ohne die Spitzenlage.
+function lagenBelegung(){const W={}, T={einfach:0,hoehe:0,sued:0};
+  for(const id of R().sorten){const w=W[id]={einfach:0,hoehe:0,sued:0}, lg=lageVon(id); w[lg]=(S.felder[id]||{}).reben||0; T[lg]+=w[lg]}
   return {W,T}}
-function wbBodenP(id){if(!id) return lageBodenP('einfach'); if(istSL(id)) return (S.felder[id]||{}).bodenP||0; const w=lagenBelegung().W[id], n=w?LAGE_REIHE.reduce((a,lg)=>a+w[lg],0):0;
-  if(!n) return lageBodenP(spitzeId(id)?'sued':rolleK(id)==='sekt'&&hangHa('hoehe')>0?'hoehe':'einfach');
-  return epRund(LAGE_REIHE.reduce((a,lg)=>a+w[lg]*lageBodenP(lg),0)/n)}
+// Boden eines Weinbergs: die Bodenpunkte seiner Lage, die Spitzenlage ihre eigenen (f.bodenP). Ohne id der einfache Hang. Seit dem Nachtrag zu 14.5 ohne Schnitt über Lagen.
+function wbBodenP(id){if(!id) return lageBodenP('einfach'); if(istSL(id)) return (S.felder[id]||{}).bodenP||0; return lageBodenP(lageVon(id))}
 // Seit 14.2.5 (Entscheidungen 38 und 41, Annahme 7): S.bodenFl merkt je Lage die größte bisher bepflanzte Fläche in Reben. Wächst die bepflanzte Fläche
 // darüber, sinken die Punkte der Lage genau um den Anteil der neuen Fläche. Nachpflanzen auf gezählter Fläche und gekauftes Land ohne Reben kosten nichts.
 function bodenVerduennen(){const T=lagenBelegung().T, F=S.bodenFl=S.bodenFl||{einfach:0,hoehe:0,sued:0}, P=S.bodenP=S.bodenP||{einfach:0,hoehe:0,sued:0};
@@ -727,20 +719,21 @@ function flaecheBep(){return Math.round(rebenGesamt()/HA_REBEN*10)/10}
 // Seit 13.4.9 (Nachtrag 3): Land je Lage in S.hang (S.lage ist schon Weinskandal und Mode). S.ha bleibt die Summe und wächst nur über landDazu.
 // S.suedMax merkt den höchsten Südhang-Besitz der Partie, S.spitzeAuk das Jahr, in dem die Spitzenlage unter den Hammer kam.
 const hangHa=lg=>(S.hang||{})[lg]||0;
+// Nachtrag zu 14.5 (Maik 25.11.2026): Jede Lage trägt genau eine Sorte (SORTE_LAGE). lageVon ist die Lage eines Weinbergs, lageReben zählt die Reben auf einer Lage
+// (am Südhang samt der ganzen Spitzenlage, slFl), lagePlatz den freien Platz dort in Reben. Gepflanzt wird nur auf die eigene Lage (platzFuer).
+const lageVon=id=>SORTE_LAGE[rolleK(id)]||'einfach';
+function lageReben(lg){return R().sorten.filter(id=>lageVon(id)===lg).reduce((a,id)=>a+((S.felder[id]||{}).reben||0),0)+(lg==='sued'?slFl():0)}
+const lagePlatz=lg=>Math.max(0,hangHa(lg)*HA_REBEN-lageReben(lg));
 function landDazu(lg,ha){const H=S.hang=S.hang||{einfach:S.ha,hoehe:0,sued:0}; H[lg]=Math.round(((H[lg]||0)+ha)*10)/10; S.ha=Math.round((S.ha+ha)*10)/10; if(lg==='sued') S.suedMax=Math.max(S.suedMax||0,H.sued)}
 // Wie viel Südhang darf noch kommen: SUED_MAX minus Besitz, bis die Spitzenlage unter den Hammer kam, bleiben ihre SPITZE_HA frei.
 function suedRest(){return Math.max(0,SUED_MAX-hangHa('sued')-(S.spitzeAuk?0:SPITZE_HA))}
-// Freier Platz in Reben. Die Spitzen-Sorte wächst nur auf freiem Südhang, Menge- und Sekt-Sorte dürfen überall stehen.
-function suedPlatz(){return Math.max(0,hangHa('sued')*HA_REBEN-handReben())}
-function platzFuer(id){const f=Math.max(0,S.ha*HA_REBEN-rebenGesamt()); return istSL(id)?slPlatz():spitzeId(id)?Math.min(f,suedPlatz()):f}
-// Anteil der Sekt-Reben auf dem einfachen Hang. Die Reben bleiben je Sorte, die Lage ergibt sich zu deinen Gunsten: Die Spitzen-Sorte steht auf dem Südhang,
-// der Sekt zuerst auf der Höhenlage, dann auf dem übrigen Südhang, erst der Rest auf dem einfachen Hang. Der Abzug gilt anteilig (Annahme von Claude).
-function sektEinfach(){const s=R().sorten.filter(sektSorte).reduce((a,id)=>a+S.felder[id].reben,0); if(!s) return 0; const gut=Math.max(0,(hangHa('hoehe')+hangHa('sued'))*HA_REBEN-handReben()); return Math.max(0,s-gut)/s}
-const sektAbzug=()=>Math.round(SEKT_EINFACH_P*sektEinfach()); // seit 14.5.7 Punkte am Sekt (l.sektP), bis 14.5.6 SEKT_EINFACH_QP auf die Qualität
-// So viele Reben der Menge- oder Sekt-Sorte passen noch, ohne Südhang zu belegen (für die Warnung beim Pflanzen). Ohne Südhang unbegrenzt.
-function suedWarnAb(id){if(spitzeId(id)||!hangHa('sued')) return Infinity; const belegt=rebenGesamt()-Math.min(handReben(),hangHa('sued')*HA_REBEN);
-  return Math.min(platzFuer(id),Math.max(0,(hangHa('einfach')+hangHa('hoehe'))*HA_REBEN-belegt))}
-function sektHangSatz(){const a=Math.round(sektEinfach()*100); return `${SUED_SATZ.sekt}${a?` Gerade stehen ${a} % deiner Sekt-Reben auf dem einfachen Hang.`:''}`}
+// Freier Platz in Reben. Seit dem Nachtrag zu 14.5 (jede Lage eine Sorte) für jede Sorte nur auf ihrer eigenen Lage (lagePlatz), die Spitzenlage auf ihrem eigenen Platz.
+// Bis dahin durften Menge- und Sekt-Sorte überall stehen, die Warnung vor belegtem Südhang und der Sekt-Abzug vom einfachen Hang sind weg.
+const suedPlatz=()=>lagePlatz('sued');
+function platzFuer(id){return istSL(id)?slPlatz():lagePlatz(lageVon(id))}
+// Satz, warum eine Sorte nicht gepflanzt werden kann, in Worten (LAGE_SATZ). Platzhalter, Wortlaut in Meilenstein 17.
+function lageKeinSatz(id){const lg=lageVon(id); return LAGE_SATZ.kein.replace('{sorte}',SORTEN[id].name).replace('{lage}',LAGE_SATZ.auf[lg]).replace('{woher}',LAGE_SATZ.woher[lg])}
+const lageNurSatz=id=>LAGE_SATZ.nur.replace('{lage}',LAGE_SATZ.auf[lageVon(id)]);
 // Stände vor 13.4.9: Ihr Land zählt als einfacher Hang. Die Spitzenlage zählt als Südhang, dazu so viel Land, wie Spitzen-Reben darauf stehen (aufgerundet, zusammen höchstens SUED_MAX).
 // Stehen mehr Spitzen-Reben, bleiben sie stehen, nachgepflanzt wird nur auf freiem Südhang. Kam die Spitzenlage schon unter den Hammer, kommt sie nicht noch einmal.
 function altHang(){if(S.hang) return; const sued=Math.min(SUED_MAX-(S.spitze||S.spitzeVers?0:SPITZE_HA),S.ha,Math.max(S.spitze?SPITZE_HA:0,Math.ceil(handReben()/HA_REBEN)));
@@ -915,7 +908,7 @@ function juryTeile(l,mitReife){return {qual:l.qp||0,stufe:l.sekt?SEKT_JURY:(STUF
   oe:l.sekt?0:Math.min(OE_JURY_MAX,oeUeber(l.stufe,l)),jh:jhWein(l)?JH_JURY:0,med:l.medP||0,sekt:l.sekt?(l.sektP||0):0}}
 const juryGrund=(l,mitReife)=>Object.values(juryTeile(l,mitReife)).reduce((a,b)=>a+b,0);
 // Die Bausteine in Worten für die Fenster der Wettbewerbe. Platzhalter, Wortlaut in Meilenstein 17.
-function juryText(l,mitReife){const t=juryTeile(l,mitReife), n={stufe:l.sekt?'Sekt':'Weinstufe',reife:'Flaschenreife',oe:'Öchsle',jh:'Jahrhundertwein',med:'Medaillen',sekt:'Hefe und Hang'};
+function juryText(l,mitReife){const t=juryTeile(l,mitReife), n={stufe:l.sekt?'Sekt':'Weinstufe',reife:'Flaschenreife',oe:'Öchsle',jh:'Jahrhundertwein',med:'Medaillen',sekt:'Hefelager'};
   return `${juryGrund(l,mitReife)} Punkte: Qualität ${t.qual}`+Object.keys(n).filter(x=>t[x]).map(x=>`, ${n[x]} ${t[x]>0?'+':'−'}${Math.abs(t[x])}`).join('')}
 // Punkte eines Weins im laufenden Wettbewerb. Stehen beim Einreichen fest.
 function wettPunkte(l){const w=S.wett;return juryGrund(l,w.typ!=='land')+w.zufall+(R().wettPlus||0)}
@@ -1035,6 +1028,15 @@ function altSchau(){if(S.wett&&S.wett.typ==='welt') S.wett=null}
 // Seit 14.4.5: Eine Lage ohne ganzen Hektar Rest bis zu deinem Deckel kommt nicht ins Los (landRest, am Südhang samt suedRest).
 function aukLage(){const z=AUK_LAGE.filter(x=>S.rang>=x.r).pop().w, W=LAGE_REIHE.filter(lg=>z[lg]>0&&landRest(lg)>=1); if(W.length<2) return W[0]||'einfach';
   let r=Math.random()*W.reduce((a,lg)=>a+z[lg],0); for(const lg of W){r-=z[lg]; if(r<0) return lg} return W[W.length-1]}
+// Nachtrag zu 14.5 (Maik 25.11.2026, Annahmen 39 und 41): sichere Auktion. Nach dem Rang AUK_SICHER[i].r kommt AUK_SICHER_JAHRE Jahre später (gewürfelt über fest,
+// Thema 16, fest je Partie) im nächsten Auktionsmonat ohne Chance und ohne Erst-Sperre ein Los dieser Lage, solange keine andere Auktion läuft, unangekündigt.
+// Besitzt der Spieler die Lage danach noch nicht, bringt jede weitere Auktion sie wieder, erst dann wird gewürfelt wie sonst. Höhenlage vor Südhang, die Spitzenlage
+// zählt nicht als Südhang (landBesitz). Passt kein ganzer Hektar bis zum Deckel (landRest), ruht die Garantie dieser Lage. S.aukSicher merkt, welche schon kam.
+function aukSicherTag(i){const x=AUK_SICHER[i], m0=(S.rangMon||{})[x.r]; if(m0==null) return null;
+  return m0+12*AUK_SICHER_JAHRE[Math.min(AUK_SICHER_JAHRE.length-1,Math.floor(fest(16,i,Math.floor(m0/12),m0%12)*AUK_SICHER_JAHRE.length))]}
+function aukSicherLage(){for(let i=0;i<AUK_SICHER.length;i++){const x=AUK_SICHER[i]; if(S.rang<x.r||landBesitz(x.lage)>0) continue; const t=aukSicherTag(i);
+    if(t==null||S.jahr*12+S.monat<t) return null; if(landRest(x.lage)<1) continue; return x.lage} return null}
+const aukSicherNeu=()=>{const lg=aukSicherLage(); return !!lg&&!(S.aukSicher||{})[lg]};
 const aukLageF=lg=>(AUK_PREIS_AKT[RANG_AKT[S.rang]]||1)*(AUK_PREIS_LAGE[lg]||1);
 // Seit 13.7.5: der Landpreis, nur auf Stufen mit DIFF.land, sonst 1.
 const landF=()=>(DIFF[S.schwer]||{}).land?(S.landF||1):1;
@@ -1053,7 +1055,9 @@ function neueAuktion(spitze,haFest){
   // Seit 13.3.7: haFest gibt die Größe des Loses vor (vor dem Winzer AUK_FRUEH_HA).
   // Seit 13.4.9: Lage des Loses nach Rang (aukLage), ein Südhang-Los höchstens so groß, wie suedRest() erlaubt, der Preis mal Faktor je Akt und Lage.
   // Seit 14.4.5: Das Los wird auf deinen Rest bis zum Deckel der Lage gekürzt (landRest). Ist in keiner Lage ein ganzer Hektar frei, bleibt es, wie es ist, und du darfst nicht mitbieten.
-  const lage=aukLage(), ha0=haFest||auktionHa(), rest=Math.floor(landRest(lage)+1e-9), ha=rest>=1?Math.min(ha0,rest):ha0, pf=(R().aukPreisF||1)*aukLageF(lage)*landF(), start=Math.round(ha*8000*pf/500)*500, B=misch(NACHBARN).slice(0,rint(2,3)).map(n=>({name:n,limit:Math.round(ha*rnd(11000,30000)*pf/500)*500}));
+  // Nachtrag zu 14.5: Ist eine sichere Lage dran (aukSicherLage), bringt das Los sie, ohne zu würfeln.
+  const sich=aukSicherLage(); if(sich) (S.aukSicher=S.aukSicher||{})[sich]=1;
+  const lage=sich||aukLage(), ha0=haFest||auktionHa(), rest=Math.floor(landRest(lage)+1e-9), ha=rest>=1?Math.min(ha0,rest):ha0, pf=(R().aukPreisF||1)*aukLageF(lage)*landF(), start=Math.round(ha*8000*pf/500)*500, B=misch(NACHBARN).slice(0,rint(2,3)).map(n=>({name:n,limit:Math.round(ha*rnd(11000,30000)*pf/500)*500}));
   for(const g of S.gegner) if(g.region===S.region){
     const t=GEGNER_TYP[g.typ];
     // Der Zufall wird immer gezogen, auch wenn der Gegner am Deckel ist und nicht mitbietet.
@@ -1692,6 +1696,8 @@ for(const r of Object.keys(REGIONEN)) kompWissen('gebiet_'+r,'gebiet',REGIONEN[r
 kompWissen('spitze','gebiet','Spitzenlage',()=>`Die beste Lage weit und breit: ${SPITZE_HA} Hektar Steilhang in voller Südsonne. Dort ist es ${KLIMA_WORT.spitzenlage} als am einfachen Hang, die Trauben bekommen mehr Öchsle. Sie ist steiler Südhang, und unter den Hammer kommt sie nur einmal, ${freiText('spitzenlage')}.`);
 // Seit dem Nachtrag zu 14.5.4: Klima je Weinberg, nur in Worten (KLIMA_KOMP). Platzhalter, Wortlaut in Meilenstein 17.
 kompWissen('klima','gebiet','Klima je Weinberg',()=>KLIMA_KOMP.replace(/\{(\w+)\}/g,(m,k)=>KLIMA_WORT[k]));
+// Nachtrag zu 14.5 (Maik 25.11.2026): Jede Lage hat ihre Sorte, mit der sicheren Auktion. Platzhalter, Wortlaut in Meilenstein 17.
+kompWissen('lagen','gebiet','Jede Lage hat ihre Sorte',()=>LAGE_SATZ.komp.replace('{hoehe}',RAENGE[AUK_SICHER[0].r].name).replace('{sued}',RAENGE[AUK_SICHER[1].r].name));
 for(let k=1;k<=KELLER_PREISE.length;k++) kompWissen('keller'+k,'technik',KELLER_NAMEN[k-1],
   ()=>`Stufe ${k} im Kellerausbau. Kostet ${eur(KELLER_PREISE[k-1])} und geht mit ${kellerMit(k-1)} im Kellerbuch. Prädikatsweine und Eiswein sind damit ${k} ${k===1?'Monat':'Monate'} früher verkaufsreif, und jeder Wein gewinnt beim Reifen schneller an Wert.`);
 // Seit 12.1: der Sektkeller mit der Flaschengärung als kleine Geschichte (KOMP_TEXT.sektkeller).
@@ -1751,7 +1757,7 @@ function kompIds(kap){
 function kompSeiten(kap){
   if(kap==='sorte') return [...kompIds(kap),...sortenFolge().map(id=>'sorte_'+id)];
   if(kap==='stufe') return [...kompIds(kap),'edel','zeichen','regeln'];
-  if(kap==='gebiet') return ['gebiet_'+S.region,'spitze','klima',...Object.keys(REGIONEN).filter(r=>r!==S.region).map(r=>'gebiet_'+r)];
+  if(kap==='gebiet') return ['gebiet_'+S.region,'spitze','klima','lagen',...Object.keys(REGIONEN).filter(r=>r!==S.region).map(r=>'gebiet_'+r)];
   if(kap==='technik') return [...KELLER_PREISE.map((p,i)=>'keller'+(i+1)),'sektkeller','reife','zuckern',...Object.keys(MASCH).map(id=>'masch_'+id)];
   if(kap==='gefahr') return ['hagel','spaetfrost','kaelte','skandal','kontrolle','maschine','helferweg',...Object.keys(SCHAED).filter(a=>schaedAn()&&(S.schaedGes||{})[a])];
   return kompIds(kap);
@@ -2336,7 +2342,8 @@ function etappe3Monat(Z){
   }
   // Seit 13.4.1: aukF des Gebiets (Rheingau) auf die Chance einer Auktion.
   // Seit 13.3.7: vor dem Winzer selten und klein (aukChance), ab dem Jungwinzer kommt das erste Angebot spätestens nach AUK_ERST_JAHRE Jahren (aukErstFaellig).
-  if(!S.auktion&&AUK_MONATE.includes(S.monat)&&(S.jahr-START_JAHR)*12+S.monat>=6&&!aukErstSperre()&&(aukErstFaellig()||Math.random()<aukChance())){
+  // Nachtrag zu 14.5: Die erste sichere Auktion einer Lage (aukSicherNeu) kommt ohne Chance und ohne Erst-Sperre.
+  if(!S.auktion&&AUK_MONATE.includes(S.monat)&&(aukSicherNeu()||(S.jahr-START_JAHR)*12+S.monat>=6&&!aukErstSperre()&&(aukErstFaellig()||Math.random()<aukChance()))){
     neueAuktion(0,frei('auktion_oft')?0:AUK_FRUEH_HA); if(S.rang>=R_AUKTION&&!S.aukErst) S.aukErst=S.jahr*12+S.monat;
     schlag(55,`Weinberg ${wo} zu versteigern`,`Nächsten Monat kommen ${losText(S.auktion)} unter den Hammer, das Startgebot liegt bei ${eur(S.auktion.start)}. ${losLage(S.auktion).satz}${!ab?nichtDu:aukDeckel()?' '+AUK_ZU_GROSS:' Halte Geld oder Kreditrahmen bereit.'}`,'auktion',{archiv:1});
   }
@@ -2851,10 +2858,11 @@ function pflanzAb(id,n){const v=S.verlust||{}, a=Math.min(v[id]||0,n); if(a) v[i
 const pflanzMitA=id=>(S.felder[id].auftrag||0)>0;
 const pflanzKann=id=>sorteFrei(id)&&!(sektSorte(id)&&!S.sektkeller);
 const pflanzReihe=()=>[...weinberge().filter(pflanzMitA),...weinberge().filter(id=>!pflanzMitA(id))];
-// Seit 13.4.9: Die Spitzen-Sorte bekommt höchstens den freien Südhang (spitzeDeckel), auch beim Freihalten für ihren Auftrag.
-const spitzeDeckel=id=>istSL(id)?slPlatz():spitzeId(id)?suedPlatz():Infinity; // seit 14.4.4: die Spitzenlage nur auf ihren eigenen Platz
-const pflanzReserve=()=>R().sorten.filter(id=>pflanzMitA(id)&&pflanzKann(id)).reduce((a,id)=>a+Math.min(pflanzSoll(id),spitzeDeckel(id)),0);
-function pflanzPlan(id){let cap=Math.max(0,S.ha*HA_REBEN-rebenGesamt()); for(const x of pflanzReihe()){const n=pflanzKann(x)?Math.floor(Math.min(pflanzSoll(x),istSL(x)?Infinity:cap,spitzeDeckel(x))/10)*10:0; if(x===id) return n; if(!istSL(x)) cap-=n} return 0}
+// Seit 13.4.9: Die Spitzen-Sorte bekommt höchstens den freien Südhang, auch beim Freihalten für ihren Auftrag. Seit dem Nachtrag zu 14.5 gilt das für jede Sorte
+// auf ihrer Lage (platzFuer), freigehalten wird nur für Aufträge derselben Lage (pflanzReserve(lg)), die Spitzenlage nur auf ihren eigenen Platz.
+const pflanzReserve=lg=>R().sorten.filter(id=>lageVon(id)===lg&&pflanzMitA(id)&&pflanzKann(id)).reduce((a,id)=>a+Math.min(pflanzSoll(id),platzFuer(id)),0);
+function pflanzPlan(id){const cap={}; for(const lg of LAGE_REIHE) cap[lg]=lagePlatz(lg);
+  for(const x of pflanzReihe()){const lg=lageVon(x), n=pflanzKann(x)?Math.floor(Math.min(pflanzSoll(x),istSL(x)?slPlatz():cap[lg])/10)*10:0; if(x===id) return n; if(!istSL(x)) cap[lg]-=n} return 0}
 function helferArbeit(L){
   if(!S.helfer) return; const st=leuteSt('helfer'), m=S.monat; chefNorm();
   // Seit 14.2.3: Düngen und Rebschnitt nur, wo der Spieler sie abgegeben hat, schon ab Stufe 1 (Entscheidung 9).
@@ -2865,7 +2873,7 @@ function helferArbeit(L){
   if(st>=3&&m<=2&&abgabe('pflanzen')) for(const id of pflanzReihe()){
     const f=S.felder[id], soll=pflanzSoll(id); if(soll<10||!pflanzKann(id)) continue;
     const wm=mgrSt('weingut')>0, pr=rebenPreis(id); if(wm&&m<2&&pr>SORTEN[id].preis) continue;
-    const res=pflanzMitA(id)?0:pflanzReserve(), pu=wm?mgrPuffer('weingut'):0, n=Math.floor(Math.min(soll,istSL(id)?slPlatz():S.ha*HA_REBEN-rebenGesamt()-res,spitzeDeckel(id),helferReben()-rebenGesamt(),Math.max(0,S.geld-pu)/pr)/10)*10;
+    const res=pflanzMitA(id)||istSL(id)?0:pflanzReserve(lageVon(id)), pu=wm?mgrPuffer('weingut'):0, n=Math.floor(Math.min(soll,platzFuer(id)-res,helferReben()-rebenGesamt(),Math.max(0,S.geld-pu)/pr)/10)*10;
     if(n<10) continue; zahle(Math.round(n*pr*100)/100); rebenDazu(id,n); pflanzAb(id,n); L.push(`${rbn(n)} ${SORTEN[id].name}-Reben gepflanzt`);
   }
 }
@@ -3169,9 +3177,9 @@ function lese(id,la,p,hefe){
   const neu={id:S.nextId++,sorte:id,jahrgang:S.jahr,liter:l,oe:q.oe,leseart:la,edel:f.edel,eis:f.gefroren,...(q.masch?{masch:1}:{}),status:'trauben',stufe:null,qp:qualWb(id),fassMonate:0,flMonate:0,...(f.laub===S.jahr?{laub:1}:{}),boden:S.boden+4*R().sorten.filter(x=>S.felder[x].gelesen||S.felder[x].teil).length,bst:wbBoden(id),pfl:f.pflSt||0,...(f.jh?{jh:1}:{})};
   // Seit 13.5.8: Die Sekt-Trauben liegen erst im Keller (sektTr), Kosten und Ansehen kommen mit dem Umlagern in den Sektkeller (sektUmlagern).
   if(sk){const h=hefe===HEFE_LANG?HEFE_LANG:SEKT_REIFE; Object.assign(neu,{status:'sektTr',stufe:SEKT_GRUND,sekt:true,edel:false,eis:false,...(h>SEKT_REIFE?{hefe:h}:{}),med:[],bund:false});
-    // Seit 13.4.9: Sekt vom einfachen Hang bekommt Punkte weniger, anteilig nach sektEinfach(). ab merkt den Abzug für die Anzeige.
-    // Seit 14.5.7 (Maik 25.11.2026, Frage 2): Hefelager (HEFE_LANG_P) und Hang (SEKT_EINFACH_P) stehen als Punkte am Sekt (l.sektP), die Qualität bleibt die des Weinbergs.
-    const ab=sektAbzug(), sp=(h>SEKT_REIFE?HEFE_LANG_P:0)-ab; if(sp) neu.sektP=sp; if(ab) neu.hangAb=ab}
+    // Seit 14.5.7 (Maik 25.11.2026, Frage 2): das lange Hefelager (HEFE_LANG_P) als Punkte am Sekt (l.sektP), die Qualität bleibt die des Weinbergs.
+    // Der Abzug vom einfachen Hang (13.4.9 bis 14.5.7) ist mit dem Nachtrag zu 14.5 weg, der Sekt steht immer auf der Höhenlage.
+    if(h>SEKT_REIFE) neu.sektP=HEFE_LANG_P}
   // Seit 13.4.6: Erlös der Lese für die Warnung des Weingut-Managers.
   {const st=sk?SEKT_GRUND:besteStufe(q); f.leseW=(f.leseW||0)+(st?leseWert(id,la,st,l):0)}
   S.lots.push(neu);

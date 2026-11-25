@@ -1140,11 +1140,10 @@ function vBerg(){
     const f=S.felder[id], so=SORTEN[id], titel=dot(id)+so.name;
     if(!f.reben&&!sorteFrei(id)){zu+=fenster('feld_'+id,titel,'',{zu:`ab dem Rang ${RAENGE[sorteAb(id)].name}`,i:`${sorteSchild(id)}. ${feldI}`}); continue}
     let z=`<div class="kv"><span>Reben</span><span>${rbn(f.reben)}</span></div><div class="kv"><span>${rolleVon(id)?'Rolle':'Eignung'}</span><span>${rolleVon(id)?rolleVon(id).name:eigText(eignung(id))}</span></div>`;
-    // Seit 13.4.9: Lage der Sorte. Die Spitzen-Sorte nur auf dem Südhang, beim Sekt der Anteil auf dem einfachen Hang mit seinem Abzug.
+    // Seit 13.4.9: Lage der Sorte. Seit dem Nachtrag zu 14.5 (jede Lage eine Sorte) für jede Sorte ihre eine Lage mit dem freien Platz dort, der Sekt-Abzug ist weg.
     // Seit 14.4.4: Die Spitzenlage mit ihrer Fläche und ihrem eigenen Boden. Platzhalter, Wortlaut in Meilenstein 17.
     if(istSL(id)) z+=`<div class="kv"><span>Lage</span><span>${LAGEN.sued.sym} ${SL_NAME}, ${SPITZE_HA} Hektar Südhang</span></div><div class="kv"><span>Boden</span><span>${BODEN_STUFEN[wbBoden(id)]}, ${epT(wbBodenP(id))} von ${BODEN_MAX} Punkten</span></div>`;
-    else if(spitzeId(id)) z+=`<div class="kv"><span>Lage</span><span>${LAGEN.sued.sym} nur Südhang, Platz für ${rbn(suedPlatz())} Reben</span></div>`;
-    else if(sektSorte(id)&&f.reben){const a=Math.round(sektEinfach()*100); z+=`<div class="kv"><span>Lage</span><span${a?' class="rot"':''}>${a?`${a}\u00a0% auf dem einfachen Hang, −${sektAbzug()} % Preis und Jury-Punkte`:`${LAGEN.hoehe.sym} Höhenlage oder Südhang`}</span></div>`}
+    else z+=`<div class="kv"><span>Lage</span><span>${LAGEN[lageVon(id)].sym} nur ${LAGEN[lageVon(id)].kurz}, Platz für ${rbn(platzFuer(id))} Reben</span></div>`;
     // Seit dem Nachtrag zu 14.5.4: das Klima des Weinbergs in Worten (klimaText), ohne Zahlen. Platzhalter, Wortlaut in Meilenstein 17.
     if(f.reben) z+=`<div class="kv"><span>Klima</span><span>${klimaText(id)}</span></div>`;
     // Seit 13.2.6: Pflegestufe mit Zähler, Deckel und Rebschnitt. Wortlaut seit 13.8.
@@ -1183,7 +1182,7 @@ function vBerg(){
       hin:[mr&&m<=2&&S.verlust&&S.verlust[id]>0&&`${WM} pflanzt beim Weiterblättern nach.`,helferKann(3)&&pflanzPlan(id)>=10&&`🌱 Deine Erntehelfer pflanzen bis März ${rbn(pflanzPlan(id))} Reben nach.${pflanzPlan(id)<pflanzSoll(id)&&!pflanzMitA(id)?' Den übrigen Platz bekommt dein Auftrag.':''}`,
         helferSchneidet(id)&&schnitt&&`✂️ Deine ${leuteStName('helfer',leuteSt('helfer'))} schneiden beim Weiterblättern, sobald das Geld reicht.`,chefRat()===id&&helferSchneidet(id)&&`👴 ${CHEF_RAT_SATZ.replace('{sorte}',SORTEN[id].name)}`,helferSchneidet(id)&&laubHandOffen(id)&&'✂️ Deine Erntehelfer machen den Sommerschnitt von Hand, sobald das Geld reicht.',(()=>{const ww=wagnisWarnung(); return ww&&ww.ids.includes(id)&&`${WM} warnt: ${Math.round(ww.anteil*100)} % deiner Ernte hängen im Wagnis.`})()],
       // Seit 13.4.6: Am Lese-Knopf steht die Chance des Wagnisses in Worten.
-      links:kannLesen&&wagnisChance(id)!=null&&chanceZeige(wagnisChance(id))?`🎲 Warten: Chance ${chanceZeige(wagnisChance(id))}${chanceRat(wagnisChance(id))?`, der alte Winzer würde ${chanceRat(wagnisChance(id))}`:''}`:sektOhne?'Die Sekt-Sorte macht nur Sekt, erst den Sektkeller kaufen.':pflanz&&platzFuer(id)<10?(spitzeId(id)&&frei>=10?'Auf deinem Südhang ist kein Platz frei.':'Auf deinem Land ist kein Platz mehr frei.'):laubHandOffen(id)?`✂️ Sommerschnitt von Hand: ${eur(laubHandKosten(id))}`:ausdOffen(id)?AUSD_LINKS.replace('{kosten}',eur(ausdKosten(id))).replace('{m}',`${Math.round(AUSD_MENGE*100)} %`).replace('{qp}',AUSD_QP):haengt?'Lese ab August.':schnitt?`✂️ Rebschnitt bis Ende April: ${eur(schnittKosten(id))}`:'',
+      links:kannLesen&&wagnisChance(id)!=null&&chanceZeige(wagnisChance(id))?`🎲 Warten: Chance ${chanceZeige(wagnisChance(id))}${chanceRat(wagnisChance(id))?`, der alte Winzer würde ${chanceRat(wagnisChance(id))}`:''}`:sektOhne?'Die Sekt-Sorte macht nur Sekt, erst den Sektkeller kaufen.':pflanz&&platzFuer(id)<10?(istSL(id)?'Auf deinem Land ist kein Platz mehr frei.':LAGE_SATZ.voll.replace('{lage}',LAGE_SATZ.auf[lageVon(id)])):laubHandOffen(id)?`✂️ Sommerschnitt von Hand: ${eur(laubHandKosten(id))}`:ausdOffen(id)?AUSD_LINKS.replace('{kosten}',eur(ausdKosten(id))).replace('{m}',`${Math.round(AUSD_MENGE*100)} %`).replace('{qp}',AUSD_QP):haengt?'Lese ab August.':schnitt?`✂️ Rebschnitt bis Ende April: ${eur(schnittKosten(id))}`:'',
       kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,...wagnisKnoepfe(id),schnitt&&!helferSchneidet(id)&&`<button class="klein" data-a="schneiden" data-id="${id}" ${S.geld<schnittKosten(id)?'disabled':''}>Schneiden</button>`,laubHandOffen(id)&&!helferSchneidet(id)&&`<button class="klein" data-a="sommerHand" data-id="${id}" ${S.geld<laubHandKosten(id)?'disabled':''}>Sommerschnitt</button>`,ausdOffen(id)&&`<button class="klein" data-a="ausduennen" data-id="${id}" ${S.geld<ausdKosten(id)?'disabled':''}>Ausdünnen</button>`,f.reben&&!istSL(id)&&m<=SCHNITT_BIS&&formenFuer(id).length>1&&`<button class="klein" data-a="formAendern" data-id="${id}">Form ändern</button>`,helferKann(1)&&f.reben&&S.schwer!=='einfach'&&`<button class="klein" data-a="schneider" data-id="${id}">${helferSchneidet(id)?'Selbst schneiden':'Schnitt abgeben'}</button>`,pflanz&&(helferKann(3)?`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzAuftrag'}" data-id="${id}" data-weiter="pflanzAuftrag">Auftrag</button>`:`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzen'}" data-id="${id}" data-weiter="pflanzen" ${platzFuer(id)<10?'disabled':''}>Pflanzen</button>`),pflanz&&f.reben&&!istSL(id)&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
   }
   // Seit 14.2.5: die drei Lagen einzeln mit Stufe, Punkten und dem, was ein gutes Bodenjahr bringt. Platzhalter, Wortlaut in Meilenstein 17.
@@ -2132,7 +2131,7 @@ const AKT={
     ${l.stufe&&oeUeber(l.stufe,l)?`<div class="kv"><span>Öchsle über der Schwelle</span><span>${oeUeber(l.stufe,l)}° · ${pz(oePreisF(l.stufe,l)-1)} mehr Preis</span></div>`:''}
     <div class="kv"><span>Qualität</span><span>${l.qp}</span></div>
     ${l.medP?`<div class="kv"><span>Medaillen</span><span>+${l.medP} Punkte · ${pz(l.medP*PUNKT_PREIS)} mehr Preis</span></div>`:''}
-    ${l.sektP?`<div class="kv"><span>Hefe und Hang</span><span>${l.sektP>0?'+':'−'}${Math.abs(l.sektP)} Punkte · ${pz(Math.abs(l.sektP)*PUNKT_PREIS)} ${l.sektP>0?'mehr':'weniger'} Preis</span></div>`:''}
+    ${l.sektP?`<div class="kv"><span>Hefelager</span><span>${l.sektP>0?'+':'−'}${Math.abs(l.sektP)} Punkte · ${pz(Math.abs(l.sektP)*PUNKT_PREIS)} ${l.sektP>0?'mehr':'weniger'} Preis</span></div>`:''}
     ${l.durch?`<div class="kv"><span>Weinprüfer</span><span>durchgefallen als ${STUFEN[l.durch].name} · ${pz(DURCH_PREIS)} weniger Preis</span></div>`:''}
     ${jhWein(l)?`<div class="kv"><span>Jahrhundertwein</span><span>${pz(JH_PREIS)} mehr Preis</span></div>`:''}
     <div class="kv"><span>Preis je Flasche</span><span>${p?eur2(p):fl?`reif in ${L.min-l.flMonate} Monaten`:'noch im Fass'}</span></div>
@@ -2367,24 +2366,24 @@ const AKT={
   pflanzen(d){
     if(!sorteFrei(d.id)) return meldung('Noch nicht',`${SORTEN[d.id].name} kannst du ab dem Rang ${RAENGE[sorteAb(d.id)].name} pflanzen.`);
     if(sektSorte(d.id)&&!S.sektkeller) return meldung('Erst der Sektkeller',`Die ${ROLLEN.sekt.name} macht nur Sekt. Kauf erst den Sektkeller im Keller.`);
-    // Seit 13.4.9: Die Spitzen-Sorte nur auf freiem Südhang (platzFuer). Menge- und Sekt-Sorte warnen, wenn sie Südhang belegen würden.
-    if(spitzeId(d.id)&&!istSL(d.id)&&suedPlatz()<10) return meldung('Kein Südhang frei',SUED_SATZ.keinPlatz);
+    // Seit 13.4.9: Die Spitzen-Sorte nur auf freiem Südhang. Seit dem Nachtrag zu 14.5 (jede Lage eine Sorte) jede Sorte nur auf freiem Land ihrer Lage (platzFuer).
+    if(!istSL(d.id)&&platzFuer(d.id)<10) return meldung(`Kein Platz: ${LAGEN[lageVon(d.id)].kurz}`,lageKeinSatz(d.id)); // Platzhalter, Wortlaut in Meilenstein 17
     if(istSL(d.id)&&slPlatz()<10) return meldung('Kein Platz',`Auf deiner ${SL_NAME} stehen alle Reben, nachgepflanzt wird nur, was eingegangen ist.`); // Platzhalter, Wortlaut in Meilenstein 17
-    const so=SORTEN[d.id], pr=rebenPreis(d.id), frei=platzFuer(d.id), kap=helferReben()-rebenGesamt(), max=Math.min(frei,kap,Math.floor(S.geld/pr/10)*10), aus=suedWarnAb(d.id);
+    const so=SORTEN[d.id], pr=rebenPreis(d.id), frei=platzFuer(d.id), kap=helferReben()-rebenGesamt(), max=Math.min(frei,kap,Math.floor(S.geld/pr/10)*10);
     if(frei>=10&&kap<10) return leuteSheet('Zu wenige Erntehelfer',`<p>${helferRegel()}. Deine Leute reichen für ${rbn(helferReben())} Reben, gepflanzt sind ${rbn(rebenGesamt())}.</p><p class="mut">Stell erst beim Arbeitsamt ein${maschFrei('klein')&&!S.maschinen.some(x=>x.typ==='klein')?` oder kauf eine Erntemaschine, mit ${MASCH.klein.fahrer} Fahrer deckt sie ${MASCH_HELFER} Hektar ab`:''}.</p>`);
     if(max<10) return meldung('Geht gerade nicht',`Dir fehlt das Geld oder der Platz für ${rbn(10)} Reben.`);
-    mengeSheet({titel:`${so.name} pflanzen`,text:`${eur2(pr/STOCK_F)} je Rebe${pr!==so.preis?`, üblich sind ${eur2(so.preis/STOCK_F)}`:''}. Neue Reben übernehmen die Pflegestufe der Sorte. Deine Erntehelfer reichen noch für ${rbn(kap)} Reben${kap<frei?', für mehr musst du erst einstellen':''}.${spitzeId(d.id)?' '+SUED_SATZ.spitze:aus<max?` Mehr als ${rbn(aus)} Reben belegen deinen Südhang, dort wächst sonst die Spitzen-Sorte.`:''}${sektSorte(d.id)?' '+sektHangSatz():''}`,max,step:10,start:Math.min(max,1000),okText:'Pflanzen',zahl:rbn,
-      info:n=>`<b>${rbn(n)} Reben</b>kostet ${eur(n*pr)}${n>aus?', belegt Südhang':''}`,
+    mengeSheet({titel:`${so.name} pflanzen`,text:`${eur2(pr/STOCK_F)} je Rebe${pr!==so.preis?`, üblich sind ${eur2(so.preis/STOCK_F)}`:''}. Neue Reben übernehmen die Pflegestufe der Sorte. Deine Erntehelfer reichen noch für ${rbn(kap)} Reben${kap<frei?', für mehr musst du erst einstellen':''}.${istSL(d.id)?'':' '+lageNurSatz(d.id)}`,max,step:10,start:Math.min(max,1000),okText:'Pflanzen',zahl:rbn,
+      info:n=>`<b>${rbn(n)} Reben</b>kostet ${eur(n*pr)}`,
       ok:n=>{fx('stempel');zahle(Math.round(n*pr*100)/100);const f=S.felder[d.id];rebenDazu(d.id,n);if(S.verlust&&S.verlust[d.id])S.verlust[d.id]=Math.max(0,S.verlust[d.id]-n)}});
   },
   // Seit 13.5.3: Ab Erntehelfer Stufe 3 gibt der Spieler nur noch den Auftrag, Sorte und Menge. Gepflanzt wird beim Weiterblättern bis März.
   pflanzAuftrag(d){
     if(!sorteFrei(d.id)) return meldung('Noch nicht',`${SORTEN[d.id].name} kannst du ab dem Rang ${RAENGE[sorteAb(d.id)].name} pflanzen.`);
     if(sektSorte(d.id)&&!S.sektkeller) return meldung('Erst der Sektkeller',`Die ${ROLLEN.sekt.name} macht nur Sekt. Kauf erst den Sektkeller im Keller.`);
-    const f=S.felder[d.id], andere=R().sorten.filter(x=>x!==d.id&&pflanzMitA(x)).reduce((a,x)=>a+pflanzSoll(x),0), v=(S.verlust||{})[d.id]||0, max=Math.max(0,(istSL(d.id)?slPlatz():Math.min(S.ha*HA_REBEN-rebenGesamt()-andere,spitzeDeckel(d.id)))-v);
+    const f=S.felder[d.id], andere=R().sorten.filter(x=>x!==d.id&&lageVon(x)===lageVon(d.id)&&pflanzMitA(x)).reduce((a,x)=>a+pflanzSoll(x),0), v=(S.verlust||{})[d.id]||0, max=Math.max(0,(istSL(d.id)?slPlatz():platzFuer(d.id)-andere)-v); // seit dem Nachtrag zu 14.5 nur die eigene Lage
     // Seit 13.5.8 (Entscheidung 11): Der Platz eingegangener Reben anderer Sorten ohne Auftrag zählt mit, der Auftrag bekommt ihn zuerst.
     const fremd=R().sorten.filter(x=>x!==d.id&&!pflanzMitA(x)).reduce((a,x)=>a+((S.verlust||{})[x]||0),0);
-    if(max<10&&!f.auftrag&&spitzeId(d.id)) return meldung('Kein Südhang frei',SUED_SATZ.keinPlatz);
+    if(max<10&&!f.auftrag&&!v&&!istSL(d.id)) return meldung(`Kein Platz: ${LAGEN[lageVon(d.id)].kurz}`,lageKeinSatz(d.id));
     if(max<10&&!f.auftrag) return meldung('Kein Platz',`Auf deinem Land ist kein Platz mehr frei${v?`, deine Erntehelfer pflanzen nur die ${rbn(v)} eingegangenen Reben nach`:''}.`);
     mengeSheet({titel:`Auftrag: ${SORTEN[d.id].name}`,text:`Deine Erntehelfer pflanzen bis März, ${mgrSt('weingut')?`die Reben kauft ${mgrG('weingut').dein} ${MGR_BEREICHE.weingut.name} so günstig wie möglich`:'die Reben kaufen sie gleich zum Preis des Monats'}.${v?` Die ${rbn(v)} eingegangenen Reben pflanzen sie sowieso nach.`:''}${fremd>=10?` Dein Auftrag bekommt den Platz eingegangener Reben anderer Sorten zuerst, ohne Auftrag pflanzen sie dort die alte Sorte nach.`:''}`,
       max,step:10,start:Math.min(max,f.auftrag||1000),okText:'Auftrag geben',zahl:rbn,
@@ -2393,7 +2392,7 @@ const AKT={
   },
   roden(d){
     const f=S.felder[d.id]; if(!f||istSL(d.id)) return; // seit 14.4.4: die Spitzenlage wird nicht gerodet
-    mengeSheet({titel:`${SORTEN[d.id].name} roden`,text:`Roden kostet ${eur2(.5/STOCK_F)} je Rebe. Die Fläche wird frei für andere Sorten.${rolleK(d.id)==='menge'?' '+SUED_SATZ.umpflanzen:''}`,max:f.reben,step:10,start:0,okText:'Roden',zahl:rbn,
+    mengeSheet({titel:`${SORTEN[d.id].name} roden`,text:`Roden kostet ${eur2(.5/STOCK_F)} je Rebe. ${istSL(d.id)?'Die Fläche wird frei.':LAGE_SATZ.roden.replace('{lage}',LAGEN[lageVon(d.id)].name)}`,max:f.reben,step:10,start:0,okText:'Roden',zahl:rbn,
       info:n=>`<b>${rbn(n)} Reben</b>kostet ${eur(n*.5)}`,
       ok:n=>{zahle(n*.5);f.reben-=n;if(!f.reben) delete f.form}});
   },
