@@ -1572,9 +1572,10 @@ function pruefeQualitaet(st,q){
   const g=[], d=STUFEN[st], min=mindest(st);
   // Seit 13.3.2: die zwei Schlösser. Die Rolle muss die Stufe machen dürfen und der Rang muss reichen, der Deckel wirkt schon übers Öchsle.
   if(!rolleDarf(q.sorte,st)) g.push(`${d.name} gibt es nicht von der ${ROLLEN[SORTEN[q.sorte].rolle].name}`);
-  // Seit 13.6.7: Ein Jahrhundertwein (q.jh) darf vor R8 Trockenbeerenauslese werden, wenn der eigene Weg offen ist (Entscheidung 6).
   // Seit 14.6.2 auch Beerenauslese, Eiswein und Trockenbeerenauslese über ihren Weg (stufeFrei), bis 14.6.1 galten sie ohne Eintrag als frei.
-  else if(!stufeFrei(st)&&!(st==='tba'&&q.jh&&frei('weg_eigen'))) g.push(`${d.name} erst ab dem Rang ${rangN(stufeFreiAb(st))}`);
+  // Seit 14.6.3 (Prüfregel B5): ohne die Ausnahme aus 13.6.7 (Jahrhundertwein als Trockenbeerenauslese schon mit dem eigenen Weg). Sie ist seit 13.6.9 (Nachtrag 3,
+  // Bauauftrag) weggefallen, die Trockenbeerenauslese kommt nur mit dem Vizepräsidenten (weg_tba). Erreichbar war sie nicht mehr, die Rosinen kommen erst mit weg_tba.
+  else if(!stufeFrei(st)) g.push(`${d.name} erst ab dem Rang ${rangN(stufeFreiAb(st))}`);
   if(q.oe<min) g.push(`es fehlen ${min-q.oe}° Öchsle (Minimum ${min}°)`);
   // Seit 14.5.5 (Entscheidungen 19 und 34, Annahme 16): der dritte Schlüssel, die Qualität des Weins (l.qp, bei der Lese feldQ mit qualWb) gegen ANSPRUCH,
   // nach Rang und Öchsle. Platzhalter, Wortlaut in Meilenstein 17.
