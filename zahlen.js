@@ -162,8 +162,9 @@ const EV_TEXT={export:'mit deiner ersten Medaille bei der Landesprämierung, son
 // Lagerarbeiter Stufe 3 kommt seit 14.4.2 mit dem ersten eigenen Sekt (bis 14.2 mit dem Rebstock der Sekt-Sorte), bis dahin macht der Spieler den Sekt von Hand.
 const HELFER_DUENG=80;
 // Seit 14.2.3: Erntehelfer schneiden und düngen ab Stufe 1, wenn du es abgibst, mit dem Zuwachs ihrer Stufe (ZUWACHS). Platzhalter, Wortlaut in Meilenstein 17.
-const LEUTE_ST={helfer:{name:'Erntehelfer',kann:['schneiden und düngen, halten aber nur den Stand','schneiden und düngen mit halbem Zuwachs','schneiden und düngen fast wie du, dazu nachpflanzen']},lagerarb:{name:'Lagerarbeiter',kann:['keltern','auch abfüllen und Etiketten kleben','auch den Sekt in den Sektkeller legen und abfüllen']}};
-const LEUTE_BOTE={helfer:['🧑‍🌾 Deine Erntehelfer können ab jetzt schneiden und düngen. Abgeben kannst du im Weinberg und bei der Düngung, sie halten aber nur den Stand.','✂️ Deine Erntehelfer sind jetzt Stufe 2: Wer bei ihnen abgibt, bekommt den halben Zuwachs.','🌱 Nachpflanzen machen jetzt die Erntehelfer. Die Reben dafür kauft der Weingut-Manager.'],
+// Seit 14.4.3: Die Stufen der Erntehelfer haben eigene Namen (stufen), Platzhalter, Wortlaut in Meilenstein 17.
+const LEUTE_ST={helfer:{name:'Erntehelfer',stufen:['Erntehelfer','Winzergesellen','Rebmeister'],kann:['schneiden und düngen, halten aber nur den Stand','schneiden und düngen mit halbem Zuwachs','schneiden und düngen fast wie du, dazu nachpflanzen']},lagerarb:{name:'Lagerarbeiter',kann:['keltern','auch abfüllen und Etiketten kleben','auch den Sekt in den Sektkeller legen und abfüllen']}};
+const LEUTE_BOTE={helfer:['🧑‍🌾 Deine Erntehelfer können ab jetzt schneiden und düngen. Abgeben kannst du im Weinberg und bei der Düngung, sie halten aber nur den Stand.','✂️ Aus deinen Erntehelfern sind Winzergesellen geworden: Wer bei ihnen abgibt, bekommt den halben Zuwachs.','🌱 Deine Rebmeister schneiden und düngen fast wie du und pflanzen jetzt auch nach. Die Reben dafür kauft der Weingut-Manager.'],
   lagerarb:['🛢️ Dein erster Qualitätswein ist angemeldet. Ab jetzt keltern deine Lagerarbeiter, das musst du nicht mehr tun.','🍾 Deine Lagerarbeiter füllen ab jetzt ab und kleben die Etiketten. Wieder eine Sorge weniger.','🥂 Dein erster Sekt ist fertig. Ab jetzt lagern die Lagerarbeiter den Sekt um und füllen ab. Kurz oder lang wählst du.']};
 const LEUTE_ERST={helfer:'🧑‍🌾 Der alte Winzer bringt eine junge Frau aus dem Dorf mit, die jeden Hang hier seit der Kindheit kennt. „Die weiß, wo der Dünger hingehört“, sagt er. Das ist deine erste Erntehelferin.',
   lagerarb:'🛢️ Der alte Winzer kommt mit einem großen, stillen Mann durchs Hoftor. „Der kann anpacken. Und er redet wenig.“ Das ist dein erster Lagerarbeiter.'};
@@ -209,7 +210,7 @@ const VERLUST=[[70,0,1],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPA
 // DECKEL_BASIS (90, 90, 104), BODEN_ST_OE und PFLEGE_ST_OE (0), BODEN_ST_QP (Liste), LAUB_QP (5) und PFLEGE_PREIS (0) in 14.2.6.
 // Entwicklungspunkte je Weinberg (f.ep): 0 bis EP_MAX, Premier Cru ab EP_PREMIER, Grand Cru ab EP_GRAND, Rebstock nach EP_REBSTOCK_JAHRE Chef-Jahren
 // der Form (Flachbogen und Kordon 7,5, Einzelpfahl 12 Punkte).
-const EP_MAX=100, EP_PREMIER=45, EP_GRAND=90, EP_REBSTOCK_JAHRE=3;
+const EP_MAX=100, EP_PREMIER=40, EP_GRAND=90, EP_REBSTOCK_JAHRE=3; // EP_PREMIER seit 14.4.3 40 (bis 14.2 45)
 // Erziehungsform je Weinberg: Punkte je Jahr mit dem Chef (ep), Rebschnitt je Hektar in der Erziehung bis Rebstock (haErz) und danach (ha),
 // Maschine (masch: 1 immer, 'rebstock' erst ab Rebstock, 0 nie), nur für eine Rolle (nur).
 const FORMEN={flach:{name:'Flachbogen',ep:2.5,haErz:250,ha:250,masch:1},kordon:{name:'Kordon',ep:2.5,haErz:500,ha:375,masch:'rebstock'},pfahl:{name:'Einzelpfahl',ep:4,haErz:750,ha:750,masch:0,nur:'spitze'}};
@@ -222,7 +223,9 @@ const STUFE_MENGE=[.5,1,1,.9], STUFE_QPF=[.5,.75,1,1.25];
 const ZUWACHS={chef:1,helfer:[0,0,.5,.9]};
 // Anteil der Punkte aus dem Rebschnitt und aus einem guten Bodenjahr (9 zu 1, Startwert nach Entscheidung 37). Verwildern ohne Schnitt im
 // ersten, zweiten und ab dem dritten Jahr. Ab Grand Cru bringt jeder Rebschnitt mindestens GC_HALTEN. Chef-Grenze vorbereitet, 3 heißt keine.
-const EP_SCHNITT=.9, EP_BODEN=.1, VERWILDERN=[5,10,20], GC_HALTEN=1, CHEF_SCHNITT_MAX=3;
+// Seit 14.4.3 (Entscheidungen 12, 15 und 17): Der Rebschnitt zählt ganz für die Rebe (EP_SCHNITT 1, EP_BODEN 0, bis 14.2 0,9 und 0,1), die Chef-Grenze ist 1
+// (bis 14.2 3, keine Grenze), Premier Cru ab 40 Punkten (EP_PREMIER oben). Wie der Chef zugeteilt wird, sagt CHEF_RAT (ganz unten).
+const EP_SCHNITT=1, EP_BODEN=0, VERWILDERN=[5,10,20], GC_HALTEN=1, CHEF_SCHNITT_MAX=1;
 // Bodenpunkte je Lage und gutem Jahr, wenn der Chef düngt (Entscheidung 39).
 const BODEN_PUNKTE={einfach:1.5,hoehe:2,sued:3.5};
 // Ansehen bei der Anmeldung: Grundwert der Weinstufe plus 1 je ANS_JE_QP Qualitätspunkte.
@@ -1478,6 +1481,10 @@ const STRAFE_ANS_AKT={2:0,3:150}, VERWARNUNG={einfach:1,mittel:0,schwer:0}, ANRE
 const GEGNER_WB={menge:[4,35,62],sekt:[46,64,89],spitze:[71,79,93]}, GEGNER_BODEN={einfach:[9,36,82],hoehe:[47,64,92],sued:[70,79,94]};
 const GEGNER_DECKEL_AN=1, GEGNER_DECKEL=[5,9,17,32,42,47,50,50,50,50], GEGNER_HA_OBEN=56;
 // Auftakt der Akte (14.4.8): eigene Schlagzeile im Monat des Aufstiegs in den 2. und 3. Akt. Platzhalter, Wortlaut in Meilenstein 17.
+// Seit 14.4.3: Winzerbote zum Jahreswechsel für einen Weinberg, den nur Erntehelfer (Stufe 1) geschnitten haben, nicht in den Lehrjahren.
+// Rat des alten Winzers zur Chef-Grenze in den Gesellenjahren. Platzhalter, Wortlaut in Meilenstein 17.
+const HELFER_NUR_BOTE='✂️ Deinen {sorte} haben nur Erntehelfer geschnitten. Sie halten den Stand, besser wird er so nicht.';
+const CHEF_RAT_SATZ='Der alte Winzer rät: Schneide den {sorte} selbst, er braucht dich am meisten.';
 const AKT_AUFTAKT={2:{t:'Der zweite Akt beginnt',text:'Ab jetzt steht dir die Hintertür offen, aber die Weinkontrolle schaut genauer hin.'},
   3:{t:'Der dritte Akt beginnt',text:'Ab jetzt setzt du deinen Ruf ein, wenn du etwas wagst.'}};
 const TITEL_NAMEN=[[['Spielidee &amp;','Entwicklung'],'Maik','Dienst'],[['Chef-Tester &amp;','Visuelle Effekte'],'Timo','Dienst']];

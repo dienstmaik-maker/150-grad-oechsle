@@ -105,7 +105,9 @@ function leuteKommen(Z){
   if(S.leuteErstOffen&&L.helfer>=1&&leuteErstGebraucht('helfer')){delete S.leuteErstOffen; if(!S.helfer) leuteErst('helfer',Z)}
 }
 // Für den Aufstiegstext: Stufen der Leute, die mit dem Rang i kommen (ohne Abstand, die anderen nennt abBringt).
-const leuteBringt=i=>LEUTE_K.flatMap(k=>[1,2,3].filter(n=>FREI[k+n].r===i&&!FREI[k+n].ab&&!FREI[k+n].tat).map(n=>`${LEUTE_ST[k].name} Stufe ${n}: ${LEUTE_ST[k].kann[n-1]}`));
+// Seit 14.4.3: Name einer Stufe, bei den Erntehelfern Erntehelfer, Winzergesellen, Rebmeister, sonst "Lagerarbeiter Stufe 2".
+const leuteStName=(k,n)=>(LEUTE_ST[k].stufen||[])[n-1]||`${LEUTE_ST[k].name} Stufe ${n}`;
+const leuteBringt=i=>LEUTE_K.flatMap(k=>[1,2,3].filter(n=>FREI[k+n].r===i&&!FREI[k+n].ab&&!FREI[k+n].tat).map(n=>`${leuteStName(k,n)}: ${LEUTE_ST[k].kann[n-1]}`));
 // Seit 13.5.1: Maschinen kommen über FREI (Schlüssel masch_ und der Typ).
 // Seit 14.2.4 auch kein Laubschneider an der Mosel, dort gibt es den Sommerschnitt von Hand (Annahme 18).
 const maschSteil=id=>R().steil&&MASCH[id]&&(MASCH[id].ernte||id==='laub');
@@ -134,8 +136,28 @@ const zuwachsVon=(wer,boden)=>boden&&S.schwer==='einfach'?1:wer==='helfer'?(ZUWA
 // Annahme von Claude: Ohne Einstellung macht es der Chef, auch das Düngen. In den Lehrjahren düngen die Erntehelfer wie bisher von selbst.
 const helferSchneidet=id=>helferKann(1)&&(S.felder[id]||{}).schneider==='helfer';
 const helferDuengt=()=>helferKann(1)&&(S.schwer==='einfach'||S.duengWer==='helfer');
-// Chef-Grenze (CHEF_SCHNITT_MAX Weinberge je Winter, Startwert 3 heißt keine Grenze, ob sie greift, klärt 14.3).
+// Chef-Grenze: CHEF_SCHNITT_MAX Weinberge je Winter schneidet der Chef selbst (seit 14.4.3 einer, bis 14.2 drei, also keine Grenze).
 const chefSchnitte=()=>R().sorten.filter(id=>{const f=S.felder[id]; return f.schnitt===S.jahr&&f.schnittWer!=='helfer'}).length;
+// Seit 14.4.3 (Maiks Entscheidung zur Chef-Grenze, CHEF_RAT 'jung'): Der Chef ist einem Weinberg zugeteilt (f.schneider nicht 'helfer'), die Zuteilung bleibt stehen,
+// bis der Spieler sie ändert. Die Regel: der Weinberg mit der niedrigsten Pflegestufe unter Grand Cru, bei Gleichstand der mit weniger Punkten (alle Grand Cru: der mit
+// weniger Punkten). In den Lehrjahren teilt das Spiel still nach der Regel zu (neu nur, solange der Chef in diesem Winter noch nicht geschnitten hat), in den
+// Gesellenjahren rät der alte Winzer dasselbe, in der Meisterprüfung gibt es keinen Rat. Sind mehr Weinberge beim Chef als erlaubt (zum Beispiel ein neu bepflanzter),
+// bleibt der, den der Chef diesen Winter schon geschnitten hat oder den der Spieler zuletzt zugeteilt hat, die anderen gehen an die Leute (Annahme der Bau-Sitzung).
+const chefKandidaten=()=>R().sorten.filter(id=>(S.felder[id]||{}).reben>0);
+const chefWeinberge=()=>chefKandidaten().filter(id=>S.felder[id].schneider!=='helfer');
+function chefRegel(ids){ids=ids||chefKandidaten(); const P=id=>S.felder[id].pflSt||0, U=ids.filter(id=>P(id)<PFLEGE_STUFEN.length-1);
+  return (U.length?U:ids).slice().sort((a,b)=>P(a)-P(b)||(S.felder[a].ep||0)-(S.felder[b].ep||0))}
+const chefStill=()=>S.schwer==='einfach'&&CHEF_RAT==='jung';
+const chefRat=()=>S.schwer==='mittel'&&CHEF_RAT==='jung'&&helferKann(1)&&chefKandidaten().length>CHEF_SCHNITT_MAX?chefRegel()[0]:null;
+function chefNorm(){
+  if(!S||!helferKann(1)) return; const K=chefKandidaten(); if(!K.length) return;
+  if(chefStill()){if(chefSchnitte()) return; const z=chefRegel(K).slice(0,CHEF_SCHNITT_MAX); for(const id of K) S.felder[id].schneider=z.includes(id)?'chef':'helfer'; return}
+  const C=chefWeinberge(); if(C.length<=CHEF_SCHNITT_MAX) return;
+  const vorn=[...C.filter(id=>S.felder[id].schnitt===S.jahr&&S.felder[id].schnittWer!=='helfer'),...C.filter(id=>S.felder[id].schneider==='chef'),...C];
+  const bleibt=[...new Set(vorn)].slice(0,CHEF_SCHNITT_MAX); for(const id of C) if(!bleibt.includes(id)) S.felder[id].schneider='helfer'}
+// Der Spieler teilt den Chef einem Weinberg zu: Der bisherige geht an die Leute. Zurück kommt, wer gegangen ist, für den Hinweis.
+function chefZuteilen(id){const f=S.felder[id]; if(!f) return []; const alt=chefWeinberge().filter(x=>x!==id); f.schneider='chef';
+  const weg=alt.slice(0,Math.max(0,alt.length+1-CHEF_SCHNITT_MAX)); for(const x of weg) S.felder[x].schneider='helfer'; return weg}
 // Zuwachs beim Düngen in diesem Jahr: Schnitt über alle Düngungen (Annahme 6), ohne Düngung zählt er voll.
 const duengZuwachs=()=>{const D=S.duengZ||[]; return D.length?D.reduce((a,b)=>a+b,0)/D.length:1};
 // Punkte, die ein Weinberg in einem guten Jahr bekäme, mit den heutigen Einstellungen (für die Anzeige).
@@ -1930,6 +1952,8 @@ function monatLauf(){
         // Seit 14.2.2: Entwicklungspunkte (epJahr), die Stufe folgt den Punkten und fällt mit ihnen.
         const vor=f.pflSt||0, gs=f.schnitt===S.jahr-1; epJahr(f,id,schnitt>=BODEN_GUT,f.schnittZ!=null?f.schnittZ:1,duengZuwachs()); f.pflSt=epStufe(id);
         if(f.pflSt>vor) pflegeAuf(Z,id,f.pflSt);
+        // Seit 14.4.3: Haben nur Erntehelfer (Stufe 1, ohne Zuwachs) geschnitten, sagt es der Winzerbote, nicht in den Lehrjahren (Platzhalter).
+        if(gs&&f.schnittWer==='helfer'&&f.schnittZ===0&&S.schwer!=='einfach') Z.push(HELFER_NUR_BOTE.replace('{sorte}',SORTEN[id].name));
         else if(f.pflSt<vor) Z.push(gs?`✂️ Dein ${SORTEN[id].name} fällt durch die vielen neuen Reben auf ${PFLEGE_STUFEN[f.pflSt]} zurück.`:`✂️ Dein ${SORTEN[id].name} fällt auf ${PFLEGE_STUFEN[f.pflSt]} zurück, er wurde nicht rechtzeitig geschnitten.`); // Platzhalter, Wortlaut in Meilenstein 17
       }
       if(f.reben){const tot=Math.min(f.reben,Math.round(f.reben*(festR(sp[1],sp[2],fest(7,si))+fp)/1000)*10); if(tot){f.reben-=tot; S.verlust[id]=tot; totAlle+=tot}}
@@ -2601,7 +2625,7 @@ const spitzeDeckel=id=>spitzeId(id)?suedPlatz():Infinity;
 const pflanzReserve=()=>R().sorten.filter(id=>pflanzMitA(id)&&pflanzKann(id)).reduce((a,id)=>a+Math.min(pflanzSoll(id),spitzeDeckel(id)),0);
 function pflanzPlan(id){let cap=Math.max(0,S.ha*HA_REBEN-rebenGesamt()); for(const x of pflanzReihe()){const n=pflanzKann(x)?Math.floor(Math.min(pflanzSoll(x),cap,spitzeDeckel(x))/10)*10:0; if(x===id) return n; cap-=n} return 0}
 function helferArbeit(L){
-  if(!S.helfer) return; const st=leuteSt('helfer'), m=S.monat;
+  if(!S.helfer) return; const st=leuteSt('helfer'), m=S.monat; chefNorm();
   // Seit 14.2.3: Düngen und Rebschnitt nur, wo der Spieler sie abgegeben hat, schon ab Stufe 1 (Entscheidung 9).
   if(st>=1&&abgabe('duengen')&&helferDuengt()&&S.duengungen<3&&S.boden<100&&(S.boden<=HELFER_DUENG||(m===7&&S.boden<90))&&S.geld>=duengKosten()){const ma=bonusMasch('duenger'); duenge('helfer'); L.push(ma?'mit dem Düngerstreuer gedüngt':'gedüngt')}
   if(st>=1&&abgabe('schneiden')) for(const id of R().sorten) if(helferSchneidet(id)&&schnittOffen(id)&&S.geld>=schnittKosten(id)){schneide(id,'helfer'); L.push(`${SORTEN[id].name} geschnitten`)}
@@ -2629,7 +2653,7 @@ function lagerArbeit(L){
 const lagerKann=n=>!!S.lagerarb&&leuteSt('lagerarb')>=n;
 // Seit 13.5.7: was die Leute schon können und was als Nächstes kommt, für "Deine Leute" im Betrieb. Wortlaut seit 13.8.
 function leuteStufeText(k){const st=leuteSt(k), T=LEUTE_ST[k], n=st+1;
-  return (st?`Können schon: ${T.kann.slice(0,st).join(', ')}.`:'Noch machst du ihre Arbeit selbst.')+(n<=3?` Stufe ${n} (${T.kann[n-1]}) kommt ${freiText(k+n)}.`:'')}
+  return (st?`${T.stufen?leuteStName(k,st)+' k':'K'}önnen schon: ${T.kann.slice(0,st).join(', ')}.`:'Noch machst du ihre Arbeit selbst.')+(n<=3?` ${T.stufen?leuteStName(k,n):'Stufe '+n} (${T.kann[n-1]}) ${T.stufen?'kommen':'kommt'} ${freiText(k+n)}.`:'')}
 // Seit 12.6.4 (Maik 20.11.2026, Prüfliste Einstieg): ruhiger Einstieg. Nur neue Partien haben S.ein, darin S.ein.f mit den Fenstern, die schon frei sind.
 // Ein Fenster aus EIN_REGEL bleibt weg, bis seine Bedingung einmal stimmt, danach bleibt es für immer. Alte Spielstände ohne S.ein sehen alles wie vorher.
 // "Deine Weine" gibt es zweimal (Weinarchiv und Großhandel), im Großhandel heißt die Regel weine_gh.
