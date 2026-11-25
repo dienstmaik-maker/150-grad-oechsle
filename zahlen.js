@@ -1291,7 +1291,7 @@ const BUERO_WO={rangliste:'erfolge',ehrungen:'erfolge',ruf:'erfolge',botschafter
 const BSORT_F={dringend:(a,b)=>lotRest(a)-lotRest(b)||a.jahrgang-b.jahrgang};
 // Seit 11.8 (Maik 20.11.2026): Der Unterreiter heißt Weinarchiv und hat drei Kacheln wie das Büro (W1): Deine Weine, Siegelbrett, Lexikon.
 // ARCHIV hält die Wahl, bis das Spiel neu geladen wird. Die Kennung buch des Unterreiters bleibt.
-const ARCHIV_B=[['weine','🍷','Deine Weine'],['brett','🏅','Siegelbrett'],['lexikon','📚','Lexikon']];
+const ARCHIV_B=[['brett','🏅','Siegelbrett'],['lexikon','📚','Lexikon']];   // seit 16.5.5 ohne Deine Weine (Bauplan 16.5, Entscheidung 6), die stehen oben im Lager
 // Version 9.0: Beim Jahreszeiten-Wechsel rollt der Winzerbote nur einen schmalen Streifen herunter (Z_TEIL, Maik 18.11.2026), damit das neue Bild zu sehen bleibt.
 // Den Rest holt ein Tipp oder Wischen irgendwo auf der Seite (Maik 18.11.2026). Der Knopf "Weiter" geht trotzdem sofort.
 const Z_TEIL=.12;
@@ -1799,4 +1799,9 @@ const WB_TEXT={
     hefeUnter:'Am weitesten: noch {n} {mon}', hefeFertig:'Fertig, jetzt abfüllen', flaschen:'Leere Flaschen', zumLager:'Zum Lager', zumKauf:'Zu „Maschine kaufen“ im Betrieb',
     anlage:'Abfüllanlage', ohneAnlage:'Ohne Abfüllanlage füllst du von Hand ab, ein Liter je Flasche. Die Anlage kaufst du im Betrieb unter „Maschine kaufen“.',
     trauben:'Trauben im Kelterhaus', frei:'Fassraum frei', weine:'Weine im Fass', angemeldet:'davon angemeldet', sektHefe:'Sekt auf der Hefe', sektFlasche:'Sektflasche, Korken und Agraffe',
-    fassPreis:'Fassraum je Liter', flPreis:'Leere Flasche', sektPreis:'Sektkeller, einmal', anlagePreis:'{name}, Ausbau', jeLiter:'{p} je Liter'}};
+    fassPreis:'Fassraum je Liter', flPreis:'Leere Flasche', sektPreis:'Sektkeller, einmal', anlagePreis:'{name}, Ausbau', jeLiter:'{p} je Liter'},
+  // Seit 16.5.5 (Bild 07): Deine Weine oben im Lager. Platzhalter, Wortlaut in Meilenstein 17.
+  wein:{titel:'Deine Weine', band:'{n} Weine, geschätzter Wert {w}', leer:'Noch keine Einträge. Hier stehen später alle deine Weine im Fass und in der Flasche.',
+    bald:'Ein Wein verdirbt bald', baldN:'{n} Weine verderben bald', fassL:'dazu {l} l im Fass', imFass:'Im Fass', sekt:'Sekt', wein:'Wein', nichtAn:'nicht angemeldet',
+    reif:'reif in {n} {mon}', fass:'im Fass', weine:'Weine', flaschen:'Flaschen', imFassL:'Im Fass', wert:'Geschätzter Wert',
+    i:'Alle deine Weine im Fass und in der Flasche, je Sorte eine Karte. Was zuerst verdirbt, steht oben. Rot heißt, bald ist es zu spät. Ein Tipp auf einen Wein zeigt alle Angaben und die Knöpfe. Die drei kleinen Siegel zeigen, wie weit der Eintrag auf dem Siegelbrett ist, für den dieser Wein zählt. Wein im Fass, gepanschter Wein und Stufen aus einer anderen Sorte zählen nicht.'}};

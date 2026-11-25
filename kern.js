@@ -2639,7 +2639,7 @@ function aufgaben(){
   const abf=S.lots.filter(l=>l.status==='fass'&&l.stufe&&l.stufe!=='feder');
   for(const l of abf) A.push({t:`${lotName(l)} kann abgefüllt werden`+(S.flaschen<abfFl(l)?` (es fehlen ${num(abfFl(l)-S.flaschen)} Flaschen)`:''),tab:'keller',ruhig:aufgabeAktiv('flaschen')&&!chefsache('abfuellen')?1:0});
   // Seit 8.2 führt die Warnung ins Kellerbuch (dort ist der Wein markiert und hat die passenden Knöpfe). Steht er im Regal, sagt sie das gleich dazu.
-  for(const l of S.lots) if(l.status==='flasche'&&lager(l).max-l.flMonate<=2) A.push({t:`${lotName(l)}: nur noch ${lager(l).max-l.flMonate} Monate haltbar`+(l.regal?', steht im Regal, erst rausnehmen':''),rot:1,tab:'keller',sub:'buch'});
+  for(const l of S.lots) if(l.status==='flasche'&&lager(l).max-l.flMonate<=2) A.push({t:`${lotName(l)}: nur noch ${lager(l).max-l.flMonate} Monate haltbar`+(l.regal?', steht im Regal, erst rausnehmen':''),rot:1,tab:'keller',sub:'lager'});   // seit 16.5.5 ins Lager (Deine Weine)
   if(m<=2&&S.verlust) for(const id of weinberge()) if(S.verlust[id]) A.push({t:`Über den Winter sind ${rbn(S.verlust[id])} ${SORTEN[id].name}-Reben eingegangen. Nachpflanzen`,tab:'gut',sub:'berg',ruhig:aufgabeAktiv('reben')||helferKann(3)?1:0});
   if(m<=2&&frei>0) A.push({t:`Pflanzzeit: Platz für ${rbn(frei)} Reben`,tab:'gut',sub:'berg',ruhig:1});
   // Version 7.3: Düngen steht an, sobald der Boden auf 70 % oder weniger fällt (Gelb), seit 7.9 Rot ab DUENG_ROT. Düngt der Weingut-Manager, nur ein ruhiger Hinweis.
@@ -3092,9 +3092,9 @@ const lotRest=l=>l.status==='fass'?8-l.fassMonate:lager(l).max-l.flMonate;
 // Haltbarkeit als kurzer Text, wie im Kellerbuch.
 function haltText(l){const fl=l.status==='flasche', r=fl?(lager(l).max===Infinity?Infinity:lager(l).max-l.flMonate):8-l.fassMonate; return {r,t:r===Infinity?'unbegrenzt haltbar':`noch ${r} ${r===1?'Monat':'Monate'} haltbar${fl?'':' im Fass'}`}}
 function vBuch(){
-  if(!ARCHIV_B.some(b=>b[0]===ARCHIV)) ARCHIV='weine';
+  if(!ARCHIV_B.some(b=>b[0]===ARCHIV)) ARCHIV='brett';
   lexInit();
-  return archivKacheln()+{weine:vWeine,brett:vBrett,lexikon:vLexikon}[ARCHIV]();
+  return archivKacheln()+{brett:vBrett,lexikon:vLexikon}[ARCHIV]();
 }
 // Für welchen Eintrag auf dem Siegelbrett ein Wein zählt (seit 11.8, D1), nach denselben Regeln wie kompVerkauf. Wein im Fass und gepanschter Wein zählen nie.
 function kompLotId(l){

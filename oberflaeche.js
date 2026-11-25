@@ -1361,7 +1361,7 @@ function wbFakten(id){const f=S.felder[id], so=SORTEN[id], m=S.monat, F=WB_TEXT.
 function wbKarte(id,titel,klein,kopf,auf,o={}){
   const iId=o.iId||'feld_'+id, zu=!o.gesperrt, offen=zu&&wbAuf(id);
   const kl=`${zu?` data-a="karte" data-id="${id}" role="button" aria-expanded="${offen}"`:''}`;
-  return `<section class="card fen wbk${o.gesperrt?' gesperrt':''}${offen?' auf':''}" id="wb_${id}"><i class="pin"></i>
+  return `<section class="card fen wbk${o.kl?' '+o.kl:''}${o.gesperrt?' gesperrt':''}${offen?' auf':''}" id="wb_${id}"><i class="pin"></i>
     <div class="wbkopf"${kl}>${o.ohneBild?'':`<div class="wbbild" style="background-image:url(bilder/${o.bild||wbBild(id)}.${o.bildArt||'jpg'})"></div>`}
       <div class="wbtext"><h3>${titel}<small>${klein}</small></h3>${kopf}</div>
       <button class="fi" data-a="bInfo" data-id="${iId}" aria-label="Erklärung zu ${esc(o.iName||'')}"><i>i</i></button></div>
@@ -1391,6 +1391,7 @@ function wbPanel(iId){
   if(iId==='leute') return wbPanelLeute();   // seit 16.4.4
   if(/^masch_/.test(iId)) return wbPanelMasch(iId.slice(6));   // seit 16.4.6
   if(/^k_/.test(iId)) return wbPanelKeller(iId.slice(2));   // seit 16.5.2
+  if(/^wl_/.test(iId)) return wbPanelWein(iId.slice(3));   // seit 16.5.5
   const id=iId.replace(/^feld_/,''), f=S.felder[id], so=SORTEN[id], m=S.monat, P=WB_TEXT;
   if(!f||!so) return '';
   let z='', k='';
@@ -1656,8 +1657,8 @@ function vLager(){
   const bel=fassBelegt(), KM=MGR_BEREICHE.weingut.name, la=aufgabeAktiv('lager'), mk=aufgabeAktiv('fass'), mf=aufgabeAktiv('flaschen');
   const kf=fassKap()-S.fassraum, kl=flKap()-S.flaschen;
   const leute=la?' Fehlen dafür Kellerleute, stellt er sie ein.':' Fehlen dafür Kellerleute, kauft er nichts.';
-  if(einZu('faesser')&&einZu('flaschen')&&!S.keller&&!kellerFrei(0)) return einKarte('lager','Noch genug Platz',`Hier kaufst du Fässer und Flaschen. Noch reichen ${num(S.fassraum)} l Fassraum und ${num(S.flaschen)} leere Flaschen, vor der Lese schaust du wieder rein.`);
-  return fenster('faesser','Fässer',`<div class="kv"><span>Fassraum belegt</span><span>${num(bel)} von ${num(S.fassraum)} l</span></div><div class="bar w"><i style="width:${S.fassraum?bel/S.fassraum*100:0}%"></i></div>
+  if(einZu('faesser')&&einZu('flaschen')&&!S.keller&&!kellerFrei(0)) return vLagerWeine()+einKarte('lager','Noch genug Platz',`Hier kaufst du Fässer und Flaschen. Noch reichen ${num(S.fassraum)} l Fassraum und ${num(S.flaschen)} leere Flaschen, vor der Lese schaust du wieder rein.`);
+  return vLagerWeine()+fenster('faesser','Fässer',`<div class="kv"><span>Fassraum belegt</span><span>${num(bel)} von ${num(S.fassraum)} l</span></div><div class="bar w"><i style="width:${S.fassraum?bel/S.fassraum*100:0}%"></i></div>
     <div class="kv"><span>Betreut (Kellerleute: ${S.lagerarb})</span><span>bis ${num(fassKap())} l</span></div>`,{
     hin:[mk&&`🌿 Dein ${KM} kauft fehlenden Fassraum beim Keltern dazu.`,csChef('fass')],
     links:kf<500?'Für mehr Fassraum brauchst du mehr Kellerleute.':`Möglich sind noch ${num(kf)} l.`,
@@ -1929,25 +1930,53 @@ function vStadt(){
   }
   return h;
 }
-let ARCHIV='weine';
+let ARCHIV='brett';   // seit 16.5.5 ohne Deine Weine, die stehen oben im Lager
 function archivKacheln(){return `<div class="bkach" role="tablist" aria-label="Teile im Weinarchiv">${ARCHIV_B.map(([k,s,n])=>`<button class="wahl${ARCHIV===k?' an':''}" role="tab" aria-selected="${ARCHIV===k}" data-a="archiv" data-id="${k}"><i>${s}</i>${n}${k==='lexikon'&&lexNeuZahl()?'<span class="lneu">Neu</span>':''}</button>`).join('')}</div>`}
 function kompLotZeile(l){const id=kompLotId(l); return id?`<div class="kv"><span>Zählt für</span><span>${esc(KOMP[id].titel)} ${kompSiegel(kompSt(id),'klein')}</span></div>`:''}
-// Deine Weine (seit 7.4 auf dem Fenster-Baustein): Zahl und geschätzter Wert, darunter je Wein eine kurze Zeile, fest nach Dringlichkeit.
-// Antippen zeigt alle Angaben und die passenden Knöpfe. Seit 11.8 ein normales i statt des grauen Worts "Weinkompendium", und rechts unten die drei kleinen Siegel des Eintrags, für den der Wein zählt.
-function vWeine(){
-  const ls=S.lots.filter(l=>l.status!=='trauben').slice().sort(BSORT_F.dringend), wert=ls.reduce((a,l)=>a+lotWert(l),0),
-    o={i:'Alle deine Weine im Fass und in der Flasche, was zuerst verdirbt, steht oben. Rot heißt, bald ist es zu spät. Die drei kleinen Siegel rechts zeigen, wie weit der Eintrag auf dem Siegelbrett ist, für den dieser Wein zählt. Wein im Fass, gepanschter Wein und Stufen aus einer anderen Sorte zählen nicht.'};
-  if(einZu('weine')) return einKarte('weine','Noch keine Weine','Nach der ersten Lese stehen hier alle deine Weine, im Fass und in der Flasche.');
-  if(!ls.length) return fenster('weine','Deine Weine',[],{...o,leer:'Noch keine Einträge. Hier stehen später alle deine Weine im Fass und in der Flasche.'});
-  return fenster('weine','Deine Weine',`<div class="kv"><span>Weine im Fass und in der Flasche</span><span>${ls.length}</span></div>
-    <div class="kv"><span>Geschätzter Wert</span><span>${eur(Math.round(wert/100)*100)}</span></div>
-    <div class="fstand" style="margin:2px 0 0">Antippen zeigt alle Angaben. Was zuerst verdirbt, steht oben.</div>
-    <div class="fzl ab">${ls.map(l=>{
-      const fl=l.status==='flasche', L=l.stufe?lager(l):null, p=preis(l), H=haltText(l), kid=kompLotId(l);
-      const pr=p?eur2(p):fl?`reif in ${L.min-l.flMonate} ${L.min-l.flMonate===1?'Monat':'Monaten'}`:'im Fass';
-      return `<button class="bzeile" data-a="buchDetail" data-id="${l.id}"><div class="bz1"><b>${dot(l.sorte)}${esc(lotName(l))}${l.pansch?' 🤫':''}${l.regal?' 🏪':''}${l.med&&l.med.length?' 🏅':''}</b><span>${pr}</span></div>
-      <div class="bz2">${l.stufe?'':'nicht angemeldet · '}Qualität ${l.qp} · ${num(l.liter)} ${fl?'Flaschen':'l im Fass'}</div>
-      <div class="bz3 ${kid?'dws ':''}${H.r<=2?'rot':''}">${kid?`<span>${H.t}</span>${kompSiegel(kompSt(kid),'klein')}`:H.t}</div></button>`}).join('')}</div>`,o);
+// Deine Weine (seit 7.4 auf dem Fenster-Baustein, bis 16.5.4 ein Teil im Weinarchiv): Zahl und geschätzter Wert, darunter je Wein eine kurze Zeile, fest nach Dringlichkeit.
+// Seit 16.5.5 (Bauplan 16.5, Entscheidungen 4 bis 6, Timos Bild 07) oben im Lager: je Sorte eine Karte im Kartenbaustein, immer nur eine offen (karte schließt die
+// anderen), Titel die Sorte, klein die Rolle, Bild die Flasche der Rolle aus Bild 07. Zu: Flaschen gesamt, Liter im Fass und das beste Qualitätssiegel, Rot, wenn ein Wein
+// bald verdirbt (dieselbe Grenze wie die rote Zeile, haltText r<=2). Auf: je Wein eine Zeile (Stufe, Jahrgang, Preis, Siegel, Menge, Qualität, Haltbarkeit, die kleinen
+// Siegel des Kompendiums), Eiswein und Sekt als eigene Zeilen, Wein im Fass als Zeile "Im Fass". Ein Tipp auf die Zeile öffnet wie bisher buchDetail.
+// Reihenfolge wie bisher nach BSORT_F.dringend: die Karte mit dem Wein, der zuerst verdirbt, steht oben, in der Karte ebenso.
+// Baustein für Lager und Großhandel (Entscheidung 5): weinKarten(ls,o) mit o.pre (Kennung, 'wl' im Lager), o.kn (Knöpfe je Wein, 16.6 Verkaufen) und o.akt (Befehl der Zeile).
+// Gleiche Jahrgänge und Stufen bleiben eigene Zeilen, weil buchDetail, Verkauf und Spielführer je Wein arbeiten (Design entschieden). Platzhalter, Wortlaut in Meilenstein 17.
+const WK_BILD={menge:'weinkarte-menge',sekt:'weinkarte-sekt',spitze:'weinkarte-spitze'};
+const wkBild=(id,ls)=>WK_BILD[(SORTEN[id]||{}).rolle]||(ls.some(l=>l.sekt)?WK_BILD.sekt:SORTEN[id].farbe==='rot'?WK_BILD.spitze:WK_BILD.menge);
+const wkSg=st=>st&&STUFEN[st]&&(st==='eis'||STUFEN[st].rang>=STUFEN.qba.rang)?st:null;
+const wkSiegel=(st,kl)=>wkSg(st)?`<img class="${kl||'wksg'}" src="bilder/siegel-${st}.webp" alt="${STUFEN[st].name}">`:'';
+const weinLager=()=>S.lots.filter(l=>l.status!=='trauben').slice().sort(BSORT_F.dringend);
+const wkGruppen=ls=>{const G=new Map(); for(const l of ls){if(!G.has(l.sorte)) G.set(l.sorte,[]); G.get(l.sorte).push(l)} return [...G]};
+function wkZeile(l,o){
+  const T=WB_TEXT.wein, fl=l.status==='flasche', L=l.stufe?lager(l):null, p=preis(l), H=haltText(l), kid=kompLotId(l);
+  const was=l.sekt?T.sekt:l.stufe?STUFEN[l.stufe].name:T.wein, klein=`${l.jahrgang}${!fl&&!l.stufe?' · '+T.nichtAn:''}`;
+  const pr=p?eur2(p):fl?wbT(T.reif,{n:L.min-l.flMonate,mon:L.min-l.flMonate===1?'Monat':'Monaten'}):T.fass;
+  return `<button class="bzeile wkz" data-a="${o.akt||'buchDetail'}" data-id="${l.id}"><div class="bz1"><b>${was} <small class="mut">${klein}</small>${l.pansch?' 🤫':''}${l.regal?' 🏪':''}${l.med&&l.med.length?' 🏅':''}</b><span>${pr}${fl?wkSiegel(l.stufe):''}</span></div>
+      <div class="bz2">${num(l.liter)} ${fl?'Flaschen':'l im Fass'} · Qualität ${l.qp}${l.sekt&&hefeLang(l)?` · ${l.hefe} Monate Hefelager`:''}${jhWein(l)?' · Jahrhundertwein':''}</div>
+      <div class="bz3 ${kid?'dws ':''}${H.r<=2?'rot':''}">${kid?`<span>${H.t}</span>${kompSiegel(kompSt(kid),'klein')}`:H.t}</div></button>${o.kn?o.kn(l):''}`}
+function weinKarten(ls,o={}){
+  const T=WB_TEXT.wein, pre=o.pre||'wl';
+  return wkGruppen(ls).map(([id,L])=>{const so=SORTEN[id], ro=rolleVon(id), F=L.filter(l=>l.status==='flasche'), fa=L.filter(l=>l.status==='fass');
+    const fl=F.reduce((a,l)=>a+l.liter,0), li=fa.reduce((a,l)=>a+l.liter,0), bald=L.filter(l=>haltText(l).r<=2).length;
+    const best=F.map(l=>wkSg(l.stufe)).filter(Boolean).sort((a,b)=>STUFEN[b].rang-STUFEN[a].rang)[0];
+    const kopf=(bald?kHin('rot',bald===1?T.bald:wbT(T.baldN,{n:bald})):'')
+      +`<div class="wkzu"><div><b class="zahl">${num(fl)}</b> Flaschen${li?`<div class="wbunter">${wbT(T.fassL,{l:num(li)})}</div>`:''}</div>${best?wkSiegel(best,'wksgz'):''}</div>`;
+    return wbKarte(pre+'_'+id,esc(so.name),ro?ro.name:'',kopf,`<div class="fzl wkl">${L.map(l=>wkZeile(l,o)).join('')}</div>`,{bild:wkBild(id,L),bildArt:'webp',iId:pre+'_'+id,iName:so.name,kl:'wkarte'})}).join('')}
+// Kopf über den Karten: Titel, Zahl der Weine und der geschätzte Wert, das i öffnet das Info-Panel mit dem alten i-Text.
+function vLagerWeine(){
+  const T=WB_TEXT.wein;
+  if(einZu('weine')) return '';
+  const ls=weinLager(), wert=ls.reduce((a,l)=>a+lotWert(l),0);
+  return `<section class="card fen wkband"><header class="fkopf"><h3>${T.titel}</h3><button class="fi" data-a="bInfo" data-id="wl_alle" aria-label="Erklärung zu ${T.titel}"><i>i</i></button></header>
+    <div class="fin">${ls.length?`<div class="wbunter">${wbT(T.band,{n:ls.length,w:eur(Math.round(wert/100)*100)})}</div>`:`<div class="fleer">${T.leer}</div>`}</div></section>${weinKarten(ls)}`}
+// Info-Panel: wl_alle für alle Weine, sonst je Sorte mit Flaschen, Fass, Wert und dem Satz der Rolle.
+function wbPanelWein(id){
+  const T=WB_TEXT.wein, alle=id==='alle', ls=weinLager().filter(l=>alle||l.sorte===id), so=SORTEN[id], ro=!alle&&rolleVon(id);
+  if(!alle&&!so) return '';
+  const F=ls.filter(l=>l.status==='flasche'), fa=ls.filter(l=>l.status==='fass'), wert=ls.reduce((a,l)=>a+lotWert(l),0);
+  const z=wbKv(T.weine,ls.length)+wbKv(T.flaschen,num(F.reduce((a,l)=>a+l.liter,0)))+wbKv(T.imFassL,`${num(fa.reduce((a,l)=>a+l.liter,0))} l`)+wbKv(T.wert,eur(Math.round(wert/100)*100))
+    +(ro?wbKv(WB_TEXT.fakt.rolle,`${ro.name}, ${ro.satz}`):'');
+  return wbPanelRahmen(alle?T.titel:so.name,wbAbschnitt('🍷',WB_TEXT.zustand,z)+wbAbschnitt('💡',WB_TEXT.tipps,`<p style="margin:0 0 6px">${T.i}</p>${mib('buch')}`));
 }
 // Winzerbote: Erst steht das Bild allein da, dann rollt sich die Zeitung wie eine Schriftrolle vom oberen Rand ab, bis ihr Kopf oben steht.
 // Oben hängt immer die Rolle. Ganz hochgeschoben verschwindet die Zeitung darin und gibt das Bild frei, Tippen auf die Rolle rollt sie wieder ab.
@@ -2037,6 +2066,8 @@ Object.assign(FU_WANN,{
 // "Zeig mir, wo": Ort und was dort golden leuchtet. sel ist eine Liste, die erste Stelle, die es gibt, gilt.
 // Bei Fenster-Tipps leuchtet das i (Regel 3), bei den Kern-Blasen der Knopf selbst.
 const fiSel=id=>`[data-a="fi"][data-id="${id}"]`;
+// Seit 16.5.5: die Weinkarte im Lager, in der ein Wein steht, ohne Wein die oberste (sie hat den Wein, der zuerst verdirbt).
+const fuWeinKarte=l=>{l=l||weinLager()[0]; return l?'wl_'+l.sorte:null};
 const FU_ZEIG={
   // Seit 12.6: e1-0a ohne Ziel, e1-01 führt in den Weinberg.
   'e1-01':{tab:'gut',sub:'berg',sel:['#subs [data-id="berg"]']},
@@ -2061,12 +2092,12 @@ const FU_ZEIG={
   'e1-19':{tab:'gut',sub:'aktuell',sel:['[data-a="weiterBis"]']},
   'k01':{tab:'gut',sub:'aktuell',sel:['[data-a="weiterBis"]']},
   'z2-02':{tab:'gut',sub:'berg',sel:['[data-a="pflanzen"]','[data-a="bInfo"][data-id^="feld_"]']},
-  'z2-03':{tab:'keller',sub:'buch',sel:['.bzeile[data-a="buchDetail"]','[data-a="archiv"][data-id="brett"]']},
+  'z2-03':{tab:'keller',sub:'lager',karte:()=>fuWeinKarte(),sel:['.bzeile[data-a="buchDetail"]','.wkband']},   // seit 16.5.5 Deine Weine im Lager
   'z2-04':{tab:'stadt',sub:'bank',sel:[fiSel('kredit')]},
   'z2-05':{tab:'stadt',sub:'laeden',sel:[fiSel('laeden'),'#subs [data-id="laeden"]']},
   'z2-06':{tab:'gut',sub:'buero',sel:[fiSel('rangliste')]},   // seit 16.3.5 der Rang im Büro, das Rang-Fenster im Klemmbrett entfällt
   'z2-07':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
-  'z2-08':{tab:'keller',sub:'buch',sel:['.bzeile[data-a="buchDetail"]','[data-a="archiv"][data-id="brett"]']},
+  'z2-08':{tab:'keller',sub:'lager',karte:()=>fuWeinKarte(),sel:['.bzeile[data-a="buchDetail"]','.wkband']},
   // Paket B: Rang-Neuheiten. Beim Befördern leuchtet der Knopf des Managers im Arbeitsamt.
   'r3-1':{tab:'stadt',sub:'amt',sel:[fiSel('auktionen'),fiSel('makler')]},
   'r3-2':{tab:'gut',sub:'berg',sel:['[data-a="bInfo"][data-id^="feld_"]']},
@@ -2100,7 +2131,7 @@ const FU_ZEIG={
   'a1':{tab:'stadt',sub:'amt',sel:[fiSel('verband')]},
   'm1':{tab:'gut',sub:'buero',sel:[fiSel('urkunden')]},
   'm2':{tab:'stadt',sub:'amt',sel:[fiSel('makler'),fiSel('auktionen')]},
-  'm3':{tab:'keller',sub:'buch',sel:['.bzeile[data-a="buchDetail"]','[data-a="archiv"][data-id="brett"]']},
+  'm3':{tab:'keller',sub:'lager',karte:()=>fuWeinKarte(),sel:['.bzeile[data-a="buchDetail"]','.wkband']},
   'm4':{tab:'stadt',sub:'amt',sel:[fiSel('wettb')]},
   // Seit 12.8: archiv schlägt im Weinarchiv gleich das Siegelbrett auf.
   'm5':{tab:'keller',sub:'buch',archiv:'brett',sel:[fiSel('brett')]},
@@ -2118,7 +2149,7 @@ const FU_ZEIG={
   'w3':{tab:'stadt',sub:'handel',sel:[fiSel('markt')]},
   'w4':{tab:'stadt',sub:'amt',sel:()=>{const l=S.lots.find(fuReiht); return [l?`[data-a="anmelden"][data-id="${l.id}"]`:'',fiSel('anmelden')]}},
   'w5':{tab:'gut',sub:'berg',sel:['[data-a="bInfo"][data-id="duengung"]']},
-  'w6':{tab:'keller',sub:'buch',sel:()=>{const l=S.lots.find(fuLange); return [l?`.bzeile[data-a="buchDetail"][data-id="${l.id}"]`:'','[data-a="archiv"][data-id="brett"]']}},
+  'w6':{tab:'keller',sub:'lager',karte:()=>fuWeinKarte(S.lots.find(fuLange)),sel:()=>{const l=S.lots.find(fuLange); return [l?`.bzeile[data-a="buchDetail"][data-id="${l.id}"]`:'','.wkband']}},
   'w7':{tab:'stadt',sub:'bank',sel:[fiSel('kredit')]},
   'w8':{tab:'keller',sub:'lager',sel:[fiSel('faesser')]},
   'w9':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
@@ -2339,9 +2370,11 @@ const AKT={
     meldung('Tipps von vorn','Warnungen und Kniffe kommen wieder, sobald sie passen. In den ersten zwei Jahren kommt auch der Rest des Fahrplans.')},
   // Seit 10.2.1: "Zeig mir, wo" klappt die Blase zum Kopf zusammen, statt sie abzuhaken. Weg ist sie erst mit "Verstanden" oder wenn die Aufgabe erledigt ist.
   // Seit 12.7: "Zeig mir, wo" geht auch bei älteren Tipps aus dem Verlauf. Beim neuen Tipp gilt er damit als gelesen (FU_WO).
-  fuWo(d){const id=d&&d.id||FU_AKT, z=FU_ZEIG[id]; if(!z) return; fuBlaseZu(); if(id===FU_AKT) FU_WO=true; FU_PAUSE=true; fuKopfStell(); if(z.tab){geh(z.tab,z.sub); if(z.sub==='buch') ARCHIV=z.archiv||'weine'; if(z.sub==='buero'){const m=/data-id="(\w+)"/.exec((z.sel||[])[0]||''); if(m&&BUERO_WO[m[1]]) BUERO=BUERO_WO[m[1]]} render();
+  fuWo(d){const id=d&&d.id||FU_AKT, z=FU_ZEIG[id]; if(!z) return; fuBlaseZu(); if(id===FU_AKT) FU_WO=true; FU_PAUSE=true; fuKopfStell(); if(z.tab){geh(z.tab,z.sub); if(z.sub==='buch') ARCHIV=z.archiv||'brett'; if(z.sub==='buero'){const m=/data-id="(\w+)"/.exec((z.sel||[])[0]||''); if(m&&BUERO_WO[m[1]]) BUERO=BUERO_WO[m[1]]} render();
     // Seit 16.5.2: z.karte klappt die Karte auf, in der der Knopf steht (Keller), offen ist wie beim Tipp nur diese eine.
-    if(z.karte&&document.getElementById('wb_'+z.karte)){for(const x of [...FI_AUF]) if(x.startsWith('wb:')) FI_AUF.delete(x); FI_AUF.add('wb:'+z.karte); render()} window.scrollTo(0,0)} setTimeout(()=>fuLeuchte(z),z.tab?120:0)},
+    // Seit 16.5.5 darf z.karte eine Funktion sein (die Weinkarte im Lager hängt am Wein).
+    const ka=typeof z.karte==='function'?z.karte():z.karte;
+    if(ka&&document.getElementById('wb_'+ka)){for(const x of [...FI_AUF]) if(x.startsWith('wb:')) FI_AUF.delete(x); FI_AUF.add('wb:'+ka); render()} window.scrollTo(0,0)} setTimeout(()=>fuLeuchte(z),z.tab?120:0)},
   // Seit 12.7 (Maik 20.11.2026): Ein Tipp auf den Kopf in der Statusleiste öffnet die Blase jederzeit, noch ein Tipp klappt sie zu.
   // Wie ein Tipp daneben: Wer zuklappt, bekommt den nächsten Tipp erst mit dem Tipp danach (FU_PAUSE).
   fuKopf(){if(FU_OFFEN){fuBlaseZu(); FU_PAUSE=true} else fuOeffne()},
