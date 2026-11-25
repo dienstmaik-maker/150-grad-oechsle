@@ -710,7 +710,8 @@ html.brett main{padding-top:18px}
 .wbal{display:flex;align-items:center;gap:7px}
 .wbal>b{flex:none;font:700 15px/1.2 var(--schrift)}
 .wbal>.zahl{flex:none;font:700 15px/1.2 var(--schrift);font-variant-numeric:lining-nums tabular-nums}
-.wbal>.zahl small{display:block;font-size:12px;color:#3e6a24;text-align:right}
+.wbunter>.zahl{font-style:normal;color:var(--ink);font-variant-numeric:lining-nums tabular-nums}
+.wbunter>.plus{font-style:normal;font-weight:700;color:#3e6a24}
 .wbal img.siegel{flex:none;width:28px;height:28px;margin:-4px 0}
 .wbbar{flex:1;min-width:40px;height:11px;border-radius:6px;background:rgba(90,60,30,.16);border:1px solid rgba(90,60,30,.5);box-shadow:inset 0 1px 2px rgba(0,0,0,.3);overflow:hidden}
 .wbbar>i{display:block;height:100%;border-radius:5px;background:linear-gradient(#97c25a,#4f7a26)}
@@ -742,6 +743,7 @@ html.brett main{padding-top:18px}
 .wbschloss{width:34px;height:34px;margin-top:2px}
 .wbreihe{padding:8px 0;border-top:1px solid rgba(120,80,40,.22)}
 .wbreihe .wbkv{margin-bottom:3px}
+.wbfakt>.breit{grid-column:1/-1}
 /* Info-Panel von unten (Bild 3): drei Abschnitte, Wischen nach unten oder ein Tipp auf den Rand schließt es. */
 #sheet .ipanel{touch-action:pan-y}
 .ipanel .igriff{display:block;width:46px;height:5px;margin:-12px auto 10px;border-radius:3px;background:#b9995a}

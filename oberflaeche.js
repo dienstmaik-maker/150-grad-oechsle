@@ -1168,6 +1168,71 @@ const csChef=k=>csBeiMgr()&&csKann(k)&&chefsache(k)?CHEFSACHE_ZEILE.chef:'';
 const csIst=k=>!csBeiMgr()&&csKann(k)&&chefsache(k)?CHEFSACHE_TEXT.ist.replace('{arbeit}',CHEFSACHE_TEXT[k]):'';
 function csKnopf(k){if(csBeiMgr()||!CS_STUFE[k]||!csKann(k)) return ''; const T=CHEFSACHE_TEXT, c=chefsache(k);
   return `<button class="klein" data-a="csSetz" data-id="${k}" data-w="${c?'auto':'chef'}">${T.knopf.replace('{arbeit}',T.kurz[k]||T[k]).replace('{stellung}',c?EINSATZ_TEXT.auto:T.selbst)}</button>`}
+// Seit 16.1 (Bauplan 16.1 Weinberg, Timos Bild 1): je Sorte eine Karte zum Auf- und Zuklappen. Zu: Hinweis, Sorte mit Lage, Öchsle-Balken oder Stand.
+// Auf: drei Balken mit Timos Symbolen, Fakten in zwei Spalten, ganz unten die Knöpfe. Offen ist immer nur eine (FI_AUF 'wb:<Sorte>', beim Ortswechsel alle zu).
+// Bilder der Karten sind Platzhalter je Lage bis Meilenstein 17 (Entscheidung 11). Texte in WB_TEXT, Platzhalter, Wortlaut in Meilenstein 17.
+const WB_BILD={einfach:'sommer',hoehe:'fruehling',sued:'nah-steillage'};
+const wbBild=id=>istSL(id)?'spitzenlage':WB_BILD[lageVon(id)]||'sommer';
+const wbAuf=id=>FI_AUF.has('wb:'+id);
+const wbT=(s,o)=>String(s).replace(/\{(\w+)\}/g,(m,k)=>o[k]!=null?o[k]:m);
+// Stufe mit zwei Angaben (Entscheidung 3): wo man steht und was bis zur nächsten Stufe fehlt, dazu die Füllung des Balkens innerhalb der Stufe.
+function wbStufe(st,z,SW,N,fmt){if(st>=N.length-1) return {p:100,t:wbT(WB_TEXT.top,{st:N[st]})};
+  const a=SW[st],b=SW[st+1]; return {p:Math.max(0,Math.min(100,(z-a)/(b-a)*100)),t:wbT(WB_TEXT.bis,{st:N[st],n:fmt(Math.max(0,b-z)),next:N[st+1]})}}
+// Öchsle: erreichte Weinstufe nach den Öchsle, nächste Stufe, die diese Sorte erreichen kann (Beeren- und Trockenbeerenauslese nur mit Edelfäulnis wie in der Lese-Hilfe),
+// das Siegel der erreichten Stufe ab Qualitätswein (Entscheidung 15), Eiswein in Platin, wenn er möglich ist.
+const WB_OE=['tafel','qba','kab','spat','aus','ba','tba'];
+function wbOe(id){const f=S.felder[id], M=R().min, oe=f.oe, darf=s=>(s!=='ba'&&s!=='tba'||f.edel)&&rolleDarf(id,s);
+  let st=null; for(const s of WB_OE) if(oe>=M[s]&&darf(s)) st=s;
+  const next=WB_OE.find(s=>darf(s)&&M[s]>oe&&M[s]<=oeGrenze(id)), g=n=>wbT(WB_TEXT.grad,{n});
+  const t=next?(st?wbT(WB_TEXT.bis,{st:STUFEN[st].name,n:g(M[next]-oe),next:STUFEN[next].name}):wbT(WB_TEXT.unter,{n:g(M[next]-oe),next:STUFEN[next].name})):st?wbT(WB_TEXT.top,{st:STUFEN[st].name}):'';
+  const sg=f.gefroren&&!eisFehlt(f)?'eis':st&&STUFEN[st].rang>=STUFEN.qba.rang?st:null;
+  return {t,sg,p:Math.min(100,oe/1.5)}}
+const wbBalken=(p,kl)=>`<div class="wbbar${kl?' '+kl:''}"><i style="width:${Math.round(p)}%"></i></div>`;
+// Der Teil, der auch zugeklappt zu sehen ist: Öchsle-Balken ab Juli, davor die Phase, im Juni die erwartete Menge (Entscheidung 5).
+function wbStand(id){const f=S.felder[id], m=S.monat, z=t=>`<div class="wbunter">${t}</div>`;
+  if(!f.reben) return z(WB_TEXT.nicht);
+  if(f.gelesen) return z(WB_TEXT.gelesen);
+  if(f.teil&&f.menge<=0) return z(WB_TEXT.teil);
+  if(m<5) return `<div class="wbal"><b>${WB_TEXT.stand}</b><span class="wbunter">${PHASE[m]}</span></div>`;
+  if(m===5) return `<div class="wbal"><b>${WB_TEXT.stand}</b><span class="wbunter">${wbT(WB_TEXT.erwartet,{l:num(f.menge)})}</span></div>`;
+  if(f.menge<=0) return z(WB_TEXT.leer);
+  const O=wbOe(id);
+  return `<div class="wbal"><b>${WB_TEXT.oe}</b>${wbBalken(O.p)}${O.sg?`<img class="siegel" src="bilder/siegel-${O.sg}.webp" alt="${STUFEN[O.sg].name}">`:''}</div>${z(`<b class="zahl">${f.oe}°</b>${f.plus>0?` <span class="plus">+${f.plus}°</span>`:''}${O.t?` · ${O.t}`:''}`)}`}
+// Graue Info-Zeile (Entscheidungen 13, 14 und 21): Leute draußen mit 🧑‍🌾, der Weingut-Manager mit Timos Mitarbeiter-Symbol, sonst das Zeichen am Satzanfang.
+function wbInfo(t,wer,kl){if(!t) return ''; const s=String(t), m=/^([^\p{L}\d<(„"]+)\s+/u.exec(s), rest=m?s.slice(m[0].length):s;
+  const sym=wer==='leute'?'<span class="em">🧑‍🌾</span>':wer==='mgr'?'<img src="bilder/sym-mitarbeiter.webp" alt="">':m?`<span class="em">${m[1].trim()}</span>`:'';
+  return `<div class="wbinfo${kl?' '+kl:''}">${sym}<span>${rest}</span></div>`}
+// Aufgeklappt, Teil 1 und 2 (Entscheidung 6): drei Balken mit Timos Symbolen, Boden und Dünger vom Boden dieses Weinbergs (Entscheidung 19), dann die Fakten.
+function wbBalkenAuf(id){const f=S.felder[id]; if(!f.reben) return '';
+  const st=f.pflSt||0, R_=wbStufe(st,f.ep||0,epSchwelle(id),PFLEGE_STUFEN,n=>wbT(WB_TEXT.punkte,{n:epT(n)})), B=wbStufe(wbBoden(id),wbBodenP(id),BODEN_SCHWELLE,BODEN_STUFEN,n=>wbT(WB_TEXT.punkte,{n:epT(n)}));
+  const z=(sym,k,t,bar)=>`<div class="wbst"><img src="bilder/${sym}.webp" alt=""><div><div class="wbkv"><b>${k}</b><span>${t}</span></div>${bar}</div></div>`;
+  return z('sym-rebstufe',WB_TEXT.reb,R_.t,wbBalken(R_.p))+z('sym-bodenstufe',WB_TEXT.bod,B.t,wbBalken(B.p))+z('sym-duenger',WB_TEXT.dueng,`${f.boden} %`,wbBalken(f.boden,f.boden<80?'rot':''))}
+function wbFakten(id){const f=S.felder[id], so=SORTEN[id], m=S.monat, F=WB_TEXT.fakt, L=[], add=(k,v,breit)=>L.push(`<div${breit?' class="breit"':''}><dt>${k}</dt><dd>${v}</dd></div>`);
+  if(f.reben) add(F.reben,rbn(f.reben));
+  if(f.reben&&m>=6&&f.menge>0&&!f.gelesen) add(F.menge,`${num(f.menge)} l`);
+  if(f.reben) add(F.form,FORMEN[formVon(id)].name);
+  add(rolleVon(id)?F.rolle:F.eignung,rolleVon(id)?rolleVon(id).name:eigText(eignung(id)));
+  add(F.lage,istSL(id)?wbT(WB_TEXT.slLage,{name:SL_NAME,ha:SPITZE_HA,n:rbn(platzFuer(id))}):wbT(WB_TEXT.lage,{lage:`${LAGEN[lageVon(id)].sym} ${LAGEN[lageVon(id)].kurz}`,n:rbn(platzFuer(id))}),1);
+  if(!f.reben){add(F.preis,eur2(rebenPreis(id)/STOCK_F)); add(F.ertrag,`rund ${String(Math.round(so.ertrag*(R().ertragF||1)/STOCK_F*10)/10).replace('.',',')} l`)}
+  // Stellung im Einsatzplan: Rebschnitt und Düngen, dazu Laubschnitt und Ausdünnen, sobald sie frei sind. "Wer liest" entfällt, Lesen ist immer Chefsache (Entscheidung 18).
+  if(f.reben){const E=EINSATZ_TEXT, P=[`${E.schnitt}: ${helferSchneidet(id)?E.auto:E.chef}`];
+    if(frei('laub_hand')) P.push(`${E.laub}: ${autoLaub(id)?E.auto:E.chef}`); if(ausdFrei()) P.push(`${E.ausd}: ${autoAusd(id)?E.auto:E.chef}`);
+    add(F.plan,P.join('<br>'),1)}
+  return `<dl class="wbfakt">${L.join('')}</dl>`}
+// Die Karte selbst. kopf ist der immer sichtbare Teil rechts vom Bild, auf der aufgeklappte Teil darunter. Gesperrte Karten klappen nicht auf.
+function wbKarte(id,titel,klein,kopf,auf,o={}){
+  const iId=o.iId||'feld_'+id, zu=!o.gesperrt, offen=zu&&wbAuf(id);
+  const kl=`${zu?` data-a="karte" data-id="${id}" role="button" aria-expanded="${offen}"`:''}`;
+  return `<section class="card fen wbk${o.gesperrt?' gesperrt':''}${offen?' auf':''}" id="wb_${id}"><i class="pin"></i>
+    <div class="wbkopf"${kl}><div class="wbbild" style="background-image:url(bilder/${o.bild||wbBild(id)}.${o.bildArt||'jpg'})"></div>
+      <div class="wbtext"><h3>${titel}<small>${klein}</small></h3>${kopf}</div>
+      <button class="fi" data-a="bInfo" data-id="${iId}" aria-label="Erklärung zu ${esc(o.iName||'')}"><i>i</i></button></div>
+    ${offen?`<div class="fin wbauf"><div class="wbtrenn">❦</div>${auf}</div>`:''}${zu?`<span class="wbzu" data-a="karte" data-id="${id}" aria-hidden="true">${offen?'▴':'▾'}</span>`:''}</section>`}
+// Erklärtext einer Sorte (bis 16.0 das i des Fensters im Weinberg).
+function wbFeldI(id){const wm=`Dein ${MGR_BEREICHE.weingut.name}`, mr=aufgabeAktiv('reben');
+  return `${!S.felder[id].reben&&!sorteFrei(id)?sorteSchild(id)+'. ':''}Gepflanzt und gerodet wird nur von Januar bis März, gelesen ab August. Je länger die Trauben hängen, desto mehr Öchsle und desto höher die Weinstufe. Aber Regen, Kälteeinbruch und fehlender Frost können alles kosten. ${S.rollen?'Jede Sorte hat ihre Rolle: Die Menge-Sorte trägt viel, die Sekt-Sorte gibt den besten Sekt, die Spitzen-Sorte die besten Weine.':'Die Sterne zeigen, wie gut die Sorte in dein Gebiet passt.'}${mr?` ${wm} pflanzt von Januar bis März nach, was über den Winter eingegangen ist.`:''}`}
+// Vorläufig bis 16.1.4: das i zeigt die Erklärung als Fenster von unten.
+function wbPanel(iId){const id=iId.replace(/^feld_/,''), so=SORTEN[id]; return `<div class="ipanel"><h3 class="iband">${so?esc(so.name):''}</h3><p>${wbFeldI(id)}</p><div class="btns"><button class="sec" data-a="close">Zurück</button></div></div>`}
 // Weinberg (seit 7.4 auf dem Fenster-Baustein): je Sorte ein Fenster (seit 4.4 oben), dann Düngung und Übersicht, darunter zugeklappt der Steckbrief des Gebiets.
 // Sorten, die der Rang noch sperrt, sind seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten). Lese-Hinweise und rote Warnungen bleiben sichtbar, die Erklärungen stehen im i.
 function vBerg(){
@@ -1177,59 +1242,22 @@ function vBerg(){
   const feldI=`Gepflanzt und gerodet wird nur von Januar bis März, gelesen ab August. Je länger die Trauben hängen, desto mehr Öchsle und desto höher die Weinstufe. Aber Regen, Kälteeinbruch und fehlender Frost können alles kosten. ${S.rollen?'Jede Sorte hat ihre Rolle: Die Menge-Sorte trägt viel, die Sekt-Sorte gibt den besten Sekt, die Spitzen-Sorte die besten Weine.':'Die Sterne zeigen, wie gut die Sorte in dein Gebiet passt.'}${mr?` ${wm} pflanzt von Januar bis März nach, was über den Winter eingegangen ist.`:''}`;
   let h='', zu='';
   for(const id of weinberge()){
-    const f=S.felder[id], so=SORTEN[id], titel=dot(id)+so.name;
-    if(!f.reben&&!sorteFrei(id)){zu+=fenster('feld_'+id,titel,'',{zu:`ab dem Rang ${RAENGE[sorteAb(id)].name}`,i:`${sorteSchild(id)}. ${feldI}`}); continue}
-    let z=`<div class="kv"><span>Reben</span><span>${rbn(f.reben)}</span></div><div class="kv"><span>${rolleVon(id)?'Rolle':'Eignung'}</span><span>${rolleVon(id)?rolleVon(id).name:eigText(eignung(id))}</span></div>`;
-    // Seit 13.4.9: Lage der Sorte. Seit dem Nachtrag zu 14.5 (jede Lage eine Sorte) für jede Sorte ihre eine Lage mit dem freien Platz dort, der Sekt-Abzug ist weg.
-    // Seit 14.4.4: Die Spitzenlage mit ihrer Fläche und ihrem eigenen Boden. Platzhalter, Wortlaut in Meilenstein 17.
-    if(istSL(id)) z+=`<div class="kv"><span>Lage</span><span>${LAGEN.sued.sym} ${SL_NAME}, ${SPITZE_HA} Hektar Südhang</span></div><div class="kv"><span>Boden</span><span>${BODEN_STUFEN[wbBoden(id)]}, ${epT(wbBodenP(id))} von ${BODEN_MAX} Punkten</span></div>`;
-    else z+=`<div class="kv"><span>Lage</span><span>${LAGEN[lageVon(id)].sym} nur ${LAGEN[lageVon(id)].kurz}, Platz für ${rbn(platzFuer(id))} Reben</span></div>`;
-    // Seit dem Nachtrag zu 14.5.4: das Klima des Weinbergs in Worten (klimaText), ohne Zahlen. Platzhalter, Wortlaut in Meilenstein 17.
-    if(f.reben) z+=`<div class="kv"><span>Klima</span><span>${klimaText(id)}</span></div>`;
-    // Seit 13.2.6: Pflegestufe mit Zähler, Deckel und Rebschnitt. Wortlaut seit 13.8.
-    // Seit 14.2.2: Entwicklungspunkte mit der nächsten Schwelle und der Wirkung der Stufe. Platzhalter, Wortlaut in Meilenstein 17.
-    if(f.reben){const st=f.pflSt||0, SW=epSchwelle(id); z+=`<div class="kv"><span>Pflege</span><span>${st>=PFLEGE_STUFEN.length-1?`${PFLEGE_STUFEN[st]}, höher geht es nicht`:`${PFLEGE_STUFEN[st]}, ab ${epT(SW[st+1])} Punkten ${PFLEGE_STUFEN[st+1]}`}</span></div>
-      <div class="kv"><span>Entwicklungspunkte</span><span>${epT(f.ep||0)} von ${EP_MAX}</span></div>
-      <div class="kv"><span>Wirkung der Stufe</span><span>${Math.round(STUFE_MENGE[st]*100)}\u00a0% Menge</span></div>
-      <div class="kv"><span>${EINSATZ_TEXT.schnitt}</span><span>${helferSchneidet(id)?`${EINSATZ_TEXT.auto}, ${leuteStName('helfer',leuteSt('helfer'))}`:`${EINSATZ_TEXT.chef}, du selbst`}, +${epT(epJahrSoll(id))} Punkte im guten Jahr</span></div>
-      <div class="kv"><span>Boden</span><span class="${f.boden<80?'rot':''}">${f.boden} %, Jahresschnitt bisher ${bodenSchnitt(id)} %</span></div><div class="bar"><i style="width:${f.boden}%"></i></div>`}
-    // Seit 14.5.2 (Annahmen 5 und 8): Qualität des Weinbergs mit ihren Bausteinen, in allen Spielstufen. Seit dem Nachtrag zu 14.5.2 mit "von 100" und,
-    // sobald das Ausdünnen frei ist, mit dem Baustein Ausdünnen. Platzhalter, Wortlaut in Meilenstein 17.
-    if(f.reben){const Q=qualTeile(id); z+=`<div class="kv"><span>Qualität</span><span>${Q.q} von 100 Punkten: Pflege ${Math.round(Q.pflege)}, Boden ${Math.round(Q.boden)}, Form ${Q.form}, Laubschnitt ${Q.laub}${ausdFrei()?`, Ausdünnen ${Q.ausd}`:''}</span></div>`}
-    // Seit 14.2.4: Erziehungsform mit Wirkung und Lese, seit 14.5.3 in allen Spielstufen. Platzhalter, Wortlaut in Meilenstein 17.
-    if(f.reben){z+=`<div class="kv"><span>Erziehungsform</span><span>${FORMEN[formVon(id)].name}, ${Math.round(formMenge(id)*100)} % Menge, ${FORMEN[formVon(id)].qual} Punkte Qualität</span></div>
-      <div class="kv"><span>Lese</span><span>${formLese(id,formVon(id))}</span></div>`}
-    if(f.reben) z+=`
-      <div class="kv"><span>Deckel</span><span>${deckel(id)}° Öchsle</span></div>
-      <div class="kv"><span>Rebschnitt ${S.jahr}</span><span${f.schnitt!==S.jahr&&m>SCHNITT_BIS?' class="rot"':''}>${f.schnitt===S.jahr?'✂️ geschnitten':m<=SCHNITT_BIS?'offen bis Ende April':`nicht geschnitten, verwildert um ${VERWILDERN[Math.min(VERWILDERN.length,(f.wild||0)+1)-1]} Punkte`}</span></div>`;
-    if(!f.reben) z+=`<div class="kv"><span>Preis je Rebe</span><span>${eur2(rebenPreis(id)/STOCK_F)}</span></div><div class="kv"><span>Ertrag je Rebe</span><span>rund ${String(Math.round(so.ertrag*(R().ertragF||1)/STOCK_F*10)/10).replace('.',',')} l</span></div><div class="fleer" style="margin-top:6px">Nicht angebaut.</div>`;
-    else if(f.gelesen) z+=`<div class="mut">✂️ Für dieses Jahr gelesen.</div>${S.lots.some(l=>l.status==='trauben'&&l.sorte===id)?rot('Die Trauben müssen diesen Monat im Keller ins Fass.'):''}`;
-    else if(f.teil&&f.menge<=0) z+=`<div class="mut">Ein Teil ist gelesen, der Rest ist verloren.</div>`;
-    else if(m<5) z+=`<div class="kv"><span>Stand</span><span>${phase[m]}</span></div>`;
-    else if(m===5) z+=`<div class="kv"><span>Fruchtansatz</span><span>rund ${num(f.menge)} l erwartet</span></div>`;
-    else if(f.menge<=0) z+=`<div class="mut">Keine Trauben mehr am Stock.</div>`;
-    else{
-      z+=`<div class="kv"><span>Öchsle</span><span>${f.oe}°${f.plus>0?` (+${f.plus}° in diesem Monat)`:''}</span></div><div class="bar g"><i style="width:${f.oe/1.5}%"></i></div>
-      <div class="kv"><span>Menge am Stock</span><span>${num(f.menge)} l</span></div>
-      <div class="kv"><span>Reif</span><span>${f.reif} %</span></div><div class="bar"><i style="width:${f.reif}%"></i></div>
-      <div class="kv"><span>davon überreif</span><span>${f.ueber} %</span></div><div class="bar w"><i style="width:${f.ueber}%"></i></div>
-      <div class="kv"><span>Edelfäulnis</span><span>${f.edel?'ja':!wagnisFeld(id)?'nie bei dieser Sorte':'nur über das Wagnis im Herbst'}</span></div>
-      ${f.gefroren?'<div class="kv"><span>Zustand</span><span>❄️ gefroren</span></div>':''}
-      ${f.teil?'<div class="mut">Ein Teil ist schon gelesen, der Rest hängt noch.</div>':''}
-      ${m>=7?`<div class="hilfe">${leseHilfe(f)}${wagnisHinweis(id)}</div>`:''}`;
-    }
+    const f=S.felder[id], so=SORTEN[id], titel=dot(id)+so.name, klein=istSL(id)?`${LAGEN.sued.sym} ${SL_NAME}`:`${LAGEN[lageVon(id)].sym} ${LAGEN[lageVon(id)].kurz}`;
+    if(einZu('feld_'+id)) continue;
+    // Seit 16.1 (Entscheidung 2): Gesperrte Sorten stehen wieder da, zugeklappt, ausgegraut, mit Timos Schloss, ganz unten (bis 16.0 ausgeblendet).
+    if(!f.reben&&!sorteFrei(id)){zu+=wbKarte(id,titel,klein,`<img class="wbschloss" src="bilder/sym-schloss.webp" alt=""><div class="wbunter">${wbT(WB_TEXT.gesperrt,{rang:RAENGE[sorteAb(id)].name})}</div>`,'',{gesperrt:1,iName:so.name}); continue}
     const sektOhne=sektSorte(id)&&!S.sektkeller, kannLesen=m>=7&&f.menge>0&&!f.gelesen&&(m<11||f.gefroren||f.edel)&&!sektOhne, pflanz=m<=2&&sorteFrei(id)&&!sektOhne&&!(istSL(id)&&slPlatz()<10), schnitt=schnittOffen(id), haengt=f.reben&&f.menge>0&&!f.gelesen&&m>5&&m<7;
-    h+=fenster('feld_'+id,titel,z,{buch:m>=7?'lese':'berg',
-      hin:[mr&&m<=2&&S.verlust&&S.verlust[id]>0&&`${WM} pflanzt beim Weiterblättern nach.`,helferKann(3)&&pflanzPlan(id)>=10&&`🌱 Deine Erntehelfer pflanzen bis März ${rbn(pflanzPlan(id))} Reben nach.${pflanzPlan(id)<pflanzSoll(id)&&!pflanzMitA(id)?' Den übrigen Platz bekommt dein Auftrag.':''}`,
+    const hin=[mr&&m<=2&&S.verlust&&S.verlust[id]>0&&`${WM} pflanzt beim Weiterblättern nach.`,helferKann(3)&&pflanzPlan(id)>=10&&`🌱 Deine Erntehelfer pflanzen bis März ${rbn(pflanzPlan(id))} Reben nach.${pflanzPlan(id)<pflanzSoll(id)&&!pflanzMitA(id)?' Den übrigen Platz bekommt dein Auftrag.':''}`,
         helferSchneidet(id)&&schnitt&&`✂️ Deine ${leuteStName('helfer',leuteSt('helfer'))} schneiden beim Weiterblättern, sobald das Geld reicht.`,chefRat()===id&&helferSchneidet(id)&&`👴 ${CHEF_RAT_SATZ.replace('{sorte}',SORTEN[id].name)}`,
         // Seit 14.7.4 (Annahme 16): Schreibt der Weingut-Manager den Plan, steht hier nur die Info-Zeile, die Automatik von Laubschnitt und Ausdünnen als Hinweis.
         f.reben&&planBeiMgr()&&helferKann(1)&&!chefStill()&&EINSATZ_TEXT.zeile.replace('{arbeit}',EINSATZ_TEXT.schnitt).replace('{stellung}',EINSATZ_TEXT[helferSchneidet(id)?'auto':'chef']),
-        laubHandOffen(id)&&autoLaub(id)&&EINSATZ_TEXT.autoLaub.replace('{wer}',leuteStName('helfer',2)),ausdOffen(id)&&autoAusd(id)&&EINSATZ_TEXT.autoAusd.replace('{wer}',leuteStName('helfer',3)),(()=>{const ww=wagnisWarnung(); return ww&&ww.ids.includes(id)&&`${WM} warnt: ${Math.round(ww.anteil*100)} % deiner Ernte hängen im Wagnis.`})()],
-      // Seit 13.4.6: Am Lese-Knopf steht die Chance des Wagnisses in Worten.
-      links:kannLesen&&wagnisChance(id)!=null&&chanceZeige(wagnisChance(id))?`🎲 Warten: Chance ${chanceZeige(wagnisChance(id))}${chanceRat(wagnisChance(id))?`, der alte Winzer würde ${chanceRat(wagnisChance(id))}`:''}`:sektOhne?'Die Sekt-Sorte macht nur Sekt, erst den Sektkeller kaufen.':pflanz&&platzFuer(id)<10?(istSL(id)?'Auf deinem Land ist kein Platz mehr frei.':LAGE_SATZ.voll.replace('{lage}',LAGE_SATZ.auf[lageVon(id)])):laubHandOffen(id)?`✂️ Sommerschnitt von Hand: ${eur(laubHandKosten(id))}`:ausdOffen(id)?AUSD_LINKS.replace('{kosten}',eur(ausdKosten(id))).replace('{m}',`${Math.round(AUSD_MENGE*100)} %`).replace('{qp}',AUSD_QP):haengt?'Lese ab August.':schnitt?`✂️ Rebschnitt bis Ende April: ${eur(schnittKosten(id))}`:'',
-      kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,...wagnisKnoepfe(id),schnitt&&!helferSchneidet(id)&&`<button class="klein" data-a="schneiden" data-id="${id}" ${S.geld<schnittKosten(id)?'disabled':''}>Schneiden</button>`,laubHandOffen(id)&&`<button class="klein" data-a="sommerHand" data-id="${id}" ${S.geld<laubHandKosten(id)?'disabled':''}>Sommerschnitt</button>`,ausdOffen(id)&&`<button class="klein" data-a="ausduennen" data-id="${id}" ${S.geld<ausdKosten(id)?'disabled':''}>Ausdünnen</button>`,f.reben&&!istSL(id)&&m<=SCHNITT_BIS&&formenFuer(id).length>1&&`<button class="klein" data-a="formAendern" data-id="${id}">Form ändern</button>`,helferKann(1)&&f.reben&&!chefStill()&&!planBeiMgr()&&`<button class="klein" data-a="schneider" data-id="${id}">${helferSchneidet(id)?'Selbst schneiden und düngen':'Schnitt und Düngen abgeben'}</button>`,
-        ...['laub','ausd'].map(art=>f.reben&&!planBeiMgr()&&planAutoKann(art)&&(art==='laub'?frei('laub_hand'):ausdFrei())&&`<button class="klein" data-a="planSetz" data-id="${id}" data-art="${art}" data-w="${planArt(id,art)==='auto'?'chef':'auto'}">${EINSATZ_TEXT[art]}: ${planArt(id,art)==='auto'?'selbst machen':EINSATZ_TEXT.auto}</button>`),pflanz&&(helferKann(3)?`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzAuftrag'}" data-id="${id}" data-weiter="pflanzAuftrag">Auftrag</button>`:`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzen'}" data-id="${id}" data-weiter="pflanzen" ${platzFuer(id)<10?'disabled':''}>Pflanzen</button>`),pflanz&&f.reben&&!istSL(id)&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
+        laubHandOffen(id)&&autoLaub(id)&&EINSATZ_TEXT.autoLaub.replace('{wer}',leuteStName('helfer',2)),ausdOffen(id)&&autoAusd(id)&&EINSATZ_TEXT.autoAusd.replace('{wer}',leuteStName('helfer',3)),(()=>{const ww=wagnisWarnung(); return ww&&ww.ids.includes(id)&&`${WM} warnt: ${Math.round(ww.anteil*100)} % deiner Ernte hängen im Wagnis.`})()].filter(Boolean), links=kannLesen&&wagnisChance(id)!=null&&chanceZeige(wagnisChance(id))?`🎲 Warten: Chance ${chanceZeige(wagnisChance(id))}${chanceRat(wagnisChance(id))?`, der alte Winzer würde ${chanceRat(wagnisChance(id))}`:''}`:sektOhne?'Die Sekt-Sorte macht nur Sekt, erst den Sektkeller kaufen.':pflanz&&platzFuer(id)<10?(istSL(id)?'Auf deinem Land ist kein Platz mehr frei.':LAGE_SATZ.voll.replace('{lage}',LAGE_SATZ.auf[lageVon(id)])):laubHandOffen(id)?`✂️ Sommerschnitt von Hand: ${eur(laubHandKosten(id))}`:ausdOffen(id)?AUSD_LINKS.replace('{kosten}',eur(ausdKosten(id))).replace('{m}',`${Math.round(AUSD_MENGE*100)} %`).replace('{qp}',AUSD_QP):haengt?'Lese ab August.':schnitt?`✂️ Rebschnitt bis Ende April: ${eur(schnittKosten(id))}`:'', kn=[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,...wagnisKnoepfe(id),schnitt&&!helferSchneidet(id)&&`<button class="klein" data-a="schneiden" data-id="${id}" ${S.geld<schnittKosten(id)?'disabled':''}>Schneiden</button>`,laubHandOffen(id)&&`<button class="klein" data-a="sommerHand" data-id="${id}" ${S.geld<laubHandKosten(id)?'disabled':''}>Sommerschnitt</button>`,ausdOffen(id)&&`<button class="klein" data-a="ausduennen" data-id="${id}" ${S.geld<ausdKosten(id)?'disabled':''}>Ausdünnen</button>`,f.reben&&!istSL(id)&&m<=SCHNITT_BIS&&formenFuer(id).length>1&&`<button class="klein" data-a="formAendern" data-id="${id}">Form ändern</button>`,helferKann(1)&&f.reben&&!chefStill()&&!planBeiMgr()&&`<button class="klein" data-a="schneider" data-id="${id}">${helferSchneidet(id)?'Selbst schneiden und düngen':'Schnitt und Düngen abgeben'}</button>`,
+        ...['laub','ausd'].map(art=>f.reben&&!planBeiMgr()&&planAutoKann(art)&&(art==='laub'?frei('laub_hand'):ausdFrei())&&`<button class="klein" data-a="planSetz" data-id="${id}" data-art="${art}" data-w="${planArt(id,art)==='auto'?'chef':'auto'}">${EINSATZ_TEXT[art]}: ${planArt(id,art)==='auto'?'selbst machen':EINSATZ_TEXT.auto}</button>`),pflanz&&(helferKann(3)?`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzAuftrag'}" data-id="${id}" data-weiter="pflanzAuftrag">Auftrag</button>`:`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzen'}" data-id="${id}" data-weiter="pflanzen" ${platzFuer(id)<10?'disabled':''}>Pflanzen</button>`),pflanz&&f.reben&&!istSL(id)&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean);
+    const auf=hin.map(x=>wbInfo(x)).join('')+(f.gelesen&&S.lots.some(l=>l.status==='trauben'&&l.sorte===id)?wbInfo('Die Trauben müssen diesen Monat im Keller ins Fass.','', 'rot'):'')+wbBalkenAuf(id)+wbFakten(id)
+      +(m>=7&&f.reben&&f.menge>0&&!f.gelesen?`<div class="hilfe">${leseHilfe(f)}${wagnisHinweis(id)}</div>`:'')+(links?`<div class="wbklein">${links}</div>`:'')+(kn.length?`<div class="wbkn">${kn.join('')}</div>`:'');
+    h+=wbKarte(id,titel,klein,wbStand(id),auf,{iName:so.name});
   }
+  h+=zu; zu='';
   // Seit 14.7.4 (Bauplan 14.7, Annahmen 8 bis 16): das Fenster Einsatzplan, sobald der Weingut-Manager den Plan schreibt.
   if(planBeiMgr()) h+=fenster('einsatz','📋 Einsatzplan',einsatzInhalt(),{i:EINSATZ_TEXT.kopf});
   // Seit 14.2.5: die drei Lagen einzeln mit Stufe, Punkten und dem, was ein gutes Bodenjahr bringt. Platzhalter, Wortlaut in Meilenstein 17.
@@ -1691,35 +1719,35 @@ const FU_ZEIG={
   // Seit 12.6: e1-0a ohne Ziel, e1-01 führt in den Weinberg.
   'e1-01':{tab:'gut',sub:'berg',sel:['#subs [data-id="berg"]']},
   'e1-02':{tab:'stadt',sub:'arbeit',sel:[fiSel('helfer'),fiSel('lagerarb')]},
-  'e1-03':{tab:'gut',sub:'berg',sel:['[data-a="fi"][data-id^="feld_"]']},
+  'e1-03':{tab:'gut',sub:'berg',sel:['[data-a="bInfo"][data-id^="feld_"]']},
   'e1-04':{sel:['#weiter']},
   'e1-05':{tab:'gut',sub:'aktuell',sel:[fiSel('ansteht')]},
   'e1-06':{sel:['#top .geld']},
-  'e1-07':{tab:'gut',sub:'berg',sel:['[data-a="pflanzen"]','[data-a="fi"][data-id^="feld_"]']},
+  'e1-07':{tab:'gut',sub:'berg',sel:['[data-a="pflanzen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'e1-08':{sel:['#top .wtr']},
   'e1-09':{tab:'gut',sub:'berg',sel:[fiSel('duengung')]},
   'e1-10':{tab:'keller',sub:'lager',sel:[fiSel('faesser')]},
-  'e1-11':{tab:'gut',sub:'berg',sel:['[data-a="fi"][data-id^="feld_"]']},
-  'e1-12':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
+  'e1-11':{tab:'gut',sub:'berg',sel:['[data-a="bInfo"][data-id^="feld_"]']},
+  'e1-12':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'e1-13':{tab:'keller',sub:'start',sel:['[data-a="keltern"]']},
   'e1-14':{tab:'stadt',sub:'amt',sel:['[data-a="anmelden"]',fiSel('anmelden')]},
   'e1-15':{tab:'keller',sub:'start',sel:['[data-a="abfuellen"]','[data-a="anmelden"]']},
   'e1-16':{tab:'stadt',sub:'handel',sel:['[data-a="verkaufen"]']},
-  'e1-17':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
-  'e1-18':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
+  'e1-17':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
+  'e1-18':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'z2-01':{tab:'stadt',sub:'amt',sel:['[data-a="anmelden"]',fiSel('anmelden')]},
   'e1-19':{tab:'gut',sub:'aktuell',sel:['[data-a="weiterBis"]']},
   'k01':{tab:'gut',sub:'aktuell',sel:['[data-a="weiterBis"]']},
-  'z2-02':{tab:'gut',sub:'berg',sel:['[data-a="pflanzen"]','[data-a="fi"][data-id^="feld_"]']},
+  'z2-02':{tab:'gut',sub:'berg',sel:['[data-a="pflanzen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'z2-03':{tab:'keller',sub:'buch',sel:['.bzeile[data-a="buchDetail"]','[data-a="archiv"][data-id="brett"]']},
   'z2-04':{tab:'stadt',sub:'bank',sel:[fiSel('kredit')]},
   'z2-05':{tab:'stadt',sub:'laeden',sel:[fiSel('laeden'),'#subs [data-id="laeden"]']},
   'z2-06':{tab:'gut',sub:'aktuell',sel:[fiSel('rang')]},
-  'z2-07':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
+  'z2-07':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'z2-08':{tab:'keller',sub:'buch',sel:['.bzeile[data-a="buchDetail"]','[data-a="archiv"][data-id="brett"]']},
   // Paket B: Rang-Neuheiten. Beim Befördern leuchtet der Knopf des Managers im Arbeitsamt.
   'r3-1':{tab:'stadt',sub:'amt',sel:[fiSel('auktionen'),fiSel('makler')]},
-  'r3-2':{tab:'gut',sub:'berg',sel:['[data-a="fi"][data-id^="feld_"]']},
+  'r3-2':{tab:'gut',sub:'berg',sel:['[data-a="bInfo"][data-id^="feld_"]']},
   'r3-3':{tab:'keller',sub:'lager',sel:[fiSel('ausbau')]},
   'r3-4':{tab:'stadt',sub:'amt',sel:[fiSel('spenden')]},
   'r4-1':{tab:'stadt',sub:'arbeit',sel:[fiSel('mgr_amt')]},
@@ -1731,7 +1759,7 @@ const FU_ZEIG={
   'r5-3':{tab:'gut',sub:'betrieb',sel:[fiSel('fest')]},
   'r5-4':{tab:'gut',sub:'maschinen',sel:[fiSel('kauf_klein')]},
   'r6-1':{tab:'stadt',sub:'arbeit',sel:[fiSel('mgr_amt')]},
-  'r6-2':{tab:'gut',sub:'berg',sel:['[data-a="fi"][data-id^="feld_"]']},
+  'r6-2':{tab:'gut',sub:'berg',sel:['[data-a="bInfo"][data-id^="feld_"]']},
   'r6-3':{tab:'gut',sub:'maschinen',sel:[fiSel('kauf_laub')]},
   'r6-4':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="handel"]',fiSel('mgr_amt')]},
   'r6-5':{tab:'keller',sub:'start',sel:['[data-a="sektAnlage"]',fiSel('sekt')]},
@@ -1771,14 +1799,14 @@ const FU_ZEIG={
   'w6':{tab:'keller',sub:'buch',sel:()=>{const l=S.lots.find(fuLange); return [l?`.bzeile[data-a="buchDetail"][data-id="${l.id}"]`:'','[data-a="archiv"][data-id="brett"]']}},
   'w7':{tab:'stadt',sub:'bank',sel:[fiSel('kredit')]},
   'w8':{tab:'keller',sub:'lager',sel:[fiSel('faesser')]},
-  'w9':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
-  'h1':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
+  'w9':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
+  'h1':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'h2':{tab:'stadt',sub:'amt',sel:[fiSel('auktionen')]},
   'h3':{tab:'stadt',sub:'amt',sel:[fiSel('auktionen')]},
   // Kniffe
   'k02':{tab:'keller',sub:'lager',sel:[fiSel('faesser')]},
   'k03':{tab:'keller',sub:'buch',sel:['[data-a="archiv"][data-id="brett"]']},
-  'k04':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="fi"][data-id^="feld_"]']},
+  'k04':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'k05':{tab:'gut',sub:'berg',sel:[fiSel('gebiet')]},
   'k06':{tab:'gut',sub:'maschinen',sel:[fiSel('maschinen')]},
   'k07':{tab:'gut',sub:'betrieb',sel:[fiSel('p_handel')]},
@@ -2214,6 +2242,10 @@ const AKT={
   },
   slotDatei(d){ZIEL=+d.id;const f=$('#datei');f.value='';f.click()},
   close(){closeSheet()},
+  // Seit 16.1: Sorten-Karte auf- und zuklappen, offen ist immer nur eine, die offene noch einmal antippen klappt sie zu (Entscheidung 3).
+  karte(d){const k='wb:'+d.id, auf=FI_AUF.has(k); for(const x of [...FI_AUF]) if(x.startsWith('wb:')) FI_AUF.delete(x); if(!auf) FI_AUF.add(k);
+    render(); const el=$('#wb_'+d.id); if(el&&!auf){const r=el.getBoundingClientRect(), top=($('#top')||{}).offsetHeight||0; if(r.top<top+8||r.top>innerHeight*.45) window.scrollBy(0,r.top-top-14)}},
+  bInfo(d){openSheet(wbPanel(d.id))},
   slMinus(){const r=$('#slr');r.value=Math.max(+r.min,+r.value-(+r.dataset.st));slUpd()},
   slPlus(){const r=$('#slr');r.value=Math.min(+r.max,+r.value+(+r.dataset.st));slUpd()},
   slOk(){const n=+$('#slr').value,f=SL.ok,w=SL.w;closeSheet();f(n,w);save();render()},

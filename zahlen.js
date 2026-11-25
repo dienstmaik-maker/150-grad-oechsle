@@ -1729,3 +1729,21 @@ const EINSATZ_TEXT={
   autoAusd:'🍇 Ausdünnen auf Automatik: Deine {wer} dünnen aus, wenn es die nächste Weinstufe bringt.',
   neuChef:'Den {sorte} machst du ab jetzt selbst, Rebschnitt und Düngen.',
   weg:'{sorte} schneiden und düngen ab jetzt deine {wer}.'};
+// Seit 16.1 (Bauplan 16.1 Weinberg): Texte der Sorten-Karten, der Karte "Boden und Düngung" und des Info-Panels. {st}, {next}, {n} sind Stufe, nächste Stufe und
+// was fehlt. Bilder der Karten: je Lage ein Platzhalter aus den vorhandenen Bildern bis Meilenstein 17. Platzhalter, Wortlaut in Meilenstein 17.
+const WB_TEXT={
+  oe:'Öchsle', reb:'Rebstufe', bod:'Bodenstufe', dueng:'Dünger', stand:'Stand',
+  bis:'{st}, noch {n} bis {next}', top:'{st}, höher geht es nicht', unter:'noch {n} bis {next}', punkte:'{n} Punkte', grad:'{n}°',
+  erwartet:'rund {l} l erwartet', gelesen:'Für dieses Jahr gelesen', teil:'Ein Teil ist gelesen, der Rest ist verloren', leer:'Keine Trauben mehr am Stock', nicht:'Nicht angebaut',
+  gesperrt:'Ab dem Rang {rang}',
+  fakt:{reben:'Reben', menge:'Menge am Stock', form:'Erziehungsform', lage:'Lage', eignung:'Eignung', rolle:'Rolle', plan:'Einsatzplan', preis:'Preis je Rebe', ertrag:'Ertrag je Rebe'},
+  lage:'{lage}, Platz für {n} Reben', slLage:'{name}, {ha} Hektar, Platz für {n} Reben',
+  hin:{fass:'Trauben müssen ins Fass', leute:'Leute fehlen', leistung:'Ernteleistung reicht nicht', duengen:'Düngen nötig', schneiden:'Reben schneiden',
+    laub:'Sommerschnitt offen', ausd:'Ausdünnen offen', pflanzen:'Pflanzen möglich', eis:'Eiswein möglich', gefroren:'Trauben gefroren', ueber:'Überreif',
+    lesen:'Lesen möglich', fertig:'Alles erledigt', leer:'Nicht angebaut', gelesen:'Gelesen', gesperrt:'Noch gesperrt'},
+  helferDuengen:'Deine {wer} düngen beim Weiterblättern, wenn der Boden mager wird.',
+  mehr:'Mehr', mehrKopf:'{sorte}: Mehr', chefMachen:'Zum Chef-Weinberg machen', chefAbgeben:'Rebschnitt und Düngen abgeben', einsatz:'📋 Einsatzplan',
+  panel:'{titel}, Infos', zustand:'Zustand', kosten:'Kosten', tipps:'Tipps', wisch:'Nach unten wischen schließt das Panel.',
+  boden:{titel:'Boden und Düngung', klein:'Deine Weinberge, {ha} Hektar', schnitt:'Boden im Schnitt', chef:'Chef-Weinberg', chefKeiner:'Du machst alles selbst',
+    noch:'Noch kein Weinberg mit Reben', geduengt:'gedüngt {n} von {max}', sterben:'Zum Jahreswechsel gehen voraussichtlich {von} bis {bis} % der Reben ein',
+    flaeche:'Fläche', bepflanzt:'Bepflanzt', platz:'Platz frei', leute:'Deine Leute reichen für', leistung:'Ernteleistung'}};
