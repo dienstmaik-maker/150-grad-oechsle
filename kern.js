@@ -74,6 +74,13 @@ function epJahr(f,id,gutBoden,zs=1,zd=1){
 // Seit dem Nachtrag zu 14.5 (Maik 25.11.2026, 08:19 Uhr): nie mehr Reben, als die eigene Lage Platz hat (platzFuer), auch kein Rundungsrest.
 // Seit 15.1.3 (Bauplan 15.1 Annahme 2): Ein neu bepflanzter Weinberg geht gleich an die Leute, sobald es sie gibt, der Chef bleibt, wo er ist (chefNorm).
 // Bis 15.1.2 zählte er bis zum nächsten Aufruf von chefNorm ohne Zuteilung als Chef-Weinberg.
+// Seit 15.6.5 (Bauplan 15.6, Maik zu 15.5): Neue Reben verdünnen die Punkte (rebenDazu). rueckfallAb(id) ist die Zahl neuer Reben, ab der die Punkte unter die
+// Schwelle der Pflegestufe rutschen, sodass der Weinberg beim nächsten Jahreswechsel zurückfällt, wenn der Schnitt es nicht ausgleicht. null, wenn er auf Jungrebe
+// steht oder die Punkte schon darunter liegen. stufeNach(id,n) ist die Pflegestufe nach n neuen Reben. Wortlaut von rueckfallSatz ist Platzhalter (Meilenstein 17).
+function rueckfallAb(id){const f=S.felder[id]; if(!f||!(f.reben>0)) return null; const st=f.pflSt||0, SW=epSchwelle(id), ep=f.ep||0; if(st<1||!(SW[st]>0)||ep<SW[st]) return null;
+  return Math.max(10,Math.floor(f.reben*(ep/SW[st]-1)/10)*10+10)}
+function stufeNach(id,n){const f=S.felder[id]; return Math.min(f.pflSt||0,stufeZu((f.ep||0)*f.reben/(f.reben+n),epSchwelle(id)))}
+function rueckfallSatz(id){const ab=rueckfallAb(id); return ab==null?'':`Ab ${rbn(ab)} neuen Reben fällt dein ${SORTEN[id].name} beim Jahreswechsel auf ${PFLEGE_STUFEN[stufeNach(id,ab)]} zurück`}
 function rebenDazu(id,n){const f=S.felder[id]; if(f) n=Math.min(n,platzFuer(id)); if(!(n>0)||!f) return; const a=f.reben||0; f.ep=epRund((f.ep||0)*a/(a+n)); f.reben=a+n; bodenVerduennen();
   if(!a&&helferKann(1)){f.schneider='helfer'; chefNorm()}}
 // Seit 14.5.4 (Annahme 14): Grand Cru für alle Sorten, nach der Pflegestufe bei der Lese (bis 14.5.3 nur die Spitzen-Sorte, dort 0).
@@ -2672,6 +2679,13 @@ function aufgaben(){
   for(const l of S.lots) if(l.status==='flasche'&&lager(l).max-l.flMonate<=2) A.push({t:`${lotName(l)}: nur noch ${lager(l).max-l.flMonate} Monate haltbar`+(l.regal?', steht im Regal, erst rausnehmen':''),rot:1,tab:'keller',sub:'buch'});
   if(m<=2&&S.verlust) for(const id of weinberge()) if(S.verlust[id]) A.push({t:`Über den Winter sind ${rbn(S.verlust[id])} ${SORTEN[id].name}-Reben eingegangen. Nachpflanzen`,tab:'gut',sub:'berg',ruhig:aufgabeAktiv('reben')||helferKann(3)?1:0});
   if(m<=2&&frei>0) A.push({t:`Pflanzzeit: Platz für ${rbn(frei)} Reben`,tab:'gut',sub:'berg',ruhig:1});
+  // Seit 15.6.5: Warnung, sobald für einen Weinberg so viel Land frei ist, dass er beim Bepflanzen zurückfiele (nach Landkauf, vor dem Pflanzen).
+  for(const id of weinberge()){const ab=rueckfallAb(id); if(ab!=null&&platzFuer(id)>=ab) A.push({t:`⚠️ ${rueckfallSatz(id)}`,tab:'gut',sub:'berg'})}
+  // Seit 15.6.5 (Maik 25.11.2026): In Lehr- und Gesellenjahren Hinweis vor einem Landkauf, nach dem weniger als ein Jahr Kosten auf dem Konto blieben.
+  // Makler als Hinweis ohne Punkt, Auktion gelb. Ein Jahr Kosten: zwölf Monate wie kontoKnapp. Wortlaut Platzhalter (Meilenstein 17).
+  if(S.schwer!=='schwer'){const jk=6*kontoKnapp(), a=S.auktion, ap=a&&!a.ende&&S.rang>=R_AUKTION&&!aukDeckel(a)?(a.phase===0?a.start:aukPreis(aukNaechstes(),a)):null;
+    if(ap!=null&&S.geld>=ap&&S.geld-ap<jk) A.push({t:`💶 Ein Zuschlag bei rund ${eur(ap)} ließe weniger als ein Jahr Kosten (${eur(jk)}) auf dem Konto`,tab:'stadt',sub:'amt'});
+    else if(!maklerGrund()&&S.geld>=MAKLER_PREIS&&S.geld-MAKLER_PREIS<jk) A.push({t:`💶 Ein Hektar beim Makler ließe weniger als ein Jahr Kosten (${eur(jk)}) auf dem Konto`,tab:'stadt',sub:'amt',ruhig:1})}
   // Version 7.3: Düngen steht an, sobald der Boden auf 70 % oder weniger fällt (Gelb), seit 7.9 Rot ab DUENG_ROT. Düngt der Weingut-Manager, nur ein ruhiger Hinweis.
   // Seit 14.7.4 je Weinberg: der Chef-Weinberg (und ohne Erntehelfer jeder) gelb oder rot, Weinberge auf Automatik als ruhiger Hinweis. Platzhalter, Wortlaut in Meilenstein 17.
   {const D=weinberge().filter(id=>duengOffen(id)&&S.felder[id].boden<=70), bt=id=>`${SORTEN[id].name} ${S.felder[id].boden}\u00a0%`;

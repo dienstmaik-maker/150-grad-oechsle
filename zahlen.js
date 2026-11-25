@@ -1591,7 +1591,7 @@ const GEGNER_LAGE={menge:'einfach',sekt:'hoehe',spitze:'sued'};
 // Auftakt der Akte (14.4.8): eigene Schlagzeile im Monat des Aufstiegs in den 2. und 3. Akt. Platzhalter, Wortlaut in Meilenstein 17.
 // Seit 14.4.3: Winzerbote zum Jahreswechsel für einen Weinberg, den nur Erntehelfer (Stufe 1) geschnitten haben, nicht in den Lehrjahren.
 // Rat des alten Winzers zur Chef-Grenze in den Gesellenjahren. Platzhalter, Wortlaut in Meilenstein 17.
-const HELFER_NUR_BOTE='✂️ Deinen {sorte} haben nur Erntehelfer geschnitten. Sie halten den Stand, besser wird er so nicht.';
+const HELFER_NUR_BOTE='✂️ Deinen {sorte} haben nur Erntehelfer geschnitten. Sie halten die Punkte, besser wird er so nicht. Neue Reben verdünnen sie, dann fällt er zurück.';   // Satz seit 15.6.5, Platzhalter
 const CHEF_RAT_SATZ='Der alte Winzer rät: Schneide den {sorte} selbst, er braucht dich am meisten.';
 // Seit 14.4.8: Rangmeldung in zwei Teilen (Maik 24.11.2026), RAENGE[i].neu und RAENGE[i].kauf, beim Verbandsvorstand und Vizepräsidenten je Weg des Gebiets.
 // Die Überschriften sind Platzhalter, Wortlaut in Meilenstein 17. Ohne Kauf-Stücke fällt der zweite Teil weg.

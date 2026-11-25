@@ -491,7 +491,7 @@ function vStart(){
   const gebiete=Object.entries(REGIONEN).map(([id,r])=>{
     // Seit 13.4.1: statt der Schilder leicht, mittel, riskant der Satz zur Spielweise und bei der Pfalz der Hinweis für die erste Partie.
     const G=GEBIET_TEXT[id], an=NEU.region===id, sb=steckbrief(id,{fen:1,neu:!!ROLLEN_NEU});
-    return fenster('g_'+id,r.name,`<button class="wahl gwahl" data-a="region" data-id="${id}" aria-pressed="${an}"><img class="gs" src="bilder/gebiet-${id}.webp" alt=""><span><b>🎯 ${G.spiel}</b>${G.erst?`<small>⭐ ${G.erst}</small>`:''}<small>${an?'✓ Gewählt':'Tippen zum Wählen'}</small></span></button>`,
+    return fenster('g_'+id,r.name,`<button class="wahl gwahl" data-a="region" data-id="${id}" aria-pressed="${an}"><img class="gs" src="bilder/gebiet-${id}.webp" alt=""><span><b>🎯 ${G.spiel}</b>${G.erst?`<small>⭐ ${G.erst}</small>`:''}${gebietKlima(r)==='kuehl'?'<small>❄️ Kühles Gebiet, spielt sich schwerer</small>':''}<small>${an?'✓ Gewählt':'Tippen zum Wählen'}</small></span></button>`,
       {kl:an?'gan':'',buch:'',i:`<div class="sb"><b>${sb.name}</b> <span class="mut">${sb.art}</span>${sb.rumpf}</div>`})}).join('');
   return `<div id="top"><div><b>150 Grad Öchsle</b><small>Neues Spiel auf Spielstand ${SLOT+1}</small></div></div><main>
   ${[0,1,2].some(i=>roh(i))?'<div class="btns" style="margin:0 0 12px"><button class="sec klein" data-a="menue">◀ Zu den Spielständen</button></div>':''}
@@ -2310,7 +2310,7 @@ const AKT={
   makler(){
     const g=maklerGrund(); if(g) return meldung('Der Makler hat nichts für dich',g);
     if(S.geld<MAKLER_PREIS) return meldung('Zu wenig Geld',`Ein Hektar kostet beim Makler ${eur(MAKLER_PREIS)}. Einen Kredit gibt es bei der Bank.`);
-    openSheet(`<h3>🏠 Einen Hektar kaufen?</h3><p>Der Makler hat einen Weinberg mit 1\u00a0Hektar ${WO[S.region]} für ${eur(MAKLER_PREIS)}.</p><p class="mut">Für den Aufstieg zählt er erst, wenn er bepflanzt ist. Gepflanzt wird von Januar bis März.</p><div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button data-a="maklerJa">Kaufen</button></div>`);
+    openSheet(`<h3>🏠 Einen Hektar kaufen?</h3><p>Der Makler hat einen Weinberg mit 1\u00a0Hektar ${WO[S.region]} für ${eur(MAKLER_PREIS)}.</p><p class="mut">Für den Aufstieg zählt er erst, wenn er bepflanzt ist. Gepflanzt wird von Januar bis März.</p>${weinberge().filter(id=>!istSL(id)&&lageVon(id)==='einfach'&&rueckfallAb(id)!=null&&platzFuer(id)+HA_REBEN>=rueckfallAb(id)).map(id=>`<p class="mut">⚠️ ${rueckfallSatz(id)}.</p>`).join('')}<div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button data-a="maklerJa">Kaufen</button></div>`);
   },
   maklerJa(){
     if(maklerGrund()||S.geld<MAKLER_PREIS) return;
@@ -2441,8 +2441,8 @@ const AKT={
     const so=SORTEN[d.id], pr=rebenPreis(d.id), frei=platzFuer(d.id), kap=helferReben()-rebenGesamt(), max=Math.min(frei,kap,Math.floor(S.geld/pr/10)*10);
     if(frei>=10&&kap<10) return leuteSheet('Zu wenige Erntehelfer',`<p>${helferRegel()}. Deine Leute reichen für ${rbn(helferReben())} Reben, gepflanzt sind ${rbn(rebenGesamt())}.</p><p class="mut">Stell erst beim Arbeitsamt ein${maschFrei('klein')&&!S.maschinen.some(x=>x.typ==='klein')?` oder kauf eine Erntemaschine, mit ${MASCH.klein.fahrer} Fahrer deckt sie ${MASCH_HELFER} Hektar ab`:''}.</p>`);
     if(max<10) return meldung('Geht gerade nicht',`Dir fehlt das Geld oder der Platz für ${rbn(10)} Reben.`);
-    mengeSheet({titel:`${so.name} pflanzen`,text:`${eur2(pr/STOCK_F)} je Rebe${pr!==so.preis?`, üblich sind ${eur2(so.preis/STOCK_F)}`:''}. Neue Reben übernehmen die Pflegestufe der Sorte. Deine Erntehelfer reichen noch für ${rbn(kap)} Reben${kap<frei?', für mehr musst du erst einstellen':''}.${istSL(d.id)?'':' '+lageNurSatz(d.id)}`,max,step:10,start:Math.min(max,1000),okText:'Pflanzen',zahl:rbn,
-      info:n=>`<b>${rbn(n)} Reben</b>kostet ${eur(n*pr)}`,
+    mengeSheet({titel:`${so.name} pflanzen`,text:`${eur2(pr/STOCK_F)} je Rebe${pr!==so.preis?`, üblich sind ${eur2(so.preis/STOCK_F)}`:''}. Neue Reben übernehmen die Pflegestufe der Sorte, verdünnen aber ihre Punkte.${rueckfallAb(d.id)!=null?' ⚠️ '+rueckfallSatz(d.id)+'.':''} Deine Erntehelfer reichen noch für ${rbn(kap)} Reben${kap<frei?', für mehr musst du erst einstellen':''}.${istSL(d.id)?'':' '+lageNurSatz(d.id)}`,max,step:10,start:Math.min(max,1000),okText:'Pflanzen',zahl:rbn,
+      info:n=>`<b>${rbn(n)} Reben</b>kostet ${eur(n*pr)}${rueckfallAb(d.id)!=null&&n>=rueckfallAb(d.id)?` · ⚠️ dann fällt er auf ${PFLEGE_STUFEN[stufeNach(d.id,n)]} zurück`:''}`,   // seit 15.6.5
       ok:n=>{fx('stempel');zahle(Math.round(n*pr*100)/100);const f=S.felder[d.id];rebenDazu(d.id,n);if(S.verlust&&S.verlust[d.id])S.verlust[d.id]=Math.max(0,S.verlust[d.id]-n)}});
   },
   // Seit 13.5.3: Ab Erntehelfer Stufe 3 gibt der Spieler nur noch den Auftrag, Sorte und Menge. Gepflanzt wird beim Weiterblättern bis März.
