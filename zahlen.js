@@ -263,7 +263,7 @@ const FORM_VORAUS='Vorausgewählt ist die Form, die der alte Winzer empfiehlt. D
 // Seit 14.2.5: Winzerbote, wenn eine Lage eine neue Boden-Stufe erreicht. Platzhalter, Wortlaut in Meilenstein 17.
 const BODEN_LAGE_BOTE='🌱 {lage}: Der Boden ist jetzt {stufe}.';
 const LAUB_HAND_BOTE='✂️ Ab jetzt kannst du im Juni den Sommerschnitt von Hand machen, im Weinberg bei jeder Sorte. Eine Maschine kommt in deine steilen Hänge nicht.';
-const VERSION='14.7.1';
+const VERSION='16.1';
 // Seit 13.3.6 (Maik 21.11.2026): Im Umbau starten neue Partien ohne Spielführer, sonst verspricht er Dinge nach den alten Rängen.
 // Mit neuen Texten muss er am Ende wieder an sein (14.4), dann FU_START=1.
 const FU_START=0;
@@ -1451,7 +1451,11 @@ const IDEE_KEY='oechsle-idee', IDEE_MAX=1000;
 // Platzhalter-Punkten (Wortlaut in Meilenstein 17), als Nächstes 14.7, danach 14.6 wie im Fahrplan der 14.0. Seit 14.7.9: Version 14.7 mit Platzhalter-Punkten
 // (Wortlaut in Meilenstein 17), als Nächstes 14.6. Seit 14.6.9 (Maiks Antwort 3 im Bauplan 14.6): Version 14.7.1 ohne eigenen Eintrag, die sichtbar geänderten
 // Regeln aus 14.6 stehen als vier Punkte unter 14.7 (Platzhalter, Wortlaut in Meilenstein 17), die Zeile "als Nächstes 14.6" ist weg. Meilenstein 13 ist seit 22.11.2026 fertig, seine Kopfzeile trägt deshalb das ✅ (die Abschlussprobe 13.9 bekam keine Version).
+// Seit 16.1.6 (Bauplan 16.1, Zweig design-16): Block 16.0 Design mit Version 16.1, Punkte sind Platzhalter, Wortlaut in Meilenstein 17. Das Kommende bekommt
+// erst eine Zeile, wenn 16.2 bis 16.9 aufgeteilt sind. Beim Zusammenführen nach 15.8 die Blöcke 14.0 und 15.0 von Meilenstein 15 übernehmen.
 const WAS_NEU=[
+  {k:'🏁 16.0 Design',d:'in Arbeit',p:['Das Spiel bekommt das neue Aussehen nach Timos Entwürfen'],v:[
+    ['','16.1','Weinberg','25.11.2026',['Der Weinberg liegt auf dem Holzbrett, je Sorte ein Zettel zum Auf- und Zuklappen','Ein Hinweis je Weinberg zeigt, was gerade am wichtigsten ist','Öchsle, Rebstufe, Boden und Dünger als Balken mit Siegel und Symbol','Das kleine i öffnet Zustand, Kosten und Tipps, nach unten wischen schließt','Ganz oben die Karte Boden und Düngung mit dem Bild der Jahreszeit']]]},
   {k:'🏁 14.0 Pflege-Umbau',d:'in Arbeit',p:['Wie du deine Reben und deinen Boden pflegst, entscheidet über deinen Wein'],v:[
     ['','14.7','Köpfe und Helfer','25.11.2026',['Zwei Köpfe statt drei: Die Handels-Managerin verkauft, der Weingut-Manager plant und kauft ein','Erntehelfer und Kellerleute lernen je Stufe eine neue Arbeit, die Kellerhelfer warten die Maschinen','Im Einsatzplan wählst du deinen Chef-Weinberg, dazu Laubschnitt und Ausdünnen je Weinberg','Jede Arbeit ist Chefsache oder Automatik, nur die Lese bleibt immer bei dir','Die Handels-Managerin verkauft keine Flasche unter 85 % vom Listenpreis','Die Raritäten-Krone braucht je einen verkauften Jahrgang von Menge, Sekt und Spitze','Sommerschnitt von Hand im Juni, eine Erntemaschine ohne passende Erziehungsform steht still','Nicht gekaufte Höhenlage kommt nur jede zweite Auktion wieder, dazwischen auch Südhang','Rangmeldung und Rangliste nennen nur, was schon da ist: Export und Laden erst mit ihrem Ereignis, die Rivalen ohne Akt-Nummer']],
     ['','14.5','Qualität und Weinprüfer','25.11.2026',['Jeder Weinberg hat seine Qualität von 0 bis 100: Pflege, Boden, Form, Laubschnitt und Ausdünnen','Jeder Wein braucht drei Schlüssel: Rang, Lesereife und Qualität','Ab dem 2. Akt darfst du beim Weinprüfer wagen, als Präsident lädst du die Presse ein','Der Preis folgt der Qualität, die Jury wertet Qualität, Weinstufe, Flaschenreife und Öchsle','Jede Lage hat ihre Sorte, Höhenlage und Südhang kommen sicher unter den Hammer']],
