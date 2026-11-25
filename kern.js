@@ -300,13 +300,22 @@ function mgrBringt(i){
 // Seit 13.3.4 dazu, was mit Abstand kommt: "in 4 Jahren der Exporthandel".
 // Seit 14.4.2: nur noch die Manager, Ereignisse (ev) kommen unangekündigt.
 const abBringt=i=>Object.values(FREI).filter(e=>e.r===i&&e.ab&&!e.ev&&e.name).map(e=>`in ${e.ab} Jahren ${e.name}`);
-function bringtTeile(i){const n=SORTE_RANG.indexOf(i), id=n>0&&S?sortenFolge()[n]:null; return [...RAENGE[i].neu.replace('{sorte}',`die ${n===1?'zweite':'dritte'} Rebsorte${id?' '+SORTEN[id].name:''}`).split(', '),...abBringt(i),...leuteBringt(i),...mgrBringt(i)]}
+// Seit 14.4.8: zwei Teile nach dem Abschnitt Rangtexte, neu ("Neu für dich") und kauf ("Das darfst du jetzt kaufen oder einstellen").
+// Die Leute nennt der Rangtext selbst (leuteBringt nicht mehr), die Manager hängen bis zur Etappe für Köpfe und Helfer mit "in x Jahren" an neu.
+// Beim Verbandsvorstand und Vizepräsidenten hängt neu am Weg des Gebiets (R().weg: edel, frost, beide).
+function rangTeile(i){const n=SORTE_RANG.indexOf(i), id=n>0&&S?sortenFolge()[n]:null, ri=RAENGE[i], nu=ri.neu||[], so=`die ${n===1?'zweite':'dritte'} Rebsorte${id?' '+SORTEN[id].name:''}`;
+  const N=Array.isArray(nu)?nu:nu[S?R().weg:'edel']||[];
+  return {neu:[...N.map(t=>t.replace('{sorte}',so)),...abBringt(i),...mgrBringt(i)],kauf:(ri.kauf||[]).slice()}}
+function bringtTeile(i){const t=rangTeile(i); return [...t.neu,...t.kauf]}
+// Seit 14.4.8: der Satz für Ehrung und Zeitung, "Neu für dich: … Das darfst du jetzt kaufen oder einstellen: …"
+function rangSatz(i){const t=rangTeile(i); return `${RANG_KOPF.neu}: ${t.neu.join(', ')}.${t.kauf.length?` ${RANG_KOPF.kauf}: ${t.kauf.join(', ')}.`:''}`}
 // Seit 13.5.8 kommt der Kellerausbau nicht mehr mit dem Rang (bis dahin kellerBringt), sondern mit dem ersten Wein der Stufe (kellerFrei).
 function bringt(i){return bringtTeile(i).join(', ')}
 // Version 8.2: der ganze Satzteil nach "bringt", beim Präsidenten "bringt dir den Sieg" statt "bringt: der Sieg".
 function bringtSatz(i){return i===R_MAX?'bringt dir den Stuhl im Festsaal':`bringt: ${bringt(i)}`}
 // Seit 11.5 (Teil B) hängt daran auch die neue Grenze fürs Land, wenn sie mit dem Rang wächst.
-function rahmenSatz(i){const r=RAENGE[i];return (r.rahmen>RAENGE[i-1].rahmen?` Dein Kreditrahmen steigt auf ${eur(r.rahmen)}.`:'')+(HA_NEU&&r.deckel>RAENGE[i-1].deckel?` Als ${rangN(i)} darfst du bis zu ${r.deckel}\u00a0Hektar Land besitzen.`:'')}
+// Seit 14.4.8 ohne den Satz zum Besitz-Deckel je Rang, den gibt es für dich seit 14.4.5 nicht mehr (weicher Deckel je Lage).
+function rahmenSatz(i){const r=RAENGE[i];return r.rahmen>RAENGE[i-1].rahmen?` Dein Kreditrahmen steigt auf ${eur(r.rahmen)}.`:''}
 const startGeld=s=>(DIFF[s]||{}).geld||START_GELD, bietF=()=>(DIFF[S.schwer]||{}).biet||1;
 // Gibt es in dieser Partie Schädlingsjahre? Nur auf Stufen mit schaed:1 (Meisterprüfung). Daran hängen die Meldungen im Winzerboten und die Seiten im Weinkompendium.
 const schaedAn=()=>!!(SCHAED_AN&&S&&(DIFF[S.schwer]||{}).schaed);
@@ -2149,7 +2158,7 @@ function etappe3Monat(Z){
     // Überholst du mehrere Gegner auf einmal, kommt nur ein Spruch, sonst wird es am Anfang zu viel.
     {const U=S.gegner.filter(g=>g.rang>=alt&&g.rang<S.rang&&GEGNER_SPRUCH[g.typ]); if(U.length){const g=U[rint(0,U.length-1)]; Z.push(GEGNER_SPRUCH[g.typ].du(g.name))}}
     // Der Aufstieg steht als Ehrung im Büro und als Thema in der Zeitung. Seit 7.2 bekommt jeder Rang eine eigene Ehrung (eine Urkunde an der Wand).
-    for(let i=alt+1;i<=S.rang;i++){const ri=RAENGE[i]; ehre(i===R_MAX?'👑':'🎖️',`Aufstieg! Du bist jetzt ${rangN(i)}.`,1,`Das ${i===R_MAX?bringtSatz(i):'bringt dir: '+bringt(i)}.${rahmenSatz(i)}${ri.weg?' '+anr(ri.weg,ri.wegW):''}`,i)}
+    for(let i=alt+1;i<=S.rang;i++){const ri=RAENGE[i]; ehre(i===R_MAX?'👑':'🎖️',`Aufstieg! Du bist jetzt ${rangN(i)}.`,1,`${rangSatz(i)}${rahmenSatz(i)}${ri.weg?' '+anr(ri.weg,ri.wegW):''}`,i)}
     // Version 7.2: Feier nach der Zeitung, goldene Rang-Karte für diesen Monat. Seit 7.7 feiert auch der Präsident (Sieg-Szene), der Leserbrief bleibt bis Vizepräsident.
     // Seit 11.5 (Teil C1): Die Manager des neuen Rangs kommen von selbst und stellen sich nach der Feier vor.
     if(MGR_GLEICH) mgrKommen();
@@ -2158,7 +2167,9 @@ function etappe3Monat(Z){
     // Seit 13.3.7 (Nachtrag 3): Zum Jungwinzer schenkt der alte Winzer einen Hektar kahlen Hang, übergeben über den Makler. S.geschenkHa merkt ihn für die Lage (13.4.9).
     if(alt<1&&S.rang>=1&&!S.geschenk){S.geschenk=S.jahr; landDazu('einfach',GESCHENK_HA); S.geschenkHa=GESCHENK_HA; Z.push(GESCHENK_TEXT)}
     S.feier={von:alt,zu:S.rang,platz:bestenEintrag()}; if(S.rang<R_MAX) S.aufBrief=S.rang;
-    schlag(95,`Aufstieg: Du bist jetzt ${rangN(S.rang)}`,`Das ${bringtSatz(S.rang)}.${rahmenSatz(S.rang)}${r.weg?' '+anr(r.weg,r.wegW):''}`,wgBild(S.rang+1,'sommer'),{sonder:1,gold:1,du:1});   // Seit 12.4.3: Weingut-Bild der neuen Stufe statt 'aufstieg' (Maik 20.11.2026)
+    schlag(95,`Aufstieg: Du bist jetzt ${rangN(S.rang)}`,`${rangSatz(S.rang)}${rahmenSatz(S.rang)}${r.weg?' '+anr(r.weg,r.wegW):''}`,wgBild(S.rang+1,'sommer'),{sonder:1,gold:1,du:1});   // Seit 12.4.3: Weingut-Bild der neuen Stufe statt 'aufstieg' (Maik 20.11.2026)
+    // Seit 14.4.8: Auftakt des 2. und 3. Akts als eigene Schlagzeile im Monat des Aufstiegs, je Partie einmal (S.auftakt).
+    for(let a=(RANG_AKT[alt]||1)+1;a<=(RANG_AKT[S.rang]||1);a++) if(AKT_AUFTAKT[a]&&!(S.auftakt=S.auftakt||{})[a]){S.auftakt[a]=S.jahr; schlag(94,AKT_AUFTAKT[a].t,AKT_AUFTAKT[a].text,'',{sonder:1,du:1})}
     if(S.rang===R_MAX&&!S.sieger) siegSpieler();
     else if(S.rang===R_MAX) schlag(99,`Du bist ${anr('Präsident','Präsidentin')}!`,`Der Weinbauverband wählt dich an seine Spitze. ${S.sieger} saß vor dir auf dem Stuhl im Festsaal und muss ihn jetzt räumen: Er gehört dir.${S.gesch&&S.gesch.flasche&&!S.flascheAuf?(S.flascheAuf=S.jahr,' Die Flasche vom ersten Jahrgang wird heute Abend doch noch geöffnet.'):''} ${AMT_AUSBLICK}`,S.flascheAuf===S.jahr?GEN_BILD.sieg:'sieg',{gold:1,du:1});
     // Seit 10.0: Das Amt beginnt in dem Monat, in dem der Spieler Präsident wird, auch wenn ein Gegner vorher schon Präsident war.
@@ -2459,11 +2470,15 @@ const feierSzene=F=>F.start?0:F.zu;
 function feierStopp(){FT.forEach(clearTimeout); FT=[]}
 const gross=t=>t.charAt(0).toUpperCase()+t.slice(1);
 // Alles, was die Ränge von+1 bis zu bringen, als Liste [Symbol, Text]. Der Kreditrahmen steht zuletzt.
+// Seit 14.4.8 in zwei Teilen: Einträge mit drittem Wert 'h' sind Überschriften ("Neu für dich", "Das darfst du jetzt kaufen oder einstellen").
 function feierPunkte(von,zu){
-  const P=[];
-  for(let i=von+1;i<=zu;i++) for(const t of bringtTeile(i)) P.push([(FREI_SYM.find(s=>s[0].test(t))||[0,'🔓'])[1],gross(t)]);
-  if(RAENGE[zu].rahmen>RAENGE[von].rahmen) P.push(['🏦',`Kreditrahmen ${eur(RAENGE[zu].rahmen)}`]);
-  for(let i=von+1;i<=zu;i++) if(RAENGE[i].weg) P.push(['⚠️',anr(RAENGE[i].weg,RAENGE[i].wegW)]);
+  const P=[], sym=t=>(FREI_SYM.find(s=>s[0].test(t))||[0,'🔓'])[1], T=[];
+  for(let i=von+1;i<=zu;i++) T.push(rangTeile(i));
+  // Kreditrahmen und Warnungen stehen am Ende von "Neu für dich", danach kommt der Teil zum Kaufen und Einstellen.
+  for(const k of ['neu','kauf']){const L=T.flatMap(t=>t[k]); if(L.length||k==='neu') P.push(['',RANG_KOPF[k],'h']); for(const t of L) P.push([sym(t),gross(t)]);
+    if(k!=='neu') continue;
+    if(RAENGE[zu].rahmen>RAENGE[von].rahmen) P.push(['🏦',`Kreditrahmen ${eur(RAENGE[zu].rahmen)}`]);
+    for(let i=von+1;i<=zu;i++) if(RAENGE[i].weg) P.push(['⚠️',anr(RAENGE[i].weg,RAENGE[i].wegW)])}
   return P;
 }
 const startPunkte=()=>[['🌱','3 Hektar kahler Weinberg'],['💶',`Startgeld ${eur(startGeld(S.schwer))}`],['🍇',`Deine erste Rebsorte: ${SORTEN[sortenFolge()[0]].name}`],['📅','Pflanzzeit bis März']];

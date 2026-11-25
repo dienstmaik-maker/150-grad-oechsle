@@ -299,15 +299,15 @@ const WO={mosel:'an der Mosel',rheingau:'im Rheingau',rheinhessen:'in Rheinhesse
 // (Wunschfläche des nächsten Ziels mal 1,25). ans und verm sind hier die heutigen Werte, die Hürde rechnet RANG_HUERDE unten daraus.
 const RAENGE=[
   {name:'Neuling',kurz:'Neuling',ans:0,ha:0,verm:0,rahmen:20000,haAlt:0,deckel:5},
-  {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:30,ha:3,verm:100000,rahmen:40000,haAlt:3,deckel:9,neu:'ein geschenkter Hang vom alten Winzer, Qualitätswein, der Makler im Rathaus, die ersten Auktionen'},
-  {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:7,verm:250000,rahmen:80000,haAlt:4,deckel:17,neu:'Kabinett, der Düngerstreuer, Spenden fürs Dorf, öfter Land bei den Auktionen'},
-  {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:210,ansW:300,ha:14,verm:600000,rahmen:160000,haAlt:5,deckel:32,neu:'Spätlese, Landesprämierung, die Erntemaschine, die Abfüllanlage, der Sommerschnitt von Hand'},
-  {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:18,verm:1500000,rahmen:300000,haAlt:6,deckel:42,neu:'{sorte}, der Sektkeller, das Weinfest, kühle Höhenlagen bei den Auktionen'},
-  {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:24,verm:3500000,rahmen:300000,haAlt:8,deckel:47,neu:'der große Vollernter'},
-  {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:24,verm:6000000,rahmen:300000,haAlt:10,deckel:50,neu:'{sorte} für den steilen Südhang, Südhang bei den Auktionen, das Amt des Weinbotschafters, der Ausbau der Abfüllanlage'},
-  {name:'Verbandsvorstand',kurz:'Vorstand',w:'Verbandsvorständin',kw:'Vorständin',ans:4000,ha:28,verm:12000000,rahmen:300000,haAlt:13,deckel:50,neu:'Auslese und der Weg deines Gebiets im Herbst, das Hoffest, der Bundeswettbewerb, der Laubschneider'},
-  {name:'Vizepräsident',kurz:'Vizepräsident',w:'Vizepräsidentin',kw:'Vizepräsidentin',ans:6000,ha:28,verm:16000000,rahmen:300000,haAlt:16,deckel:50,neu:'Trockenbeerenauslese, in besonderen Jahren der fremde Weg im Herbst, du kannst Kontrollen anregen'},
-  {name:'Präsident des Weinbauverbands',kurz:'Präsident',w:'Präsidentin des Weinbauverbands',kw:'Präsidentin',ans:8500,ha:28,verm:30000000,rahmen:300000,haAlt:20,deckel:50,neu:'der Stuhl im Festsaal, das Amt an der Spitze des Verbands, der Weg zur Weltweinschau'}
+  {name:'Jungwinzer',kurz:'Jungwinzer',w:'Jungwinzerin',kw:'Jungwinzerin',ans:30,ha:3,verm:100000,rahmen:40000,haAlt:3,deckel:9,neu:['ein geschenkter Hang vom alten Winzer','Qualitätswein','Erntehelfer'],kauf:['Land beim Makler im Rathaus']},
+  {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:7,verm:250000,rahmen:80000,haAlt:4,deckel:17,neu:['Kabinett','Spenden fürs Dorf','dein Kellergeselle füllt ab und klebt die Etiketten'],kauf:['der Düngerstreuer']},
+  {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:210,ansW:300,ha:14,verm:600000,rahmen:160000,haAlt:5,deckel:32,neu:['Spätlese','die Landesprämierung','Winzergesellen mit dem Laubschnitt von Hand'],kauf:['die Erntemaschine','die Abfüllanlage','mit der ersten Spätlese der Edelstahltank im Keller']},
+  {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:18,verm:1500000,rahmen:300000,haAlt:6,deckel:42,neu:['{sorte} für den Sekt','das Weinfest','kühle Höhenlagen bei den Auktionen'],kauf:['der Sektkeller']},
+  {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:24,verm:3500000,rahmen:300000,haAlt:8,deckel:47,neu:['Rebmeister'],kauf:['die Schatzkammer mit dem Großen Holzfass im Keller','der große Vollernter']},
+  {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:24,verm:6000000,rahmen:300000,haAlt:10,deckel:50,neu:['{sorte} für den steilen Südhang mit Südhang bei den Auktionen','das Amt des Weinbotschafters'],kauf:['der Ausbau der Abfüllanlage']},
+  {name:'Verbandsvorstand',kurz:'Vorstand',w:'Verbandsvorständin',kw:'Vorständin',ans:4000,ha:28,verm:12000000,rahmen:300000,haAlt:13,deckel:50,neu:{edel:['Auslese und Beerenauslese','das Hoffest','der Bundeswettbewerb'],frost:['Auslese und Eiswein','das Hoffest','der Bundeswettbewerb'],beide:['Auslese sowie Beerenauslese und Eiswein','das Hoffest','der Bundeswettbewerb']},kauf:['der Laubschneider','mit der ersten Auslese der Barrique-Keller']},
+  {name:'Vizepräsident',kurz:'Vizepräsident',w:'Vizepräsidentin',kw:'Vizepräsidentin',ans:6000,ha:28,verm:16000000,rahmen:300000,haAlt:16,deckel:50,neu:{edel:['Trockenbeerenauslese','in besonderen Jahren Eiswein','du kannst Kontrollen anregen'],frost:['in besonderen Jahren Beerenauslese und Trockenbeerenauslese','du kannst Kontrollen anregen'],beide:['Trockenbeerenauslese','du kannst Kontrollen anregen']},kauf:[]},
+  {name:'Präsident des Weinbauverbands',kurz:'Präsident',w:'Präsidentin des Weinbauverbands',kw:'Präsidentin',ans:8500,ha:28,verm:30000000,rahmen:300000,haAlt:20,deckel:50,neu:['der Stuhl im Festsaal','das Amt an der Spitze des Verbands','der Weg zur Weltweinschau','die Presse, einmal im Jahr für einen deiner Weine'],kauf:[]}
 ];
 // Seit 11.5 (Teil B): Fläche neu. Die Hürden (ha, bepflanzt) gehen bis 40 Hektar statt bis 20, haAlt sind die Werte bis 11.4.
 // deckel ist der höchste Besitz je Rang, seit 13.3.8 nach Nachtrag 3 (bis 13.3.7: ein Viertel mehr, als der nächste Rang verlangt), für niemanden mehr als 50 (Maik 20.11.2026).
@@ -1194,7 +1194,7 @@ const KAPITEL=[null,
 // 7.8: Wer die Anzeige gelesen hat, je Generation. Neutral, weil das Spiel das Geschlecht der ersten Generation nicht kennt.
 const VORFAHREN=['Deine Eltern','Deine Großeltern','Deine Urgroßeltern','Deine Vorfahren'];
 // Seit 10.6 nennt die Feier alles, was mit dem Rang auftaucht (gesperrte Fenster sind unsichtbar), dazu Makler, Spenden und Weinfest.
-const FREI_SYM=[[/Erntehelfer|Lagerarbeiter/,'🧑‍🌾'],[/Makler/,'🤝'],[/Spenden/,'💝'],[/Manager|Stufe/,'👔'],[/Rebsorte/,'🍇'],[/Auktion/,'🔨'],[/Sekt/,'🍾'],[/Export/,'🚢'],[/Keller/i,'🛢️'],[/prämierung|wettbewerb/i,'🏅'],[/ernte|vollernter/i,'🚜'],
+const FREI_SYM=[[/Erntehelfer|Lagerarbeiter|Kellergeselle|Winzergesellen|Rebmeister/,'🧑‍🌾'],[/Makler/,'🤝'],[/Spenden/,'💝'],[/Manager|Stufe/,'👔'],[/Rebsorte/,'🍇'],[/Auktion/,'🔨'],[/Sekt/,'🍾'],[/Export/,'🚢'],[/Keller/i,'🛢️'],[/prämierung|wettbewerb/i,'🏅'],[/ernte|vollernter/i,'🚜'],
   [/Weinhandlung/,'🏪'],[/botschafter/i,'🎗️'],[/Hoffest|Weinfest/,'🎉'],[/Kontrolle/,'🔍'],[/Spitzenlage/,'⛰️'],[/Sieg/,'👑']];
 // Version 9.0: Aufstiegs-Szene (FSTUFE -1) vor der Bild-Bühne. Erst das Sommerbild der alten Stufe mit dem alten Rang, dann wechselt der Titel
 // und das Sommerbild der neuen Stufe blendet über, egal welcher Monat ist (Sommer-Regel, Maik 18.11.2026). Ein Tipp zeigt gleich das Ende.
@@ -1513,6 +1513,9 @@ const GEGNER_LAGE={menge:'einfach',sekt:'hoehe',spitze:'sued'};
 // Rat des alten Winzers zur Chef-Grenze in den Gesellenjahren. Platzhalter, Wortlaut in Meilenstein 17.
 const HELFER_NUR_BOTE='✂️ Deinen {sorte} haben nur Erntehelfer geschnitten. Sie halten den Stand, besser wird er so nicht.';
 const CHEF_RAT_SATZ='Der alte Winzer rät: Schneide den {sorte} selbst, er braucht dich am meisten.';
+// Seit 14.4.8: Rangmeldung in zwei Teilen (Maik 24.11.2026), RAENGE[i].neu und RAENGE[i].kauf, beim Verbandsvorstand und Vizepräsidenten je Weg des Gebiets.
+// Die Überschriften sind Platzhalter, Wortlaut in Meilenstein 17. Ohne Kauf-Stücke fällt der zweite Teil weg.
+const RANG_KOPF={neu:'Neu für dich',kauf:'Das darfst du jetzt kaufen oder einstellen'};
 const AKT_AUFTAKT={2:{t:'Der zweite Akt beginnt',text:'Ab jetzt steht dir die Hintertür offen, aber die Weinkontrolle schaut genauer hin.'},
   3:{t:'Der dritte Akt beginnt',text:'Ab jetzt setzt du deinen Ruf ein, wenn du etwas wagst.'}};
 const TITEL_NAMEN=[[['Spielidee &amp;','Entwicklung'],'Maik','Dienst'],[['Chef-Tester &amp;','Visuelle Effekte'],'Timo','Dienst']];
