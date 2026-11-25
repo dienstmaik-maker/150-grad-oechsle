@@ -2,7 +2,7 @@
 // Die Spielseite (index.html), das Buch (anleitung.js) und seit 8.1 die Sprechblasen (fuehrer.js) kommen immer zuerst frisch aus dem Netz, so kommen neue Fassungen von selbst an. Ohne Netz gilt die gespeicherte.
 // Seit 13.1 steht der Code in zahlen.js, kern.js und oberflaeche.js. Sie kommen wie die Seite zuerst frisch, sonst sähe ein Handy einen halben alten Stand.
 // Bilder und Töne kommen aus dem Speicher. Ändert sich eines davon, die Nummer in LAGER erhöhen, dann lädt das Gerät alles neu.
-const LAGER = 'oechsle-43';
+const LAGER = 'oechsle-44';
 const FRISCH = ['anleitung.js', 'fuehrer.js', 'zahlen.js', 'kern.js', 'oberflaeche.js'];
 const DATEIEN = [
   './', 'index.html', 'manifest.webmanifest', 'anleitung.js', 'fuehrer.js', 'zahlen.js', 'kern.js', 'oberflaeche.js',
@@ -131,6 +131,22 @@ const DATEIEN = [
   'bilder/zeitung-fuss.webp',
   'bilder/zeitung-kopf.webp',
   'bilder/zeitung-mitte.webp',
+  'bilder/sym-rebstufe.webp',
+  'bilder/sym-bodenstufe.webp',
+  'bilder/sym-duenger.webp',
+  'bilder/sym-schloss.webp',
+  'bilder/sym-mitarbeiter.webp',
+  'bilder/siegel-qba.webp',
+  'bilder/siegel-kab.webp',
+  'bilder/siegel-spat.webp',
+  'bilder/siegel-aus.webp',
+  'bilder/siegel-ba.webp',
+  'bilder/siegel-tba.webp',
+  'bilder/siegel-eis.webp',
+  'bilder/jz-fruehling.webp',
+  'bilder/jz-sommer.webp',
+  'bilder/jz-herbst.webp',
+  'bilder/jz-winter.webp',
   'schrift/alegreya-kursiv.woff2',
   'schrift/alegreya-sc-fett.woff2',
   'schrift/alegreya-sc.woff2',
