@@ -1634,16 +1634,26 @@ const EINSATZ_RAT={einfach:'still',mittel:'rat',schwer:''};
 // Von sich aus Automatik, nur das Einstellen ist Chefsache (Maik bei der Abnahme, 25.11.2026). Im Spielstand S.chefsache, dazu S.sektWahl für Verfahren und Hefezeit.
 const CHEFSACHE_START={keltern:0,abfuellen:0,sekt:0,warten:0,fass:0,flaschen:0,leute:1};
 // Info-Zeilen an der Arbeit, sobald der Schalter beim Weingut-Manager sitzt (Entscheidung "Delegierte Arbeit zeigt eine Info-Zeile statt Knopf").
-// {wer} ist die Stufe der Leute, die es machen. Platzhalter, Wortlaut in Meilenstein 17.
+// {wer} ist die Stufe der Leute, die es machen ("deine Kellerhelfer"). Platzhalter, Wortlaut in Meilenstein 17.
 const CHEFSACHE_ZEILE={
   chef:'👤 Chefsache: Das machst du selbst. Umstellen beim Weingut-Manager.',
-  keltern:'🍇 Keltern macht {wer}, eingeteilt vom Weingut-Manager.',
-  abfuellen:'🍾 Abfüllen und Etiketten macht {wer}, eingeteilt vom Weingut-Manager.',
-  sekt:'🥂 Den Sekt macht {wer}, nach deiner Vorwahl beim Weingut-Manager.',
-  warten:'🔧 Die Maschinen wartet {wer}, eingeteilt vom Weingut-Manager.',
+  keltern:'🍇 Keltern machen {wer}, eingeteilt vom Weingut-Manager.',
+  abfuellen:'🍾 Abfüllen und Etiketten machen {wer}, eingeteilt vom Weingut-Manager.',
+  sekt:'🥂 Den Sekt machen {wer}, nach deiner Vorwahl beim Weingut-Manager.',
+  warten:'🔧 Die Maschinen warten {wer}, eingeteilt vom Weingut-Manager.',
   fass:'🛢️ Fassraum kauft der Weingut-Manager.',
   flaschen:'🍾 Flaschen kauft der Weingut-Manager.',
   leute:'🧑‍🌾 Leute stellt der Weingut-Manager ein.'};
+// Chefsache (gebaut in 14.7.5): Namen der Arbeiten und Sätze im Block "Chefsache" beim Weingut-Manager und an der Arbeit davor.
+// {wer} ist die Stufe der Leute oder des Kopfs, {h} die Hefezeit. Platzhalter, Wortlaut in Meilenstein 17.
+const CHEFSACHE_TEXT={
+  titel:'👤 Chefsache',
+  kopf:'Je Arbeit: Chefsache machst du selbst, Automatik machen deine Leute oder der Weingut-Manager. Lesen ist immer Chefsache.',
+  keltern:'Keltern', abfuellen:'Abfüllen und Etiketten', sekt:'Sekt', warten:'Maschinen warten', fass:'Fassraum kaufen', flaschen:'Flaschen kaufen', leute:'Leute einstellen',
+  ab:'Automatik ab {wer}', abStufe:'Automatik ab seiner Stufe {n}',
+  vorwahl:'Hefezeit für deinen Kellermeister:', reif:'{h} Monate reifen', hefe:'{h} Monate auf der Hefe',
+  knopf:'{arbeit}: {stellung}', kurz:{abfuellen:'Abfüllen',warten:'Warten'}, selbst:'selbst machen', ist:'👤 {arbeit} ist Chefsache, das machst du selbst.',
+  lese:'Die Hefezeit hast du vorgewählt, dein Kellermeister hält sich daran. Umstellen {wo}.', woMgr:'beim Weingut-Manager', woKeller:'im Sektkeller'};
 // Namen der zwei Gruppen der Leute (Entscheidung Kellerleute, 24.11.2026). Platzhalter, Wortlaut in Meilenstein 17.
 const LEUTE_GRUPPE={helfer:'Außenbetrieb',lagerarb:'Kellerwirtschaft'};
 // Einsatzplan (gebaut in 14.7.4): Namen der Stellungen und Arbeiten, Sätze im Fenster und im Weinberg. {wer} ist die Stufe der Leute, {sorte} der Weinberg.

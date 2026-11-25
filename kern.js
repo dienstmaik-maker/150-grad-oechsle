@@ -317,7 +317,22 @@ function mgrAufgabe(k){return MANAGER.find(e=>e.aufgaben.includes(k))}
 function aufgabeDa(k){const e=mgrAufgabe(k); return !!e&&mgrSt(e.bereich)>=e.stufe}
 // Die Aufgaben einer Stufe für die Anzeige: ohne Schädlinge fehlt das Spritzen (Liste der Stufen, Schalter, Vorstellung des Managers).
 function mgrAufg(e){return e.aufgaben}
-function aufgabeAktiv(k){return aufgabeDa(k)&&!!(S.manager[mgrAufgabe(k).bereich].an||{})[k]}
+// Seit 14.7.5 (Bauplan 14.7, Annahmen 14 bis 16): Fassraum, Flaschen und das Einstellen (helfer und lager) haben statt des Aufgaben-Schalters die Chefsache (CS_AUFG).
+function aufgabeAktiv(k){return aufgabeDa(k)&&(CS_AUFG[k]?!chefsache(CS_AUFG[k]):!!(S.manager[mgrAufgabe(k).bereich].an||{})[k])}
+// Chefsache je Arbeit (Bauplan 14.7, Annahmen 14 bis 16): S.chefsache mit 1 (der Chef macht es selbst) oder 0 (Automatik), Voreinstellung CHEFSACHE_START.
+// Keller: Keltern und Warten ab den Kellerhelfern, Abfüllen ab den Kellergesellen, Sekt ab dem Kellermeister (CS_STUFE). Kann die Stufe der Kellerleute die Arbeit
+// noch nicht, macht sie der Chef ohne Schalter (Annahme 8). Einkauf (fass, flaschen) ab Stufe 2 des Weingut-Managers, Einstellen (leute) ab Stufe 3, vorher der Chef.
+// Bis der Weingut-Manager kommt, sitzt der Schalter an der Arbeit, danach gesammelt bei ihm (csBeiMgr), an der Arbeit nur die Info-Zeile (CHEFSACHE_ZEILE).
+// Sekt auf Automatik: Der Kellermeister nimmt die Hefezeit der Vorwahl (S.sektWahl, SEKT_REIFE oder HEFE_LANG). Lesen hat keinen Schalter (Annahme 17).
+const CS_AUFG={fass:'fass',flaschen:'flaschen',helfer:'leute',lager:'leute'};
+const CS_STUFE={keltern:1,abfuellen:2,sekt:3,warten:1};
+const CS_ARBEIT=['keltern','abfuellen','sekt','warten','fass','flaschen','leute'];
+const chefsache=k=>{const c=S.chefsache||CHEFSACHE_START; return (k in c?c[k]:CHEFSACHE_START[k])===1};
+const csKann=k=>CS_STUFE[k]?lagerKann(CS_STUFE[k]):aufgabeDa(k==='leute'?'helfer':k);
+const kellerMacht=k=>csKann(k)&&!chefsache(k);
+const csBeiMgr=()=>mgrSt('weingut')>0;
+const sektVorwahl=()=>S.sektWahl===HEFE_LANG?HEFE_LANG:SEKT_REIFE;
+function csSetzen(k,w){if(!CS_ARBEIT.includes(k)) return; S.chefsache=Object.assign({},CHEFSACHE_START,S.chefsache||{}); S.chefsache[k]=w==='chef'?1:0}
 function mgrLohn(){let s=0; for(const b in S.manager||{}) s+=(mgrEintrag(b,mgrSt(b))||{}).lohn||0; return s}
 // Seit 11.5 (Teil C1): Bringt jeden Manager auf die Stufe, die der Rang erlaubt. Neue Aufgaben sind eingeschaltet, was die Stufe kostet, steht in e.kosten (im Spiel 0).
 // Läuft beim Aufstieg, beim Laden alter Spielstände und zur Sicherheit vor der Arbeit der Manager. S.mgrNeu merkt je Bereich, wer sich noch vorstellen muss ({b, von, st}).
@@ -1942,7 +1957,7 @@ function kompAuf(id){
 function neuesSpiel(){
   if(NEU.schwer===MEISTER_STUFE&&!meisterFrei()) NEU.schwer=MEISTER_VON; // seit 13.7.7, gesperrt bis zur ersten Übergabe in den Gesellenjahren
   const reg=REG(NEU.region,!!ROLLEN_NEU);
-  S={v:1,v13:1,v147:1,zf:zfNeu(),name:NEU.name.trim().slice(0,NAME_MAX)||'Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:startGeld(NEU.schwer),ha:3,hang:{einfach:3,hoehe:0,sued:0},bodenSt:0,bodenP:{einfach:0,hoehe:0,sued:0},duengungen:0,
+  S={v:1,v13:1,v147:1,chefsache:{...CHEFSACHE_START},sektWahl:SEKT_REIFE,zf:zfNeu(),name:NEU.name.trim().slice(0,NAME_MAX)||'Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:startGeld(NEU.schwer),ha:3,hang:{einfach:3,hoehe:0,sued:0},bodenSt:0,bodenP:{einfach:0,hoehe:0,sued:0},duengungen:0,
     felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',markt:1,ansehen:0,ansV:1,leuteV:1,
     jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:ALLEIN_HA?0:1,lagerarb:ALLEIN_FASS?0:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,meilen:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],rangMon:{0:START_JAHR*12},freiBote:{},taten:{},komp:{},kompV:3,v121:1,ein:{f:[]},...(ROLLEN_NEU?{rollen:1}:{})};
   for(const id of reg.sorten){S.felder[id]={reben:0,pflSt:0,ep:0,boden:BODEN_START}; feldReset(S.felder[id])}
@@ -2561,10 +2576,10 @@ function aufgaben(){
   if(maschOhneFahrer().some(x=>mTyp(x).leute==='lagerarb')) A.push({t:'🍾 Die Abfüllanlage steht still, es fehlt ein Kellermensch',tab:'stadt',sub:'arbeit'});
   if(of&&!fehlText()) A.push({t:`🚜 ${of===1?'Eine Maschine steht':of+' Maschinen stehen'} still, es ${fahrerFehlen()===1?'fehlt ein Fahrer':'fehlen '+fahrerFehlen()+' Fahrer'}`,tab:'stadt',sub:'arbeit'});
   for(const id of weinberge()){const f=S.felder[id]; if(f.menge>0&&!f.gelesen&&handFehlt(f)) A.push({t:`✋ ${SORTEN[id].name}: für die Handlese fehlen ${handBedarf(f)-S.helfer} Erntehelfer, sonst nur Qualitätswein`,tab:'stadt',sub:'arbeit'})}}
-  for(const l of S.lots) if(l.status==='trauben') A.push(lagerKann(1)&&l.liter<=S.fassraum-fassBelegt()+(aufgabeAktiv('fass')?Infinity:0)?{t:`${SORTEN[l.sorte].name}-Trauben: deine Kellerleute keltern beim Weiterblättern`,tab:'keller',ruhig:1}:{t:`${SORTEN[l.sorte].name}-Trauben müssen diesen Monat gekeltert werden`,rot:1,tab:'keller'});
+  for(const l of S.lots) if(l.status==='trauben') A.push(kellerMacht('keltern')&&l.liter<=S.fassraum-fassBelegt()+(aufgabeAktiv('fass')?Infinity:0)?{t:`${SORTEN[l.sorte].name}-Trauben: deine Kellerleute keltern beim Weiterblättern`,tab:'keller',ruhig:1}:{t:`${SORTEN[l.sorte].name}-Trauben müssen diesen Monat gekeltert werden`,rot:1,tab:'keller'});
   // Seit 13.5.8: Sekt von Hand, bis Lagerarbeiter Stufe 3.
-  for(const l of S.lots) if(l.status==='sektTr') A.push(lagerKann(3)?{t:`${SORTEN[l.sorte].name}-Sekt: deine Kellerleute legen ihn beim Weiterblättern in den Sektkeller`,tab:'keller',ruhig:1}:{t:`${SORTEN[l.sorte].name}-Sekt muss diesen Monat in den Sektkeller`,rot:1,tab:'keller'});
-    else if(sektFertig(l)&&!lagerKann(3)) A.push({t:`🍾 ${lotName(l)}: die Hefezeit ist um, jetzt abfüllen`,tab:'keller'});
+  for(const l of S.lots) if(l.status==='sektTr') A.push(kellerMacht('sekt')?{t:`${SORTEN[l.sorte].name}-Sekt: deine Kellerleute legen ihn beim Weiterblättern in den Sektkeller`,tab:'keller',ruhig:1}:{t:`${SORTEN[l.sorte].name}-Sekt muss diesen Monat in den Sektkeller`,rot:1,tab:'keller'});
+    else if(sektFertig(l)&&!kellerMacht('sekt')) A.push({t:`🍾 ${lotName(l)}: die Hefezeit ist um, jetzt abfüllen`,tab:'keller'});
   for(const l of S.lots) if(l.status==='fass'){
     if(l.stufe==='feder') A.push({t:`Federweißer ${SORTEN[l.sorte].name} muss diesen Monat abgefüllt werden`,rot:1,tab:'keller'});
     else if(l.fassMonate>=5) A.push({t:`${lotName(l)}: verdirbt im Fass in ${8-l.fassMonate} Monaten`,rot:1,tab:l.stufe?'keller':'stadt',sub:l.stufe?'':'amt'});
@@ -2572,7 +2587,7 @@ function aufgaben(){
   const anm=S.lots.filter(l=>l.status==='fass'&&!l.stufe&&['feder',...REIHE].some(st=>!pruefeAnmeldung(l,st).length)).length;
   if(anm) A.push({t:`${anm} ${anm===1?'Fass kann':'Fässer können'} im Rathaus angemeldet werden`,tab:'stadt',sub:'amt'});
   const abf=S.lots.filter(l=>l.status==='fass'&&l.stufe&&l.stufe!=='feder');
-  for(const l of abf) A.push({t:`${lotName(l)} kann abgefüllt werden`+(S.flaschen<abfFl(l)?` (es fehlen ${num(abfFl(l)-S.flaschen)} Flaschen)`:''),tab:'keller',ruhig:aufgabeAktiv('flaschen')?1:0});
+  for(const l of abf) A.push({t:`${lotName(l)} kann abgefüllt werden`+(S.flaschen<abfFl(l)?` (es fehlen ${num(abfFl(l)-S.flaschen)} Flaschen)`:''),tab:'keller',ruhig:aufgabeAktiv('flaschen')&&!chefsache('abfuellen')?1:0});
   // Seit 8.2 führt die Warnung ins Kellerbuch (dort ist der Wein markiert und hat die passenden Knöpfe). Steht er im Regal, sagt sie das gleich dazu.
   for(const l of S.lots) if(l.status==='flasche'&&lager(l).max-l.flMonate<=2) A.push({t:`${lotName(l)}: nur noch ${lager(l).max-l.flMonate} Monate haltbar`+(l.regal?', steht im Regal, erst rausnehmen':''),rot:1,tab:'keller',sub:'buch'});
   if(m<=2&&S.verlust) for(const id of weinberge()) if(S.verlust[id]) A.push({t:`Über den Winter sind ${rbn(S.verlust[id])} ${SORTEN[id].name}-Reben eingegangen. Nachpflanzen`,tab:'gut',sub:'berg',ruhig:aufgabeAktiv('reben')||helferKann(3)?1:0});
@@ -2906,24 +2921,25 @@ function helferArbeit(L){
     if(n<10) continue; zahle(Math.round(n*pr*100)/100); rebenDazu(id,n); pflanzAb(id,n); L.push(`${rbn(n)} ${SORTEN[id].name}-Reben gepflanzt`);
   }
 }
+// Seit 14.7.5: Jede Arbeit nur auf Automatik (kellerMacht), auf Chefsache bleibt sie liegen (Annahme 14).
 // Lagerarbeiter: Stufe 1 keltert die Lese, sobald genug Fassraum frei ist, Stufe 2 füllt angemeldete Weine ab und klebt die Etiketten, sobald genug leere Flaschen da sind.
 // Fassraum und Flaschen kaufen sie nicht, das macht der Kellermeister oder der Spieler. Stufe 3 stellt den Sekt her, der seit 13.3.3 mit der Lese in den Sektkeller geht,
 // die Wahl 9 oder 24 Monate trifft weiter der Spieler. Was angemeldet wird, entscheidet nur er, deshalb füllen sie nur Angemeldetes ab.
 function lagerArbeit(L){
   if(!S.lagerarb) return; const st=leuteSt('lagerarb');
-  if(st>=1&&abgabe('keltern')) for(const l of S.lots.filter(l=>l.status==='trauben')) if(l.liter<=S.fassraum-fassBelegt()){delete l.mgrNot; l.status='fass'; l.fassMonate=0; L.push(`${num(l.liter)}\u00a0l ${SORTEN[l.sorte].name} gekeltert`)}
-  if(st>=2&&abgabe('abfuellen')) for(const l of S.lots.filter(l=>l.status==='fass'&&l.stufe)) if(S.flaschen>=abfFl(l)){const an=bonusMasch('abfuell'); fuelleAb(l); L.push(`${lotName(l)} abgefüllt${an?' mit der Abfüllanlage':''}`)}
+  if(st>=1&&abgabe('keltern')&&kellerMacht('keltern')) for(const l of S.lots.filter(l=>l.status==='trauben')) if(l.liter<=S.fassraum-fassBelegt()){delete l.mgrNot; l.status='fass'; l.fassMonate=0; L.push(`${num(l.liter)}\u00a0l ${SORTEN[l.sorte].name} gekeltert`)}
+  if(st>=2&&abgabe('abfuellen')&&kellerMacht('abfuellen')) for(const l of S.lots.filter(l=>l.status==='fass'&&l.stufe)) if(S.flaschen>=abfFl(l)){const an=bonusMasch('abfuell'); fuelleAb(l); L.push(`${lotName(l)} abgefüllt${an?' mit der Abfüllanlage':''}`)}
   // Seit 13.5.8 (Entscheidung 6): Stufe 3 legt den Sekt in den Sektkeller und füllt ihn ab, wenn die vom Spieler gewählte Hefezeit um ist. Abgefüllt wird am Ende
   // des Monats, in dem sie endet (beim Weiterblättern vor dem Monatswechsel), so ist er im selben Monat verkäuflich wie beim Spieler, der am Monatsanfang abfüllt.
-  if(st>=3&&abgabe('sekt')){for(const l of sektTrauben()) if(sektUmlagern(l)) L.push(`${num(l.liter)} Flaschen ${lotName(l)} in den Sektkeller gelegt`);
+  if(st>=3&&abgabe('sekt')&&kellerMacht('sekt')){for(const l of sektTrauben()) if(sektUmlagern(l)) L.push(`${num(l.liter)} Flaschen ${lotName(l)} in den Sektkeller gelegt`);
     for(const l of sektAufHefe()) if(l.flMonate+1>=lager(l).min){sektAbfuellen(l); L.push(`${lotName(l)} abgefüllt`)}}
 }
 const lagerKann=n=>!!S.lagerarb&&leuteSt('lagerarb')>=n;
 // Seit 14.7.3 (Annahme 21): Die Kellerhelfer warten die Maschinen, sobald einer angestellt ist, nach der Regel des Weingut-Managers bis 14.7.2: nach der Lese
 // (vor August oder wenn kein Feld mehr hängt) jede Maschine unter MGR_WART_AB auf 100 %, eine ausgefallene Erntemaschine (unter MASCH_ROT) sofort, auch mitten in der Lese.
 // Sie lassen die Geldgrenze des Weingut-Managers auf dem Konto (mgrPuffer, ohne ihn MGR_PUFFER_START), reicht es nicht ganz, warten sie so weit, wie das Geld reicht.
-// Die Ausgefallene kommt nur, wenn das Geld bis MASCH_ROT reicht. Der Schalter dafür kommt in 14.7.5, bis dahin warten sie immer (Testschalter ABGABE_AUS.warten).
-const kellerWartet=()=>lagerKann(1)&&abgabe('warten');
+// Die Ausgefallene kommt nur, wenn das Geld bis MASCH_ROT reicht. Seit 14.7.5 nur auf Automatik (Chefsache warten), Testschalter ABGABE_AUS.warten.
+const kellerWartet=()=>kellerMacht('warten')&&abgabe('warten');
 const kellerZahl=n=>`${num(n)} ${n===1?'Kellermensch':'Kellerleute'}`;   // Platzhalter, Wortlaut in Meilenstein 17
 function kellerWarten(L){
   if(!kellerWartet()) return; const pu=mgrPuffer('weingut');
@@ -3223,7 +3239,8 @@ function lese(id,la,p,hefe){
   if(M>0&&maschDarf(id)) maschAbnutzung(f.reben*Math.min(1,M/Math.max(1,rebenGesamt()-handLeseReben())),M);
   const neu={id:S.nextId++,sorte:id,jahrgang:S.jahr,liter:l,oe:q.oe,leseart:la,edel:f.edel,eis:f.gefroren,...(q.masch?{masch:1}:{}),status:'trauben',stufe:null,qp:qualWb(id),fassMonate:0,flMonate:0,...(f.laub===S.jahr?{laub:1}:{}),boden:f.boden,bst:wbBoden(id),pfl:f.pflSt||0,...(f.jh?{jh:1}:{})};
   // Seit 13.5.8: Die Sekt-Trauben liegen erst im Keller (sektTr), Kosten und Ansehen kommen mit dem Umlagern in den Sektkeller (sektUmlagern).
-  if(sk){const h=hefe===HEFE_LANG?HEFE_LANG:SEKT_REIFE; Object.assign(neu,{status:'sektTr',stufe:SEKT_GRUND,sekt:true,edel:false,eis:false,...(h>SEKT_REIFE?{hefe:h}:{}),med:[],bund:false});
+  // Seit 14.7.5: Macht der Kellermeister den Sekt (Automatik), gilt die Vorwahl des Spielers (sektVorwahl), sonst die Wahl bei der Lese.
+  if(sk){const h=kellerMacht('sekt')?sektVorwahl():hefe===HEFE_LANG?HEFE_LANG:SEKT_REIFE; Object.assign(neu,{status:'sektTr',stufe:SEKT_GRUND,sekt:true,edel:false,eis:false,...(h>SEKT_REIFE?{hefe:h}:{}),med:[],bund:false});
     // Seit 14.5.7 (Maik 25.11.2026, Frage 2): das lange Hefelager (HEFE_LANG_P) als Punkte am Sekt (l.sektP), die Qualität bleibt die des Weinbergs.
     // Der Abzug vom einfachen Hang (13.4.9 bis 14.5.7) ist mit dem Nachtrag zu 14.5 weg, der Sekt steht immer auf der Höhenlage.
     if(h>SEKT_REIFE) neu.sektP=HEFE_LANG_P}

@@ -924,7 +924,7 @@ function leuteHtml(){
     z('helfer','Erntehelfer',`Fest angestellt, pflegen die Reben und lesen die Trauben. Einer je ${haWort(REBEN_JE_HELFER/HA_REBEN)} Reben${ALLEIN_HA?`, die ersten ${ALLEIN_HA} Hektar schafft deine Familie`:''}${ms?`, deine Erntemaschinen im Einsatz decken ${haWort(ms)} ab`:''}. ${S.rang>=R_STREU?'Sie fahren auch die Maschinen und lesen':'Sie lesen auch'} Edelfäulnis und Eiswein von Hand.`),
     z('lagerarb','Kellerleute',`Betreuen Fassraum und leere Flaschen. Einer je ${num(FASS_JE_LAGERARB)} l Fassraum und ${num(flJeLager())} Flaschen${bonusMasch('abfuell')?', mit der Abfüllanlage':''}${ALLEIN_FASS||ALLEIN_FL?`, ${num(ALLEIN_FASS)} l und ${num(ALLEIN_FL)} Flaschen betreust du selbst`:''}.${maschFrei('abfuell')||S.maschinen.some(x=>x.typ==='abfuell')?' Einer bedient auch die Abfüllanlage.':''}`)],{
     hin:[aufgabeAktiv('helfer')&&`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name} stellt fehlende Erntehelfer beim Weiterblättern ein.`,
-      aufgabeAktiv('lager')&&`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name} stellt fehlende Kellerleute beim Weiterblättern ein.`],
+      aufgabeAktiv('lager')&&`${MGR_BEREICHE.weingut.sym} Dein ${MGR_BEREICHE.weingut.name} stellt fehlende Kellerleute beim Weiterblättern ein.`,csChef('leute')],
     kn:pk('arbeitsamt','Zum Arbeitsamt','',{sec:1}),buch:'arbeit',
     i:`${helferRegel()}. ${lagerRegel()}. Deine Leute brauchst du das ganze Jahr: Fehlt jemand, geht es nicht in den nächsten Monat. Einstellen und entlassen kannst du im Arbeitsamt. Dort schwankt der Lohn jeden Monat zwischen ${eur(lohnF(LOHN_MIN))} und ${eur(lohnF(LOHN_MAX))}, wer eingestellt ist, behält seinen Lohn.`});
 }
@@ -965,9 +965,10 @@ function mgrAmt(){
 function mgrSchalter(b){
   const st=mgrSt(b), E=MANAGER.filter(e=>e.bereich===b), G=mgrG(b);
   const teil=e=>e.stufe>st?`<div class="mut" style="margin:0 0 8px">${mgrStufenText(e,st)}</div>`
-    :mgrAufg(e).map(k=>{const an=aufgabeAktiv(k); return `<button class="wahl schalter ${an?'an':''}" data-a="mgrAn" data-id="${k}">${an?'✅':'⬜'} ${k==='laeden'||k==='handel'?'📋 ':''}${MGR_AUFGABEN[k].text}</button>`}).join('');
+    :mgrAufg(e).filter(k=>!CS_AUFG[k]).map(k=>{const an=aufgabeAktiv(k); return `<button class="wahl schalter ${an?'an':''}" data-a="mgrAn" data-id="${k}">${an?'✅':'⬜'} ${k==='laeden'||k==='handel'?'📋 ':''}${MGR_AUFGABEN[k].text}</button>`}).join('');
   return E.map(teil).join('')
     +(b==='weingut'&&aufgabeAktiv('plan')?`<div class="mitte" style="margin:2px 0 8px"><button class="klein" data-a="einsatz">📋 Einsatzplan öffnen</button></div>`:'') // seit 14.7.4
+    +(b==='weingut'&&st?`<div style="margin-top:8px"><b>${CHEFSACHE_TEXT.titel}</b></div><div class="mut">${CHEFSACHE_TEXT.kopf}</div>${csInhalt()}`:'') // seit 14.7.5
     +(b==='handel'&&(aufgabeAktiv('laeden')||aufgabeAktiv('handel')||aufgabeAktiv('regal'))?`<div class="mut" style="margin:8px 0 6px">Je Wein bleiben im Keller, außer kurz vorm Verderben:</div>${reserveChips()}`:'')
     +(b==='handel'&&aufgabeAktiv('fest')||b==='weingut'&&mgrPufferFuer().length?`<div class="mut" style="margin:8px 0 6px">${b==='weingut'?'Für '+wortListe(mgrPufferFuer()):'Für das Fest'} gibt ${G.er} nur so viel aus, dass mindestens das auf dem Konto bleibt:</div>${pufferChips(b)}`:'');
 }
@@ -1059,7 +1060,8 @@ function vMaschinen(){
     <div class="kv"><span>Zustand</span><span class="${ma.zustand<MASCH_ROT?'rot':''}">${ma.zustand} %${ma.zustand<MASCH_ROT?'':ma.zustand<MASCH_GELB?', Warten lohnt sich':''}</span></div><div class="bar"><i style="width:${ma.zustand}%"></i></div>
     ${T.bonus?`<div class="kv"><span>Bonus</span><span class="${ein?'':'rot'}">${ein?'wirkt':'fällt weg'}</span></div>`:`<div class="kv"><span>Leistung</span><span>${ein?rbn(T.leist*ma.zustand/100):0} Reben</span></div>`}
     ${kz(saison?'':'Verkaufen geht wieder ab Januar.',pk('maschWarten','Warten','',{id:i,aus:ma.zustand>=100,arm:S.geld<T.wart,klein:`${eur(T.wart)} je %`}),saison?pk('maschVerkauf','Verkaufen','+'+eur(T.preis*.5*ma.zustand/100),{id:i,sec:1}):'')}</div>`}),{
-    hin:[kellerWartet()&&`🔧 Deine Kellerhelfer warten nach der Lese jede Maschine unter ${MGR_WART_AB} % auf 100 %, eine ausgefallene Erntemaschine sofort.`],   // seit 14.7.3, Platzhalter, Wortlaut in Meilenstein 17
+    hin:[csBeiMgr()?csZeile('warten'):kellerWartet()?`🔧 Deine Kellerhelfer warten nach der Lese jede Maschine unter ${MGR_WART_AB} % auf 100 %, eine ausgefallene Erntemaschine sofort.`:csIst('warten')],   // seit 14.7.3, Platzhalter, Wortlaut in Meilenstein 17
+    kn:csKnopf('warten')||[],   // seit 14.7.5
     leer:'Du hast noch keine Maschine.',i:`${mI}<br><br>Warten bringt den Zustand wieder hoch, verkaufen bringt die Hälfte vom Neupreis, je nach Zustand.`});
   for(const [id,T] of Object.entries(MASCH)){
     if(R().steil&&T.ernte) continue;
@@ -1147,6 +1149,22 @@ function einsatzInhalt(){
 }
 const einsatzSheet=()=>`<div class="einsatzSh"><h3>📋 Einsatzplan</h3><p class="mut">${EINSATZ_TEXT.kopf}</p>${einsatzInhalt()}<div class="btns"><button class="sec" data-a="close">Zurück</button></div></div>`;
 const einsatzAuf=()=>$('#sheet').classList.contains('an')&&!!$('#sheet .einsatzSh');
+// Seit 14.7.5 (Bauplan 14.7, Annahmen 14 bis 16): Chefsache für Keller, Einkauf und Einstellen. Ab dem Weingut-Manager der Block "Chefsache" in seinem Fenster
+// (csInhalt, Muster wie der Einsatzplan), an der Arbeit nur die Info-Zeile (csZeile). Vorher sitzen die Schalter der Keller-Arbeiten an der Arbeit (csKnopf, csIst),
+// Einkauf und Einstellen macht der Chef dann ohne Schalter (Annahme 15). Platzhalter, Wortlaut in Meilenstein 17.
+function csVorwahl(){const T=CHEFSACHE_TEXT, v=sektVorwahl(), chip=(h,t)=>`<button class="chip ${v===h?'an':''}" data-a="sektWahl" data-h="${h}">${t.replace('{h}',h)}</button>`;
+  return `<div class="mut" style="margin-top:4px">${T.vorwahl}</div><div class="chips">${chip(SEKT_REIFE,T.reif)}${chip(HEFE_LANG,T.hefe)}</div>`}
+function csInhalt(){
+  const T=CHEFSACHE_TEXT, E=EINSATZ_TEXT, chip=(k,w,an)=>`<button class="chip ${an?'an':''}" data-a="csSetz" data-id="${k}" data-w="${w}">${E[w]}</button>`;
+  return CS_ARBEIT.filter(k=>k!=='sekt'||sektRang()).map(k=>{const ok=csKann(k), c=chefsache(k);
+    const ab=CS_STUFE[k]?T.ab.replace('{wer}',leuteStName('lagerarb',CS_STUFE[k])):T.abStufe.replace('{n}',mgrAufgabe(k==='leute'?'helfer':k).stufe);
+    return `<div class="kv"><span>${T[k]}</span><span>${ok?'':`${E.chef}, ${ab}`}</span></div>`+(ok?`<div class="chips">${chip(k,'chef',c)}${chip(k,'auto',!c)}</div>`:'')+(k==='sekt'&&ok&&!c?csVorwahl():'')}).join('');
+}
+const csZeile=k=>csBeiMgr()&&csKann(k)?(chefsache(k)?CHEFSACHE_ZEILE.chef:CHEFSACHE_ZEILE[k].replace('{wer}','deine '+leuteStName('lagerarb',CS_STUFE[k]||1))):'';
+const csChef=k=>csBeiMgr()&&csKann(k)&&chefsache(k)?CHEFSACHE_ZEILE.chef:'';
+const csIst=k=>!csBeiMgr()&&csKann(k)&&chefsache(k)?CHEFSACHE_TEXT.ist.replace('{arbeit}',CHEFSACHE_TEXT[k]):'';
+function csKnopf(k){if(csBeiMgr()||!CS_STUFE[k]||!csKann(k)) return ''; const T=CHEFSACHE_TEXT, c=chefsache(k);
+  return `<button class="klein" data-a="csSetz" data-id="${k}" data-w="${c?'auto':'chef'}">${T.knopf.replace('{arbeit}',T.kurz[k]||T[k]).replace('{stellung}',c?EINSATZ_TEXT.auto:T.selbst)}</button>`}
 // Weinberg (seit 7.4 auf dem Fenster-Baustein): je Sorte ein Fenster (seit 4.4 oben), dann Düngung und Übersicht, darunter zugeklappt der Steckbrief des Gebiets.
 // Sorten, die der Rang noch sperrt, sind seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten). Lese-Hinweise und rote Warnungen bleiben sichtbar, die Erklärungen stehen im i.
 function vBerg(){
@@ -1254,15 +1272,16 @@ function vKellerStart(){
       `<span class="rot">Muss diesen Monat ins Fass, sonst verdirbt alles.${l.liter>frei?` Frei sind nur ${num(frei)} l Fassraum.`:''}</span>`,
       `<button class="klein" data-a="keltern" data-id="${l.id}">Keltern</button>`)),{
     leer:'Keine Trauben im Kelterhaus.',
-    hin:[mk&&`🌿 Dein ${KM} kauft fehlenden Fassraum dazu.`,lagerKann(1)&&'🛢️ Deine Kellerleute keltern beim Weiterblättern, sobald genug Fassraum frei ist.'],
-    i:`Frisch gelesene Trauben müssen im Monat der Lese ins Fass. Sie brauchen freien Fassraum, was nicht hineinpasst, geht verloren.${mk?` Dein ${KM} kauft fehlenden Fassraum dazu.`:''}${lagerKann(1)?' Deine Kellerleute keltern von selbst, sobald genug Fassraum frei ist. Von Hand keltern kannst du trotzdem jederzeit.':''}`});
+    hin:[mk&&`🌿 Dein ${KM} kauft fehlenden Fassraum dazu.`,csBeiMgr()?csZeile('keltern'):kellerMacht('keltern')?'🛢️ Deine Kellerleute keltern beim Weiterblättern, sobald genug Fassraum frei ist.':csIst('keltern')],
+    kn:csKnopf('keltern')||[],   // seit 14.7.5
+    i:`Frisch gelesene Trauben müssen im Monat der Lese ins Fass. Sie brauchen freien Fassraum, was nicht hineinpasst, geht verloren.${mk?` Dein ${KM} kauft fehlenden Fassraum dazu.`:''}${kellerMacht('keltern')?' Deine Kellerleute keltern von selbst, sobald genug Fassraum frei ist. Von Hand keltern kannst du trotzdem jederzeit.':''}`});
   h+=fenster('abfuellen','Wein abfüllen',fa.map(l=>{const rest=8-l.fassMonate; return fz(dot(l.sorte)+lotName(l),
       `${num(l.liter)} l · ${l.oe}° Öchsle · seit ${l.fassMonate} ${mon(l.fassMonate)} im Fass`,
       `${l.stufe?'':'Noch nicht angemeldet. '}<span class="${l.fassMonate>=5?'rot':''}">Verdirbt in ${rest} ${mon(rest)}.</span>${l.stufe&&abfFl(l)>l.liter?` Mit der Abfüllanlage ${num(abfFl(l))} Flaschen.`:''}${l.stufe&&S.flaschen<abfFl(l)?` <span class="rot">Es fehlen ${num(abfFl(l)-S.flaschen)} leere Flaschen.</span>`:''}`,
       l.stufe?`<button class="klein" data-a="abfuellen" data-id="${l.id}">Abfüllen</button>`:`<button class="klein" data-a="anmelden" data-id="${l.id}">Anmelden</button>`)}),{
-    leer:'Alle Fässer sind leer.',
-    hin:[mf&&`🍷 Dein ${KM} kauft fehlende Flaschen dazu.`,lagerKann(2)&&'🍾 Deine Kellerleute füllen angemeldete Weine beim Weiterblättern ab, sobald genug leere Flaschen da sind.',bonusMasch('abfuell')&&`🍾 Mit der Abfüllanlage kommen ${Math.round(abfPlus()*100)} % mehr Flaschen aus jedem Fass.`],
-    i:`Der Wein bleibt mindestens einen Monat im Fass und höchstens sieben, danach verdirbt er. Abfüllen geht erst nach der Anmeldung im Rathaus. Abgefüllt wird immer das ganze Fass, ein Liter je Flasche. Mit der Abfüllanlage geht nichts daneben, dann kommen ${Math.round(ABF_PLUS*100)} % mehr Flaschen heraus, dafür brauchst du auch so viele leere.${mf?` Dein ${KM} kauft die Flaschen für angemeldete Fässer, anmelden musst du selbst.`:''}${lagerKann(2)?' Deine Kellerleute füllen angemeldete Fässer von selbst ab.':''}`});
+    leer:'Alle Fässer sind leer.', kn:csKnopf('abfuellen')||[],   // seit 14.7.5
+    hin:[mf&&`🍷 Dein ${KM} kauft fehlende Flaschen dazu.`,csBeiMgr()?csZeile('abfuellen'):kellerMacht('abfuellen')?'🍾 Deine Kellerleute füllen angemeldete Weine beim Weiterblättern ab, sobald genug leere Flaschen da sind.':csIst('abfuellen'),bonusMasch('abfuell')&&`🍾 Mit der Abfüllanlage kommen ${Math.round(abfPlus()*100)} % mehr Flaschen aus jedem Fass.`],
+    i:`Der Wein bleibt mindestens einen Monat im Fass und höchstens sieben, danach verdirbt er. Abfüllen geht erst nach der Anmeldung im Rathaus. Abgefüllt wird immer das ganze Fass, ein Liter je Flasche. Mit der Abfüllanlage geht nichts daneben, dann kommen ${Math.round(ABF_PLUS*100)} % mehr Flaschen heraus, dafür brauchst du auch so viele leere.${mf?` Dein ${KM} kauft die Flaschen für angemeldete Fässer, anmelden musst du selbst.`:''}${kellerMacht('abfuellen')?' Deine Kellerleute füllen angemeldete Fässer von selbst ab.':''}`});
   const sektI=`Die ${ROLLEN.sekt.name} macht nur Sekt. Nach der Lese legst du die Trauben noch im selben Monat in den Sektkeller, ohne Grundwein, und ist die Hefezeit um, füllst du ihn ab. Ab dem Kellermeister macht das dein Kellermeister. Er reift ${SEKT_REIFE} Monate, mit ${HEFE_LANG} Monaten auf der Hefe kostet er ${HEFE_LANG_P} % mehr und bekommt bei der Jury ${HEFE_LANG_P} Punkte mehr. Das Hefelager wählst du bei der Lese.`;
   const vorrat=fenster('vorrat','Vorrat',`<div class="kv"><span>Fassraum</span><span>${num(bel)} von ${num(S.fassraum)} l</span></div><div class="kv"><span>Leere Flaschen (1 l)</span><span>${num(S.flaschen)}</span></div>`,
     {buch:'lager',i:'Fassraum und leere Flaschen kaufst du im Lager, beides braucht Kellerleute. Fassraum am besten vor der Lese kaufen, Flaschen vor dem Abfüllen.'});
@@ -1274,7 +1293,7 @@ function vKellerStart(){
     i:`Im Sektkeller gärt dein Wein ein zweites Mal, diesmal in der Flasche. Du kaufst ihn einmal für ${eur(SEKTKELLER_PREIS)}, danach machst du hier Sekt. ${sektI} Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche.`})+vorrat;
   const an=!!S.sektAnlage, ak=!an&&fuR65Zeit();   // 13.5.8: frei ist hier der freie Fassraum, deshalb über fuR65Zeit (Fehler seit 13.5.1)
   // Seit 13.5.8: Sekt-Trauben in den Sektkeller legen und fertigen Sekt abfüllen, von Hand bis Lagerarbeiter Stufe 3.
-  const l3=lagerKann(3), sk=sektKosten();
+  const l3=kellerMacht('sekt'), sk=sektKosten();   // seit 14.7.5 nur auf Automatik
   h+=fenster('sekt','Sektkeller',[...sektTrauben().map(l=>fz(dot(l.sorte)+lotName(l),`${num(l.liter)} Flaschen · frisch gelesen · ${l.hefe||SEKT_REIFE} Monate auf der Hefe gewählt`,
       l3?'Deine Kellerleute legen ihn beim Weiterblättern in den Sektkeller.':`<span class="rot">Muss diesen Monat in den Sektkeller, sonst verdirbt alles.</span> Sektflasche, Korken und Agraffe kosten ${eur(Math.round(l.liter*sk))}.`,
       `<button class="klein" data-a="sektUmlagern" data-id="${l.id}">In den Sektkeller</button>`)),
@@ -1282,10 +1301,10 @@ function vKellerStart(){
       fe?(l3?'Die Hefezeit ist um, deine Kellerleute füllen ihn beim Weiterblättern ab.':'Die Hefezeit ist um, jetzt abfüllen. Erst danach kannst du ihn verkaufen.'):`Noch ${n} ${n===1?'Monat':'Monate'} auf der Hefe.${l3&&n===1?' Deine Kellerleute füllen ihn beim Weiterblättern ab.':''}`,
       ...(fe?[`<button class="klein" data-a="sektAbfuellen" data-id="${l.id}">Abfüllen</button>`]:[]))})],{
     leer:'Gerade liegt kein Sekt auf der Hefe. Neuer Sekt kommt mit der Lese der Sekt-Sorte.',
-    hin:[l3&&'🥂 Deine Kellerleute legen den Sekt in den Sektkeller und füllen ihn ab, wenn die Hefezeit um ist.',an&&`🍾 Mit der ${SEKT_ANLAGE_NAME} kostet jede Flasche nur ${eur2(sektKosten())}.`],
-    stand:sektAnsText(),
+    hin:[csBeiMgr()?csZeile('sekt'):l3?'🥂 Deine Kellerleute legen den Sekt in den Sektkeller und füllen ihn ab, wenn die Hefezeit um ist.':csIst('sekt'),an&&`🍾 Mit der ${SEKT_ANLAGE_NAME} kostet jede Flasche nur ${eur2(sektKosten())}.`],
+    stand:sektAnsText()+(!csBeiMgr()&&l3?csVorwahl():''),   // seit 14.7.5: die Vorwahl der Hefezeit, bis der Weingut-Manager kommt
     links:ak?`Ausbau: ${SEKT_ANLAGE_NAME}, jede Flasche kostet dann die Hälfte.`:'',
-    kn:ak?pk('sektAnlage','Ausbauen',eur(SEKT_ANLAGE_PREIS),{klein:'Anlage',arm:S.geld<SEKT_ANLAGE_PREIS}):null,
+    kn:[ak&&pk('sektAnlage','Ausbauen',eur(SEKT_ANLAGE_PREIS),{klein:'Anlage',arm:S.geld<SEKT_ANLAGE_PREIS}),csKnopf('sekt')].filter(Boolean),
     i:`${sektI} Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche${an?`, dank der ${SEKT_ANLAGE_NAME} nur die Hälfte`:ak?`. Mit der ${SEKT_ANLAGE_NAME} wird nicht mehr von Hand degorgiert und verkorkt, dann kostet jede Flasche die Hälfte`:''}.`});
   return h+vorrat;
 }
@@ -1298,7 +1317,7 @@ function vLager(){
   if(einZu('faesser')&&einZu('flaschen')&&!S.keller&&!kellerFrei(0)) return einKarte('lager','Noch genug Platz',`Hier kaufst du Fässer und Flaschen. Noch reichen ${num(S.fassraum)} l Fassraum und ${num(S.flaschen)} leere Flaschen, vor der Lese schaust du wieder rein.`);
   return fenster('faesser','Fässer',`<div class="kv"><span>Fassraum belegt</span><span>${num(bel)} von ${num(S.fassraum)} l</span></div><div class="bar w"><i style="width:${S.fassraum?bel/S.fassraum*100:0}%"></i></div>
     <div class="kv"><span>Betreut (Kellerleute: ${S.lagerarb})</span><span>bis ${num(fassKap())} l</span></div>`,{
-    hin:[mk&&`🌿 Dein ${KM} kauft fehlenden Fassraum beim Keltern dazu.`],
+    hin:[mk&&`🌿 Dein ${KM} kauft fehlenden Fassraum beim Keltern dazu.`,csChef('fass')],
     links:kf<500?'Für mehr Fassraum brauchst du mehr Kellerleute.':`Möglich sind noch ${num(kf)} l.`,
     kn:pk('kaufFass','Kaufen',eur2(fassPreis()),{klein:'je Liter',arm:kf<500||S.geld<500*fassPreis()}),
     i:`Fassraum brauchst du zum Keltern, kauf ihn am besten vor der Lese. ${ALLEIN_FASS?`${num(ALLEIN_FASS)} l betreust du selbst, jeder Kellermensch ${num(FASS_JE_LAGERARB)} l dazu`:`Ein Kellermensch betreut ${num(FASS_JE_LAGERARB)} l Fassraum`}. Der Preis schwankt jeden Monat.${mk?` Dein ${KM} kauft beim Keltern nur so viel, wie gerade fehlt.${leute}`:''}`})
@@ -1306,7 +1325,7 @@ function vLager(){
   +fenster('flaschen','Flaschen',`<div class="kv"><span>Flaschenplatz belegt</span><span>${num(S.flaschen)} von ${num(flKap())}</span></div><div class="bar w"><i style="width:${flKap()?Math.min(100,S.flaschen/flKap()*100):0}%"></i></div>
     <div class="kv"><span>Betreust du selbst</span><span>${num(ALLEIN_FL)}</span></div>
     <div class="kv"><span>Kellerleute (${S.lagerarb}) betreuen</span><span>+ ${num(flKap()-ALLEIN_FL)}</span></div>`,{
-    hin:[mf&&`🍷 Dein ${KM} kauft fehlende Flaschen beim Abfüllen dazu.`],
+    hin:[mf&&`🍷 Dein ${KM} kauft fehlende Flaschen beim Abfüllen dazu.`,csChef('flaschen')],
     links:kl<100?'Für mehr Flaschen brauchst du mehr Kellerleute.':`Möglich sind noch ${num(kl)} Flaschen.`,
     kn:pk('kaufFlaschen','Kaufen',eur2(flaschePreis()),{klein:'je Flasche',arm:kl<100||S.geld<100*flaschePreis()}),
     i:`Leere Flaschen brauchst du zum Abfüllen, ein Liter je Flasche. Kauf sie am besten vor dem Abfüllen. ${ALLEIN_FL?`${num(ALLEIN_FL)} leere Flaschen betreust du selbst, jeder Kellermensch ${num(FLASCHEN_JE_LAGERARB)} dazu`:`Ein Kellermensch betreut ${num(FLASCHEN_JE_LAGERARB)} leere Flaschen`}, mit der Abfüllanlage im Einsatz ${num(ABF_FLASCHEN)}. Der Preis schwankt jeden Monat.${mf?` Dein ${KM} kauft beim Abfüllen nur so viele, wie gerade fehlen.${leute}`:''}`})
@@ -1540,7 +1559,7 @@ function vStadt(){
       ${ohneGeld('helfer')}
       <div class="kv"><span>Ernteleistung</span><span class="${lei<bed?'rot':''}">${rbn(lei)} von ${rbn(bed)} Reben</span></div>
       <div class="bar"><i style="width:${bed?Math.min(100,lei/bed*100):100}%"></i></div>`,{
-      hin:[aufgabeAktiv('helfer')&&`${MGR_BEREICHE.weingut.sym} Dein ${WM} stellt fehlende Erntehelfer beim Weiterblättern ein.`],
+      hin:[aufgabeAktiv('helfer')&&`${MGR_BEREICHE.weingut.sym} Dein ${WM} stellt fehlende Erntehelfer beim Weiterblättern ein.`,csChef('leute')],
       kn:lohnKnoepfe('helfer'),
       i:`${helferRegel()}. Eine Erntemaschine im Einsatz deckt ${MASCH_HELFER} Hektar ab, ein Vollernter ${VOLL_HELFER}. Das gilt nur mit Fahrern: Die Erntemaschine braucht ${MASCH.klein.fahrer}, der Vollernter ${MASCH.gross.fahrer}, gefahren wird von deinen Erntehelfern. Düngerstreuer und Laubschneider brauchen je ${MASCH.duenger.fahrer}, sie bekommen ihre Fahrer erst nach den Erntemaschinen. Trauben mit Edelfäulnis liest man von Hand, dafür brauchst du je ${rbn(HAND_REBEN)} Reben des Felds einen Erntehelfer${ALLEIN_HA?`, die ersten ${rbn(alleinReben())} liest deine Familie`:''}, sonst liest die Maschine und es gibt höchstens Qualitätswein. Pflanzen kannst du nur so viel, wie deine Leute schaffen. Bei der Lese leistet eine abgenutzte Maschine weniger. ${amtI}${aufgabeAktiv('helfer')?` Dein ${WM} stellt zum Angebot des Monats ein, entlassen musst du selbst. Nur die Helfer für die Handlese schickt er nach der Lese wieder heim.`:''}`});
     h+=fenster('lagerarb','Kellerleute',`${lohnTeil('lagerarb')}
@@ -1548,7 +1567,7 @@ function vStadt(){
       <div class="kv"><span>Fassraum</span><span>${num(S.fassraum)} l, betreut bis ${num(fassKap())} l</span></div>
       <div class="kv"><span>Leere Flaschen</span><span>${num(S.flaschen)}, betreut bis ${num(flKap())}</span></div>
       ${ohneGeld('lagerarb')}`,{
-      hin:[aufgabeAktiv('lager')&&`${MGR_BEREICHE.weingut.sym} Dein ${KM} stellt fehlende Kellerleute beim Weiterblättern ein.`],
+      hin:[aufgabeAktiv('lager')&&`${MGR_BEREICHE.weingut.sym} Dein ${KM} stellt fehlende Kellerleute beim Weiterblättern ein.`,csChef('leute')],
       kn:lohnKnoepfe('lagerarb'),
       i:`${lagerRegel()}, mit der Abfüllanlage im Einsatz ${num(ABF_FLASCHEN)} Flaschen. Einer deiner Kellerleute bedient sie. Mehr Fassraum oder Flaschen kaufen kannst du erst mit mehr Leuten. ${amtI}${aufgabeAktiv('lager')?` Dein ${KM} stellt zum Angebot des Monats ein, entlassen musst du selbst.`:''}`});
     // Seit 12.6.4 (Entscheidung 4): Solange die Familie alles schafft, steht hier nur eine Karte.
@@ -2360,6 +2379,10 @@ const AKT={
     if(!['laub','ausd'].includes(d.art)||(w==='auto'&&!planAutoKann(d.art))) return;
     const y=window.scrollY, sh=einsatzAuf(); (f.plan=f.plan||{})[d.art]=w; save(); render(); window.scrollTo(0,y); if(sh) openSheet(einsatzSheet())},
   einsatz(){if(!planBeiMgr()) return; MGR_OFFEN=null; openSheet(einsatzSheet())},
+  // Seit 14.7.5: Chefsache je Arbeit (w 'chef' oder 'auto') und die Vorwahl der Hefezeit. Automatik nur, wenn die Stufe sie kann (csKann).
+  csSetz(d){if(!CS_ARBEIT.includes(d.id)||(d.w==='auto'&&!csKann(d.id))) return; csSetzen(d.id,d.w==='auto'?'auto':'chef');
+    save(); const y=window.scrollY; render(); window.scrollTo(0,y); if(MGR_OFFEN&&$('#sheet').classList.contains('an')) openSheet(mgrFenster(MGR_OFFEN))},
+  sektWahl(d){S.sektWahl=+d.h===HEFE_LANG?HEFE_LANG:SEKT_REIFE; save(); const y=window.scrollY; render(); window.scrollTo(0,y); if(MGR_OFFEN&&$('#sheet').classList.contains('an')) openSheet(mgrFenster(MGR_OFFEN))},
   // Seit 14.2.4: Wahl der Erziehungsform beim ersten Pflanzen, als halbhohes Fenster. Seit 14.5.3 (Annahme 11) je Spielstufe: In den Lehrjahren ist die
   // empfohlene Form vorausgewählt (d.sel, änderbar), der alte Winzer nennt Empfehlung, Wahl fürs Leben und Maschinen-Regel. In den Gesellenjahren nennt das
   // Fenster Wahl fürs Leben und Maschinen-Regel mit dem Rat, ohne Vorauswahl. In der Meisterprüfung nur die Steckbriefe, beides steht im Weinkompendium.
@@ -2436,8 +2459,9 @@ const AKT={
     // Seit 13.3.3: Die Sekt-Sorte wählt nur das Hefelager, gelesen wird alles.
     if(sektSorte(d.id)){
       const l=feldLiter(f,'alles'), k=Math.round(l*sektKosten());
-      const opt=[[SEKT_REIFE,`${SEKT_REIFE} Monate reifen`],[HEFE_LANG,`${HEFE_LANG} Monate auf der Hefe`]].map(([h,t])=>`<button class="wahl" data-a="sektLeseJa" data-id="${d.id}" data-h="${h}" ${l<=0||!S.sektkeller?'disabled':''}><b>${t}</b><br><span class="mut">${num(l)} Flaschen Sekt${h>SEKT_REIFE?` · +${HEFE_LANG_P} % Preis und Jury-Punkte`:''} · verkaufsreif ${inMonaten(h)}</span></button>`).join('');
-      return openSheet(`${sbild('sektkeller')}<h3>${so.name} lesen</h3><p class="mut">Die ${ROLLEN.sekt.name} macht nur Sekt. Nach der Lese legst du die Trauben noch diesen Monat in den Sektkeller${lagerKann(3)?', das machen deine Kellerleute':''}. Sektflasche, Korken und Agraffe kosten dann ${eur(k)}. Hier wählst du nur, wie lange er auf der Hefe liegt.</p>${S.sektkeller?'':'<p class="rot">Ohne Sektkeller gibt es keinen Sekt.</p>'}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0%. Den Rest liest keiner, er ist verloren.</p>`:''}${opt}${mib('lese')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
+      // Seit 14.7.5: Macht der Kellermeister den Sekt (Automatik), gilt die Vorwahl des Spielers, dann steht nur sie hier (Annahme 14).
+      const vw=kellerMacht('sekt'), opt=[[SEKT_REIFE,`${SEKT_REIFE} Monate reifen`],[HEFE_LANG,`${HEFE_LANG} Monate auf der Hefe`]].filter(([h])=>!vw||h===sektVorwahl()).map(([h,t])=>`<button class="wahl" data-a="sektLeseJa" data-id="${d.id}" data-h="${h}" ${l<=0||!S.sektkeller?'disabled':''}><b>${t}</b><br><span class="mut">${num(l)} Flaschen Sekt${h>SEKT_REIFE?` · +${HEFE_LANG_P} % Preis und Jury-Punkte`:''} · verkaufsreif ${inMonaten(h)}</span></button>`).join('');
+      return openSheet(`${sbild('sektkeller')}<h3>${so.name} lesen</h3><p class="mut">Die ${ROLLEN.sekt.name} macht nur Sekt. Nach der Lese legst du die Trauben noch diesen Monat in den Sektkeller${kellerMacht('sekt')?', das machen deine Kellerleute':''}. Sektflasche, Korken und Agraffe kosten dann ${eur(k)}. ${vw?CHEFSACHE_TEXT.lese.replace('{wo}',CHEFSACHE_TEXT[csBeiMgr()?'woMgr':'woKeller']):'Hier wählst du nur, wie lange er auf der Hefe liegt.'}</p>${S.sektkeller?'':'<p class="rot">Ohne Sektkeller gibt es keinen Sekt.</p>'}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0%. Den Rest liest keiner, er ist verloren.</p>`:''}${opt}${mib('lese')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
     }
     const opt=['reif','ueber','alles'].map(la=>{const b=besteStufe(feldQ(f,la)),l=feldLiter(f,la);
       return `<button class="wahl" data-a="leseFrage" data-id="${d.id}" data-la="${la}" ${l<=0?'disabled':''}><b>${LESE[la]}</b><br><span class="mut">${num(l)}\u00a0l mit ${feldQ(f,la).oe}° Öchsle · reicht für: ${b?stufeText(b,feldQ(f,la).oe):'nichts'}${b?`<br>💶 Wert rund ${eur(leseWert(d.id,la,b,l))}<br>${verkaufAb(d.id,b)}`:''}</span></button>`}).join('');
@@ -2451,7 +2475,7 @@ const AKT={
   // Eine Lese je Feld und Jahr: Die Leseart nimmt das ganze Feld. Alte Spielstände mit angefangener Teil-Lese lesen so den Rest.
   // Version 4.4: danach im Weinberg bleiben und neu zeichnen, damit der Lesen-Knopf sofort verschwindet.
   sektLeseJa(d){const f=S.felder[d.id]; closeSheet(); if(!sektSorte(d.id)||feldLiter(f,'alles')<=0) return; const t=TAB,s=SUB,y=window.scrollY, l=lese(d.id,'alles',1,+d.h); TAB=t; SUB=s; save(); render(); window.scrollTo(0,y);
-    if(l) meldung('Sekt-Trauben im Keller',`${num(l.liter)} Flaschen ${lotName(l)} warten im Keller. ${lagerKann(3)?'Deine Kellerleute legen sie beim Weiterblättern in den Sektkeller.':'Leg sie noch diesen Monat im Keller in den Sektkeller, sonst verderben sie.'} Nach ${lager(l).min} Monaten auf der Hefe wird abgefüllt.`,'sektkeller')},
+    if(l) meldung('Sekt-Trauben im Keller',`${num(l.liter)} Flaschen ${lotName(l)} warten im Keller. ${kellerMacht('sekt')?'Deine Kellerleute legen sie beim Weiterblättern in den Sektkeller.':'Leg sie noch diesen Monat im Keller in den Sektkeller, sonst verderben sie.'} Nach ${lager(l).min} Monaten auf der Hefe wird abgefüllt.`,'sektkeller')},
   // Seit 13.5.8: die zwei Handgriffe beim Sekt, bis Lagerarbeiter Stufe 3.
   sektUmlagern(d){const l=lot(d.id); if(!sektUmlagern(l)) return; save(); render(); meldung('Sekt auf der Hefe',`${num(l.liter)} Flaschen ${lotName(l)} liegen jetzt im Sektkeller, abfüllen kannst du ${inMonaten(lager(l).min)}.${l.ans?` +${l.ans} Ansehen für den ersten Sekt des Jahres.`:''}`,'sektkeller')},
   sektAbfuellen(d){const l=lot(d.id); if(!l||!sektFertig(l)) return; sektAbfuellen(l); save(); render()},
