@@ -926,7 +926,7 @@ function wbBetriebKarte(){
   const G=steckbrief(S.region,{fen:1}), ga=FI_AUF.has('gebiet+');
   const geb=`<div class="wbgebiet"><div class="wbkv"><b>${T.gebiet}</b></div><div class="gkopf"><img class="gs" src="bilder/gebiet-${S.region}.webp" alt=""><div class="kv"><span>${G.name}</span><span>${G.art}</span></div></div>
     <div class="sb fklapp"${ga?'':' hidden'}>${G.rumpf}</div><div class="wbkn"><button class="klein sec" data-a="klapp" data-id="gebiet" data-auf="${T.zuklappen}" data-zu="${T.zeigen}">${ga?T.zuklappen:T.zeigen}</button></div></div>`;
-  return wbKarte('betrieb',esc(S.name),wbT(T.klein,{gebiet:R().name}),kopf,`<dl class="wbfakt">${L.join('')}</dl>`+geb,{bild:wgBild(wgStufe(),JZ[S.monat]),iId:'betrieb',iName:S.name,unter});
+  return wbKarte('betrieb',esc(S.name),wbT(T.klein,{gebiet:R().name}),kopf,`<dl class="wbfakt">${L.join('')}</dl>`+(einZu('gebiet')?'':geb),{bild:wgBild(wgStufe(),JZ[S.monat]),iId:'betrieb',iName:S.name,unter});
 }
 // Info-Panel der Karte "Dein Betrieb": Zustand, Kosten und als Tipps die i-Texte der alten Fenster "Dein Betrieb" und "Dein Gebiet".
 function wbPanelBetrieb(){
@@ -1024,16 +1024,19 @@ function mgrAmt(){
 }
 // Schalter je Aufgabe der erreichten Stufen, darunter die noch fehlenden Stufen und die Auswahl für Reserve und Geldgrenze.
 // Steht seit 7.5 im Fenster des Managers im Betrieb und im Fenster von unten, beide zeigen dasselbe.
+// Seit 16.4.5 (Maiks Entscheidung 3): in Abschnitten. Beim Weingut-Manager Aufgaben (mit seiner Geldgrenze), Einsatzplan direkt (planSetz wie im eigenen Fenster)
+// und Chefsache, bei der Handels-Managerin Aufgaben und Verkauf (Grenze, Reserve, Geldgrenze fürs Fest). Bis 16.4.4 stand der Einsatzplan hinter einem Knopf.
 function mgrSchalter(b){
-  const st=mgrSt(b), E=MANAGER.filter(e=>e.bereich===b), G=mgrG(b);
+  const st=mgrSt(b), E=MANAGER.filter(e=>e.bereich===b), G=mgrG(b), T=WB_TEXT.mgr, ab=(titel,h)=>h?`<section class="mgrab"><h4>${titel}</h4>${h}</section>`:'';
   const teil=e=>e.stufe>st?`<div class="mut" style="margin:0 0 8px">${mgrStufenText(e,st)}</div>`
     :mgrAufg(e).filter(k=>!CS_AUFG[k]).map(k=>{const an=aufgabeAktiv(k); return `<button class="wahl schalter ${an?'an':''}" data-a="mgrAn" data-id="${k}">${an?'✅':'⬜'} ${k==='laeden'||k==='handel'?'📋 ':''}${MGR_AUFGABEN[k].text}</button>`}).join('');
-  return E.map(teil).join('')
-    +(b==='weingut'&&aufgabeAktiv('plan')?`<div class="mitte" style="margin:2px 0 8px"><button class="klein" data-a="einsatz">📋 Einsatzplan öffnen</button></div>`:'') // seit 14.7.4
-    +(b==='weingut'&&st?`<div style="margin-top:8px"><b>${CHEFSACHE_TEXT.titel}</b></div><div class="mut">${CHEFSACHE_TEXT.kopf}</div>${csInhalt()}`:'') // seit 14.7.5
-    +(b==='handel'&&st?`<div class="mut" style="margin:8px 0 6px">${verkaufText('grenze')}</div>`:'') // seit 14.7.6, Annahme 24
-    +(b==='handel'&&(aufgabeAktiv('laeden')||aufgabeAktiv('handel')||aufgabeAktiv('regal'))?`<div class="mut" style="margin:8px 0 6px">Je Wein bleiben im Keller, außer kurz vorm Verderben:</div>${reserveChips()}`:'')
-    +(b==='handel'&&aufgabeAktiv('fest')||b==='weingut'&&mgrPufferFuer().length?`<div class="mut" style="margin:8px 0 6px">${b==='weingut'?'Für '+wortListe(mgrPufferFuer()):'Für das Fest'} gibt ${G.er} nur so viel aus, dass mindestens das auf dem Konto bleibt:</div>${pufferChips(b)}`:'');
+  const puffer=(b==='handel'&&aufgabeAktiv('fest')||b==='weingut'&&mgrPufferFuer().length)?`<div class="mut" style="margin:8px 0 6px">${b==='weingut'?'Für '+wortListe(mgrPufferFuer()):'Für das Fest'} gibt ${G.er} nur so viel aus, dass mindestens das auf dem Konto bleibt:</div>${pufferChips(b)}`:'';
+  if(b==='weingut') return ab(T.aufgaben,E.map(teil).join('')+puffer)
+    +(aufgabeAktiv('plan')?ab(T.einsatz,`<p class="mut">${EINSATZ_TEXT.kopf}</p>${einsatzInhalt()}`):'')   // seit 14.7.4, seit 16.4.5 direkt im Fenster
+    +(st?ab(CHEFSACHE_TEXT.titel,`<div class="mut">${CHEFSACHE_TEXT.kopf}</div>${csInhalt()}`):'');   // seit 14.7.5
+  return ab(T.aufgaben,E.map(teil).join(''))
+    +ab(T.verkauf,(st?`<div class="mut" style="margin:0 0 6px">${verkaufText('grenze')}</div>`:'')   // seit 14.7.6, Annahme 24
+      +(aufgabeAktiv('laeden')||aufgabeAktiv('handel')||aufgabeAktiv('regal')?`<div class="mut" style="margin:8px 0 6px">${T.reserve}</div>${reserveChips()}`:'')+puffer);
 }
 // Seit 14.7.2 (Annahme 5): wofür der Weingut-Manager seine Geldgrenze nimmt. Platzhalter, Wortlaut in Meilenstein 17.
 function mgrPufferFuer(){return [(aufgabeAktiv('fass')||aufgabeAktiv('flaschen'))&&'Fassraum und Flaschen',(aufgabeAktiv('helfer')||aufgabeAktiv('lager'))&&'das Einstellen'].filter(Boolean)}
@@ -1050,14 +1053,17 @@ function mgrFenster(b){
   const vor=!neu?'':(neu.von?`<p><b>${G.Dein} ${M.name} ist mit dir aufgestiegen und jetzt auf Stufe ${st}.</b> ${was.length?`Neu dazu: ${was.join(', ')}. `:''}${G.Er} bekommt jetzt ${lohn} im Monat.</p>`
     :`<p><b>${G.Dein} ${M.name} stellt sich vor.</b> Mit deinem Rang gehört ${G.er} ab jetzt fest zu deinem Weingut${was.length?` und übernimmt: ${was.join(', ')}`:''}. ${G.Er} bekommt ${lohn} im Monat.</p>`)
     +`<p class="mut">Alles Neue ist eingeschaltet. Was du lieber selbst machst, schaltest du hier oder später im Betrieb ab, der Lohn läuft trotzdem weiter.</p>`;
-  return `${M.bild?`<div class="mgrportraet" style="background-image:url(bilder/${M.bild})"></div>`:''}<h3>${M.sym} ${st?G.Dein+' '+M.name:M.name}</h3>
+  return `<div class="mgrfen">${M.bild?`<div class="mgrportraet" style="background-image:url(bilder/${M.bild})"></div>`:''}<h3>${M.sym} ${st?G.Dein+' '+M.name:M.name}</h3>
   ${vor}<div class="mut" style="margin-bottom:8px">${st?`Stufe ${st} von ${E.length}. ${G.Er} erledigt beim Weiterblättern, was du hier einschaltest, und berichtet im Winzerboten. Einkäufe zahlt ${G.er} aus deiner Kasse.`:`${G.Er} kommt mit dem Rang ${RAENGE[E[0].rang].name} von selbst.`}</div>
   ${st?`<div class="kv"><span>Lohn im Monat</span><span>${lohn}</span></div>`:''}
   ${m.zuletzt?`<div class="kv"><span>Zuletzt</span><span>${esc(m.zuletzt)}</span></div>`:''}
   ${mgrSchalter(b)}
   ${n&&st&&!neu?`<div class="mut" style="margin:8px 0">Stufe ${n.stufe} kommt ${freiText(mgrK(n))}.</div>`:''}${st&&!neu?mgrLogHtml(b):''}${mib('manager')}
-  ${neu?`<div class="mitte"><button class="siegel" data-a="mgrDa">Okay</button></div>`:`<div class="btns"><button class="sec" data-a="close">Zurück</button></div>`}`;
+  ${neu?`<div class="mitte"><button class="siegel" data-a="mgrDa">Okay</button></div>`:`<div class="btns"><button class="sec" data-a="close">Zurück</button></div>`}</div>`;
 }
+// Seit 16.4.5: Nach einem Schalter im Fenster eines Kopfs das Fenster neu zeichnen und den Scrollstand halten, nur wenn es gerade offen ist (bis 16.4.4 reichte MGR_OFFEN).
+const mgrAuf=()=>!!MGR_OFFEN&&$('#sheet').classList.contains('an')&&!!$('#sheet .mgrfen');
+function mgrWieder(){if(!mgrAuf()) return; const d=$('#sheet>div'), y=d?d.scrollTop:0; openSheet(mgrFenster(MGR_OFFEN)); const n=$('#sheet>div'); if(n) n.scrollTop=y}
 // Stellt den nächsten Manager aus S.mgrNeu vor, sobald Zeitung und Feier vorbei sind und kein Fenster offen ist. Läuft am Ende von render.
 function mgrVorstellen(){
   if(!S||window.BOT||S.ende||!S.mgrNeu||!S.mgrNeu.length||S.feier||!SUBS[TAB]||$('#sheet').classList.contains('an')) return;
@@ -1239,11 +1245,12 @@ const formSteck=(id,fm)=>{const F=FORMEN[fm]; return `${Math.round(F.menge*100)}
 function einsatzInhalt(){
   const T=EINSATZ_TEXT, chip=(id,art,w,an)=>`<button class="chip ${an?'an':''}" data-a="planSetz" data-id="${id}" data-art="${art}" data-w="${w}">${T[w]}</button>`, wahl=(id,art,a)=>`<div class="chips">${chip(id,art,'chef',a==='chef')}${chip(id,art,'auto',a==='auto')}</div>`;
   return chefKandidaten().map(id=>{const sa=helferSchneidet(id)?'auto':'chef', frei_=helferKann(1)&&!chefStill();
-    let z=`<div style="margin-top:8px"><b>${dot(id)}${esc(SORTEN[id].name)}</b></div><div class="kv"><span>${T.schnitt}</span><span>${!helferKann(1)?`${T.chef}. ${T.ohneLeute}`:chefStill()?`${T[sa]}. ${T.still}`:''}</span></div>`;
+    // Seit 16.4.5 ohne Wertezeilen wie die Chefsache: Name der Arbeit, darunter die Wahl oder grau, warum es keine gibt.
+    let z=`<div style="margin-top:8px"><b>${dot(id)}${esc(SORTEN[id].name)}</b></div><div class="csz"><span>${T.schnitt}</span>${!helferKann(1)?`<div class="mut">${T.chef}. ${T.ohneLeute}</div>`:chefStill()?`<div class="mut">${T[sa]}. ${T.still}</div>`:''}</div>`;
     if(frei_) z+=wahl(id,'schnitt',sa);
     if(chefRat()===id&&helferSchneidet(id)) z+=`<div class="mut">👴 ${CHEF_RAT_SATZ.replace('{sorte}',SORTEN[id].name)}</div>`;
     for(const [art,da,ab] of [['laub',frei('laub_hand'),T.abLaub],['ausd',ausdFrei(),T.abAusd]]) if(da){
-      z+=`<div class="kv"><span>${T[art]}</span><span>${planAutoKann(art)?'':`${T.chef}, ${ab}`}</span></div>`; if(planAutoKann(art)) z+=wahl(id,art,planArt(id,art))}
+      z+=`<div class="csz"><span>${T[art]}</span>${planAutoKann(art)?'':`<div class="mut">${T.chef}, ${ab}</div>`}</div>`; if(planAutoKann(art)) z+=wahl(id,art,planArt(id,art))}
     return z}).join('')||'<div class="fleer">Noch kein Weinberg mit Reben.</div>';
 }
 const einsatzSheet=()=>`<div class="einsatzSh"><h3>📋 Einsatzplan</h3><p class="mut">${EINSATZ_TEXT.kopf}</p>${einsatzInhalt()}<div class="btns"><button class="sec" data-a="close">Zurück</button></div></div>`;
@@ -1257,7 +1264,8 @@ function csInhalt(){
   const T=CHEFSACHE_TEXT, E=EINSATZ_TEXT, chip=(k,w,an)=>`<button class="chip ${an?'an':''}" data-a="csSetz" data-id="${k}" data-w="${w}">${E[w]}</button>`;
   return CS_ARBEIT.filter(k=>k!=='sekt'||sektRang()).map(k=>{const ok=csKann(k), c=chefsache(k);
     const ab=CS_STUFE[k]?T.ab.replace('{wer}',leuteStName('lagerarb',CS_STUFE[k])):T.abStufe.replace('{n}',mgrAufgabe(k==='leute'?'helfer':k).stufe);
-    return `<div class="kv"><span>${T[k]}</span><span>${ok?'':`${E.chef}, ${ab}`}</span></div>`+(ok?`<div class="chips">${chip(k,'chef',c)}${chip(k,'auto',!c)}</div>`:'')+(k==='sekt'&&ok&&!c?csVorwahl():'')}).join('');
+    // Seit 16.4.5 ohne Wertezeile (sie brach um, gefunden in 16.2.5): Name der Arbeit, darunter die Wahl oder grau, ab wann es Automatik gibt.
+    return `<div class="csz"><b>${T[k]}</b>`+(ok?`<div class="chips">${chip(k,'chef',c)}${chip(k,'auto',!c)}</div>`:`<div class="mut">${E.chef}, ${ab}</div>`)+(k==='sekt'&&ok&&!c?csVorwahl():'')+'</div>'}).join('');
 }
 const csZeile=k=>csBeiMgr()&&csKann(k)?(chefsache(k)?CHEFSACHE_ZEILE.chef:CHEFSACHE_ZEILE[k].replace('{wer}','deine '+leuteStName('lagerarb',CS_STUFE[k]||1))):'';
 const csChef=k=>csBeiMgr()&&csKann(k)&&chefsache(k)?CHEFSACHE_ZEILE.chef:'';
@@ -2528,15 +2536,15 @@ const AKT={
     const e=mgrAufgabe(d.id); if(!e||!aufgabeDa(d.id)) return;
     const m=S.manager[e.bereich]; m.an=m.an||{}; m.an[d.id]=m.an[d.id]?0:1;
     save(); const y=window.scrollY; render(); window.scrollTo(0,y);
-    if(MGR_OFFEN&&$('#sheet').classList.contains('an')) openSheet(mgrFenster(MGR_OFFEN));
+    mgrWieder();
   },
   mgrPuffer(d){
     const m=(S.manager||{})[d.b]; if(!m) return; m.puffer=+d.id; save(); const y=window.scrollY; render(); window.scrollTo(0,y);
-    if(MGR_OFFEN&&$('#sheet').classList.contains('an')) openSheet(mgrFenster(MGR_OFFEN));
+    mgrWieder();
   },
   dauerRes(d){
     S.dauer=S.dauer||{}; S.dauer.reserve=+d.id; save(); const y=window.scrollY; render(); window.scrollTo(0,y);
-    if(MGR_OFFEN&&$('#sheet').classList.contains('an')) openSheet(mgrFenster(MGR_OFFEN));
+    mgrWieder();
   },
   makler(){
     const g=maklerGrund(); if(g) return meldung('Der Makler hat nichts für dich',g);
@@ -2613,18 +2621,18 @@ const AKT={
   schneider(d){const f=S.felder[d.id]; if(!f||!helferKann(1)||chefStill()) return; const y=window.scrollY, sh=einsatzAuf();
     if(f.schneider==='helfer'){const weg=chefZuteilen(d.id), voll=chefSchnitte()>=CHEF_SCHNITT_MAX&&schnittOffen(d.id); save(); render(); window.scrollTo(0,y);
       if(weg.length||voll) meldung('Neuer Chef-Weinberg',`${weg.length?EINSATZ_TEXT.weg.replace('{sorte}',`Den ${weg.map(x=>SORTEN[x].name).join(' und ')}`).replace('{wer}',leuteStName('helfer',leuteSt('helfer')))+' ':''}${EINSATZ_TEXT.neuChef.replace('{sorte}',SORTEN[d.id].name)}${voll?' Schneiden kannst du ihn erst im nächsten Winter, diesen hast du schon geschnitten.':''}`);
-      else if(sh) openSheet(einsatzSheet()); return}
-    f.schneider='helfer'; save(); render(); window.scrollTo(0,y); if(sh) openSheet(einsatzSheet())},
+      else if(sh) openSheet(einsatzSheet()); else mgrWieder(); return}
+    f.schneider='helfer'; save(); render(); window.scrollTo(0,y); if(sh) openSheet(einsatzSheet()); else mgrWieder()},
   // Seit 14.7.4: Schalter des Einsatzplans (art 'schnitt', 'laub' oder 'ausd', w 'chef' oder 'auto'). Automatik nur, wenn die Stufe der Leute die Arbeit kann.
   planSetz(d){const f=S.felder[d.id]; if(!f||!f.reben) return; const w=d.w==='auto'?'auto':'chef';
     if(d.art==='schnitt'){if((w==='auto')!==helferSchneidet(d.id)) AKT.schneider({id:d.id}); return}
     if(!['laub','ausd'].includes(d.art)||(w==='auto'&&!planAutoKann(d.art))) return;
-    const y=window.scrollY, sh=einsatzAuf(); (f.plan=f.plan||{})[d.art]=w; save(); render(); window.scrollTo(0,y); if(sh) openSheet(einsatzSheet())},
+    const y=window.scrollY, sh=einsatzAuf(); (f.plan=f.plan||{})[d.art]=w; save(); render(); window.scrollTo(0,y); if(sh) openSheet(einsatzSheet()); else mgrWieder()},
   einsatz(){if(!planBeiMgr()) return; MGR_OFFEN=null; openSheet(einsatzSheet())},
   // Seit 14.7.5: Chefsache je Arbeit (w 'chef' oder 'auto') und die Vorwahl der Hefezeit. Automatik nur, wenn die Stufe sie kann (csKann).
   csSetz(d){if(!CS_ARBEIT.includes(d.id)||(d.w==='auto'&&!csKann(d.id))) return; csSetzen(d.id,d.w==='auto'?'auto':'chef');
-    save(); const y=window.scrollY; render(); window.scrollTo(0,y); if(MGR_OFFEN&&$('#sheet').classList.contains('an')) openSheet(mgrFenster(MGR_OFFEN))},
-  sektWahl(d){S.sektWahl=+d.h===HEFE_LANG?HEFE_LANG:SEKT_REIFE; save(); const y=window.scrollY; render(); window.scrollTo(0,y); if(MGR_OFFEN&&$('#sheet').classList.contains('an')) openSheet(mgrFenster(MGR_OFFEN))},
+    save(); const y=window.scrollY; render(); window.scrollTo(0,y); mgrWieder()},
+  sektWahl(d){S.sektWahl=+d.h===HEFE_LANG?HEFE_LANG:SEKT_REIFE; save(); const y=window.scrollY; render(); window.scrollTo(0,y); mgrWieder()},
   // Seit 14.2.4: Wahl der Erziehungsform beim ersten Pflanzen, als halbhohes Fenster. Seit 14.5.3 (Annahme 11) je Spielstufe: In den Lehrjahren ist die
   // empfohlene Form vorausgewählt (d.sel, änderbar), der alte Winzer nennt Empfehlung, Wahl fürs Leben und Maschinen-Regel. In den Gesellenjahren nennt das
   // Fenster Wahl fürs Leben und Maschinen-Regel mit dem Rat, ohne Vorauswahl. In der Meisterprüfung nur die Steckbriefe, beides steht im Weinkompendium.

@@ -1772,4 +1772,6 @@ const WB_TEXT={
   leute:{titel:'Deine Leute', klein:'Köpfe und Leute im Betrieb', hin:{fehlen:'Leute fehlen', leistung:'Ernteleistung reicht nicht', fertig:'Alle an Bord'},
     stufe:'Stufe {st} von {n}', lohn:'{lohn} im Monat', kommt:'kommt mit dem nächsten Monat', keiner:'Noch keiner angestellt', fehlt1:'Es fehlt einer', fehltN:'Es fehlen {n}',
     reichen:'Reichen für {n} Reben', leistung:'Ernteleistung {n} Reben', draussen:'Draußen', drinnen:'Drinnen', angestellt:'Angestellt', stufeL:'Stufe', lohnL:'Lohn im Monat',
-    sperre:'vorher geht es nicht in den nächsten Monat', koepfe:'Köpfe', loehne:'Löhne der Leute', mgrLohn:'Löhne der Köpfe'}};
+    sperre:'vorher geht es nicht in den nächsten Monat', koepfe:'Köpfe', loehne:'Löhne der Leute', mgrLohn:'Löhne der Köpfe'},
+  // Seit 16.4.5 (Maiks Entscheidung 3): Abschnitte im Fenster der zwei Köpfe. Platzhalter, Wortlaut in Meilenstein 17.
+  mgr:{aufgaben:'Aufgaben', einsatz:'📋 Einsatzplan', verkauf:'Verkauf', reserve:'Je Wein bleiben im Keller, außer kurz vorm Verderben:'}};
