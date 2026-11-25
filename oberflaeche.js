@@ -1644,7 +1644,8 @@ function zWehen(){
   const o=document.createElement('div'); o.className='zrolle oben'; o.addEventListener('click',()=>zGleite(el,0,900)); el.appendChild(o);
   z.addEventListener('click',e=>{if(e.target.closest('button'))return; if(z.getBoundingClientRect().bottom<innerHeight*.25) zGleite(el,0,900)});
 }
-if(typeof FUEHRER!=='undefined') for(const id in FUEHRER){const x=fuRang(id); if(x) FU_WANN[id]=()=>{const rm=(S.fu.rm||{})[x.r]; return rm!=null&&S.rang>=x.r&&monatNr()>=rm+Math.ceil(fuPlatz(id))-1&&(!FU_BEFOERD[id]||mgrSt(FUEHRER[id].s)>=1)}}
+// Seit 14.7.7: Blasen mit eigenem Auslöser (FU_EIGEN) behalten ihn, auch wenn ihre Kennung nach einem Rang aussieht.
+if(typeof FUEHRER!=='undefined') for(const id in FUEHRER){const x=fuRang(id); if(x&&!FU_EIGEN[id]) FU_WANN[id]=()=>{const rm=(S.fu.rm||{})[x.r]; return rm!=null&&S.rang>=x.r&&monatNr()>=rm+Math.ceil(fuPlatz(id))-1&&(!FU_BEFOERD[id]||mgrSt(FUEHRER[id].s)>=1)}}
 function fuLandZuViel(){
   const a=S.auktion; if(!a||a.phase===0||a.ende||S.rang<R_AUKTION) return false;
   const p=Math.min(...R().sorten.filter(sorteFrei).map(rebenPreis));
@@ -1723,7 +1724,7 @@ const FU_ZEIG={
   'r4-2':{tab:'stadt',sub:'handel',sel:[fiSel('markt')]},
   'r4-3':{tab:'keller',sub:'start',sel:[fiSel('sekt')]},
   'r4-4':{tab:'gut',sub:'maschinen',sel:[fiSel('kauf_duenger')]},
-  'r5-1':{tab:'stadt',sub:'arbeit',sel:[fiSel('mgr_amt')]},
+  'r5-1':{tab:'stadt',sub:'arbeit',sel:[fiSel('lagerarb')]},   // seit 14.7.7 die Kellerleute, wie r7-3 und r10-3
   'r5-2':{tab:'stadt',sub:'amt',sel:[fiSel('wettb')]},
   'r5-3':{tab:'gut',sub:'betrieb',sel:[fiSel('fest')]},
   'r5-4':{tab:'gut',sub:'maschinen',sel:[fiSel('kauf_klein')]},
@@ -1734,7 +1735,7 @@ const FU_ZEIG={
   'r6-5':{tab:'keller',sub:'start',sel:['[data-a="sektAnlage"]',fiSel('sekt')]},
   'r7-1':{tab:'stadt',sub:'amt',sel:[fiSel('wettb')]},
   'r7-2':{tab:'gut',sub:'maschinen',sel:[fiSel('kauf_gross')]},
-  'r7-3':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="keller"]',fiSel('mgr_amt')]},
+  'r7-3':{tab:'stadt',sub:'arbeit',sel:[fiSel('lagerarb')]},
   'r8-1':{tab:'stadt',sub:'laeden',sel:[fiSel('regalRein'),fiSel('regal')]},
   'r8-2':{tab:'gut',sub:'maschinen',sel:[fiSel('kauf_abfuell')]},
   'r8-3':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="weingut"]',fiSel('mgr_amt')]},
@@ -1754,7 +1755,11 @@ const FU_ZEIG={
   'm6':{tab:'keller',sub:'buch',archiv:'brett',sel:['.album',fiSel('brett')]},
   'p2':{tab:'stadt',sub:'amt',sel:[fiSel('verband')]},
   'r10-2':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="weingut"]',fiSel('mgr_amt')]},
-  'r10-3':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="keller"]',fiSel('mgr_amt')]},
+  'r10-3':{tab:'stadt',sub:'arbeit',sel:[fiSel('lagerarb')]},
+  // Seit 14.7.7: die Figur draußen und Einsatzplan und Chefsache beim Weingut-Manager.
+  'l1':{tab:'stadt',sub:'arbeit',sel:[fiSel('helfer')]},
+  'l4':{tab:'gut',sub:'betrieb',sel:[fiSel('p_weingut')]},
+  'l5':{tab:'gut',sub:'betrieb',sel:[fiSel('p_weingut')]},
   // Warnungen: sel darf eine Funktion sein, dann leuchtet genau das betroffene Fass.
   'w1':{tab:'stadt',sub:'amt',sel:()=>{const l=S.lots.find(fuKabFrueh); return [l?`[data-a="anmelden"][data-id="${l.id}"]`:'',fiSel('anmelden')]}},
   'w2':{tab:'stadt',sub:'amt',sel:[fiSel('auktionen')]},
@@ -1813,7 +1818,7 @@ function fuKopfStell(){
   k.classList.toggle('offen',FU_OFFEN);
   k.style.backgroundImage=P.bild?`url(bilder/${P.bild}.jpg)`:'none';
   k.setAttribute('aria-label',P.name+(FU_OFFEN?': Blase zuklappen':': Tipps öffnen'));
-  k.innerHTML=(P.bild?'':'📜')+(FU_AKT&&!FU_WO&&!FU_OFFEN?'<b>💬</b>':'');
+  k.innerHTML=(P.bild?'':P.sym||'📜')+(FU_AKT&&!FU_WO&&!FU_OFFEN?'<b>💬</b>':'');
 }
 // Bleiben neben dem Kopf weniger als 6 Pixel Luft, wird links der Monat abgekürzt ("Sep. 2068") und rechts der Rang ausgeblendet. Nach jedem render() einmal.
 function fuTopMess(){
@@ -1847,7 +1852,7 @@ function fuBlase(){
   // Entscheidung 11: Die Leiste mit den Gesichtern erst ab zwei Sprechern, nur wer schon gesprochen hat.
   const sp=[...new Set(FU_VL.map(v=>v.s))];
   const leiste=sp.length<2?'':`<div class="fleiste"><button class="alle${FU_FILTER==='alle'?' an':''}" data-a="fuFilter" data-id="alle">Alle</button>${sp.map(s=>{const Q=FU_SPRECHER[s]||FU_SPRECHER.winzer;
-    return `<button class="gesicht${FU_FILTER===s?' an':''}" data-a="fuFilter" data-id="${s}" aria-label="${Q.name}" title="${Q.name}"${Q.bild?` style="background-image:url(bilder/${Q.bild}.jpg)"`:''}>${Q.bild?'':'📜'}</button>`}).join('')}</div>`;
+    return `<button class="gesicht${FU_FILTER===s?' an':''}" data-a="fuFilter" data-id="${s}" aria-label="${Q.name}" title="${Q.name}"${Q.bild?` style="background-image:url(bilder/${Q.bild}.jpg)"`:''}>${Q.bild?'':Q.sym||'📜'}</button>`}).join('')}</div>`;
   el.setAttribute('aria-label',P.name);
   el.innerHTML=`${leiste}<div class="fnamen"><div><b class="fname">${P.name}</b><span class="frolle">${esc(b.n||P.rolle)}</span></div>${akt&&!FU_WO?'<span class="fneu">Neu</span>':''}</div>
     <div class="ftext">${fuAbsaetze(text)}</div><div class="fschatten">▼ weiter unten mehr</div>
@@ -1891,7 +1896,7 @@ function fuFenster(){
   const W=[['alle','💬 Alle Tipps'],['neu','🎓 Nur Neuheiten und Warnungen'],['aus','🔕 Aus']];
   return fenster('fuehrer','Spielführer',W.map(([k,x])=>`<button class="wahl schalter ${st===k?'an':''}" data-a="fuStell" data-id="${k}">${st===k?'✅':'⬜'} ${x}</button>`).join(''),{
     links:'Warnungen und Kniffe noch einmal',kn:pk('fuVorn','Tipps von vorn','',{sec:1,aus:!f.an}),buch:'fuehrer',
-    i:'Der alte Winzer und, sobald ihr Rang sie freischaltet, deine drei Manager melden sich in einer Sprechblase: wenn etwas zum ersten Mal ansteht, nach jedem Aufstieg, bei typischen Fehlern und ab dem dritten Jahr ab und zu mit einem Kniff. Der alte Winzer verabschiedet sich nach der ersten Übergabe an dein Kind, danach sprechen nur noch die Manager. Das Gesicht dessen, der zuletzt gesprochen hat, sitzt oben in der Mitte der Leiste, mit 💬, solange ein neuer Tipp ungelesen ist. Ein Tipp darauf öffnet die Blase jederzeit, noch ein Tipp, ein Tipp daneben oder „Zeig mir, wo“ klappt sie zu. Unten in der Blase blätterst du mit ‹ und › durch alle Tipps, die schon dran waren, ab zwei Sprechern zeigen die Gesichter oben in der Blase nur die Tipps von einem. „Alle Tipps“ ist für Neulinge, „Nur Neuheiten und Warnungen“ für alle, die das Spiel kennen. Mit allen Tipps gibt es ⏩ „Weiter bis etwas ansteht“ erst ab dem zweiten Jahr. „Tipps von vorn“ holt Warnungen und Kniffe zurück, in den ersten zwei Jahren auch den Rest des Fahrplans, und leert den Verlauf. Bei „Aus“ verschwindet auch das Gesicht oben.'});
+    i:'Der alte Winzer und, sobald sie da sind, deine zwei Manager und deine Leute draußen und im Keller melden sich in einer Sprechblase: wenn etwas zum ersten Mal ansteht, nach jedem Aufstieg, bei typischen Fehlern und ab dem dritten Jahr ab und zu mit einem Kniff. Der alte Winzer verabschiedet sich nach der ersten Übergabe an dein Kind, danach sprechen nur noch die Manager. Das Gesicht dessen, der zuletzt gesprochen hat, sitzt oben in der Mitte der Leiste, mit 💬, solange ein neuer Tipp ungelesen ist. Ein Tipp darauf öffnet die Blase jederzeit, noch ein Tipp, ein Tipp daneben oder „Zeig mir, wo“ klappt sie zu. Unten in der Blase blätterst du mit ‹ und › durch alle Tipps, die schon dran waren, ab zwei Sprechern zeigen die Gesichter oben in der Blase nur die Tipps von einem. „Alle Tipps“ ist für Neulinge, „Nur Neuheiten und Warnungen“ für alle, die das Spiel kennen. Mit allen Tipps gibt es ⏩ „Weiter bis etwas ansteht“ erst ab dem zweiten Jahr. „Tipps von vorn“ holt Warnungen und Kniffe zurück, in den ersten zwei Jahren auch den Rest des Fahrplans, und leert den Verlauf. Bei „Aus“ verschwindet auch das Gesicht oben.'});
 }
 function fuLeuchte(z){
   const el=(typeof z.sel==='function'?z.sel():z.sel||[]).filter(Boolean).map(s=>document.querySelector(s)).find(Boolean); if(!el) return;

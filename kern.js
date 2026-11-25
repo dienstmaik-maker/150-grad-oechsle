@@ -3163,6 +3163,8 @@ function fuHalt(){fuehrerPruef(); return fuBereit()&&S.fu.q.some(id=>FUEHRER[id]
 // Text für später (sp), ohne diese Angaben ein Manager, der schon da ist, mit dem alten Text. chef: aus "mein Lieber" und "Nachbar" wird "Chef".
 // Gibt es noch keinen Manager, kommt der Tipp ohne Gesicht (FU_SPRECHER.gut).
 const fuDa=s=>!FU_VOR[s]||fuGes(FU_VOR[s]);
+// Seit 14.7.7: Titel der Figur der Kellerleute (k lagerarb) oder draußen (k helfer) nach der Stufe ihrer Leute, vor Stufe 1 der erste Titel.
+const fuTitel=(P,k)=>P.titel[Math.min(3,Math.max(1,S?leuteSt(k):1))-1];
 function fuSprecher(id){
   const b=FUEHRER[id], v=FU_VOR[b.s], ersatz=!!(v&&v!==id&&!fuGes(v)&&b.e);
   if(!fuNach()||id==='g2-1') return ersatz?{s:'winzer',t:b.e,k:'e'}:{s:b.s,t:b.t,k:''};

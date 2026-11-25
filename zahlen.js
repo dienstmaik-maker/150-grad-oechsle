@@ -1281,12 +1281,17 @@ const Z_TEIL=.12;
 // sobald ein Ort zu sehen ist (nie über Winzerbote, Feier, Dialog oder Buch). "Verstanden" und "Zeig mir, wo" haken sie ab.
 // Paket A: Einstieg, erstes und zweites Jahr, k01. Paket B: Rang-Neuheiten, Warnungen, Kniffe, Schalter im Büro und beim Start.
 const FU_SPRECHER={winzer:{name:'Der alte Winzer',rolle:'Dein Nachbar',bild:'fuehrer-winzer'},handel:{name:'Die Handels-Managerin',rolle:'Verkauf und Zahlen',bild:'manager-handel'},
-  keller:{name:'Der Kellermeister',rolle:'Fass und Flasche',bild:'manager-keller'},weingut:{name:'Der Weingut-Manager',rolle:'Reben und Maschinen',bild:'manager-weingut'},
+  // Seit 14.7.7 (Bauplan 14.7, Annahme 26): keller ist die Figur der Kellerleute mit dem Bild des früheren Kellermeisters, aussen die Figur draußen (Erntehelfer)
+  // ohne Bild bis Meilenstein 17, dafür das Symbol sym. Der Name ist der Titel ihrer Stufe (titel, fuTitel), ein Bild je Figur. Platzhalter, Wortlaut in Meilenstein 17.
+  keller:{get name(){return fuTitel(this,'lagerarb')},titel:['Der Kellerhelfer','Der Kellergeselle','Der Kellermeister'],get rolle(){return LEUTE_GRUPPE.lagerarb},bild:'manager-keller'},
+  aussen:{get name(){return fuTitel(this,'helfer')},titel:['Die Erntehelferin','Die Winzergesellin','Die Rebmeisterin'],get rolle(){return LEUTE_GRUPPE.helfer},bild:'',sym:'🧑‍🌾'},
+  weingut:{name:'Der Weingut-Manager',rolle:'Plan und Einkauf',bild:'manager-weingut'},
   // Seit 10.3: Tipp ohne Gesicht, falls nach der ersten Übergabe noch kein Manager da ist.
   gut:{name:'Dein Weingut',rolle:'Notiz aus dem Büro',bild:''}};
 // Vorstellung je Manager. Vorher spricht der alte Winzer mit dem Ersatz-Text.
 // Seit 10.3 (Maik 19.11.2026): Nach der ersten Übergabe spricht der alte Winzer nicht mehr (fuSprecher), er verabschiedet sich mit g2-1.
-const FU_VOR={handel:'r4-1',keller:'r5-1',weingut:'r6-1'};
+// Seit 14.7.7: keller mit dem ersten Kellerhelfer (r5-1), aussen mit der ersten Erntehelferin (l1).
+const FU_VOR={handel:'r4-1',keller:'r5-1',weingut:'r6-1',aussen:'l1'};
 // Reihenfolge, wenn mehrere warten: Warnung, dann Einstieg und Erstes Mal, dann Rang, dann Kniff.
 const FU_ART={warnung:0,einstieg:1,erstes:1,rang:2,kniff:3};
 // Ab so vielen Zeichen gilt ein Tipp als lang, dann wird das Spiel dahinter abgedunkelt.
@@ -1331,7 +1336,16 @@ FU_WANN['z2-05']=()=>monatNr()>=12&&Object.keys(S.laeden||{}).some(r=>S.laeden[r
 // Seit 10.3 (C31): Die Maschinen-Blase rückt auf den zweiten Platz, damit sie ins Kauf-Fenster (Januar bis März) fällt.
 // Seit 12.8 (Maik 21.11.2026): nur noch, wenn sie dadurch in Januar bis März fällt und auf ihrem normalen Platz nicht (Feier im Januar: Februar statt April).
 // Seit 10.3 (C32): Blasen zum Befördern warten, bis der Manager eingestellt ist.
-const FU_MASCH_VOR={'r4-4':1,'r5-4':1,'r6-3':1}, FU_BEFOERD={'r6-4':1,'r7-3':1,'r8-3':1,'r9-2':1,'r10-2':1,'r10-3':1};
+const FU_MASCH_VOR={'r4-4':1,'r5-4':1,'r6-3':1}, FU_BEFOERD={'r6-4':1};
+// Seit 14.7.7 (Bauplan 14.7, Annahme 27): Blasen der Leute und der Köpfe mit eigenem Auslöser statt des Rangs aus ihrer Kennung, weil Köpfe und Leute seit 14.7.2
+// zu anderen Rängen oder mit einer Tat kommen. Die Leute nach ihrer Stufe (leuteSt), die Köpfe nach ihrer Stufe (mgrSt), immer nach der Blase davor.
+const FU_EIGEN={
+  'r5-1':()=>leuteSt('lagerarb')>=1&&S.lagerarb>0, 'r7-3':()=>leuteSt('lagerarb')>=2&&fuGes('r5-1'), 'r10-3':()=>leuteSt('lagerarb')>=3&&fuGes('r7-3'),
+  'l1':()=>leuteSt('helfer')>=1&&S.helfer>0, 'l2':()=>leuteSt('helfer')>=2&&fuGes('l1'), 'l3':()=>leuteSt('helfer')>=3&&fuGes('l2'),
+  'r6-1':()=>mgrSt('weingut')>=1, 'r8-3':()=>mgrSt('weingut')>=2&&fuGes('r6-1'), 'r10-2':()=>mgrSt('weingut')>=3&&fuGes('r8-3'),
+  'r9-2':()=>mgrSt('handel')>=3&&fuGes('r6-4'),
+  'l4':()=>aufgabeAktiv('plan')&&fuGes('r6-1'), 'l5':()=>mgrSt('weingut')>=1&&fuGes('l4')};
+Object.assign(FU_WANN,FU_EIGEN);
 // Warnungen (Paket B): jede nur beim ersten Mal, danach reichen die Punkte. Gesperrte Manager lässt fuSprecher den alten Winzer vertreten.
 // w1: ein Fass, das ab Januar Kabinett wird, und du stehst im Rathaus. w2: Auktion läuft, und nach dem nächsten Gebot reicht das Geld nicht für die Reben.
 // Seit 10.3 (C35): nicht nur Kabinett, auch jede höhere Stufe, der nur noch der Januar fehlt.
