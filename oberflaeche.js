@@ -1151,8 +1151,9 @@ function vBerg(){
       <div class="kv"><span>Entwicklungspunkte</span><span>${epT(f.ep||0)} von ${EP_MAX}</span></div>
       <div class="kv"><span>Wirkung der Stufe</span><span>${Math.round(STUFE_MENGE[st]*100)}\u00a0% Menge</span></div>
       <div class="kv"><span>Rebschnitt durch</span><span>${helferSchneidet(id)?leuteStName('helfer',leuteSt('helfer')):'dich selbst'}, +${epT(epJahrSoll(id))} Punkte im guten Jahr</span></div>`}
-    // Seit 14.5.2 (Annahmen 5 und 8): Qualität des Weinbergs mit ihren vier Bausteinen, in allen Spielstufen, ohne "von 100". Platzhalter, Wortlaut in Meilenstein 17.
-    if(f.reben){const Q=qualTeile(id); z+=`<div class="kv"><span>Qualität</span><span>${Q.q} Punkte: Pflege ${Math.round(Q.pflege)}, Boden ${Math.round(Q.boden)}, Form ${Q.form}, Laubschnitt ${Q.laub}</span></div>`}
+    // Seit 14.5.2 (Annahmen 5 und 8): Qualität des Weinbergs mit ihren Bausteinen, in allen Spielstufen. Seit dem Nachtrag zu 14.5.2 mit "von 100" und,
+    // sobald das Ausdünnen frei ist, mit dem Baustein Ausdünnen. Platzhalter, Wortlaut in Meilenstein 17.
+    if(f.reben){const Q=qualTeile(id); z+=`<div class="kv"><span>Qualität</span><span>${Q.q} von 100 Punkten: Pflege ${Math.round(Q.pflege)}, Boden ${Math.round(Q.boden)}, Form ${Q.form}, Laubschnitt ${Q.laub}${ausdFrei()?`, Ausdünnen ${Q.ausd}`:''}</span></div>`}
     // Seit 14.2.4: Erziehungsform mit Wirkung und Lese, seit 14.5.3 in allen Spielstufen. Platzhalter, Wortlaut in Meilenstein 17.
     if(f.reben){z+=`<div class="kv"><span>Erziehungsform</span><span>${FORMEN[formVon(id)].name}, ${Math.round(formMenge(id)*100)} % Menge, ${FORMEN[formVon(id)].qual} Punkte Qualität</span></div>
       <div class="kv"><span>Lese</span><span>${formLese(id,formVon(id))}</span></div>`}
@@ -1180,8 +1181,8 @@ function vBerg(){
       hin:[mr&&m<=2&&S.verlust&&S.verlust[id]>0&&`${WM} pflanzt beim Weiterblättern nach.`,helferKann(3)&&pflanzPlan(id)>=10&&`🌱 Deine Erntehelfer pflanzen bis März ${rbn(pflanzPlan(id))} Reben nach.${pflanzPlan(id)<pflanzSoll(id)&&!pflanzMitA(id)?' Den übrigen Platz bekommt dein Auftrag.':''}`,
         helferSchneidet(id)&&schnitt&&`✂️ Deine ${leuteStName('helfer',leuteSt('helfer'))} schneiden beim Weiterblättern, sobald das Geld reicht.`,chefRat()===id&&helferSchneidet(id)&&`👴 ${CHEF_RAT_SATZ.replace('{sorte}',SORTEN[id].name)}`,helferSchneidet(id)&&laubHandOffen(id)&&'✂️ Deine Erntehelfer machen den Sommerschnitt von Hand, sobald das Geld reicht.',(()=>{const ww=wagnisWarnung(); return ww&&ww.ids.includes(id)&&`${WM} warnt: ${Math.round(ww.anteil*100)} % deiner Ernte hängen im Wagnis.`})()],
       // Seit 13.4.6: Am Lese-Knopf steht die Chance des Wagnisses in Worten.
-      links:kannLesen&&wagnisChance(id)!=null&&chanceZeige(wagnisChance(id))?`🎲 Warten: Chance ${chanceZeige(wagnisChance(id))}${chanceRat(wagnisChance(id))?`, der alte Winzer würde ${chanceRat(wagnisChance(id))}`:''}`:sektOhne?'Die Sekt-Sorte macht nur Sekt, erst den Sektkeller kaufen.':pflanz&&platzFuer(id)<10?(spitzeId(id)&&frei>=10?'Auf deinem Südhang ist kein Platz frei.':'Auf deinem Land ist kein Platz mehr frei.'):laubHandOffen(id)?`✂️ Sommerschnitt von Hand: ${eur(laubHandKosten(id))}`:haengt?'Lese ab August.':schnitt?`✂️ Rebschnitt bis Ende April: ${eur(schnittKosten(id))}`:'',
-      kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,...wagnisKnoepfe(id),schnitt&&!helferSchneidet(id)&&`<button class="klein" data-a="schneiden" data-id="${id}" ${S.geld<schnittKosten(id)?'disabled':''}>Schneiden</button>`,laubHandOffen(id)&&!helferSchneidet(id)&&`<button class="klein" data-a="sommerHand" data-id="${id}" ${S.geld<laubHandKosten(id)?'disabled':''}>Sommerschnitt</button>`,f.reben&&!istSL(id)&&m<=SCHNITT_BIS&&formenFuer(id).length>1&&`<button class="klein" data-a="formAendern" data-id="${id}">Form ändern</button>`,helferKann(1)&&f.reben&&S.schwer!=='einfach'&&`<button class="klein" data-a="schneider" data-id="${id}">${helferSchneidet(id)?'Selbst schneiden':'Schnitt abgeben'}</button>`,pflanz&&(helferKann(3)?`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzAuftrag'}" data-id="${id}" data-weiter="pflanzAuftrag">Auftrag</button>`:`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzen'}" data-id="${id}" data-weiter="pflanzen" ${platzFuer(id)<10?'disabled':''}>Pflanzen</button>`),pflanz&&f.reben&&!istSL(id)&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
+      links:kannLesen&&wagnisChance(id)!=null&&chanceZeige(wagnisChance(id))?`🎲 Warten: Chance ${chanceZeige(wagnisChance(id))}${chanceRat(wagnisChance(id))?`, der alte Winzer würde ${chanceRat(wagnisChance(id))}`:''}`:sektOhne?'Die Sekt-Sorte macht nur Sekt, erst den Sektkeller kaufen.':pflanz&&platzFuer(id)<10?(spitzeId(id)&&frei>=10?'Auf deinem Südhang ist kein Platz frei.':'Auf deinem Land ist kein Platz mehr frei.'):laubHandOffen(id)?`✂️ Sommerschnitt von Hand: ${eur(laubHandKosten(id))}`:ausdOffen(id)?AUSD_LINKS.replace('{kosten}',eur(ausdKosten(id))).replace('{m}',`${Math.round(AUSD_MENGE*100)} %`).replace('{qp}',AUSD_QP):haengt?'Lese ab August.':schnitt?`✂️ Rebschnitt bis Ende April: ${eur(schnittKosten(id))}`:'',
+      kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,...wagnisKnoepfe(id),schnitt&&!helferSchneidet(id)&&`<button class="klein" data-a="schneiden" data-id="${id}" ${S.geld<schnittKosten(id)?'disabled':''}>Schneiden</button>`,laubHandOffen(id)&&!helferSchneidet(id)&&`<button class="klein" data-a="sommerHand" data-id="${id}" ${S.geld<laubHandKosten(id)?'disabled':''}>Sommerschnitt</button>`,ausdOffen(id)&&`<button class="klein" data-a="ausduennen" data-id="${id}" ${S.geld<ausdKosten(id)?'disabled':''}>Ausdünnen</button>`,f.reben&&!istSL(id)&&m<=SCHNITT_BIS&&formenFuer(id).length>1&&`<button class="klein" data-a="formAendern" data-id="${id}">Form ändern</button>`,helferKann(1)&&f.reben&&S.schwer!=='einfach'&&`<button class="klein" data-a="schneider" data-id="${id}">${helferSchneidet(id)?'Selbst schneiden':'Schnitt abgeben'}</button>`,pflanz&&(helferKann(3)?`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzAuftrag'}" data-id="${id}" data-weiter="pflanzAuftrag">Auftrag</button>`:`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzen'}" data-id="${id}" data-weiter="pflanzen" ${platzFuer(id)<10?'disabled':''}>Pflanzen</button>`),pflanz&&f.reben&&!istSL(id)&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
   }
   // Seit 14.2.5: die drei Lagen einzeln mit Stufe, Punkten und dem, was ein gutes Bodenjahr bringt. Platzhalter, Wortlaut in Meilenstein 17.
   const BT=lagenBelegung().T, bzd=zuwachsVon(helferDuengt()?'helfer':'chef',1);
@@ -1885,6 +1886,13 @@ function render(){
 // musik: Stück, das läuft, solange das Fenster offen ist. bild: Bild oben in der Meldung.
 function openSheet(h,musik){$('#sheet').innerHTML=`<div>${h}</div>`;$('#sheet').classList.add('an');SMUSIK=musik||null;musikOrt(musikWahl())}
 function closeSheet(){$('#sheet').classList.remove('an');$('#sheet').innerHTML='';SL=null;SMUSIK=null;musikOrt(musikWahl());setTimeout(fuehrerZeig,0)}
+// Seit dem Nachtrag zu 14.5.2 (Annahme 34): Nachfrage im Sommer, Lehrjahre mit Rat in Zahlen, Gesellenjahre mit kurzem Hinweis (SOMMER_FRAGE).
+// Je Weinberg ein Knopf für die Arbeit, darunter "Weiter ohne". Platzhalter, Wortlaut in Meilenstein 17.
+function zeigeSommerFrage(F){const A=SOMMER_ARBEIT[F[0].art], rat=SOMMER_FRAGE[S.schwer]==='rat', pz=x=>`${Math.round(x*100)} %`;
+  const satz=x=>(rat?SOMMER_RAT:SOMMER_HINWEIS).replace('{sorte}',SORTEN[x.id].name).replace('{arbeit}',A.name).replace('{q}',x.q).replace('{vor}',x.vor)
+    .replace('{stufe}',STUFEN[x.st].name).replace('{ans}',ANSPRUCH[x.st]).replace('{kosten}',eur(x.kosten)).replace('{menge}',A.menge.replace('{m}',pz(x.art==='laub'?LAUB_MENGE:AUSD_MENGE)));
+  openSheet(`<h3>${esc(A.titel)}?</h3>${F.map(x=>`<p>${esc(satz(x))}</p><div class="mitte"><button class="klein" data-a="${x.art==='laub'?'sommerHand':'ausduennen'}" data-id="${x.id}" ${S.geld<x.kosten?'disabled':''}>${esc(A.name)}: ${esc(SORTEN[x.id].name)}</button></div>`).join('')}
+    ${rat?`<p class="mut">${esc(SOMMER_FUSS)}</p>`:''}<div class="btns"><button class="sec" data-a="close">Zurück</button><button data-a="sommerOhne">Weiter ohne</button></div>`)}
 function meldung(t,text,bild){openSheet(`${bild?sbild(bild):''}<h3>${esc(t)}</h3><p>${esc(text)}</p><div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`)}
 let SL=null;
 function mengeSheet(o){
@@ -2194,6 +2202,8 @@ const AKT={
       ${fe.helfer?`<p class="mut">${helferRegel()}. Du hast ${rbn(rebenGesamt())} Reben, deine Leute reichen für ${rbn(helferReben())}. ${S.monat<=2?`Statt einzustellen, kannst du bis März auch Reben roden${maschFrei('klein')&&!S.maschinen.some(x=>x.typ==='klein')?' oder eine Erntemaschine kaufen':''}.`:''}${maschOhneFahrer().length||S.maschinen.some(m=>m.zustand<MASCH_ROT)?` Eine Maschine zählt nur im Einsatz, also mit Fahrer und ab ${MASCH_ROT}\u00a0% Zustand.`:''}</p>`:''}
       ${fe.lagerarb?`<p class="mut">${lagerRegel(flSperre())}. Du hast ${num(S.fassraum)}\u00a0l Fassraum und ${num(S.flaschen)} leere Flaschen.</p>`:''}
       <p class="mut">Einstellen geht auch ohne Geld, dein Konto rutscht dann ins Minus.</p>`);
+    // Seit dem Nachtrag zu 14.5.2 (Annahme 34): Nachfrage zum Sommerschnitt und zum Ausdünnen, nur wenn die Arbeit die nächste Weinstufe bringt.
+    const sf=sommerFrage(); if(sf.length) return zeigeSommerFrage(sf);
     const v=verfallListe(), t=S.monat===11?steuerSchau():null, st=!!(t&&t.steuer>0);
     if(v.length||st) openSheet(`<h3>⚠️ Letzte Warnung</h3>${v.length?`<p>Wenn du jetzt weiterblätterst, geht das verloren:</p><ul class="kl">${v.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}${st?`<p>💶 Zum Jahreswechsel zahlst du rund ${eur(t.steuer)} Steuer auf rund ${eur(t.gew)} Gewinn. Was du jetzt noch kaufst, senkt die Steuer.</p>`:''}<div class="btns"><button class="sec" data-a="close">Zurück</button><button ${v.length?'class="wag" ':''}data-a="weiterJa">${v.length?'Trotzdem weiter':'Weiter'}</button></div>`);
     else monatWeiter();
@@ -2209,7 +2219,7 @@ const AKT={
       if(S.ende) return;
       if(S.pleite) return zeigePleite();
       managerArbeit();
-      if(fehlText()||verfallListe().length||(S.monat===11&&steuerSchau().steuer>0)){if(n) break; return AKT.weiter()}
+      if(fehlText()||sommerFrage().length||verfallListe().length||(S.monat===11&&steuerSchau().steuer>0)){if(n) break; return AKT.weiter()}
       SPRUNG=L.slice(); monatWeiter();
       if(S.pleite||S.ende||S.pruefer||erbeOffen()||$('#sheet').classList.contains('an')) return;
       const top=TOP.slice().sort((a,b)=>b.p-a.p)[0];
@@ -2342,6 +2352,12 @@ const AKT={
   // Seit 14.2.4: Sommerschnitt von Hand im Juni (Annahme 18). Platzhalter, Wortlaut in Meilenstein 17.
   sommerHand(d){const id=d.id; if(!laubHandOffen(id)) return; const k=laubHandKosten(id); if(S.geld<k) return meldung('Zu wenig Geld',`Der Sommerschnitt von Hand kostet ${eur(k)}.`);
     const a=laubHand(id); fx('schere'); save(); render(); meldung('Sommerschnitt',`Der ${SORTEN[id].name} ist für ${eur(k)} von Hand geschnitten: Die Lese ${S.jahr} bekommt ${LAUB_QP} Punkte Qualität und ${Math.round(LAUB_MENGE*100)} % mehr Menge${a?`, dazu +${a} Ansehen`:''}.`)},
+  // Seit dem Nachtrag zu 14.5.2 (Annahmen 31 bis 34): Ausdünnen von Hand im August, ab dem Gutsherrn. Platzhalter, Wortlaut in Meilenstein 17.
+  ausduennen(d){const id=d.id; if(!ausdOffen(id)) return; const k=ausdKosten(id); if(S.geld<k) return meldung('Zu wenig Geld',`Das Ausdünnen kostet ${eur(k)}.`);
+    ausduennen(id); fx('schere'); save(); render();
+    meldung('Ausdünnen',AUSD_MELDUNG.replace('{sorte}',SORTEN[id].name).replace('{kosten}',eur(k)).replace('{jahr}',S.jahr).replace('{qp}',AUSD_QP).replace('{m}',`${Math.round(AUSD_MENGE*100)} %`))},
+  // Nachfrage im Sommer (Annahme 34): "Weiter ohne" fragt in diesem Monat nicht mehr und blättert weiter wie sonst.
+  sommerOhne(){S.sommerGefragt=monatNr(); closeSheet(); AKT.weiter()},
   pflanzen(d){
     if(!sorteFrei(d.id)) return meldung('Noch nicht',`${SORTEN[d.id].name} kannst du ab dem Rang ${RAENGE[sorteAb(d.id)].name} pflanzen.`);
     if(sektSorte(d.id)&&!S.sektkeller) return meldung('Erst der Sektkeller',`Die ${ROLLEN.sekt.name} macht nur Sekt. Kauf erst den Sektkeller im Keller.`);

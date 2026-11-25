@@ -151,6 +151,28 @@ const laubHandKosten=id=>Math.round(LAUB_HAND_HA*(S.felder[id].reben||0)/HA_REBE
 const laubHandOffen=id=>{const f=S.felder[id]; return !!f&&f.reben>0&&S.monat===6&&frei('laub_hand')&&f.laub!==S.jahr&&f.menge>0&&!f.gelesen};
 function laubAnsehen(){if(S.laubAns===S.jahr) return 0; S.laubAns=S.jahr; return ruhm(LAUB_ANS)}
 function laubHand(id){const f=S.felder[id]; zahle(laubHandKosten(id)); f.laub=S.jahr; f.menge=Math.round(f.menge*(1+LAUB_MENGE)); return laubAnsehen()}
+// Seit dem Nachtrag zu 14.5.2 (Annahmen 31 bis 34): Ausdünnen von Hand durch den Chef, je Weinberg, im August (AUSD_MONAT), frei am Gutsherrn (ausduennen).
+// f.ausd merkt das Jahr: AUSD_QP Punkte für die Lese des Jahres (qualTeile), AUSD_MENGE weniger Menge, AUSD_HAND_HA Euro je Hektar. Leute dünnen erst ab 14.7 aus.
+// ausdFrei steht für frei('ausduennen'), weil vBerg in oberflaeche.js eine eigene Zahl namens frei hat.
+const ausdFrei=()=>frei('ausduennen'), ausdKosten=id=>Math.round(AUSD_HAND_HA*(S.felder[id].reben||0)/HA_REBEN);
+const ausdOffen=id=>{const f=S.felder[id]; return !!f&&f.reben>0&&S.monat===AUSD_MONAT&&ausdFrei()&&f.ausd!==S.jahr&&f.menge>0&&!f.gelesen};
+function ausduennen(id){const f=S.felder[id]; zahle(ausdKosten(id)); f.ausd=S.jahr; f.menge=Math.round(f.menge*(1-AUSD_MENGE))}
+// Nachfrage nach Annahme 34: Welche offene Sommerarbeit dieses Monats bringt einem Weinberg die nächste Weinstufe, die der Rang schon erlaubt?
+// Die Öchsle zählen nicht, nur der Anspruch (ANSPRUCH, bis 14.5.5 noch die alte Leiter). Beerenauslese und Trockenbeerenauslese zählen mit ihrem Weg
+// (weg_eigen, weg_tba), der Eiswein nicht, er hängt am Frost. Der Sommerschnitt wird nur gefragt, wo der Chef selbst schneidet (nicht abgegeben).
+// Einmal "ohne" gewählt, fragt das Spiel in diesem Monat nicht mehr (S.sommerGefragt). Meisterprüfung ohne Nachfrage (SOMMER_FRAGE).
+const stufeRangDarf=st=>FREI['wein_'+st]?frei('wein_'+st):st==='ba'?frei('weg_eigen'):st==='tba'?frei('weg_tba'):false;
+const naechsteStufe=(id,q)=>REIHE.find(st=>st!=='eis'&&rolleDarf(id,st)&&stufeRangDarf(st)&&ANSPRUCH[st]>q)||null;
+function sommerFrage(){
+  if(!SOMMER_FRAGE[S.schwer]||S.sommerGefragt===monatNr()) return [];
+  const art=S.monat===6?'laub':S.monat===AUSD_MONAT?'ausd':null; if(!art) return [];
+  const F=[]; for(const id of weinberge()){
+    if(art==='laub'?!(laubHandOffen(id)&&!helferSchneidet(id)):!ausdOffen(id)) continue;
+    const vor=qualWb(id), q=qualTeile(id,{[art]:S.jahr}).q, st=naechsteStufe(id,vor);
+    if(st&&q>=ANSPRUCH[st]) F.push({id,art,vor,q,st,kosten:art==='laub'?laubHandKosten(id):ausdKosten(id)});
+  }
+  return F;
+}
 // Seit 14.2.3: Zuwachs nach dem, der schneidet oder düngt (ZUWACHS). In den Lehrjahren zählt das Düngen immer voll (Annahme 13, boden=1).
 const zuwachsVon=(wer,boden)=>boden&&S.schwer==='einfach'?1:wer==='helfer'?(ZUWACHS.helfer[leuteSt('helfer')]||0):ZUWACHS.chef;
 // Einstellung je Weinberg (f.schneider) und für das Düngen (S.duengWer): 'helfer' gibt ab, sobald Erntehelfer da sind, sonst macht es der Chef.
@@ -2281,13 +2303,14 @@ const maniText=l=>[l.zucker?`gezuckert (+${l.zucker}\u00a0%)`:'',l.wasser?`gewä
 // Seit 14.5.2 (Entscheidungen 18, 21, 35 und 45, Annahmen 1 bis 5): Qualität je Weinberg von 0 bis 100 aus vier Bausteinen, für alle Weinberge einzeln.
 // Pflege: ab dem Rebstock QUAL_PFLEGE_AB plus QUAL_PFLEGE_EP der Entwicklungspunkte (die Jungrebe nur das Drittel), höchstens QUAL_PFLEGE_MAX.
 // Boden: gleitend zwischen QUAL_BODEN an den Schwellen BODEN_SCHWELLE nach den Bodenpunkten des Weinbergs (wbBodenP), darüber der letzte Wert.
-// Form: FORMEN.qual. Sonstiges: Laubschnitt LAUB_QP nur im laufenden Jahr. Gerundet wird einmal am Ende, QUAL_RESERVE bleibt frei.
+// Form: FORMEN.qual. Sonstiges: Laubschnitt LAUB_QP und seit dem Nachtrag zu 14.5.2 Ausdünnen AUSD_QP (f.ausd), beide nur im laufenden Jahr.
+// Gerundet wird einmal am Ende, höchstens 100 am Einzelpfahl, 95 am Kordon und 90 am Flachbogen (Annahme 5, bis zum Nachtrag 97 mit 3 Punkten Reserve).
 // Weinstufe, Öchsle, Sonne, Jahrhundertjahr und Sorte zählen nicht mehr (bis 14.4: qpGrund und qpFuer, gerechnet bei der Anmeldung).
 function qualBoden(p){const W=BODEN_SCHWELLE, Q=QUAL_BODEN; for(let i=1;i<W.length;i++) if(p<W[i]) return Q[i-1]+(Q[i]-Q[i-1])*(Math.max(0,p)-W[i-1])/(W[i]-W[i-1]); return Q[Q.length-1]}
-// v setzt einzelne Werte vorweg (ep, pflSt, form, laub), zum Beispiel für die Abfrage beim Umstellen der Form.
+// v setzt einzelne Werte vorweg (ep, pflSt, form, laub, ausd), zum Beispiel für die Abfrage beim Umstellen der Form und die Nachfrage im Sommer.
 function qualTeile(id,v){const f=Object.assign({},S.felder[id]||{},v||{}), pflege=Math.min(QUAL_PFLEGE_MAX,((f.pflSt||0)>=1?QUAL_PFLEGE_AB:0)+(f.ep||0)*QUAL_PFLEGE_EP),
-  boden=qualBoden(wbBodenP(id)), form=(FORMEN[f.form||formVon(id)]||{}).qual||0, laub=f.laub===S.jahr?LAUB_QP:0;
-  return {pflege,boden,form,laub,q:Math.round(pflege+boden+form+laub)}}
+  boden=qualBoden(wbBodenP(id)), form=(FORMEN[f.form||formVon(id)]||{}).qual||0, laub=f.laub===S.jahr?LAUB_QP:0, ausd=f.ausd===S.jahr?AUSD_QP:0;
+  return {pflege,boden,form,laub,ausd,q:Math.round(pflege+boden+form+laub+ausd)}}
 const qualWb=id=>qualTeile(id).q;
 // Schmiergeld für den Beamten: ein Anteil vom Wert des Weins, mindestens SCHMIER_MIN.
 const schmierVon=w=>Math.max(SCHMIER_MIN,Math.round(w*SCHMIER_ANTEIL/100)*100);

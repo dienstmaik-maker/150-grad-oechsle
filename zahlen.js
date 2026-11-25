@@ -127,10 +127,10 @@ const LADEN_AB=3, LADEN_BIS=7, EXPORT_SPAET=5, AUK_ERST_AB=2;
 // Beim Export gibt es zwei Zeilen: bote mit der Medaille, boteEv als Ereignis. Neue Zeilen sind Platzhalter, Wortlaut in Meilenstein 17.
 // Beerenauslese und Eiswein kommen nur über den Weg des Gebiets im Herbst (weg_eigen), die Trockenbeerenauslese nur über das Wagnis (weg_tba), dazu der fremde Weg (weg_fremd).
 // Feder-, Tafel- und Qualitätswein gelten für jede Rolle, die sie machen darf. laub_hand ist der Sommerschnitt von Hand, masch_laub nur noch die Maschine.
-// hintertuer (gebaut in 14.4.6) und presse (gebaut in 14.5) sind schon angelegt.
+// hintertuer (gebaut in 14.4.6) und presse (gebaut in 14.5) sind schon angelegt. ausduennen seit dem Nachtrag zu 14.5.2 am Gutsherrn (Annahme 32).
 const FREI={wein_feder:{r:0},wein_tafel:{r:0},wein_qba:{r:1},wein_kab:{r:2},wein_spat:{r:3},wein_aus:{r:7},weg_eigen:{r:7},weg_fremd:{r:8},weg_tba:{r:8},
   makler:{r:1},auktion:{r:1},spende:{r:2},auktion_oft:{r:2},land:{r:3},laub_hand:{r:3},
-  sorte_sekt:{r:4},sektkeller:{r:4},weinfest:{r:4},hintertuer:{r:4},sorte_spitze:{r:6},botschafter:{r:6},bund:{r:7},hoffest:{r:7},kontrolle:{r:8},presse:{r:9},
+  sorte_sekt:{r:4},sektkeller:{r:4},weinfest:{r:4},hintertuer:{r:4},ausduennen:{r:5},sorte_spitze:{r:6},botschafter:{r:6},bund:{r:7},hoffest:{r:7},kontrolle:{r:8},presse:{r:9},
   // Stufen der Leute: Erntehelfer am Rang, Lagerarbeiter Stufe 2 am Rang (Annahme 26), Stufe 1 und 3 verdient. Eine höhere Stufe bringt die fehlenden mit,
   // Leute fallen nie zurück (S.leuteSt). Namen und Arbeiten bleiben bis zur Etappe für Köpfe und Helfer, wie sie sind.
   helfer1:{r:1},helfer2:{r:3},helfer3:{r:5},lagerarb1:{tat:'qba'},lagerarb2:{r:2},lagerarb3:{tat:'sekt'},
@@ -312,7 +312,7 @@ const RAENGE=[
   {name:'Winzer',kurz:'Winzer',w:'Winzerin',kw:'Winzerin',ans:120,ha:7,verm:250000,rahmen:80000,haAlt:4,deckel:17,neu:['Kabinett','Spenden fürs Dorf','dein Kellergeselle füllt ab und klebt die Etiketten'],kauf:['der Düngerstreuer']},
   {name:'Winzermeister',kurz:'Winzermeister',w:'Winzermeisterin',kw:'Winzermeisterin',ans:210,ansW:300,ha:14,verm:600000,rahmen:160000,haAlt:5,deckel:32,neu:['Spätlese','die Landesprämierung','Winzergesellen mit dem Laubschnitt von Hand'],kauf:['die Erntemaschine','die Abfüllanlage','mit der ersten Spätlese der Edelstahltank im Keller']},
   {name:'Weingutsbesitzer',kurz:'Gutsbesitzer',w:'Weingutsbesitzerin',kw:'Gutsbesitzerin',ans:600,ha:18,verm:1500000,rahmen:300000,haAlt:6,deckel:42,neu:['{sorte} für den Sekt','das Weinfest','kühle Höhenlagen bei den Auktionen'],kauf:['der Sektkeller']},
-  {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:24,verm:3500000,rahmen:300000,haAlt:8,deckel:47,neu:['Rebmeister'],kauf:['die Schatzkammer mit dem Großen Holzfass im Keller','der große Vollernter']},
+  {name:'Gutsherr',kurz:'Gutsherr',w:'Gutsherrin',kw:'Gutsherrin',ans:1000,ha:24,verm:3500000,rahmen:300000,haAlt:8,deckel:47,neu:['Rebmeister','das Ausdünnen im August'],kauf:['die Schatzkammer mit dem Großen Holzfass im Keller','der große Vollernter']},
   {name:'Weinbaurat',kurz:'Weinbaurat',w:'Weinbaurätin',kw:'Weinbaurätin',ans:1500,ha:24,verm:6000000,rahmen:300000,haAlt:10,deckel:50,neu:['{sorte} für den steilen Südhang mit Südhang bei den Auktionen','das Amt des Weinbotschafters'],kauf:['der Ausbau der Abfüllanlage']},
   {name:'Verbandsvorstand',kurz:'Vorstand',w:'Verbandsvorständin',kw:'Vorständin',ans:4000,ha:28,verm:12000000,rahmen:300000,haAlt:13,deckel:50,neu:{edel:['Auslese und Beerenauslese','das Hoffest','der Bundeswettbewerb'],frost:['Auslese und Eiswein','das Hoffest','der Bundeswettbewerb'],beide:['Auslese sowie Beerenauslese und Eiswein','das Hoffest','der Bundeswettbewerb']},kauf:['der Laubschneider','mit der ersten Auslese der Barrique-Keller']},
   {name:'Vizepräsident',kurz:'Vizepräsident',w:'Vizepräsidentin',kw:'Vizepräsidentin',ans:6000,ha:28,verm:16000000,rahmen:300000,haAlt:16,deckel:50,neu:{edel:['Trockenbeerenauslese','in besonderen Jahren Eiswein','du kannst Kontrollen anregen'],frost:['in besonderen Jahren Beerenauslese und Trockenbeerenauslese','du kannst Kontrollen anregen'],beide:['Trockenbeerenauslese','du kannst Kontrollen anregen']},kauf:[]},
@@ -1535,8 +1535,23 @@ const TITEL_NAMEN=[[['Spielidee &amp;','Entwicklung'],'Maik','Dienst'],[['Chef-T
 // LAUB_QP (2) und die alten Punkte (QP_MIN, QP_MAX, STUFE_QPF, BODEN_ST_QP, SONNE_QP_MAX, PFLEGE_QP) in 14.5.2, FORM_WIRKUNG und ROLLEN.ertrag in 14.5.3,
 // STUFEN.preis, PFLEGE_PREIS und EIS_WERT in 14.5.4, ANSPRUCH in 14.5.5, ANS_JE_QP (10) in 14.5.6, KRONEN.p und GEGNER_TYP.ws in 14.5.7.
 // Qualität je Weinberg (Entscheidungen 18, 21 und 35): Pflege QUAL_PFLEGE_AB ab dem Rebstock plus QUAL_PFLEGE_EP der Entwicklungspunkte, höchstens QUAL_PFLEGE_MAX.
-// Boden gleitend zwischen QUAL_BODEN an den Schwellen BODEN_SCHWELLE, darüber der letzte Wert. Form aus FORMEN.qual, QUAL_RESERVE bleibt frei.
-const QUAL_PFLEGE_AB=10, QUAL_PFLEGE_EP=1/3, QUAL_PFLEGE_MAX=40, QUAL_BODEN=[0,10,20,40], QUAL_RESERVE=3;
+// Boden gleitend zwischen QUAL_BODEN an den Schwellen BODEN_SCHWELLE, darüber der letzte Wert. Form aus FORMEN.qual.
+// Sonstiges: Laubschnitt LAUB_QP und Ausdünnen AUSD_QP. Bis zum Nachtrag zu 14.5.2 standen hier 3 Punkte Reserve (QUAL_RESERVE), Höchstwert 97.
+const QUAL_PFLEGE_AB=10, QUAL_PFLEGE_EP=1/3, QUAL_PFLEGE_MAX=40, QUAL_BODEN=[0,10,20,40];
+// Seit dem Nachtrag zu 14.5.2 (Maik 25.11.2026, Annahmen 5 und 31 bis 34): Ausdünnen als Handgriff des Chefs je Weinberg, frei am Gutsherrn (FREI.ausduennen).
+// Es bringt AUSD_QP Punkte für den Wein des laufenden Jahres, kostet AUSD_MENGE der Menge und AUSD_HAND_HA Euro je Hektar, im Monat AUSD_MONAT (August).
+const AUSD_QP=3, AUSD_MENGE=.05, AUSD_HAND_HA=500, AUSD_MONAT=7;
+// Nachfrage beim Weiterblättern im Monat des Sommerschnitts von Hand und im Monat des Ausdünnens, nur wenn die Arbeit einem Weinberg die nächste Weinstufe bringt,
+// die der Rang schon erlaubt (Öchsle zählen nicht). Je Spielstufe nach dem Muster CHANCE_ZEIGE: Lehrjahre Rat in Zahlen, Gesellenjahre kurzer Hinweis,
+// Meisterprüfung keine Nachfrage. Ab 14.7 ersetzt der Schalter beim Weingut-Manager die Nachfrage. Texte sind Platzhalter, Wortlaut in Meilenstein 17.
+const SOMMER_FRAGE={einfach:'rat',mittel:'hinweis',schwer:''};
+const SOMMER_ARBEIT={laub:{titel:'✂️ Sommerschnitt',name:'Sommerschnitt',menge:'bringt {m} mehr Menge'},
+  ausd:{titel:'🍇 Ausdünnen',name:'Ausdünnen',menge:'{m} Menge'}};
+const SOMMER_RAT='{sorte}: Mit dem {arbeit} kommst du auf {q} Punkte Qualität statt {vor}, das reicht für {stufe} (ab {ans} Punkten). Es kostet {kosten} und {menge}.';
+const SOMMER_HINWEIS='{sorte}: Mit dem {arbeit} reicht die Qualität für {stufe}.';
+const SOMMER_FUSS='Ob die Öchsle auch reichen, zeigt erst die Lese.';
+const AUSD_LINKS='🍇 Ausdünnen: {kosten}, {m} weniger Menge, {qp} Punkte Qualität';
+const AUSD_MELDUNG='Der {sorte} ist für {kosten} ausgedünnt: Die Lese {jahr} bekommt {qp} Punkte Qualität und {m} weniger Menge.';
 // Preis (Entscheidungen 24, 38 und 44): Qualitätsfaktor QUAL_PREIS_AB plus QUAL_PREIS_JE je Punkt, Grundpreis je Sorte, Jahrhundertwein JH_PREIS mehr.
 const QUAL_PREIS_AB=.5, QUAL_PREIS_JE=.01, SORTE_PREIS={menge:1,sekt:1,spitze:1.05}, JH_PREIS=.1;
 // Wagnis beim Weinprüfer (Entscheidungen 20, 26 und 28), nicht zu verwechseln mit WAGNIS und WAGNIS_AUS (Wagnis bei der Lese):
