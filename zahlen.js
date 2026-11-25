@@ -1800,6 +1800,11 @@ const WB_TEXT={
     anlage:'Abfüllanlage', ohneAnlage:'Ohne Abfüllanlage füllst du von Hand ab, ein Liter je Flasche. Die Anlage kaufst du im Betrieb unter „Maschine kaufen“.',
     trauben:'Trauben im Kelterhaus', frei:'Fassraum frei', weine:'Weine im Fass', angemeldet:'davon angemeldet', sektHefe:'Sekt auf der Hefe', sektFlasche:'Sektflasche, Korken und Agraffe',
     fassPreis:'Fassraum je Liter', flPreis:'Leere Flasche', sektPreis:'Sektkeller, einmal', anlagePreis:'{name}, Ausbau', jeLiter:'{p} je Liter'},
+  // Seit 16.5.6: Karten im Lager. Platzhalter, Wortlaut in Meilenstein 17.
+  lager:{fassraum:'Fassraum', fassKlein:'Fässer kaufen', flaschen:'Flaschen', flKlein:'Leere Flaschen kaufen', ausbau:'Kellerausbau', belegt:'Fassraum belegt',
+    fassUnter:'{bel} von {ges} l belegt', platz:'Flaschenplatz belegt', flUnter:'{n} von {ges} Flaschen', ausgebaut:'Ausgebaut', stufe:'Stufe {k} von {n}',
+    betreut:'Betreut bis', moeglich:'Möglich noch', zuletzt:'Zuletzt gebaut', naechste:'Nächste Stufe: {name}',
+    hin:{leute:'Mehr Kellerleute nötig', fass:'Noch {l} l möglich', fl:'Noch {n} Flaschen möglich', fertig:'Fertig ausgebaut', zu:'Stufe {st} noch gesperrt', kann:'Stufe {st} möglich'}},
   // Seit 16.5.5 (Bild 07): Deine Weine oben im Lager. Platzhalter, Wortlaut in Meilenstein 17.
   wein:{titel:'Deine Weine', band:'{n} Weine, geschätzter Wert {w}', leer:'Noch keine Einträge. Hier stehen später alle deine Weine im Fass und in der Flasche.',
     bald:'Ein Wein verdirbt bald', baldN:'{n} Weine verderben bald', fassL:'dazu {l} l im Fass', imFass:'Im Fass', sekt:'Sekt', wein:'Wein', nichtAn:'nicht angemeldet',

@@ -1392,6 +1392,7 @@ function wbPanel(iId){
   if(/^masch_/.test(iId)) return wbPanelMasch(iId.slice(6));   // seit 16.4.6
   if(/^k_/.test(iId)) return wbPanelKeller(iId.slice(2));   // seit 16.5.2
   if(/^wl_/.test(iId)) return wbPanelWein(iId.slice(3));   // seit 16.5.5
+  if(/^l_/.test(iId)) return wbPanelLager(iId.slice(2));   // seit 16.5.6
   const id=iId.replace(/^feld_/,''), f=S.felder[id], so=SORTEN[id], m=S.monat, P=WB_TEXT;
   if(!f||!so) return '';
   let z='', k='';
@@ -1653,36 +1654,58 @@ function wbPanelKeller(k){
 }
 // Lager (seit 7.4 auf dem Fenster-Baustein): Fässer, Flaschen, Kellerausbau. Der Zustand steht als Zeilen im Fenster, die Erklärungen im i.
 // Was der Kellermeister von selbst kauft, steht als kurzer Hinweis im Fenster, ob er dafür Lagerarbeiter einstellt, im i.
-function vLager(){
-  const bel=fassBelegt(), KM=MGR_BEREICHE.weingut.name, la=aufgabeAktiv('lager'), mk=aufgabeAktiv('fass'), mf=aufgabeAktiv('flaschen');
-  const kf=fassKap()-S.fassraum, kl=flKap()-S.flaschen;
-  const leute=la?' Fehlen dafür Kellerleute, stellt er sie ein.':' Fehlen dafür Kellerleute, kauft er nichts.';
-  if(einZu('faesser')&&einZu('flaschen')&&!S.keller&&!kellerFrei(0)) return vLagerWeine()+einKarte('lager','Noch genug Platz',`Hier kaufst du Fässer und Flaschen. Noch reichen ${num(S.fassraum)} l Fassraum und ${num(S.flaschen)} leere Flaschen, vor der Lese schaust du wieder rein.`);
-  return vLagerWeine()+fenster('faesser','Fässer',`<div class="kv"><span>Fassraum belegt</span><span>${num(bel)} von ${num(S.fassraum)} l</span></div><div class="bar w"><i style="width:${S.fassraum?bel/S.fassraum*100:0}%"></i></div>
-    <div class="kv"><span>Betreut (Kellerleute: ${S.lagerarb})</span><span>bis ${num(fassKap())} l</span></div>`,{
-    hin:[mk&&`🌿 Dein ${KM} kauft fehlenden Fassraum beim Keltern dazu.`,csChef('fass')],
-    links:kf<500?'Für mehr Fassraum brauchst du mehr Kellerleute.':`Möglich sind noch ${num(kf)} l.`,
-    kn:pk('kaufFass','Kaufen',eur2(fassPreis()),{klein:'je Liter',arm:kf<500||S.geld<500*fassPreis()}),
-    i:`Fassraum brauchst du zum Keltern, kauf ihn am besten vor der Lese. ${ALLEIN_FASS?`${num(ALLEIN_FASS)} l betreust du selbst, jeder Kellermensch ${num(FASS_JE_LAGERARB)} l dazu`:`Ein Kellermensch betreut ${num(FASS_JE_LAGERARB)} l Fassraum`}. Der Preis schwankt jeden Monat.${mk?` Dein ${KM} kauft beim Keltern nur so viel, wie gerade fehlt.${leute}`:''}`})
-  // Seit 10.6 (Maik 20.11.2026): Leiste wie beim Fassraum, darunter, was du selbst betreust und was die Lagerarbeiter dazu schaffen.
-  +fenster('flaschen','Flaschen',`<div class="kv"><span>Flaschenplatz belegt</span><span>${num(S.flaschen)} von ${num(flKap())}</span></div><div class="bar w"><i style="width:${flKap()?Math.min(100,S.flaschen/flKap()*100):0}%"></i></div>
-    <div class="kv"><span>Betreust du selbst</span><span>${num(ALLEIN_FL)}</span></div>
-    <div class="kv"><span>Kellerleute (${S.lagerarb}) betreuen</span><span>+ ${num(flKap()-ALLEIN_FL)}</span></div>`,{
-    hin:[mf&&`🍷 Dein ${KM} kauft fehlende Flaschen beim Abfüllen dazu.`,csChef('flaschen')],
-    links:kl<100?'Für mehr Flaschen brauchst du mehr Kellerleute.':`Möglich sind noch ${num(kl)} Flaschen.`,
-    kn:pk('kaufFlaschen','Kaufen',eur2(flaschePreis()),{klein:'je Flasche',arm:kl<100||S.geld<100*flaschePreis()}),
-    i:`Leere Flaschen brauchst du zum Abfüllen, ein Liter je Flasche. Kauf sie am besten vor dem Abfüllen. ${ALLEIN_FL?`${num(ALLEIN_FL)} leere Flaschen betreust du selbst, jeder Kellermensch ${num(FLASCHEN_JE_LAGERARB)} dazu`:`Ein Kellermensch betreut ${num(FLASCHEN_JE_LAGERARB)} leere Flaschen`}, mit der Abfüllanlage im Einsatz ${num(ABF_FLASCHEN)}. Der Preis schwankt jeden Monat.${mf?` Dein ${KM} kauft beim Abfüllen nur so viele, wie gerade fehlen.${leute}`:''}`})
-  +kellerAusHtml();
+// Seit 16.5.6 (Bauplan 16.5, Entscheidung 3): Karten im Kartenbaustein auf dem Holzbrett unter "Deine Weine", Kennungen l_fassraum, l_flaschen, l_ausbau (k_faesser ist die
+// Karte der Weine im Fass im Keller). Bilder aus Timos Kellerbildern (fassgang, panorama-keller-teil-4, keller), Design entschieden. Zu: Hinweis und Balken, auf: die Zeilen
+// und Knöpfe von bisher (kaufFass, kaufFlaschen, kellerAus) mit denselben Bedingungen, das i öffnet das Info-Panel (wbPanelLager). Platzhalter, Wortlaut in Meilenstein 17.
+const lKarte=(k,titel,klein,kopf,auf)=>wbKarte('l_'+k,titel,klein,kopf,auf,{bild:'lagerkarte-'+k,bildArt:'webp',iId:'l_'+k,iName:titel});
+const L_I={
+  fassraum:()=>{const KM=MGR_BEREICHE.weingut.name, mk=aufgabeAktiv('fass'), la=aufgabeAktiv('lager'); return `Fassraum brauchst du zum Keltern, kauf ihn am besten vor der Lese. ${ALLEIN_FASS?`${num(ALLEIN_FASS)} l betreust du selbst, jeder Kellermensch ${num(FASS_JE_LAGERARB)} l dazu`:`Ein Kellermensch betreut ${num(FASS_JE_LAGERARB)} l Fassraum`}. Der Preis schwankt jeden Monat.${mk?` Dein ${KM} kauft beim Keltern nur so viel, wie gerade fehlt.${la?' Fehlen dafür Kellerleute, stellt er sie ein.':' Fehlen dafür Kellerleute, kauft er nichts.'}`:''}`},
+  flaschen:()=>{const KM=MGR_BEREICHE.weingut.name, mf=aufgabeAktiv('flaschen'), la=aufgabeAktiv('lager'); return `Leere Flaschen brauchst du zum Abfüllen, ein Liter je Flasche. Kauf sie am besten vor dem Abfüllen. ${ALLEIN_FL?`${num(ALLEIN_FL)} leere Flaschen betreust du selbst, jeder Kellermensch ${num(FLASCHEN_JE_LAGERARB)} dazu`:`Ein Kellermensch betreut ${num(FLASCHEN_JE_LAGERARB)} leere Flaschen`}, mit der Abfüllanlage im Einsatz ${num(ABF_FLASCHEN)}. Der Preis schwankt jeden Monat.${mf?` Dein ${KM} kauft beim Abfüllen nur so viele, wie gerade fehlen.${la?' Fehlen dafür Kellerleute, stellt er sie ein.':' Fehlen dafür Kellerleute, kauft er nichts.'}`:''}`},
+  ausbau:()=>'Jede Stufe lässt Prädikatsweine und Eiswein einen Monat früher verkaufsreif werden, und jeder Wein gewinnt beim Reifen in der Flasche schneller an Wert.'+kellerRangText()};
+function lFassraum(){
+  const T=WB_TEXT.lager, bel=fassBelegt(), kf=fassKap()-S.fassraum, KM=MGR_BEREICHE.weingut.name;
+  const kopf=kHin(...(kf<500?['gelb',T.hin.leute]:['gruen',wbT(T.hin.fass,{l:num(kf)})]))+kBal(T.belegt,S.fassraum?bel/S.fassraum*100:0,'',wbT(T.fassUnter,{bel:num(bel),ges:num(S.fassraum)}));
+  const auf=kInfo([aufgabeAktiv('fass')&&`🌿 Dein ${KM} kauft fehlenden Fassraum beim Keltern dazu.`,csChef('fass')])
+    +`<div class="kv"><span>Betreut (Kellerleute: ${S.lagerarb})</span><span>bis ${num(fassKap())} l</span></div>`
+    +`<div class="wbklein">${kf<500?'Für mehr Fassraum brauchst du mehr Kellerleute.':`Möglich sind noch ${num(kf)} l.`}</div>`
+    +kKn(pk('kaufFass','Kaufen',eur2(fassPreis()),{klein:'je Liter',arm:kf<500||S.geld<500*fassPreis()}));
+  return lKarte('fassraum',T.fassraum,T.fassKlein,kopf,auf);
 }
-function kellerAusHtml(){
-  const K=S.keller||0, pr=KELLER_PREISE[K], N=KELLER_PREISE.length;
-  const was='Jede Stufe lässt Prädikatsweine und Eiswein einen Monat früher verkaufsreif werden, und jeder Wein gewinnt beim Reifen in der Flasche schneller an Wert.'+kellerRangText();
-  if(pr!=null&&!K&&!kellerFrei(0)) return fenster('ausbau','Kellerausbau','',{zu:`mit ${kellerMit(0)}`,i:`${was} Ausbauen kannst du mit ${kellerMit(0)} im Kellerbuch.`});
-  const stand=`<div class="kv"><span>Ausgebaut</span><span>Stufe ${K} von ${N}</span></div>${K?`<div class="kv"><span>Zuletzt gebaut</span><span>${KELLER_NAMEN[K-1]}</span></div>`:''}<div class="bar w"><i style="width:${K/N*100}%"></i></div>
-    ${K?`<div class="kv"><span>Prädikat und Eiswein</span><span>${K} ${K===1?'Monat':'Monate'} früher reif</span></div>`:''}`;
-  if(pr==null) return fenster('ausbau','Kellerausbau',stand+`<div class="fleer" style="margin-top:6px">Dein Keller ist fertig ausgebaut.</div>`,{i:was});
-  if(!kellerFrei(K)) return fenster('ausbau','Kellerausbau',stand+`<div class="fleer" style="margin-top:6px">🔒 Stufe ${K+1} (${KELLER_NAMEN[K]}) kannst du mit ${kellerMit(K)} im Kellerbuch ausbauen.</div>`,{i:was});
-  return fenster('ausbau','Kellerausbau',stand,{kn:pk('kellerAus','Ausbauen',eur(pr),{klein:KELLER_NAMEN[K],arm:S.geld<pr}),i:was});
+function lFlaschen(){
+  const T=WB_TEXT.lager, kl=flKap()-S.flaschen, KM=MGR_BEREICHE.weingut.name;
+  const kopf=kHin(...(kl<100?['gelb',T.hin.leute]:['gruen',wbT(T.hin.fl,{n:num(kl)})]))+kBal(T.platz,flKap()?Math.min(100,S.flaschen/flKap()*100):0,'',wbT(T.flUnter,{n:num(S.flaschen),ges:num(flKap())}));
+  const auf=kInfo([aufgabeAktiv('flaschen')&&`🍷 Dein ${KM} kauft fehlende Flaschen beim Abfüllen dazu.`,csChef('flaschen')])
+    +`<div class="kv"><span>Betreust du selbst</span><span>${num(ALLEIN_FL)}</span></div><div class="kv"><span>Kellerleute (${S.lagerarb}) betreuen</span><span>+ ${num(flKap()-ALLEIN_FL)}</span></div>`
+    +`<div class="wbklein">${kl<100?'Für mehr Flaschen brauchst du mehr Kellerleute.':`Möglich sind noch ${num(kl)} Flaschen.`}</div>`
+    +kKn(pk('kaufFlaschen','Kaufen',eur2(flaschePreis()),{klein:'je Flasche',arm:kl<100||S.geld<100*flaschePreis()}));
+  return lKarte('flaschen',T.flaschen,T.flKlein,kopf,auf);
+}
+// Kellerausbau: vor der ersten Freigabe ausgeblendet wie bisher (das Fenster war zu und damit unsichtbar), sonst Stand, Schloss oder Ausbauen.
+function lAusbau(){
+  const T=WB_TEXT.lager, K=S.keller||0, pr=KELLER_PREISE[K], N=KELLER_PREISE.length;
+  if(pr!=null&&!K&&!kellerFrei(0)) return '';
+  const fertig=pr==null, zu=!fertig&&!kellerFrei(K);
+  const hw=fertig?['gruen',T.hin.fertig]:zu?['grau',wbT(T.hin.zu,{st:K+1})]:[S.geld<pr?'grau':'gelb',wbT(T.hin.kann,{st:K+1})];
+  const kopf=kHin(...hw)+kBal(T.ausgebaut,K/N*100,'',wbT(T.stufe,{k:K,n:N})+(K?`, ${KELLER_NAMEN[K-1]}`:''));
+  const auf=(K?`<div class="kv"><span>Prädikat und Eiswein</span><span>${K} ${K===1?'Monat':'Monate'} früher reif</span></div>`:'')
+    +(fertig?`<div class="fleer" style="margin-top:6px">Dein Keller ist fertig ausgebaut.</div>`:zu?`<div class="fleer" style="margin-top:6px">🔒 Stufe ${K+1} (${KELLER_NAMEN[K]}) kannst du mit ${kellerMit(K)} im Kellerbuch ausbauen.</div>`
+      :kKn(pk('kellerAus','Ausbauen',eur(pr),{klein:KELLER_NAMEN[K],arm:S.geld<pr})));
+  return lKarte('ausbau',T.ausbau,wbT(T.stufe,{k:K,n:N}),kopf,auf);
+}
+function vLager(){
+  // Ruhiger Einstieg wie bisher: Solange Fässer und Flaschen zu sind und der Keller nichts zu bauen hat, nur der Hinweis "Noch genug Platz".
+  if(einZu('faesser')&&einZu('flaschen')&&!S.keller&&!kellerFrei(0)) return vLagerWeine()+einKarte('lager','Noch genug Platz',`Hier kaufst du Fässer und Flaschen. Noch reichen ${num(S.fassraum)} l Fassraum und ${num(S.flaschen)} leere Flaschen, vor der Lese schaust du wieder rein.`);
+  return vLagerWeine()+(einZu('faesser')?'':lFassraum())+(einZu('flaschen')?'':lFlaschen())+lAusbau();
+}
+// Info-Panel einer Lager-Karte: Zustand, Kosten, als Tipp der alte i-Text mit dem Buchkapitel lager.
+function wbPanelLager(k){
+  const T=WB_TEXT.lager, bel=fassBelegt(), K=S.keller||0, pr=KELLER_PREISE[K];
+  let z='', c='', t='';
+  if(k==='fassraum'){z=wbKv(T.belegt,wbT(T.fassUnter,{bel:num(bel),ges:num(S.fassraum)}))+wbKv(T.betreut,`${num(fassKap())} l`)+wbKv(T.moeglich,`${num(Math.max(0,fassKap()-S.fassraum))} l`); c=wbKv(WB_TEXT.keller.fassPreis,eur2(fassPreis())); t=L_I.fassraum()}
+  else if(k==='flaschen'){z=wbKv(T.platz,wbT(T.flUnter,{n:num(S.flaschen),ges:num(flKap())}))+wbKv(T.moeglich,num(Math.max(0,flKap()-S.flaschen))); c=wbKv(WB_TEXT.keller.flPreis,eur2(flaschePreis())); t=L_I.flaschen()}
+  else if(k==='ausbau'){z=wbKv(T.ausgebaut,wbT(T.stufe,{k:K,n:KELLER_PREISE.length}))+(K?wbKv(T.zuletzt,KELLER_NAMEN[K-1]):''); c=pr!=null?wbKv(wbT(T.naechste,{name:KELLER_NAMEN[K]}),eur(pr)):''; t=L_I.ausbau()}
+  else return '';
+  return wbPanelRahmen(T[k],wbAbschnitt('📦',WB_TEXT.zustand,z)+wbAbschnitt('🪙',WB_TEXT.kosten,c)+wbAbschnitt('💡',WB_TEXT.tipps,`<p style="margin:0 0 6px">${t}</p>${mib('lager')}`));
 }
 // Hintertür im Keller (seit 7.4 auf dem Fenster-Baustein): Zuckern und Wässern, Verschneiden, darunter der Weinprüfer als Zustand. Die Sabotage ist seit 13.5.9 raus.
 // Seit 16.5.4 (Bauplan 16.5, Entscheidung 2): drei Karten im Kartenbaustein unten im Keller, Kennungen k_zuckern, k_verschneiden, k_pruefer, Befehle unverändert
@@ -2079,7 +2102,7 @@ const FU_ZEIG={
   'e1-07':{tab:'gut',sub:'berg',sel:['[data-a="pflanzen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'e1-08':{sel:['#top .wtr']},
   'e1-09':{tab:'gut',sub:'berg',sel:['[data-a="bInfo"][data-id="duengung"]']},
-  'e1-10':{tab:'keller',sub:'lager',sel:[fiSel('faesser')]},
+  'e1-10':{tab:'keller',sub:'lager',sel:['[data-a="bInfo"][data-id="l_fassraum"]']},   // seit 16.5.6 das i der Karte Fassraum
   'e1-11':{tab:'gut',sub:'berg',sel:['[data-a="bInfo"][data-id^="feld_"]']},
   'e1-12':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'e1-13':{tab:'keller',sub:'start',karte:'k_keltern',sel:['[data-a="keltern"]','#wb_k_keltern']},   // seit 16.5.2 mit aufgeklappter Karte
@@ -2101,7 +2124,7 @@ const FU_ZEIG={
   // Paket B: Rang-Neuheiten. Beim Befördern leuchtet der Knopf des Managers im Arbeitsamt.
   'r3-1':{tab:'stadt',sub:'amt',sel:[fiSel('auktionen'),fiSel('makler')]},
   'r3-2':{tab:'gut',sub:'berg',sel:['[data-a="bInfo"][data-id^="feld_"]']},
-  'r3-3':{tab:'keller',sub:'lager',sel:[fiSel('ausbau')]},
+  'r3-3':{tab:'keller',sub:'lager',sel:['[data-a="bInfo"][data-id="l_ausbau"]']},   // seit 16.5.6 das i der Karte Kellerausbau
   'r3-4':{tab:'stadt',sub:'amt',sel:[fiSel('spenden')]},
   'r4-1':{tab:'stadt',sub:'arbeit',sel:[fiSel('mgr_amt')]},
   'r4-2':{tab:'stadt',sub:'handel',sel:[fiSel('markt')]},
@@ -2151,13 +2174,13 @@ const FU_ZEIG={
   'w5':{tab:'gut',sub:'berg',sel:['[data-a="bInfo"][data-id="duengung"]']},
   'w6':{tab:'keller',sub:'lager',karte:()=>fuWeinKarte(S.lots.find(fuLange)),sel:()=>{const l=S.lots.find(fuLange); return [l?`.bzeile[data-a="buchDetail"][data-id="${l.id}"]`:'','.wkband']}},
   'w7':{tab:'stadt',sub:'bank',sel:[fiSel('kredit')]},
-  'w8':{tab:'keller',sub:'lager',sel:[fiSel('faesser')]},
+  'w8':{tab:'keller',sub:'lager',sel:['[data-a="bInfo"][data-id="l_fassraum"]']},
   'w9':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'h1':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'h2':{tab:'stadt',sub:'amt',sel:[fiSel('auktionen')]},
   'h3':{tab:'stadt',sub:'amt',sel:[fiSel('auktionen')]},
   // Kniffe
-  'k02':{tab:'keller',sub:'lager',sel:[fiSel('faesser')]},
+  'k02':{tab:'keller',sub:'lager',sel:['[data-a="bInfo"][data-id="l_fassraum"]']},
   'k03':{tab:'keller',sub:'buch',sel:['[data-a="archiv"][data-id="brett"]']},
   'k04':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'k05':{tab:'gut',sub:'betrieb',sel:['[data-a="klapp"][data-id="gebiet"]','[data-a="bInfo"][data-id="betrieb"]']},   // seit 16.4.2 in der Karte Dein Betrieb
@@ -2302,7 +2325,7 @@ function render(){
   // Kellerbuch und Aktuelles öffnen sich mit einem eigenen Geräusch.
   ortFarbe(SUBS[TAB]?TAB:'gut');
   // Seit 16.1: Im Weinberg liegt das Holzbrett hinter den Karten. Seit 16.3.2 auch hinter dem Klemmbrett (Bild 05).
-  document.documentElement.classList.toggle('brett',TAB==='gut'&&(SUB==='berg'||SUB==='aktuell'||SUB==='betrieb')||TAB==='keller'&&SUB==='start');   // seit 16.4.2 auch im Betrieb (Bild 22), seit 16.5.2 im Keller (Bild 23)
+  document.documentElement.classList.toggle('brett',TAB==='gut'&&(SUB==='berg'||SUB==='aktuell'||SUB==='betrieb')||TAB==='keller'&&(SUB==='start'||SUB==='lager'));   // seit 16.4.2 auch im Betrieb (Bild 22), seit 16.5.2 im Keller (Bild 23), seit 16.5.6 im Lager
   const ort=SUBS[TAB]?TAB+'/'+SUB:TAB; if(ort!==ORT_ALT){FI_AUF.clear(); if(ORT_ALT&&(ort==='keller/buch'||ort==='gut/aktuell')) fx('menue'); ORT_ALT=ort}
   musikOrt(musikWahl());
   if(ort==='stadt/laeden') S.ladenSeh=S.jahr*12+S.monat;
