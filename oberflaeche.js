@@ -1243,8 +1243,36 @@ function wbMehrListe(id){const f=S.felder[id], L=[], E=EINSATZ_TEXT, b=(x,txt,kl
 // Erklärtext einer Sorte (bis 16.0 das i des Fensters im Weinberg).
 function wbFeldI(id){const wm=`Dein ${MGR_BEREICHE.weingut.name}`, mr=aufgabeAktiv('reben');
   return `${!S.felder[id].reben&&!sorteFrei(id)?sorteSchild(id)+'. ':''}Gepflanzt und gerodet wird nur von Januar bis März, gelesen ab August. Je länger die Trauben hängen, desto mehr Öchsle und desto höher die Weinstufe. Aber Regen, Kälteeinbruch und fehlender Frost können alles kosten. ${S.rollen?'Jede Sorte hat ihre Rolle: Die Menge-Sorte trägt viel, die Sekt-Sorte gibt den besten Sekt, die Spitzen-Sorte die besten Weine.':'Die Sterne zeigen, wie gut die Sorte in dein Gebiet passt.'}${mr?` ${wm} pflanzt von Januar bis März nach, was über den Winter eingegangen ist.`:''}`}
-// Vorläufig bis 16.1.4: das i zeigt die Erklärung als Fenster von unten.
-function wbPanel(iId){const id=iId.replace(/^feld_/,''), so=SORTEN[id]; return `<div class="ipanel"><h3 class="iband">${so?esc(so.name):''}</h3><p>${wbFeldI(id)}</p><div class="btns"><button class="sec" data-a="close">Zurück</button></div></div>`}
+// Seit 16.1.4 (Entscheidung 7, Timos Bild 3): Info-Panel von unten mit Zustand, Kosten und Tipps. Wischen nach unten oder ein Tipp auf den Rand schließt es.
+// Inhalt aus dem, was bis 16.1.2 in der Karte stand, und dem i-Text. iId ist 'feld_<Sorte>' oder 'duengung'. Platzhalter, Wortlaut in Meilenstein 17.
+const wbKv=(k,v,kl)=>`<div class="kv"><span>${k}</span><span${kl?` class="${kl}"`:''}>${v}</span></div>`;
+function wbAbschnitt(sym,titel,inhalt){return inhalt?`<section class="iab"><div class="isym">${sym}</div><div><h4>${titel}</h4>${inhalt}</div></section>`:''}
+function wbPanel(iId){
+  if(iId==='duengung') return wbPanelBoden();
+  const id=iId.replace(/^feld_/,''), f=S.felder[id], so=SORTEN[id], m=S.monat, P=WB_TEXT;
+  if(!f||!so) return '';
+  let z='', k='';
+  if(f.reben){const st=f.pflSt||0, Q=qualTeile(id), F=FORMEN[formVon(id)];
+    z=wbKv(`Rebschnitt ${S.jahr}`,f.schnitt===S.jahr?'✂️ geschnitten':m<=SCHNITT_BIS?'offen bis Ende April':`nicht geschnitten, verwildert um ${VERWILDERN[Math.min(VERWILDERN.length,(f.wild||0)+1)-1]} Punkte`,f.schnitt!==S.jahr&&m>SCHNITT_BIS?'rot':'')
+      +wbKv('Wirkung der Stufe',`${PFLEGE_STUFEN[st]}: ${Math.round(STUFE_MENGE[st]*100)}\u00a0% Menge`)
+      +wbKv('Qualität',`${Q.q} von 100 Punkten: Pflege ${Math.round(Q.pflege)}, Boden ${Math.round(Q.boden)}, Form ${Q.form}, Laubschnitt ${Q.laub}${ausdFrei()?`, Ausdünnen ${Q.ausd}`:''}`)
+      +wbKv('Erziehungsform',`${F.name}, ${Math.round(formMenge(id)*100)} % Menge, ${F.qual} Punkte Qualität, Lese ${formLese(id,formVon(id))}`)
+      +wbKv('Deckel',`${deckel(id)}° Öchsle`)+wbKv('Klima',klimaText(id))
+      +wbKv('Edelfäulnis',f.edel?'ja':!wagnisFeld(id)?'nie bei dieser Sorte':'nur über das Wagnis im Herbst')
+      +(f.gefroren?wbKv('Trauben','❄️ gefroren'):'')+(f.teil&&f.menge>0?wbKv('Lese','Ein Teil ist schon gelesen, der Rest hängt noch.'):'');
+    const zs=zuwachsVon(helferSchneidet(id)?'helfer':'chef'), zd=zuwachsVon(helferDuengt(id)?'helfer':'chef',1), wer=helferSchneidet(id)?`${EINSATZ_TEXT.auto}, ${leuteStName('helfer',leuteSt('helfer'))}`:`${EINSATZ_TEXT.chef}, du selbst`;
+    k=wbKv('Rebschnitt',`${eur(schnittKosten(id))}, ${eur(schnittHa(id))} je Hektar`)+wbKv('Düngen',`${eur(duengKosten(id))} je Düngung, höchstens ${DUENG_MAX} Mal im Jahr`)
+      +(frei('laub_hand')?wbKv('Laubschnitt von Hand',`${eur(laubHandKosten(id))}, ${eur(LAUB_HAND_HA)} je Hektar`):'')+(ausdFrei()?wbKv('Ausdünnen',eur(ausdKosten(id))):'')
+      +wbKv(EINSATZ_TEXT.schnitt,`${wer}, +${epT(epJahrSoll(id))} Punkte im guten Jahr, ${Math.round(zd*100)}\u00a0% Zuwachs beim Düngen`)}
+  else z=P.nicht;
+  k+=wbKv('Preis je Rebe',eur2(rebenPreis(id)/STOCK_F))+wbKv('Ertrag je Rebe',`rund ${String(Math.round(so.ertrag*(R().ertragF||1)/STOCK_F*10)/10).replace('.',',')} l`);
+  const lese=m>=7&&f.reben&&f.menge>0&&!f.gelesen?`<div class="hilfe">${leseHilfe(f)}${wagnisHinweis(id)}</div>`:'';
+  const tipp=`<p style="margin:0 0 6px">${wbFeldI(id)}</p>${lese}${mib(m>=7?'lese':'berg')}`;
+  return wbPanelRahmen(`${so.name}`,wbAbschnitt('<img src="bilder/sym-rebstufe.webp" alt="">',P.zustand,z)+wbAbschnitt('🪙',P.kosten,k)+wbAbschnitt('💡',P.tipps,tipp));
+}
+const wbPanelRahmen=(titel,inhalt)=>`<div class="ipanel"><i class="igriff"></i><h3 class="iband">${wbT(WB_TEXT.panel,{titel:esc(titel)})}</h3>${inhalt}<p class="iwisch">${WB_TEXT.wisch}</p><div class="btns"><button class="sec" data-a="close">Zurück</button></div></div>`;
+// Bis 16.1.5 die Karte "Boden und Düngung" kommt: Panel aus dem i-Text des Fensters Düngung.
+function wbPanelBoden(){return wbPanelRahmen(WB_TEXT.boden.titel,wbAbschnitt('💡',WB_TEXT.tipps,''))}
 // Weinberg (seit 7.4 auf dem Fenster-Baustein): je Sorte ein Fenster (seit 4.4 oben), dann Düngung und Übersicht, darunter zugeklappt der Steckbrief des Gebiets.
 // Sorten, die der Rang noch sperrt, sind seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten). Lese-Hinweise und rote Warnungen bleiben sichtbar, die Erklärungen stehen im i.
 function vBerg(){
@@ -2846,6 +2874,17 @@ function titelZu(){const t=$('#titel'); t.className=''; t.innerHTML=''; delete t
 let WISCH=null, WISCH_ZEIT=0;
 document.addEventListener('pointerdown',e=>{WISCH=e.target.closest('.pano')?{x:e.clientX,y:e.clientY}:null});
 document.addEventListener('pointercancel',()=>{WISCH=null});
+// Seit 16.1.4: Das Info-Panel folgt dem Finger nach unten und schließt ab 70 Pixeln, solange es ganz oben steht (sonst scrollt es nur).
+let IP_W=null;
+const ipStart=(x,y,el)=>{const p=el&&el.closest&&el.closest('#sheet .ipanel'), box=p&&p.parentElement; IP_W=box&&box.scrollTop<=0?{x,y,box}:null};
+const ipZug=y=>{if(IP_W){const dy=y-IP_W.y; IP_W.box.style.transform=dy>0?`translateY(${dy}px)`:''}};
+const ipEnde=(x,y)=>{const W=IP_W; IP_W=null; if(!W) return; W.box.style.transform=''; const dy=y-W.y; if(dy>70&&dy>Math.abs(x-W.x)){WISCH_ZEIT=Date.now(); closeSheet()}};
+document.addEventListener('touchstart',e=>{const t=e.touches[0]; ipStart(t.clientX,t.clientY,e.target)},{passive:true});
+document.addEventListener('touchmove',e=>{if(IP_W) ipZug(e.touches[0].clientY)},{passive:true});
+document.addEventListener('touchend',e=>{if(IP_W){const t=e.changedTouches[0]; ipEnde(t.clientX,t.clientY)}},{passive:true});
+document.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse') ipStart(e.clientX,e.clientY,e.target)});
+document.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'&&e.buttons&&IP_W) ipZug(e.clientY)});
+document.addEventListener('pointerup',e=>{if(e.pointerType==='mouse'&&IP_W) ipEnde(e.clientX,e.clientY)});
 document.addEventListener('pointerup',e=>{
   if(!WISCH) return; const dx=e.clientX-WISCH.x, dy=e.clientY-WISCH.y; WISCH=null;
   if(Math.abs(dx)<40||Math.abs(dx)<Math.abs(dy)*1.5) return;
