@@ -904,21 +904,43 @@ function buchZeig(){
 // Betrieb (seit 7.4 auf dem Fenster-Baustein, seit 7.5 mit dem Personal): Dein Betrieb, die drei Manager untereinander, Deine Leute, das Fest.
 // Von Juni bis August steht das Fest oben, solange es nicht gefeiert ist. Was der Rang noch sperrt, ist seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten).
 // Der Gebiets-Steckbrief steht seit 7.4 im Weinberg.
+// Seit 16.4.2 (Bild 22, Annahme 4.4): Karte "Dein Betrieb" im Kartenbaustein des Weinbergs (wbKarte), Bild vom Weingut der eigenen Stufe in der Jahreszeit.
+// Zu: Name des Weinguts als Titel, Hinweis-Zeile, Fassraum als Balken, leere Flaschen und Löhne. Auf: Fläche, Bepflanzt, Platz frei, Lagen, Spitzenlage, Kosten, Kredit
+// und zugeklappt "Dein Gebiet" (bis 16.3 im Weinberg). Das i öffnet das Info-Panel mit den Texten des alten Fensters. Platzhalter, Wortlaut in Meilenstein 17.
+// Hinweis: Rot, wenn Leute fehlen (Sperre beim Weiterblättern), Gelb, wenn die Trauben im Kelterhaus nicht in den freien Fassraum passen (wie die rote Zeile beim Keltern).
+const wbHa=x=>String(x).replace('.',',');
+function wbBetriebKarte(){
+  const T=WB_TEXT.betrieb, ges=S.ha*HA_REBEN, bep=rebenGesamt(), fe=leuteFehlen(), bel=fassBelegt(), frei=Math.max(0,S.fassraum-bel), k=kosten();
+  const tr=S.lots.filter(l=>l.status==='trauben').reduce((a,l)=>a+l.liter,0);
+  const hw=fe.helfer||fe.lagerarb?['rot',T.hin.leute]:tr>frei?['gelb',T.hin.fass]:['gruen',T.hin.fertig];
+  const zl=(sym,k_,v)=>`<div class="wbzl"><span class="em">${sym}</span><span>${k_}</span><b class="zahl">${v}</b></div>`;
+  const kopf=`<div class="hinw ${hw[0]}"><i></i><em>${hw[1]}</em></div><div class="wbal"><b>${T.fass}</b>${wbBalken(S.fassraum?bel/S.fassraum*100:0)}</div>
+    <div class="wbunter">${wbT(T.fassUnter,{bel:num(bel),ges:num(S.fassraum)})}</div>`, unter=zl('🍾',T.flaschen,num(S.flaschen))+zl('👥',T.loehne,eur(k.loehne));
+  const L=[], add=(k_,v,kl)=>L.push(`<div${kl?` class="${kl}"`:''}><dt>${k_}</dt><dd>${v}</dd></div>`);
+  add(T.flaeche,`${wbHa(S.ha)} Hektar`); add(T.bepflanzt,`${rbn(bep)} Reben, ${Math.round(ges?bep/ges*100:0)} %`); add(T.platz,`${rbn(ges-bep)} Reben`);
+  add(T.kosten,eur(k.basis+k.loehne+k.tilgung+k.zins));
+  add(T.lage,hangZeile(),'breit');
+  if(S.spitze) add(T.spitze,`${SPITZE_HA} Hektar Südhang, ${KLIMA_WORT.spitzenlage}`,'breit');
+  if(S.kredit) add(T.kredit,eur(S.kredit.rest),'breit');
+  const G=steckbrief(S.region,{fen:1}), ga=FI_AUF.has('gebiet+');
+  const geb=`<div class="wbgebiet"><div class="wbkv"><b>${T.gebiet}</b></div><div class="gkopf"><img class="gs" src="bilder/gebiet-${S.region}.webp" alt=""><div class="kv"><span>${G.name}</span><span>${G.art}</span></div></div>
+    <div class="sb fklapp"${ga?'':' hidden'}>${G.rumpf}</div><div class="wbkn"><button class="klein sec" data-a="klapp" data-id="gebiet" data-auf="${T.zuklappen}" data-zu="${T.zeigen}">${ga?T.zuklappen:T.zeigen}</button></div></div>`;
+  return wbKarte('betrieb',esc(S.name),wbT(T.klein,{gebiet:R().name}),kopf,`<dl class="wbfakt">${L.join('')}</dl>`+geb,{bild:wgBild(wgStufe(),JZ[S.monat]),iId:'betrieb',iName:S.name,unter});
+}
+// Info-Panel der Karte "Dein Betrieb": Zustand, Kosten und als Tipps die i-Texte der alten Fenster "Dein Betrieb" und "Dein Gebiet".
+function wbPanelBetrieb(){
+  const T=WB_TEXT.betrieb, k=kosten(), bel=fassBelegt();
+  const z=wbKv(T.fass,`${num(bel)} von ${num(S.fassraum)} l, ${num(Math.max(0,S.fassraum-bel))} l ${T.frei}`)+wbKv(T.flaschen,num(S.flaschen))
+    +wbKv(T.masch,`${S.maschinen.length}${S.maschinen.length?`, ${maschVerteilung().length} ${T.einsatz}`:''}`)+wbKv('Anbaugebiet',R().name);
+  const ko=wbKv(T.loehne,eur(k.loehne))+wbKv(T.basis,eur(k.basis))+(S.kredit?wbKv(T.rate,eur(k.tilgung+k.zins)):'')+wbKv(T.kosten,eur(k.basis+k.loehne+k.tilgung+k.zins))
+    +(S.kredit?wbKv(T.kredit,eur(S.kredit.rest)):'');
+  const tipp=`<p style="margin:0 0 6px">Hier siehst du dein Weingut auf einen Blick: Fläche, Fassraum, Kosten und Kredit. Feste Kosten sind Betriebskosten, Löhne und die Kreditrate, sie gehen jeden Monat von selbst ab. Darunter stehen deine Leute und deine Maschinen. Den Steckbrief deines Gebiets findest du aufgeklappt in dieser Karte.</p>`
+    +`<p style="margin:0 0 6px">Jedes Gebiet hat eine eigene Stärke. In warmen Gebieten gibt es öfter edelsüße Weine, in kühlen öfter Eiswein, in der Mitte mehr Medaillen oder mehr Geld. Der Steckbrief zeigt, welche Sorten hier passen, was sich lohnt und wie du am besten vorgehst.</p>${mib('betrieb')} ${mib('gebiete')}`;
+  return wbPanelRahmen(S.name,wbAbschnitt('🏡',WB_TEXT.zustand,z)+wbAbschnitt('💶',WB_TEXT.kosten,ko)+wbAbschnitt('💡',WB_TEXT.tipps,tipp));
+}
 function vBetrieb(){
   const F=hoffestHtml(), M=mgrHtml();
-  return (F.jetzt?F.h:'')+fenster('betrieb','Dein Betrieb',`<div class="kv"><span>Anbaugebiet</span><span>${R().name}</span></div>
-    <div class="kv"><span>Fläche</span><span>${S.ha} Hektar, ${Math.round(rebenGesamt()/(S.ha*HA_REBEN)*100)} % bepflanzt</span></div>
-    <div class="kv"><span>Lagen</span><span>${hangZeile()}</span></div>
-    <div class="kv"><span>Bepflanzt</span><span>${rbn(rebenGesamt())} von ${rbn(S.ha*HA_REBEN)} Reben</span></div>
-    ${S.spitze?`<div class="kv"><span>Spitzenlage</span><span>${SPITZE_HA} Hektar Südhang, ${KLIMA_WORT.spitzenlage}</span></div>`:''}
-    <div class="kv"><span>Fassraum belegt</span><span>${num(fassBelegt())} von ${num(S.fassraum)} l</span></div>
-    <div class="kv"><span>Leere Flaschen</span><span>${num(S.flaschen)}</span></div>
-    ${einFrei('leute')?'':`<div class="kv"><span>Deine Leute</span><span>Familie, schafft ${ALLEIN_HA} Hektar</span></div>`}
-    <div class="kv"><span>Maschinen</span><span>${S.maschinen.length}${S.maschinen.length?`, ${maschVerteilung().length} im Einsatz`:''}</span></div>
-    <div class="kv"><span>Löhne im Monat</span><span>${eur(kosten().loehne)}</span></div>
-    <div class="kv"><span>Feste Kosten im Monat</span><span>${(k=>eur(k.basis+k.loehne+k.tilgung+k.zins))(kosten())}</span></div>
-    ${S.kredit?`<div class="kv"><span>Kredit, Restschuld</span><span>${eur(S.kredit.rest)}</span></div>`:''}`,{
-    i:'Hier siehst du dein Weingut auf einen Blick: Fläche, Fassraum, Kosten und Kredit. Feste Kosten sind Betriebskosten, Löhne und die Kreditrate, sie gehen jeden Monat von selbst ab. Darunter stehen deine Manager und deine Leute. Den Steckbrief deines Gebiets findest du im Weinberg.'})
+  return (F.jetzt?F.h:'')+wbBetriebKarte()
     +M.h+leuteHtml()+(F.jetzt?'':F.h||'')+M.zu+(F.zu||'')+vMaschinen();   // seit 16.4.1: die Maschinen unten im Betrieb (bis 16.3 eigener Unterreiter)
 }
 // Seit 7.5: Erntehelfer und Lagerarbeiter im Betrieb, je eine Zeile mit Anzahl, Aufgabe und Lohn. Eingestellt und entlassen wird im Arbeitsamt.
@@ -1265,6 +1287,7 @@ function wbFakten(id){const f=S.felder[id], so=SORTEN[id], m=S.monat, F=WB_TEXT.
     add(F.plan,P.join('<br>'),1)}
   return `<dl class="wbfakt">${L.join('')}</dl>`}
 // Die Karte selbst. kopf ist der immer sichtbare Teil rechts vom Bild, auf der aufgeklappte Teil darunter. Gesperrte Karten klappen nicht auf.
+// Seit 16.4.2: o.unter steht immer sichtbar unter Bild und Kopf über die ganze Breite (Zeilen, die neben dem Bild umbrechen würden).
 function wbKarte(id,titel,klein,kopf,auf,o={}){
   const iId=o.iId||'feld_'+id, zu=!o.gesperrt, offen=zu&&wbAuf(id);
   const kl=`${zu?` data-a="karte" data-id="${id}" role="button" aria-expanded="${offen}"`:''}`;
@@ -1272,7 +1295,7 @@ function wbKarte(id,titel,klein,kopf,auf,o={}){
     <div class="wbkopf"${kl}><div class="wbbild" style="background-image:url(bilder/${o.bild||wbBild(id)}.${o.bildArt||'jpg'})"></div>
       <div class="wbtext"><h3>${titel}<small>${klein}</small></h3>${kopf}</div>
       <button class="fi" data-a="bInfo" data-id="${iId}" aria-label="Erklärung zu ${esc(o.iName||'')}"><i>i</i></button></div>
-    ${offen?`<div class="fin wbauf"><div class="wbtrenn">❦</div>${auf}</div>`:''}${zu?`<span class="wbzu" data-a="karte" data-id="${id}" aria-hidden="true">${offen?'▴':'▾'}</span>`:''}</section>`}
+    ${o.unter?`<div class="wbunterz" data-a="karte" data-id="${id}">${o.unter}</div>`:''}${offen?`<div class="fin wbauf"><div class="wbtrenn">❦</div>${auf}</div>`:''}${zu?`<span class="wbzu" data-a="karte" data-id="${id}" aria-hidden="true">${offen?'▴':'▾'}</span>`:''}</section>`}
 // Seit 16.1.3 (Entscheidung 9): Pflanzen und Roden gehen von Januar bis März, wenn die Sorte frei ist (Bedingung wie bis 16.0).
 const wbPflanz=id=>S.monat<=2&&sorteFrei(id)&&!(sektSorte(id)&&!S.sektkeller)&&!(istSL(id)&&slPlatz()<10);
 // Inhalt von "Mehr": Form ändern, der Einsatzplan dieses Weinbergs (beim Weingut-Manager nur der Weg dorthin) und Roden. Platzhalter, Wortlaut in Meilenstein 17.
@@ -1294,6 +1317,7 @@ const wbKv=(k,v,kl)=>`<div class="kv"><span>${k}</span><span${kl?` class="${kl}"
 function wbAbschnitt(sym,titel,inhalt){return inhalt?`<section class="iab"><div class="isym">${sym}</div><div><h4>${titel}</h4>${inhalt}</div></section>`:''}
 function wbPanel(iId){
   if(iId==='duengung') return wbPanelBoden();
+  if(iId==='betrieb') return wbPanelBetrieb();   // seit 16.4.2
   const id=iId.replace(/^feld_/,''), f=S.felder[id], so=SORTEN[id], m=S.monat, P=WB_TEXT;
   if(!f||!so) return '';
   let z='', k='';
@@ -1422,10 +1446,7 @@ function vBerg(){
   h+=zu; zu='';
   // Seit 16.1.5 (Entscheidungen 2 und 10): Die Fenster Einsatzplan, Düngung und Übersicht sind weg. Der Einsatzplan steht unter "Mehr" auf der Sorten-Karte
   // und beim Weingut-Manager, Boden, Düngen und die Übersicht in der Karte "Boden und Düngung" ganz oben. Darunter die Sorten, die gesperrten, dann "Dein Gebiet" zu.
-  const G=steckbrief(S.region,{fen:1}), auf=FI_AUF.has('gebiet+');
-  h+=fenster('gebiet','Dein Gebiet',`<div class="gkopf"><img class="gs" src="bilder/gebiet-${S.region}.webp" alt=""><div class="kv"><span>${G.name}</span><span>${G.art}</span></div></div><div class="sb fklapp"${auf?'':' hidden'}>${G.rumpf}</div>`,{buch:'gebiete',
-    kn:`<button class="klein" data-a="klapp" data-id="gebiet" data-auf="Zuklappen" data-zu="Steckbrief zeigen">${auf?'Zuklappen':'Steckbrief zeigen'}</button>`,
-    i:'Jedes Gebiet hat eine eigene Stärke. In warmen Gebieten gibt es öfter edelsüße Weine, in kühlen öfter Eiswein, in der Mitte mehr Medaillen oder mehr Geld. Der Steckbrief zeigt, welche Sorten hier passen, was sich lohnt und wie du am besten vorgehst.'});
+  // Seit 16.4.2 steht "Dein Gebiet" zugeklappt in der Karte "Dein Betrieb" (Annahme 4.3).
   return wbBodenKarte()+h+zu;
 }
 // Startansicht des Kellers (seit 7.4 das Muster für den Fenster-Baustein): Keltern und Abfüllen oben, dann Sekt, darunter der Vorrat als kleines Fenster (Maik 17.11.2026).
@@ -1942,7 +1963,7 @@ const FU_ZEIG={
   'k02':{tab:'keller',sub:'lager',sel:[fiSel('faesser')]},
   'k03':{tab:'keller',sub:'buch',sel:['[data-a="archiv"][data-id="brett"]']},
   'k04':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
-  'k05':{tab:'gut',sub:'berg',sel:[fiSel('gebiet')]},
+  'k05':{tab:'gut',sub:'betrieb',sel:['[data-a="klapp"][data-id="gebiet"]','[data-a="bInfo"][data-id="betrieb"]']},   // seit 16.4.2 in der Karte Dein Betrieb
   'k06':{tab:'gut',sub:'betrieb',sel:[fiSel('maschinen')]},
   'k07':{tab:'gut',sub:'betrieb',sel:[fiSel('p_handel')]},
   'k08':{tab:'keller',sub:'sabotage',sel:[fiSel('zuckern'),'#subs [data-id="sabotage"]']},
@@ -2084,7 +2105,7 @@ function render(){
   // Kellerbuch und Aktuelles öffnen sich mit einem eigenen Geräusch.
   ortFarbe(SUBS[TAB]?TAB:'gut');
   // Seit 16.1: Im Weinberg liegt das Holzbrett hinter den Karten. Seit 16.3.2 auch hinter dem Klemmbrett (Bild 05).
-  document.documentElement.classList.toggle('brett',TAB==='gut'&&(SUB==='berg'||SUB==='aktuell'));
+  document.documentElement.classList.toggle('brett',TAB==='gut'&&(SUB==='berg'||SUB==='aktuell'||SUB==='betrieb'));   // seit 16.4.2 auch im Betrieb (Bild 22)
   const ort=SUBS[TAB]?TAB+'/'+SUB:TAB; if(ort!==ORT_ALT){FI_AUF.clear(); if(ORT_ALT&&(ort==='keller/buch'||ort==='gut/aktuell')) fx('menue'); ORT_ALT=ort}
   musikOrt(musikWahl());
   if(ort==='stadt/laeden') S.ladenSeh=S.jahr*12+S.monat;

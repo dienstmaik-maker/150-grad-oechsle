@@ -1761,4 +1761,9 @@ const WB_TEXT={
   boden:{titel:'Boden und Düngung', klein:'Deine Weinberge, {ha} Hektar', schnitt:'Boden im Schnitt', chef:'Chef-Weinberg', chefKeiner:'Du machst alles selbst',
     noch:'Noch kein Weinberg mit Reben', geduengt:'gedüngt {n} von {max}', sterben:'Zum Jahreswechsel gehen voraussichtlich {von} bis {bis} % der Reben ein',
     flaeche:'Fläche', bepflanzt:'Bepflanzt', platz:'Platz frei', leute:'Deine Leute reichen für', leistung:'Ernteleistung',
-    chefAuto:'keiner, alles auf Automatik', gutJahr:'+{n} Punkte im guten Bodenjahr', jahr:'Jahresschnitt bisher {n} %', lage:'Lagen'}};
+    chefAuto:'keiner, alles auf Automatik', gutJahr:'+{n} Punkte im guten Bodenjahr', jahr:'Jahresschnitt bisher {n} %', lage:'Lagen'},
+  // Seit 16.4.2 (Bild 22): Karte "Dein Betrieb" im Unterreiter Betrieb. Platzhalter, Wortlaut in Meilenstein 17.
+  betrieb:{klein:'Anbaugebiet {gebiet}', fass:'Fassraum', fassUnter:'{bel} von {ges} l', flaschen:'Leere Flaschen', loehne:'Löhne im Monat',
+    hin:{leute:'Leute fehlen', fass:'Fassraum reicht nicht', fertig:'Alles im Lot'},
+    flaeche:'Fläche', bepflanzt:'Bepflanzt', platz:'Platz frei', lage:'Lagen', spitze:'Spitzenlage', kosten:'Feste Kosten im Monat', kredit:'Kredit, Restschuld',
+    gebiet:'Dein Gebiet', zeigen:'Steckbrief zeigen', zuklappen:'Zuklappen', frei:'frei', einsatz:'im Einsatz', masch:'Maschinen', basis:'Betriebskosten', rate:'Kreditrate'}};

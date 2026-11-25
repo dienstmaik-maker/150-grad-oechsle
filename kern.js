@@ -2765,7 +2765,8 @@ function kopf(titel){return ortBild(titel)}
 function vGut(){
   const T={berg:'Weinberg',betrieb:S.name,buero:'Büro'};
   // Seit 16.1 (Bauplan 16.1, Entscheidung 1): Im Weinberg entfällt das große Bild oben, die Karten liegen auf dem Holzbrett. Seit 16.3.1 auch im Klemmbrett.
-  return (SUB==='berg'||SUB==='aktuell'?'':kopf(T[SUB]))+{berg:vBerg,betrieb:vBetrieb,aktuell:vKlemm,buero:vBuero}[SUB]();
+  // Seit 16.4.2 (Bild 22) auch im Betrieb, der Name des Weinguts steht als Titel der Karte "Dein Betrieb".
+  return (SUB==='berg'||SUB==='aktuell'||SUB==='betrieb'?'':kopf(T[SUB]))+{berg:vBerg,betrieb:vBetrieb,aktuell:vKlemm,buero:vBuero}[SUB]();
 }
 // Seit 13.3.1 nur noch ein Schild, warm wirkt nicht mehr.
 const gebietArt=r=>r.warm>0?['🔥','Warm']:r.warm<0?['🧊','Kühl']:['⛰️','Mitte'];
