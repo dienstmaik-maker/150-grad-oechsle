@@ -649,6 +649,10 @@ button.fi.wort{width:auto;padding:0 11px;font:600 13px/1 system-ui,-apple-system
 .lpunkt{display:inline-block;width:8px;height:8px;margin-left:5px;border-radius:50%;background:#e5a93c;vertical-align:1px}
 .bkach .wahl .lneu{margin-left:4px;font-size:10px;line-height:14px;padding:0 4px}
 #ksiegel .ksg{width:30px;height:30px;margin:0}#ksiegel b{display:block}#ksiegel small{display:block;font-size:13px;color:#6b5a45}
+/* Seit 16.8.2: kurze Meldungen auf demselben Schild, Titel und Text je eine Zeile in Alegreya. #kmess misst unsichtbar, ob es passt. */
+#ksiegel.kurz{font-family:var(--schrift);padding:9px 16px}#ksiegel.kurz small{font-size:14px;color:#4e3d2a}
+#ksiegel.kurz b,#ksiegel.kurz small,#kmess>*{white-space:nowrap}
+#kmess{position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;font:15px/1.3 var(--schrift)}#kmess>*{position:absolute;left:0;top:0;width:max-content}#kmess>small{font-size:14px}
 /* Optik 2.0: nur Code, ohne neue Bilder */
 :root{--holz:url(bilder/holz-weingut.jpg);--dunkel:.12}
 html.ort-stadt{--holz:url(bilder/holz-stadt.jpg);--dunkel:.12}

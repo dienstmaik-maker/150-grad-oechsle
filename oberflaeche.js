@@ -168,10 +168,30 @@ let RUF_M=0;
 function rufMeldung(k,nach){
   const el=$('#ksiegel'); if(!el||!S||!k) return;
   const t=`Ruf des Hauses: ${RUF_NAMEN[k-1]}`, u=nach?`Deine ${kompZahlen().hab} Siegel reichen für Stufe ${k} von ${RUF_STUFEN.length}, die Händler zahlen dir ${rufProz(k)} % mehr`:`Stufe ${k} von ${RUF_STUFEN.length}, die Händler zahlen dir ${rufProz(k)} % mehr`;
-  el.dataset.id=''; el.innerHTML=`<i class="ksg s3 an"></i><div><b>${esc(t)}</b><small>${esc(u)}</small></div>`;
-  el.classList.toggle('oben',$('#sheet').classList.contains('an')); el.classList.add('an'); fx('korken');
-  clearTimeout(KOMP_AUS); KOMP_AUS=setTimeout(()=>el.classList.remove('an'),4200);
+  schild({h:`<i class="ksg s3 an"></i><div><b>${esc(t)}</b><small>${esc(u)}</small></div>`,ms:4200,ton:'korken'});
 }
+// Seit 16.8.2 (Bauplan 16.8, Entscheidung 2): eine Schlange für das Schild unten. Neue Siegel, Ruf des Hauses und kurze Meldungen kommen nacheinander,
+// jedes bleibt seine Zeit stehen (Siegel 3,6, Ruf 4,2, Meldung 3,5 Sekunden), nach einer kurzen Pause kommt das nächste. Geht auch auf der Seite der
+// Spielstände ohne laufendes Spiel. x: h (Inhalt), ms, ton, id (Siegel zum Aufschlagen), art ('kurz' für Meldungen, ein Tipp schiebt sie nur weg).
+let SCHILD_Q=[], SCHILD_T=0, SCHILD_AN=0;
+function schild(x){SCHILD_Q.push(x); if(!SCHILD_AN) schildNaechst()}
+function schildNaechst(){
+  clearTimeout(SCHILD_T); SCHILD_T=0; const el=$('#ksiegel'), x=SCHILD_Q.shift(); if(!el||!x){SCHILD_AN=0; return}
+  SCHILD_AN=1; el.dataset.id=x.id||''; el.dataset.art=x.art||''; el.innerHTML=x.h;
+  // Liegt ein Fenster von unten offen, kommt das Schild oben, sonst verdeckt es dessen Knöpfe.
+  el.classList.toggle('oben',$('#sheet').classList.contains('an')); el.classList.toggle('kurz',x.art==='kurz'); el.classList.add('an'); if(x.ton) fx(x.ton);
+  SCHILD_T=setTimeout(schildWeg,x.ms||3500);
+}
+function schildWeg(){clearTimeout(SCHILD_T); const el=$('#ksiegel'); if(el) el.classList.remove('an'); SCHILD_AN=SCHILD_Q.length?1:0; SCHILD_T=SCHILD_AN?setTimeout(schildNaechst,450):0}
+// Passt die Meldung aufs Schild? Faustregel von Maik: Was nicht in eine Zeile passt, wird ein Info-Panel. Gemessen wird der echte Text in der Schrift
+// des Schilds bei der Breite, die es auf diesem Gerät höchstens hat, Titel und Text je eine Zeile.
+function schildPasst(t,text){
+  const m=$('#kmess')||document.body.appendChild(Object.assign(document.createElement('div'),{id:'kmess'})), w=Math.min(innerWidth*.92,520)-32;
+  m.innerHTML=`<b>${esc(t)}</b><small>${esc(text)}</small>`; const [b,s]=m.children;
+  return b.getBoundingClientRect().width<=w&&s.getBoundingClientRect().width<=w;
+}
+// Zähler der Meldungen, damit "Weiter, bis was passiert" und "Mehr" nach einer Meldung anhalten wie bis 16.7, als jede Meldung ein Fenster war.
+let MELD_N=0;
 // Karte "Ruf des Hauses" im Büro bei den Erfolgen (seit 16.7.2 im Kartenbaustein, Bauplan 16.7, Entscheidung 2). Zu: Stufe und Zuschlag, Balken der Siegel bis zur nächsten Stufe.
 // Auf: die erreichten Stufen und die nächste, der Knopf zum Siegelbrett. Platzhalter, Wortlaut in Meilenstein 17.
 function rufFenster(){
@@ -284,17 +304,14 @@ function leseHilfe(f){
 
 // Neues Siegel: Zeile für den nächsten Winzerboten, Album, und die Siegel-Meldung unten im Bild.
 // KOMP_LEISE: Beim Monatswechsel und bei der Arbeit der Manager kommt keine Meldung, dann reicht die Zeile im Winzerboten.
-let KOMP_LEISE=0, KOMP_Q=[], KOMP_T=0, KOMP_AUS=0, KOMP_AKT='sorte';
+let KOMP_LEISE=0, KOMP_Q=[], KOMP_T=0, KOMP_AKT='sorte';
 function kompMeldung(){
   KOMP_T=0; const el=$('#ksiegel'), Q=KOMP_Q; KOMP_Q=[];
   if(!el||!S||!Q.length) return;
   const [id,st]=Q[Q.length-1], t=Q.length===1?`Neues Siegel: ${KOMP[id].titel}`:`${Q.length} neue Siegel`, u=Q.length===1?`${KOMP_ST[st]} auf dem Siegelbrett`:Q.map(q=>KOMP[q[0]].titel).join(', ');
-  el.dataset.id=id; el.innerHTML=`<i class="ksg s${st} an"></i><div><b>${esc(t)}</b><small>${esc(u)}</small></div>`;
-  // Liegt ein Fenster von unten offen, kommt die Meldung oben, sonst verdeckt sie dessen Knöpfe.
-  el.classList.toggle('oben',$('#sheet').classList.contains('an')); el.classList.add('an'); fx('korken');
-  clearTimeout(KOMP_AUS); KOMP_AUS=setTimeout(()=>el.classList.remove('an'),3600);
-  // Seit 11.5 (Teil D): Bringt das Siegel eine neue Stufe im Ruf des Hauses, folgt deren Meldung, sobald die des Siegels weg ist.
-  if(RUF_M){const k=RUF_M; RUF_M=0; KOMP_AUS=setTimeout(()=>{el.classList.remove('an'); KOMP_AUS=setTimeout(()=>rufMeldung(k),450)},3200)}
+  schild({h:`<i class="ksg s${st} an"></i><div><b>${esc(t)}</b><small>${esc(u)}</small></div>`,id,ms:3600,ton:'korken'});
+  // Seit 11.5 (Teil D): Bringt das Siegel eine neue Stufe im Ruf des Hauses, folgt deren Meldung, sobald die des Siegels weg ist (seit 16.8.2 über die Schlange).
+  if(RUF_M){const k=RUF_M; RUF_M=0; rufMeldung(k)}
 }
 /* ---- Anzeige: Fenster von unten, aus dem Kellerbuch und aus dem Büro ---- */
 const kompSiegel=(st,k)=>`<span class="ksg3${k?' '+k:''}">${[1,2,3].map(i=>`<i class="ksg s${i}${st>=i?' an':''}"></i>`).join('')}</span>`;
@@ -2520,7 +2537,15 @@ function zeigeSommerFrage(F){const A=SOMMER_ARBEIT[F[0].art], rat=SOMMER_FRAGE[S
     .replace('{stufe}',STUFEN[x.st].name).replace('{ans}',ANSPRUCH[x.st]).replace('{kosten}',eur(x.kosten)).replace('{menge}',A.menge.replace('{m}',pz(x.art==='laub'?LAUB_MENGE:AUSD_MENGE)));
   openSheet(`<h3>${esc(A.titel)}?</h3>${F.map(x=>`<p>${esc(satz(x))}</p><div class="mitte"><button class="klein" data-a="${x.art==='laub'?'sommerHand':'ausduennen'}" data-id="${x.id}" ${S.geld<x.kosten?'disabled':''}>${esc(A.name)}: ${esc(SORTEN[x.id].name)}</button></div>`).join('')}
     ${rat?`<p class="mut">${esc(SOMMER_FUSS)}</p>`:''}<div class="btns"><button class="sec" data-a="close">Zurück</button><button data-a="sommerOhne">Weiter ohne</button></div>`)}
-function meldung(t,text,bild){openSheet(`${bild?sbild(bild):''}<h3>${esc(t)}</h3><p>${esc(text)}</p><div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`)}
+// Seit 16.8.2 (Bauplan 16.8, Entscheidung 2): Kurze Meldungen ohne Bild werden das Schild unten (schild), lange und solche mit Bild ein Info-Panel
+// mit schlichtem Okay ohne Siegel. Wie bis 16.7, als jede Meldung das offene Fenster ersetzte, schließt das Schild ein offenes Fenster, nur ein Pflichtfenster bleibt.
+function meldung(t,text,bild){
+  MELD_N++;
+  if(bild||!schildPasst(t,text)) return openSheet(`${bild?sbild(bild):''}<h3>${esc(t)}</h3><p>${esc(text)}</p><div class="btns"><button class="sec" data-a="close">Okay</button></div>`);
+  if($('#sheet').classList.contains('an')&&SART!=='pflicht') closeSheet();
+  if(window.BOT) return;
+  schild({h:`<div><b>${esc(t)}</b><small>${esc(text)}</small></div>`,ms:3500,art:'kurz'});
+}
 let SL=null;
 function mengeSheet(o){
   SL=o; const st=o.step||1, rs=o.rangeStep||st, max=Math.floor(o.max/rs)*rs;
@@ -2741,7 +2766,8 @@ const AKT={
   arbeitsamt(){closeSheet();geh('stadt','arbeit');render();window.scrollTo(0,0)},
   // Seit 11.1 öffnet der Knopf im Kellerbuch das Weinkompendium. Der Name der Aktion bleibt, die Sprechblasen zeigen darauf.
   weinQual(){archivGeh('brett')},
-  kompAuf(d){const el=$('#ksiegel'); if(el) el.classList.remove('an'); if(S) kompAuf(d&&d.id)},
+  // Ein Tipp aufs Schild schiebt es weg, beim Siegel und beim Ruf schlägt er wie bisher das Siegelbrett auf (seit 16.8.2 über die Schlange).
+  kompAuf(d){const kurz=d&&d.art==='kurz'; schildWeg(); if(S&&!kurz) kompAuf(d&&d.id)},
   kompKap(d){if(!KOMP_KAP.some(k=>k[0]===d.id)||KOMP_AKT===d.id) return; KOMP_AKT=d.id; render()},
   archivGeh(d){archivGeh(d.id)},
   kompEintrag(d){if(S&&KOMP[d.id]) kompAuf(d.id)},
@@ -2801,8 +2827,8 @@ const AKT={
   abfZumKauf(){closeSheet(); geh('gut','betrieb'); render(); setTimeout(()=>fuLeuchte({sel:['[data-a="maschKaufen"]']}),120)},   // seit 16.4.6, das Fenster mit allen Maschinen (Annahme 4)
   bMehr(d){const L=wbMehrListe(d.id); if(!L.length) return; openSheet(`<h3>${dot(d.id)}${wbT(WB_TEXT.mehrKopf,{sorte:esc(SORTEN[d.id].name)})}</h3><div class="wbmehr">${L.join('')}</div><div class="btns"><button class="sec" data-a="close">Zurück</button></div>`)},
   // Knöpfe aus "Mehr" rufen die bisherigen Befehle. Nach einem Schalter im Einsatzplan kommt "Mehr" wieder, sofern kein Hinweis offen ist.
-  mehrTu(d){const x=d.x, id=d.id; if(!['formAendern','roden','einsatz','schneider','planSetz'].includes(x)) return; closeSheet(); AKT[x](Object.assign({},d));
-    if((x==='schneider'||x==='planSetz')&&!$('#sheet').classList.contains('an')) AKT.bMehr({id})},
+  mehrTu(d){const x=d.x, id=d.id, m0=MELD_N; if(!['formAendern','roden','einsatz','schneider','planSetz'].includes(x)) return; closeSheet(); AKT[x](Object.assign({},d));
+    if((x==='schneider'||x==='planSetz')&&!$('#sheet').classList.contains('an')&&MELD_N===m0) AKT.bMehr({id})},
   slMinus(){const r=$('#slr');r.value=Math.max(+r.min,+r.value-(+r.dataset.st));slUpd()},
   slPlus(){const r=$('#slr');r.value=Math.min(+r.max,+r.value+(+r.dataset.st));slUpd()},
   slOk(){const n=+$('#slr').value,f=SL.ok,w=SL.w;closeSheet();f(n,w);save();render()},
@@ -2870,8 +2896,8 @@ const AKT={
       if(S.pleite) return zeigePleite();
       managerArbeit();
       if(fehlText()||sommerFrage().length||verfallListe().length||(S.monat===11&&steuerSchau().steuer>0)){if(n) break; return AKT.weiter()}
-      SPRUNG=L.slice(); monatWeiter();
-      if(S.pleite||S.ende||S.pruefer||erbeOffen()||$('#sheet').classList.contains('an')) return;
+      const m0=MELD_N; SPRUNG=L.slice(); monatWeiter();
+      if(S.pleite||S.ende||S.pruefer||erbeOffen()||$('#sheet').classList.contains('an')||MELD_N!==m0) return;
       const top=TOP.slice().sort((a,b)=>b.p-a.p)[0];
       if(sprungHalt().length||fuHalt()) break;
       L.push(`⏩ ${MON[S.monat]}: ${top?top.t:'ein ruhiger Monat'}`);
