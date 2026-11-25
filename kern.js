@@ -1655,7 +1655,11 @@ const sortePreisF=id=>SORTE_PREIS[rolleK(id)]||1;
 // Schwelle der Weinstufe für den Öchsle-Zuschlag: die Tabelle R().min, beim Eiswein EIS_OE_SCHWELLE (Annahme 37). Federweißer und Sekt haben keine (Annahme der Bau-Sitzung).
 const oeSchwelle=st=>st==='eis'?EIS_OE_SCHWELLE:st==='feder'||!st?null:R().min[st];
 // Grad über der Schwelle, ohne Deckel (die Jury nimmt ihn ab 14.5.7 mit OE_JURY_MAX), beim Sekt 0.
-const oeUeber=(st,w)=>{const s=w.sekt?null:oeSchwelle(st); return s==null?0:Math.max(0,Math.round(w.oe||0)-s)};
+// Seit dem Nachtrag zu 14.7.1 (Maik 25.11.2026, "Zucker hebt den Preis nicht"): Es zählen nur die Öchsle der Trauben vor dem Zuckern (oeTraube),
+// im Preis (oePreisF) und bei der Jury (juryTeile). Grund (Maik): Reife kommt aus dem Wetter, Zuckern darf sich nicht lohnen.
+// oeTraube zählt nie mehr als die Öchsle von heute, so drückt Wasser den Zuschlag weiter, Zucker hebt ihn nie. Ohne Zucker (auch die Werte eines Weinbergs) ist es w.oe wie bisher.
+const oeTraube=w=>w.oeT!=null?Math.min(w.oe||0,w.oeT):(w.oe||0);
+const oeUeber=(st,w)=>{const s=w.sekt?null:oeSchwelle(st); return s==null?0:Math.max(0,Math.round(oeTraube(w))-s)};
 const oePreisF=(st,w)=>1+Math.min(OE_PREIS_MAX,OE_PREIS_JE*oeUeber(st,w));
 // Seit 14.5.6: durchgefallen beim Weinprüfer (w.durch) DURCH_PREIS weniger, auch im Vermögen (lotWert).
 // Seit 14.5.7: Punkte eigen am Wein (Medaillen w.medP, Sekt w.sektP) mit PUNKT_PREIS je Punkt, der Jahrhundertwein JH_PREIS mehr (Maik 25.11.2026, Frage 3).
@@ -2402,6 +2406,8 @@ const hinterOffen=()=>frei('hintertuer');
 // Seit 13.7.8 (Entscheidung 12, Maik 22.11.2026): Zucker hebt das Öchsle höchstens bis zum Deckel des Weinbergs, aus dem die Trauben kommen (deckel der Sorte, wie er gerade steht).
 // ZUCKER_MAX bleibt die zweite Grenze. zuckerOe rechnet das Öchsle nach n Prozent Zucker, zuckerBis gibt die meisten Prozent, die noch gehen (0 heißt gesperrt).
 const zuckerOe=(l,n)=>Math.min(OE_MAX,Math.round(l.oe*(1+n/100)));
+// Seit dem Nachtrag zu 14.7.1: Beim ersten Zuckern merkt sich der Posten die Öchsle davor (l.oeT, gezählt über oeTraube beim Öchsle-Zuschlag).
+function zuckerDazu(l,n){if(l.oeT==null) l.oeT=l.oe; l.oe=zuckerOe(l,n); l.zucker=(l.zucker||0)+n}
 function zuckerBis(l){const D=deckel(l.sorte); let n=0; while(n<ZUCKER_MAX-(l.zucker||0)&&zuckerOe(l,n+1)<=D) n++; return n}
 const maniText=l=>[l.zucker?`gezuckert (+${l.zucker}\u00a0%)`:'',l.wasser?`gewässert (+${l.wasser}\u00a0%)`:''].filter(Boolean).join(' und ');
 // Seit 14.5.2 (Entscheidungen 18, 21, 35 und 45, Annahmen 1 bis 5): Qualität je Weinberg von 0 bis 100 aus vier Bausteinen, für alle Weinberge einzeln.
@@ -2425,6 +2431,8 @@ const farbe=l=>SORTEN[l.sorte].farbe;
 function mischung(a,b){
   if(STUFEN[b.stufe].rang>STUFEN[a.stufe].rang) [a,b]=[b,a];
   const L=a.liter+b.liter, o={a,b,liter:L,oe:Math.round((a.oe*a.liter+b.oe*b.liter)/L),qp:Math.round((a.qp*a.liter+b.qp*b.liter)/L)};
+  // Seit dem Nachtrag zu 14.7.1: Ist einer der beiden gezuckert, trägt der Verschnitt die Öchsle der Trauben vor dem Zuckern mit (oeTraube im Schnitt).
+  if(a.oeT!=null||b.oeT!=null) o.oeT=Math.round((oeTraube(a)*a.liter+oeTraube(b)*b.liter)/L);
   o.schmier=schmierVon(L*STUFEN[a.stufe].preis*qualPreisF(o.qp)); return o;
 }
 /* ---- Version 10.0: Amtszeit und Wahl (Spielende, Paket 1) ---- */

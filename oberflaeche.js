@@ -2428,7 +2428,7 @@ const AKT={
     const neu=n=>zu?{oe:zuckerOe(l,n),liter:l.liter}:{oe:Math.round(l.oe/(1+n/100)),liter:Math.round(l.liter*(1+n/100))};
     mengeSheet({titel:zu?'Most zuckern':'Most wässern',text:zu?`Zucker hebt die Öchsle um den gewählten Anteil, höchstens bis zum Deckel des Weinbergs (${deckel(l.sorte)}°).`:'Wasser streckt die Menge um den gewählten Anteil, die Öchsle sinken entsprechend.',min:1,max:bis,step:1,start:Math.min(5,bis),okText:zu?'Zuckern':'Wässern',wag:1,
       info:n=>{const x=neu(n);return `<b>${n}\u00a0%</b>danach ${num(x.liter)}\u00a0l mit ${x.oe}° Öchsle<br><span class="${hat+n>ZUCKER_ERLAUBT?'rot':'mut'}">${hat+n>ZUCKER_ERLAUBT?'Über '+ZUCKER_ERLAUBT+' %: Das ist Panscherei.':'Als Tafelwein noch erlaubt.'}</span>${hat+n>ZUCKER_ERLAUBT&&KONTR_ZEIGE[S.schwer]==='warnung'?`<br><span class="mut">${kontrWarn()}</span>`:''}`},
-      ok:n=>{const x=neu(n);l.oe=x.oe;l.liter=x.liter;l[k]=hat+n}});
+      ok:n=>{if(zu) return zuckerDazu(l,n); const x=neu(n);l.oe=x.oe;l.liter=x.liter;l[k]=hat+n}});   // seit dem Nachtrag zu 14.7.1 merkt sich zuckerDazu die Öchsle davor
   },
   misch1(){
     if(!hinterOffen()) return;
@@ -2452,7 +2452,7 @@ const AKT={
     if(S.geld<m.schmier) return;
     closeSheet(); fx('stempel'); zahle(m.schmier);
     // Seit 13.2.2: Der Verschnitt trägt die niedrigere Pflege- und Boden-Stufe der beiden Weine, für Preisbonus und Namen.
-    Object.assign(a,{liter:m.liter,oe:m.oe,qp:m.qp,fassMonate:Math.max(a.fassMonate,m.b.fassMonate),pansch:true,jh:a.jh&&m.b.jh?1:0,...(a.durch||m.b.durch?{durch:a.durch||m.b.durch}:{}),pfl:Math.min(a.pfl||0,m.b.pfl||0),bst:Math.min(a.bst||0,m.b.bst||0)});
+    Object.assign(a,{liter:m.liter,oe:m.oe,qp:m.qp,fassMonate:Math.max(a.fassMonate,m.b.fassMonate),pansch:true,jh:a.jh&&m.b.jh?1:0,...(a.durch||m.b.durch?{durch:a.durch||m.b.durch}:{}),pfl:Math.min(a.pfl||0,m.b.pfl||0),bst:Math.min(a.bst||0,m.b.bst||0),...(m.oeT!=null?{oeT:m.oeT}:{})});
     S.lots=S.lots.filter(l=>l!==m.b); save();render();
     meldung('Verschnitten',`${lotName(a)}: ${num(a.liter)}\u00a0l mit Qualität ${a.qp}. Bis er verkauft ist, darf ihn kein Prüfer finden.`,'fassgang');
   },
