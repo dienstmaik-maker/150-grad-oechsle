@@ -140,6 +140,8 @@ const DATEIEN = [
   'bilder/tab-kellerei.webp',
   'bilder/tab-stadt.webp',
   'bilder/tab-klemmbrett.webp',
+  'bilder/kopf-kalender.webp',
+  'bilder/kopf-muenzen.webp',
   'bilder/siegel-qba.webp',
   'bilder/siegel-kab.webp',
   'bilder/siegel-spat.webp',
