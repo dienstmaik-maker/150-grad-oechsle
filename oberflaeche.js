@@ -1228,6 +1228,18 @@ function wbKarte(id,titel,klein,kopf,auf,o={}){
       <div class="wbtext"><h3>${titel}<small>${klein}</small></h3>${kopf}</div>
       <button class="fi" data-a="bInfo" data-id="${iId}" aria-label="Erklärung zu ${esc(o.iName||'')}"><i>i</i></button></div>
     ${offen?`<div class="fin wbauf"><div class="wbtrenn">❦</div>${auf}</div>`:''}${zu?`<span class="wbzu" data-a="karte" data-id="${id}" aria-hidden="true">${offen?'▴':'▾'}</span>`:''}</section>`}
+// Seit 16.1.3 (Entscheidung 9): Pflanzen und Roden gehen von Januar bis März, wenn die Sorte frei ist (Bedingung wie bis 16.0).
+const wbPflanz=id=>S.monat<=2&&sorteFrei(id)&&!(sektSorte(id)&&!S.sektkeller)&&!(istSL(id)&&slPlatz()<10);
+// Inhalt von "Mehr": Form ändern, der Einsatzplan dieses Weinbergs (beim Weingut-Manager nur der Weg dorthin) und Roden. Platzhalter, Wortlaut in Meilenstein 17.
+function wbMehrListe(id){const f=S.felder[id], L=[], E=EINSATZ_TEXT, b=(x,txt,kl,da='')=>`<button class="${kl||''}" data-a="mehrTu" data-x="${x}" data-id="${id}"${da}>${txt}</button>`;
+  if(!f||!f.reben) return L;
+  if(!istSL(id)&&S.monat<=SCHNITT_BIS&&formenFuer(id).length>1) L.push(b('formAendern','Form ändern','sec'));
+  if(planBeiMgr()) L.push(b('einsatz',WB_TEXT.einsatz,'sec'));
+  else{if(helferKann(1)&&!chefStill()) L.push(b('schneider',helferSchneidet(id)?WB_TEXT.chefMachen:WB_TEXT.chefAbgeben,'sec'));
+    for(const art of ['laub','ausd']) if(planAutoKann(art)&&(art==='laub'?frei('laub_hand'):ausdFrei())){const au=planArt(id,art)==='auto';
+      L.push(b('planSetz',`${E[art]}: ${au?'selbst machen':E.auto}`,'sec',` data-art="${art}" data-w="${au?'chef':'auto'}"`))}}
+  if(wbPflanz(id)&&!istSL(id)) L.push(b('roden','Roden','wag'));
+  return L}
 // Erklärtext einer Sorte (bis 16.0 das i des Fensters im Weinberg).
 function wbFeldI(id){const wm=`Dein ${MGR_BEREICHE.weingut.name}`, mr=aufgabeAktiv('reben');
   return `${!S.felder[id].reben&&!sorteFrei(id)?sorteSchild(id)+'. ':''}Gepflanzt und gerodet wird nur von Januar bis März, gelesen ab August. Je länger die Trauben hängen, desto mehr Öchsle und desto höher die Weinstufe. Aber Regen, Kälteeinbruch und fehlender Frost können alles kosten. ${S.rollen?'Jede Sorte hat ihre Rolle: Die Menge-Sorte trägt viel, die Sekt-Sorte gibt den besten Sekt, die Spitzen-Sorte die besten Weine.':'Die Sterne zeigen, wie gut die Sorte in dein Gebiet passt.'}${mr?` ${wm} pflanzt von Januar bis März nach, was über den Winter eingegangen ist.`:''}`}
@@ -1247,15 +1259,46 @@ function vBerg(){
     // Seit 16.1 (Entscheidung 2): Gesperrte Sorten stehen wieder da, zugeklappt, ausgegraut, mit Timos Schloss, ganz unten (bis 16.0 ausgeblendet).
     if(!f.reben&&!sorteFrei(id)){zu+=wbKarte(id,titel,klein,`<img class="wbschloss" src="bilder/sym-schloss.webp" alt=""><div class="wbunter">${wbT(WB_TEXT.gesperrt,{rang:RAENGE[sorteAb(id)].name})}</div>`,'',{gesperrt:1,iName:so.name}); continue}
     const sektOhne=sektSorte(id)&&!S.sektkeller, kannLesen=m>=7&&f.menge>0&&!f.gelesen&&(m<11||f.gefroren||f.edel)&&!sektOhne, pflanz=m<=2&&sorteFrei(id)&&!sektOhne&&!(istSL(id)&&slPlatz()<10), schnitt=schnittOffen(id), haengt=f.reben&&f.menge>0&&!f.gelesen&&m>5&&m<7;
-    const hin=[mr&&m<=2&&S.verlust&&S.verlust[id]>0&&`${WM} pflanzt beim Weiterblättern nach.`,helferKann(3)&&pflanzPlan(id)>=10&&`🌱 Deine Erntehelfer pflanzen bis März ${rbn(pflanzPlan(id))} Reben nach.${pflanzPlan(id)<pflanzSoll(id)&&!pflanzMitA(id)?' Den übrigen Platz bekommt dein Auftrag.':''}`,
-        helferSchneidet(id)&&schnitt&&`✂️ Deine ${leuteStName('helfer',leuteSt('helfer'))} schneiden beim Weiterblättern, sobald das Geld reicht.`,chefRat()===id&&helferSchneidet(id)&&`👴 ${CHEF_RAT_SATZ.replace('{sorte}',SORTEN[id].name)}`,
-        // Seit 14.7.4 (Annahme 16): Schreibt der Weingut-Manager den Plan, steht hier nur die Info-Zeile, die Automatik von Laubschnitt und Ausdünnen als Hinweis.
-        f.reben&&planBeiMgr()&&helferKann(1)&&!chefStill()&&EINSATZ_TEXT.zeile.replace('{arbeit}',EINSATZ_TEXT.schnitt).replace('{stellung}',EINSATZ_TEXT[helferSchneidet(id)?'auto':'chef']),
-        laubHandOffen(id)&&autoLaub(id)&&EINSATZ_TEXT.autoLaub.replace('{wer}',leuteStName('helfer',2)),ausdOffen(id)&&autoAusd(id)&&EINSATZ_TEXT.autoAusd.replace('{wer}',leuteStName('helfer',3)),(()=>{const ww=wagnisWarnung(); return ww&&ww.ids.includes(id)&&`${WM} warnt: ${Math.round(ww.anteil*100)} % deiner Ernte hängen im Wagnis.`})()].filter(Boolean), links=kannLesen&&wagnisChance(id)!=null&&chanceZeige(wagnisChance(id))?`🎲 Warten: Chance ${chanceZeige(wagnisChance(id))}${chanceRat(wagnisChance(id))?`, der alte Winzer würde ${chanceRat(wagnisChance(id))}`:''}`:sektOhne?'Die Sekt-Sorte macht nur Sekt, erst den Sektkeller kaufen.':pflanz&&platzFuer(id)<10?(istSL(id)?'Auf deinem Land ist kein Platz mehr frei.':LAGE_SATZ.voll.replace('{lage}',LAGE_SATZ.auf[lageVon(id)])):laubHandOffen(id)?`✂️ Sommerschnitt von Hand: ${eur(laubHandKosten(id))}`:ausdOffen(id)?AUSD_LINKS.replace('{kosten}',eur(ausdKosten(id))).replace('{m}',`${Math.round(AUSD_MENGE*100)} %`).replace('{qp}',AUSD_QP):haengt?'Lese ab August.':schnitt?`✂️ Rebschnitt bis Ende April: ${eur(schnittKosten(id))}`:'', kn=[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,...wagnisKnoepfe(id),schnitt&&!helferSchneidet(id)&&`<button class="klein" data-a="schneiden" data-id="${id}" ${S.geld<schnittKosten(id)?'disabled':''}>Schneiden</button>`,laubHandOffen(id)&&`<button class="klein" data-a="sommerHand" data-id="${id}" ${S.geld<laubHandKosten(id)?'disabled':''}>Sommerschnitt</button>`,ausdOffen(id)&&`<button class="klein" data-a="ausduennen" data-id="${id}" ${S.geld<ausdKosten(id)?'disabled':''}>Ausdünnen</button>`,f.reben&&!istSL(id)&&m<=SCHNITT_BIS&&formenFuer(id).length>1&&`<button class="klein" data-a="formAendern" data-id="${id}">Form ändern</button>`,helferKann(1)&&f.reben&&!chefStill()&&!planBeiMgr()&&`<button class="klein" data-a="schneider" data-id="${id}">${helferSchneidet(id)?'Selbst schneiden und düngen':'Schnitt und Düngen abgeben'}</button>`,
-        ...['laub','ausd'].map(art=>f.reben&&!planBeiMgr()&&planAutoKann(art)&&(art==='laub'?frei('laub_hand'):ausdFrei())&&`<button class="klein" data-a="planSetz" data-id="${id}" data-art="${art}" data-w="${planArt(id,art)==='auto'?'chef':'auto'}">${EINSATZ_TEXT[art]}: ${planArt(id,art)==='auto'?'selbst machen':EINSATZ_TEXT.auto}</button>`),pflanz&&(helferKann(3)?`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzAuftrag'}" data-id="${id}" data-weiter="pflanzAuftrag">Auftrag</button>`:`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzen'}" data-id="${id}" data-weiter="pflanzen" ${platzFuer(id)<10?'disabled':''}>Pflanzen</button>`),pflanz&&f.reben&&!istSL(id)&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean);
-    const auf=hin.map(x=>wbInfo(x)).join('')+(f.gelesen&&S.lots.some(l=>l.status==='trauben'&&l.sorte===id)?wbInfo('Die Trauben müssen diesen Monat im Keller ins Fass.','', 'rot'):'')+wbBalkenAuf(id)+wbFakten(id)
-      +(m>=7&&f.reben&&f.menge>0&&!f.gelesen?`<div class="hilfe">${leseHilfe(f)}${wagnisHinweis(id)}</div>`:'')+(links?`<div class="wbklein">${links}</div>`:'')+(kn.length?`<div class="wbkn">${kn.join('')}</div>`:'');
-    h+=wbKarte(id,titel,klein,wbStand(id),auf,{iName:so.name});
+    // Seit 16.1.3 (Entscheidung 8): ein Hinweis je Karte, der wichtigste zuerst. Rot vor Düngen, Schneiden, Sommerarbeit, Pflanzen, Eiswein und Überreif, Lesen, erledigt.
+    // Sommerschnitt, Ausdünnen und Pflanzen sind zwischen Schneiden und Überreif eingeordnet (Annahme der Bau-Sitzung 16.1).
+    const H=WB_TEXT.hin, platz=platzFuer(id)>=10, chefD=f.reben&&!helferDuengt(id), dueng=f.reben&&duengOffen(id), lf=f.reben&&leuteFehlen().helfer;
+    const fass=f.gelesen&&S.lots.some(l=>l.status==='trauben'&&l.sorte===id), knapp=kannLesen&&leseFaktor()<1;
+    const hw=fass?['rot',H.fass]:lf?['rot',H.leute]:knapp?['rot',H.leistung]
+      :dueng&&chefD&&f.boden<80?['gelb',H.duengen]:schnitt&&!helferSchneidet(id)?['gelb',H.schneiden]
+      :laubHandOffen(id)&&!autoLaub(id)?['gelb',H.laub]:ausdOffen(id)&&!autoAusd(id)?['gelb',H.ausd]:pflanz&&platz&&!f.reben?['gelb',H.pflanzen]
+      :kannLesen&&f.gefroren?['gelb',eisFehlt(f)?H.gefroren:H.eis]:kannLesen&&f.ueber>0?['gelb',H.ueber]:kannLesen?['gelb',H.lesen]
+      :!f.reben?['grau',H.leer]:f.gelesen?['grau',H.gelesen]:['gruen',H.fertig];
+    // Graue Info-Zeilen (Entscheidungen 13, 14, 21): Macht jemand anderes die Arbeit, steht statt des Knopfs die Zeile. Platzhalter, Wortlaut in Meilenstein 17.
+    const I=[], mg=x=>I.push(wbInfo(x,'mgr')), le=x=>I.push(wbInfo(x,'leute')), so_=(x,kl)=>I.push(wbInfo(x,'',kl)), wer=leuteStName('helfer',leuteSt('helfer'));
+    if(fass) so_('Die Trauben müssen diesen Monat im Keller ins Fass.','rot');
+    if(lf) so_(`Es fehlen ${lf} Erntehelfer, ohne sie geht es nicht in den nächsten Monat. Einstellen im Arbeitsamt.`,'rot');
+    if(knapp) so_(`Bei der Lese bleiben ${100-Math.round(leseFaktor()*100)} % hängen, die Ernteleistung reicht nicht.`,'rot');
+    if(mr&&m<=2&&S.verlust&&S.verlust[id]>0) mg(`${WM} pflanzt beim Weiterblättern nach.`);
+    if(helferKann(3)&&pflanzPlan(id)>=10) le(`Deine Erntehelfer pflanzen bis März ${rbn(pflanzPlan(id))} Reben nach.${pflanzPlan(id)<pflanzSoll(id)&&!pflanzMitA(id)?' Den übrigen Platz bekommt dein Auftrag.':''}`);
+    if(helferSchneidet(id)&&schnitt) le(`Deine ${wer} schneiden beim Weiterblättern, sobald das Geld reicht.`);
+    if(dueng&&!chefD&&f.boden<80) le(wbT(WB_TEXT.helferDuengen,{wer}));
+    if(chefRat()===id&&helferSchneidet(id)) so_(`👴 ${CHEF_RAT_SATZ.replace('{sorte}',SORTEN[id].name)}`);
+    if(f.reben&&planBeiMgr()&&helferKann(1)&&!chefStill()) mg(EINSATZ_TEXT.zeile.replace('{arbeit}',EINSATZ_TEXT.schnitt).replace('{stellung}',EINSATZ_TEXT[helferSchneidet(id)?'auto':'chef']));
+    if(laubHandOffen(id)&&autoLaub(id)) le(EINSATZ_TEXT.autoLaub.replace('{wer}',leuteStName('helfer',2)));
+    if(ausdOffen(id)&&autoAusd(id)) le(EINSATZ_TEXT.autoAusd.replace('{wer}',leuteStName('helfer',3)));
+    {const ww=wagnisWarnung(); if(ww&&ww.ids.includes(id)) mg(`${WM} warnt: ${Math.round(ww.anteil*100)} % deiner Ernte hängen im Wagnis.`)}
+    if(sektOhne) so_('Die Sekt-Sorte macht nur Sekt, erst den Sektkeller kaufen.');
+    if(pflanz&&!platz) so_(istSL(id)?'Auf deinem Land ist kein Platz mehr frei.':LAGE_SATZ.voll.replace('{lage}',LAGE_SATZ.auf[lageVon(id)]));
+    if(haengt) so_('Lese ab August.');
+    // Knöpfe nur, wenn sie Sinn ergeben (Entscheidung 9). Die Befehle heißen wie bis 16.0, der Test-Spieler ruft sie direkt auf. Fehlt Geld, grau, aber antippbar.
+    const K=[], arm=k=>S.geld<k;
+    if(kannLesen) K.push(`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,...wagnisKnoepfe(id));
+    if(schnitt&&!helferSchneidet(id)) K.push(pk('schneiden','Schneiden',eur(schnittKosten(id)),{id,arm:arm(schnittKosten(id))}));
+    if(dueng&&chefD) K.push(pk('duengen','Düngen',eur(duengKosten(id)),{id,arm:arm(duengKosten(id))}));
+    if(laubHandOffen(id)&&!autoLaub(id)) K.push(pk('sommerHand','Sommerschnitt',eur(laubHandKosten(id)),{id,arm:arm(laubHandKosten(id))}));
+    if(ausdOffen(id)&&!autoAusd(id)) K.push(pk('ausduennen','Ausdünnen',eur(ausdKosten(id)),{id,arm:arm(ausdKosten(id))}));
+    if(pflanz&&platz) K.push(helferKann(3)?`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzAuftrag'}" data-id="${id}" data-weiter="pflanzAuftrag">Auftrag</button>`:`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzen'}" data-id="${id}" data-weiter="pflanzen">Pflanzen</button>`);
+    if(wbMehrListe(id).length) K.push(`<button class="klein sec" data-a="bMehr" data-id="${id}">${WB_TEXT.mehr}</button>`);
+    // Zeilen über den Knöpfen: die Chance des Wagnisses (seit 13.4.6) und was das Ausdünnen bringt.
+    const kl=[kannLesen&&wagnisChance(id)!=null&&chanceZeige(wagnisChance(id))&&`🎲 Warten: Chance ${chanceZeige(wagnisChance(id))}${chanceRat(wagnisChance(id))?`, der alte Winzer würde ${chanceRat(wagnisChance(id))}`:''}`,
+      ausdOffen(id)&&!autoAusd(id)&&AUSD_LINKS.replace('{kosten}',eur(ausdKosten(id))).replace('{m}',`${Math.round(AUSD_MENGE*100)} %`).replace('{qp}',AUSD_QP)].filter(Boolean);
+    const auf=I.join('')+wbBalkenAuf(id)+wbFakten(id)+kl.map(x=>`<div class="wbklein">${x}</div>`).join('')+(K.length?`<div class="wbkn">${K.join('')}</div>`:'');
+    h+=wbKarte(id,titel,klein,`<div class="hinw ${hw[0]}"><i></i><em>${hw[1]}</em></div>`+wbStand(id),auf,{iName:so.name});
   }
   h+=zu; zu='';
   // Seit 14.7.4 (Bauplan 14.7, Annahmen 8 bis 16): das Fenster Einsatzplan, sobald der Weingut-Manager den Plan schreibt.
@@ -2246,6 +2289,10 @@ const AKT={
   karte(d){const k='wb:'+d.id, auf=FI_AUF.has(k); for(const x of [...FI_AUF]) if(x.startsWith('wb:')) FI_AUF.delete(x); if(!auf) FI_AUF.add(k);
     render(); const el=$('#wb_'+d.id); if(el&&!auf){const r=el.getBoundingClientRect(), top=($('#top')||{}).offsetHeight||0; if(r.top<top+8||r.top>innerHeight*.45) window.scrollBy(0,r.top-top-14)}},
   bInfo(d){openSheet(wbPanel(d.id))},
+  bMehr(d){const L=wbMehrListe(d.id); if(!L.length) return; openSheet(`<h3>${dot(d.id)}${wbT(WB_TEXT.mehrKopf,{sorte:esc(SORTEN[d.id].name)})}</h3><div class="wbmehr">${L.join('')}</div><div class="btns"><button class="sec" data-a="close">Zurück</button></div>`)},
+  // Knöpfe aus "Mehr" rufen die bisherigen Befehle. Nach einem Schalter im Einsatzplan kommt "Mehr" wieder, sofern kein Hinweis offen ist.
+  mehrTu(d){const x=d.x, id=d.id; if(!['formAendern','roden','einsatz','schneider','planSetz'].includes(x)) return; closeSheet(); AKT[x](Object.assign({},d));
+    if((x==='schneider'||x==='planSetz')&&!$('#sheet').classList.contains('an')) AKT.bMehr({id})},
   slMinus(){const r=$('#slr');r.value=Math.max(+r.min,+r.value-(+r.dataset.st));slUpd()},
   slPlus(){const r=$('#slr');r.value=Math.min(+r.max,+r.value+(+r.dataset.st));slUpd()},
   slOk(){const n=+$('#slr').value,f=SL.ok,w=SL.w;closeSheet();f(n,w);save();render()},
