@@ -232,8 +232,8 @@ const ZUWACHS={chef:1,helfer:[0,0,.5,.9]};
 const EP_SCHNITT=1, EP_BODEN=0, VERWILDERN=[5,10,20], GC_HALTEN=1, CHEF_SCHNITT_MAX=1;
 // Bodenpunkte je Lage und gutem Jahr, wenn der Chef düngt (Entscheidung 39).
 const BODEN_PUNKTE={einfach:1.5,hoehe:2,sued:3.5};
-// Ansehen bei der Anmeldung: Grundwert der Weinstufe plus 1 je ANS_JE_QP Qualitätspunkte.
-const ANS_JE_QP=5;
+// Ansehen bei der Anmeldung: Grundwert der Weinstufe plus 1 je ANS_JE_QP Punkte Qualität. Seit 14.5.6 (Entscheidung 25) 10, bis dahin 5.
+const ANS_JE_QP=10;
 // Jahrhundertjahre ohne Terroir: um JH_ERST, dann alle JH_ABSTAND Jahre, jedes bis zu JH_STREU Jahre früher oder später, je Partie fest gewürfelt.
 // Seit 14.4.2 (Maik 24.11.2026, Frage 1): JH_ERST 91 statt 90, Vorgeschmack in Jahr 89 bis 93, die echten ab Jahr 94, nicht vor dem Vizepräsidenten.
 const JH_ERST=91, JH_STREU=2;
@@ -1524,7 +1524,8 @@ const CHEF_RAT_SATZ='Der alte Winzer rät: Schneide den {sorte} selbst, er brauc
 // Seit 14.4.8: Rangmeldung in zwei Teilen (Maik 24.11.2026), RAENGE[i].neu und RAENGE[i].kauf, beim Verbandsvorstand und Vizepräsidenten je Weg des Gebiets.
 // Die Überschriften sind Platzhalter, Wortlaut in Meilenstein 17. Ohne Kauf-Stücke fällt der zweite Teil weg.
 const RANG_KOPF={neu:'Neu für dich',kauf:'Das darfst du jetzt kaufen oder einstellen'};
-const AKT_AUFTAKT={2:{t:'Der zweite Akt beginnt',text:'Ab jetzt steht dir die Hintertür offen, aber die Weinkontrolle schaut genauer hin.'},
+// Seit 14.5.6 (Annahme 23): Der Auftakt zum 2. Akt nennt das Wagnis beim Weinprüfer. Platzhalter, Wortlaut in Meilenstein 17.
+const AKT_AUFTAKT={2:{t:'Der zweite Akt beginnt',text:'Ab jetzt steht dir die Hintertür offen, aber die Weinkontrolle schaut genauer hin. Beim Weinprüfer darfst du jetzt auch über deiner Qualität anmelden, jeder fehlende Punkt kostet Chance.'},
   3:{t:'Der dritte Akt beginnt',text:'Ab jetzt setzt du deinen Ruf ein, wenn du etwas wagst.'}};
 const TITEL_NAMEN=[[['Spielidee &amp;','Entwicklung'],'Maik','Dienst'],[['Chef-Tester &amp;','Visuelle Effekte'],'Timo','Dienst']];
 
@@ -1584,6 +1585,17 @@ const PRUEFER_ZEIGE={einfach:'chance',mittel:'punkte',schwer:''}, PRESSE_RAT_AB=
 const PRUEFER_NAECHSTE='🔍 Weinprüfer, zur nächsten Stufe ({stufe}): {fehlt}.', PANSCH_OHNE_ANS=' Gezuckerter oder gewässerter Wein bringt kein Ansehen.';
 // Presse beim Präsidenten (FREI.presse): Erfolg PRESSE_ERFOLG mal, Durchfallen PRESSE_DURCH mal der Grundwert, PRESSE_JE_JAHR Einsatz im Jahr.
 const PRESSE_ERFOLG=2, PRESSE_DURCH=3, PRESSE_JE_JAHR=1;
+// Seit 14.5.6: das Urteil des Weinprüfers, fest aus der Startzahl (fest mit Thema URTEIL_THEMA, Weinberg und Stufe als Zahl, Jahrgang), neu laden ändert nichts.
+// Gewagt wird bis WAGNIS_MAX_FEHLT fehlende Punkte (Annahme 15, darüber wäre die Chance 0). Texte je Spielstufe nach PRUEFER_ZEIGE, Platzhalter, Wortlaut in Meilenstein 17.
+const URTEIL_THEMA=15, WAGNIS_MAX_FEHLT=9;
+const WAGNIS_KOPF='⚖️ Wagnis beim Weinprüfer', WAGNIS_KNOPF='Wagen', PRESSE_KNOPF='📰 Mit Presse',
+  WAGNIS_INFO={chance:'Chance {p}. Fällt er durch, wird er {tiefer} mit {abschlag} weniger Preis{ans}.',punkte:'{fehlt}. Fällt er durch, wird er {tiefer} mit {abschlag} weniger Preis{ans}.',
+    '':'Der Weinprüfer entscheidet.'},
+  WAGNIS_ANS=' und kostet {n} Ansehen', WAGNIS_RAT_JA='Der alte Winzer rät: Wag es, im Schnitt bringt es mehr.', WAGNIS_RAT_NEIN='Der alte Winzer rät ab, im Schnitt bringt die sichere Stufe mehr.',
+  PRESSE_INFO='📰 Die Presse ist dein Recht als Präsident, einmal im Jahr für einen Wein: Bestanden bringt doppeltes Ansehen für die Weinstufe, durchgefallen kostet das Dreifache.',
+  PRESSE_RAT='Der alte Winzer rät zur Presse.', PRESSE_SCHON='📰 Die Presse war dieses Jahr schon da.',
+  URTEIL_JA='⚖️ Bestanden: Der Weinprüfer bestätigt {stufe}.', URTEIL_NEIN='⚖️ Der Weinprüfer stuft ihn herab, er wird {tiefer}, mit Kennzeichen und {abschlag} weniger Preis.',
+  URTEIL_ANS_MINUS=' {n} Ansehen.', PRESSE_JA=' 📰 Die Presse feiert den Wein.', PRESSE_NEIN=' 📰 Die Presse schreibt über die Pleite.', DURCH_NAME=' (herabgestuft)';
 // Jury (Entscheidung 36, Maik 25.11.2026): Jahrhundertwein JH_JURY mehr, Sekt mit dem Wert SEKT_JURY, die Felder WETT_FELD_PLUS höher.
 const JH_JURY=15, SEKT_JURY=11, WETT_FELD_PLUS=40;
 // Sekt (Maik 25.11.2026, Frage 2): langes Hefelager HEFE_LANG_P Punkte, einfacher Hang bis SEKT_EINFACH_P weniger, im Preis 1 Punkt gleich 1 Prozent.

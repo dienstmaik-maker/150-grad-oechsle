@@ -826,7 +826,7 @@ function fassBelegt(){return S.lots.filter(l=>l.status==='fass').reduce((a,l)=>a
 const weinZusatz=l=>`${(l.pfl||0)>=NAME_PFLEGE_AB?' '+PFLEGE_STUFEN[l.pfl]:''}${(l.bst||0)>=NAME_BODEN_AB?' vom '+BODEN_STUFEN[l.bst]:''}`;
 // Seit 13.6.2: Ein Jahrhundertwein ist eine Trockenbeerenauslese oder ein Eiswein aus dem gelungenen Wagnis im Jahrhundertjahr (l.jh), der Name steht auf dem Etikett.
 const jhWein=l=>!!(l&&l.jh&&!l.sekt&&(l.stufe==='tba'||l.stufe==='eis'));
-function lotName(l){return `${l.jahrgang} ${SORTEN[l.sorte].name}${l.stufe&&!l.sekt?' '+STUFEN[l.stufe].name:''}${jhWein(l)?' Jahrhundertwein':''}${l.sekt?'-Sekt':''}${weinZusatz(l)}${l.sekt&&hefeLang(l)?` (${l.hefe} Monate Hefelager)`:''}`}
+function lotName(l){return `${l.jahrgang} ${SORTEN[l.sorte].name}${l.stufe&&!l.sekt?' '+STUFEN[l.stufe].name:''}${jhWein(l)?' Jahrhundertwein':''}${l.sekt?'-Sekt':''}${weinZusatz(l)}${l.durch?DURCH_NAME:''}${l.sekt&&hefeLang(l)?` (${l.hefe} Monate Hefelager)`:''}`}
 function rahmen(){return RAENGE[S.rang].rahmen}
 // Für Anzeigen (seit Teil D): ein Tabellenwert mit dem Faktor seiner Quelle, so wie ihn ruhm auf Stufe mittel gutschreibt.
 function ansQ(n,q){return Math.max(1,Math.round(n*(ANS_F[q]||1)))}
@@ -1544,6 +1544,39 @@ function besteStufe(q){let b=null; for(const st of REIHE) if(!pruefeQualitaet(st
 // pruefeQualitaet nennt zuerst den Rang, dann die Öchsle, dann die Punkte (Annahme 16).
 const kannWerden=(q,st)=>rolleDarf(q.sorte,st)&&(q.eis?st==='eis'||STUFEN[st].rang<3:st!=='eis')&&!(q.edel&&STUFEN[st].edel===false);
 function prueferNaechste(q){const b=besteStufe(q), st=REIHE.slice(b?REIHE.indexOf(b)+1:0).find(st=>kannWerden(q,st)); return st?{st,g:pruefeQualitaet(st,q)}:null}
+/* ---- Wagnis beim Weinprüfer, Herabstufen und Presse (seit 14.5.6, Entscheidungen 20, 25, 26, 28 und 50, Annahmen 15 bis 22) ---- */
+// Ab dem Akt WAGNIS_AB_AKT (nach dem Rang, RANG_AKT) darf über der Qualität angemeldet werden. Gewagt wird nur, wenn allein die Punkte fehlen (Annahme 16),
+// höchstens WAGNIS_MAX_FEHLT, nicht mit gepanschtem Wein und nicht mit Sekt. pruefFehlt gibt die fehlenden Punkte, sonst 0.
+const aktJetzt=()=>RANG_AKT[S.rang]||1, pruefWagAkt=()=>aktJetzt()>=WAGNIS_AB_AKT;
+function pruefFehlt(l,st){if(!pruefWagAkt()||!l||l.sekt||mani(l)||st==='feder'||!(st in ANSPRUCH)) return 0; const n=anspruchFehlt(st,l.qp);
+  if(n<1||n>WAGNIS_MAX_FEHLT) return 0; return pruefeAnmeldung(Object.assign({},l,{qp:ANSPRUCH[st]}),st).length?0:n}
+// Chance: jeder fehlende Punkt kostet WAGNIS_JE_PUNKT (Entscheidung 20), auf ganze Prozent gerundet.
+const pruefChance=n=>n>0?Math.max(0,Math.round((1-n*WAGNIS_JE_PUNKT)*100)/100):1;
+// Das Urteil, fest je Weinberg, Jahrgang und Stufe (Annahme 22): bestanden, wenn der Wurf unter der Chance liegt. Neu laden ändert nichts.
+const urteilNr=(l,st)=>Math.max(0,weinberge().indexOf(l.sorte))*20+REIHE.indexOf(st);
+const urteil=(l,st,p)=>fest(URTEIL_THEMA,urteilNr(l,st),l.jahrgang,0)<p;
+// Herabstufen (Annahme 17): die höchste Stufe unter der angemeldeten, die Öchsle und Qualität sicher hergeben, Leseart, Edelfäulnis und gefrorene Trauben außen vor.
+// Bei höchstens 9 fehlenden Punkten genau eine Stufe tiefer, Beerenauslese und Eiswein werden Auslese, die Trockenbeerenauslese wird Beerenauslese.
+const HERAB_REIHE=['tafel','qba','kab','spat','aus','ba','tba'];
+function herabStufe(l,st){const top=st==='eis'?HERAB_REIHE.indexOf('aus')+1:HERAB_REIHE.indexOf(st);
+  for(let i=top-1;i>=0;i--){const s=HERAB_REIHE[i]; if(rolleDarf(l.sorte,s)&&(l.oe||0)>=mindest(s)&&!anspruchFehlt(s,l.qp)) return s} return 'tafel'}
+// Ansehen bei der Anmeldung (Entscheidung 25): Grundwert der Weinstufe plus ansZuschlag, mit Presse PRESSE_ERFOLG mal der Grundwert (Annahme 19).
+// Durchgefallen (Annahmen 18 und 20): kein Ansehen, ab dem Akt DURCH_ANS_AB_AKT minus DURCH_ANS mal der Grundwert der angemeldeten Stufe, mit Presse PRESSE_DURCH mal.
+const ansErfolg=(l,st,presse)=>STUFEN[st].ans*(presse?PRESSE_ERFOLG:1)+ansZuschlag(l);
+const ansDurch=(st,presse)=>presse?PRESSE_DURCH*STUFEN[st].ans:aktJetzt()>=DURCH_ANS_AB_AKT?Math.round(DURCH_ANS*STUFEN[st].ans):0;
+// Ansehen gibt es je Weinberg, Jahrgang und Stufe nur einmal (S.ansGeb, wie bisher), ansNeu sagt, ob es noch offen ist.
+const ansKey=(l,st)=>l.sorte+'|'+l.jahrgang+'|'+st, ansNeu=(l,st)=>!(S.ansGeb||[]).includes(ansKey(l,st));
+// Die Presse (Annahme 19): Recht des Präsidenten (FREI.presse), PRESSE_JE_JAHR Einsatz je Kalenderjahr (S.presseJ zählt), nicht für Sekt und gepanschten Wein,
+// nur wenn die Anmeldung noch Ansehen bringt. Vorher nennt sie kein Fenster und kein Rat.
+const presseRecht=()=>frei('presse'), presseFrei=()=>presseRecht()&&!(S.presseJ&&S.presseJ.j===S.jahr&&S.presseJ.n>=PRESSE_JE_JAHR);
+const presseGeht=(l,st)=>presseFrei()&&!l.sekt&&!mani(l)&&STUFEN[st].ans>0&&ansNeu(l,st);
+// Rat des alten Winzers in den Lehrjahren (Annahme 21): wagen, wenn es sich im Schnitt in Geld lohnt (echte Preise, Gebühr eingerechnet), ab dem Akt
+// DURCH_ANS_AB_AKT nur, wenn auch das Ansehen im Schnitt nicht sinkt. Verglichen wird mit der besten sicheren Stufe. Presse ab PRESSE_RAT_AB Chance.
+function pruefRat(l,st,n){const p=pruefChance(n), t=herabStufe(l,st), s=besteStufe(l), W=x=>x?weinWert(x,l)*l.liter:0, G=x=>x?STUFEN[x].geb:0;
+  const geld=p*W(st)+(1-p)*W(t)*(1-DURCH_PREIS)-G(st), sicher=W(s)-G(s);
+  if(geld<sicher) return false; if(aktJetzt()<DURCH_ANS_AB_AKT) return true;
+  return p*ansErfolg(l,st)-(1-p)*ansDurch(st)>=(s&&ansNeu(l,s)?ansErfolg(l,s):0)}
+const presseRat=p=>p>=PRESSE_RAT_AB;
 // Name der Stufe für die Lese-Hilfe (bis 14.5.3 beim Eiswein mit seiner Wertstufe nach den Öchsle).
 const stufeText=st=>STUFEN[st].name;
 // Seit 13.4.2: auch gefrorene Trauben liest die Hand, wie früher, als es Eiswein nur mit Edelfäulnis gab.
@@ -1605,7 +1638,8 @@ const oeSchwelle=st=>st==='eis'?EIS_OE_SCHWELLE:st==='feder'||!st?null:R().min[s
 // Grad über der Schwelle, ohne Deckel (die Jury nimmt ihn ab 14.5.7 mit OE_JURY_MAX), beim Sekt 0.
 const oeUeber=(st,w)=>{const s=w.sekt?null:oeSchwelle(st); return s==null?0:Math.max(0,Math.round(w.oe||0)-s)};
 const oePreisF=(st,w)=>1+Math.min(OE_PREIS_MAX,OE_PREIS_JE*oeUeber(st,w));
-function weinWert(st,w){return STUFEN[st].preis*sortePreisF(w.sorte)*qualPreisF(w.qp)*(1+pflegePreis(w.pfl))*oePreisF(st,w)*sternF(w.sorte)}
+// Seit 14.5.6: durchgefallen beim Weinprüfer (w.durch) DURCH_PREIS weniger, auch im Vermögen (lotWert).
+function weinWert(st,w){return STUFEN[st].preis*sortePreisF(w.sorte)*qualPreisF(w.qp)*(1+pflegePreis(w.pfl))*oePreisF(st,w)*sternF(w.sorte)*(w.durch?1-DURCH_PREIS:1)}
 function preis(l){
   if(l.status!=='flasche') return 0;
   const L=lager(l); if(l.flMonate<L.min) return 0;
