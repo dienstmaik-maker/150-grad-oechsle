@@ -2502,8 +2502,17 @@ function render(){
 
 /* ================= Dialoge ================= */
 // musik: Stück, das läuft, solange das Fenster offen ist. bild: Bild oben in der Meldung.
-function openSheet(h,musik){$('#sheet').innerHTML=`<div>${h}</div>`;$('#sheet').classList.add('an');SMUSIK=musik||null;musikOrt(musikWahl())}
-function closeSheet(){$('#sheet').classList.remove('an');$('#sheet').innerHTML='';SL=null;SMUSIK=null;musikOrt(musikWahl());setTimeout(fuehrerZeig,0)}
+// Seit 16.8.1 (Bauplan 16.8, Entscheidung 1): Jedes Fenster von unten hat eine Art (art), ohne Angabe 'info'. Alle im Papyrus-Stil, alle von unten.
+// 'info': Griffstrich, Wischen nach unten oder Tipp daneben schließt. 'frage': ebenso, beides heißt Abbrechen. 'pflicht': kein Griff, nicht wischbar,
+// Hintergrund stark abgedunkelt, ein Tipp daneben tut nichts. zu: was Wischen und Tipp daneben statt closeSheet tun (der neue Manager zählt es als Okay).
+// Die Kurzmeldung ist kein Fenster, sie läuft über meldung() und das Schild unten.
+let SART='', SZU=null;
+const SHEET_ARTEN=['info','frage','pflicht'];
+function openSheet(h,musik,art,zu){const a=SHEET_ARTEN.includes(art)?art:'info', el=$('#sheet'); SART=a; SZU=zu||null;
+  el.innerHTML=`<div>${a!=='pflicht'&&!/class="ipanel"/.test(h)?'<i class="igriff"></i>':''}${h}</div>`; el.className='an '+a; SMUSIK=musik||null; musikOrt(musikWahl())}
+function closeSheet(){$('#sheet').className='';$('#sheet').innerHTML='';SL=null;SMUSIK=null;SART='';SZU=null;musikOrt(musikWahl());setTimeout(fuehrerZeig,0)}
+// Wischen nach unten oder Tipp neben das Fenster, nie beim Pflichtfenster.
+function sheetWeg(){if(SART==='pflicht'||!$('#sheet').classList.contains('an')) return; const f=SZU; if(f) f(); else closeSheet()}
 // Seit dem Nachtrag zu 14.5.2 (Annahme 34): Nachfrage im Sommer, Lehrjahre mit Rat in Zahlen, Gesellenjahre mit kurzem Hinweis (SOMMER_FRAGE).
 // Je Weinberg ein Knopf für die Arbeit, darunter "Weiter ohne". Platzhalter, Wortlaut in Meilenstein 17.
 function zeigeSommerFrage(F){const A=SOMMER_ARBEIT[F[0].art], rat=SOMMER_FRAGE[S.schwer]==='rat', pz=x=>`${Math.round(x*100)} %`;
@@ -3348,10 +3357,11 @@ let WISCH=null, WISCH_ZEIT=0;
 document.addEventListener('pointerdown',e=>{WISCH=e.target.closest('.pano')?{x:e.clientX,y:e.clientY}:null});
 document.addEventListener('pointercancel',()=>{WISCH=null});
 // Seit 16.1.4: Das Info-Panel folgt dem Finger nach unten und schließt ab 70 Pixeln, solange es ganz oben steht (sonst scrollt es nur).
+// Seit 16.8.1 gilt das für jedes Fenster von unten außer dem Pflichtfenster, nicht auf Schiebereglern und Eingabefeldern. Schließen über sheetWeg().
 let IP_W=null;
-const ipStart=(x,y,el)=>{const p=el&&el.closest&&el.closest('#sheet .ipanel'), box=p&&p.parentElement; IP_W=box&&box.scrollTop<=0?{x,y,box}:null};
+const ipStart=(x,y,el)=>{const box=el&&el.closest&&el.closest('#sheet>div'); IP_W=box&&SART&&SART!=='pflicht'&&!el.closest('input,textarea,select')&&box.scrollTop<=0?{x,y,box}:null};
 const ipZug=y=>{if(IP_W){const dy=y-IP_W.y; IP_W.box.style.transform=dy>0?`translateY(${dy}px)`:''}};
-const ipEnde=(x,y)=>{const W=IP_W; IP_W=null; if(!W) return; W.box.style.transform=''; const dy=y-W.y; if(dy>70&&dy>Math.abs(x-W.x)){WISCH_ZEIT=Date.now(); closeSheet()}};
+const ipEnde=(x,y)=>{const W=IP_W; IP_W=null; if(!W) return; W.box.style.transform=''; const dy=y-W.y; if(dy>70&&dy>Math.abs(x-W.x)){WISCH_ZEIT=Date.now(); sheetWeg()}};
 document.addEventListener('touchstart',e=>{const t=e.touches[0]; ipStart(t.clientX,t.clientY,e.target)},{passive:true});
 document.addEventListener('touchmove',e=>{if(IP_W) ipZug(e.touches[0].clientY)},{passive:true});
 document.addEventListener('touchend',e=>{if(IP_W){const t=e.changedTouches[0]; ipEnde(t.clientX,t.clientY)}},{passive:true});
@@ -3391,7 +3401,11 @@ document.addEventListener('click',e=>{
   if(!FU_OFFEN&&!FU_PAUSE) setTimeout(fuehrerZeig,0);
 });
 $('#datei').addEventListener('change',e=>{const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>dateiLaden(String(r.result),ZIEL); r.readAsText(f)});
-$('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet'&&!SL)closeSheet()});
+// Seit 16.8.1: Ein Tipp neben das Fenster zählt nur, wenn auch der Finger dort aufgesetzt hat. So schließt ein Schieberegler, den man
+// über den Rand hinauszieht, das Fenster nicht mehr (bis 16.7 sperrte SL den Tipp daneben ganz).
+let SHEET_AB=0;
+$('#sheet').addEventListener('pointerdown',e=>{SHEET_AB=e.target.id==='sheet'});
+$('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet'&&SHEET_AB) sheetWeg(); SHEET_AB=0});
 load(); meisterAbgleich(); render(); zeigeTitel();
 // Als App: Der Helfer sw.js legt alle Dateien aufs Gerät, danach läuft das Spiel ohne Netz und holt sich neue Fassungen von selbst.
 // Am Laptop (localhost) bleibt er aus, damit beim Bauen nichts Altes hängen bleibt. Zum Testen dort: ?app an die Adresse hängen.

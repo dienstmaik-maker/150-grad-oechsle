@@ -813,16 +813,33 @@ html.brett main{padding-top:18px}
 .kanl{margin:2px 0 4px;font:700 17px/1.1 var(--knopf);font-variant-caps:small-caps;letter-spacing:.03em;color:#4a1526;text-align:center}
 /* Info-Panel von unten (Bild 3): drei Abschnitte, Wischen nach unten oder ein Tipp auf den Rand schließt es. */
 #sheet .ipanel{touch-action:pan-y}
-.ipanel .igriff{display:block;width:46px;height:5px;margin:-12px auto 10px;border-radius:3px;background:#b9995a}
+/* Seit 16.8.1 (Bauplan 16.8, Entscheidung 1 und 11.1): Fenster von unten in drei Arten. Info und Rückfrage mit Griffstrich statt der Zierlinie oben,
+   die Pflicht-Entscheidung ohne Griff mit stark abgedunkeltem Hintergrund. Der erste Titel ist das Banner wie im Info-Panel (Bild 03).
+   Der Inhalt aller Fenster und die Hilfen in Alegreya, Zahlen in gleicher Höhe. */
+#sheet>div{touch-action:pan-y;font-family:var(--schrift);font-variant-numeric:lining-nums}
+#sheet.pflicht{background:rgba(0,0,0,.8)}
+#sheet:is(.info,.frage)>div::before{display:none}
+#sheet>div>:is(h2,h3):first-of-type{margin:0 -4px 12px;padding:7px 12px;text-align:center;font:700 21px/1.15 var(--knopf);font-variant-caps:small-caps;color:#4a1526;background:linear-gradient(90deg,transparent,rgba(185,153,90,.35) 15%,rgba(185,153,90,.35) 85%,transparent)}
+.hilfe,.finfo{font-family:var(--schrift)}
+#sheet .btns{align-items:center}
+/* Wachssiegel auf verbindlichen Knöpfen (Entscheidung 4): Hauptknopf mit dem Siegel links, die Schrift bleibt stehen. */
+button.vb{position:relative;padding-left:58px}
+button.vb::before{content:'';position:absolute;left:2px;top:50%;width:50px;height:50px;margin-top:-25px;background:url(bilder/siegel.webp) center/contain no-repeat;filter:drop-shadow(0 2px 2px rgba(0,0,0,.45))}
+/* Warnknopf für Löschen und Neu anfangen (Entscheidung 4.1): rotes Schild ohne Siegel. */
+button.warn{--schild:url(bilder/knopf-rot.webp);--kschrift:#f8e6bf;--kschatten:0 1px 2px #3a0a16}
+/* Unauffälliger Knopf für riskante Nebenwege (Entscheidung 4.4): nur Text, kursiv, der sichere Weg ist der auffällige. */
+button.leise{border-image:none;background:none;filter:none;padding:10px 12px;min-height:44px;font:italic 600 16px/1.2 var(--schrift);font-variant-caps:normal;letter-spacing:0;color:#4e3d2a;text-shadow:none;text-decoration:underline;text-underline-offset:3px}
+button.leise:active{transform:translateY(1px);filter:none;opacity:.8}
+.igriff{display:block;width:46px;height:5px;margin:-12px auto 10px;border-radius:3px;background:#b9995a}
 .ipanel .iband{margin:0 0 12px;padding:7px 12px;text-align:center;font:700 21px/1.15 var(--knopf);font-variant-caps:small-caps;color:#4a1526;background:linear-gradient(90deg,transparent,rgba(185,153,90,.35) 15%,rgba(185,153,90,.35) 85%,transparent)}
 .iab{display:flex;gap:10px;align-items:flex-start;padding:10px;margin:0 0 10px;border:1px solid rgba(154,106,53,.55);border-radius:10px;background:rgba(255,255,255,.38)}
 .iab>.isym{flex:none;width:50px;height:50px;display:grid;place-items:center;font-size:32px}
 .iab>.isym img{width:50px;height:50px}
-.iab>div{flex:1;min-width:0;font-size:14.5px}
+.iab>div{flex:1;min-width:0;font-size:15px}
 .iab h4{display:inline-block;margin:0 0 6px;padding:3px 14px;border-radius:12px;background:linear-gradient(#8a4f28,#5e3216);color:#f8e6bf;font:700 16px/1.2 var(--knopf);font-variant-caps:small-caps;letter-spacing:.04em}
-.iab .kv{display:block;font-size:14.5px;padding:3px 0;border-bottom:1px solid rgba(120,80,40,.15)}
+.iab .kv{display:block;font-size:15px;padding:3px 0;border-bottom:1px solid rgba(120,80,40,.15)}
 .iab .kv>span{display:block;text-align:left}
-.iab .kv>span:first-child{font-size:12.5px;color:var(--mut)}
+.iab .kv>span:first-child{font-size:13px;color:var(--mut)}
 .iab .kv:last-child{border-bottom:0}
 .iwisch{margin:4px 0 0;text-align:center;font:italic 13.5px var(--schrift);color:var(--mut)}
 /* Seit 16.2.2 (Bild 06): Leiste aus dunklem Holz mit goldener Kante, Reiter mit Timos Symbolen und dünnen goldenen Trennstrichen, der aktive Reiter liegt auf goldenem Schein.
