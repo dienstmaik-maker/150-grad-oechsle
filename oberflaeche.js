@@ -1121,11 +1121,13 @@ function bueroEinst(){
     +`<div class="fussnote">Bilder, Musik und Geräusche sind mit KI erstellt (Musik mit Treblo, Geräusche mit ElevenLabs, elevenlabs.io).</div>`;
 }
 // Seit 14.2.4: Erziehungsform. Gefragt wird beim ersten Pflanzen in einen leeren Weinberg, nicht in den Lehrjahren (Entscheidung 19), ohne Wahl gilt die passende.
-const formFrage=id=>!(S.felder[id]||{}).reben&&S.schwer!=='einfach'&&formenFuer(id).length>1;
+// Seit 14.5.3 (Annahme 11): Die Formwahl kommt in allen Spielstufen, in den Lehrjahren mit der empfohlenen Form als Vorauswahl.
+const formFrage=id=>!(S.felder[id]||{}).reben&&formenFuer(id).length>1;
 // Wer liest in diesem Weinberg mit dieser Form. Platzhalter, Wortlaut in Meilenstein 17.
-const formLese=(id,fm)=>{const F=FORMEN[fm]; return R().steil?'von Hand, an der Mosel fährt keine Maschine':spitzeId(id)?'von Hand, auf dem Südhang lesen immer Arbeiter':F.masch===1?'Maschine erlaubt':F.masch?(fm===formVon(id)&&!inErziehung(id)?'Maschine erlaubt, der Rebstock steht':'von Hand bis zum Rebstock, danach Maschine'):'nur von Hand'};
+// Seit 14.5.3 (Entscheidungen 40 und 42): für jede Sorte gleich, der Kordon nur mit dem Vollernter.
+const formLese=(id,fm)=>{const F=FORMEN[fm]; return R().steil?'von Hand, an der Mosel fährt keine Maschine':F.masch===1?'jede Erntemaschine erlaubt':F.masch==='voll'?(vollDa()?'der Vollernter liest':'von Hand, bis der Vollernter kommt'):'nur von Hand'};
 // Steckbrief einer Form für die Wahl und das Umstellen.
-const formSteck=(id,fm)=>{const F=FORMEN[fm], w=(FORM_WIRKUNG[rolleK(id)]||{})[fm]||[1,1]; return `${Math.round(w[0]*100)} % Menge, ${F.qual} Punkte Qualität, ${epT(F.ep)} Punkte im Jahr, Rebschnitt ${eur(F.haErz)} je Hektar${F.ha!==F.haErz?` bis zum Rebstock, danach ${eur(F.ha)}`:''}, Lese ${formLese(id,fm)}`};
+const formSteck=(id,fm)=>{const F=FORMEN[fm]; return `${Math.round(F.menge*100)} % Menge${F.schutz!=null?`, halber Verlust bei Spätfrost und Oktoberregen`:''}, ${F.qual} Punkte Qualität, ${epT(F.ep)} Punkte im Jahr, Rebschnitt ${eur(F.haErz)} je Hektar${F.ha!==F.haErz?` bis zum Rebstock, danach ${eur(F.ha)}`:''}, Lese ${formLese(id,fm)}`};
 // Weinberg (seit 7.4 auf dem Fenster-Baustein): je Sorte ein Fenster (seit 4.4 oben), dann Düngung und Übersicht, darunter zugeklappt der Steckbrief des Gebiets.
 // Sorten, die der Rang noch sperrt, sind seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten). Lese-Hinweise und rote Warnungen bleiben sichtbar, die Erklärungen stehen im i.
 function vBerg(){
@@ -1151,8 +1153,8 @@ function vBerg(){
       <div class="kv"><span>Rebschnitt durch</span><span>${helferSchneidet(id)?leuteStName('helfer',leuteSt('helfer')):'dich selbst'}, +${epT(epJahrSoll(id))} Punkte im guten Jahr</span></div>`}
     // Seit 14.5.2 (Annahmen 5 und 8): Qualität des Weinbergs mit ihren vier Bausteinen, in allen Spielstufen, ohne "von 100". Platzhalter, Wortlaut in Meilenstein 17.
     if(f.reben){const Q=qualTeile(id); z+=`<div class="kv"><span>Qualität</span><span>${Q.q} Punkte: Pflege ${Math.round(Q.pflege)}, Boden ${Math.round(Q.boden)}, Form ${Q.form}, Laubschnitt ${Q.laub}</span></div>`}
-    // Seit 14.2.4: Erziehungsform mit Wirkung und Lese, nicht in den Lehrjahren. Platzhalter, Wortlaut in Meilenstein 17.
-    if(f.reben&&S.schwer!=='einfach'){const w=formWirk(id); z+=`<div class="kv"><span>Erziehungsform</span><span>${FORMEN[formVon(id)].name}, ${Math.round(w[0]*100)} % Menge, ${FORMEN[formVon(id)].qual} Punkte Qualität</span></div>
+    // Seit 14.2.4: Erziehungsform mit Wirkung und Lese, seit 14.5.3 in allen Spielstufen. Platzhalter, Wortlaut in Meilenstein 17.
+    if(f.reben){z+=`<div class="kv"><span>Erziehungsform</span><span>${FORMEN[formVon(id)].name}, ${Math.round(formMenge(id)*100)} % Menge, ${FORMEN[formVon(id)].qual} Punkte Qualität</span></div>
       <div class="kv"><span>Lese</span><span>${formLese(id,formVon(id))}</span></div>`}
     if(f.reben) z+=`
       <div class="kv"><span>Deckel</span><span>${deckel(id)}° Öchsle</span></div>
@@ -1179,7 +1181,7 @@ function vBerg(){
         helferSchneidet(id)&&schnitt&&`✂️ Deine ${leuteStName('helfer',leuteSt('helfer'))} schneiden beim Weiterblättern, sobald das Geld reicht.`,chefRat()===id&&helferSchneidet(id)&&`👴 ${CHEF_RAT_SATZ.replace('{sorte}',SORTEN[id].name)}`,helferSchneidet(id)&&laubHandOffen(id)&&'✂️ Deine Erntehelfer machen den Sommerschnitt von Hand, sobald das Geld reicht.',(()=>{const ww=wagnisWarnung(); return ww&&ww.ids.includes(id)&&`${WM} warnt: ${Math.round(ww.anteil*100)} % deiner Ernte hängen im Wagnis.`})()],
       // Seit 13.4.6: Am Lese-Knopf steht die Chance des Wagnisses in Worten.
       links:kannLesen&&wagnisChance(id)!=null&&chanceZeige(wagnisChance(id))?`🎲 Warten: Chance ${chanceZeige(wagnisChance(id))}${chanceRat(wagnisChance(id))?`, der alte Winzer würde ${chanceRat(wagnisChance(id))}`:''}`:sektOhne?'Die Sekt-Sorte macht nur Sekt, erst den Sektkeller kaufen.':pflanz&&platzFuer(id)<10?(spitzeId(id)&&frei>=10?'Auf deinem Südhang ist kein Platz frei.':'Auf deinem Land ist kein Platz mehr frei.'):laubHandOffen(id)?`✂️ Sommerschnitt von Hand: ${eur(laubHandKosten(id))}`:haengt?'Lese ab August.':schnitt?`✂️ Rebschnitt bis Ende April: ${eur(schnittKosten(id))}`:'',
-      kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,...wagnisKnoepfe(id),schnitt&&!helferSchneidet(id)&&`<button class="klein" data-a="schneiden" data-id="${id}" ${S.geld<schnittKosten(id)?'disabled':''}>Schneiden</button>`,laubHandOffen(id)&&!helferSchneidet(id)&&`<button class="klein" data-a="sommerHand" data-id="${id}" ${S.geld<laubHandKosten(id)?'disabled':''}>Sommerschnitt</button>`,f.reben&&!istSL(id)&&S.schwer!=='einfach'&&m<=SCHNITT_BIS&&formenFuer(id).length>1&&`<button class="klein" data-a="formAendern" data-id="${id}">Form ändern</button>`,helferKann(1)&&f.reben&&S.schwer!=='einfach'&&`<button class="klein" data-a="schneider" data-id="${id}">${helferSchneidet(id)?'Selbst schneiden':'Schnitt abgeben'}</button>`,pflanz&&(helferKann(3)?`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzAuftrag'}" data-id="${id}" data-weiter="pflanzAuftrag">Auftrag</button>`:`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzen'}" data-id="${id}" data-weiter="pflanzen" ${platzFuer(id)<10?'disabled':''}>Pflanzen</button>`),pflanz&&f.reben&&!istSL(id)&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
+      kn:[kannLesen&&`<button class="klein" data-a="lesen" data-id="${id}">Lesen</button>`,...wagnisKnoepfe(id),schnitt&&!helferSchneidet(id)&&`<button class="klein" data-a="schneiden" data-id="${id}" ${S.geld<schnittKosten(id)?'disabled':''}>Schneiden</button>`,laubHandOffen(id)&&!helferSchneidet(id)&&`<button class="klein" data-a="sommerHand" data-id="${id}" ${S.geld<laubHandKosten(id)?'disabled':''}>Sommerschnitt</button>`,f.reben&&!istSL(id)&&m<=SCHNITT_BIS&&formenFuer(id).length>1&&`<button class="klein" data-a="formAendern" data-id="${id}">Form ändern</button>`,helferKann(1)&&f.reben&&S.schwer!=='einfach'&&`<button class="klein" data-a="schneider" data-id="${id}">${helferSchneidet(id)?'Selbst schneiden':'Schnitt abgeben'}</button>`,pflanz&&(helferKann(3)?`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzAuftrag'}" data-id="${id}" data-weiter="pflanzAuftrag">Auftrag</button>`:`<button class="klein" data-a="${formFrage(id)?'formWahl':'pflanzen'}" data-id="${id}" data-weiter="pflanzen" ${platzFuer(id)<10?'disabled':''}>Pflanzen</button>`),pflanz&&f.reben&&!istSL(id)&&`<button class="klein wag" data-a="roden" data-id="${id}">Roden</button>`].filter(Boolean),i:feldI});
   }
   // Seit 14.2.5: die drei Lagen einzeln mit Stufe, Punkten und dem, was ein gutes Bodenjahr bringt. Platzhalter, Wortlaut in Meilenstein 17.
   const BT=lagenBelegung().T, bzd=zuwachsVon(helferDuengt()?'helfer':'chef',1);
@@ -2308,21 +2310,31 @@ const AKT={
       if(weg.length||voll) meldung('Neue Zuteilung',`${weg.length?`Den ${weg.map(x=>SORTEN[x].name).join(' und ')} schneiden ab jetzt deine ${leuteStName('helfer',leuteSt('helfer'))}. `:''}Den ${SORTEN[d.id].name} schneidest du selbst${voll?', aber erst im nächsten Winter, diesen hast du schon geschnitten':''}.`); return}
     f.schneider='helfer'; save(); render()},
   duengWer(){if(!helferKann(1)) return; S.duengWer=S.duengWer==='helfer'?'chef':'helfer'; save(); render()},
-  // Seit 14.2.4: Wahl der Erziehungsform beim ersten Pflanzen, als halbhohes Fenster. In den Gesellenjahren mit dem Rat des alten Winzers und dem Warum,
-  // in der Meisterprüfung ohne Rat (Annahme von Claude: der Steckbrief jeder Form steht in beiden). Platzhalter, Wortlaut in Meilenstein 17.
-  formWahl(d){const id=d.id, rl=rolleK(id), rat=S.schwer==='mittel', weiter=d.weiter==='pflanzAuftrag'?'pflanzAuftrag':'pflanzen';
-    openSheet(`<h3>${esc(SORTEN[id].name)}: Erziehungsform</h3><p class="mut">${FORM_WAHL_SATZ}</p>${rat?`<p>👴 ${FORM_RAT[rl]}</p>`:''}
-      ${formenFuer(id).map(fm=>`<div class="kv"><span><b>${FORMEN[fm].name}</b>${rat&&fm===FORM_PASST[rl]?' 👴':''}</span><span>${formSteck(id,fm)}</span></div>${rat&&fm==='pfahl'?`<div class="mut">${FORM_PFAHL_HAND}</div>`:''}<div class="mitte"><button data-a="formNimm" data-id="${id}" data-form="${fm}" data-weiter="${weiter}">${FORMEN[fm].name}</button></div>`).join('')}
-      <div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`)},
+  // Seit 14.2.4: Wahl der Erziehungsform beim ersten Pflanzen, als halbhohes Fenster. Seit 14.5.3 (Annahme 11) je Spielstufe: In den Lehrjahren ist die
+  // empfohlene Form vorausgewählt (d.sel, änderbar), der alte Winzer nennt Empfehlung, Wahl fürs Leben und Maschinen-Regel. In den Gesellenjahren nennt das
+  // Fenster Wahl fürs Leben und Maschinen-Regel mit dem Rat, ohne Vorauswahl. In der Meisterprüfung nur die Steckbriefe, beides steht im Weinkompendium.
+  // Platzhalter, Wortlaut in Meilenstein 17.
+  formWahl(d){const id=d.id, rl=rolleK(id), lehr=S.schwer==='einfach', rat=S.schwer!=='schwer', weiter=d.weiter==='pflanzAuftrag'?'pflanzAuftrag':'pflanzen', F=formenFuer(id);
+    const sel=lehr?(F.includes(d.sel)?d.sel:F.includes(FORM_PASST[rl])?FORM_PASST[rl]:F[0]):null;
+    const knopf=fm=>lehr?`<button class="${fm===sel?'':'sec'}" data-a="formWahl" data-id="${id}" data-weiter="${weiter}" data-sel="${fm}">${fm===sel?'✓ ':''}${FORMEN[fm].name}</button>`
+      :`<button data-a="formNimm" data-id="${id}" data-form="${fm}" data-weiter="${weiter}">${FORMEN[fm].name}</button>`;
+    openSheet(`<h3>${esc(SORTEN[id].name)}: Erziehungsform</h3>${rat?`<p class="mut">${FORM_WAHL_SATZ} ${FORM_MASCH_SATZ}</p><p>👴 ${FORM_RAT[rl]||''}</p>`:''}${lehr?`<p class="mut">${FORM_VORAUS}</p>`:''}
+      ${F.map(fm=>`<div class="kv"><span><b>${FORMEN[fm].name}</b>${rat&&fm===FORM_PASST[rl]?' 👴':''}</span><span>${formSteck(id,fm)}</span></div>${rat&&fm==='pfahl'?`<div class="mut">${FORM_PFAHL_HAND}</div>`:''}<div class="mitte">${knopf(fm)}</div>`).join('')}
+      <div class="btns"><button class="sec" data-a="close">Abbrechen</button>${lehr?`<button data-a="formNimm" data-id="${id}" data-form="${sel}" data-weiter="${weiter}">Pflanzen am ${FORMEN[sel].name}</button>`:''}</div>`)},
   formNimm(d){const f=S.felder[d.id]; if(!f||f.reben||!formenFuer(d.id).includes(d.form)) return; f.form=d.form; closeSheet(); AKT[d.weiter==='pflanzAuftrag'?'pflanzAuftrag':'pflanzen']({id:d.id})},
-  // Seit 14.2.4: Umstellen mit Sicherheitsabfrage (Annahme 12), nicht in den Lehrjahren, nur von Januar bis April.
+  // Seit 14.2.4: Umstellen mit Sicherheitsabfrage (Annahme 12), nur von Januar bis April, seit 14.5.3 in allen Spielstufen.
   formAendern(d){if(istSL(d.id)) return; const id=d.id, alt=formVon(id), andere=formenFuer(id).filter(x=>x!==alt);
     if(andere.length===1) return AKT.formUmFrage({id,form:andere[0]});
     openSheet(`<h3>${esc(SORTEN[id].name)}: Form ändern</h3><p class="mut">Jetzt am ${FORMEN[alt].name}. ${FORM_WAHL_SATZ}</p>
       ${andere.map(fm=>`<div class="kv"><span><b>${FORMEN[fm].name}</b></span><span>${formSteck(id,fm)}</span></div><div class="mitte"><button data-a="formUmFrage" data-id="${id}" data-form="${fm}">${FORMEN[fm].name}</button></div>`).join('')}
       <div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`)},
-  formUmFrage(d){const id=d.id, f=S.felder[id], k=formUmKosten(id,d.form);
-    openSheet(`<h3>Auf ${FORMEN[d.form].name} umstellen?</h3><p>Der ${esc(SORTEN[id].name)} fängt mit der Erziehung von vorn an: Die ${epT(f.ep||0)} Entwicklungspunkte fallen auf 0, die Stufe auf ${PFLEGE_STUFEN[0]}. Die Reben bleiben stehen.</p><p class="mut">Das Umstellen kostet einen Rebschnitt der neuen Form, ${eur(k)}, und zählt als Rebschnitt ${S.jahr}. ${formSteck(id,d.form)}.</p>
+  // Seit 14.5.3 (Bauplan 14.5, Unteretappe 3): Die Abfrage nennt in allen Spielstufen die drei Verluste in Zahlen: alle Entwicklungspunkte, die Jahre mit
+  // halber Ernte bis zum Rebstock und die Weinstufen, deren Anspruch (ANSPRUCH) der Weinberg danach nicht mehr erreicht. Platzhalter, Wortlaut in Meilenstein 17.
+  formUmFrage(d){const id=d.id, f=S.felder[id], k=formUmKosten(id,d.form), qa=qualWb(id), qn=qualTeile(id,{ep:0,pflSt:0,form:d.form,laub:0}).q,
+      weg=Object.keys(STUFEN).filter(st=>ANSPRUCH[st]<=qa&&ANSPRUCH[st]>qn).map(st=>STUFEN[st].name);
+    openSheet(`<h3>Auf ${FORMEN[d.form].name} umstellen?</h3><p>Der ${esc(SORTEN[id].name)} fängt mit der Erziehung von vorn an. Du verlierst:</p>
+      <ol><li>alle ${epT(f.ep||0)} Entwicklungspunkte, die Stufe fällt von ${PFLEGE_STUFEN[f.pflSt||0]} auf ${PFLEGE_STUFEN[0]},</li><li>${EP_REBSTOCK_JAHRE} Jahre lang ${Math.round(STUFE_MENGE[0]*100)} % Ernte, bis der Rebstock wieder steht,</li>
+      <li>${weg.length?`diese Weinstufen, deren Qualität der Weinberg dann nicht mehr schafft: ${weg.join(', ')}`:'keine Weinstufe, die Qualität reicht weiter'} (Qualität ${qa} jetzt, ${qn} danach).</li></ol><p class="mut">Die Reben bleiben stehen.</p><p class="mut">Das Umstellen kostet einen Rebschnitt der neuen Form, ${eur(k)}, und zählt als Rebschnitt ${S.jahr}. ${formSteck(id,d.form)}.</p>
       <div class="btns"><button class="sec" data-a="close">Abbrechen</button><button class="wag" data-a="formUm" data-id="${id}" data-form="${d.form}" ${S.geld<k?'disabled':''}>Umstellen</button></div>`)},
   formUm(d){const id=d.id, f=S.felder[id]; if(!f||!f.reben||S.schwer==='einfach'||S.monat>SCHNITT_BIS||!formenFuer(id).includes(d.form)||d.form===formVon(id)) return closeSheet();
     const k=formUmKosten(id,d.form); if(S.geld<k) return meldung('Zu wenig Geld',`Das Umstellen kostet ${eur(k)}.`);

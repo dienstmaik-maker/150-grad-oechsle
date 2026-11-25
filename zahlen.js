@@ -17,8 +17,8 @@ const SORTEN={
 // die Sekt-Sorte liegt dazwischen und ist als einzige Sekt-Star. Die sechs alten Sorten oben bleiben für Spielstände von vor 11.4 unberührt.
 const ROLLEN={
   menge:{name:'Menge-Sorte',satz:'trägt viel und ist früh verkaufsreif',ertrag:5.6,zucker:-4,preis:3,minL:6,maxL:96,reife:.05},
-  sekt:{name:'Sekt-Sorte',satz:'gibt den Regional-Sekt',ertrag:4.8,zucker:-2,preis:4.5,minL:9,maxL:144,reife:.08,sektStar:true},
-  spitze:{name:'Spitzen-Sorte',satz:'trägt wenig, bringt die beste Qualität und reift lange',ertrag:4,zucker:0,preis:9,minL:18,maxL:360,reife:.12}
+  sekt:{name:'Sekt-Sorte',satz:'gibt den Regional-Sekt',ertrag:5.05,zucker:-2,preis:4.5,minL:9,maxL:144,reife:.08,sektStar:true},
+  spitze:{name:'Spitzen-Sorte',satz:'trägt wenig, bringt die beste Qualität und reift lange',ertrag:4.44,zucker:0,preis:9,minL:18,maxL:360,reife:.12}
 };
 // 17 neue Kennungen für 15 Namen (Riesling und Silvaner gibt es in zwei Rollen). Kennungen nie umbenennen, sie stehen in Spielständen und ab 11.4 im Album.
 const SORTEN_ROLLEN={
@@ -213,13 +213,17 @@ const VERLUST=[[70,0,1],[50,4,7],[35,7,11],[0,12,18]], FROST_2=2, FROST_3=4, SPA
 // der Form (Flachbogen und Kordon 7,5, Einzelpfahl 12 Punkte).
 const EP_MAX=100, EP_PREMIER=40, EP_GRAND=90, EP_REBSTOCK_JAHRE=3; // EP_PREMIER seit 14.4.3 40 (bis 14.2 45)
 // Erziehungsform je Weinberg: Punkte je Jahr mit dem Chef (ep), Rebschnitt je Hektar in der Erziehung bis Rebstock (haErz) und danach (ha),
-// Maschine (masch: 1 immer, 'rebstock' erst ab Rebstock, 0 nie), nur für eine Rolle (nur).
+// Maschine (masch: 1 jede Erntemaschine, 'voll' nur der Vollernter, 0 nie). Seit 14.5.3 (Entscheidungen 30, 32, 39, 40 und 42) gilt jede Form für jede Sorte
+// (bis 14.4 der Einzelpfahl nur für die Spitzen-Sorte mit nur, der Kordon mit Maschine ab Rebstock).
 // Seit 14.5.1 (Bauplan 14.5, Entscheidungen 30, 32 und 39): qual Punkte der Form in der Qualität, menge Anteil der Menge für jede Sorte,
-// schutz am Kordon der Anteil, den Spätfrost und Regen im Oktober noch kosten. Noch ungenutzt, qual ab 14.5.2, menge und schutz ab 14.5.3.
-const FORMEN={flach:{name:'Flachbogen',ep:2.5,haErz:250,ha:250,masch:1,qual:5,menge:1},kordon:{name:'Kordon',ep:2.5,haErz:500,ha:375,masch:'rebstock',qual:10,menge:.95,schutz:.5},pfahl:{name:'Einzelpfahl',ep:4,haErz:750,ha:750,masch:0,nur:'spitze',qual:15,menge:.9}};
+// schutz am Kordon der Anteil, den Spätfrost und Regen im Oktober noch kosten (formSchutz). qual seit 14.5.2, menge und schutz seit 14.5.3.
+const FORMEN={flach:{name:'Flachbogen',ep:2.5,haErz:250,ha:250,masch:1,qual:5,menge:1},kordon:{name:'Kordon',ep:2.5,haErz:500,ha:375,masch:'voll',qual:10,menge:.95,schutz:.5},pfahl:{name:'Einzelpfahl',ep:4,haErz:750,ha:750,masch:0,qual:15,menge:.9}};
+// Empfohlene Form je Rolle für den alten Winzer, die Vorauswahl in den Lehrjahren und den Test-Spieler (Annahme 11).
 const FORM_PASST={menge:'flach',sekt:'kordon',spitze:'pfahl'};
-// Faktoren für Menge und Qualitätspunkte je Rolle und Form, die passende Form hat 1 und 1. Seit 14.5.2 zählt nur noch die Menge [0], die Qualität kommt aus FORMEN.qual.
-const FORM_WIRKUNG={menge:{flach:[1,1],kordon:[.85,1.15]},sekt:{kordon:[1,1],flach:[1.1,.85]},spitze:{pfahl:[1,1],kordon:[1.1,.85],flach:[1.2,.7]}};
+// Seit 14.5.3: Wetterverluste, die der Kordon zur Hälfte abfängt (FORMEN.kordon.schutz, Annahme 9): Spätfrost lässt SPAETFROST_MENGE der Menge,
+// Regen im Oktober REGEN_OKT_MENGE (beides bis 14.5.2 als Zahl in wachse).
+const SPAETFROST_MENGE=.7, REGEN_OKT_MENGE=.9;
+// FORM_WIRKUNG (Menge und Qualität je Rolle und Form) ist seit 14.5.3 weg, die Menge steht in FORMEN.menge, die Qualität in FORMEN.qual.
 // Wirkung je Pflegestufe für alle Rollen gleich: Jungrebe, Rebstock, Premier Cru, Grand Cru. Ersetzen PFLEGE_MENGE, SETZ_MENGE und PFLEGE_QP.
 const STUFE_MENGE=[.5,1,1,.9]; // STUFE_QPF ist seit 14.5.2 weg, die Pflege zählt in der Qualität über QUAL_PFLEGE_AB und QUAL_PFLEGE_EP
 // Zuwachs nach dem, der schneidet oder düngt: der Chef ganz, Erntehelfer je Stufe (Index 1 bis 3).
@@ -242,10 +246,13 @@ const LAUB_HAND_HA=500;
 const ANSPRUCH={feder:0,tafel:0,qba:15,kab:30,spat:40,aus:50,ba:60,tba:70,eis:50}, ANSPRUCH_PREIS=0, ANSPRUCH_ANS=0;
 // Seit 14.2.4: Texte zur Erziehungsform und zum Sommerschnitt von Hand. Platzhalter, Wortlaut in Meilenstein 17.
 const FORM_RAT={menge:'Der alte Winzer rät zum Flachbogen: „Der trägt viel, der Schnitt ist billig, und die Maschine darf lesen. Genau das will die Menge-Sorte.“',
-  sekt:'Der alte Winzer rät zum Kordon: „Am Kordon hängen die Trauben gleichmäßig und luftig, das gibt den feinsten Grundwein. Bis zum Rebstock ist er teuer und will von Hand gelesen werden, danach darf die Maschine.“',
+  sekt:'Der alte Winzer rät zum Kordon: „Am Kordon hängen die Trauben gleichmäßig und luftig, das gibt den feinsten Grundwein. Er ist teurer im Schnitt und hält Spätfrost und Oktoberregen besser aus. Lesen darf ihn nur der Vollernter, bis dahin liest die Hand.“',
   spitze:'Der alte Winzer rät zum Einzelpfahl: „Jeder Stock steht für sich, das gibt wenig Menge, aber die besten Trauben, und am Pfahl wächst der Weinberg am schnellsten zum Grand Cru.“'};
 const FORM_PFAHL_HAND='Am Einzelpfahl liest du immer von Hand, eine Maschine passt nicht in den Weinberg.';
 const FORM_WAHL_SATZ='Die Form wählst du einmal für den Weinberg. Wer später umstellt, fängt mit der Erziehung von vorn an.';
+// Seit 14.5.3 (Annahme 11): Maschinen-Regel im Fenster der Formwahl (Lehr- und Gesellenjahre) und im Weinkompendium. Platzhalter, Wortlaut in Meilenstein 17.
+const FORM_MASCH_SATZ='Den Flachbogen darf jede Erntemaschine lesen, den Kordon nur der Vollernter, den Einzelpfahl nie eine Maschine.';
+const FORM_VORAUS='Vorausgewählt ist die Form, die der alte Winzer empfiehlt. Du kannst sie ändern.';
 // Seit 14.2.5: Winzerbote, wenn eine Lage eine neue Boden-Stufe erreicht. Platzhalter, Wortlaut in Meilenstein 17.
 const BODEN_LAGE_BOTE='🌱 {lage}: Der Boden ist jetzt {stufe}.';
 const LAUB_HAND_BOTE='✂️ Ab jetzt kannst du im Juni den Sommerschnitt von Hand machen, im Weinberg bei jeder Sorte. Eine Maschine kommt in deine steilen Hänge nicht.';

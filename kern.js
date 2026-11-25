@@ -37,17 +37,21 @@ const rolleK=id=>(SORTEN[id]||{}).rolle||'menge';
 // Seit 14.2.2: Mengen-Faktor der Pflegestufe, für alle Rollen gleich (STUFE_MENGE). Die Qualität rechnet seit 14.5.2 qualTeile.
 const pflegeMenge=(f,id)=>STUFE_MENGE[f.pflSt||0];
 // Seit 14.2.2: Entwicklungspunkte (f.ep, 0 bis EP_MAX). Erziehungsform des Weinbergs, ohne Wahl die passende (Entscheidung 34).
-const formVon=id=>{const f=S.felder[id]||{}; return f.form||FORM_PASST[rolleK(id)]};
+const formVon=id=>{const f=S.felder[id]||{}; return f.form||FORM_PASST[rolleK(id)]||'flach'};
 // Schwellen in Punkten: Rebstock nach EP_REBSTOCK_JAHRE Chef-Jahren der Form, Premier Cru, Grand Cru.
 const epSchwelle=id=>[0,EP_REBSTOCK_JAHRE*FORMEN[formVon(id)].ep,EP_PREMIER,EP_GRAND];
 const epStufe=id=>stufeZu((S.felder[id]||{}).ep||0,epSchwelle(id));
-// Seit 14.2.4: Erziehungsformen, die eine Rolle haben darf (Schlüssel in FORM_WIRKUNG), und die Wirkung der Form auf die Menge [0]. Der Teil [1] zählt seit 14.5.2 nicht mehr.
-const formenFuer=id=>Object.keys(FORM_WIRKUNG[rolleK(id)]||{});
-const formWirk=id=>((FORM_WIRKUNG[rolleK(id)]||{})[formVon(id)])||[1,1];
+// Seit 14.5.3 (Entscheidungen 30, 32 und 42): jede Form für jede Sorte, die Spitzenlage steht fest an ihrer Form. Menge der Form für jede Sorte gleich
+// (FORMEN.menge, bis 14.5.2 FORM_WIRKUNG je Rolle). formSchutz: Der Kordon fängt Spätfrost und Regen im Oktober zur Hälfte ab (Annahme 9).
+const formenFuer=id=>istSL(id)?[SL_FORM]:Object.keys(FORMEN);
+const formMenge=id=>FORMEN[formVon(id)].menge;
+const formSchutz=(id,F)=>{const s=FORMEN[formVon(id)].schutz; return s==null?F:1-(1-F)*s};
 // In der Erziehung ist ein Weinberg bis zum Rebstock (Kordon teurer im Schnitt und von Hand gelesen, Annahme 11).
 const inErziehung=id=>((S.felder[id]||{}).pflSt||0)<1;
-// Erlaubt die Form die Maschine? Einzelpfahl nie, Kordon ab Rebstock, die Spitzen-Sorte steht auf dem Südhang und liest immer von Hand (Entscheidung 17).
-const formMasch=id=>{const m=FORMEN[formVon(id)].masch; return !spitzeId(id)&&(m===1||(m==='rebstock'&&!inErziehung(id)))};
+// Erlaubt die Form die Maschine? Seit 14.5.3 (Entscheidungen 40 und 42, Annahme 10) für jede Sorte gleich: Flachbogen jede Erntemaschine, Kordon nur mit dem
+// Vollernter im Einsatz (bis dahin liest die Hand nach handFeld), Einzelpfahl nie. Bis 14.5.2: Kordon ab Rebstock, die Spitzen-Sorte nie.
+const vollDa=h=>maschEinsatz(h).some(m=>mTyp(m)===MASCH.gross);
+const formMasch=id=>{const m=FORMEN[formVon(id)].masch; return m===1||(m==='voll'&&vollDa())};
 // Darf die Maschine in den Weinberg (Lese und Laubschneider)? Dazu nie an der Mosel (Annahme 18).
 const maschDarf=id=>!R().steil&&formMasch(id);
 // Reben, die von Hand gelesen werden (seit 14.2.4 nach der Form statt nur die Spitzen-Sorte).
@@ -1152,13 +1156,18 @@ function leseFaktor(id){const t=leseTeile(); if(id!=null) return !maschDarf(id)?
 // Leute-Regel: Gezählt werden Köpfe. Seit 8.0 zählt eine Maschine nur im Einsatz (Fahrer da, Zustand ab MASCH_ROT), darüber bremst der Zustand nur die Ernteleistung.
 // Seit 11.5 (Teil C1) wird in Reben gerechnet: helferReben sagt, für wie viele Reben die Familie, h Erntehelfer und die Maschinen im Einsatz übers Jahr reichen.
 // Seit 13.5.5 decken die Erntemaschinen nur Reben der Menge- und Sekt-Sorte ab, die Spitzen-Sorte braucht immer Erntehelfer.
-function helferReben(h){h=h==null?S.helfer:h; return alleinReben()+h*REBEN_JE_HELFER+Math.min(maschHelfer(h)*HA_REBEN,rebenGesamt()-handLeseReben())}
+function helferReben(h){h=h==null?S.helfer:h; const mh=maschTeile(h,m=>mTyp(m).helfer*HA_REBEN); return alleinReben()+h*REBEN_JE_HELFER+Math.min(maschDeckt(mh.kl,mh.gr),rebenGesamt()-handLeseReben())}
 // Seit 13.5.5 (Maik 21.11.2026, Leitsatz: die Maschine für die Menge, die Hand für die Qualität): Erntemaschine und Vollernter lesen nur Menge- und Sekt-Sorte,
 // die Spitzen-Sorte lesen Familie und Erntehelfer immer von Hand, auch Kabinett und Spätlese. leseTeile rechnet, welcher Anteil je Gruppe gelesen wird:
 // Die Maschinen nehmen von Menge und Sekt, was sie schaffen, den Rest und die ganze Spitzen-Sorte lesen die Hände.
 const spitzeId=id=>(SORTEN[id]||{}).rolle==='spitze';
 function handReben(){return R().sorten.filter(spitzeId).reduce((a,id)=>a+S.felder[id].reben,0)+slFl()} // seit 14.4.4 mit der ganzen Spitzenlage
-function leseTeile(){const sp=handLeseReben(), rest=rebenGesamt()-sp, mT=Math.min(maschLeistung(),rest), need=sp+rest-mT, H=alleinReben()+S.helfer*HELFER_LEISTUNG, hf=need?Math.min(1,H/need):1;
+// Seit 14.5.3 (Annahme 10): Die Erntemaschine deckt nur Flachbogen-Fläche ab, der Vollernter Flachbogen und Kordon. maschDeckt rechnet, wie viele Reben
+// die Maschinen abdecken können, kl und gr sind Leistung (oder Hektar in Reben) der Erntemaschinen und der Vollernter.
+function maschDeckt(kl,gr){const T={flach:0,voll:0}; if(!R().steil) for(const id of weinberge()){const m=FORMEN[formVon(id)].masch; if(m===1) T.flach+=S.felder[id].reben; else if(m==='voll'&&gr>0) T.voll+=S.felder[id].reben}
+  return Math.min(T.flach+T.voll,Math.min(kl,T.flach)+gr)}
+function maschTeile(h,wert){const o={kl:0,gr:0}; for(const m of maschEinsatz(h)) o[mTyp(m)===MASCH.gross?'gr':'kl']+=wert(m); return o}
+function leseTeile(){const sp=handLeseReben(), rest=rebenGesamt()-sp, mL=maschTeile(undefined,m=>Math.round(mTyp(m).leist*m.zustand/100)), mT=Math.min(maschDeckt(mL.kl,mL.gr),rest), need=sp+rest-mT, H=alleinReben()+S.helfer*HELFER_LEISTUNG, hf=need?Math.min(1,H/need):1;
   return {hand:hf,masch:rest?(mT+(rest-mT)*hf)/rest:1,sp,rest}}
 // Erntehelfer, die es ohne Maschinen braucht (nur für die Anzeige).
 function helferBedarf(){return Math.max(0,Math.ceil((rebenGesamt()-alleinReben())/REBEN_JE_HELFER))}
@@ -1279,10 +1288,10 @@ function wachse(m){
   // Seit 14.4.4 alle Weinberge, die Spitzenlage würfelt wie der Weinberg ihrer Sorte (si der Sorte), nur ihre Trauben bekommen SPITZE_OE.
   for(const [si,id] of weinberge().map(x=>[reg.sorten.indexOf(stamm(x)),x])){
     const f=S.felder[id], so=SORTEN[id]; if(!f.reben) continue;
-    if((m===3||m===4)&&w==='frost'){f.frostF=.7; L.push(`Spätfrost schädigt die Blüte beim ${so.name}.`)}
+    if((m===3||m===4)&&w==='frost'){f.frostF=formSchutz(id,SPAETFROST_MENGE); L.push(`Spätfrost schädigt die Blüte beim ${so.name}.`)}
     // Seit 13.2.2: statt der Jungreben der Mengen-Faktor der Rebpflege (pflegeMenge).
-    // Seit 14.2.4 mal der Menge der Erziehungsform (formWirk).
-    if(m===5) f.menge=Math.round(f.reben*pflegeMenge(f,id)*formWirk(id)[0]*so.ertrag*(reg.ertragF||1)*(.6+.4*S.boden/100)*(1+BODEN_ST_MENGE*wbBoden(id))*f.frostF*festR(.9,1.1,fest(6,si,S.jahr,m)));
+    // Seit 14.2.4 mal der Menge der Erziehungsform, seit 14.5.3 für jede Sorte gleich (formMenge).
+    if(m===5) f.menge=Math.round(f.reben*pflegeMenge(f,id)*formMenge(id)*so.ertrag*(reg.ertragF||1)*(.6+.4*S.boden/100)*(1+BODEN_ST_MENGE*wbBoden(id))*f.frostF*festR(.9,1.1,fest(6,si,S.jahr,m)));
     // Seit 13.2.3: Das Wetter-Öchsle zählt höchstens bis zur Grenze des Weinbergs (oeGrenze: Deckel, Edelfäulnis der Spitzen-Sorte bis 150°).
     if(m===6){f.oe=Math.min(oeGrenze(id),OE_START+zuckerIm(id)+wbonus(w)+festI(-2,2,fest(5,si,S.jahr,m))+(istSL(id)?SPITZE_OE:0)); f.reif=5; f.ueber=0; f.plus=0}
     if(m>=7&&f.menge>0&&!f.gelesen){
@@ -1291,7 +1300,7 @@ function wachse(m){
       f.oe=Math.min(oeGrenze(id),f.oe+OE_PLUS[m-7]+wbonus(w)+festI(-2,2,fest(5,si,S.jahr,m))+(segen?SP_SEGEN:0)); f.plus=f.oe-vor;
       f.reif=clamp([35,70,92,100,100][m-7]+(w==='sonnig'?5:w==='regen'?-5:0),0,100);
       f.ueber=clamp([0,5,20,45,70][m-7]+(w==='sonnig'?5:0)+(f.edel?EDEL_UEBER:0),0,100);
-      if(m===9&&w==='regen') f.menge=Math.round(f.menge*.9);
+      if(m===9&&w==='regen') f.menge=Math.round(f.menge*formSchutz(id,REGEN_OKT_MENGE));
       // Seit 13.4.2: Jeder Monat über Oktober hinaus kostet Menge (WARTEN_MENGE), danach entscheidet das Wagnis.
       if(m>=10){f.menge=Math.round(f.menge*WARTEN_MENGE); herbstWagnis(id,f,so,m,L)}
     }
@@ -1575,6 +1584,8 @@ for(let k=1;k<=KELLER_PREISE.length;k++) kompWissen('keller'+k,'technik',KELLER_
   ()=>`Stufe ${k} im Kellerausbau. Kostet ${eur(KELLER_PREISE[k-1])} und geht mit ${kellerMit(k-1)} im Kellerbuch. Prädikatsweine und Eiswein sind damit ${k} ${k===1?'Monat':'Monate'} früher verkaufsreif, und jeder Wein gewinnt beim Reifen schneller an Wert.`);
 // Seit 12.1: der Sektkeller mit der Flaschengärung als kleine Geschichte (KOMP_TEXT.sektkeller).
 kompWissen('sektkeller','technik','Sektkeller',()=>`Kostet einmal ${eur(SEKTKELLER_PREIS)} und geht ab dem Rang ${RAENGE[R_SEKT].name}. Ohne ihn gibt es keinen Sekt. Sektflasche, Korken und Agraffe kosten ${eur2(SEKT_KOSTEN)} je Flasche, mit der ${SEKT_ANLAGE_NAME} (${eur(SEKT_ANLAGE_PREIS)}, zu haben ${freiText('sekt_anlage')}) die Hälfte. Bei der Lese der ${ROLLEN.sekt.name} wählst du ${SEKT_REIFE} oder ${HEFE_LANG} Monate auf der Hefe, lang bringt ${HEFE_LANG_QP} Punkte mehr.${S.sektkeller?` Dein Sektkeller steht${S.sektAnlage?', mit Anlage':''}.`:''}`);
+// Seit 14.5.3 (Annahme 11): die Erziehungsform mit Wahl fürs Leben und Maschinen-Regel, in der Meisterprüfung steht sie nur hier. Platzhalter, Wortlaut in Meilenstein 17.
+kompWissen('form','technik','Erziehungsform',()=>`${Object.values(FORMEN).map(F=>`${F.name}: ${Math.round(F.menge*100)} % Menge, ${F.qual} Punkte Qualität, Rebschnitt ${eur(F.ha)} je Hektar`).join('. ')}. Der Kordon verliert bei Spätfrost und Regen im Oktober nur die Hälfte. ${FORM_MASCH_SATZ} ${FORM_WAHL_SATZ}`);
 kompWissen('reife','technik','Flaschenreife',()=>'In der Flasche gewinnt ein Wein mit jedem Jahr an Wert, höchstens bis zum Vierfachen. Wie schnell das geht und wie lange er hält, hängt an der Rebsorte und am Kellerausbau.');
 kompWissen('zuckern','technik','Zuckern und Wässern',()=>`Zucker hebt die Öchsle im Most, aber nie über den Deckel des Weinbergs, aus dem die Trauben kommen. Wasser streckt die Menge. Beides geht um höchstens ${ZUCKER_MAX} %. Bis ${ZUCKER_ERLAUBT} % ist das beim Tafelwein erlaubt. Alles andere ist Panscherei und ein Fall für den Weinprüfer.`);
 for(const id of Object.keys(MASCH)) kompWissen('masch_'+id,'technik',MASCH[id].name,
@@ -2273,8 +2284,9 @@ const maniText=l=>[l.zucker?`gezuckert (+${l.zucker}\u00a0%)`:'',l.wasser?`gewä
 // Form: FORMEN.qual. Sonstiges: Laubschnitt LAUB_QP nur im laufenden Jahr. Gerundet wird einmal am Ende, QUAL_RESERVE bleibt frei.
 // Weinstufe, Öchsle, Sonne, Jahrhundertjahr und Sorte zählen nicht mehr (bis 14.4: qpGrund und qpFuer, gerechnet bei der Anmeldung).
 function qualBoden(p){const W=BODEN_SCHWELLE, Q=QUAL_BODEN; for(let i=1;i<W.length;i++) if(p<W[i]) return Q[i-1]+(Q[i]-Q[i-1])*(Math.max(0,p)-W[i-1])/(W[i]-W[i-1]); return Q[Q.length-1]}
-function qualTeile(id){const f=S.felder[id]||{}, pflege=Math.min(QUAL_PFLEGE_MAX,((f.pflSt||0)>=1?QUAL_PFLEGE_AB:0)+(f.ep||0)*QUAL_PFLEGE_EP),
-  boden=qualBoden(wbBodenP(id)), form=(FORMEN[formVon(id)]||{}).qual||0, laub=f.laub===S.jahr?LAUB_QP:0;
+// v setzt einzelne Werte vorweg (ep, pflSt, form, laub), zum Beispiel für die Abfrage beim Umstellen der Form.
+function qualTeile(id,v){const f=Object.assign({},S.felder[id]||{},v||{}), pflege=Math.min(QUAL_PFLEGE_MAX,((f.pflSt||0)>=1?QUAL_PFLEGE_AB:0)+(f.ep||0)*QUAL_PFLEGE_EP),
+  boden=qualBoden(wbBodenP(id)), form=(FORMEN[f.form||formVon(id)]||{}).qual||0, laub=f.laub===S.jahr?LAUB_QP:0;
   return {pflege,boden,form,laub,q:Math.round(pflege+boden+form+laub)}}
 const qualWb=id=>qualTeile(id).q;
 // Schmiergeld für den Beamten: ein Anteil vom Wert des Weins, mindestens SCHMIER_MIN.
