@@ -969,6 +969,7 @@ function mgrSchalter(b){
   return E.map(teil).join('')
     +(b==='weingut'&&aufgabeAktiv('plan')?`<div class="mitte" style="margin:2px 0 8px"><button class="klein" data-a="einsatz">📋 Einsatzplan öffnen</button></div>`:'') // seit 14.7.4
     +(b==='weingut'&&st?`<div style="margin-top:8px"><b>${CHEFSACHE_TEXT.titel}</b></div><div class="mut">${CHEFSACHE_TEXT.kopf}</div>${csInhalt()}`:'') // seit 14.7.5
+    +(b==='handel'&&st?`<div class="mut" style="margin:8px 0 6px">${verkaufText('grenze')}</div>`:'') // seit 14.7.6, Annahme 24
     +(b==='handel'&&(aufgabeAktiv('laeden')||aufgabeAktiv('handel')||aufgabeAktiv('regal'))?`<div class="mut" style="margin:8px 0 6px">Je Wein bleiben im Keller, außer kurz vorm Verderben:</div>${reserveChips()}`:'')
     +(b==='handel'&&aufgabeAktiv('fest')||b==='weingut'&&mgrPufferFuer().length?`<div class="mut" style="margin:8px 0 6px">${b==='weingut'?'Für '+wortListe(mgrPufferFuer()):'Für das Fest'} gibt ${G.er} nur so viel aus, dass mindestens das auf dem Konto bleibt:</div>${pufferChips(b)}`:'');
 }

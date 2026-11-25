@@ -372,7 +372,7 @@ const MGR_G=[{Dein:'Dein',dein:'dein',Er:'Er',er:'er',ihn:'ihn',ein:'ein',den:'d
 // Seit 13.5.4 (Bauplan 13.5) machen die Köpfe nur Büro, Wettbewerbswein und Hoffest wählt immer der Spieler. Neue Texte sind Platzhalter, Wortlaut in Meilenstein 17.
 const MGR_AUFGABEN={
   laeden:{kurz:'Weinhandlungen beliefern',text:'Jeden Monat die Weinhandlungen mit passenden Weinen beliefern, dazu den Federweißen an den Weinhändler'},
-  handel:{kurz:'an den Großhandel verkaufen',text:'Jeden Monat an den Großhandel verkaufen, so viel er zum vollen Preis nimmt'},
+  handel:{kurz:'an den Großhandel verkaufen',text:''},   // seit 14.7.6 aus VERKAUF_TEXT.handel (unten bei MGR_PREIS_MIN)
   export:{kurz:'auch in den Export verkaufen',text:'Beim Verkauf auch den Exporthandel nutzen, wenn er mehr zahlt als das Inland'},
   plan:{kurz:'Einsatzplan',text:'Den Einsatzplan fürs Düngen und Schneiden schreiben, je Weinberg'},
   fass:{kurz:'Fassraum kaufen',text:'Nach der Lese fehlenden Fassraum kaufen, damit deine Kellerleute keltern können'},
@@ -1232,7 +1232,8 @@ const WACHS_WECHSEL=2600, WACHS_WENDE=3900;   const WF_POS={
 const SPAET_JAHR=8;
 const BUCH_ORT={berg:'berg',betrieb:'betrieb',aktuell:'aktuell',maschinen:'maschinen',buero:'buero',buch:'buch',sabotage:'hintertuer',start:'keller',lager:'lager',amt:'rathaus',handel:'handel',laeden:'weinhandel',bank:'bank',arbeit:'arbeit'};
 // Daueraufträge für den Verkauf (seit 4.4, seit 7.0 beim Handels-Manager: Weinhandlungen ab Stufe 1, Großhandel ab Stufe 2).
-// Sie laufen beim Weiterblättern vor dem Monatswechsel: erst die Weinhandlungen (sie zahlen mehr), dann der Großhandel bis zum Budget, nie unter dem vollen Preis.
+// Sie laufen beim Weiterblättern vor dem Monatswechsel: erst die Weinhandlungen (sie zahlen mehr), dann der Großhandel. Seit 14.7.6 (Annahme 24) in jedem Kanal nie unter
+// MGR_PREIS_MIN vom Listenpreis (listenPreis), der Großhandel auch über das Budget hinaus, bis der Schnitt je Flasche auf diese Grenze fällt (bis 14.7.5 nie unter dem vollen Preis).
 // Was am ehesten verdirbt, geht zuerst. Je Wein bleiben S.dauer.reserve Flaschen liegen, außer er hält nur noch zwei Monate. Bericht über S.dauerLog im Winzerboten.
 const DAUER_RESERVE=[0,100,500,1000];
 // Seit 7.5: Logbuch je Manager in S.manager[b].log=[{z,t}], ein Eintrag je Monat (z=Jahr*12+Monat), die letzten MGR_LOG Monate mit Arbeit.
@@ -1627,6 +1628,14 @@ const PUNKT_PREIS=.01;
 // Verkauf von selbst (Annahme 24, gebaut in 14.7.6): Die Handels-Managerin verkauft in jedem Kanal nur, wenn sie je Flasche im Schnitt
 // mindestens MGR_PREIS_MIN vom Listenpreis bekommt (Listenpreis ist der Preis ohne Tagespreis). Das Regal im eigenen Laden hat keine Grenze (Annahme 25).
 const MGR_PREIS_MIN=.85;
+// Seit 14.7.6: Sätze der Handels-Managerin zur Grenze, {p} ist MGR_PREIS_MIN in Prozent, {n} Flaschen. Platzhalter, Wortlaut in Meilenstein 17.
+const VERKAUF_TEXT={
+  grenze:'💶 Verkauft wird von selbst nie unter {p} % vom Listenpreis, dem Preis deines Weins ohne den Tagespreis. Fürs Regal deiner Weinhandlung gilt die Grenze nicht.',
+  handel:'Jeden Monat an den Großhandel verkaufen, auch über sein Budget hinaus, solange im Schnitt mindestens {p} % vom Listenpreis ankommen',
+  info:'verkauft bei jedem Weiterblättern an den Großhandel, auch über sein Budget hinaus, solange im Schnitt mindestens {p} % vom Listenpreis ankommen',
+  wartet:'{n} Flaschen warten im Keller, der Tagespreis liegt unter {p} % vom Listenpreis'};
+const verkaufText=(k,n)=>VERKAUF_TEXT[k].replace('{p}',Math.round(MGR_PREIS_MIN*100)).replace('{n}',n);
+MGR_AUFGABEN.handel.text=verkaufText('handel');   // seit 14.7.6, MGR_AUFGABEN steht weiter oben vor MGR_PREIS_MIN
 // Einsatzplan (Annahmen 8 bis 13, gebaut in 14.7.4): Rat zum Chef-Weinberg je Spielstufe nach dem Muster CHANCE_ZEIGE.
 // still: der Weingut-Manager wählt den Chef-Weinberg ohne Frage nach chefRegel (Lehrjahre), rat: der alte Winzer rät (Gesellenjahre), leer: kein Rat (Meisterprüfung).
 const EINSATZ_RAT={einfach:'still',mittel:'rat',schwer:''};

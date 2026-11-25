@@ -1695,12 +1695,17 @@ const oePreisF=(st,w)=>1+Math.min(OE_PREIS_MAX,OE_PREIS_JE*oeUeber(st,w));
 const jhPreisF=(st,w)=>w.jh&&!w.sekt&&(st==='tba'||st==='eis')?1+JH_PREIS:1;
 function weinWert(st,w){return STUFEN[st].preis*sortePreisF(w.sorte)*qualPreisF(w.qp)*(1+pflegePreis(w.pfl))*oePreisF(st,w)*sternF(w.sorte)*(w.durch?1-DURCH_PREIS:1)
   *(1+((w.medP||0)+(w.sektP||0))*PUNKT_PREIS)*jhPreisF(st,w)}
-function preis(l){
+// Seit 14.7.6 (Annahme 24): preisBei rechnet mit dem Tagespreis m, preis mit S.markt wie bisher, listenPreis ohne Tagespreis (m=1).
+function preisBei(l,m){
   if(l.status!=='flasche') return 0;
   const L=lager(l); if(l.flMonate<L.min) return 0;
   const alter=Math.min(4,1+(l.flMonate-L.min)/12*L.rate);
-  return Math.round(weinWert(l.stufe,l)*alter*S.markt*lageF(l)*sektF(l)*(R().preisF||1)*100)/100;
+  return Math.round(weinWert(l.stufe,l)*alter*m*lageF(l)*sektF(l)*(R().preisF||1)*100)/100;
 }
+function preis(l){return preisBei(l,S.markt)}
+function listenPreis(l){return preisBei(l,1)}
+// Die Grenze der Handels-Managerin je Flasche, MGR_PREIS_MIN vom Listenpreis (Annahme 24).
+const mgrGrenze=l=>listenPreis(l)*MGR_PREIS_MIN;
 
 // Die drei Sorten der Partie nach Rolle: {menge, sekt, spitze}.
 function kompRollen(){
@@ -2730,22 +2735,27 @@ function dauerAuftrag(){
   const d=S.dauer||{}, aL=aufgabeAktiv('laeden'), aH=aufgabeAktiv('handel'); if(!aL&&!aH) return;
   const res=DAUER_RESERVE.includes(+d.reserve)?+d.reserve:0, frei=l=>lotRest(l)<=2?l.liter:Math.max(0,l.liter-res), L=[];
   const ls=()=>S.lots.filter(l=>l.status==='flasche'&&!l.regal&&l.liter>0&&preis(l)>0).sort(BSORT_F.dringend);
-  let nL=0,eL=0,nH=0,eH=0;
+  // Seit 14.7.6 (Annahme 24): in jedem Kanal nur, wenn je Flasche im Schnitt mindestens mgrGrenze ankommt. Was nur wegen des Tagespreises liegen bleibt, zählt warte.
+  let nL=0,eL=0,nH=0,eH=0; const warte=new Set(), wartet=(l,p)=>p<mgrGrenze(l)&&!!warte.add(l);
   if(aL) for(const [r,la] of Object.entries(S.laeden)) for(const l of ls().filter(l=>ladenPasst(l,r))){
-    if(la.rest<=0) break; const n=Math.min(frei(l),la.rest); if(n<=0) continue;
-    const p=ladenPreis(l,r), e=erloes(Math.round(n*p)); kassiere(e); la.rest-=n; l.liter-=n; nL+=n; eL+=e; kompVerkauf(l,n);
+    if(la.rest<=0) break; if(wartet(l,ladenPreis(l,r))) continue; const n=Math.min(frei(l),la.rest); if(n<=0) continue;
+    const p=ladenPreis(l,r), e=erloes(Math.round(n*p)); kassiere(e); la.rest-=n; l.liter-=n; nL+=n; eL+=e; kompVerkauf(l,n); warte.delete(l);
   }
   // Seit 14.7.2 (Annahme 19): Den Federweißen bringt die Handels-Managerin schon auf Stufe 1 mit den Weinhandlungen zum Weinhändler, ganz und sofort.
   let nF=0,eF=0;
-  if(aL) for(const l of ls().filter(federHandel)){const w=wege(l)[0]; if(!w) continue; const n=l.liter, e=erloes(Math.round(n*w.p)); kassiere(e); l.liter-=n; nF+=n; eF+=e; kompVerkauf(l,n)}
+  if(aL) for(const l of ls().filter(federHandel)){const w=wege(l)[0]; if(!w||wartet(l,w.p)) continue; const n=l.liter, e=erloes(Math.round(n*w.p)); kassiere(e); l.liter-=n; nF+=n; eF+=e; kompVerkauf(l,n); warte.delete(l)}
   if(aH) for(const l of ls().filter(l=>!federHandel(l))){
-    const w=wege(l).filter(x=>aufgabeAktiv('export')||x.name!=='Exporthandel')[0]; if(!w) continue; const n=Math.min(frei(l),Math.floor(marktRest()/w.p)); if(n<=0) continue;
-    const e=erloes(Math.round(n*w.p)); kassiere(e); S.absatz=(S.absatz||0)+n*w.p; l.liter-=n; nH+=n; eH+=e; kompVerkauf(l,n);
+    // Seit 14.7.6: auch über das Budget hinaus, so viele Flaschen, dass der Schnitt w.p*marktF nicht unter die Grenze fällt (marktF fällt mit der Menge, also halbieren).
+    const w=wege(l).filter(x=>aufgabeAktiv('export')||x.name!=='Exporthandel')[0]; if(!w||wartet(l,w.p)) continue;
+    const G=mgrGrenze(l), geht=n=>w.p*marktF(n*w.p)>=G; let lo=0, hi=frei(l); if(geht(hi)) lo=hi; else while(hi-lo>1){const m=(lo+hi)>>1; if(geht(m)) lo=m; else hi=m}
+    const n=lo; if(n<=0) continue;
+    const e=erloes(Math.round(n*w.p*marktF(n*w.p))); kassiere(e); S.absatz=(S.absatz||0)+n*w.p; l.liter-=n; nH+=n; eH+=e; kompVerkauf(l,n); warte.delete(l);
   }
   S.lots=S.lots.filter(l=>l.liter>0);
   if(nL) L.push(`${num(nL)} Flaschen an Weinhandlungen für ${eur(eL)} verkauft`);
   if(nF) L.push(`${num(nF)} Flaschen Federweißer an den Weinhändler für ${eur(eF)} verkauft`);   // Platzhalter, Wortlaut in Meilenstein 17
   if(nH) L.push(`${num(nH)} Flaschen an den Großhandel für ${eur(eH)} verkauft`);
+  {const n=[...warte].filter(l=>l.liter>0).reduce((a,l)=>a+frei(l),0); if(n) L.push(verkaufText('wartet',num(n)))}   // seit 14.7.6, Platzhalter
   handelMelde(L);
 }
 // Dauerauftrag im Großhandel (k='handel') und im Weinhandel (k='laeden'). Seit 7.4 ohne eigene Karte: Schalter und Reserve stehen im Fenster der Handels-Managerin.
@@ -2757,7 +2767,7 @@ function dauerInfo(k){
   if(!aufgabeAktiv(k)) return {stand:'📋 Der Dauerauftrag ist aus. Einschalten kannst du ihn im Betrieb bei deinen Managern.',
     text:` ${wer} kann den Verkauf ${lae?'an die Weinhandlungen':'an den Großhandel'} als Dauerauftrag übernehmen.`};
   return {hin:`${M.sym} ${wer} ${lae?'beliefert die Weinhandlungen':'verkauft'} beim Weiterblättern.`,
-    text:` ${wer} ${lae?'beliefert die Weinhandlungen bei jedem Weiterblättern mit passenden Weinen':'verkauft bei jedem Weiterblättern, so viel der Großhandel zum vollen Preis nimmt'}. Was am ehesten verdirbt, geht zuerst. Wie viel je Wein im Keller bleibt, stellst du im Betrieb bei deinen Managern ein. Von Hand verkaufen kannst du trotzdem jederzeit.`};
+    text:` ${wer} ${lae?'beliefert die Weinhandlungen bei jedem Weiterblättern mit passenden Weinen':verkaufText('info')}. Was am ehesten verdirbt, geht zuerst. Wie viel je Wein im Keller bleibt, stellst du im Betrieb bei deinen Managern ein. Von Hand verkaufen kannst du trotzdem jederzeit.`};
 }
 // Version 7.0 (Schritt D): Manager im Betrieb (statt Gutsverwalter), im Arbeitsamt und als Fenster von unten.
 // Seit 7.5 hat jeder Manager im Betrieb ein eigenes Fenster mit Stufe, Lohn und den Schaltern seiner Aufgaben. Das Fenster von unten (AKT.mgr)
