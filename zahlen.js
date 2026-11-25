@@ -497,7 +497,8 @@ const PREISE={
 const LAGER_SCHWANK=.2, REBEN_ANGEBOT=.15, LADEN_EIGEN=6000, LADEN_EIGEN_F=1.45, BOTSCHAFT_ANS=20, HOFFEST_PREIS=180000, HOFFEST_ANS=32;
 const HOFFEST_WETTER={sonnig:1.25,mild:1,regen:.7,kalt:.85,frost:.85};
 const BESTEN_KEY='oechsle-besten';
-const ANREG_ANS=60, ANREG_FEHL=6, PANSCH={zocker:.4,vorsicht:.08,qualitaet:.04}, SPITZE_HA=2, SPITZE_START=200000, SPITZE_OE=5, SPITZE_ANS=30, LOHN_BILLIG=1900;
+// Seit 14.4.6 (Entscheidung 58): ANREG_ANS 150 und ANREG_FEHL 50 (bis 14.4.5 60 und 6).
+const ANREG_ANS=150, ANREG_FEHL=50, PANSCH={zocker:.4,vorsicht:.08,qualitaet:.04}, SPITZE_HA=2, SPITZE_START=200000, SPITZE_OE=5, SPITZE_ANS=30, LOHN_BILLIG=1900;
 // Paket 4 (15.11.2026): Ziele fürs Geld und Land ohne Auktionsglück.
 // Makler: ab Jungwinzer Land zum MAKLER_PREIS je Hektar, nur wenn für den nächsten Rang allein noch Land fehlt. Auktionen bleiben deutlich billiger.
 // Seit 11.5 (Teil B) wächst sein Angebot mit dem Rang: MAKLER_HA Hektar im Jahr je Rang (Idee Maik 20.11.2026, Zahlen von Claude). Bis 11.4 war es immer einer.
@@ -1492,6 +1493,15 @@ const STUNDUNG_MONATE=12, STUNDUNG_AB_GEN=2;
 // Anzeige bei "Kontrolle anregen" je Spielstufe.
 const KONTR_AB_AKT=2, KONTR_ABSTAND={einfach:[24,48],mittel:[24,48],schwer:[12,48]}, KONTR_ZEIGE={einfach:'warnung',mittel:'strafe',schwer:'nichts'};
 const STRAFE_ANS_AKT={2:0,3:150}, VERWARNUNG={einfach:1,mittel:0,schwer:0}, ANREG_ZEIGE={einfach:'chance',mittel:'wort',schwer:'geruecht'};
+// Seit 14.4.6: Chance bei "Kontrolle anregen" für die Anzeige: ohne Gerücht PANSCH des Gegners, mit Gerücht ANREG_CHANCE_GERUECHT.
+// Der alte Winzer rät zum Hinweis ab einer Chance, bei der er sich lohnt (ANREG_FEHL durch ANREG_ANS plus ANREG_FEHL). Sätze sind Platzhalter, Wortlaut in Meilenstein 17.
+const ANREG_CHANCE_GERUECHT=.9;
+const KONTR_TEXT={zu:'Hinter dieser Tür geht es nicht ganz sauber zu. Sie geht erst ab dem Rang {rang} auf, bis dahin gibt es auch keine Weinkontrolle.',
+  warn:'Der alte Winzer warnt: Findet der Prüfer gepanschten Wein, kostet das das Doppelte seines Werts, mindestens {min}{ans}, und fünf Jahre lang kommt er jedes Jahr.',
+  verwarnErst:'Der erste Fund bleibt eine Verwarnung: Der Wein ist weg, sonst passiert nichts.',
+  verwarnung:'Diesmal bleibt es bei einer Verwarnung: {wein}. Beim nächsten Mal gibt es Strafe.',
+  strafe:'das Doppelte des Werts, mindestens {min}',
+  ratJa:'Der alte Winzer rät: Schick den Prüfer hin.', ratNein:'Der alte Winzer rät: Lass es lieber, das lohnt sich nicht.', chance:'Chance auf einen Fund {p} %'};
 // Gegner mit Wunschjahren (14.4.7): je Rolle die Jahre für Rebstock, Premier Cru und Grand Cru, je Lage die Jahre für Fruchtboden, Gutsboden und Terroir (Annahme 12).
 // Deckel der Gegner: GEGNER_DECKEL_AN 1 mit dem Besitz-Deckel je Rang (GEGNER_DECKEL), 0 nur mit der Obergrenze GEGNER_HA_OBEN.
 const GEGNER_WB={menge:[4,35,62],sekt:[46,64,89],spitze:[71,79,93]}, GEGNER_BODEN={einfach:[9,36,82],hoehe:[47,64,92],sued:[70,79,94]};

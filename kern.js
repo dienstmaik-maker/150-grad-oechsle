@@ -2207,26 +2207,45 @@ function etappe3Monat(Z){
   ereignisMonat();
 }
 /* ---- Weinkontrolle: unangekündigt, im Schnitt alle drei Jahre, spätestens nach vier. Nach einem Fund fünf Jahre lang jedes Jahr ---- */
-function kontrNeu(){const k=S.kontr; if(k.scharf>0){k.scharf--; k.in=12}else k.in=rint(24,48)}
+// Seit 14.4.6 (Entscheidungen 54 und 56): Kontrollen erst ab dem Akt KONTR_AB_AKT (mit der Hintertür beim Weingutsbesitzer), Abstand je Spielstufe (KONTR_ABSTAND).
+// Die erste Kontrolle kommt nach dem üblichen Abstand ab dem Monat des Aufstiegs (S.kontr.ab merkt, dass die Uhr läuft).
+const kontrAktiv=()=>(RANG_AKT[S.rang]||1)>=KONTR_AB_AKT, kontrAbstand=()=>KONTR_ABSTAND[S.schwer]||[24,48];
+function kontrNeu(){const k=S.kontr; if(k.scharf>0){k.scharf--; k.in=12}else{const A=kontrAbstand(); k.in=rint(A[0],A[1])}}
 function panschListe(){return S.lots.filter(l=>l.pansch&&l.status!=='trauben')}
 function strafeHoehe(){return Math.max(STRAFE_MIN,Math.round(2*panschListe().reduce((a,l)=>a+lotWert(l),0)/100)*100)}
-function strafeAns(){return STRAFE_ANS+STRAFE_ANS_WEITER*(panschListe().length-1)}
+// Seit 14.4.6 (Entscheidung 57): Ansehen bei einem Fund je Akt (STRAFE_ANS_AKT), die Zuschläge je weiterem Wein und nach abgelehnter Bestechung nur im 3. Akt.
+function strafeAns(extra){const akt=RANG_AKT[S.rang]||1; return akt>=3?(STRAFE_ANS_AKT[3]||0)+STRAFE_ANS_WEITER*(panschListe().length-1)+(extra||0):STRAFE_ANS_AKT[akt]||0}
+// Seit 14.4.6: In den Lehrjahren (VERWARNUNG) ist der erste Fund je Partie eine Verwarnung, der Wein ist weg, ohne Geldstrafe, Ansehen und scharfe Jahre (S.verwarnt).
+const verwarnOffen=()=>!!VERWARNUNG[S.schwer]&&!S.verwarnt;
+// Warnung des alten Winzers in Zahlen (Lehrjahre, KONTR_ZEIGE). Platzhalter, Wortlaut in Meilenstein 17.
+const kontrWarn=()=>KONTR_TEXT.warn.replace('{min}',eur(STRAFE_MIN)).replace('{ans}',strafeAns()?`, dazu ${num(strafeAns())} Ansehen`:'');
 function kontrolleMonat(Z){
-  const k=S.kontr; if(--k.in>0) return;
+  const k=S.kontr; if(!kontrAktiv()) return; if(!k.ab){k.ab=1; kontrNeu(); return}
+  if(--k.in>0) return;
   if(!panschListe().length){kontrNeu(); schlag(45,'Weinkontrolle ohne Befund',`Der Prüfer blättert durch dein Kellerbuch und findet nichts zu beanstanden. +${ruhm(4)} Ansehen.`,'kontrolle',{archiv:1}); return}
   // Gepanschter Wein im Keller: Der Spieler entscheidet im Dialog, ob er besticht. Bis dahin ist alles andere gesperrt.
   S.pruefer=1; schlag(85,'Weinkontrolle im Keller','Der Prüfer steht unangemeldet im Keller und will dein Kellerbuch sehen.','kontrolle',{archiv:1,du:1});
 }
 const bestechChance=n=>.5+.35*(n-BESTECH_MIN)/(BESTECH_MAX-BESTECH_MIN);
 // Der Prüfer findet den gepanschten Wein. extra ist der zusätzliche Abzug nach einer abgelehnten Bestechung.
+// Seit 14.4.6: Ansehen je Akt (strafeAns), Verwarnung in den Lehrjahren. Platzhalter, Wortlaut in Meilenstein 17.
 function pruefEnde(extra){
-  const F=panschListe(), st=strafeHoehe(), ab=strafeAns()+(extra||0);
-  S.lots=S.lots.filter(l=>!F.includes(l)); zahle(st); ruhm(-ab); S.kontr={in:12,scharf:5}; S.pruefer=0;
-  return `${F.length===1?'Der gepanschte Wein wird':'Die gepanschten Weine werden'} vernichtet. Strafe: ${eur(st)}, ${ab} Ansehen weg. Fünf Jahre lang kommt der Prüfer jetzt jedes Jahr.`;
+  const F=panschListe(), weg=F.length===1?'Der gepanschte Wein wird vernichtet':'Die gepanschten Weine werden vernichtet';
+  if(verwarnOffen()){S.lots=S.lots.filter(l=>!F.includes(l)); S.verwarnt=1; S.pruefer=0; kontrNeu(); return KONTR_TEXT.verwarnung.replace('{wein}',weg)}
+  const st=strafeHoehe(), ab=strafeAns(extra);
+  S.lots=S.lots.filter(l=>!F.includes(l)); zahle(st); if(ab) ruhm(-ab); S.kontr={in:12,scharf:5,ab:1}; S.pruefer=0;
+  return `${weg}. Strafe: ${eur(st)}${ab?`, ${ab} Ansehen weg`:''}. Fünf Jahre lang kommt der Prüfer jetzt jedes Jahr.`;
 }
+// Seit 14.4.6 (Entscheidung 58): Chance auf einen Fund bei "Kontrolle anregen" für die Anzeige je Spielstufe (ANREG_ZEIGE).
+const anregChance=g=>g.geruecht?ANREG_CHANCE_GERUECHT:PANSCH[g.typ]||0, anregLohnt=g=>anregChance(g)>=ANREG_FEHL/(ANREG_ANS+ANREG_FEHL);
+function anregZeichen(g){const z=ANREG_ZEIGE[S.schwer], c=anregChance(g);
+  if(z==='chance') return KONTR_TEXT.chance.replace('{p}',Math.round(c*100))+'. '+(anregLohnt(g)?KONTR_TEXT.ratJa:KONTR_TEXT.ratNein);
+  if(z==='wort') return `Chance ${CHANCE_WORT.find(x=>c>=x[0])[1]}.`; return ''}
 /* ---- Panschen: Most zuckern oder wässern, Fässer verschneiden ---- */
 const mani=l=>(l.zucker||0)+(l.wasser||0)>0;
+// Seit 14.4.6: Im 1. Akt ist die Hintertür zu (FREI.hintertuer), auch das erlaubte Strecken beim Tafelwein geht dann nicht.
 const maniLegal=(l,st)=>st==='tafel'&&(l.zucker||0)<=ZUCKER_ERLAUBT&&(l.wasser||0)<=ZUCKER_ERLAUBT;
+const hinterOffen=()=>frei('hintertuer');
 // Seit 13.7.8 (Entscheidung 12, Maik 22.11.2026): Zucker hebt das Öchsle höchstens bis zum Deckel des Weinbergs, aus dem die Trauben kommen (deckel der Sorte, wie er gerade steht).
 // ZUCKER_MAX bleibt die zweite Grenze. zuckerOe rechnet das Öchsle nach n Prozent Zucker, zuckerBis gibt die meisten Prozent, die noch gehen (0 heißt gesperrt).
 const zuckerOe=(l,n)=>Math.min(150,Math.round(l.oe*(1+n/100)));

@@ -446,7 +446,7 @@ function zeigePruefer(){
   const F=panschListe(), max=Math.floor(Math.min(BESTECH_MAX,S.geld)/1000)*1000;
   openSheet(`${sbild('kontrolle')}<h3>🔍 Weinkontrolle</h3><p>Der Prüfer steht im Keller und will dein Kellerbuch sehen. Darin ${F.length===1?'steht ein gepanschter Wein':`stehen ${F.length} gepanschte Weine`}:</p>
     <ul class="kl">${F.map(l=>`<li>${esc(lotName(l))}, ${num(l.liter)}\u00a0l</li>`).join('')}</ul>
-    <p class="mut">${F.length===1?'Findet er ihn, wird er vernichtet':'Findet er sie, werden sie vernichtet'}. Dazu kommen ${eur(strafeHoehe())} Strafe und ${strafeAns()} Ansehen Abzug, und fünf Jahre lang kommt er jedes Jahr wieder.</p>
+    <p class="mut">${F.length===1?'Findet er ihn, wird er vernichtet':'Findet er sie, werden sie vernichtet'}. ${verwarnOffen()?KONTR_TEXT.verwarnErst:`Dazu kommen ${eur(strafeHoehe())} Strafe${strafeAns()?` und ${strafeAns()} Ansehen Abzug`:''}, und fünf Jahre lang kommt er jedes Jahr wieder.`}</p>
     <div class="btns"><button class="wag" data-a="pruefBestechen" ${max<BESTECH_MIN?'disabled':''}>Bestechen</button><button data-a="pruefJa">Prüfen lassen</button></div>`);
 }
 // Alle Texte zum Amt an einer Stelle. k ist der Fall, p sind die gemerkten Zahlen und Namen. Fällt eine Übergabe in denselben Monat,
@@ -1294,6 +1294,11 @@ function kellerAusHtml(){
 // Die roten Zeilen zu gepanschtem Wein und zum Prüfer stehen immer sichtbar im Fenster "Weinprüfer", die Erklärungen im i.
 function vSabotage(){
   const tr=S.lots.filter(l=>l.status==='trauben'), mi=S.lots.filter(mischbar), paare=mi.some(a=>mi.some(b=>a!==b&&farbe(a)===farbe(b))), P=panschListe().length, scharf=S.kontr.scharf>0;
+  // Seit 14.4.6: Im 1. Akt ist die Hintertür zu, sie geht mit dem Rang FREI.hintertuer auf. Platzhalter, Wortlaut in Meilenstein 17.
+  if(!hinterOffen()) return einKarte('hinter','Die Hintertür ist zu',KONTR_TEXT.zu.replace('{rang}',RAENGE[FREI.hintertuer.r].name));
+  // Seit 14.4.6: Was das Fenster "Weinprüfer" zeigt, je Spielstufe (KONTR_ZEIGE): Lehrjahre die Warnung des alten Winzers in Zahlen,
+  // Gesellenjahre Strafe und Abstand, Meisterprüfung keine Zahlen.
+  const kz=KONTR_ZEIGE[S.schwer], kA=kontrAbstand(), kAbst=scharf?'jedes Jahr':`alle ${kA[0]} bis ${kA[1]} Monate`, kStrafe=KONTR_TEXT.strafe.replace('{min}',eur(STRAFE_MIN))+(strafeAns()?`, ${strafeAns()} Ansehen`:'');
   if(['zuckern','verschneiden','pruefer'].every(einZu)) return einKarte('hinter','Noch alles sauber','Hinter dieser Tür geht es nicht ganz sauber zu. Bis zur ersten Lese gibt es hier nichts zu tun.');
   return fenster('zuckern','Most zuckern oder wässern',tr.map(l=>fz(dot(l.sorte)+SORTEN[l.sorte].name,
       `${num(l.liter)} l Trauben · ${l.oe}° Öchsle${l.oe>=deckel(l.sorte)?' · am Deckel':''}${mani(l)?' · 🤫 '+maniText(l):''}`,'',
@@ -1306,9 +1311,10 @@ function vSabotage(){
     kn:`<button class="klein wag" data-a="misch1" ${paare?'':'disabled'}>Fässer mischen</button>`,
     i:'Zwei angemeldete Fassweine gleicher Farbe werden zu einem. Der bessere Name bleibt, Öchsle und Qualitätspunkte werden gemittelt. Streng verboten, der Beamte will dafür Schmiergeld.'})
   +fenster('pruefer','Weinprüfer',`<div class="kv"><span>Gepanschte Weine im Keller</span><span${P?' class="rot"':''}>${P}</span></div>
-    <div class="kv"><span>Kontrolle</span><span${scharf?' class="rot"':''}>${scharf?'jedes Jahr':'etwa alle drei Jahre'}</span></div>
+    ${kz!=='nichts'?`<div class="kv"><span>Kontrolle</span><span${scharf?' class="rot"':''}>${kAbst}</span></div><div class="kv"><span>Strafe bei einem Fund</span><span>${kStrafe}</span></div>`:''}
+    ${kz==='warnung'?`<div style="font-size:14px;margin-top:4px">${kontrWarn()}${verwarnOffen()?' '+KONTR_TEXT.verwarnErst:''}</div>`:''}
     ${scharf?'<div class="rot" style="font-size:14px;margin-top:4px">Der Prüfer hat dich auf dem Kieker.</div>':''}`,{
-    i:'Hinter der unscheinbaren Tür geht es nicht ganz sauber zu. Der Weinprüfer kommt unangemeldet, im Schnitt alle drei Jahre, spätestens nach vier. Was bis dahin verkauft ist, findet er nicht mehr.'});
+    i:`Hinter der unscheinbaren Tür geht es nicht ganz sauber zu. Der Weinprüfer kommt unangemeldet${kz!=='nichts'?`, alle ${kA[0]} bis ${kA[1]} Monate`:''}. Was bis dahin verkauft ist, findet er nicht mehr.`});
 }
 function vStadt(){
   let h=kopf({amt:'Rathaus',handel:'Großhandel',laeden:ladenFrei()?'Deine Weinhandlung':'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'}[SUB]);
@@ -1370,7 +1376,7 @@ function vStadt(){
     if(S.rang<R_KONTROLLE) zu.push(fenster('anreg','Kontrolle anregen','',{zu:`ab dem Rang ${RAENGE[R_KONTROLLE].name}`,i:anI}));
     else{
       const schon=S.anregJahr===S.jahr;
-      h+=fenster('anreg','Kontrolle anregen',S.gegner.map(g=>fz(esc(g.name)+(g.geruecht?' 🗣️':''),`${GEGNER_TYP[g.typ].art}, ${WO[g.region]}`,g.geruecht?'Es gibt Gerüchte.':'',
+      h+=fenster('anreg','Kontrolle anregen',S.gegner.map(g=>fz(esc(g.name)+(g.geruecht?' 🗣️':''),`${GEGNER_TYP[g.typ].art}, ${WO[g.region]}`,[g.geruecht?'Es gibt Gerüchte.':'',anregZeichen(g)].filter(Boolean).join(' '),
         `<button class="klein" data-a="anreg" data-id="${g.id}" ${schon?'disabled':''}>Hinweis geben</button>`)),{
         stand:schon?'Für dieses Jahr hast du deinen Hinweis schon gegeben.':'Dein Hinweis für dieses Jahr ist noch frei.',i:anI});
     }
@@ -2382,14 +2388,15 @@ const AKT={
   leseJa(d){const f=S.felder[d.id]; closeSheet(); if(feldLiter(f,d.la)<=0) return; const t=TAB,s=SUB,y=window.scrollY; lese(d.id,d.la,1); TAB=t; SUB=s; save(); render(); window.scrollTo(0,y)},
   /* ---- Hintertür: Panschen ---- */
   zuckern(d){
-    const l=lot(d.id), k=d.k, zu=k==='zucker'; if(!l||l.status!=='trauben') return;
+    const l=lot(d.id), k=d.k, zu=k==='zucker'; if(!l||l.status!=='trauben'||!hinterOffen()) return;
     const hat=l[k]||0, bis=zu?zuckerBis(l):ZUCKER_MAX-hat; if(bis<1) return;   // seit 13.7.8: Zucker nur bis zum Deckel des Weinbergs
     const neu=n=>zu?{oe:zuckerOe(l,n),liter:l.liter}:{oe:Math.round(l.oe/(1+n/100)),liter:Math.round(l.liter*(1+n/100))};
     mengeSheet({titel:zu?'Most zuckern':'Most wässern',text:zu?`Zucker hebt die Öchsle um den gewählten Anteil, höchstens bis zum Deckel des Weinbergs (${deckel(l.sorte)}°).`:'Wasser streckt die Menge um den gewählten Anteil, die Öchsle sinken entsprechend.',min:1,max:bis,step:1,start:Math.min(5,bis),okText:zu?'Zuckern':'Wässern',wag:1,
-      info:n=>{const x=neu(n);return `<b>${n}\u00a0%</b>danach ${num(x.liter)}\u00a0l mit ${x.oe}° Öchsle<br><span class="${hat+n>ZUCKER_ERLAUBT?'rot':'mut'}">${hat+n>ZUCKER_ERLAUBT?'Über '+ZUCKER_ERLAUBT+' %: Das ist Panscherei.':'Als Tafelwein noch erlaubt.'}</span>`},
+      info:n=>{const x=neu(n);return `<b>${n}\u00a0%</b>danach ${num(x.liter)}\u00a0l mit ${x.oe}° Öchsle<br><span class="${hat+n>ZUCKER_ERLAUBT?'rot':'mut'}">${hat+n>ZUCKER_ERLAUBT?'Über '+ZUCKER_ERLAUBT+' %: Das ist Panscherei.':'Als Tafelwein noch erlaubt.'}</span>${hat+n>ZUCKER_ERLAUBT&&KONTR_ZEIGE[S.schwer]==='warnung'?`<br><span class="mut">${kontrWarn()}</span>`:''}`},
       ok:n=>{const x=neu(n);l.oe=x.oe;l.liter=x.liter;l[k]=hat+n}});
   },
   misch1(){
+    if(!hinterOffen()) return;
     const mi=S.lots.filter(mischbar), ls=mi.filter(a=>mi.some(b=>a!==b&&farbe(a)===farbe(b)));
     openSheet(`${sbild('fassgang')}<h3>Fässer verschneiden</h3><p class="mut">Wähle das erste Fass.</p>${ls.map(l=>`<button class="wahl" data-a="misch2" data-id="${l.id}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${num(l.liter)}\u00a0l · ${l.oe}° Öchsle · ${l.qp} Qualitätspunkte</span></button>`).join('')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
   },
@@ -2406,7 +2413,7 @@ const AKT={
       <div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button class="wag" data-a="mischJa" data-id="${a.id}" data-b="${b.id}" ${S.geld<m.schmier?'disabled':''}>Verschneiden</button></div>`);
   },
   mischJa(d){
-    const x=lot(d.id), y=lot(d.b); if(!x||!y||!mischbar(x)||!mischbar(y)) return; const m=mischung(x,y), a=m.a;
+    const x=lot(d.id), y=lot(d.b); if(!x||!y||!mischbar(x)||!mischbar(y)||!hinterOffen()) return; const m=mischung(x,y), a=m.a;
     if(S.geld<m.schmier) return;
     closeSheet(); fx('stempel'); zahle(m.schmier);
     // Seit 13.2.2: Der Verschnitt trägt die niedrigere Pflege- und Boden-Stufe der beiden Weine, für Preisbonus und Namen.
@@ -2419,7 +2426,7 @@ const AKT={
   pruefBestechen(){
     if(!S.pruefer) return;
     const max=Math.floor(Math.min(BESTECH_MAX,S.geld)/1000)*1000; if(max<BESTECH_MIN) return;
-    mengeSheet({titel:'Prüfer bestechen',text:`Je dicker der Umschlag, desto eher nimmt er ihn. Lehnt er ab, behältst du dein Geld, aber er prüft erst recht und es kostet ${BESTECH_NEIN_ANS} Ansehen extra.`,min:BESTECH_MIN,max,step:1000,start:Math.min(max,20000),okText:'Umschlag rüberschieben',bild:'kontrolle',wag:1,
+    mengeSheet({titel:'Prüfer bestechen',text:`Je dicker der Umschlag, desto eher nimmt er ihn. Lehnt er ab, behältst du dein Geld, aber er prüft erst recht${strafeAns(BESTECH_NEIN_ANS)>strafeAns()?` und es kostet ${BESTECH_NEIN_ANS} Ansehen extra`:''}.`,min:BESTECH_MIN,max,step:1000,start:Math.min(max,20000),okText:'Umschlag rüberschieben',bild:'kontrolle',wag:1,
       info:n=>`<b>${eur(n)}</b>Er nimmt mit ${Math.round(bestechChance(n)*100)}\u00a0% an`,
       ok:n=>{
         if(Math.random()<bestechChance(n)){zahle(n); kontrNeu(); S.pruefer=0; meldung('🔍 Glück gehabt','Der Prüfer steckt den Umschlag ein, blättert kurz durchs Kellerbuch und findet nichts.','kontrolle')}
