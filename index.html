@@ -795,6 +795,38 @@ html.brett main{padding-top:18px}
 #top .geld b::after,#top .wtr small::after{opacity:.55}
 #tkopf{width:54px;height:54px;margin:-27px 0 0 -27px;border:3px solid #d9a845;box-shadow:0 0 0 1.5px #4a2a10,0 0 0 3px rgba(255,214,120,.35),0 3px 6px rgba(0,0,0,.65);font:24px/48px system-ui,sans-serif}
 #tkopf.offen{box-shadow:0 0 0 1.5px #4a2a10,0 0 0 5px rgba(242,199,102,.6),0 3px 6px rgba(0,0,0,.65)}
+/* Seit 16.3.2 (Bild 05 und 13): Klemmbrett aus Holz mit Metallklemme, darauf Papier mit Banner und Weingut-Streifen, Aufgaben mit Timos Symbolen.
+   Rot, Gelb und Grau wie bisher als Punkt und Schriftfarbe, rechts der Pfeil. Keine Kästchen zum Abhaken. */
+.klemmbrett{position:relative;margin:14px 0 18px;padding:13px 11px 12px;border-radius:18px;background:#6b3f1d url(bilder/brett-honig.jpg) center/cover;box-shadow:inset 0 0 0 2px rgba(255,214,140,.25),inset 0 0 18px rgba(40,18,4,.55),0 5px 12px rgba(0,0,0,.55)}
+.kbklemme{position:absolute;top:-12px;left:50%;width:118px;height:36px;margin-left:-59px;z-index:2;border-radius:10px 10px 14px 14px;background:linear-gradient(#f4dc93,#c9a04a 45%,#8f6a25);border:1.5px solid #6e4f17;box-shadow:inset 0 2px 0 rgba(255,250,220,.7),0 3px 5px rgba(0,0,0,.5)}
+.kbklemme::before{content:'';position:absolute;top:-13px;left:50%;width:30px;height:20px;margin-left:-15px;border:4px solid #b78d3c;border-bottom:0;border-radius:15px 15px 0 0;box-sizing:border-box}
+.kbklemme::after{content:'';position:absolute;left:12px;right:12px;top:15px;height:3px;border-radius:2px;background:rgba(90,60,15,.45)}
+.kbpapier{position:relative;padding:26px 10px 12px;border-radius:6px;background:#f3e7ca url(bilder/papier.jpg) center/cover;color:#2b2118;--ink:#2b2118;--mut:#5c4a35;box-shadow:inset 0 0 22px rgba(120,80,30,.35),0 1px 2px rgba(0,0,0,.4)}
+.kbband{position:relative;z-index:1;margin:0 14px -10px;padding:5px 12px 7px;text-align:center;border-radius:4px;background:linear-gradient(#fbf0d2,#e7cf9b);border:1.5px solid #a87a3c;box-shadow:0 2px 3px rgba(80,40,10,.35)}
+.kbband::before,.kbband::after{content:'';position:absolute;top:9px;width:20px;height:100%;z-index:-1;background:#d8b97c;border:1.5px solid #a87a3c}
+.kbband::before{left:-14px;clip-path:polygon(0 0,100% 0,100% 100%,0 100%,38% 50%)}
+.kbband::after{right:-14px;clip-path:polygon(0 0,100% 0,62% 50%,100% 100%,0 100%)}
+.kbband h2{margin:0;font:700 23px/1.1 var(--knopf);color:#5a1424;letter-spacing:.02em}
+.kbbild{height:64px;margin:0 4px 6px;border-radius:0 0 40% 40%/0 0 18px 18px;background:#7a8a4a center 62%/cover no-repeat;box-shadow:inset 0 -6px 10px -6px rgba(60,40,10,.5);opacity:.96}
+.kbkopf{display:flex;align-items:center;gap:2px;margin:4px 0 4px}
+.kbkopf .kbtitel{flex:1;padding-left:40px}
+.kbtitel{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0}
+.kbtitel h3{margin:0;padding:3px 14px 4px;border-radius:9px;background:linear-gradient(#8a4f28,#5e3216);border:1.5px solid #c9973f;color:#f8e6bf;font:700 19px/1.2 var(--knopf);letter-spacing:.03em;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,230,170,.35),0 2px 3px rgba(0,0,0,.3)}
+.kbranke{color:#6b8a2a;font:20px/1 Georgia,serif}.kbranke.r{transform:scaleX(-1)}
+.kbkopf .fi{margin-right:-4px}
+.klemmbrett .finfo{margin:0 0 6px;border-radius:8px;border:1px solid rgba(154,106,53,.4)}
+.kbliste{margin:2px 0 4px}
+.kbz{display:flex;align-items:center;gap:8px;width:100%;min-height:52px;margin:0;padding:6px 2px 6px 0;border:0;border-image:none;border-bottom:1px solid rgba(120,80,40,.3);border-radius:0;background:none;box-shadow:none;filter:none;text-shadow:none;transform:none;color:var(--ink);text-align:left;font:600 15.5px/1.25 var(--schrift);font-variant-caps:normal;letter-spacing:0}
+.kbz:active{background:rgba(185,153,90,.18)}
+.kbz>img{flex:none;width:42px;height:42px;filter:drop-shadow(0 1px 1px rgba(60,30,5,.4))}
+.kbz>i{flex:none;width:10px;height:10px;border-radius:50%;background:#e08a2c;box-shadow:0 0 0 2px rgba(255,255,255,.6)}
+.kbz>span{flex:1;min-width:0;overflow-wrap:anywhere}
+.kbz>b{flex:none;width:18px;color:#8a4a1c;font:700 24px/1 var(--schrift);text-align:center}
+.kbz.rot{color:var(--rot)}.kbz.rot>i{background:var(--rot)}
+.kbz.hin{color:var(--mut);font-weight:400;font-size:14.5px;min-height:46px}.kbz.hin>i{background:#a89676}.kbz.hin>img{width:34px;height:34px;margin:0 4px;opacity:.85}
+.kbhin{margin-top:4px}
+.kbleer{padding:12px 6px;text-align:center;font:italic 15px/1.3 var(--schrift);color:var(--mut);border-bottom:1px solid rgba(120,80,40,.3)}
+.kbalt{margin-top:10px}
 </style>
 </head>
 <body>

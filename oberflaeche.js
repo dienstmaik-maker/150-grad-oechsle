@@ -1044,13 +1044,28 @@ function fenster(id,titel,inhalt,o={}){
 }
 // Zeile im Fenster für einen Wein oder Posten: Name, graue Angaben, darunter links Zustand oder Warnung, rechts der Knopf.
 function fz(name,angaben,zustand,...kn){return `<div class="fz"><b>${name}</b>${angaben?`<div class="mut">${angaben}</div>`:''}${zustand||kn.length?kz(zustand||'',...kn):''}</div>`}
-// Klemmbrett (seit 16.3.1 der alte Ort Aktuelles ohne Zunge und ohne Bild): "Das steht an" ganz oben (Maik, Version 4.4), der Rang darunter.
+// Klemmbrett (seit 16.3.1 der alte Ort Aktuelles ohne Zunge und ohne Bild, "Das steht an" seit Version 4.4 ganz oben).
+// Seit 16.3.2 (Bild 05 und 13): Holzrahmen, Klemme, Papier, Banner "Klemmbrett, <Monat>" und ein Streifen vom Weingut der eigenen Stufe in der Jahreszeit.
+// Die Aufgaben sind die Zeilen aus aufgaben(), unverändert: links Timos Symbol nach Ort (KB_SYM), Punkt und Schrift in Rot, Gelb oder Grau wie bisher, rechts der Pfeil,
+// ein Tipp führt an denselben Ort wie bisher. "Aufgaben (N)" zählt wie der Reiter die Zeilen ohne ruhig, die grauen Hinweise stehen darunter ohne Zahl (Annahme 2).
+// Keine Kästchen zum Abhaken, das Spiel hakt selbst ab (Maik 25.11.2026, 18:49 Uhr). Texte sind Platzhalter, Wortlaut in Meilenstein 17.
+const KB_SYM={berg:'traube',gut:'traktor',keller:'fass',stadt:'haendler'};
+const kbSym=a=>KB_SYM[a.tab==='gut'&&a.sub==='berg'?'berg':a.tab]||'traktor';
+const kbZeile=a=>`<button class="kbz ${a.rot?'rot':a.ruhig?'hin':'gelb'}" data-a="${a.akt||'tab'}" data-id="${a.tab||''}" data-sub="${a.sub||''}"><img src="bilder/aufg-${kbSym(a)}.webp" alt=""><i></i><span>${esc(a.t)}</span><b>›</b></button>`;
+const kbTitel=t=>`<div class="kbtitel"><span class="kbranke">❧</span><h3>${t}</h3><span class="kbranke r">❧</span></div>`;
 function vKlemm(){
-  const A=aufgaben(), an=stehtAn()||fuSperre();
-  return fenster('ansteht','Das steht an',A.length?A.map(a=>`<button class="task ${a.rot?'rot':a.ruhig?'hin':'gelb'}" data-a="${a.akt||'tab'}" data-id="${a.tab||''}" data-sub="${a.sub||''}">${a.rot?'⚠️ ':''}${esc(a.t)}</button>`).join(''):[],{
-    leer:'Diesen Monat steht nichts an. Du kannst weiterblättern.',
-    kn:an?`<button class="klein" data-a="tab" data-id="monat">📰 Winzerbote</button>`:`<div class="zweikn"><button class="klein" data-a="tab" data-id="monat">📰 Winzerbote</button><button class="klein" data-a="weiterBis">⏩ Weiter bis etwas ansteht</button></div>`,
-    i:'Hier steht, was diesen Monat zu tun ist. Ein Tipp führt dich direkt an den Ort. <b>Rot</b> kann nicht warten, <b>Gelb</b> hat Zeit, <b>Grau</b> ist nur ein Hinweis. Die Punkte an den Reitern zeigen dasselbe, Hinweise bekommen keinen Punkt.<br><br>⏩ „Weiter bis etwas ansteht“ blättert am Stück, höchstens zwölf Monate. Es hält nur bei Rot und bei Schlagzeilen, die dich selbst betreffen. Bei Gelb und bei Hinweisen blättert es weiter. Ausnahme ist die Lese: Von September bis November hält es einmal im Monat, solange Trauben hängen, im Dezember nur bei gefrorenen Trauben.<br><br>Geboten und eingereicht wird im Rathaus, der Tipp hier führt dich hin. „Winzerbote“ zeigt die letzte Ausgabe noch einmal. Tipps gibt dir der Spielführer in der Sprechblase.'+(fuSperre()?(S.ein?'<br><br>Mit dem Spielführer gibt es ⏩ ab April, bis dahin zeigt dir der alte Winzer das Pflanzen.':'<br><br>Mit dem Spielführer gibt es ⏩ erst ab dem Januar des zweiten Jahres, im ersten Jahr kommt fast jeden Monat ein Tipp.'):'')})+vRang();
+  const A=aufgaben(), K=A.filter(a=>!a.ruhig), H=A.filter(a=>a.ruhig), an=stehtAn()||fuSperre(), auf=FI_AUF.has('ansteht');
+  const i='Hier steht, was diesen Monat zu tun ist. Ein Tipp führt dich direkt an den Ort. <b>Rot</b> kann nicht warten, <b>Gelb</b> hat Zeit, <b>Grau</b> ist nur ein Hinweis. Die Punkte an den Reitern zeigen dasselbe, Hinweise bekommen keinen Punkt.<br><br>⏩ „Weiter bis etwas ansteht“ blättert am Stück, höchstens zwölf Monate. Es hält nur bei Rot und bei Schlagzeilen, die dich selbst betreffen. Bei Gelb und bei Hinweisen blättert es weiter. Ausnahme ist die Lese: Von September bis November hält es einmal im Monat, solange Trauben hängen, im Dezember nur bei gefrorenen Trauben.<br><br>Geboten und eingereicht wird im Rathaus, der Tipp hier führt dich hin. „Winzerbote“ zeigt die letzte Ausgabe noch einmal. Tipps gibt dir der Spielführer in der Sprechblase.'+(fuSperre()?(S.ein?'<br><br>Mit dem Spielführer gibt es ⏩ ab April, bis dahin zeigt dir der alte Winzer das Pflanzen.':'<br><br>Mit dem Spielführer gibt es ⏩ erst ab dem Januar des zweiten Jahres, im ersten Jahr kommt fast jeden Monat ein Tipp.'):'');
+  const kn=an?`<button class="klein" data-a="tab" data-id="monat">📰 Winzerbote</button>`:`<div class="zweikn"><button class="klein" data-a="tab" data-id="monat">📰 Winzerbote</button><button class="klein" data-a="weiterBis">⏩ Weiter bis etwas ansteht</button></div>`;
+  // Die i-Taste behält die Kennung 'ansteht', damit Spielführer (e1-05) und Buch sie weiter finden. fi() sucht das nächste .fen.
+  return `<section class="fen klemmbrett"><div class="kbklemme"></div><div class="kbpapier">
+    <header class="kbband"><h2>Klemmbrett, ${MON[S.monat]}</h2></header>
+    <div class="kbbild" style="background-image:url(bilder/${wgBild(wgStufe(),JZ[S.monat])}.jpg)"></div>
+    <div class="kbkopf">${kbTitel(`Aufgaben (${K.length})`)}<button class="fi${auf?' an':''}" data-a="fi" data-id="ansteht" aria-label="Erklärung zu Aufgaben" aria-expanded="${auf}"><i>i</i></button></div>
+    <div class="finfo"${auf?'':' hidden'}>${i}${mib(BUCH_ORT.aktuell)}</div>
+    <div class="kbliste">${K.map(kbZeile).join('')}${!K.length?`<div class="kbleer">${H.length?'Diesen Monat ist nichts dringend.':'Diesen Monat steht nichts an. Du kannst weiterblättern.'}</div>`:''}${H.length?`<div class="kbhin">${H.map(kbZeile).join('')}</div>`:''}</div>
+    <div class="kbalt">${kn}</div>
+  </div></section>`+vRang();
 }
 // Maschinen (seit 7.4 auf dem Fenster-Baustein): "Deine Maschinen" mit einer Zeile je Maschine, darunter je Bauart ein Fenster zum Kaufen.
 // Was der Rang noch sperrt, ist seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten): die kleine Maschine ab Winzermeister, der Vollernter ab Gutsherr.
@@ -2047,8 +2062,8 @@ function render(){
   if(SUBS[TAB]&&!SUBS[TAB].some(s=>s[0]===SUB)&&!imKlemm()) SUB=START_SUB[TAB];
   // Kellerbuch und Aktuelles öffnen sich mit einem eigenen Geräusch.
   ortFarbe(SUBS[TAB]?TAB:'gut');
-  // Seit 16.1: Im Weinberg liegt das Holzbrett hinter den Karten.
-  document.documentElement.classList.toggle('brett',TAB==='gut'&&SUB==='berg');
+  // Seit 16.1: Im Weinberg liegt das Holzbrett hinter den Karten. Seit 16.3.2 auch hinter dem Klemmbrett (Bild 05).
+  document.documentElement.classList.toggle('brett',TAB==='gut'&&(SUB==='berg'||SUB==='aktuell'));
   const ort=SUBS[TAB]?TAB+'/'+SUB:TAB; if(ort!==ORT_ALT){FI_AUF.clear(); if(ORT_ALT&&(ort==='keller/buch'||ort==='gut/aktuell')) fx('menue'); ORT_ALT=ort}
   musikOrt(musikWahl());
   if(ort==='stadt/laeden') S.ladenSeh=S.jahr*12+S.monat;
