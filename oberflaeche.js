@@ -1756,7 +1756,7 @@ function vSabotage(){
 // Kosten (o.k) und als Tipp dem Text des alten i (o.i) samt Buchkapitel. ST_PANEL merkt sich die Teile der zuletzt gezeichneten Karten.
 // stadtBrett: die Orte der Stadt, die schon auf dem Holzbrett ohne Panorama liegen (Entscheidung 3, wie Betrieb und Keller).
 const ST_PANEL={}, ST_SYM={amt:'🏛️',handel:'⚖️',laeden:'🍷',bank:'🏦',arbeit:'🧑‍🌾'};
-const stadtBrett=()=>TAB==='stadt'&&['platz','amt','handel'].includes(SUB);
+const stadtBrett=()=>TAB==='stadt'&&['platz','amt','handel','laeden','bank'].includes(SUB);
 function sKarte(id,titel,kopf,auf,o={}){
   if(einZu(id)) return '';
   ST_PANEL[id]={titel:o.iName||titel,z:o.z||'',k:o.k||'',t:o.i||'',buch:o.buch===undefined?BUCH_ORT[SUB]:o.buch,sym:o.sym||ST_SYM[SUB]||'🏛️'};
@@ -1906,54 +1906,74 @@ function vStadt(){
   }
   // Weinhandel (seit 7.4 auf dem Fenster-Baustein), Reihenfolge nach der Regel "was diesen Monat ansteht, Handgriffe, Zustand, Gesperrtes":
   // die Weinhandlungen der anderen Gebiete mit ihrem Wunsch des Monats, dann "Ins Regal stellen" und "Dein Regal" der eigenen Weinhandlung (ab R_LADEN).
-  // Vorher steht "Eigene Weinhandlung" zugeklappt mit Schloss unten. Die beiden kleinen Bilder sind raus, sie kommen in den Fenstern von unten.
+  // Vorher ist "Eigene Weinhandlung" wie seit 10.6 ausgeblendet. Die beiden kleinen Bilder sind raus, sie kommen in den Fenstern von unten.
+  // Seit 16.6.5 (Bauplan 16.6, Entscheidung 7): auf dem Holzbrett, drei Karten im Kartenbaustein (laeden, regalRein, regal), Befehle ladenAngebot, regal, buchDetail wie bisher.
+  // Der Hinweis der Weinhandlungen ist Gelb unter derselben Bedingung wie der Punkt an Zunge und Schild (ladenPunkt ohne das Regal). Platzhalter, Wortlaut in Meilenstein 17.
   if(SUB==='laeden'){
-    const n=S.lots.filter(ladenOk).length, D=dauerInfo('laeden'), HM=`${mgrG('handel').Dein} ${MGR_BEREICHE.handel.name}`, mr=aufgabeAktiv('regal'), mehr=Math.round((LADEN_EIGEN_F-1)*100);
+    const T=WB_TEXT.stadt, W=T.wh, n=S.lots.filter(ladenOk).length, D=dauerInfo('laeden'), HM=`${mgrG('handel').Dein} ${MGR_BEREICHE.handel.name}`, mr=aufgabeAktiv('regal'), mehr=Math.round((LADEN_EIGEN_F-1)*100);
     // Ohne passenden Wein sagt ein Hinweis, was fehlt und ab wann es geht (seit 5.0). Wie man zu Kabinett kommt, steht im i.
     const bald=n?null:S.lots.filter(l=>l.status==='flasche'&&!l.regal&&!preis(l)&&(l.sekt||STUFEN[l.stufe].rang>=3)).map(l=>({l,n:lager(l).min-l.flMonate})).sort((a,b)=>a.n-b.n)[0];
-    h+=fenster('laeden','Weinhandlungen',Object.entries(S.laeden).map(([r,d])=>{const k=S.lots.filter(l=>ladenPasst(l,r)).length;
+    const LA=Object.entries(S.laeden), offen=LA.filter(([r,d])=>d.rest>0&&S.lots.some(l=>ladenPasst(l,r))).length;
+    const hw=!n?['grau',W.keinWein]:offen?[aufgabeAktiv('laeden')?'gruen':'gelb',offen===1?W.nimmt1:wbT(W.nimmtN,{n:offen})]:['grau',W.nichts];
+    h+=sKarte('laeden',T.laeden,kHin(...hw)+(D.hin?wbInfo(D.hin,''):''),
+      (!n?`<div class="hilfe">🍷 <b>Noch kein passender Wein.</b> ${bald?`Als Erstes reif: ${esc(lotName(bald.l))} im ${inMonaten(bald.n)}.`:'Weinhandlungen nehmen nur Prädikatswein ab Kabinett oder Sekt.'} Bis dahin verkaufst du im Großhandel.</div>`:'')
+      +(D.stand?`<div class="fstand">${D.stand}</div>`:'')
+      +kZeilen(LA.map(([r,d])=>{const k=S.lots.filter(l=>ladenPasst(l,r)).length;
         return fz(`Weinhandlung ${WO[r]}`,`Sucht diesen Monat nur ${wunschName(d.wunsch)}`,
           d.rest<=0?'Nimmt diesen Monat nichts mehr.':`Nimmt noch ${num(d.rest)} Flaschen, ${k?`${k} ${k===1?'Wein passt':'Weine passen'}`:'du hast keinen passenden Wein'}.`,
-          `<button class="klein" data-a="ladenAngebot" data-id="${r}"${d.rest>0&&k?'':' disabled'}>Anbieten</button>`)}),{
-      hin:[D.hin,!n&&`🍷 <b>Noch kein passender Wein.</b> ${bald?`Als Erstes reif: ${esc(lotName(bald.l))} im ${inMonaten(bald.n)}.`:'Weinhandlungen nehmen nur Prädikatswein ab Kabinett oder Sekt.'} Bis dahin verkaufst du im Großhandel.`],
-      stand:D.stand,
+          `<button class="klein" data-a="ladenAngebot" data-id="${r}"${d.rest>0&&k?'':' disabled'}>Anbieten</button>`)}),'Gerade gibt es hier nichts zu tun.'),{
+      z:wbKv(W.passend,n)+wbKv(W.offen,`${offen} von ${LA.length}`),
       i:`Weinhandlungen in den anderen Anbaugebieten zahlen mehr als der Großhandel. Sie nehmen aber nur Prädikatswein und Sekt, jede nur das, was sie gerade sucht, und jeden Monat nur eine kleine Menge. Für Kabinett liest du reife Trauben ab ${R().min.kab}° ohne Edelfäulnis, anmelden darfst du ab Januar, danach reift er je nach Sorte noch einige Monate in der Flasche (📜 Weinarchiv, Lexikon).${D.text}`});
-    const regalI=`Was im Regal steht, verkauft sich jeden Monat von selbst, das Teuerste zuerst, bis ${eur(ladenEigen())} Listenwert. Dafür bekommst du ${mehr} % mehr als den Listenpreis. Regalweine fehlen im Großhandel.`;
+    const regalI=`Was im Regal steht, verkauft sich jeden Monat von selbst, das Teuerste zuerst, bis ${eur(ladenEigen())} Listenwert. Dafür bekommst du ${mehr} % mehr als den Listenpreis. Regalweine fehlen im Großhandel.`;
     if(ladenFrei()){
-      const rg=regalWeine(), kann=S.lots.filter(l=>l.status==='flasche'&&!l.regal&&preis(l)>0).sort((a,b)=>preis(b)-preis(a));
-      h+=fenster('regalRein','Ins Regal stellen',kann.map(l=>`<button class="bzeile" data-a="regal" data-id="${l.id}"><div class="bz1"><b>${dot(l.sorte)}${esc(lotName(l))}</b><span>${eur2(preis(l)*LADEN_EIGEN_F)}</span></div><div class="bz2">${num(l.liter)} Flaschen · im Großhandel ${eur2(wege(l)[0].p)}</div></button>`),{
-        leer:'Gerade hast du keinen verkaufsreifen Flaschenwein fürs Regal.',
-        hin:[mr&&`${MGR_BEREICHE.handel.sym} ${HM} füllt das Regal beim Weiterblättern.`],
+      const rg=regalWeine(), kann=S.lots.filter(l=>l.status==='flasche'&&!l.regal&&preis(l)>0).sort((a,b)=>preis(b)-preis(a)), imR=rg.reduce((a,l)=>a+l.liter,0);
+      h+=sKarte('regalRein',T.regalRein,kHin(...(kann.length?[mr?'gruen':'gelb',kann.length===1?W.passt1:wbT(W.passtN,{n:kann.length})]:['grau',W.keinReif]))+(mr?wbInfo(`${MGR_BEREICHE.handel.sym} ${HM} füllt das Regal beim Weiterblättern.`,'mgr'):''),
+        kZeilen(kann.map(l=>`<button class="bzeile" data-a="regal" data-id="${l.id}"><div class="bz1"><b>${dot(l.sorte)}${esc(lotName(l))}</b><span>${eur2(preis(l)*LADEN_EIGEN_F)}</span></div><div class="bz2">${num(l.liter)} Flaschen · im Großhandel ${eur2(wege(l)[0].p)}</div></button>`),
+          'Gerade hast du keinen verkaufsreifen Flaschenwein fürs Regal.'),{
+        z:wbKv(W.kann,kann.length),
         i:`Antippen stellt einen Wein ins Regal, rechts steht sein Preis dort. ${regalI}${mr?` ${HM} füllt das Regal von selbst, mit Wein für rund ${MGR_REGAL} Monate.`:''}`});
-      h+=fenster('regal','Dein Regal',rg.length?`<div class="kv"><span>Flaschen im Regal</span><span>${num(rg.reduce((a,l)=>a+l.liter,0))}</span></div>
-        <div class="fzl ab">${rg.map(l=>`<button class="bzeile" data-a="buchDetail" data-id="${l.id}"><div class="bz1"><b>${dot(l.sorte)}${esc(lotName(l))}</b><span>${preis(l)?eur2(preis(l)*LADEN_EIGEN_F):'nicht verkaufsreif'}</span></div><div class="bz2">${num(l.liter)} Flaschen</div></button>`).join('')}</div>`:[],{
-        leer:'Das Regal ist leer.',
+      h+=sKarte('regal',T.regal,kHin(...(rg.length?['gruen',wbT(W.imRegal,{n:num(imR)})]:['grau',W.leer])),
+        rg.length?`<div class="fzl">${rg.map(l=>`<button class="bzeile" data-a="buchDetail" data-id="${l.id}"><div class="bz1"><b>${dot(l.sorte)}${esc(lotName(l))}</b><span>${preis(l)?eur2(preis(l)*LADEN_EIGEN_F):'nicht verkaufsreif'}</span></div><div class="bz2">${num(l.liter)} Flaschen</div></button>`).join('')}</div>`
+          :`<div class="fleer">Das Regal ist leer.</div>`,{
+        z:wbKv(W.flaschen,num(imR))+wbKv(W.bis,eur(ladenEigen())),
         i:`${regalI} Antippen zeigt alle Angaben, dort nimmst du einen Wein auch wieder aus dem Regal.`});
-    } else h+=fenster('regal','Eigene Weinhandlung','',{zu:freiText('laden'),i:`Eine eigene Weinhandlung bekommst du ${freiText('laden')}. ${regalI}`});
+    }
     if(einZu('laeden')&&!ladenFrei()) h+=einKarte('handel','Noch kein passender Wein','Ab Kabinett oder Sekt kaufen hier Weinhandlungen aus den anderen Gebieten. Bis dahin verkaufst du im Großhandel.');
   }
   // Bank (seit 7.4 auf dem Fenster-Baustein): "Dein Konto" mit dem, was zuletzt abgebucht wurde, darunter der Kredit.
   // Seit 7.9.2 steht dort der Spielraum bis zur Mahnung: Kreditrahmen minus Schulden, der Kredit für die Erbschaftssteuer zählt nicht mit.
+  // Seit 16.6.5 (Bauplan 16.6, Entscheidung 8): auf dem Holzbrett, Karten "Dein Konto" (Hinweis Rot bei Minus oder Mahnung wie die roten Zeilen) und "Kredit" mit dem
+  // Spielraum bis zur Mahnung als Balken, Knöpfe kredit und tilgen wie bisher. Die zweistufige Auswahl der Laufzeit baut 16.8. Platzhalter, Wortlaut in Meilenstein 17.
   if(SUB==='bank'){
-    const k=S.kredit, K=kosten(), ab=S.bericht&&S.bericht.k, kv=(a,x)=>x?`<div class="kv"><span>${a}</span><span>${eur(x)}</span></div>`:'';
-    h+=fenster('konto','Dein Konto',`<div class="kv"><span>Kontostand</span><span class="${S.geld<0?'rot':''}">${eur(S.geld)}</span></div>
+    const T=WB_TEXT.stadt, B=T.bank, k=S.kredit, K=kosten(), ab=S.bericht&&S.bericht.k, kv=(a,x)=>x?`<div class="kv"><span>${a}</span><span>${eur(x)}</span></div>`:'';
+    const luft=rahmen()-(schulden()-erbRest()), stund=S.stundBis!=null&&monatNr()<S.stundBis;
+    const hw=S.mahnung?['rot',wbT(B.mahnung,{n:S.mahnung})]:S.geld<0?['rot',B.minus]:['gruen',B.plus];
+    const bal=kBal(B.spielraum,rahmen()?Math.max(0,Math.min(100,luft/rahmen()*100)):0,luft<0?'rot':'',luft<0?wbT(B.ueber,{x:eur(-luft)}):wbT(B.frei,{x:eur(luft),r:eur(rahmen())}));
+    h+=sKarte('konto',T.konto,kHin(...hw)+`<div class="wkzu"><div><b class="zahl${S.geld<0?' rot':''}">${eur(S.geld)}</b> ${B.stand}</div></div>`,
+      `<div class="kv"><span>Kontostand</span><span class="${S.geld<0?'rot':''}">${eur(S.geld)}</span></div>
       <div class="kv"><span>Kreditrahmen</span><span>${eur(rahmen())}</span></div>
       <div class="kv"><span>Schulden gesamt</span><span class="${schulden()>rahmen()?'rot':''}">${eur(schulden())}</span></div>
-      ${(l=>l<0?`<div class="kv"><span>Über dem Kreditrahmen</span><span class="rot">${eur(-l)}</span></div>`:`<div class="kv"><span>Spielraum bis zur Mahnung</span><span>${eur(l)}</span></div>`)(rahmen()-(schulden()-erbRest()))}
+      ${luft<0?`<div class="kv"><span>Über dem Rahmen</span><span class="rot">${eur(-luft)}</span></div>`:`<div class="kv"><span>Bis zur Mahnung</span><span>${eur(luft)}</span></div>`}
       ${S.mahnung?`<div class="rot" style="font-size:14px;margin-top:4px">⚠️ ${S.mahnung}. Mahnung in Folge. Beim dritten Mal kommt der Gerichtsvollzieher.</div>`:''}
-      ${S.stundBis!=null&&monatNr()<S.stundBis?`<div style="font-size:14px;margin-top:4px">🕊️ Die Bank stundet noch ${S.stundBis-monatNr()} Monate, so lange mahnt sie nicht.</div>`:''}
-      ${ab?`<div class="fzl ab"><div class="fstand" style="margin-bottom:2px">Zum letzten Monatswechsel abgebucht</div>
+      ${stund?`<div style="font-size:14px;margin-top:4px">🕊️ Die Bank stundet noch ${S.stundBis-monatNr()} Monate, so lange mahnt sie nicht.</div>`:''}
+      ${ab?`<h4 class="gk">Zum letzten Monatswechsel abgebucht</h4>
       ${kv('Betriebskosten',ab.basis)}${kv('Löhne',ab.loehne)}${kv('Kreditrate',ab.rate)}${kv('Überziehungszinsen',ab.ueberz)}${kv('Steuer auf den Jahresgewinn',ab.steuer)}
-      <div class="kv"><span><b>Zusammen</b></span><span>${eur(ab.basis+ab.loehne+ab.rate+ab.ueberz+ab.steuer)}</span></div></div>`:''}`,{
+      <div class="kv"><span><b>Zusammen</b></span><span>${eur(ab.basis+ab.loehne+ab.rate+ab.ueberz+ab.steuer)}</span></div>`:''}`,{
+      z:wbKv('Kontostand',eur(S.geld),S.geld<0?'rot':'')+wbKv('Schulden gesamt',eur(schulden()))+wbKv(luft<0?'Über dem Rahmen':'Bis zur Mahnung',eur(Math.abs(luft)),luft<0?'rot':''),
+      k:ab?wbKv('Zuletzt abgebucht',eur(ab.basis+ab.loehne+ab.rate+ab.ueberz+ab.steuer)):'',
       i:'Hier siehst du Kontostand, Kreditrahmen und was zuletzt abgebucht wurde. Der Kreditrahmen wächst mit deinem Rang. Minus auf dem Konto und Kredit zählen zusammen als Schulden. Der Spielraum zeigt, wie viel bis zum Kreditrahmen noch frei ist. Liegst du beim Monatswechsel darüber, mahnt die Bank, das kostet 6 Ansehen. Beim dritten Mal in Folge kommt der Gerichtsvollzieher.'});
     const krI='Einen Kredit gibt es ab 5.000 €, Laufzeit 12 bis 48 Monate, 6 % Zinsen im Jahr auf die Restschuld. Die Rate wird jeden Monat von selbst abgebucht. Vorzeitig ablösen geht jederzeit, ohne Gebühr.';
-    h+=k?fenster('kredit','Dein Kredit',`<div class="kv"><span>Restschuld</span><span>${eur(k.rest)}</span></div>
+    h+=k?sKarte('kredit',B.deinKredit,kHin('gelb',wbT(B.rest,{x:eur(k.rest)}))+bal,
+      `<div class="kv"><span>Restschuld</span><span>${eur(k.rest)}</span></div>
       <div class="kv"><span>Rate diesen Monat</span><span>${eur(K.tilgung+K.zins)}</span></div>
-      <div class="kv"><span>Restlaufzeit</span><span>${Math.ceil(k.rest/k.tilgung)} Monate</span></div>`,{
-      links:S.geld<k.rest?'Zum Ablösen reicht dein Geld gerade nicht.':'',kn:pk('tilgen','Ablösen',eur(k.rest),{arm:S.geld<k.rest}),i:krI})
-     :fenster('kredit','Kredit',`<div class="kv"><span>Möglich</span><span>5.000 € bis ${eur(rahmen())}</span></div>
-      <div class="kv"><span>Zinsen im Jahr</span><span>6 %</span></div>
-      <div class="kv"><span>Laufzeit</span><span>12 bis 48 Monate</span></div>`,{kn:pk('kredit','Aufnehmen',''),i:krI});
+      <div class="kv"><span>Restlaufzeit</span><span>${Math.ceil(k.rest/k.tilgung)} Monate</span></div>`
+      +(S.geld<k.rest?`<div class="wbklein">Zum Ablösen reicht dein Geld gerade nicht.</div>`:'')+kKn(pk('tilgen','Ablösen',eur(k.rest),{arm:S.geld<k.rest})),{
+      z:wbKv('Restschuld',eur(k.rest))+wbKv('Restlaufzeit',`${Math.ceil(k.rest/k.tilgung)} Monate`),k:wbKv('Rate diesen Monat',eur(K.tilgung+K.zins)),i:krI})
+     :sKarte('kredit',T.kredit,kHin('grau',wbT(B.moeglich,{x:eur(rahmen())}))+bal,
+      `<div class="kv"><span>Möglich</span><span>5.000 € bis ${eur(rahmen())}</span></div>
+      <div class="kv"><span>Zinsen im Jahr</span><span>6 %</span></div>
+      <div class="kv"><span>Laufzeit</span><span>12 bis 48 Monate</span></div>`+kKn(pk('kredit','Aufnehmen','')),{
+      z:wbKv('Kreditrahmen',eur(rahmen())),k:wbKv('Zinsen im Jahr','6 %'),i:krI});
   }
   // Arbeitsamt (seit 7.4 auf dem Fenster-Baustein): Erntehelfer, Lagerarbeiter, darunter je Manager ein Fenster. Die Erklärtexte stehen im i,
   // sichtbar bleiben Zustand, rote Warnungen und der Hinweis, wenn ein Manager das Einstellen übernimmt.
