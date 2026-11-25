@@ -285,6 +285,9 @@ const ALLEIN_HA=4, ALLEIN_FASS=10000, ALLEIN_FL=10000, REBEN_JE_HELFER=3000, MAS
 /* ---- Etappe 3: Ränge, Gegner, Auktionen, Wettbewerbe, Export ---- */
 // START_GELD: seit 7.0 (Schritt C, Maik 16.11.2026) 60.000 € statt 40.000 €, weil am Start nur die ★★★-Sorte geht und Riesling erst nach 18 Monaten Geld bringt. Endgültig in Schritt H.
 const START_JAHR=2027, START_GELD=60000;
+// Seit 15.1.4 (Bauplan 15.1 Annahme 4, Maik 25.11.2026, 11:33 Uhr): Startgeld-Zuschlag je Gebiet und Spielstufe, zum Startgeld aus DIFF dazu (startGeld).
+// Neutral auf 0, gemessen mit 0 und 15.000 € nur für Franken in den Lehrjahren. Gestellt wird er erst nach Maiks Entscheidung in 15.1.5.
+const GEBIET_START_PLUS={franken:{einfach:0}};
 // Seit 13.3.8 (Nachtrag 3): Vermögen = Geld minus offener Kredit + Wein im Keller (WEIN_WERT seines Listenwerts, ohne Deckel beim Großhandel) + Weinberge.
 // Maschinen, Gebäude und der feste Landwert je Hektar (bis 13.3.7 LANDWERT 15.000 €) zählen nicht mehr. Ein Hektar Weinberg ist VERM_GRUND mal Sorte (VERM_SORTE
 // je Rolle) mal Pflegestufe (VERM_PFLEGE) mal Boden-Stufe (VERM_BODEN), kahles Land VERM_GRUND mal Boden mal VERM_KAHL. Pflanzen lohnt sich immer (Maik).

@@ -401,7 +401,8 @@ function bringtSatz(i){return i===R_MAX?'bringt dir den Stuhl im Festsaal':`brin
 // Seit 11.5 (Teil B) hängt daran auch die neue Grenze fürs Land, wenn sie mit dem Rang wächst.
 // Seit 14.4.8 ohne den Satz zum Besitz-Deckel je Rang, den gibt es für dich seit 14.4.5 nicht mehr (weicher Deckel je Lage).
 function rahmenSatz(i){const r=RAENGE[i];return r.rahmen>RAENGE[i-1].rahmen?` Dein Kreditrahmen steigt auf ${eur(r.rahmen)}.`:''}
-const startGeld=s=>(DIFF[s]||{}).geld||START_GELD, bietF=()=>(DIFF[S.schwer]||{}).biet||1;
+// Seit 15.1.4 mit dem Zuschlag je Gebiet (GEBIET_START_PLUS), r ist das Gebiet.
+const startGeld=(s,r)=>((DIFF[s]||{}).geld||START_GELD)+(((GEBIET_START_PLUS[r]||{})[s])||0), bietF=()=>(DIFF[S.schwer]||{}).biet||1;
 // Gibt es in dieser Partie Schädlingsjahre? Nur auf Stufen mit schaed:1 (Meisterprüfung). Daran hängen die Meldungen im Winzerboten und die Seiten im Weinkompendium.
 const schaedAn=()=>!!(SCHAED_AN&&S&&(DIFF[S.schwer]||{}).schaed);
 function genNr(){return S.gen||1}
@@ -2033,7 +2034,7 @@ function kompAuf(id){
 function neuesSpiel(){
   if(NEU.schwer===MEISTER_STUFE&&!meisterFrei()) NEU.schwer=MEISTER_VON; // seit 13.7.7, gesperrt bis zur ersten Übergabe in den Gesellenjahren
   const reg=REG(NEU.region,!!ROLLEN_NEU);
-  S={v:1,v13:1,v147:1,chefsache:{...CHEFSACHE_START},sektWahl:SEKT_REIFE,zf:zfNeu(),name:NEU.name.trim().slice(0,NAME_MAX)||'Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:startGeld(NEU.schwer),ha:3,hang:{einfach:3,hoehe:0,sued:0},bodenSt:0,bodenP:{einfach:0,hoehe:0,sued:0},duengungen:0,
+  S={v:1,v13:1,v147:1,chefsache:{...CHEFSACHE_START},sektWahl:SEKT_REIFE,zf:zfNeu(),name:NEU.name.trim().slice(0,NAME_MAX)||'Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:startGeld(NEU.schwer,NEU.region),ha:3,hang:{einfach:3,hoehe:0,sued:0},bodenSt:0,bodenP:{einfach:0,hoehe:0,sued:0},duengungen:0,
     felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',markt:1,ansehen:0,ansV:1,leuteV:1,
     jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:ALLEIN_HA?0:1,lagerarb:ALLEIN_FASS?0:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,meilen:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],rangMon:{0:START_JAHR*12},freiBote:{},taten:{},komp:{},kompV:3,v121:1,ein:{f:[]},...(ROLLEN_NEU?{rollen:1}:{})};
   for(const id of reg.sorten){S.felder[id]={reben:0,pflSt:0,ep:0,boden:BODEN_START}; feldReset(S.felder[id])}
@@ -2746,7 +2747,7 @@ function feierPunkte(von,zu){
     for(let i=von+1;i<=zu;i++) if(RAENGE[i].weg) P.push(['⚠️',anr(RAENGE[i].weg,RAENGE[i].wegW)])}
   return P;
 }
-const startPunkte=()=>[['🌱','3 Hektar kahler Weinberg'],['💶',`Startgeld ${eur(startGeld(S.schwer))}`],['🍇',`Deine erste Rebsorte: ${SORTEN[sortenFolge()[0]].name}`],['📅','Pflanzzeit bis März']];
+const startPunkte=()=>[['🌱','3 Hektar kahler Weinberg'],['💶',`Startgeld ${eur(startGeld(S.schwer,S.region))}`],['🍇',`Deine erste Rebsorte: ${SORTEN[sortenFolge()[0]].name}`],['📅','Pflanzzeit bis März']];
 // Version 7.7: gleicher Ablauf für alle zehn Szenen. Bühne mit dem Kapitel Satz für Satz (ein Tipp zeigt alles), dann Urkunde oder Kaufvertrag.
 // Version 8.2: Stufe 8 der Spenden auf der Bild-Bühne mit Holzbogen und Namenstafel, ohne Fanfare. Erst die Bühne mit dem Kapitel, dann der Ehrenbrief.
 const spKapitel=()=>['Der ganze Gemeinderat steht auf dem Dorfplatz, die Blaskapelle spielt diesmal fast gerade.',`Der Bürgermeister zieht das Tuch vom neuen Holzbogen: „${SP_SPRUCH}.“`,'Darunter stehen die Namen deiner Familie, Generation für Generation.',`„Ab heute bist du ${anr('Ehrenbürger','Ehrenbürgerin')} unseres Dorfs“, sagt er, „und das bleibt so, auch wenn die Nächsten übernehmen.“`];
@@ -3284,7 +3285,7 @@ function fuText(t,chef){
     if(a==='Dritte Sorte') return S.rollen?`Es ist ${L[2].name}, deine Spitzen-Sorte: Sie trägt wenig, bringt aber die beste Qualität und reift am längsten. Drei Sorten verteilen außerdem das Wetterrisiko.`:'Sie hat nur einen Stern, startet mit weniger Zucker und bringt weniger Geld. Dafür ist sie in manchen Gebieten der erste Rotwein, und drei Sorten verteilen das Wetterrisiko.';
     if(a==='Langsorte') return (L.find(x=>x.minL>=18)||s).name;
     // Seit 12.6.1: das echte Startgeld der Schwierigkeit (Einfach 80.000 €, sonst 60.000 €).
-    if(a==='Startgeld') return eur(startGeld(S.schwer));
+    if(a==='Startgeld') return eur(startGeld(S.schwer,S.region));
     if(chef) return 'Chef';
     return a==='Nachbar'?anr('Nachbar','Nachbarin'):a==='Mein Lieber'?anr('Mein Lieber','Meine Liebe'):anr('mein Lieber','meine Liebe');
   });
