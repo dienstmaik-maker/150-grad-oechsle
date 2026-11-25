@@ -2534,6 +2534,8 @@ function openSheet(h,musik,art,zu){const a=SHEET_ARTEN.includes(art)?art:'info',
 function closeSheet(){$('#sheet').className='';$('#sheet').innerHTML='';SL=null;SMUSIK=null;SART='';SZU=null;musikOrt(musikWahl());setTimeout(fuehrerZeig,0)}
 // Kurzformen für die Rückfrage (seit 16.8.4) und die Pflicht-Entscheidung (seit 16.8.6).
 const frageSheet=(h,zu)=>openSheet(h,null,'frage',zu), pflichtSheet=h=>openSheet(h,null,'pflicht');
+// Seit 16.8.5: der Knopf mit Wachssiegel am Ende einer Auswahl in zwei Schritten (AKT.wahlSetz, AKT.wahlOk). vor: schon gewählte Angaben, sonst gesperrt bis zur Wahl.
+const wahlKnopf=(t,vor)=>`<button class="vb" id="wahlok" data-a="wahlOk"${vor?` data-wahl="${esc(JSON.stringify(vor))}"`:' disabled'}>${t}</button>`;
 // Wischen nach unten oder Tipp neben das Fenster, nie beim Pflichtfenster.
 function sheetWeg(){if(SART==='pflicht'||!$('#sheet').classList.contains('an')) return; const f=SZU; if(f) f(); else closeSheet()}
 // Seit dem Nachtrag zu 14.5.2 (Annahme 34): Nachfrage im Sommer, Lehrjahre mit Rat in Zahlen, Gesellenjahre mit kurzem Hinweis (SOMMER_FRAGE).
@@ -2824,6 +2826,11 @@ const AKT={
   },
   slotDatei(d){ZIEL=+d.id;const f=$('#datei');f.value='';f.click()},
   close(){closeSheet()},
+  // Seit 16.8.5 (Bauplan 16.8, Entscheidung 5): Auswahl in zwei Schritten. Ein Tipp auf eine Zeile wählt nur (hervorgehoben), erst der Knopf mit dem
+  // Wachssiegel (#wahlok aus wahlKnopf) ruft den bisherigen Befehl (data-ziel) mit den Angaben der Zeile. Die Befehle selbst bleiben, wie sie sind.
+  wahlSetz(d,e){const b=e&&e.target.closest('[data-a="wahlSetz"]'), ok=$('#wahlok'); if(!b||!ok||b.disabled) return;
+    document.querySelectorAll('#sheet [data-a="wahlSetz"]').forEach(x=>x.classList.toggle('an',x===b)); ok.dataset.wahl=JSON.stringify(Object.assign({},b.dataset)); if(b.dataset.knopf) ok.textContent=b.dataset.knopf; ok.disabled=false},
+  wahlOk(){const ok=$('#wahlok'); if(!ok||!ok.dataset.wahl) return; const d=JSON.parse(ok.dataset.wahl), f=AKT[d.ziel]; delete d.a; delete d.ziel; delete d.knopf; if(f) f(d)},
   // Seit 16.1: Sorten-Karte auf- und zuklappen, offen ist immer nur eine, die offene noch einmal antippen klappt sie zu (Entscheidung 3).
   karte(d){const k='wb:'+d.id, auf=FI_AUF.has(k); for(const x of [...FI_AUF]) if(x.startsWith('wb:')) FI_AUF.delete(x); if(!auf) FI_AUF.add(k);
     render(); const el=$('#wb_'+d.id); if(el&&!auf){const r=el.getBoundingClientRect(), top=($('#top')||{}).offsetHeight||0; if(r.top<top+8||r.top>innerHeight*.45) window.scrollBy(0,r.top-top-14)}},
@@ -3023,26 +3030,26 @@ const AKT={
   // Platzhalter, Wortlaut in Meilenstein 17.
   formWahl(d){const id=d.id, rl=rolleK(id), lehr=S.schwer==='einfach', rat=S.schwer!=='schwer', weiter=d.weiter==='pflanzAuftrag'?'pflanzAuftrag':'pflanzen', F=formenFuer(id);
     const sel=lehr?(F.includes(d.sel)?d.sel:F.includes(FORM_PASST[rl])?FORM_PASST[rl]:F[0]):null;
-    const knopf=fm=>lehr?`<button class="${fm===sel?'':'sec'}" data-a="formWahl" data-id="${id}" data-weiter="${weiter}" data-sel="${fm}">${fm===sel?'✓ ':''}${FORMEN[fm].name}</button>`
-      :`<button data-a="formNimm" data-id="${id}" data-form="${fm}" data-weiter="${weiter}">${FORMEN[fm].name}</button>`;
-    openSheet(`<h3>${esc(SORTEN[id].name)}: Erziehungsform</h3>${rat?`<p class="mut">${FORM_WAHL_SATZ} ${FORM_MASCH_SATZ}</p><p>👴 ${FORM_RAT[rl]||''}</p>`:''}${lehr?`<p class="mut">${FORM_VORAUS}</p>`:''}
+    // Seit 16.8.5 (Entscheidung 5): die Formen als Zeilen, gepflanzt wird erst mit dem Knopf mit Wachssiegel. In den Lehrjahren ist die empfohlene Form vorgewählt.
+    const knopf=fm=>`<button class="wahl${fm===sel?' an':''}" data-a="wahlSetz" data-ziel="formNimm" data-id="${id}" data-form="${fm}" data-weiter="${weiter}" data-knopf="Pflanzen am ${FORMEN[fm].name}"><b>${FORMEN[fm].name}</b></button>`;
+    frageSheet(`<h3>${esc(SORTEN[id].name)}: Erziehungsform</h3>${rat?`<p class="mut">${FORM_WAHL_SATZ} ${FORM_MASCH_SATZ}</p><p>👴 ${FORM_RAT[rl]||''}</p>`:''}${lehr?`<p class="mut">${FORM_VORAUS}</p>`:''}
       ${F.map(fm=>`<div class="kv"><span><b>${FORMEN[fm].name}</b>${rat&&fm===FORM_PASST[rl]?' 👴':''}</span><span>${formSteck(id,fm)}</span></div>${rat&&fm==='pfahl'?`<div class="mut">${FORM_PFAHL_HAND}</div>`:''}<div class="mitte">${knopf(fm)}</div>`).join('')}
-      <div class="btns"><button class="sec" data-a="close">Abbrechen</button>${lehr?`<button data-a="formNimm" data-id="${id}" data-form="${sel}" data-weiter="${weiter}">Pflanzen am ${FORMEN[sel].name}</button>`:''}</div>`)},
+      <div class="btns"><button class="sec" data-a="close">Abbrechen</button>${wahlKnopf(sel?`Pflanzen am ${FORMEN[sel].name}`:'Pflanzen',sel?{ziel:'formNimm',id,form:sel,weiter}:null)}</div>`)},
   formNimm(d){const f=S.felder[d.id]; if(!f||f.reben||!formenFuer(d.id).includes(d.form)) return; f.form=d.form; closeSheet(); AKT[d.weiter==='pflanzAuftrag'?'pflanzAuftrag':'pflanzen']({id:d.id})},
   // Seit 14.2.4: Umstellen mit Sicherheitsabfrage (Annahme 12), nur von Januar bis April, seit 14.5.3 in allen Spielstufen.
   formAendern(d){if(istSL(d.id)) return; const id=d.id, alt=formVon(id), andere=formenFuer(id).filter(x=>x!==alt);
     if(andere.length===1) return AKT.formUmFrage({id,form:andere[0]});
-    openSheet(`<h3>${esc(SORTEN[id].name)}: Form ändern</h3><p class="mut">Jetzt am ${FORMEN[alt].name}. ${FORM_WAHL_SATZ}</p>
+    frageSheet(`<h3>${esc(SORTEN[id].name)}: Form ändern</h3><p class="mut">Jetzt am ${FORMEN[alt].name}. ${FORM_WAHL_SATZ}</p>
       ${andere.map(fm=>`<div class="kv"><span><b>${FORMEN[fm].name}</b></span><span>${formSteck(id,fm)}</span></div><div class="mitte"><button data-a="formUmFrage" data-id="${id}" data-form="${fm}">${FORMEN[fm].name}</button></div>`).join('')}
       <div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`)},
   // Seit 14.5.3 (Bauplan 14.5, Unteretappe 3): Die Abfrage nennt in allen Spielstufen die drei Verluste in Zahlen: alle Entwicklungspunkte, die Jahre mit
   // halber Ernte bis zum Rebstock und die Weinstufen, deren Anspruch (ANSPRUCH) der Weinberg danach nicht mehr erreicht. Platzhalter, Wortlaut in Meilenstein 17.
   formUmFrage(d){const id=d.id, f=S.felder[id], k=formUmKosten(id,d.form), qa=qualWb(id), qn=qualTeile(id,{ep:0,pflSt:0,form:d.form,laub:0}).q,
       weg=Object.keys(STUFEN).filter(st=>ANSPRUCH[st]<=qa&&ANSPRUCH[st]>qn).map(st=>STUFEN[st].name);
-    openSheet(`<h3>Auf ${FORMEN[d.form].name} umstellen?</h3><p>Der ${esc(SORTEN[id].name)} fängt mit der Erziehung von vorn an. Du verlierst:</p>
+    frageSheet(`<h3>Auf ${FORMEN[d.form].name} umstellen?</h3><p>Der ${esc(SORTEN[id].name)} fängt mit der Erziehung von vorn an. Du verlierst:</p>
       <ol><li>alle ${epT(f.ep||0)} Entwicklungspunkte, die Stufe fällt von ${PFLEGE_STUFEN[f.pflSt||0]} auf ${PFLEGE_STUFEN[0]},</li><li>${EP_REBSTOCK_JAHRE} Jahre lang ${Math.round(STUFE_MENGE[0]*100)} % Ernte, bis der Rebstock wieder steht,</li>
       <li>${weg.length?`diese Weinstufen, deren Qualität der Weinberg dann nicht mehr schafft: ${weg.join(', ')}`:'keine Weinstufe, die Qualität reicht weiter'} (Qualität ${qa} jetzt, ${qn} danach).</li></ol><p class="mut">Die Reben bleiben stehen.</p><p class="mut">Das Umstellen kostet einen Rebschnitt der neuen Form, ${eur(k)}, und zählt als Rebschnitt ${S.jahr}. ${formSteck(id,d.form)}.</p>
-      <div class="btns"><button class="sec" data-a="close">Abbrechen</button><button class="wag" data-a="formUm" data-id="${id}" data-form="${d.form}" ${S.geld<k?'disabled':''}>Umstellen</button></div>`)},
+      <div class="btns"><button class="sec" data-a="close">Abbrechen</button><button class="vb" data-a="formUm" data-id="${id}" data-form="${d.form}" ${S.geld<k?'disabled':''}>Umstellen</button></div>`)},
   formUm(d){const id=d.id, f=S.felder[id]; if(!f||!f.reben||S.schwer==='einfach'||S.monat>SCHNITT_BIS||!formenFuer(id).includes(d.form)||d.form===formVon(id)) return closeSheet();
     const k=formUmKosten(id,d.form); if(S.geld<k) return meldung('Zu wenig Geld',`Das Umstellen kostet ${eur(k)}.`);
     formUmstellen(id,d.form); fx('schere'); save(); render(); meldung('Umgestellt',`Der ${SORTEN[id].name} steht jetzt am ${FORMEN[d.form].name} und fängt als ${PFLEGE_STUFEN[0]} von vorn an.`)},
@@ -3094,17 +3101,17 @@ const AKT={
     if(sektSorte(d.id)){
       const l=feldLiter(f,'alles'), k=Math.round(l*sektKosten());
       // Seit 14.7.5: Macht der Kellermeister den Sekt (Automatik), gilt die Vorwahl des Spielers, dann steht nur sie hier (Annahme 14).
-      const vw=kellerMacht('sekt'), opt=[[SEKT_REIFE,`${SEKT_REIFE} Monate reifen`],[HEFE_LANG,`${HEFE_LANG} Monate auf der Hefe`]].filter(([h])=>!vw||h===sektVorwahl()).map(([h,t])=>`<button class="wahl" data-a="sektLeseJa" data-id="${d.id}" data-h="${h}" ${l<=0||!S.sektkeller?'disabled':''}><b>${t}</b><br><span class="mut">${num(l)} Flaschen Sekt${h>SEKT_REIFE?` · +${HEFE_LANG_P} % Preis und Jury-Punkte`:''} · verkaufsreif ${inMonaten(h)}</span></button>`).join('');
-      return openSheet(`${sbild('sektkeller')}<h3>${so.name} lesen</h3><p class="mut">Die ${ROLLEN.sekt.name} macht nur Sekt. Nach der Lese legst du die Trauben noch diesen Monat in den Sektkeller${kellerMacht('sekt')?', das machen deine Kellerleute':''}. Sektflasche, Korken und Agraffe kosten dann ${eur(k)}. ${vw?CHEFSACHE_TEXT.lese.replace('{wo}',CHEFSACHE_TEXT[csBeiMgr()?'woMgr':'woKeller']):'Hier wählst du nur, wie lange er auf der Hefe liegt.'}</p>${S.sektkeller?'':'<p class="rot">Ohne Sektkeller gibt es keinen Sekt.</p>'}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0%. Den Rest liest keiner, er ist verloren.</p>`:''}${opt}${mib('lese')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
+      const vw=kellerMacht('sekt'), opt=[[SEKT_REIFE,`${SEKT_REIFE} Monate reifen`],[HEFE_LANG,`${HEFE_LANG} Monate auf der Hefe`]].filter(([h])=>!vw||h===sektVorwahl()).map(([h,t])=>`<button class="wahl" data-a="wahlSetz" data-ziel="sektLeseJa" data-id="${d.id}" data-h="${h}" ${l<=0||!S.sektkeller?'disabled':''}><b>${t}</b><br><span class="mut">${num(l)} Flaschen Sekt${h>SEKT_REIFE?` · +${HEFE_LANG_P} % Preis und Jury-Punkte`:''} · verkaufsreif ${inMonaten(h)}</span></button>`).join('');
+      return frageSheet(`${sbild('sektkeller')}<h3>${so.name} lesen</h3><p class="mut">Die ${ROLLEN.sekt.name} macht nur Sekt. Nach der Lese legst du die Trauben noch diesen Monat in den Sektkeller${kellerMacht('sekt')?', das machen deine Kellerleute':''}. Sektflasche, Korken und Agraffe kosten dann ${eur(k)}. ${vw?CHEFSACHE_TEXT.lese.replace('{wo}',CHEFSACHE_TEXT[csBeiMgr()?'woMgr':'woKeller']):'Hier wählst du nur, wie lange er auf der Hefe liegt.'}</p>${S.sektkeller?'':'<p class="rot">Ohne Sektkeller gibt es keinen Sekt.</p>'}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0%. Den Rest liest keiner, er ist verloren.</p>`:''}${opt}${mib('lese')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button>${wahlKnopf('Lesen')}</div>`);
     }
     const opt=['reif','ueber','alles'].map(la=>{const b=besteStufe(feldQ(f,la)),l=feldLiter(f,la);
       return `<button class="wahl" data-a="leseFrage" data-id="${d.id}" data-la="${la}" ${l<=0?'disabled':''}><b>${LESE[la]}</b><br><span class="mut">${num(l)}\u00a0l mit ${feldQ(f,la).oe}° Öchsle · reicht für: ${b?stufeText(b,feldQ(f,la).oe):'nichts'}${b?`<br>💶 Wert rund ${eur(leseWert(d.id,la,b,l))}<br>${verkaufAb(d.id,b)}`:''}</span></button>`}).join('');
-    openSheet(`${sbild(f.gefroren?'eiswein':'lese')}<h3>${so.name} lesen</h3><p class="mut">Jedes Feld liest du nur einmal im Jahr. Was die Leseart nicht mitnimmt, ist danach verloren. Die Trauben müssen noch diesen Monat gekeltert werden.${MOST_UEBER<1&&f.ueber>0?` Überreife Trauben sind schon eingetrocknet und geben nur ${Math.round(MOST_UEBER*100)} % Most.`:''}</p>${f.gefroren?`<p class="hilfe" style="margin:0 0 10px">${eisFehlt(f)?eisFehlt(f)+'. Es reicht nur für die Stufen oben.':'Eiswein gibt es nur aus reifen oder aus überreifen Trauben, nicht aus beiden zusammen.'}</p>`:wagnisHinweis(d.id)?`<p class="hilfe" style="margin:0 0 10px">${wagnisHinweis(d.id).replace(/^<br>/,'')}</p>`:''}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0%. Den Rest liest keiner, er ist verloren.</p>`:''}${handFeld(f)?`<p class="hilfe" style="margin:0 0 10px">${handText(f,'')}${handFehlt(f)?' Stell vorher beim Arbeitsamt ein, dann liest die Hand.':''}</p>`:''}${opt}${mib('lese')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
+    frageSheet(`${sbild(f.gefroren?'eiswein':'lese')}<h3>${so.name} lesen</h3><p class="mut">Jedes Feld liest du nur einmal im Jahr. Was die Leseart nicht mitnimmt, ist danach verloren. Die Trauben müssen noch diesen Monat gekeltert werden.${MOST_UEBER<1&&f.ueber>0?` Überreife Trauben sind schon eingetrocknet und geben nur ${Math.round(MOST_UEBER*100)} % Most.`:''}</p>${f.gefroren?`<p class="hilfe" style="margin:0 0 10px">${eisFehlt(f)?eisFehlt(f)+'. Es reicht nur für die Stufen oben.':'Eiswein gibt es nur aus reifen oder aus überreifen Trauben, nicht aus beiden zusammen.'}</p>`:wagnisHinweis(d.id)?`<p class="hilfe" style="margin:0 0 10px">${wagnisHinweis(d.id).replace(/^<br>/,'')}</p>`:''}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0%. Den Rest liest keiner, er ist verloren.</p>`:''}${handFeld(f)?`<p class="hilfe" style="margin:0 0 10px">${handText(f,'')}${handFehlt(f)?' Stell vorher beim Arbeitsamt ein, dann liest die Hand.':''}</p>`:''}${opt}${mib('lese')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
   },
   // Version 5.1 (Paket 10): Sicherheitsabfrage, bevor gelesen wird. "Zurück" führt wieder zur Wahl der Leseart.
   leseFrage(d){
     const f=S.felder[d.id], so=SORTEN[d.id], q=feldQ(f,d.la), l=feldLiter(f,d.la), b=besteStufe(q); if(l<=0) return;
-    openSheet(`<h3>${so.name} jetzt lesen?</h3><p>Du liest ${LESE[d.la]}${q.masch?' mit der Maschine':handFeld(f)?' von Hand':''}: ${num(l)} l mit ${q.oe}° Öchsle, das reicht für ${b?stufeText(b,q.oe):'nichts'}.${b?` Wert rund ${eur(leseWert(d.id,d.la,b,l))}.`:''}</p>${q.masch?`<p class="rot">Für die Handlese fehlen ${handBedarf(f)-S.helfer} Erntehelfer, deshalb gibt es höchstens Qualitätswein.</p>`:''}<p class="mut">Danach ist das Feld für dieses Jahr gelesen. Das lässt sich nicht rückgängig machen.</p><div class="mitte"><button class="siegel" data-a="leseJa" data-id="${d.id}" data-la="${d.la}">Okay</button></div><div class="btns"><button class="sec" data-a="lesen" data-id="${d.id}">Zurück</button></div>`);
+    frageSheet(`<h3>${so.name} jetzt lesen?</h3><p>Du liest ${LESE[d.la]}${q.masch?' mit der Maschine':handFeld(f)?' von Hand':''}: ${num(l)} l mit ${q.oe}° Öchsle, das reicht für ${b?stufeText(b,q.oe):'nichts'}.${b?` Wert rund ${eur(leseWert(d.id,d.la,b,l))}.`:''}</p>${q.masch?`<p class="rot">Für die Handlese fehlen ${handBedarf(f)-S.helfer} Erntehelfer, deshalb gibt es höchstens Qualitätswein.</p>`:''}<p class="mut">Danach ist das Feld für dieses Jahr gelesen. Das lässt sich nicht rückgängig machen.</p><div class="btns"><button class="sec" data-a="lesen" data-id="${d.id}">Zurück</button><button class="vb" data-a="leseJa" data-id="${d.id}" data-la="${d.la}">Lesen</button></div>`);
   },
   // Eine Lese je Feld und Jahr: Die Leseart nimmt das ganze Feld. Alte Spielstände mit angefangener Teil-Lese lesen so den Rest.
   // Version 4.4: danach im Weinberg bleiben und neu zeichnen, damit der Lesen-Knopf sofort verschwindet.
@@ -3126,19 +3133,19 @@ const AKT={
   misch1(){
     if(!hinterOffen()) return;
     const mi=S.lots.filter(mischbar), ls=mi.filter(a=>mi.some(b=>a!==b&&farbe(a)===farbe(b)));
-    openSheet(`${sbild('fassgang')}<h3>Fässer verschneiden</h3><p class="mut">Wähle das erste Fass.</p>${ls.map(l=>`<button class="wahl" data-a="misch2" data-id="${l.id}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${num(l.liter)}\u00a0l · ${l.oe}° Öchsle · Qualität ${l.qp}</span></button>`).join('')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
+    frageSheet(`${sbild('fassgang')}<h3>Fässer verschneiden</h3><p class="mut">Wähle das erste Fass.</p>${ls.map(l=>`<button class="wahl" data-a="misch2" data-id="${l.id}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${num(l.liter)}\u00a0l · ${l.oe}° Öchsle · Qualität ${l.qp}</span></button>`).join('')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
   },
   misch2(d){
     const a=lot(d.id); if(!a) return;
     const ls=S.lots.filter(b=>mischbar(b)&&b!==a&&farbe(b)===farbe(a));
-    openSheet(`${sbild('fassgang')}<h3>${esc(lotName(a))} mischen mit</h3>${ls.map(b=>{const m=mischung(a,b);return `<button class="wahl" data-a="misch3" data-id="${a.id}" data-b="${b.id}"><b>${dot(b.sorte)}${esc(lotName(b))}</b><br><span class="mut">${num(b.liter)}\u00a0l · ergibt ${num(m.liter)}\u00a0l ${STUFEN[m.a.stufe].name} mit Qualität ${m.qp}</span></button>`}).join('')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
+    frageSheet(`${sbild('fassgang')}<h3>${esc(lotName(a))} mischen mit</h3>${ls.map(b=>{const m=mischung(a,b);return `<button class="wahl" data-a="misch3" data-id="${a.id}" data-b="${b.id}"><b>${dot(b.sorte)}${esc(lotName(b))}</b><br><span class="mut">${num(b.liter)}\u00a0l · ergibt ${num(m.liter)}\u00a0l ${STUFEN[m.a.stufe].name} mit Qualität ${m.qp}</span></button>`}).join('')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
   },
   misch3(d){
     const a=lot(d.id), b=lot(d.b); if(!a||!b) return; const m=mischung(a,b);
-    openSheet(`${sbild('fassgang')}<h3>Wirklich verschneiden?</h3><p>Aus ${esc(lotName(m.a))} (${num(m.a.liter)}\u00a0l) und ${esc(lotName(m.b))} (${num(m.b.liter)}\u00a0l) werden ${num(m.liter)}\u00a0l ${esc(lotName(m.a))}.</p>
+    frageSheet(`${sbild('fassgang')}<h3>Wirklich verschneiden?</h3><p>Aus ${esc(lotName(m.a))} (${num(m.a.liter)}\u00a0l) und ${esc(lotName(m.b))} (${num(m.b.liter)}\u00a0l) werden ${num(m.liter)}\u00a0l ${esc(lotName(m.a))}.</p>
       <div class="kv"><span>Öchsle</span><span>${m.oe}°</span></div><div class="kv"><span>Qualität</span><span>${m.qp}</span></div><div class="kv"><span>Schmiergeld für den Beamten</span><span>${eur(m.schmier)}</span></div>
       <p class="rot">Der Wein gilt als gepanscht. Findet ihn der Prüfer, wird er vernichtet und es gibt Strafe.</p>
-      <div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button class="wag" data-a="mischJa" data-id="${a.id}" data-b="${b.id}" ${S.geld<m.schmier?'disabled':''}>Verschneiden</button></div>`);
+      <div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button class="vb" data-a="mischJa" data-id="${a.id}" data-b="${b.id}" ${S.geld<m.schmier?'disabled':''}>Verschneiden</button></div>`);
   },
   mischJa(d){
     const x=lot(d.id), y=lot(d.b); if(!x||!y||!mischbar(x)||!mischbar(y)||!hinterOffen()) return; const m=mischung(x,y), a=m.a;
@@ -3297,7 +3304,7 @@ const AKT={
       info:n=>`<b>${eur(n)}</b>Die Laufzeit wählst du im nächsten Schritt`,
       ok:n=>{
         if(n<5000) return meldung('Zu wenig','Die Bank vergibt Kredite erst ab 5.000 €.');
-        openSheet(`${sbild('bank')}<h3>Laufzeit für ${eur(n)}</h3>${[12,24,36,48].map(m=>`<button class="wahl" data-a="kreditJa" data-n="${n}" data-m="${m}"><b>${m} Monate</b><br><span class="mut">erste Rate ${eur(n/m+n*ZINS/12)}, Zinsen gesamt rund ${eur(n*ZINS/12*(m+1)/2)}</span></button>`).join('')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
+        frageSheet(`${sbild('bank')}<h3>Laufzeit für ${eur(n)}</h3>${[12,24,36,48].map(m=>`<button class="wahl" data-a="wahlSetz" data-ziel="kreditJa" data-n="${n}" data-m="${m}"><b>${m} Monate</b><br><span class="mut">erste Rate ${eur(n/m+n*ZINS/12)}, Zinsen gesamt rund ${eur(n*ZINS/12*(m+1)/2)}</span></button>`).join('')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button>${wahlKnopf('Kredit aufnehmen')}</div>`);
       }});
   },
   kreditJa(d){const n=+d.n,m=+d.m;closeSheet();if(S.kredit)return;S.kredit={rest:n,tilgung:Math.ceil(n/m)};S.geld+=n;fx('kasse');save();render()},
