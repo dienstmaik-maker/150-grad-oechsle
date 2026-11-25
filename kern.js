@@ -787,7 +787,9 @@ function marktFrei(){return Math.round((MARKT_FREI+MARKT_RANG*S.rang+MARKT_EXPOR
 function haUeber(){return Math.max(0,flaecheBep()-HA_FREI)}
 function marktRest(){return Math.max(0,marktFrei()-(S.absatz||0))}
 // Seit dem Nachtrag vor 14.7.8 (Maik 25.11.2026, 12:16 Uhr): marktFBei ist der Faktor der Flasche an der Stelle x im Absatz (in €), marktF mittelt ihn über n.
-function marktFBei(x,Q=marktFrei()){return x<=Q?1:Math.max(MARKT_MIN,1-(1-MARKT_MIN)*(x-Q)/(Q*MARKT_BREIT))}
+// Seit 15.6.7 (Bauplan 15.6, Maik zu 15.5): In den Lehrjahren fällt der Großhandel nur bis DIFF.einfach.marktMin, sonst bis MARKT_MIN.
+const marktMin=()=>(S&&(DIFF[S.schwer]||{}).marktMin)||MARKT_MIN;
+function marktFBei(x,Q=marktFrei()){const mn=marktMin(); return x<=Q?1:Math.max(mn,1-(1-mn)*(x-Q)/(Q*MARKT_BREIT))}
 function marktF(n){n=Math.max(0,n);const Q=marktFrei(),a=S.absatz||0,f=x=>marktFBei(x,Q); if(n<=0) return f(a); let s=0; for(let i=0;i<40;i++) s+=f(a+n*(i+.5)/40); return s/40}
 function R(){return S.rollen?REGIONEN_ROLLEN[S.region]:REGIONEN[S.region]}
 // Seit 7.9: zwei Namen und Anrede. S.name ist das Weingut, S.ich der eigene Name, S.anrede 'm' oder 'w'. Bei der Übergabe ersetzt der Erbe beides
