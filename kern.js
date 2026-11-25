@@ -2618,8 +2618,8 @@ function aufgaben(){
   // Dazu Gelb für Maschinen ohne Fahrer und für Felder, denen Helfer für die Handlese fehlen.
   {const mw=kellerWartet();
   // Seit Paket B: Bei den Bonus-Maschinen ist Rot nur ein gelber Hinweis, es fällt nur der Bonus weg.
-  for(const ma of S.maschinen) if(ma.zustand<MASCH_ROT) A.push({t:`🔧 ${maschName(ma)} bei ${ma.zustand} %: fällt aus, bis ${maschEr(ma)} gewartet ist${mTyp(ma).bonus?', solange fehlt der Bonus':''}`,...(mTyp(ma).bonus?{}:{rot:1}),tab:'gut',sub:'maschinen'});
-    else if(ma.zustand<MASCH_GELB) A.push({t:`🔧 ${maschName(ma)} bei ${ma.zustand} %: `+(mw?'deine Kellerhelfer warten nach der Lese':'Warten lohnt sich'),tab:'gut',sub:'maschinen',...(mw?{ruhig:1}:{})});
+  for(const ma of S.maschinen) if(ma.zustand<MASCH_ROT) A.push({t:`🔧 ${maschName(ma)} bei ${ma.zustand} %: fällt aus, bis ${maschEr(ma)} gewartet ist${mTyp(ma).bonus?', solange fehlt der Bonus':''}`,...(mTyp(ma).bonus?{}:{rot:1}),tab:'gut',sub:'betrieb'});
+    else if(ma.zustand<MASCH_GELB) A.push({t:`🔧 ${maschName(ma)} bei ${ma.zustand} %: `+(mw?'deine Kellerhelfer warten nach der Lese':'Warten lohnt sich'),tab:'gut',sub:'betrieb',...(mw?{ruhig:1}:{})});
   const of=maschOhneFahrer().filter(x=>mTyp(x).leute==='helfer').length;
   if(maschOhneFahrer().some(x=>mTyp(x).leute==='lagerarb')) A.push({t:'🍾 Die Abfüllanlage steht still, es fehlt ein Kellermensch',tab:'stadt',sub:'arbeit'});
   if(of&&!fehlText()) A.push({t:`🚜 ${of===1?'Eine Maschine steht':of+' Maschinen stehen'} still, es ${fahrerFehlen()===1?'fehlt ein Fahrer':'fehlen '+fahrerFehlen()+' Fahrer'}`,tab:'stadt',sub:'arbeit'});
@@ -2653,7 +2653,7 @@ function aufgaben(){
   if(m===11){const t=steuerSchau(); if(t.steuer>0){
     A.push({t:`💶 Im Januar rund ${eur(t.steuer)} Steuer auf ${eur(t.gew)} Gewinn. Fassraum oder Flaschen kaufen senkt sie`,tab:'keller',sub:'lager',ruhig:1});
     if(weinberge().some(duengOffen)) A.push({t:'💶 Steuer senken: noch düngen',tab:'gut',sub:'berg',ruhig:1});
-    if(S.maschinen.some(x=>x.zustand<100)) A.push({t:'💶 Steuer senken: Maschinen warten',tab:'gut',sub:'maschinen',ruhig:1});
+    if(S.maschinen.some(x=>x.zustand<100)) A.push({t:'💶 Steuer senken: Maschinen warten',tab:'gut',sub:'betrieb',ruhig:1});
   }}
   // Seit 8.2: gelber Punkt im Rathaus im November und Dezember, solange die Spende des Rangs offen ist. Nie rot.
   {const s=spOffen(); if(s&&m>=10) A.push({t:`🤝 Spende für ${SPENDEN[s].z}: ${vonGeld(spBezahlt(),SPENDEN[s].b)}. Vor Silvester gespendet senkt sie die Steuer`,tab:'stadt',sub:'amt'})}
@@ -2763,9 +2763,9 @@ function wgSeit(i){if(!i) return `Der Anfang, ${START_JAHR}`; const e=(S.ehrunge
 // Kopf jeder Ansicht: das Bild des Ortes mit dem Titel darin.
 function kopf(titel){return ortBild(titel)}
 function vGut(){
-  const T={berg:'Weinberg',betrieb:S.name,maschinen:'Maschinen',buero:'Büro'};
+  const T={berg:'Weinberg',betrieb:S.name,buero:'Büro'};
   // Seit 16.1 (Bauplan 16.1, Entscheidung 1): Im Weinberg entfällt das große Bild oben, die Karten liegen auf dem Holzbrett. Seit 16.3.1 auch im Klemmbrett.
-  return (SUB==='berg'||SUB==='aktuell'?'':kopf(T[SUB]))+{berg:vBerg,betrieb:vBetrieb,aktuell:vKlemm,maschinen:vMaschinen,buero:vBuero}[SUB]();
+  return (SUB==='berg'||SUB==='aktuell'?'':kopf(T[SUB]))+{berg:vBerg,betrieb:vBetrieb,aktuell:vKlemm,buero:vBuero}[SUB]();
 }
 // Seit 13.3.1 nur noch ein Schild, warm wirkt nicht mehr.
 const gebietArt=r=>r.warm>0?['🔥','Warm']:r.warm<0?['🧊','Kühl']:['⛰️','Mitte'];

@@ -919,7 +919,7 @@ function vBetrieb(){
     <div class="kv"><span>Feste Kosten im Monat</span><span>${(k=>eur(k.basis+k.loehne+k.tilgung+k.zins))(kosten())}</span></div>
     ${S.kredit?`<div class="kv"><span>Kredit, Restschuld</span><span>${eur(S.kredit.rest)}</span></div>`:''}`,{
     i:'Hier siehst du dein Weingut auf einen Blick: Fläche, Fassraum, Kosten und Kredit. Feste Kosten sind Betriebskosten, Löhne und die Kreditrate, sie gehen jeden Monat von selbst ab. Darunter stehen deine Manager und deine Leute. Den Steckbrief deines Gebiets findest du im Weinberg.'})
-    +M.h+leuteHtml()+(F.jetzt?'':F.h||'')+M.zu+(F.zu||'');
+    +M.h+leuteHtml()+(F.jetzt?'':F.h||'')+M.zu+(F.zu||'')+vMaschinen();   // seit 16.4.1: die Maschinen unten im Betrieb (bis 16.3 eigener Unterreiter)
 }
 // Seit 7.5: Erntehelfer und Lagerarbeiter im Betrieb, je eine Zeile mit Anzahl, Aufgabe und Lohn. Eingestellt und entlassen wird im Arbeitsamt.
 function leuteHtml(){
@@ -1104,23 +1104,23 @@ function vMaschinen(){
     ${kz(saison?'':'Verkaufen geht wieder ab Januar.',pk('maschWarten','Warten','',{id:i,aus:ma.zustand>=100,arm:S.geld<T.wart,klein:`${eur(T.wart)} je %`}),saison?pk('maschVerkauf','Verkaufen','+'+eur(T.preis*.5*ma.zustand/100),{id:i,sec:1}):'')}</div>`}),{
     hin:[csBeiMgr()?csZeile('warten'):kellerWartet()?`🔧 Deine Kellerhelfer warten nach der Lese jede Maschine unter ${MGR_WART_AB} % auf 100 %, eine ausgefallene Erntemaschine sofort.`:csIst('warten')],   // seit 14.7.3, Platzhalter, Wortlaut in Meilenstein 17
     kn:csKnopf('warten')||[],   // seit 14.7.5
-    leer:'Du hast noch keine Maschine.',i:`${mI}<br><br>Warten bringt den Zustand wieder hoch, verkaufen bringt die Hälfte vom Neupreis, je nach Zustand.`});
+    leer:'Du hast noch keine Maschine.',buch:'maschinen',i:`${mI}<br><br>Warten bringt den Zustand wieder hoch, verkaufen bringt die Hälfte vom Neupreis, je nach Zustand.`});
   for(const [id,T] of Object.entries(MASCH)){
     if(R().steil&&T.ernte) continue;
     const titel=`Neue${T.f?' ':'r '}${T.name}`, lw=T.leute==='lagerarb'?(T.fahrer===1?'Kellermensch':'Kellerleute'):'Fahrer', fa=`braucht ${T.fahrer} ${lw}`, hat=maschEins(id)&&S.maschinen.some(x=>x.typ===id);
     const was=(T.bonus?`${MASCH_BONUS[id]()}. ${wie[id]} Mehr als ${T.f?'eine':'einen'} brauchst du nicht`:`Schafft ${rbn(T.leist)} Reben bei der Lese und deckt übers Jahr ${T.helfer} Hektar Reben ab${T.eins?`. Mehr als ${T.f?'eine':'einen'} gibt es nicht, alles darüber lesen deine Erntehelfer von Hand, einer je ${REBEN_JE_HELFER/HA_REBEN} Hektar`:''}`)+`, ${fa}. Die Wartung kostet ${eur(T.wart)} je Prozentpunkt.<br><br>${mI}`;
-    if(!maschFrei(id)){zu.push(fenster('kauf_'+id,titel,'',{zu:maschFreiText(id),i:was})); continue}
+    if(!maschFrei(id)){zu.push(fenster('kauf_'+id,titel,'',{zu:maschFreiText(id),buch:'maschinen',i:was})); continue}
     h+=fenster('kauf_'+id,titel,(T.bonus?`<div class="mut" style="margin-bottom:4px">${MASCH_BONUS[id]()}.</div>`:`<div class="kv"><span>Leistung bei der Lese</span><span>${rbn(T.leist)} Reben</span></div>
       <div class="kv"><span>Deckt übers Jahr ab</span><span>${T.helfer} Hektar Reben</span></div>`)+`<div class="kv"><span>${lw}</span><span>${fa}</span></div><div class="kv"><span>Wartung</span><span>${eur(T.wart)} je %</span></div>`
       // Seit 14.6.8 (Antwort zu D3): in Lehr- und Gesellenjahren ein Satz, wie viele deiner Reben die Erntemaschine lesen darf. Platzhalter, Wortlaut in Meilenstein 17.
       +(T.ernte&&MASCH_FORM_STUFEN.includes(S.schwer)?`<div class="mut" style="margin-top:4px">${MASCH_FORM_TEXT.kauf.replace('{er}',maschEr({typ:id})).replace('{formen}',MASCH_FORM_TEXT.formen[id]).replace('{g}',rbn(rebenGesamt())).replace('{n}',rbn(maschFormReben(T)))}</div>`:''),{
-      links:hat?`Du hast schon ${T.f?'eine':'einen'}.`:saison?'':'Zu kaufen von Januar bis März.',kn:pk('maschKauf','Kaufen',eur(T.preis),{id,aus:!saison||hat,arm:S.geld<T.preis}),i:was});
+      links:hat?`Du hast schon ${T.f?'eine':'einen'}.`:saison?'':'Zu kaufen von Januar bis März.',kn:pk('maschKauf','Kaufen',eur(T.preis),{id,aus:!saison||hat,arm:S.geld<T.preis}),buch:'maschinen',i:was});
   }
   // Seit 13.5.5: Ausbau der Abfüllanlage auf Stufe 2, für jede Anlage, die noch auf Stufe 1 ist. Wie der Kauf von Januar bis März.
   {const A=S.maschinen.filter(x=>x.typ==='abfuell'), ein=A.find(x=>abfStufe(x)<2), was=`Stufe 2: ${Math.round(ABF_PLUS2*100)} statt ${Math.round(ABF_PLUS*100)} % mehr Flaschen aus jedem Fass, ein Kellermensch betreut ${num(ABF_FLASCHEN2)} statt ${num(ABF_FLASCHEN)} leere Flaschen.`;
   if(A.length&&!frei('masch_abfuell2')) zu.push(fenster('ausbau_abfuell','Abfüllanlage ausbauen','',{zu:freiText('masch_abfuell2'),i:was}));
   else if(A.length) h+=fenster('ausbau_abfuell','Abfüllanlage ausbauen',`<div class="mut" style="margin-bottom:4px">${was}</div>`,{
-    links:!ein?'Deine Abfüllanlage ist schon auf Stufe 2.':saison?'':'Ausbauen geht von Januar bis März.',kn:pk('abfAusbau','Ausbauen',eur(ABF_PREIS2),{aus:!saison||!ein,arm:S.geld<ABF_PREIS2}),i:was})}
+    links:!ein?'Deine Abfüllanlage ist schon auf Stufe 2.':saison?'':'Ausbauen geht von Januar bis März.',kn:pk('abfAusbau','Ausbauen',eur(ABF_PREIS2),{aus:!saison||!ein,arm:S.geld<ABF_PREIS2}),buch:'maschinen',i:was})}
   if(einZu('maschinen')) return einKarte('maschinen','Noch alles von Hand',`Am Anfang machst du alles von Hand. Maschinen kommen nach und nach, der Düngerstreuer ${maschFreiText('duenger')}.`);
   return h+zu.join('');
 }
@@ -1888,21 +1888,21 @@ const FU_ZEIG={
   'r4-1':{tab:'stadt',sub:'arbeit',sel:[fiSel('mgr_amt')]},
   'r4-2':{tab:'stadt',sub:'handel',sel:[fiSel('markt')]},
   'r4-3':{tab:'keller',sub:'start',sel:[fiSel('sekt')]},
-  'r4-4':{tab:'gut',sub:'maschinen',sel:[fiSel('kauf_duenger')]},
+  'r4-4':{tab:'gut',sub:'betrieb',sel:[fiSel('kauf_duenger')]},
   'r5-1':{tab:'stadt',sub:'arbeit',sel:[fiSel('lagerarb')]},   // seit 14.7.7 die Kellerleute, wie r7-3 und r10-3
   'r5-2':{tab:'stadt',sub:'amt',sel:[fiSel('wettb')]},
   'r5-3':{tab:'gut',sub:'betrieb',sel:[fiSel('fest')]},
-  'r5-4':{tab:'gut',sub:'maschinen',sel:[fiSel('kauf_klein')]},
+  'r5-4':{tab:'gut',sub:'betrieb',sel:[fiSel('kauf_klein')]},
   'r6-1':{tab:'stadt',sub:'arbeit',sel:[fiSel('mgr_amt')]},
   'r6-2':{tab:'gut',sub:'berg',sel:['[data-a="bInfo"][data-id^="feld_"]']},
-  'r6-3':{tab:'gut',sub:'maschinen',sel:[fiSel('kauf_laub')]},
+  'r6-3':{tab:'gut',sub:'betrieb',sel:[fiSel('kauf_laub')]},
   'r6-4':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="handel"]',fiSel('mgr_amt')]},
   'r6-5':{tab:'keller',sub:'start',sel:['[data-a="sektAnlage"]',fiSel('sekt')]},
   'r7-1':{tab:'stadt',sub:'amt',sel:[fiSel('wettb')]},
-  'r7-2':{tab:'gut',sub:'maschinen',sel:[fiSel('kauf_gross')]},
+  'r7-2':{tab:'gut',sub:'betrieb',sel:[fiSel('kauf_gross')]},
   'r7-3':{tab:'stadt',sub:'arbeit',sel:[fiSel('lagerarb')]},
   'r8-1':{tab:'stadt',sub:'laeden',sel:[fiSel('regalRein'),fiSel('regal')]},
-  'r8-2':{tab:'gut',sub:'maschinen',sel:[fiSel('kauf_abfuell')]},
+  'r8-2':{tab:'gut',sub:'betrieb',sel:[fiSel('kauf_abfuell')]},
   'r8-3':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="weingut"]',fiSel('mgr_amt')]},
   'r8-4':{tab:'gut',sub:'buero',sel:[fiSel('botschafter')]},
   'r9-1':{tab:'gut',sub:'betrieb',sel:[fiSel('fest')]},
@@ -1943,7 +1943,7 @@ const FU_ZEIG={
   'k03':{tab:'keller',sub:'buch',sel:['[data-a="archiv"][data-id="brett"]']},
   'k04':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'k05':{tab:'gut',sub:'berg',sel:[fiSel('gebiet')]},
-  'k06':{tab:'gut',sub:'maschinen',sel:[fiSel('maschinen')]},
+  'k06':{tab:'gut',sub:'betrieb',sel:[fiSel('maschinen')]},
   'k07':{tab:'gut',sub:'betrieb',sel:[fiSel('p_handel')]},
   'k08':{tab:'keller',sub:'sabotage',sel:[fiSel('zuckern'),'#subs [data-id="sabotage"]']},
   'k09':{tab:'gut',sub:'buero',sel:[fiSel('rangliste')]},
