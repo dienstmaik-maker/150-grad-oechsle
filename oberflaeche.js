@@ -1349,14 +1349,14 @@ function vStadt(){
           `<button class="klein${s.ein||!n?' sec':''}" data-a="schau">${s.ein?'Tauschen':n?'Anmelden':'Ansehen'}</button>`)};
       h+=fenster('wettb','Wettbewerbe',[wz('land'),wz('bund'),...(S.amt&&S.amt.brief?[sz()]:[])],{hin:[mb&&`${MGR_BEREICHE[mb].sym} ${mgrG(mb).Dein} ${MGR_BEREICHE[mb].name} reicht beim Weiterblättern deinen besten Wein ein.${S.amt&&S.amt.brief?' Den Wein für die Weltweinschau wählst du selbst.':''}`],i:wI});
     }
-    const aI=`Bei einer Auktion kommt Land unter den Hammer, meist viel billiger als beim Makler. Der Winzerbote kündigt sie einen Monat vorher an, im Monat danach bietest du hier mit. Mitgehen kannst du bis Konto plus freier Kreditrahmen. Auktionen gibt es nicht jedes Jahr, geboten wird wenn, dann im ${AUK_MONATE.map(m=>MON[(m+1)%12]).join(', ').replace(/, ([^,]*)$/,' oder $1')}.${deckelSatz()?' '+deckelSatz()+' Mitbieten darfst du nur, wenn dein Besitz samt dem ganzen Los darunter bleibt.':''}`;
+    const aI=`Bei einer Auktion kommt Land unter den Hammer, meist viel billiger als beim Makler. Der Winzerbote kündigt sie einen Monat vorher an, im Monat danach bietest du hier mit. Mitgehen kannst du bis Konto plus freier Kreditrahmen. Auktionen gibt es nicht jedes Jahr, geboten wird wenn, dann im ${AUK_MONATE.map(m=>MON[(m+1)%12]).join(', ').replace(/, ([^,]*)$/,' oder $1')}.${deckelSatz()?' '+deckelSatz():''}`;
     if(S.rang<R_AUKTION) zu.push(fenster('auktionen','Auktionen','',{zu:`ab dem Rang ${RAENGE[R_AUKTION].name}`,i:aI}));
     else{
       const a=S.auktion, was=a?`${a.spitze?'Spitzenlage':losLage(a).sym+' '+losLage(a).kurz} mit ${a.ha}\u00a0Hektar`:'', lim=Math.max(0,aukLimit()), zuG=a&&aukDeckel(a)?`<span class="rot">${AUK_ZU_GROSS}</span>`:'';
       h+=fenster('auktionen','Auktionen',!a?[]
-        :a.phase===0?[fz(was,`Geboten wird im ${MON[(S.monat+1)%12]} · Startgebot ${eur(a.start)}`,zuG||(lim>=a.start?`Du kannst bis ${eur(lim)} mitgehen.`:`<span class="rot">Fürs Startgebot fehlen dir ${eur(a.start-lim)}.</span>`),`<button class="klein" data-a="auktion">Ansehen</button>`)]
+        :a.phase===0?[fz(was,`Geboten wird im ${MON[(S.monat+1)%12]} · Startgebot ${eur(a.start)}`,zuG||((aukZeichen(a,a.start)?aukZeichen(a,a.start)+' ':'')+(lim>=aukPreis(a.start,a)?`Du kannst bis ${eur(lim)} mitgehen.`:`<span class="rot">Fürs Startgebot fehlen dir ${eur(aukPreis(a.start,a)-lim)}.</span>`)),`<button class="klein" data-a="auktion">Ansehen</button>`)]
         :a.ende?[fz(was,'Die Auktion ist beendet.','',`<button class="klein" data-a="auktion">Ansehen</button>`)]
-        :[fz(was,`${a.fuehrer?'Höchstgebot':'Startgebot'} ${eur(a.gebot)}${a.fuehrer?' von '+esc(a.fuehrer):''}`,zuG||(aukNaechstes()<=lim?'<span class="rot">Geboten wird nur diesen Monat.</span>':'Zum Mitbieten reicht dein Geld nicht.'),`<button class="klein" data-a="auktion">${zuG?'Ansehen':'Bieten'}</button>`)],
+        :[fz(was,`${a.fuehrer?'Höchstgebot':'Startgebot'} ${eur(a.gebot)}${a.fuehrer?' von '+esc(a.fuehrer):''}`,zuG||((aukZeichen(a,aukNaechstes())?aukZeichen(a,aukNaechstes())+' ':'')+(aukPreis(aukNaechstes(),a)<=lim?'<span class="rot">Geboten wird nur diesen Monat.</span>':'Zum Mitbieten reicht dein Geld nicht.')),`<button class="klein" data-a="auktion">${zuG?'Ansehen':'Bieten'}</button>`)],
         {leer:`Gerade nichts, als Nächstes frühestens im ${aukNaechst()}.`,i:aI});
     }
     const mkI=`Der Makler kennt Winzer, die ihr Land lieber still verkaufen. Ein Hektar kostet bei ihm ${eur(MAKLER_PREIS)}, bei einer Auktion meist viel weniger. ${HA_NEU?`Mit dem Rang hat er mehr für dich: ${maklerStaffel()}. Er verkauft aber nur`:'Er verkauft dir höchstens einen Hektar im Jahr und nur'}, wenn dir für den nächsten Rang allein noch Land fehlt.${deckelSatz()?' '+deckelSatz():''}`;
@@ -1467,6 +1467,7 @@ function vStadt(){
       <div class="kv"><span>Schulden gesamt</span><span class="${schulden()>rahmen()?'rot':''}">${eur(schulden())}</span></div>
       ${(l=>l<0?`<div class="kv"><span>Über dem Kreditrahmen</span><span class="rot">${eur(-l)}</span></div>`:`<div class="kv"><span>Spielraum bis zur Mahnung</span><span>${eur(l)}</span></div>`)(rahmen()-(schulden()-erbRest()))}
       ${S.mahnung?`<div class="rot" style="font-size:14px;margin-top:4px">⚠️ ${S.mahnung}. Mahnung in Folge. Beim dritten Mal kommt der Gerichtsvollzieher.</div>`:''}
+      ${S.stundBis!=null&&monatNr()<S.stundBis?`<div style="font-size:14px;margin-top:4px">🕊️ Die Bank stundet noch ${S.stundBis-monatNr()} Monate, so lange mahnt sie nicht.</div>`:''}
       ${ab?`<div class="fzl ab"><div class="fstand" style="margin-bottom:2px">Zum letzten Monatswechsel abgebucht</div>
       ${kv('Betriebskosten',ab.basis)}${kv('Löhne',ab.loehne)}${kv('Kreditrate',ab.rate)}${kv('Überziehungszinsen',ab.ueberz)}${kv('Steuer auf den Jahresgewinn',ab.steuer)}
       <div class="kv"><span><b>Zusammen</b></span><span>${eur(ab.basis+ab.loehne+ab.rate+ab.ueberz+ab.steuer)}</span></div></div>`:''}`,{
@@ -1947,7 +1948,7 @@ const AKT={
     const a=S.auktion; if(!a) return;
     // Angekündigt: nur der Hinweis, geboten wird erst nächsten Monat.
     if(a.phase===0) return openSheet(`${sbild(a.spitze?'spitzenlage':'auktion')}<h3>🔨 Auktion im ${MON[(S.monat+1)%12]}</h3><p>${losText(a)} ${WO[S.region]} kommen nächsten Monat unter den Hammer. ${losLage(a).satz} Startgebot ${eur(a.start)}, geboten wird in Schritten von ${eur(a.schritt)}.</p>
-      <p class="mut">${S.rang<R_AUKTION?`Mitbieten darfst du ab dem Rang ${RAENGE[R_AUKTION].name}.`:aukDeckel(a)?`${AUK_ZU_GROSS} ${aukDeckel(a)}`:`Mitgehen kannst du bis Konto plus freier Kreditrahmen, gerade sind das ${eur(Math.max(0,aukLimit()))}.`}</p><div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`);
+      <p class="mut">${S.rang<R_AUKTION?`Mitbieten darfst du ab dem Rang ${RAENGE[R_AUKTION].name}.`:aukDeckel(a)?`${AUK_ZU_GROSS} ${aukDeckel(a)}`:`${aukZeichen(a,a.start)?aukZeichen(a,a.start)+' ':''}Mitgehen kannst du bis Konto plus freier Kreditrahmen, gerade sind das ${eur(Math.max(0,aukLimit()))}.`}</p><div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`);
     if(S.rang<R_AUKTION) return;
     if(a.ende) return openSheet(`${sbild(a.spitze?'spitzenlage':'auktion')}<h3>🔨 Auktion beendet</h3><p>${esc(a.text)}</p><div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`);
     // Seit 11.5 (Teil B): Passt das Los nicht unter den Deckel, gibt es nur die Erklärung. Die anderen machen es zum Monatswechsel unter sich aus.
@@ -1957,20 +1958,22 @@ const AKT={
       <p class="mut">${losLage(a).satz} Im Saal sitzen außer dir ${a.bieter.length} Bieter. Wie weit sie gehen, verrät keiner.</p>
       <div class="gebot"><span class="mut">${a.fuehrer?'Höchstgebot':'Startgebot'}</span><b>${eur(a.gebot)}</b><span>${a.fuehrer?'von '+esc(a.fuehrer):'noch kein Gebot'}</span></div>
       ${a.text?`<p>${esc(a.text)}</p>`:''}
+      ${aukZeichen(a,x)?`<p>${aukZeichen(a,x)}</p>`:''}
       <p class="mut">Du kannst bis ${eur(Math.max(0,lim))} mitgehen (Konto plus freier Kreditrahmen).</p>
-      <div class="btns"><button class="sec" data-a="aukRaus">Aussteigen</button><button data-a="bieten" ${x>lim?'disabled':''}>Bieten: ${eur(x)}</button></div>
+      <div class="btns"><button class="sec" data-a="aukRaus">Aussteigen</button><button data-a="bieten" ${aukPreis(x,a)>lim?'disabled':''}>Bieten: ${eur(x)}</button></div>
       <div class="btns"><button class="sec klein" data-a="close">Später weitermachen</button></div>`);
   },
   bieten(){
     const a=S.auktion; if(!a||a.ende||a.phase===0||S.rang<R_AUKTION||aukDeckel(a)) return;
-    const x=aukNaechstes(); if(x>aukLimit()) return;
+    // Seit 14.4.5: Über der Schwelle zahlst du beim Zuschlag das Gebot mal Aufschlag (aukPreis), geboten wird im Saal für alle gleich.
+    const x=aukNaechstes(), px=aukPreis(x,a); if(px>aukLimit()) return;
     const K=a.bieter.filter(b=>b.limit>=x+a.schritt);
     if(K.length){
       const b=K[rint(0,K.length-1)], sprung=Math.random()<.2&&b.limit>=x+2*a.schritt?2:1;
       a.gebot=x+sprung*a.schritt; a.fuehrer=b.name; a.text=`Du bietest ${eur(x)}. ${b.name} geht sofort drüber.`;
     }else{
-      a.gebot=x; a.fuehrer='du'; a.ende='du'; S.geld-=x; landDazu(a.lage||'einfach',a.ha); if(a.lage==='sued') aukGlueck(); fx('hammer',3);
-      a.text=`Zum Ersten, zum Zweiten, zum Dritten! ${losText(a)} gehören dir für ${eur(x)}. +${ruhm(2*(3+Math.min(a.ha,7)))} Ansehen. Dein Weingut hat jetzt ${S.ha}\u00a0Hektar.`;
+      a.gebot=x; a.fuehrer='du'; a.ende='du'; S.geld-=px; a.preisDu=px; landDazu(a.lage||'einfach',a.ha); if(a.lage==='sued') aukGlueck(); fx('hammer',3);
+      a.text=`Zum Ersten, zum Zweiten, zum Dritten! ${losText(a)} gehören dir für ${eur(px)}. +${ruhm(2*(3+Math.min(a.ha,7)))} Ansehen. Dein Weingut hat jetzt ${S.ha}\u00a0Hektar.`;
       // Seit 14.4.4: Die Spitzenlage ist ein eigener Weinberg (slKauf), fertig bepflanzt. Platzhalter, Wortlaut in Meilenstein 17.
       if(a.spitze){S.spitze=1; slKauf(); a.text+=` Die Spitzenlage gehört dir: +${ruhm(SPITZE_ANS)} Ansehen. Sie steht fertig bepflanzt als eigener Weinberg da, ihre Trauben starten jeden Juli mit ${SPITZE_OE}° mehr.`}
       if(S.geld<0) a.text+=` Dein Konto steht jetzt im Minus, das kostet 1 % Zinsen im Monat. Ein Kredit bei der Bank kostet nur ${Math.round(ZINS*100)} % im Jahr.`;

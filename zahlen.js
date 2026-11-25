@@ -18,7 +18,7 @@ const SORTEN={
 const ROLLEN={
   menge:{name:'Menge-Sorte',satz:'trägt viel und ist früh verkaufsreif',ertrag:5.6,zucker:-4,preis:3,minL:6,maxL:96,q:3,reife:.05},
   sekt:{name:'Sekt-Sorte',satz:'gibt den Regional-Sekt',ertrag:4.8,zucker:-2,preis:4.5,minL:9,maxL:144,q:6,reife:.08,sektStar:true},
-  spitze:{name:'Spitzen-Sorte',satz:'trägt wenig, bringt die beste Qualität und reift lange',ertrag:4,zucker:0,preis:6,minL:18,maxL:360,q:10,reife:.12}
+  spitze:{name:'Spitzen-Sorte',satz:'trägt wenig, bringt die beste Qualität und reift lange',ertrag:4,zucker:0,preis:9,minL:18,maxL:360,q:10,reife:.12}
 };
 // 17 neue Kennungen für 15 Namen (Riesling und Silvaner gibt es in zwei Rollen). Kennungen nie umbenennen, sie stehen in Spielständen und ab 11.4 im Album.
 const SORTEN_ROLLEN={
@@ -449,7 +449,7 @@ const WELT_GUETER=['Château Belmont, Frankreich','Tenuta Montefiore, Italien','
 // Herausforderer beim Amtsantritt und als Untergrenze nach der Abwahl, fav Punkte mehr für die Favoriten der Weltweinschau, form: ihre Form in Worten (WELT_FORM).
 const DIFF={
   einfach:{name:'Lehrjahre',kurz:'Einfach',text:'Sonne satt und Zeit zum Lernen. Du startest mit einem dicken Polster, und die Nachbarn lassen es gemütlich angehen. Genau richtig für die erste Partie.',ans:1.25,ki:.45,feld:-4,biet:1,geld:80000},
-  mittel:{name:'Gesellenjahre',kurz:'Mittel',text:'So ist das Winzerleben gedacht. Die Nachbarn sind fleißig, aber mit guter Arbeit bist du vor ihnen an der Spitze.',ans:1,ki:.6,feld:0,biet:1},
+  mittel:{name:'Gesellenjahre',kurz:'Mittel',text:'So ist das Winzerleben gedacht. Die Nachbarn sind fleißig, aber mit guter Arbeit bist du vor ihnen an der Spitze.',ans:1,ki:.6,feld:0,biet:1,land:[.03,.85,1.15]},
   schwer:{name:'Meisterprüfung',kurz:'Schwer',text:'Trau dich! Die Nachbarn sind schnell, die Konkurrenz ist stark, und wer im Herbst wartet, muss die Zeichen lesen. Wer hier Präsident wird, hat es sich verdient.',ans:1,ki:.81,feld:3,biet:1,schaed:1,markt:[.09,.75,1.25],land:[.09,.75,1.25],klug:1,marktSatz:1,marke:5,fav:5,form:1}
 };
 // Seit 13.7.7 (Entscheidung 11, Maik 22.11.2026): Die Meisterprüfung (MEISTER_STUFE) ist gesperrt, bis auf diesem Gerät einmal in den Gesellenjahren (MEISTER_VON)
@@ -744,7 +744,8 @@ const LAGE_REIHE=['einfach','hoehe','sued'], SUED_MAX=8, SEKT_EINFACH_QP=5;
 // seit 14.4.2 ab dem Weinbaurat auch Südhang (bis 14.2 ab dem Gutsherrn). Es gilt die letzte Zeile, deren Rang erreicht ist.
 const AUK_LAGE=[{r:0,w:{einfach:1}},{r:4,w:{einfach:.3,hoehe:.7}},{r:6,w:{einfach:.2,hoehe:.5,sued:.3}}];
 // Landpreis je Akt (RANG_AKT) und je Lage als Faktoren auf Startgebot und Gebote. Neutral auf dem heutigen Preis, die Werte setzt 14.2 (Platzhalter).
-const AUK_PREIS_AKT={1:1,2:1,3:1}, AUK_PREIS_LAGE={einfach:1,hoehe:1,sued:1};
+// Seit 14.4.5 (Entscheidung 5): Preisniveau je Lage einfacher Hang 1, Höhenlage 2, Südhang 4, auf Startgebot und alle Gebote (bis 14.4.4 überall 1).
+const AUK_PREIS_AKT={1:1,2:1,3:1}, AUK_PREIS_LAGE={einfach:1,hoehe:2,sued:4};
 // Seit 13.7.5 (Entscheidung 9, Platzhalter bis 14.2): Wert des Loses = Hektar × AUK_WERT_HA × Gebiet × Lage × Akt × Landpreis (S.landF). Auf Stufen mit DIFF.klug
 // gehen die Gegner bis AUK_KLUG[0] bis [1] davon, statt wie sonst 14.000 bis 26.000 € je Hektar nach Laune. AUK_WERT_HA ist die alte Obergrenze der Laune.
 const AUK_WERT_HA=26000, AUK_KLUG=[.9,1];
@@ -1474,6 +1475,16 @@ const LAND_AUFSCHLAG=7, LAND_AUFSCHLAG_FRUEH=3, LAND_FRUEH_BIS=2;
 // Der Satz kommt in den Spielstufen LAND_SATZ_STUFEN in den Winzerboten. Zeichen am Los je Spielstufe (LAND_ZEIGE): Rat des alten Winzers, Aufschlag als Zahl, nichts.
 // Der alte Winzer warnt ab einem Aufschlag von LAND_RAT_AB (1 heißt 100 Prozent). Platzhalter, Wortlaut in Meilenstein 17.
 const LAND_SATZ=[.92,1.08], LAND_SATZ_PUFFER=.03, LAND_SATZ_STUFEN=['mittel','schwer'], LAND_ZEIGE={einfach:'rat',mittel:'zahl',schwer:'nichts'}, LAND_RAT_AB=1;
+// Seit 14.4.5: Sätze zur Preislage im Winzerboten, zum Los und zum weichen Deckel. Platzhalter, Wortlaut in Meilenstein 17.
+const LAND_SATZ_TEXT={guenstig:['Land ist gerade günstig','Im Rathaus heißt es, Land geht gerade unter Wert weg. Wer kaufen will, sollte jetzt bieten.'],
+  normal:['Die Landpreise sind wieder normal','Bei den Auktionen wird wieder gezahlt, was man kennt.'],
+  teuer:['Land ist gerade teuer','Bei den Auktionen wird gerade viel geboten. Wer warten kann, kauft lieber später.']};
+const LAND_RAT={teuer:'Der alte Winzer meint: Das ist teuer, ich würde auf den nächsten Rang warten.',geht:'Der alte Winzer meint: Das Land wird teurer, aber es geht noch.'};
+const LAND_TEXT={satz:'Je mehr Land du in einer Lage schon hast, desto teurer wird jeder weitere Hektar dort: über der Schwelle steigt der Preis bis aufs {f}-fache am Deckel, darüber geht nichts mehr. Als {rang}: {liste}.',
+  lage:'{lage} bis {s} Hektar normal, höchstens {d}',
+  auf:'Aufschlag +{p} %', preis:'Dein Preis beim Zuschlag: {preis}', ende:'Mehr Land in dieser Lage gibt es im Verband für niemanden.', spaeter:'Mehr gibt es dort erst als {rang}.'};
+// Seit 14.4.5: Stundung im Winzerboten. Platzhalter, Wortlaut in Meilenstein 17.
+const STUNDUNG_TEXT=['Die Bank stundet','Statt den Gerichtsvollzieher zu schicken, gibt dir die Bank {n} Monate Aufschub. Die Zinsen laufen weiter, danach zählt sie die Mahnungen von vorn. Das gibt es nur einmal je Generation.'];
 // Stundung (14.4.5): Bei der dritten Mahnung in Folge STUNDUNG_MONATE Monate ohne Mahnung statt der Pfändung, ab der Generation STUNDUNG_AB_GEN, einmal je Generation.
 const STUNDUNG_MONATE=12, STUNDUNG_AB_GEN=2;
 // Hintertür und Kontrollen je Akt (14.4.6): Kontrollen ab dem Akt KONTR_AB_AKT, Abstand in Monaten je Spielstufe, Anzeige je Spielstufe,

@@ -352,13 +352,39 @@ function maschEr(ma){return mTyp(ma).f?'sie':'er'}
 function maschStatus(ma){const T=mTyp(ma); return ma.zustand<MASCH_ROT?`fällt aus, bis ${maschEr(ma)} gewartet ist`:maschVerteilung().includes(ma)?'im Einsatz':T.leute==='lagerarb'?'steht still, es fehlt ein Lagerarbeiter':'steht still, es fehlt ein Fahrer'}
 function festArt(){return S.rang>=R_HOFFEST?'hoffest':S.rang>=R_WEINFEST?'weinfest':''}
 // Seit 11.5 (Teil B): Deckel für den Besitz je Rang. Ohne HA_NEU gibt es für dich keinen, die Gegner halten dann bei GEGNER_HA_MAX.
-function haDeckel(r){return HA_NEU?RAENGE[r==null?S.rang:r].deckel:Infinity}
+// Seit 14.4.5 (Entscheidung 5): Für dich gibt es keinen Besitz-Deckel über alles mehr, an seine Stelle tritt der weiche Deckel je Lage (landDeckel). Die Gegner behalten ihren.
+function haDeckel(r){return Infinity}
 function gegnerDeckel(g){return HA_NEU?RAENGE[g.rang].deckel:GEGNER_HA_MAX}
 // Die Regel in einem Satz, für die i-Texte im Rathaus.
-function deckelSatz(){const d=haDeckel(); return d===Infinity?'':S.rang>=R_MAX?`Mehr als ${d} Hektar darf im Verband niemand besitzen.`:`Du darfst höchstens ein Viertel mehr Land haben, als der nächste Rang verlangt. Als ${rangN(S.rang)} sind das ${d} Hektar.`}
+// Seit 14.4.5: die Regel des weichen Deckels je Lage für deinen Rang, nur mit den Lagen, die bei den Auktionen schon kommen. Platzhalter, Wortlaut in Meilenstein 17.
+function deckelSatz(){const z=AUK_LAGE.filter(x=>S.rang>=x.r).pop().w, L=LAGE_REIHE.filter(lg=>z[lg]>0).map(lg=>LAND_TEXT.lage.replace('{lage}',LAGEN[lg].kurz).replace('{s}',num(landSchwelle(lg))).replace('{d}',num(landDeckel(lg))));
+  return LAND_TEXT.satz.replace('{f}',num(1+(S.rang<=LAND_FRUEH_BIS?LAND_AUFSCHLAG_FRUEH:LAND_AUFSCHLAG))).replace('{rang}',rangN(S.rang)).replace('{liste}',L.join(', '))}
+// Seit 14.4.5 (Entscheidung 5, Annahme 6): weicher Deckel je Lage. Bis LAND_SCHWELLE Hektar Besitz in der Lage normaler Preis, darüber ein Aufschlag im Quadrat
+// (Anteil des Wegs von der Schwelle zum Deckel, zum Quadrat, mal LAND_AUFSCHLAG, bis zum Rang LAND_FRUEH_BIS mal LAND_AUFSCHLAG_FRUEH), über LAND_DECKEL kein Kauf.
+// Gezählt wird der Stand nach dem Kauf, der Aufschlag gilt für das ganze Los. Der Südhang zählt ohne die SPITZE_HA Hektar der Spitzenlage.
+const landR=r=>Math.min(r==null?S.rang:r,LAND_DECKEL.einfach.length-1);
+function landSchwelle(lg,r){return LAND_SCHWELLE[lg][landR(r)]}
+function landDeckel(lg,r){return LAND_DECKEL[lg][landR(r)]}
+function landBesitz(lg){return Math.round((hangHa(lg)-(lg==='sued'&&S.spitze?SPITZE_HA:0))*10)/10}
+function landAufschlag(lg,haNach,r){const s=landSchwelle(lg,r), d=landDeckel(lg,r); if(haNach<=s) return 0; if(haNach>d+1e-9) return null;
+  return ((r==null?S.rang:r)<=LAND_FRUEH_BIS?LAND_AUFSCHLAG_FRUEH:LAND_AUFSCHLAG)*Math.pow((haNach-s)/(d-s),2)}
+// Preisfaktor für den Stand nach dem Kauf: Preisniveau der Lage mal (1 + Aufschlag), über dem Deckel Infinity.
+function landPreisF(lg,haNach,r){const a=landAufschlag(lg,haNach,r); return a==null?Infinity:(AUK_PREIS_LAGE[lg]||1)*(1+a)}
+// Wie viel Land in der Lage bis zum Deckel noch geht, am Südhang höchstens suedRest().
+function landRest(lg){const x=Math.max(0,landDeckel(lg)-landBesitz(lg)); return lg==='sued'?Math.min(x,suedRest()):x}
+// Faktor des Aufschlags für dich auf ein Los (1 ohne Aufschlag und bei der Spitzenlage) und dein Preis beim Zuschlag für ein Gebot x.
+function aukAufF(a){a=a||S.auktion; if(!a||a.spitze) return 1; const lg=a.lage||'einfach', z=landAufschlag(lg,landBesitz(lg)+a.ha); return z==null?1:1+z}
+function aukPreis(x,a){const F=aukAufF(a); return F===1?x:Math.round(x*F/500)*500}
+// Was die Lage noch bringt: nach dem Aufstieg, erst bei einem späteren Rang oder nie mehr.
+function landMehr(lg){const d=landDeckel(lg); for(let r=S.rang+1;r<RAENGE.length;r++) if(landDeckel(lg,r)>d) return r===S.rang+1?aufstiegFehlt():LAND_TEXT.spaeter.replace('{rang}',rangN(r)); return LAND_TEXT.ende}
+// Zeichen am Los je Spielstufe (LAND_ZEIGE): in den Lehrjahren der Rat des alten Winzers, in den Gesellenjahren der Aufschlag in Prozent, in der Meisterprüfung nichts.
+// Dazu überall dein Preis beim Zuschlag, sobald ein Aufschlag drauf ist. Platzhalter, Wortlaut in Meilenstein 17.
+function aukZeichen(a,x){a=a||S.auktion; const F=aukAufF(a); if(F===1) return ''; const z=LAND_ZEIGE[S.schwer], T=[];
+  if(z==='zahl') T.push(LAND_TEXT.auf.replace('{p}',num(Math.round((F-1)*100)))); if(z==='rat') T.push(F-1>=LAND_RAT_AB?LAND_RAT.teuer:LAND_RAT.geht);
+  T.push(LAND_TEXT.preis.replace('{preis}',eur(aukPreis(x==null?a.gebot:x,a)))); return T.map(t=>t.replace(/\.$/,'')).join('. ')+'.'}
 // Was zum nächsten Rang fehlt, als Satz für die Sperre am Deckel.
 function aufstiegFehlt(){
-  const n=RAENGE[S.rang+1]; if(!n) return `Mehr als ${haDeckel()} Hektar darf im Verband niemand besitzen.`;
+  const n=RAENGE[S.rang+1]; if(!n) return LAND_TEXT.ende;
   const f=[], a=n.ans-S.ansehen, h=Math.round((n.ha-flaecheBep())*10)/10, v=n.verm-vermoegen();
   if(a>0) f.push(`${num(a)} Ansehen`); if(h>0) f.push(`${h.toLocaleString('de-DE')} Hektar bepflanzt`); if(v>0) f.push(`${eur(v)} Vermögen`);
   return f.length?`Mehr Land gibt es erst nach dem Aufstieg. Zum Rang ${rangN(S.rang+1)} fehlen dir noch ${f.join(', ').replace(/, ([^,]*)$/,' und $1')}.`:`Mehr Land gibt es nach dem Aufstieg zum Rang ${rangN(S.rang+1)}, der kommt mit dem nächsten Monat.`;
@@ -368,13 +394,14 @@ function aufstiegFehlt(){
 // Seit 13.4.9: Los mit Lage für die Texte, zum Beispiel "2 Hektar kühle Höhenlage". Alte Lose ohne Lage sind einfacher Hang.
 const losLage=a=>LAGEN[(a&&a.lage)||'einfach'], losText=a=>`${a.ha}\u00a0Hektar ${losLage(a).name}`;
 function hangZeile(){return LAGE_REIHE.filter(lg=>hangHa(lg)>0).map(lg=>`${LAGEN[lg].sym} ${String(hangHa(lg)).replace('.',',')}\u00a0ha`).join(' · ')||'kein Land'}
-function aukDeckel(a){a=a||S.auktion; const d=haDeckel(); if(!a||a.spitze||S.ha+a.ha<=d) return '';
-  return `${S.ha>=d?`Du hast ${S.ha}\u00a0Hektar`:`Mit diesem Los hättest du ${S.ha+a.ha}\u00a0Hektar`}, als ${rangN(S.rang)} darfst du höchstens ${d} besitzen. ${aufstiegFehlt()}`}
+// Seit 14.4.5: Der Deckel gilt je Lage (landDeckel), gezählt wird dein Besitz in der Lage des Loses. Platzhalter, Wortlaut in Meilenstein 17.
+function aukDeckel(a){a=a||S.auktion; if(!a||a.spitze) return ''; const lg=a.lage||'einfach', b=landBesitz(lg), d=landDeckel(lg); if(b+a.ha<=d+1e-9) return '';
+  return `${b>=d?`Du hast ${num(b)}\u00a0Hektar ${LAGEN[lg].name}`:`Mit diesem Los hättest du ${num(b+a.ha)}\u00a0Hektar ${LAGEN[lg].name}`}, als ${rangN(S.rang)} darfst du dort höchstens ${d} besitzen. ${landMehr(lg)}`}
 // Der Makler verkauft, wenn der Spieler den Rang hat, dieses Jahr noch Land für ihn da ist (maklerHa) und ihm für den nächsten Rang allein noch Land fehlt.
 // S.maklerN zählt die Hektar im Jahr S.maklerJahr. Alte Spielstände kennen nur das Jahr, dort zählt es als ein Hektar.
 function maklerHa(){return HA_NEU?MAKLER_HA[S.rang]||1:1}
 function maklerDiesJahr(){return S.maklerJahr===S.jahr?S.maklerN||1:0}
-function maklerGrund(){if(S.rang<R_MAKLER) return `Der Makler arbeitet erst für dich ab dem Rang ${RAENGE[R_MAKLER].name}.`; const mh=maklerHa(); if(maklerDiesJahr()>=mh) return `Dieses Jahr hat er dir schon ${mh>1?mh+'\u00a0Hektar':'einen Hektar'} verkauft. Nächstes Jahr wieder.`; const n=RAENGE[S.rang+1]; if(!n||S.ha>=n.ha) return 'Für den nächsten Rang hast du genug Land, da verkauft er dir nichts.'; if(S.ha+1>haDeckel()) return `Als ${rangN(S.rang)} darfst du höchstens ${haDeckel()} Hektar besitzen. ${aufstiegFehlt()}`; if(S.ansehen<n.ans||vermoegen()<n.verm) return 'Dir fehlt für den nächsten Rang nicht nur Land. Erst wenn Ansehen und Vermögen reichen, verkauft er dir einen Hektar.'; return ''}
+function maklerGrund(){if(S.rang<R_MAKLER) return `Der Makler arbeitet erst für dich ab dem Rang ${RAENGE[R_MAKLER].name}.`; const mh=maklerHa(); if(maklerDiesJahr()>=mh) return `Dieses Jahr hat er dir schon ${mh>1?mh+'\u00a0Hektar':'einen Hektar'} verkauft. Nächstes Jahr wieder.`; const n=RAENGE[S.rang+1]; if(!n||S.ha>=n.ha) return 'Für den nächsten Rang hast du genug Land, da verkauft er dir nichts.'; if(landRest('einfach')<1) return `Als ${rangN(S.rang)} darfst du am einfachen Hang höchstens ${landDeckel('einfach')} Hektar besitzen. ${landMehr('einfach')}`; if(S.ansehen<n.ans||vermoegen()<n.verm) return 'Dir fehlt für den nächsten Rang nicht nur Land. Erst wenn Ansehen und Vermögen reichen, verkauft er dir einen Hektar.'; return ''}
 // Sein Angebot je Rang als Satzteil: "ab Jungwinzer 1 Hektar im Jahr, ab Weingutsbesitzer 2, ab Verbandsvorstand 3".
 function maklerStaffel(){const T=[]; for(let i=R_MAKLER;i<R_MAX;i++) if(i===R_MAKLER||MAKLER_HA[i]!==MAKLER_HA[i-1]) T.push(`ab ${RAENGE[i].name} ${MAKLER_HA[i]}${T.length?'':' Hektar im Jahr'}`); return T.join(', ')}
 
@@ -939,7 +966,8 @@ function altSchau(){if(S.wett&&S.wett.typ==='welt') S.wett=null}
 
 // Seit 13.4.9: Lage des nächsten Loses, gewürfelt nach den Anteilen in AUK_LAGE für deinen Rang. Südhang nur, solange noch ein ganzer Hektar frei ist.
 // Gibt es nur eine Lage, wird nicht gewürfelt, so bleiben die Würfe im ersten Akt wie vorher.
-function aukLage(){const z=AUK_LAGE.filter(x=>S.rang>=x.r).pop().w, W=LAGE_REIHE.filter(lg=>z[lg]>0&&(lg!=='sued'||suedRest()>=1)); if(W.length<2) return W[0]||'einfach';
+// Seit 14.4.5: Eine Lage ohne ganzen Hektar Rest bis zu deinem Deckel kommt nicht ins Los (landRest, am Südhang samt suedRest).
+function aukLage(){const z=AUK_LAGE.filter(x=>S.rang>=x.r).pop().w, W=LAGE_REIHE.filter(lg=>z[lg]>0&&landRest(lg)>=1); if(W.length<2) return W[0]||'einfach';
   let r=Math.random()*W.reduce((a,lg)=>a+z[lg],0); for(const lg of W){r-=z[lg]; if(r<0) return lg} return W[W.length-1]}
 const aukLageF=lg=>(AUK_PREIS_AKT[RANG_AKT[S.rang]]||1)*(AUK_PREIS_LAGE[lg]||1);
 // Seit 13.7.5: der Landpreis, nur auf Stufen mit DIFF.land, sonst 1.
@@ -947,13 +975,19 @@ const landF=()=>(DIFF[S.schwer]||{}).land?(S.landF||1):1;
 // Satz zum Markt im Winzerboten, wenn sich die Lage der Weinpreise ändert (nur mit DIFF.marktSatz). S.marktW merkt die letzte Lage.
 function marktSatz(){if(!(DIFF[S.schwer]||{}).marktSatz) return; const M=MARKT_SATZ.find(x=>S.markt>=x[0]); if(S.marktW==null){S.marktW=M[1]; return} if(M[1]===S.marktW) return;
   if(M[1]==='normal'&&(S.marktW==='gut'?S.markt>MARKT_SATZ[0][0]-MARKT_SATZ_PUFFER:S.markt<MARKT_SATZ[1][0]+MARKT_SATZ_PUFFER)) return; S.marktW=M[1]; schlag(24,M[2],M[3],'',{archiv:1})}
+// Seit 14.4.5 (Entscheidung 10, Frage 3): Satz zur Preislage beim Land im Winzerboten, in den Spielstufen LAND_SATZ_STUFEN, sobald sie wechselt.
+// Günstig unter LAND_SATZ[0], teuer ab LAND_SATZ[1], zurück auf normal erst mit LAND_SATZ_PUFFER Abstand. S.landW merkt die letzte Lage.
+function landLage(f){return f<LAND_SATZ[0]?'guenstig':f>=LAND_SATZ[1]?'teuer':'normal'}
+function landSatz(){if(!LAND_SATZ_STUFEN.includes(S.schwer)||!(DIFF[S.schwer]||{}).land) return; const f=S.landF||1, w=landLage(f); if(S.landW==null){S.landW=w; return} if(w===S.landW) return;
+  if(w==='normal'&&(S.landW==='guenstig'?f<LAND_SATZ[0]+LAND_SATZ_PUFFER:f>=LAND_SATZ[1]-LAND_SATZ_PUFFER)) return; S.landW=w; const T=LAND_SATZ_TEXT[w]; schlag(23,T[0],T[1],'',{archiv:1})}
 function auktionHa(){const r=Math.random();return r<.4?1:r<.73?2:r<.95?3:r<.995?5:10}
 function neueAuktion(spitze,haFest){
   if(spitze){const B=misch(NACHBARN).slice(0,3).map(n=>({name:n,limit:rint(64,144)*5000})); S.auktion={ha:SPITZE_HA,lage:'sued',start:SPITZE_START,schritt:10000,gebot:SPITZE_START,fuehrer:B[rint(0,2)].name,bieter:B,ende:null,text:'',phase:0,spitze:1}; return}
   // Seit 13.4.1: aukPreisF des Gebiets (Rheinhessen) auf Startgebot und alle Gebote, so wird das Land günstiger.
   // Seit 13.3.7: haFest gibt die Größe des Loses vor (vor dem Winzer AUK_FRUEH_HA).
   // Seit 13.4.9: Lage des Loses nach Rang (aukLage), ein Südhang-Los höchstens so groß, wie suedRest() erlaubt, der Preis mal Faktor je Akt und Lage.
-  const lage=aukLage(), ha0=haFest||auktionHa(), ha=lage==='sued'?Math.min(ha0,Math.floor(suedRest())):ha0, pf=(R().aukPreisF||1)*aukLageF(lage)*landF(), start=Math.round(ha*8000*pf/500)*500, B=misch(NACHBARN).slice(0,rint(2,3)).map(n=>({name:n,limit:Math.round(ha*rnd(11000,30000)*pf/500)*500}));
+  // Seit 14.4.5: Das Los wird auf deinen Rest bis zum Deckel der Lage gekürzt (landRest). Ist in keiner Lage ein ganzer Hektar frei, bleibt es, wie es ist, und du darfst nicht mitbieten.
+  const lage=aukLage(), ha0=haFest||auktionHa(), rest=Math.floor(landRest(lage)+1e-9), ha=rest>=1?Math.min(ha0,rest):ha0, pf=(R().aukPreisF||1)*aukLageF(lage)*landF(), start=Math.round(ha*8000*pf/500)*500, B=misch(NACHBARN).slice(0,rint(2,3)).map(n=>({name:n,limit:Math.round(ha*rnd(11000,30000)*pf/500)*500}));
   for(const g of S.gegner) if(g.region===S.region){
     const t=GEGNER_TYP[g.typ];
     // Der Zufall wird immer gezogen, auch wenn der Gegner am Deckel ist und nicht mitbietet.
@@ -1993,7 +2027,7 @@ function monatLauf(){
   // Rebenmarkt: in der Pflanzzeit jeden Monat neu gewürfelt, ohne Vorschau.
   S.rebenF=S.monat<=2?Math.round(rnd(1-REBEN_SCHWANK,1+REBEN_SCHWANK)*100)/100:1;
   // Seit 13.7.5: Weinpreise je Stufe (DIFF.markt), in der Meisterprüfung dazu der Landpreis (DIFF.land) und der Satz zum Markt.
-  {const D=DIFF[S.schwer]||{}, M=D.markt||MARKT_SCHWANK; S.markt=clamp(S.markt+rnd(-M[0],M[0]),M[1],M[2]); if(D.land) S.landF=clamp((S.landF||1)+rnd(-D.land[0],D.land[0]),D.land[1],D.land[2]); marktSatz()}
+  {const D=DIFF[S.schwer]||{}, M=D.markt||MARKT_SCHWANK; S.markt=clamp(S.markt+rnd(-M[0],M[0]),M[1],M[2]); if(D.land) S.landF=clamp((S.landF||1)+rnd(-D.land[0],D.land[0]),D.land[1],D.land[2]); marktSatz(); landSatz()}
   S.fassF=clamp((S.fassF||1)+rnd(-.08,.08),1-LAGER_SCHWANK,1+LAGER_SCHWANK); S.flaschF=clamp((S.flaschF||1)+rnd(-.08,.08),1-LAGER_SCHWANK,1+LAGER_SCHWANK);
   {const fr=R().sorten.filter(sorteFrei); S.rebenAng=S.monat<=2?fr[rint(0,fr.length-1)]:null}
   if(S.lage&&--S.lage.rest<=0){Z.push(S.lage.typ==='mode'?`Die Mode im Ausland ist vorbei, ${SORTEN[S.lage.sorte].name} kostet wieder so viel wie üblich.`:'Der Weinskandal ist vergessen, die Weinpreise erholen sich.'); S.lage=null}
@@ -2027,9 +2061,13 @@ function monatLauf(){
   // Seit 13.4.4: Der Winzerbote sagt an, wenn der fremde Weg offen ist, und nur dann.
   if(S.monat===8&&wegeOffen().includes(wegFremd(R().weg))){const T=FREMD_TEXT[wegFremd(R().weg)]; schlag(46,T[0],T[1].replace('{wo}',WO[S.region]),'lese',{du:1})}
   // Schritt G 7.0: Der Kredit für die Erbschaftssteuer (erbRest) zählt nicht gegen den Kreditrahmen.
-  if(schulden()-erbRest()>rahmen()){
+  // Seit 14.4.5 (Entscheidung 4): Stundung. Bei der dritten Mahnung in Folge gibt es ab der Generation STUNDUNG_AB_GEN einmal je Generation STUNDUNG_MONATE Monate ohne Mahnung
+  // statt der Pfändung (S.stundBis, S.stundGen), die Zinsen laufen weiter, danach zählt die Bank von vorn.
+  const stund=S.stundBis!=null&&monatNr()<=S.stundBis;
+  if(!stund&&schulden()-erbRest()>rahmen()){
     S.mahnung++;
-    if(S.mahnung>=3){S.pleite=true; S.pleiteP=S.rang?bestenEintrag():0; schlag(90,`Pfändung bei ${S.name}`,'Der Gerichtsvollzieher steht vor der Tür. Dein Weingut ist pleite.','pleite',{du:1})}
+    if(S.mahnung>=3&&genNr()>=STUNDUNG_AB_GEN&&S.stundGen!==genNr()){S.mahnung=0; S.stundGen=genNr(); S.stundBis=monatNr()+STUNDUNG_MONATE; schlag(88,STUNDUNG_TEXT[0],STUNDUNG_TEXT[1].replace('{n}',STUNDUNG_MONATE),'bank',{du:1})}
+    else if(S.mahnung>=3){S.pleite=true; S.pleiteP=S.rang?bestenEintrag():0; schlag(90,`Pfändung bei ${S.name}`,'Der Gerichtsvollzieher steht vor der Tür. Dein Weingut ist pleite.','pleite',{du:1})}
     else{ruhm(-6); schlag(58,`${S.mahnung}. Mahnung der Bank`,`Deine Schulden von ${eur(schulden()-erbRest())} liegen über dem Kreditrahmen von ${eur(rahmen())}. Das kostet 6 Ansehen. Beim dritten Mal kommt der Gerichtsvollzieher.`,'bank',{du:1})}
   }else{S.mahnung=0; if(S.geld<0) Z.push('Dein Konto ist im Minus. Die Bank nimmt dafür 1 % Zinsen im Monat.')}
   // Seit 10.1: Endet die Partie in diesem Januar (spielEnde in generationMonat), passiert danach nichts mehr.
