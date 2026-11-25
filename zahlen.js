@@ -1767,7 +1767,7 @@ const WB_TEXT={
       maklerJa:'Ein Hektar zu haben', maklerNein:'Verkauft dir gerade nichts', anregFrei:'Dein Hinweis ist frei', anregSchon:'Hinweis für dieses Jahr gegeben', geruecht:'Es gibt Gerüchte',
       spStufe:'Spende Stufe {s} offen', spFertig:'Alle Spenden erledigt', stFehlt1:'Eine Spende fehlt dem Dorf', stFehltN:'{n} Spenden fehlen dem Dorf',
       stimmGut:'Die Stimmung reicht', stimmSchlecht:'Die Stimmung reicht nicht', umfrage:'Umfrage im {m}', schauAn:'Angemeldet: {name}', schauJetzt:'Anmelden nur diesen Monat',
-      schauKein:'Kein Wein angemeldet', schauIm:'Die Schau ist im {m}', schauNaechst:'Anmeldung im {m}', schauFertig:'Alle Kronen geholt'},
+      schauKein:'Kein Wein angemeldet', schauIm:'Die Schau ist im {m}', schauNaechst:'Anmeldung im {m}', schauFertig:'Alle Kronen geholt', keineWahl:'Keine Wahl mehr'},
     fassweine:'Fassweine ohne Anmeldung', zugelassen:'Zugelassene Weine', mitgehen:'Mitgehen bis', flaeche:'Deine Fläche', naechsterRang:'Nächster Rang', maklerJahr:'Dieses Jahr gekauft',
     preisHa:'Ein Hektar beim Makler', gespendet:'Gespendet', eingezahlt:'Eingezahlt', stufe:'Stufe {s}', fuer:'für {z}', erledigt:'Erledigt', stimmung:'Stimmung', kronen:'Kronen',
     gegner:'Gegner', hinweis:'Hinweis dieses Jahr', frei:'frei', gegeben:'gegeben', stimmKauf:'Stimmen kaufen'},
