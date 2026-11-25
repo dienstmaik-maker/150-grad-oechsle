@@ -1746,6 +1746,8 @@ const WB_TEXT={
     laub:'Sommerschnitt offen', ausd:'Ausdünnen offen', pflanzen:'Pflanzen möglich', eis:'Eiswein möglich', gefroren:'Trauben gefroren', ueber:'Überreif',
     lesen:'Lesen möglich', fertig:'Alles erledigt', leer:'Nicht angebaut', gelesen:'Gelesen', gesperrt:'Noch gesperrt'},
   helferDuengen:'Deine {wer} düngen beim Weiterblättern, wenn der Boden mager wird.',
+  // Seit 16.2.1: auf der Sorten-Karte nur, wenn sie beim nächsten Weiterblättern wirklich düngen (helferDuengBoden), Platzhalter, Wortlaut in Meilenstein 17.
+  helferDuengenJetzt:'Deine {wer} düngen diesen Weinberg beim Weiterblättern{geld}.', helferDuengenGeld:', sobald das Geld reicht',
   mehr:'Mehr', mehrKopf:'{sorte}: Mehr', chefMachen:'Zum Chef-Weinberg machen', chefAbgeben:'Rebschnitt und Düngen abgeben', einsatz:'📋 Einsatzplan',
   panel:'{titel}, Infos', zustand:'Zustand', kosten:'Kosten', tipps:'Tipps', wisch:'Nach unten wischen schließt das Panel.',
   boden:{titel:'Boden und Düngung', klein:'Deine Weinberge, {ha} Hektar', schnitt:'Boden im Schnitt', chef:'Chef-Weinberg', chefKeiner:'Du machst alles selbst',

@@ -2956,11 +2956,13 @@ const pflanzReihe=()=>[...weinberge().filter(pflanzMitA),...weinberge().filter(i
 const pflanzReserve=lg=>R().sorten.filter(id=>lageVon(id)===lg&&pflanzMitA(id)&&pflanzKann(id)).reduce((a,id)=>a+Math.min(pflanzSoll(id),platzFuer(id)),0);
 function pflanzPlan(id){const cap={}; for(const lg of LAGE_REIHE) cap[lg]=lagePlatz(lg);
   for(const x of pflanzReihe()){const lg=lageVon(x), n=pflanzKann(x)?Math.floor(Math.min(pflanzSoll(x),istSL(x)?slPlatz():cap[lg])/10)*10:0; if(x===id) return n; if(!istSL(x)) cap[lg]-=n} return 0}
+// Seit 16.2.1: Wann die Erntehelfer auf Automatik düngen (Boden auf HELFER_DUENG oder darunter, im August schon unter 90), auch für die Info-Zeile im Weinberg.
+const helferDuengBoden=id=>{const f=S.felder[id]; return f.boden<=HELFER_DUENG||(S.monat===7&&f.boden<90)};
 function helferArbeit(L){
   if(!S.helfer) return; const st=leuteSt('helfer'), m=S.monat; chefNorm();
   // Seit 14.2.3: Düngen und Rebschnitt nur, wo der Spieler sie abgegeben hat, schon ab Stufe 1 (Entscheidung 9). Seit 14.7.4 beides je Weinberg auf Automatik (Annahme 9).
   if(st>=1&&abgabe('duengen')) for(const id of weinberge()){const f=S.felder[id];
-    if(helferDuengt(id)&&duengOffen(id)&&(f.boden<=HELFER_DUENG||(m===7&&f.boden<90))&&S.geld>=duengKosten(id)){const ma=bonusMasch('duenger'); duenge(id,'helfer'); L.push(`${SORTEN[id].name} ${ma?'mit dem Düngerstreuer gedüngt':'gedüngt'}`)}}
+    if(helferDuengt(id)&&duengOffen(id)&&helferDuengBoden(id)&&S.geld>=duengKosten(id)){const ma=bonusMasch('duenger'); duenge(id,'helfer'); L.push(`${SORTEN[id].name} ${ma?'mit dem Düngerstreuer gedüngt':'gedüngt'}`)}}
   if(st>=1&&abgabe('schneiden')) for(const id of weinberge()) if(helferSchneidet(id)&&schnittOffen(id)&&S.geld>=schnittKosten(id)){schneide(id,'helfer'); L.push(`${SORTEN[id].name} geschnitten`)}
   // Seit 14.7.4 (Annahmen 13 und 22): Draußen bringt jede Stufe ihre Arbeit. Winzergesellen machen auf Automatik den Laubschnitt (bis 14.7.3 machten die Erntehelfer
   // den Sommerschnitt von Hand, wo der Rebschnitt abgegeben war), Rebmeister das Ausdünnen, beides nur, wo es die nächste Weinstufe bringt (sommerLohnt),

@@ -644,7 +644,9 @@ function vMonat(){
   const art=(b.art||[]).map(a=>{const f=(frei||a.foto)&&a.bild&&a.bild!==k.bild?(a.foto||(frei=0),foto(a,'klein')):''; return `<div class="zart">${f}<h3>${esc(a.t)}</h3>${a.text?`<p>${esc(a.text)}</p>`:''}${liste(a)}</div>`}).join('');
   const haengt=S.monat>=7&&weinberge().some(id=>S.felder[id].menge>0&&!S.felder[id].gelesen);
   const nah=wg?nahBild(st):null;
-  const rechts=`<h4>Dein Weingut</h4>${nah?`<div class="zluft gross" style="background-image:url(bilder/${nah[0]}.jpg)"></div><div class="znah">${nah[2]}</div>`:wg?`<div class="zluft${wgGross(st)?' gross':''}" style="background-image:url(bilder/${bild}.jpg)"></div>`:''}<div class="zvier"><div class="zz"><b>Rang</b>${duK()}</div><div class="zz"><b>Boden</b><span class="${bodenMin()<80?'rot':''}">${bodenMin()}\u00a0%${weinberge().some(id=>duengOffen(id)&&!helferDuengt(id)&&S.felder[id].boden<80)?', Düngen ist dran':''}</span></div>
+  // Seit 16.2.1: Kachel Boden wie die Sorten-Karten (wbDuengNoetig, wbDuengRot), bis 16.1 Rot und Düngen ist dran unter 80.
+  const bodenW=weinberge().filter(id=>S.felder[id].reben>0), bodenRot=bodenW.some(wbDuengRot), bodenDran=bodenW.some(id=>duengOffen(id)&&!helferDuengt(id)&&wbDuengNoetig(id));
+  const rechts=`<h4>Dein Weingut</h4>${nah?`<div class="zluft gross" style="background-image:url(bilder/${nah[0]}.jpg)"></div><div class="znah">${nah[2]}</div>`:wg?`<div class="zluft${wgGross(st)?' gross':''}" style="background-image:url(bilder/${bild}.jpg)"></div>`:''}<div class="zvier"><div class="zz"><b>Rang</b>${duK()}</div><div class="zz"><b>Boden</b><span class="${bodenRot?'rot':''}">${bodenMin()}\u00a0%${bodenDran?', Düngen ist dran':''}</span></div>
     <div class="zz"><b>Ansehen</b>${num(S.ansehen)}</div><div class="zz"><b>Konto</b><span class="${S.geld<0?'rot':''}">${eur(S.geld)}</span></div></div>`;   // Seit 10.2.1 zwei Spalten: Rang und Ansehen links, Boden und Konto rechts (Maik 19.11.2026)
   return `<div id="info" class="${wg?'wg'+(wgGross(st)?' gross':'')+(wech?' jzw':''):bild}">${hinten}<div class="iverl"></div>
   <div class="zt"><div class="zkopf"></div><div class="zmitte">
@@ -1355,7 +1357,8 @@ function vBerg(){
     if(mr&&m<=2&&S.verlust&&S.verlust[id]>0) mg(`${WM} pflanzt beim Weiterblättern nach.`);
     if(helferKann(3)&&pflanzPlan(id)>=10) le(`Deine Erntehelfer pflanzen bis März ${rbn(pflanzPlan(id))} Reben nach.${pflanzPlan(id)<pflanzSoll(id)&&!pflanzMitA(id)?' Den übrigen Platz bekommt dein Auftrag.':''}`);
     if(helferSchneidet(id)&&schnitt) le(`Deine ${wer} schneiden beim Weiterblättern, sobald das Geld reicht.`);
-    if(dueng&&!chefD&&f.boden<80) le(wbT(WB_TEXT.helferDuengen,{wer}));
+    // Seit 16.2.1: dieselbe Bedingung wie helferArbeit in kern.js (bis 16.1 stand hier Boden unter 80).
+    if(dueng&&!chefD&&helferDuengBoden(id)) le(wbT(WB_TEXT.helferDuengenJetzt,{wer,geld:S.geld<duengKosten(id)?WB_TEXT.helferDuengenGeld:''}));
     if(chefRat()===id&&helferSchneidet(id)) so_(`👴 ${CHEF_RAT_SATZ.replace('{sorte}',SORTEN[id].name)}`);
     if(f.reben&&planBeiMgr()&&helferKann(1)&&!chefStill()) mg(EINSATZ_TEXT.zeile.replace('{arbeit}',EINSATZ_TEXT.schnitt).replace('{stellung}',EINSATZ_TEXT[helferSchneidet(id)?'auto':'chef']));
     if(laubHandOffen(id)&&autoLaub(id)) le(EINSATZ_TEXT.autoLaub.replace('{wer}',leuteStName('helfer',2)));
