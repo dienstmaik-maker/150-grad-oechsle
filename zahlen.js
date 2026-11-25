@@ -1506,6 +1506,8 @@ const KONTR_TEXT={zu:'Hinter dieser Tür geht es nicht ganz sauber zu. Sie geht 
 // Deckel der Gegner: GEGNER_DECKEL_AN 1 mit dem Besitz-Deckel je Rang (GEGNER_DECKEL), 0 nur mit der Obergrenze GEGNER_HA_OBEN.
 const GEGNER_WB={menge:[4,35,62],sekt:[46,64,89],spitze:[71,79,93]}, GEGNER_BODEN={einfach:[9,36,82],hoehe:[47,64,92],sued:[70,79,94]};
 const GEGNER_DECKEL_AN=1, GEGNER_DECKEL=[5,9,17,32,42,47,50,50,50,50], GEGNER_HA_OBEN=56;
+// Seit 14.4.7: Lage je Rolle für die Bodenstufen der Gegner (Annahme 12): Menge am einfachen Hang, Sekt in der Höhenlage, Spitze am Südhang.
+const GEGNER_LAGE={menge:'einfach',sekt:'hoehe',spitze:'sued'};
 // Auftakt der Akte (14.4.8): eigene Schlagzeile im Monat des Aufstiegs in den 2. und 3. Akt. Platzhalter, Wortlaut in Meilenstein 17.
 // Seit 14.4.3: Winzerbote zum Jahreswechsel für einen Weinberg, den nur Erntehelfer (Stufe 1) geschnitten haben, nicht in den Lehrjahren.
 // Rat des alten Winzers zur Chef-Grenze in den Gesellenjahren. Platzhalter, Wortlaut in Meilenstein 17.

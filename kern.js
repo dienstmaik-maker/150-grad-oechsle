@@ -354,7 +354,9 @@ function festArt(){return S.rang>=R_HOFFEST?'hoffest':S.rang>=R_WEINFEST?'weinfe
 // Seit 11.5 (Teil B): Deckel für den Besitz je Rang. Ohne HA_NEU gibt es für dich keinen, die Gegner halten dann bei GEGNER_HA_MAX.
 // Seit 14.4.5 (Entscheidung 5): Für dich gibt es keinen Besitz-Deckel über alles mehr, an seine Stelle tritt der weiche Deckel je Lage (landDeckel). Die Gegner behalten ihren.
 function haDeckel(r){return Infinity}
-function gegnerDeckel(g){return HA_NEU?RAENGE[g.rang].deckel:GEGNER_HA_MAX}
+// Seit 14.4.7 (Entscheidung 70): der Deckel der Gegner an genau einer Stelle. GEGNER_DECKEL_AN 1: Besitz-Deckel je Rang (GEGNER_DECKEL), höchstens GEGNER_HA_OBEN,
+// 0: nur die Obergrenze GEGNER_HA_OBEN. Ohne HA_NEU (Messläufe) wie bisher GEGNER_HA_MAX.
+function gegnerDeckel(g){if(!HA_NEU) return GEGNER_HA_MAX; return GEGNER_DECKEL_AN?Math.min(GEGNER_DECKEL[Math.min(g.rang,GEGNER_DECKEL.length-1)],GEGNER_HA_OBEN):GEGNER_HA_OBEN}
 // Die Regel in einem Satz, für die i-Texte im Rathaus.
 // Seit 14.4.5: die Regel des weichen Deckels je Lage für deinen Rang, nur mit den Lagen, die bei den Auktionen schon kommen. Platzhalter, Wortlaut in Meilenstein 17.
 function deckelSatz(){const z=AUK_LAGE.filter(x=>S.rang>=x.r).pop().w, L=LAGE_REIHE.filter(lg=>z[lg]>0).map(lg=>LAND_TEXT.lage.replace('{lage}',LAGEN[lg].kurz).replace('{s}',num(landSchwelle(lg))).replace('{d}',num(landDeckel(lg))));
@@ -796,7 +798,10 @@ function weinbergWert(){let w=0, bep=0; for(const id of Object.keys(S.felder)){c
   for(const lg of LAGE_REIHE){const kahl=Math.max(0,hangHa(lg)*HA_REBEN-T[lg]), mit=Math.min(kahl,Math.max(0,(F[lg]||0)-T[lg])); k+=(mit*kahlWert(lageBoden(lg))+(kahl-mit)*kahlWert(0))/HA_REBEN}
   return w+k}
 function vermoegen(){return Math.round(S.geld-(S.kredit?S.kredit.rest:0)+WEIN_WERT*S.lots.reduce((a,l)=>a+lotWert(l),0)+weinbergWert())}
-function gWeinberg(g){const j=S.jahr-START_JAHR, b=stufeZu(j,BODEN_SCHWELLE), p=stufeZu(j,PFLEGE_SCHWELLE); let rest=g.ha, w=0; for(const [rl,n] of GEGNER_FL){const h=Math.min(rest,n); if(h>0) w+=h*haWert(rl,p,b); rest-=h} return w}
+// Seit 14.4.7 (Entscheidung 70, Annahme 12): Weinbergswert der Gegner je Rolle mit den Wunschjahren der Pflegestufen (GEGNER_WB) und je Lage mit den Jahren
+// der Bodenstufen (GEGNER_BODEN, Lage je Rolle GEGNER_LAGE). Die Fläche verteilt sich wie bisher nach GEGNER_FL (bis 14.4.6 eine Stufe für alle nach Jahren).
+const gStufe=(j,J)=>J.filter(x=>j>=x).length;
+function gWeinberg(g){const j=S.jahr-START_JAHR; let rest=g.ha, w=0; for(const [rl,n] of GEGNER_FL){const h=Math.min(rest,n); if(h>0) w+=h*haWert(rl,gStufe(j,GEGNER_WB[rl]),gStufe(j,GEGNER_BODEN[GEGNER_LAGE[rl]])); rest-=h} return w}
 function gVerm(g){return Math.round(g.geld-g.kredit+gWeinberg(g))}
 function rangFuer(ab,ans,ha,verm){let r=ab;while(r<R_MAX){const n=RAENGE[r+1];if(ans>=n.ans&&ha>=n.ha&&verm>=n.verm)r++;else break}return r}
 /* ================= Absatzwege ================= */
