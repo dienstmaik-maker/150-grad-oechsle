@@ -310,19 +310,25 @@ function kompZeile(id){
 // nächsten Eintrags, die Balken je Eintrag stehen im Eintrag. Der Ruf des Hauses steht nur in seiner Karte direkt darüber (Entscheidung 3.2), die Album-Fußnote bleibt unten.
 // Bis 16.7.3 war jeder Eintrag eine Zeile mit Balken (kompBrettZeile, kompEtikett), das Gold-Etikett steht im Eintrag. Platzhalter, Wortlaut in Meilenstein 17.
 // Das Motiv im Feld: das Qualitätssiegel der Stufe aus Bild 24 (bilder/siegel-<Stufe>.webp), ohne eigenes Siegel ein Zeichen (SB_SYM).
-const SB_BILD=['qba','kab','spat','aus','ba','tba','eis'], SB_SYM={feder:'🍇',tafel:'🍷',sekt:'🍾'}, SB_KURZ={qba:'Qualitäts&shy;wein',ba:'Beeren&shy;auslese',tba:'Trocken&shy;beeren&shy;auslese'};
+// Seit 16.7.8 (Maiks Wunsch 25.11.2026): zwei Reihen zu je fünf Feldern, oben die Menge (Federweißer bis Spätlese), unten die Kür (Spitze von Auslese bis Eiswein und
+// der Sekt). Je Feld drei Zustände, nur Anzeige (kompSt, kompNaechst unverändert): geholt = Wachs- oder Gold-Siegel wie bisher, als Nächstes dran (.dran) = der Eintrag, den
+// "Als Nächstes" nennt, mit hellem Ring, noch nicht dran = leere Prägung blass. In der Kür je Sorte eine Zeile "Als Nächstes", denn Spitze und Sekt laufen getrennt.
+// Namen in den Feldern 13 Pixel auf dunklem Schild (Stilfibel, Problem 3), Album-Zeile dunkel auf Papyrus (Problem 2).
+const SB_BILD=['qba','kab','spat','aus','ba','tba','eis'], SB_SYM={feder:'🍇',tafel:'🍷',sekt:'🍾'}, SB_KURZ={feder:'Feder&shy;weißer',tafel:'Tafel&shy;wein',qba:'Qualitäts&shy;wein',spat:'Spät&shy;lese',ba:'Beeren&shy;auslese',tba:'Trocken&shy;beeren&shy;auslese',eis:'Eis&shy;wein'};
 const sbName=id=>id==='sekt'?(S.rollen?'Regional-Sekt':'Sekt'):KOMP[id].name;
-function sbFeld(id){
+function sbFeld(id,dran){
   const st=kompSt(id), k=id.replace(/^stufe_/,'');
-  return `<button class="sbfeld s${st}" data-a="kompEintrag" data-id="${id}" aria-label="${esc(sbName(id))}, ${st?KOMP_ST[st]:'noch kein Siegel'}"><span class="sbrund">${SB_BILD.includes(k)?`<img src="bilder/siegel-${k}.webp" alt="">`:`<i>${SB_SYM[k]||'🍷'}</i>`}</span><small>${SB_KURZ[k]||esc(sbName(id))}</small>${st?kompSiegel(st,'klein'):''}</button>`;
+  return `<button class="sbfeld s${st}${dran?' dran':''}" data-a="kompEintrag" data-id="${id}" aria-label="${esc(sbName(id))}, ${st?KOMP_ST[st]:'noch kein Siegel'}${dran?', als Nächstes dran':''}"><span class="sbrund">${SB_BILD.includes(k)?`<img src="bilder/siegel-${k}.webp" alt="">`:`<i>${SB_SYM[k]||'🍷'}</i>`}</span><small>${SB_KURZ[k]||esc(sbName(id))}</small>${st?kompSiegel(st,'klein'):''}</button>`;
 }
 function vBrett(){
-  const z=kompZahlen(), RL=kompRollen(), fr=S.region==='franken', S7=RUF_STUFEN.length;
+  const z=kompZahlen(), RL=kompRollen(), fr=S.region==='franken', S7=RUF_STUFEN.length, oR=!S.rollen;
   let h='';
-  for(const [rl,rn] of KOMP_BRETT){
-    const I=kompBrettIds(rl), hab=I.reduce((a,id)=>a+kompSt(id),0), alt=rl==='sekt'&&!S.rollen, nx=I.find(id=>kompSt(id)<3);
-    h+=`<section class="sbteil"><h4>${esc(alt?'Sekt':SORTEN[RL[rl]].name)}<small>${alt?'jede Sorte zählt':rn} · ${hab} von ${I.length*3}</small></h4><div class="sbraster">${I.map(sbFeld).join('')}</div>`
-      +`<div class="sbnext">${nx?`<b>Als Nächstes</b> · ${esc(sbName(nx))}: ${esc(kompNaechst(nx))}`:'✔ Alle Siegel dieser Sorte'}</div></section>`;
+  for(const [titel,rls] of [['Menge',['menge']],['Kür',['spitze','sekt']]]){
+    const I=rls.flatMap(kompBrettIds), hab=I.reduce((a,id)=>a+kompSt(id),0), NX=rls.map(rl=>[rl,kompBrettIds(rl).find(id=>kompSt(id)<3)]);
+    const so=rls.length===1?SORTEN[RL.menge].name:`${SORTEN[RL.spitze].name}, Sekt ${oR?'jeder Sorte':'aus '+SORTEN[RL.sekt].name}`;
+    const nz=NX.some(x=>x[1])?NX.map(([rl,nx])=>`<div>${nx?`<b>Als Nächstes</b> · ${esc(sbName(nx))}: ${esc(kompNaechst(nx))}`:`✔ ${rl==='sekt'?'Sekt':'Spitze'}: alle Siegel`}</div>`).join(''):'✔ Alle Siegel dieser Reihe';
+    h+=`<section class="sbteil"><h4>${titel}<small>${esc(so)} · ${hab} von ${I.length*3}</small></h4><div class="sbraster">${I.map(id=>sbFeld(id,NX.some(x=>x[1]===id))).join('')}</div>`
+      +`<div class="sbnext">${nz}</div></section>`;
   }
   const A=kompAlbumLies(), an=KOMP_ALBUM.filter(id=>A[id]).length, sg=KOMP_ALBUM.reduce((s,id)=>s+Math.min(3,Math.max(0,Math.floor(+A[id]||0))),0), alt=KOMP_ALBUM_ALT.filter(id=>A[id]).length;
   const auf=`<div class="sbrett">${h}</div><p class="fussnote album">📚 Album über alle Partien: ${an} von ${KOMP_ALBUM.length} Weinen entdeckt, ${sg} von ${KOMP_ALBUM.length*3} Siegeln.${alt?`<br>Aus der Zeit vor Version 11.4: ${alt} von ${KOMP_ALBUM_ALT.length} Einträgen.`:''}</p>`;
