@@ -760,6 +760,16 @@ html.brett main{padding-top:18px}
 .mgrab{margin-top:12px;padding-top:8px;border-top:1px solid rgba(120,80,40,.3)}
 .mgrab>h4{margin:0 0 6px;font:700 17px/1.2 var(--knopf);font-variant-caps:small-caps;letter-spacing:.03em;color:#4a1526}
 .mgrab .einsatzSh h3{display:none}
+.wbbar.gelb>i{background:linear-gradient(#f0c35a,#c88a1c)}
+/* Seit 16.4.6: Knopf und Fenster "Maschine kaufen" (Bild 22) */
+.mkauf{display:flex;justify-content:center;margin:4px 0 18px}
+.mkaufkn{min-width:70%;padding:12px 18px;font:700 19px/1.1 var(--knopf);font-variant-caps:small-caps;letter-spacing:.03em;color:#f4e2b8;background:linear-gradient(#7a4a24,#4f2c12);border:2px solid #2e1a0a;border-radius:12px;box-shadow:inset 0 0 0 2px rgba(240,200,130,.35),0 3px 5px rgba(0,0,0,.45)}
+.mkz{display:grid;grid-template-columns:86px 1fr;align-items:start;gap:6px 10px;padding:9px 0;border-top:1px solid rgba(120,80,40,.25)}
+.mkz>img{flex:none;width:86px;height:62px;object-fit:cover;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(90,50,20,.45),0 1px 3px rgba(0,0,0,.35)}
+.mkz>div:nth-child(2){flex:1;min-width:0}.mkz b{display:block;font:700 16px/1.2 var(--schrift)}.mkz span{display:block;font:13.5px/1.3 var(--schrift);color:var(--mut)}
+.mkz>.mkkn{grid-column:2;justify-self:end;width:132px}.mkz>.mkkn>.pk{width:100%;min-width:0}.mkz.gesperrt{align-items:center}
+.mkz.gesperrt>img{filter:grayscale(1) brightness(.85)}.mkz.gesperrt b{color:var(--mut)}
+.mkregel{margin:10px 0 4px;font:14px/1.35 var(--schrift)}.mkregel summary{cursor:pointer;font-weight:700}
 .csz{margin:8px 0 2px}.csz>b,.csz>span{display:block;font:600 15px/1.25 var(--schrift)}.csz>.mut{font-size:14px}.csz>.chips{margin-top:4px}
 .wbk.gesperrt{opacity:.82}
 .wbk.gesperrt .wbkopf{cursor:default}

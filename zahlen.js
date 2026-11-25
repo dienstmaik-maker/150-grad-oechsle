@@ -1774,4 +1774,10 @@ const WB_TEXT={
     reichen:'Reichen für {n} Reben', leistung:'Ernteleistung {n} Reben', draussen:'Draußen', drinnen:'Drinnen', angestellt:'Angestellt', stufeL:'Stufe', lohnL:'Lohn im Monat',
     sperre:'vorher geht es nicht in den nächsten Monat', koepfe:'Köpfe', loehne:'Löhne der Leute', mgrLohn:'Löhne der Köpfe'},
   // Seit 16.4.5 (Maiks Entscheidung 3): Abschnitte im Fenster der zwei Köpfe. Platzhalter, Wortlaut in Meilenstein 17.
-  mgr:{aufgaben:'Aufgaben', einsatz:'📋 Einsatzplan', verkauf:'Verkauf', reserve:'Je Wein bleiben im Keller, außer kurz vorm Verderben:'}};
+  mgr:{aufgaben:'Aufgaben', einsatz:'📋 Einsatzplan', verkauf:'Verkauf', reserve:'Je Wein bleiben im Keller, außer kurz vorm Verderben:'},
+  // Seit 16.4.6 (Bild 22, Annahmen 1 bis 4): Maschinen-Karten und Fenster "Maschine kaufen". Platzhalter, Wortlaut in Meilenstein 17.
+  masch:{hin:{einsatz:'Im Einsatz', gelb:'Warten lohnt sich', rot:'Reparatur nötig', fahrer:'Kein Fahrer', keller:'Kein Kellermensch', still:'Steht still'},
+    zustand:'Zustand', einsatzL:'Einsatz', leistung:'Leistung bei der Lese', bonus:'Bonus', wirkt:'wirkt', weg:'fällt weg', wartung:'Wartung', jeP:'{p} je %', stufe:'Stufe',
+    verkauf:'Verkaufen bringt', abJan:'Verkaufen geht wieder ab Januar.', kaufen:'Maschine kaufen', kaufKopf:'Kaufen geht von Januar bis März, warten das ganze Jahr.',
+    deckt:'Deckt übers Jahr ab', hat:'Du hast schon {ein}.', ausbau:'Abfüllanlage ausbauen', verbessern:'Verbessern', schonStufe2:'Deine Abfüllanlage ist schon auf Stufe 2.',
+    regeln:'So arbeiten Maschinen', noch:'Noch keine eigene Maschine.'}};

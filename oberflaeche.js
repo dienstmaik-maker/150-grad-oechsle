@@ -1151,39 +1151,65 @@ function vKlemm(){
 }
 // Maschinen (seit 7.4 auf dem Fenster-Baustein): "Deine Maschinen" mit einer Zeile je Maschine, darunter je Bauart ein Fenster zum Kaufen.
 // Was der Rang noch sperrt, ist seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten): die kleine Maschine ab Winzermeister, der Vollernter ab Gutsherr.
+// Seit 16.4.6 (Bild 22, Annahmen 1 bis 4): je eigene Maschine eine Karte im Kartenbaustein mit Timos Bild, Hinweis-Zeile und Zustandsbalken, darunter der Knopf
+// "Maschine kaufen" für das Fenster mit allen Maschinen (bis 16.4.5 je Typ eine Kauf-Karte). Die Befehle heißen wie bisher: maschWarten, maschVerkauf, maschKauf, abfAusbau.
+// Hinweis aus den Bedingungen, die das Spiel schon nutzt (maschStatus, MASCH_GELB, MASCH_ROT, maschPasst). Platzhalter, Wortlaut in Meilenstein 17.
+const MASCH_TEXT_I=()=>`Kaufen und verkaufen kannst du von Januar bis März, warten das ganze Jahr.<br><br>🚜 <b>Keine Leute, keine Bewegung:</b> Jede Maschine braucht ihre Leute: die Erntemaschine ${MASCH.klein.fahrer} Fahrer, der Vollernter ${MASCH.gross.fahrer}, Düngerstreuer und Laubschneider je ${MASCH.duenger.fahrer}, die Abfüllanlage ${MASCH.abfuell.fahrer} Kellermensch. Fahrer sind deine Erntehelfer, wer welche Maschine fährt, ist egal. Reichen sie nicht für alle, bekommen erst die Erntemaschinen ihre Fahrer, die großen zuerst. Eine Maschine ohne Fahrer steht still: Eine Erntemaschine zählt dann weder als Helfer noch bei der Ernteleistung, bei den anderen fällt der Bonus weg.<br><br>🔧 <b>Abnutzung:</b> Eine Maschine nutzt sich nur im Einsatz ab. Eine Erntemaschine verliert voll ausgelastet im Jahr rund ${ABNUTZ_VOLL} Prozentpunkte, halb ausgelastet rund die Hälfte, und mit dem Zustand sinkt ihre Leistung bei der Lese. Der Düngerstreuer verliert rund ${STREU_ABN} je Düngung, der Laubschneider rund ${LAUB_ABN} je Sommer, die Abfüllanlage rund ${ABF_ABN} je ${num(ABF_NORM)} Flaschen. Unter ${MASCH_GELB} % lohnt sich das Warten, unter ${MASCH_ROT} % fällt sie ganz aus, bis sie gewartet ist. Bei Düngerstreuer, Laubschneider und Abfüllanlage hält dich das nicht auf, dann fehlt nur der Bonus.<br><br>✨ <b>Pflege lohnt sich:</b> Steht sie vor dem Einsatz bei ${PFLEGE[0][0]} % oder mehr, nutzt sie sich um ein Fünftel weniger ab, bei den Erntemaschinen zählt der Stand vor der ersten Lese des Jahres. Unter ${PFLEGE[1][0]} % nutzt sie sich um zwei Fünftel mehr ab.`;
+const MASCH_WIE={duenger:`Er hilft beim Düngen, von Hand und bei deinem Weingut-Manager.`,laub:'Er läuft im Juni von selbst, sobald er da ist und einen Fahrer hat.',abfuell:'Sie hilft beim Abfüllen, von Hand und bei deinen Kellergesellen.'};
+function maschHin(ma){const H=WB_TEXT.masch.hin, st=maschStatus(ma);
+  return ma.zustand<MASCH_ROT?['rot',H.rot]:!maschPasst(ma)?['grau',H.still]:st!=='im Einsatz'?['rot',mTyp(ma).leute==='lagerarb'?H.keller:H.fahrer]:ma.zustand<MASCH_GELB?['gelb',H.gelb]:['gruen',H.einsatz]}
+// Zeile der Kellerhelfer zum Warten (bis 16.4.5 einmal im Fenster "Deine Maschinen", seit 16.4.6 auf jeder Karte) und der Schalter vor dem Weingut-Manager.
+const maschWartZeile=()=>csBeiMgr()?csZeile('warten'):kellerWartet()?`🔧 Deine Kellerhelfer warten nach der Lese jede Maschine unter ${MGR_WART_AB} % auf 100 %, eine ausgefallene Erntemaschine sofort.`:csIst('warten');
+function maschKarte(ma,i){
+  const T=mTyp(ma), M=WB_TEXT.masch, st=maschStatus(ma), ein=st==='im Einsatz', saison=S.monat<=2, gl=S.maschinen.filter(x=>mTyp(x)===T), nr=gl.length>1?' '+(gl.indexOf(ma)+1):'', hw=maschHin(ma);
+  const typ=Object.keys(MASCH).find(k=>MASCH[k]===T)||'klein';
+  const kopf=`<div class="hinw ${hw[0]}"><i></i><em>${hw[1]}</em></div><div class="wbal"><b>${M.zustand}</b>${wbBalken(ma.zustand,ma.zustand<MASCH_ROT?'rot':ma.zustand<MASCH_GELB?'gelb':'')}</div><div class="wbunter"><b class="zahl">${ma.zustand} %</b></div>`;
+  const L=[], add=(k,v,kl)=>L.push(`<div${kl?` class="${kl}"`:''}><dt>${k}</dt><dd>${v}</dd></div>`);
+  add(M.einsatzL,`<span class="${ein?'':'rot'}">${st}</span>`,'breit');
+  if(T.bonus) add(M.bonus,`<span class="${ein?'':'rot'}">${ein?M.wirkt:M.weg}</span>`); else add(M.leistung,`${ein?rbn(T.leist*ma.zustand/100):0} Reben`);
+  add(M.wartung,wbT(M.jeP,{p:eur(T.wart)}));
+  if(typ==='abfuell') add(M.stufe,`${abfStufe(ma)} von 2`);
+  if(saison) add(M.verkauf,eur(T.preis*.5*ma.zustand/100));
+  const K=[pk('maschWarten','Warten','',{id:i,aus:ma.zustand>=100,arm:S.geld<T.wart,klein:wbT(M.jeP,{p:eur(T.wart)})})];
+  if(saison) K.push(pk('maschVerkauf','Verkaufen','+'+eur(T.preis*.5*ma.zustand/100),{id:i,sec:1}));
+  // "Verbessern" nur bei der Abfüllanlage, der Ausbau auf Stufe 2 wie bis 16.4.5 (Annahme 3), sonst wäre es eine neue Regel.
+  if(typ==='abfuell'&&abfStufe(ma)<2&&frei('masch_abfuell2')) K.push(pk('abfAusbau',M.verbessern,eur(ABF_PREIS2),{aus:!saison,arm:S.geld<ABF_PREIS2,sec:1}));
+  const cs=csKnopf('warten');
+  const auf=wbInfo(maschWartZeile())+`<dl class="wbfakt">${L.join('')}</dl>`+(saison?'':`<div class="wbklein">${M.abJan}</div>`)+`<div class="wbkn">${K.join('')}${cs}</div>`;
+  return wbKarte('masch'+i,T.name+nr,'',kopf,auf,{bild:'maschkarte-'+typ,bildArt:'webp',iId:'masch_'+i,iName:T.name+nr});
+}
+// Info-Panel einer Maschine: Zustand, Kosten, als Tipp die Regeln aus dem i des alten Fensters.
+function wbPanelMasch(i){
+  const ma=S.maschinen[+i]; if(!ma) return ''; const T=mTyp(ma), M=WB_TEXT.masch, st=maschStatus(ma), ein=st==='im Einsatz';
+  const z=wbKv(M.zustand,`${ma.zustand} %${ma.zustand<MASCH_ROT?'':ma.zustand<MASCH_GELB?', '+M.hin.gelb:''}`,ma.zustand<MASCH_ROT?'rot':'')+wbKv(M.einsatzL,st,ein?'':'rot')
+    +(T.bonus?wbKv(M.bonus,T.bonus&&MASCH_BONUS[Object.keys(MASCH).find(k=>MASCH[k]===T)]?MASCH_BONUS[Object.keys(MASCH).find(k=>MASCH[k]===T)]():''):wbKv(M.leistung,`${ein?rbn(T.leist*ma.zustand/100):0} Reben`));
+  const k=wbKv(M.wartung,wbT(M.jeP,{p:eur(T.wart)}))+wbKv(M.verkauf,`${eur(T.preis*.5*ma.zustand/100)}, ${S.monat<=2?'jetzt':'ab Januar'}`);
+  return wbPanelRahmen(T.name,wbAbschnitt('🚜',WB_TEXT.zustand,z)+wbAbschnitt('💶',WB_TEXT.kosten,k)+wbAbschnitt('💡',WB_TEXT.tipps,`<p style="margin:0 0 6px">${MASCH_TEXT_I()}<br><br>Warten bringt den Zustand wieder hoch, verkaufen bringt die Hälfte vom Neupreis, je nach Zustand.</p>${mib('maschinen')}`));
+}
 function vMaschinen(){
-  const saison=S.monat<=2, zu=[];
-  // Seit 8.0: Fahrer-Regel, Abnutzung je Lese, Gelb und Rot, Pflege-Bonus. Alle Zahlen aus den Konstanten bei MASCH.
-  // Seit Paket B: drei Bonus-Maschinen (bonus:1), je eine im Betrieb. Sie lesen nicht und zählen nicht als Helfer, bei Rot oder ohne Fahrer fällt nur ihr Bonus weg.
-  const mI=`Kaufen und verkaufen kannst du von Januar bis März, warten das ganze Jahr.<br><br>🚜 <b>Keine Leute, keine Bewegung:</b> Jede Maschine braucht ihre Leute: die Erntemaschine ${MASCH.klein.fahrer} Fahrer, der Vollernter ${MASCH.gross.fahrer}, Düngerstreuer und Laubschneider je ${MASCH.duenger.fahrer}, die Abfüllanlage ${MASCH.abfuell.fahrer} Kellermensch. Fahrer sind deine Erntehelfer, wer welche Maschine fährt, ist egal. Reichen sie nicht für alle, bekommen erst die Erntemaschinen ihre Fahrer, die großen zuerst. Eine Maschine ohne Fahrer steht still: Eine Erntemaschine zählt dann weder als Helfer noch bei der Ernteleistung, bei den anderen fällt der Bonus weg.<br><br>🔧 <b>Abnutzung:</b> Eine Maschine nutzt sich nur im Einsatz ab. Eine Erntemaschine verliert voll ausgelastet im Jahr rund ${ABNUTZ_VOLL} Prozentpunkte, halb ausgelastet rund die Hälfte, und mit dem Zustand sinkt ihre Leistung bei der Lese. Der Düngerstreuer verliert rund ${STREU_ABN} je Düngung, der Laubschneider rund ${LAUB_ABN} je Sommer, die Abfüllanlage rund ${ABF_ABN} je ${num(ABF_NORM)} Flaschen. Unter ${MASCH_GELB} % lohnt sich das Warten, unter ${MASCH_ROT} % fällt sie ganz aus, bis sie gewartet ist. Bei Düngerstreuer, Laubschneider und Abfüllanlage hält dich das nicht auf, dann fehlt nur der Bonus.<br><br>✨ <b>Pflege lohnt sich:</b> Steht sie vor dem Einsatz bei ${PFLEGE[0][0]} % oder mehr, nutzt sie sich um ein Fünftel weniger ab, bei den Erntemaschinen zählt der Stand vor der ersten Lese des Jahres. Unter ${PFLEGE[1][0]} % nutzt sie sich um zwei Fünftel mehr ab.`;
-  // Wie der Bonus genutzt wird, steht unter dem Bonus im Kauf-Fenster.
-  const wie={duenger:`Er hilft beim Düngen, von Hand und bei deinem ${MGR_BEREICHE.weingut.name}.`,laub:'Er läuft im Juni von selbst, sobald er da ist und einen Fahrer hat.',abfuell:'Sie hilft beim Abfüllen, von Hand und bei deinen Kellergesellen.'};
-  let h=fenster('maschinen','Deine Maschinen',S.maschinen.map((ma,i)=>{const T=mTyp(ma), st=maschStatus(ma), ein=st==='im Einsatz', gl=S.maschinen.filter(x=>mTyp(x)===T), nr=gl.length>1?' '+(gl.indexOf(ma)+1):''; return `<div class="fz"><b>${T.name}${nr}</b>
-    <div class="kv"><span>Einsatz</span><span class="${ein?'':'rot'}">${st}</span></div>
-    <div class="kv"><span>Zustand</span><span class="${ma.zustand<MASCH_ROT?'rot':''}">${ma.zustand} %${ma.zustand<MASCH_ROT?'':ma.zustand<MASCH_GELB?', Warten lohnt sich':''}</span></div><div class="bar"><i style="width:${ma.zustand}%"></i></div>
-    ${T.bonus?`<div class="kv"><span>Bonus</span><span class="${ein?'':'rot'}">${ein?'wirkt':'fällt weg'}</span></div>`:`<div class="kv"><span>Leistung</span><span>${ein?rbn(T.leist*ma.zustand/100):0} Reben</span></div>`}
-    ${kz(saison?'':'Verkaufen geht wieder ab Januar.',pk('maschWarten','Warten','',{id:i,aus:ma.zustand>=100,arm:S.geld<T.wart,klein:`${eur(T.wart)} je %`}),saison?pk('maschVerkauf','Verkaufen','+'+eur(T.preis*.5*ma.zustand/100),{id:i,sec:1}):'')}</div>`}),{
-    hin:[csBeiMgr()?csZeile('warten'):kellerWartet()?`🔧 Deine Kellerhelfer warten nach der Lese jede Maschine unter ${MGR_WART_AB} % auf 100 %, eine ausgefallene Erntemaschine sofort.`:csIst('warten')],   // seit 14.7.3, Platzhalter, Wortlaut in Meilenstein 17
-    kn:csKnopf('warten')||[],   // seit 14.7.5
-    leer:'Du hast noch keine Maschine.',buch:'maschinen',i:`${mI}<br><br>Warten bringt den Zustand wieder hoch, verkaufen bringt die Hälfte vom Neupreis, je nach Zustand.`});
+  const M=WB_TEXT.masch, kn=`<div class="mkauf"><button class="mkaufkn" data-a="maschKaufen">⚙️ ${M.kaufen}</button></div>`;
+  if(einZu('maschinen')) return einKarte('maschinen','Noch alles von Hand',`Am Anfang machst du alles von Hand. Maschinen kommen nach und nach, der Düngerstreuer ${maschFreiText('duenger')}.`)+kn;
+  return S.maschinen.map(maschKarte).join('')+kn;
+}
+// Fenster von unten "Maschine kaufen" (Annahme 4): je Typ eine Zeile mit Bild, Angaben und Kaufen-Knopf, gesperrte mit Schloss und Freischalt-Text,
+// der Ausbau der Abfüllanlage als eigene Zeile. Dieselben Bedingungen wie die Kauf-Karten bis 16.4.5 (Januar bis März, schon vorhanden, Geld).
+function maschKaufFenster(){
+  const M=WB_TEXT.masch, saison=S.monat<=2, Z=[];
   for(const [id,T] of Object.entries(MASCH)){
     if(R().steil&&T.ernte) continue;
-    const titel=`Neue${T.f?' ':'r '}${T.name}`, lw=T.leute==='lagerarb'?(T.fahrer===1?'Kellermensch':'Kellerleute'):'Fahrer', fa=`braucht ${T.fahrer} ${lw}`, hat=maschEins(id)&&S.maschinen.some(x=>x.typ===id);
-    const was=(T.bonus?`${MASCH_BONUS[id]()}. ${wie[id]} Mehr als ${T.f?'eine':'einen'} brauchst du nicht`:`Schafft ${rbn(T.leist)} Reben bei der Lese und deckt übers Jahr ${T.helfer} Hektar Reben ab${T.eins?`. Mehr als ${T.f?'eine':'einen'} gibt es nicht, alles darüber lesen deine Erntehelfer von Hand, einer je ${REBEN_JE_HELFER/HA_REBEN} Hektar`:''}`)+`, ${fa}. Die Wartung kostet ${eur(T.wart)} je Prozentpunkt.<br><br>${mI}`;
-    if(!maschFrei(id)){zu.push(fenster('kauf_'+id,titel,'',{zu:maschFreiText(id),buch:'maschinen',i:was})); continue}
-    h+=fenster('kauf_'+id,titel,(T.bonus?`<div class="mut" style="margin-bottom:4px">${MASCH_BONUS[id]()}.</div>`:`<div class="kv"><span>Leistung bei der Lese</span><span>${rbn(T.leist)} Reben</span></div>
-      <div class="kv"><span>Deckt übers Jahr ab</span><span>${T.helfer} Hektar Reben</span></div>`)+`<div class="kv"><span>${lw}</span><span>${fa}</span></div><div class="kv"><span>Wartung</span><span>${eur(T.wart)} je %</span></div>`
-      // Seit 14.6.8 (Antwort zu D3): in Lehr- und Gesellenjahren ein Satz, wie viele deiner Reben die Erntemaschine lesen darf. Platzhalter, Wortlaut in Meilenstein 17.
-      +(T.ernte&&MASCH_FORM_STUFEN.includes(S.schwer)?`<div class="mut" style="margin-top:4px">${MASCH_FORM_TEXT.kauf.replace('{er}',maschEr({typ:id})).replace('{formen}',MASCH_FORM_TEXT.formen[id]).replace('{g}',rbn(rebenGesamt())).replace('{n}',rbn(maschFormReben(T)))}</div>`:''),{
-      links:hat?`Du hast schon ${T.f?'eine':'einen'}.`:saison?'':'Zu kaufen von Januar bis März.',kn:pk('maschKauf','Kaufen',eur(T.preis),{id,aus:!saison||hat,arm:S.geld<T.preis}),buch:'maschinen',i:was});
+    const lw=T.leute==='lagerarb'?(T.fahrer===1?'Kellermensch':'Kellerleute'):'Fahrer', hat=maschEins(id)&&S.maschinen.some(x=>x.typ===id), bild=`<img src="bilder/maschkarte-${id}.webp" alt="">`;
+    if(!maschFrei(id)){Z.push(`<div class="mkz gesperrt">${bild}<div><b>🔒 ${T.name}</b><span>${maschFreiText(id)}</span></div></div>`); continue}
+    const was=(T.bonus?`${MASCH_BONUS[id]()}. ${MASCH_WIE[id]}`:`${M.leistung}: ${rbn(T.leist)} Reben. ${M.deckt}: ${T.helfer} Hektar Reben.${T.eins?` Mehr als ${T.f?'eine':'einen'} gibt es nicht.`:''}`)
+      +` Braucht ${T.fahrer} ${lw}. ${M.wartung}: ${wbT(M.jeP,{p:eur(T.wart)})}.`
+      // Seit 14.6.8 (Antwort zu D3): in Lehr- und Gesellenjahren ein Satz, wie viele deiner Reben die Erntemaschine lesen darf.
+      +(T.ernte&&MASCH_FORM_STUFEN.includes(S.schwer)?' '+MASCH_FORM_TEXT.kauf.replace('{er}',maschEr({typ:id})).replace('{formen}',MASCH_FORM_TEXT.formen[id]).replace('{g}',rbn(rebenGesamt())).replace('{n}',rbn(maschFormReben(T))):'');
+    Z.push(`<div class="mkz" id="mk_${id}">${bild}<div><b>${T.name}</b><span>${was}</span>${hat?`<span class="mut">${wbT(M.hat,{ein:T.f?'eine':'einen'})}</span>`:''}</div>
+      <div class="mkkn">${pk('maschKauf','Kaufen',eur(T.preis),{id,aus:!saison||hat,arm:S.geld<T.preis})}</div></div>`);
   }
-  // Seit 13.5.5: Ausbau der Abfüllanlage auf Stufe 2, für jede Anlage, die noch auf Stufe 1 ist. Wie der Kauf von Januar bis März.
-  {const A=S.maschinen.filter(x=>x.typ==='abfuell'), ein=A.find(x=>abfStufe(x)<2), was=`Stufe 2: ${Math.round(ABF_PLUS2*100)} statt ${Math.round(ABF_PLUS*100)} % mehr Flaschen aus jedem Fass, ein Kellermensch betreut ${num(ABF_FLASCHEN2)} statt ${num(ABF_FLASCHEN)} leere Flaschen.`;
-  if(A.length&&!frei('masch_abfuell2')) zu.push(fenster('ausbau_abfuell','Abfüllanlage ausbauen','',{zu:freiText('masch_abfuell2'),i:was}));
-  else if(A.length) h+=fenster('ausbau_abfuell','Abfüllanlage ausbauen',`<div class="mut" style="margin-bottom:4px">${was}</div>`,{
-    links:!ein?'Deine Abfüllanlage ist schon auf Stufe 2.':saison?'':'Ausbauen geht von Januar bis März.',kn:pk('abfAusbau','Ausbauen',eur(ABF_PREIS2),{aus:!saison||!ein,arm:S.geld<ABF_PREIS2}),buch:'maschinen',i:was})}
-  if(einZu('maschinen')) return einKarte('maschinen','Noch alles von Hand',`Am Anfang machst du alles von Hand. Maschinen kommen nach und nach, der Düngerstreuer ${maschFreiText('duenger')}.`);
-  return h+zu.join('');
+  const A=S.maschinen.filter(x=>x.typ==='abfuell'), ein=A.find(x=>abfStufe(x)<2), was=`Stufe 2: ${Math.round(ABF_PLUS2*100)} statt ${Math.round(ABF_PLUS*100)} % mehr Flaschen aus jedem Fass, ein Kellermensch betreut ${num(ABF_FLASCHEN2)} statt ${num(ABF_FLASCHEN)} leere Flaschen.`;
+  if(A.length) Z.push(!frei('masch_abfuell2')?`<div class="mkz gesperrt"><img src="bilder/maschkarte-abfuell.webp" alt=""><div><b>🔒 ${M.ausbau}</b><span>${freiText('masch_abfuell2')}</span></div></div>`
+    :`<div class="mkz" id="mk_ausbau"><img src="bilder/maschkarte-abfuell.webp" alt=""><div><b>${M.ausbau}</b><span>${was}</span>${ein?'':`<span class="mut">${M.schonStufe2}</span>`}</div><div class="mkkn">${pk('abfAusbau','Ausbauen',eur(ABF_PREIS2),{aus:!saison||!ein,arm:S.geld<ABF_PREIS2})}</div></div>`);
+  return `<div class="mkfen"><h3>⚙️ ${M.kaufen}</h3><p class="mut">${M.kaufKopf}</p>${Z.join('')}<details class="mkregel"><summary>${M.regeln}</summary><p>${MASCH_TEXT_I()}</p></details>${mib('maschinen')}<div class="btns"><button class="sec" data-a="close">Zurück</button></div></div>`;
 }
 function ehrSumme(wein){
   const n={}; for(const e of wein) n[e.i]=(n[e.i]||0)+1;
@@ -1360,6 +1386,7 @@ function wbPanel(iId){
   if(iId==='duengung') return wbPanelBoden();
   if(iId==='betrieb') return wbPanelBetrieb();   // seit 16.4.2
   if(iId==='leute') return wbPanelLeute();   // seit 16.4.4
+  if(/^masch_/.test(iId)) return wbPanelMasch(iId.slice(6));   // seit 16.4.6
   const id=iId.replace(/^feld_/,''), f=S.felder[id], so=SORTEN[id], m=S.monat, P=WB_TEXT;
   if(!f||!so) return '';
   let z='', k='';
@@ -1949,21 +1976,21 @@ const FU_ZEIG={
   'r4-1':{tab:'stadt',sub:'arbeit',sel:[fiSel('mgr_amt')]},
   'r4-2':{tab:'stadt',sub:'handel',sel:[fiSel('markt')]},
   'r4-3':{tab:'keller',sub:'start',sel:[fiSel('sekt')]},
-  'r4-4':{tab:'gut',sub:'betrieb',sel:[fiSel('kauf_duenger')]},
+  'r4-4':{tab:'gut',sub:'betrieb',sel:['[data-a="maschKaufen"]']},   // seit 16.4.6 der Knopf "Maschine kaufen" statt der Kauf-Karten
   'r5-1':{tab:'stadt',sub:'arbeit',sel:[fiSel('lagerarb')]},   // seit 14.7.7 die Kellerleute, wie r7-3 und r10-3
   'r5-2':{tab:'stadt',sub:'amt',sel:[fiSel('wettb')]},
   'r5-3':{tab:'gut',sub:'betrieb',sel:[fiSel('fest')]},
-  'r5-4':{tab:'gut',sub:'betrieb',sel:[fiSel('kauf_klein')]},
+  'r5-4':{tab:'gut',sub:'betrieb',sel:['[data-a="maschKaufen"]']},
   'r6-1':{tab:'stadt',sub:'arbeit',sel:[fiSel('mgr_amt')]},
   'r6-2':{tab:'gut',sub:'berg',sel:['[data-a="bInfo"][data-id^="feld_"]']},
-  'r6-3':{tab:'gut',sub:'betrieb',sel:[fiSel('kauf_laub')]},
+  'r6-3':{tab:'gut',sub:'betrieb',sel:['[data-a="maschKaufen"]']},
   'r6-4':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="handel"]',fiSel('mgr_amt')]},
   'r6-5':{tab:'keller',sub:'start',sel:['[data-a="sektAnlage"]',fiSel('sekt')]},
   'r7-1':{tab:'stadt',sub:'amt',sel:[fiSel('wettb')]},
-  'r7-2':{tab:'gut',sub:'betrieb',sel:[fiSel('kauf_gross')]},
+  'r7-2':{tab:'gut',sub:'betrieb',sel:['[data-a="maschKaufen"]']},
   'r7-3':{tab:'stadt',sub:'arbeit',sel:[fiSel('lagerarb')]},
   'r8-1':{tab:'stadt',sub:'laeden',sel:[fiSel('regalRein'),fiSel('regal')]},
-  'r8-2':{tab:'gut',sub:'betrieb',sel:[fiSel('kauf_abfuell')]},
+  'r8-2':{tab:'gut',sub:'betrieb',sel:['[data-a="maschKaufen"]']},
   'r8-3':{tab:'stadt',sub:'arbeit',sel:['[data-a="mgrStufe"][data-id="weingut"]',fiSel('mgr_amt')]},
   'r8-4':{tab:'gut',sub:'buero',sel:[fiSel('botschafter')]},
   'r9-1':{tab:'gut',sub:'betrieb',sel:[fiSel('fest')]},
@@ -2004,7 +2031,7 @@ const FU_ZEIG={
   'k03':{tab:'keller',sub:'buch',sel:['[data-a="archiv"][data-id="brett"]']},
   'k04':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'k05':{tab:'gut',sub:'betrieb',sel:['[data-a="klapp"][data-id="gebiet"]','[data-a="bInfo"][data-id="betrieb"]']},   // seit 16.4.2 in der Karte Dein Betrieb
-  'k06':{tab:'gut',sub:'betrieb',sel:[fiSel('maschinen')]},
+  'k06':{tab:'gut',sub:'betrieb',sel:['[data-a="bInfo"][data-id^="masch_"]','[data-a="maschKaufen"]']},
   'k07':{tab:'gut',sub:'betrieb',sel:['[data-a="mgr"][data-id="handel"]']},   // seit 16.4.4 die Zeile in "Deine Leute"
   'k08':{tab:'keller',sub:'sabotage',sel:[fiSel('zuckern'),'#subs [data-id="sabotage"]']},
   'k09':{tab:'gut',sub:'buero',sel:[fiSel('rangliste')]},
@@ -2449,6 +2476,7 @@ const AKT={
   karte(d){const k='wb:'+d.id, auf=FI_AUF.has(k); for(const x of [...FI_AUF]) if(x.startsWith('wb:')) FI_AUF.delete(x); if(!auf) FI_AUF.add(k);
     render(); const el=$('#wb_'+d.id); if(el&&!auf){const r=el.getBoundingClientRect(), top=($('#top')||{}).offsetHeight||0; if(r.top<top+8||r.top>innerHeight*.45) window.scrollBy(0,r.top-top-14)}},
   bInfo(d){openSheet(wbPanel(d.id))},
+  maschKaufen(){openSheet(maschKaufFenster())},   // seit 16.4.6, das Fenster mit allen Maschinen (Annahme 4)
   bMehr(d){const L=wbMehrListe(d.id); if(!L.length) return; openSheet(`<h3>${dot(d.id)}${wbT(WB_TEXT.mehrKopf,{sorte:esc(SORTEN[d.id].name)})}</h3><div class="wbmehr">${L.join('')}</div><div class="btns"><button class="sec" data-a="close">Zurück</button></div>`)},
   // Knöpfe aus "Mehr" rufen die bisherigen Befehle. Nach einem Schalter im Einsatzplan kommt "Mehr" wieder, sofern kein Hinweis offen ist.
   mehrTu(d){const x=d.x, id=d.id; if(!['formAendern','roden','einsatz','schneider','planSetz'].includes(x)) return; closeSheet(); AKT[x](Object.assign({},d));
