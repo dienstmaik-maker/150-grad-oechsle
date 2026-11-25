@@ -1393,6 +1393,7 @@ function wbPanel(iId){
   if(/^k_/.test(iId)) return wbPanelKeller(iId.slice(2));   // seit 16.5.2
   if(/^wl_/.test(iId)) return wbPanelWein(iId.slice(3));   // seit 16.5.5
   if(/^l_/.test(iId)) return wbPanelLager(iId.slice(2));   // seit 16.5.6
+  if(ST_PANEL[iId]) return wbPanelStadt(iId);   // seit 16.6.2, Karten der Stadt
   const id=iId.replace(/^feld_/,''), f=S.felder[id], so=SORTEN[id], m=S.monat, P=WB_TEXT;
   if(!f||!so) return '';
   let z='', k='';
@@ -1744,6 +1745,19 @@ function vSabotage(){
   if(!hinterOffen()) return '';
   return (einZu('zuckern')?'':kZuckern())+(einZu('verschneiden')?'':kVerschneiden())+(einZu('pruefer')?'':kPruefer());
 }
+// Seit 16.6.2 (Bauplan 16.6, Entscheidung 4): Karten der Stadt im Kartenbaustein ohne Bild auf dem Holzbrett (wbKarte mit o.ohneBild). Kennung wie das alte Fenster,
+// damit Spielführer und Fenster-Prüfung sie finden, der ruhige Einstieg gilt wie bisher über einZu. Das i öffnet das Info-Panel (wbPanelStadt) mit Zustand (o.z),
+// Kosten (o.k) und als Tipp dem Text des alten i (o.i) samt Buchkapitel. ST_PANEL merkt sich die Teile der zuletzt gezeichneten Karten.
+// stadtBrett: die Orte der Stadt, die schon auf dem Holzbrett ohne Panorama liegen (Entscheidung 3, wie Betrieb und Keller).
+const ST_PANEL={}, ST_SYM={amt:'🏛️',handel:'⚖️',laeden:'🍷',bank:'🏦',arbeit:'🧑‍🌾'};
+const stadtBrett=()=>TAB==='stadt'&&['platz','amt'].includes(SUB);
+function sKarte(id,titel,kopf,auf,o={}){
+  if(einZu(id)) return '';
+  ST_PANEL[id]={titel:o.iName||titel,z:o.z||'',k:o.k||'',t:o.i||'',buch:o.buch===undefined?BUCH_ORT[SUB]:o.buch,sym:o.sym||ST_SYM[SUB]||'🏛️'};
+  return wbKarte(id,titel,o.klein||'',kopf,auf,{ohneBild:1,iId:id,iName:o.iName||titel,unter:o.unter,gesperrt:o.gesperrt,kl:'skarte'+(o.kl?' '+o.kl:'')});
+}
+function wbPanelStadt(id){const P=ST_PANEL[id];
+  return P?wbPanelRahmen(P.titel,wbAbschnitt(P.sym,WB_TEXT.zustand,P.z)+wbAbschnitt('🪙',WB_TEXT.kosten,P.k)+wbAbschnitt('💡',WB_TEXT.tipps,`<p style="margin:0 0 6px">${P.t}</p>${P.buch?mib(P.buch):''}`)):''}
 // Seit 16.6.1 (Bauplan 16.6, Entscheidungen 1, 2 und 10, Timos Bild 08): der Stadtplatz als Startansicht der Stadt. Das Bild über die volle Breite, darauf je Gebäude
 // eine Tippfläche (STADT_PLATZ, mindestens 44 Pixel hoch) mit dem Namen für Bildschirmleser, ein Tipp öffnet das Gebäude wie die Zunge (data-a="sub").
 // Wartet dort etwas, sitzt am Schild der Punkt aus badges(), Rot oder Gelb wie an den Zungen. Platzhalter, Wortlaut in Meilenstein 17.
@@ -1755,24 +1769,29 @@ function vPlatz(){
 }
 function vStadt(){
   if(SUB==='platz') return vPlatz();
-  let h=kopf({amt:'Rathaus',handel:'Großhandel',laeden:ladenFrei()?'Deine Weinhandlung':'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'}[SUB]);
-  // Rathaus (seit 7.4 auf dem Fenster-Baustein): festes Fenster "Wein anmelden" mit der Anzahl, darunter Makler und Kontrolle anregen.
-  // Was der Rang noch sperrt, ist seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten). Am Ziel (Präsident) gibt es keinen Makler mehr.
+  let h=stadtBrett()?'':kopf({amt:'Rathaus',handel:'Großhandel',laeden:ladenFrei()?'Deine Weinhandlung':'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'}[SUB]);
+  // Rathaus (seit 7.4 auf dem Fenster-Baustein). Was der Rang noch sperrt, ist seit 10.6 ausgeblendet, das bleibt so. Am Ziel (Präsident) gibt es keinen Makler mehr.
+  // Seit 16.6.2 (Bauplan 16.6, Entscheidungen 4 und 5): auf dem Holzbrett, Karten im Kartenbaustein ohne Bild (sKarte), Kennungen wie die alten Fenster, Reihenfolge wie bisher:
+  // Verband und Weltweinschau (mit Amt), Wein anmelden, Wettbewerbe, Auktionen, Makler, Kontrolle anregen, Spenden, Stiftung. Zu: Hinweis mit Punkt, wo sinnvoll ein Balken,
+  // auf: die Zeilen und Knöpfe der alten Fenster mit denselben Bedingungen und Befehlen (anmelden, wettbewerb, auktion, makler, anreg, spenden, stiften, spBank, spBogen).
+  // Die Weltweinschau steht seit 16.6.3 nur noch in ihrer eigenen Karte (Entscheidung 5.1). Platzhalter, Wortlaut in Meilenstein 17.
   if(SUB==='amt'){
-    const fa=S.lots.filter(l=>l.status==='fass'&&!l.stufe).sort(BSORT_F.dringend), zu=[], mon=n=>n===1?'Monat':'Monaten';
+    const T=WB_TEXT.stadt, H=T.hin, fa=S.lots.filter(l=>l.status==='fass'&&!l.stufe).sort(BSORT_F.dringend), mon=n=>n===1?'Monat':'Monaten';
     // Seit 10.0: Mit Amt steht der Weinbauverband ganz oben.
     if(S.amt) h+=vVerband()+vWeltschau();
-    h+=fenster('anmelden','Wein anmelden',`<div class="kv"><span>Fassweine ohne Anmeldung</span><span>${fa.length}</span></div>`
-      +(fa.length?`<div class="fzl ab">${fa.map(l=>{const rest=8-l.fassMonate; return fz(dot(l.sorte)+lotName(l),
-        `${num(l.liter)} l · ${l.oe}° Öchsle · ${LESE[l.leseart]} · Edelfäulnis ${l.edel?'ja':'nein'}${mani(l)?' · 🤫 '+maniText(l):''}`,
-        `<span class="${l.fassMonate>=5?'rot':''}">Verdirbt in ${rest} ${mon(rest)}.</span>`,
-        `<button class="klein" data-a="anmelden" data-id="${l.id}">Anmelden</button>`)}).join('')}</div>`
-      :`<div class="fleer" style="margin-top:6px">Kein Fasswein wartet auf die Anmeldung.</div>`),{
-      i:'Im Rathaus meldest du deinen Fasswein an. Erst dann bekommt er seine Stufe und darf in die Flasche. Welche Stufen für einen Wein möglich sind, siehst du nach dem Tipp auf „Anmelden“. Was zuerst verdirbt, steht oben.'});
-    // Seit 7.9: feste Fenster "Wettbewerbe" und "Auktionen". Einreichen und Bieten gehen hier, die Tipps in "Das steht an" führen her.
-    const wI=`Bei der Landesprämierung im Februar treten die Winzer deines Gebiets mit Prädikatsweinen vom letzten Jahrgang an.${S.rang>=R_BUND?' Der Bundeswettbewerb ist alle drei Jahre im Juni, mit verkaufsreifen Prädikatsweinen und Sekten aus der Flasche.':''} Eingereicht wird im Monat der Ausschreibung, das Ergebnis steht im nächsten Winzerboten. Ein Platz auf dem Treppchen bringt Ansehen und Punkte für den Wein.${S.amt&&S.amt.brief?` Die Weltweinschau ist jeden ${MON[WELT_MONAT]} bei dir im Dorf, angemeldet wird im ${MON[WELT_ANM]}. Jedes Jahr geht es um eine Krone, in fester Reihenfolge: ${KRONEN.map(K=>K.name).join(', ')}. Verlierst du, ist im nächsten Jahr dieselbe Krone dran.`:''}`;
-    if(S.rang<R_LAND) zu.push(fenster('wettb','Wettbewerbe','',{zu:`ab dem Rang ${RAENGE[R_LAND].name}`,i:wI}));
-    else{
+    // Wein anmelden (Entscheidung 5.3): "N Fässer warten", Rot unter derselben Bedingung wie die rote Zeile "Verdirbt in …" (ab 5 Monaten im Fass).
+    {const bald=fa.some(l=>l.fassMonate>=5);
+      h+=sKarte('anmelden',T.anmelden,kHin(...(fa.length?[bald?'rot':'gelb',fa.length===1?H.fass1:wbT(H.fassN,{n:fa.length})]:['grau',H.fassKein])),
+        kZeilen(fa.map(l=>{const rest=8-l.fassMonate; return fz(dot(l.sorte)+lotName(l),
+          `${num(l.liter)} l · ${l.oe}° Öchsle · ${LESE[l.leseart]} · Edelfäulnis ${l.edel?'ja':'nein'}${mani(l)?' · 🤫 '+maniText(l):''}`,
+          `<span class="${l.fassMonate>=5?'rot':''}">Verdirbt in ${rest} ${mon(rest)}.</span>`,
+          `<button class="klein" data-a="anmelden" data-id="${l.id}">Anmelden</button>`)}),'Kein Fasswein wartet auf die Anmeldung.'),{
+        z:wbKv(T.fassweine,fa.length),
+        i:'Im Rathaus meldest du deinen Fasswein an. Erst dann bekommt er seine Stufe und darf in die Flasche. Welche Stufen für einen Wein möglich sind, siehst du nach dem Tipp auf „Anmelden“. Was zuerst verdirbt, steht oben.'});}
+    // Seit 7.9: Wettbewerbe und Auktionen. Einreichen und Bieten gehen hier, die Tipps im Klemmbrett führen her.
+    // Wettbewerbe (Entscheidung 5.1 und 5.3): nur Landesprämierung und Bundeswettbewerb, Rot "Einreichen nur diesen Monat" unter derselben Bedingung wie die rote Zeile.
+    const wI=`Bei der Landesprämierung im Februar treten die Winzer deines Gebiets mit Prädikatsweinen vom letzten Jahrgang an.${S.rang>=R_BUND?' Der Bundeswettbewerb ist alle drei Jahre im Juni, mit verkaufsreifen Prädikatsweinen und Sekten aus der Flasche.':''} Eingereicht wird im Monat der Ausschreibung, das Ergebnis steht im nächsten Winzerboten. Ein Platz auf dem Treppchen bringt Ansehen und Punkte für den Wein.`;
+    if(S.rang>=R_LAND){
       const w=S.wett&&!S.wett.fertig?S.wett:null, mb=aufgabeAktiv('wett')?mgrAufgabe('wett').bereich:'';
       const wz=typ=>{
         const name=WETTNAME[typ], rg=typ==='bund'?R_BUND:R_LAND;
@@ -1780,71 +1799,69 @@ function vStadt(){
         if(!w||w.typ!==typ) return fz(name,`Gerade nichts, als Nächstes im ${wettNaechst(typ)}.`);
         const n=S.lots.filter(wettFaehig).length;
         return fz(`${name} ${S.jahr}`,w.ein?`Eingereicht: ${esc(w.ein.name)}`:n?`${n} ${n===1?'Wein ist':'Weine sind'} zugelassen`:'Du hast gerade keinen zugelassenen Wein.',
-          w.ein?'Tauschen geht bis zum Monatsende.':n&&(!mb||typ==='welt')?'<span class="rot">Einreichen geht nur diesen Monat.</span>':'',
+          w.ein?'Tauschen geht bis zum Monatsende.':n&&!mb?'<span class="rot">Einreichen geht nur diesen Monat.</span>':'',
           `<button class="klein${w.ein||!n?' sec':''}" data-a="wettbewerb">${w.ein?'Tauschen':n?'Einreichen':'Ansehen'}</button>`)};
-      // Seit 13.6.3: die Weltweinschau mit der Krone, die gerade dran ist. Angemeldet wird nur im Januar.
-      const sz=()=>{
-        if(amtEhre()) return fz('🌍 '+WETTNAME.welt,`Alle ${KRONEN.length} Kronen geholt, die letzte ${S.amt.ehren.j}. Als ${ehrP()} trittst du nicht mehr an.`);
-        const s=S.schau, K=KRONEN[s?s.kl:kroneKl()];
-        if(!schauAnm()) return fz(`🌍 ${WETTNAME.welt} · ${K.name}`,s?`${s.ein?'Angemeldet: '+esc(s.ein.name):'Kein Wein angemeldet'}. Die Schau ist im ${MON[WELT_MONAT]}.`:`Als Nächstes Anmeldung im ${wettNaechst('welt')}.`);
-        const n=S.lots.filter(l=>schauFaehig(l)).length;
-        return fz(`🌍 ${WETTNAME.welt} ${S.jahr} · ${K.name}`,s.ein?`Angemeldet: ${esc(s.ein.name)}`:n?`${n} ${n===1?'Wein ist':'Weine sind'} zugelassen`:esc(kroneFehltText(s.kl))||'Du hast gerade keinen zugelassenen Wein.',
-          s.ein?'Tauschen geht bis zum Monatsende.':n?'<span class="rot">Anmelden geht nur diesen Monat.</span>':'',
-          `<button class="klein${s.ein||!n?' sec':''}" data-a="schau">${s.ein?'Tauschen':n?'Anmelden':'Ansehen'}</button>`)};
-      h+=fenster('wettb','Wettbewerbe',[wz('land'),wz('bund'),...(S.amt&&S.amt.brief?[sz()]:[])],{hin:[mb&&`${MGR_BEREICHE[mb].sym} ${mgrG(mb).Dein} ${MGR_BEREICHE[mb].name} reicht beim Weiterblättern deinen besten Wein ein.${S.amt&&S.amt.brief?' Den Wein für die Weltweinschau wählst du selbst.':''}`],i:wI});
+      const da=w&&(w.typ==='land'||w.typ==='bund'&&S.rang>=R_BUND), n=S.lots.filter(wettFaehig).length, wer=mb&&`${mgrG(mb).Dein} ${MGR_BEREICHE[mb].name}`;
+      const hw=!da?['grau',wbT(H.naechst,{m:wettNaechst('land')})]:w.ein?['gruen',wbT(H.eingereicht,{name:esc(w.ein.name)})]:!n?['grau',H.keinWein]:mb?['gelb',wbT(H.mgrReicht,{wer})]:['rot',H.einreichen];
+      h+=sKarte('wettb',T.wettb,kHin(...hw),kInfo([mb&&`${MGR_BEREICHE[mb].sym} ${wer} reicht beim Weiterblättern deinen besten Wein ein.${S.amt&&S.amt.brief?' Den Wein für die Weltweinschau wählst du selbst.':''}`])
+        +kZeilen([wz('land'),wz('bund')].filter(Boolean),'Gerade gibt es hier nichts zu tun.'),{z:wbKv(T.zugelassen,n),i:wI});
     }
+    // Auktionen (Entscheidung 5.3): Hinweis zu den Geboten im Monat, Rot "Gebote nur diesen Monat" unter derselben Bedingung wie die rote Zeile.
     const aI=`Bei einer Auktion kommt Land unter den Hammer, meist viel billiger als beim Makler. Der Winzerbote kündigt sie einen Monat vorher an, im Monat danach bietest du hier mit. Mitgehen kannst du bis Konto plus freier Kreditrahmen. Auktionen gibt es nicht jedes Jahr, geboten wird wenn, dann im ${AUK_MONATE.map(m=>MON[(m+1)%12]).join(', ').replace(/, ([^,]*)$/,' oder $1')}.${deckelSatz()?' '+deckelSatz():''}`;
-    if(S.rang<R_AUKTION) zu.push(fenster('auktionen','Auktionen','',{zu:`ab dem Rang ${RAENGE[R_AUKTION].name}`,i:aI}));
-    else{
-      const a=S.auktion, was=a?`${a.spitze?'Spitzenlage':losLage(a).sym+' '+losLage(a).kurz} mit ${a.ha}\u00a0Hektar`:'', lim=Math.max(0,aukLimit()), zuG=a&&aukDeckel(a)?`<span class="rot">${AUK_ZU_GROSS}</span>`:'';
-      h+=fenster('auktionen','Auktionen',!a?[]
+    if(S.rang>=R_AUKTION){
+      const a=S.auktion, was=a?`${a.spitze?'Spitzenlage':losLage(a).sym+' '+losLage(a).kurz} mit ${a.ha} Hektar`:'', lim=Math.max(0,aukLimit()), zuG=a&&aukDeckel(a)?`<span class="rot">${AUK_ZU_GROSS}</span>`:'';
+      const Z=!a?[]
         :a.phase===0?[fz(was,`Geboten wird im ${MON[(S.monat+1)%12]} · Startgebot ${eur(a.start)}`,zuG||((aukZeichen(a,a.start)?aukZeichen(a,a.start)+' ':'')+(lim>=aukPreis(a.start,a)?`Du kannst bis ${eur(lim)} mitgehen.`:`<span class="rot">Fürs Startgebot fehlen dir ${eur(aukPreis(a.start,a)-lim)}.</span>`)),`<button class="klein" data-a="auktion">Ansehen</button>`)]
         :a.ende?[fz(was,'Die Auktion ist beendet.','',`<button class="klein" data-a="auktion">Ansehen</button>`)]
-        :[fz(was,`${a.fuehrer?'Höchstgebot':'Startgebot'} ${eur(a.gebot)}${a.fuehrer?' von '+esc(a.fuehrer):''}`,zuG||((aukZeichen(a,aukNaechstes())?aukZeichen(a,aukNaechstes())+' ':'')+(aukPreis(aukNaechstes(),a)<=lim?'<span class="rot">Geboten wird nur diesen Monat.</span>':'Zum Mitbieten reicht dein Geld nicht.')),`<button class="klein" data-a="auktion">${zuG?'Ansehen':'Bieten'}</button>`)],
-        {leer:`Gerade nichts, als Nächstes frühestens im ${aukNaechst()}.`,i:aI});
+        :[fz(was,`${a.fuehrer?'Höchstgebot':'Startgebot'} ${eur(a.gebot)}${a.fuehrer?' von '+esc(a.fuehrer):''}`,zuG||((aukZeichen(a,aukNaechstes())?aukZeichen(a,aukNaechstes())+' ':'')+(aukPreis(aukNaechstes(),a)<=lim?'<span class="rot">Geboten wird nur diesen Monat.</span>':'Zum Mitbieten reicht dein Geld nicht.')),`<button class="klein" data-a="auktion">${zuG?'Ansehen':'Bieten'}</button>`)];
+      const hw=!a?['grau',H.aukKeine]:a.phase===0?['gelb',wbT(H.aukBald,{m:MON[(S.monat+1)%12]})]:a.ende?['grau',H.aukEnde]:zuG?['grau',H.aukZu]:aukPreis(aukNaechstes(),a)<=lim?['rot',H.aukJetzt]:['grau',H.aukArm];
+      h+=sKarte('auktionen',T.auktionen,kHin(...hw),kZeilen(Z,`Gerade nichts, als Nächstes frühestens im ${aukNaechst()}.`),{z:wbKv(T.mitgehen,eur(lim)),i:aI});
     }
+    // Makler (Entscheidung 5.3 und 5.4): Hinweis mit dem Grund aus maklerGrund(). "Für den nächsten Rang" brach bei 375 Pixeln um, jetzt kurzes Etikett "Nächster Rang".
     const mkI=`Der Makler kennt Winzer, die ihr Land lieber still verkaufen. Ein Hektar kostet bei ihm ${eur(MAKLER_PREIS)}, bei einer Auktion meist viel weniger. ${HA_NEU?`Mit dem Rang hat er mehr für dich: ${maklerStaffel()}. Er verkauft aber nur`:'Er verkauft dir höchstens einen Hektar im Jahr und nur'}, wenn dir für den nächsten Rang allein noch Land fehlt.${deckelSatz()?' '+deckelSatz():''}`;
-    if(S.rang<R_MAKLER) zu.push(fenster('makler','Makler','',{zu:`ab dem Rang ${RAENGE[R_MAKLER].name}`,i:mkI}));
-    else if(S.rang<R_MAX){
+    if(S.rang>=R_MAKLER&&S.rang<R_MAX){
       const g=maklerGrund(), n=RAENGE[S.rang+1];
-      h+=fenster('makler','Makler',`<div class="kv"><span>Deine Fläche</span><span>${S.ha}${haDeckel()<Infinity?' von höchstens '+haDeckel():''} Hektar</span></div><div class="kv"><span>Für den nächsten Rang</span><span>${n.ha} Hektar bepflanzt</span></div>${maklerHa()>1?`<div class="kv"><span>Beim Makler dieses Jahr</span><span>${maklerDiesJahr()} von ${maklerHa()} Hektar</span></div>`:''}`,{
-        links:g,kn:pk('makler','Kaufen',eur(MAKLER_PREIS),{klein:'1 Hektar',aus:!!g,arm:S.geld<MAKLER_PREIS}),i:mkI});
+      h+=sKarte('makler',T.makler,kHin(...(g?['grau',H.maklerNein]:['gruen',H.maklerJa]))+(g?`<div class="wbunter">${g}</div>`:''),
+        wbKv(T.flaeche,`${S.ha}${haDeckel()<Infinity?' von höchstens '+haDeckel():''} Hektar`)+wbKv(T.naechsterRang,`${n.ha} Hektar bepflanzt`)
+        +(maklerHa()>1?wbKv(T.maklerJahr,`${maklerDiesJahr()} von ${maklerHa()} Hektar`):'')
+        +kKn(pk('makler','Kaufen',eur(MAKLER_PREIS),{klein:'1 Hektar',aus:!!g,arm:S.geld<MAKLER_PREIS})),{
+        z:wbKv(T.flaeche,`${S.ha} Hektar`)+wbKv(T.naechsterRang,`${n.ha} Hektar`),k:wbKv(T.preisHa,eur(MAKLER_PREIS)),i:mkI});
     }
     const anI=`Einmal im Jahr kannst du dem Prüfer einen Hinweis geben. Findet er bei einem Gegner gepanschten Wein, kostet ihn das ${ANREG_ANS} Ansehen und Strafe. Findet er nichts, kostet dich die falsche Verdächtigung ${ANREG_FEHL} Ansehen. Gerüchte im Winzerboten helfen beim Raten.`;
-    if(S.rang<R_KONTROLLE) zu.push(fenster('anreg','Kontrolle anregen','',{zu:`ab dem Rang ${RAENGE[R_KONTROLLE].name}`,i:anI}));
-    else{
-      const schon=S.anregJahr===S.jahr;
-      h+=fenster('anreg','Kontrolle anregen',S.gegner.map(g=>fz(esc(g.name)+(g.geruecht?' 🗣️':''),`${GEGNER_TYP[g.typ].art}, ${WO[g.region]}`,[g.geruecht?'Es gibt Gerüchte.':'',anregZeichen(g)].filter(Boolean).join(' '),
-        `<button class="klein" data-a="anreg" data-id="${g.id}" ${schon?'disabled':''}>Hinweis geben</button>`)),{
-        stand:schon?'Für dieses Jahr hast du deinen Hinweis schon gegeben.':'Dein Hinweis für dieses Jahr ist noch frei.',i:anI});
+    if(S.rang>=R_KONTROLLE){
+      const schon=S.anregJahr===S.jahr, ger=S.gegner.some(g=>g.geruecht);
+      h+=sKarte('anreg',T.anreg,kHin(...(schon?['grau',H.anregSchon]:ger?['gelb',H.geruecht]:['gruen',H.anregFrei])),
+        kZeilen(S.gegner.map(g=>fz(esc(g.name)+(g.geruecht?' 🗣️':''),`${GEGNER_TYP[g.typ].art}, ${WO[g.region]}`,[g.geruecht?'Es gibt Gerüchte.':'',anregZeichen(g)].filter(Boolean).join(' '),
+          `<button class="klein" data-a="anreg" data-id="${g.id}" ${schon?'disabled':''}>Hinweis geben</button>`)),'Gerade gibt es hier nichts zu tun.'),{
+        z:wbKv(T.hinweis,schon?T.gegeben:T.frei)+wbKv(T.gegner,S.gegner.length),i:anI});
     }
     // Version 8.2: Spenden. Je Rang eine Stufe, Raten, Stand und der Dank des Dorfs. Nach der Bank und dem Holzbogen kann man beide hier wieder ansehen.
+    // Seit 16.6.2: Balken "Gespendet" im Kopf der Karte.
     const spI=`Jeder Rang vom ${RAENGE[1].name} bis zum ${RAENGE[SPENDEN.length-1].name} hat eine Spende für das Dorf. Du zahlst in Raten, so viel und so oft du willst. Jede Rate senkt den Gewinn ihres Jahres und damit die Steuer, aber höchstens um ${pz(SP_DECKEL)} des Gewinns. Wer über mehrere Jahre verteilt zahlt, spart öfter.<br><br>Den Dank des Dorfs gibt es erst beim vollen Betrag: Ansehen, ein Schild oder eine Urkunde fürs Büro und eine Belohnung für dein Weingut. Steigst du vorher auf, verfällt der Rest, das Gezahlte senkt dann nur noch die Steuer.<br><br>Wer alle ${SPENDEN.length-1} Spenden schafft, hält später einen der zwei Schlüssel zur Weltweinschau in der Hand.`;
-    if(S.rang<1) zu.push(fenster('spenden','Spenden','',{zu:`ab dem Rang ${RAENGE[1].name}`,i:spI}));
-    else{
+    if(S.rang>=1){
       const s=spOffen(), D=s&&SPENDEN[s], bez=spBezahlt(), st=D?D.b/SP_TEIL:0, fertig=(S.spenden||[]).length;
       const ansehen=[spLohn(7)&&pk('spBank','Bank ansehen','',{sec:1}),spFertig(8)&&pk('spBogen','Holzbogen ansehen','',{sec:1})].filter(Boolean);
-      const inhalt=s?`<div class="kv"><span>Stufe ${s}: für ${esc(D.z)}</span><span>${eur(D.b)}</span></div>
-        <div class="kv"><span>Gespendet</span><span>${vonGeld(bez,D.b)}</span></div><div class="bar ${bez>=D.b?'':'g'}"><i style="width:${Math.round(bez/D.b*100)}%"></i></div>
-        <div class="mut">Dank des Dorfs: ${D.ans} Ansehen, ${s<=4?'ein Schild':s===8?'der Ehrenbrief':'eine Urkunde'} fürs Büro. ${esc(D.lohn)}.</div>`
-        :`<div class="fleer">${S.rang>=SPENDEN.length?(stFehlt()?`Als ${anr('Präsident','Präsidentin')} spendest du nicht mehr. Was du verpasst hast, holt die Stiftung fürs Dorf nach.`:`Als ${anr('Präsident','Präsidentin')} spendest du nicht mehr, das Dorf weiß, was es an dir hat.`):S.rang===SPENDEN.length-1?'Das war die letzte Spende. Das ganze Dorf kennt deinen Namen.':`Die Spende für ${esc(SPENDEN[S.rang].z)} ist erledigt. Die nächste kommt mit dem Rang ${RAENGE[S.rang+1].name}.`}</div>`;
-      h+=fenster('spenden','Spenden',inhalt,{
-        stand:`${fertig} von ${SPENDEN.length-1} Spenden erledigt${S.spJahr?` · dieses Jahr ${eur(S.spJahr)} gespendet`:''}`,
-        links:s?`Raten ab ${eur(Math.min(st,D.b-bez))}. Jede senkt die Steuer dieses Jahres.`:'',
-        kn:[...(s?[pk('spenden','Spenden','',{klein:`noch ${eur(D.b-bez)}`,arm:S.geld<Math.min(st,D.b-bez)})]:[]),...ansehen],i:spI});
+      const kopf=(s?kHin('gelb',wbT(H.spStufe,{s}))+kBal(T.gespendet,Math.min(100,bez/D.b*100),'',vonGeld(bez,D.b)):kHin('gruen',fertig>=SPENDEN.length-1?H.spFertig:T.erledigt))
+        +`<div class="wbunter">${fertig} von ${SPENDEN.length-1} Spenden erledigt${S.spJahr?` · dieses Jahr ${eur(S.spJahr)} gespendet`:''}</div>`;
+      const auf=(s?wbKv(wbT(T.stufe,{s}),eur(D.b))+`<div class="wbklein">${wbT(T.fuer,{z:esc(D.z)})}</div>
+        <div class="wbklein">Dank des Dorfs: ${D.ans} Ansehen, ${s<=4?'ein Schild':s===8?'der Ehrenbrief':'eine Urkunde'} fürs Büro. ${esc(D.lohn)}.</div>
+        <div class="wbklein">Raten ab ${eur(Math.min(st,D.b-bez))}. Jede senkt die Steuer dieses Jahres.</div>`
+        :`<div class="fleer">${S.rang>=SPENDEN.length?(stFehlt()?`Als ${anr('Präsident','Präsidentin')} spendest du nicht mehr. Was du verpasst hast, holt die Stiftung fürs Dorf nach.`:`Als ${anr('Präsident','Präsidentin')} spendest du nicht mehr, das Dorf weiß, was es an dir hat.`):S.rang===SPENDEN.length-1?'Das war die letzte Spende. Das ganze Dorf kennt deinen Namen.':`Die Spende für ${esc(SPENDEN[S.rang].z)} ist erledigt. Die nächste kommt mit dem Rang ${RAENGE[S.rang+1].name}.`}</div>`)
+        +kKn(s&&pk('spenden','Spenden','',{klein:`noch ${eur(D.b-bez)}`,arm:S.geld<Math.min(st,D.b-bez)}),...ansehen);
+      h+=sKarte('spenden',T.spenden,kopf,auf,{z:wbKv(T.gespendet,s?vonGeld(bez,D.b):T.erledigt)+wbKv(T.erledigt,`${fertig} von ${SPENDEN.length-1}`),k:s?wbKv(wbT(T.stufe,{s}),eur(D.b)):'',i:spI});
     }
     // Seit 10.1: Stiftung fürs Dorf, nur mit Amt und nur solange eine Spende fehlt. Die niedrigste verpasste Stufe zuerst, zum STIFT_FAKTOR-fachen Preis.
     {const s=stOffen(); if(s){
       const D=SPENDEN[s], b=stPreis(s), bez=stBezahlt(), st=b/SP_TEIL, n=stAnzahl();
-      h+=fenster('stiftung','Stiftung fürs Dorf',`<div class="kv"><span>Stufe ${s}: für ${esc(D.z)}</span><span>${eur(b)}</span></div>
-        <div class="kv"><span>Eingezahlt</span><span>${vonGeld(bez,b)}</span></div><div class="bar ${bez>=b?'':'g'}"><i style="width:${Math.round(bez/b*100)}%"></i></div>
-        <div class="mut">Dank des Dorfs: ${D.ans} Ansehen und ${s<=4?'das Schild':s===8?'der Ehrenbrief':'die Urkunde'} fürs Büro. ${s===8?'Der Holzbogen auf dem Dorfplatz kommt mit.':'Die Belohnung der Spende gibt es nicht mehr.'}</div>`,{
-        stand:`${n===1?'Eine Spende fehlt':n+' Spenden fehlen'} dem Dorf noch${S.spJahr?` · dieses Jahr ${eur(S.spJahr)} gegeben`:''}`,
-        links:`Raten ab ${eur(Math.min(st,b-bez))}. Jede senkt die Steuer dieses Jahres.`,
-        kn:pk('stiften','Einzahlen','',{klein:`noch ${eur(b-bez)}`,arm:S.geld<Math.min(st,b-bez)}),buch:'wahl',
+      h+=sKarte('stiftung',T.stiftung,kHin('gelb',n===1?H.stFehlt1:wbT(H.stFehltN,{n}))+kBal(T.eingezahlt,Math.min(100,bez/b*100),'',vonGeld(bez,b))
+        +(S.spJahr?`<div class="wbunter">Dieses Jahr ${eur(S.spJahr)} gegeben</div>`:''),
+        wbKv(wbT(T.stufe,{s}),eur(b))+`<div class="wbklein">${wbT(T.fuer,{z:esc(D.z)})}</div>
+        <div class="wbklein">Dank des Dorfs: ${D.ans} Ansehen und ${s<=4?'das Schild':s===8?'der Ehrenbrief':'die Urkunde'} fürs Büro. ${s===8?'Der Holzbogen auf dem Dorfplatz kommt mit.':'Die Belohnung der Spende gibt es nicht mehr.'}</div>
+        <div class="wbklein">Raten ab ${eur(Math.min(st,b-bez))}. Jede senkt die Steuer dieses Jahres.</div>`
+        +kKn(pk('stiften','Einzahlen','',{klein:`noch ${eur(b-bez)}`,arm:S.geld<Math.min(st,b-bez)})),{buch:'wahl',
+        z:wbKv(T.eingezahlt,vonGeld(bez,b)),k:wbKv(wbT(T.stufe,{s}),eur(b)),
         i:`Die Stiftung holt nach, was du auf dem Weg nach oben nicht gespendet hast, eine Stufe nach der anderen und zum ${STIFT_FAKTOR===2?'doppelten':STIFT_FAKTOR+'-fachen'} Preis. Du zahlst in Raten wie bei den Spenden, mit demselben Steuervorteil (höchstens ${pz(SP_DECKEL)} des Gewinns).<br><br>Beim vollen Betrag gibt es das Ansehen und die Ehrung der Spende, aber nicht mehr ihre Belohnung. Nur der Holzbogen der letzten Stufe kommt mit. Auf die Stimmung im Verband zählt dieses Ansehen nicht. Sind alle ${SPENDEN.length-1} Stufen erledigt, hast du den Schlüssel „Dorf“ für die Weltweinschau.`});
     }}
-    h+=zu.join('');
     if(einZu('anmelden')&&!S.amt&&S.rang<1&&!stOffen()) h+=einKarte('rathaus','Noch kein Wein','Im Rathaus meldest du deinen Wein an, sobald er im Fass liegt. Erst dann darf er in die Flasche.');
   }
   // Großhandel (seit 7.4 auf dem Fenster-Baustein): "Markt diesen Monat" mit Marktlage und Budget, darunter "Deine Weine" als Liste zum Antippen.
@@ -2098,7 +2115,8 @@ Object.assign(FU_WANN,{
 });
 // "Zeig mir, wo": Ort und was dort golden leuchtet. sel ist eine Liste, die erste Stelle, die es gibt, gilt.
 // Bei Fenster-Tipps leuchtet das i (Regel 3), bei den Kern-Blasen der Knopf selbst.
-const fiSel=id=>`[data-a="fi"][data-id="${id}"]`;
+// Seit 16.6.2: auch das i einer Karte mit derselben Kennung (die Stadt hat Karten statt Fenster, Kennungen wie bisher).
+const fiSel=id=>`[data-a="fi"][data-id="${id}"],[data-a="bInfo"][data-id="${id}"]`;
 // Seit 16.5.5: die Weinkarte im Lager, in der ein Wein steht, ohne Wein die oberste (sie hat den Wein, der zuerst verdirbt).
 const fuWeinKarte=l=>{l=l||weinLager()[0]; return l?'wl_'+l.sorte:null};
 const FU_ZEIG={
@@ -2116,12 +2134,12 @@ const FU_ZEIG={
   'e1-11':{tab:'gut',sub:'berg',sel:['[data-a="bInfo"][data-id^="feld_"]']},
   'e1-12':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'e1-13':{tab:'keller',sub:'start',karte:'k_keltern',sel:['[data-a="keltern"]','#wb_k_keltern']},   // seit 16.5.2 mit aufgeklappter Karte
-  'e1-14':{tab:'stadt',sub:'amt',sel:['[data-a="anmelden"]',fiSel('anmelden')]},
+  'e1-14':{tab:'stadt',sub:'amt',karte:'anmelden',sel:['[data-a="anmelden"]',fiSel('anmelden')]},
   'e1-15':{tab:'keller',sub:'start',karte:'k_faesser',sel:['[data-a="abfuellen"]','[data-a="anmelden"]','#wb_k_faesser']},
   'e1-16':{tab:'stadt',sub:'handel',sel:['[data-a="verkaufen"]']},
   'e1-17':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'e1-18':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
-  'z2-01':{tab:'stadt',sub:'amt',sel:['[data-a="anmelden"]',fiSel('anmelden')]},
+  'z2-01':{tab:'stadt',sub:'amt',karte:'anmelden',sel:['[data-a="anmelden"]',fiSel('anmelden')]},
   'e1-19':{tab:'gut',sub:'aktuell',sel:['[data-a="weiterBis"]']},
   'k01':{tab:'gut',sub:'aktuell',sel:['[data-a="weiterBis"]']},
   'z2-02':{tab:'gut',sub:'berg',sel:['[data-a="pflanzen"]','[data-a="bInfo"][data-id^="feld_"]']},
@@ -2177,10 +2195,10 @@ const FU_ZEIG={
   'l4':{tab:'gut',sub:'betrieb',sel:['[data-a="mgr"][data-id="weingut"]']},   // seit 16.4.4 die Zeile in "Deine Leute"
   'l5':{tab:'gut',sub:'betrieb',sel:['[data-a="mgr"][data-id="weingut"]']},
   // Warnungen: sel darf eine Funktion sein, dann leuchtet genau das betroffene Fass.
-  'w1':{tab:'stadt',sub:'amt',sel:()=>{const l=S.lots.find(fuKabFrueh); return [l?`[data-a="anmelden"][data-id="${l.id}"]`:'',fiSel('anmelden')]}},
+  'w1':{tab:'stadt',sub:'amt',karte:'anmelden',sel:()=>{const l=S.lots.find(fuKabFrueh); return [l?`[data-a="anmelden"][data-id="${l.id}"]`:'',fiSel('anmelden')]}},
   'w2':{tab:'stadt',sub:'amt',sel:[fiSel('auktionen')]},
   'w3':{tab:'stadt',sub:'handel',sel:[fiSel('markt')]},
-  'w4':{tab:'stadt',sub:'amt',sel:()=>{const l=S.lots.find(fuReiht); return [l?`[data-a="anmelden"][data-id="${l.id}"]`:'',fiSel('anmelden')]}},
+  'w4':{tab:'stadt',sub:'amt',karte:'anmelden',sel:()=>{const l=S.lots.find(fuReiht); return [l?`[data-a="anmelden"][data-id="${l.id}"]`:'',fiSel('anmelden')]}},
   'w5':{tab:'gut',sub:'berg',sel:['[data-a="bInfo"][data-id="duengung"]']},
   'w6':{tab:'keller',sub:'lager',karte:()=>fuWeinKarte(S.lots.find(fuLange)),sel:()=>{const l=S.lots.find(fuLange); return [l?`.bzeile[data-a="buchDetail"][data-id="${l.id}"]`:'','.wkband']}},
   'w7':{tab:'stadt',sub:'bank',sel:[fiSel('kredit')]},
@@ -2335,7 +2353,7 @@ function render(){
   // Kellerbuch und Aktuelles öffnen sich mit einem eigenen Geräusch.
   ortFarbe(SUBS[TAB]?TAB:'gut');
   // Seit 16.1: Im Weinberg liegt das Holzbrett hinter den Karten. Seit 16.3.2 auch hinter dem Klemmbrett (Bild 05).
-  document.documentElement.classList.toggle('brett',TAB==='gut'&&(SUB==='berg'||SUB==='aktuell'||SUB==='betrieb')||TAB==='keller'&&(SUB==='start'||SUB==='lager')||amPlatz());   // seit 16.4.2 auch im Betrieb (Bild 22), seit 16.5.2 im Keller (Bild 23), seit 16.5.6 im Lager, seit 16.6.1 auf dem Stadtplatz
+  document.documentElement.classList.toggle('brett',TAB==='gut'&&(SUB==='berg'||SUB==='aktuell'||SUB==='betrieb')||TAB==='keller'&&(SUB==='start'||SUB==='lager')||stadtBrett());   // seit 16.4.2 auch im Betrieb (Bild 22), seit 16.5.2 im Keller (Bild 23), seit 16.5.6 im Lager, seit 16.6.1 auf dem Stadtplatz
   const ort=SUBS[TAB]?TAB+'/'+SUB:TAB; if(ort!==ORT_ALT){FI_AUF.clear(); if(ORT_ALT&&(ort==='keller/buch'||ort==='gut/aktuell')) fx('menue'); ORT_ALT=ort}
   musikOrt(musikWahl());
   if(ort==='stadt/laeden') S.ladenSeh=S.jahr*12+S.monat;
