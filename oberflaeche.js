@@ -1107,16 +1107,18 @@ function mgrFenster(b){
   ${m.zuletzt?`<div class="kv"><span>Zuletzt</span><span>${esc(m.zuletzt)}</span></div>`:''}
   ${mgrSchalter(b)}
   ${n&&st&&!neu?`<div class="mut" style="margin:8px 0">Stufe ${n.stufe} kommt ${freiText(mgrK(n))}.</div>`:''}${st&&!neu?mgrLogHtml(b):''}${mib('manager')}
-  ${neu?`<div class="mitte"><button class="siegel" data-a="mgrDa">Okay</button></div>`:`<div class="btns"><button class="sec" data-a="close">Zurück</button></div>`}</div>`;
+  ${neu?`<div class="btns"><button class="sec" data-a="mgrDa">Okay</button></div>`:`<div class="btns"><button class="sec" data-a="close">Zurück</button></div>`}</div>`;
 }
 // Seit 16.4.5: Nach einem Schalter im Fenster eines Kopfs das Fenster neu zeichnen und den Scrollstand halten, nur wenn es gerade offen ist (bis 16.4.4 reichte MGR_OFFEN).
 const mgrAuf=()=>!!MGR_OFFEN&&$('#sheet').classList.contains('an')&&!!$('#sheet .mgrfen');
-function mgrWieder(){if(!mgrAuf()) return; const d=$('#sheet>div'), y=d?d.scrollTop:0; openSheet(mgrFenster(MGR_OFFEN)); const n=$('#sheet>div'); if(n) n.scrollTop=y}
+// Seit 16.8.3 (Bauplan 16.8, Entscheidung 8): Stellt sich ein Kopf neu vor, zählen Wischen und Tipp daneben wie "Okay" (mgrZu), dann kommt er beim nächsten Bild nicht noch einmal.
+const mgrZu=()=>MGR_NEU?()=>AKT.mgrDa():null;
+function mgrWieder(){if(!mgrAuf()) return; const d=$('#sheet>div'), y=d?d.scrollTop:0; openSheet(mgrFenster(MGR_OFFEN),null,'info',mgrZu()); const n=$('#sheet>div'); if(n) n.scrollTop=y}
 // Stellt den nächsten Manager aus S.mgrNeu vor, sobald Zeitung und Feier vorbei sind und kein Fenster offen ist. Läuft am Ende von render.
 function mgrVorstellen(){
   if(!S||window.BOT||S.ende||!S.mgrNeu||!S.mgrNeu.length||S.feier||!SUBS[TAB]||$('#sheet').classList.contains('an')) return;
   if(!mgrSt(S.mgrNeu[0].b)){S.mgrNeu.shift(); return}
-  MGR_OFFEN=S.mgrNeu[0].b; MGR_NEU=1; openSheet(mgrFenster(MGR_OFFEN));
+  MGR_OFFEN=S.mgrNeu[0].b; MGR_NEU=1; openSheet(mgrFenster(MGR_OFFEN),null,'info',mgrZu());
 }
 // Hoffest ab Verbandsvorstand: Juni bis August, einmal im Jahr.
 // Weinfest ab Winzermeister, ab Verbandsvorstand wird daraus das Hoffest. Beide teilen sich Bild, Monate und S.festJahr.
@@ -2604,10 +2606,10 @@ const AKT={
     if(!n&&S.amt) ziel+=`<h4 class="gs">🗳️ Weinbauverband</h4>${kv('Stimmung im Verband',`${stimmZ()} von 100`)}${amtBalken()}<div class="mut" style="margin-bottom:8px">${amtSatz()}</div>`;
     openSheet(`<h3>📋 Dein Stand</h3><h4 class="gs">💶 Kasse</h4>${kv('🏦 Kontostand',eur(S.geld),S.geld<0?'rot':'')}<h4 class="gk">Dieses Jahr bisher</h4>${kv('📈 Einnahmen',eur(S.jahrEin),'gruen')}${kv('📉 Ausgaben',eur(S.jahrAus),'rot')}${kv('⚖️ Ergebnis',eur(S.jahrEin-S.jahrAus),S.jahrEin>=S.jahrAus?'gruen':'rot')}
     <h4 class="gk">Jeden Monat fällig</h4>${kv('Löhne',eur(K.loehne))}${kv('Feste Kosten',eur(K.basis))}${k?kv('Zinsen',eur(K.zins))+kv('Tilgung',eur(K.tilgung))+kv('Kredit offen',eur(k.rest)):''}${kv('Zusammen',eur(K.basis+K.loehne+K.zins+K.tilgung))}${ziel}${rangLeiter()}${zeitStand()}
-    ${mib('geld')}<div class="btns"><button data-a="zurBank">🏦 Zur Bank</button><button data-a="close">Okay</button></div>`)},
+    ${mib('geld')}<div class="btns"><button class="sec" data-a="close">Okay</button><button data-a="zurBank">🏦 Zur Bank</button></div>`)},
   // Version 7.6: Wetter oben links als Blatt.
   wetterInfo(){fx('menue'); const kv=(a,x)=>`<div class="kv"><span>${a}</span><span>${x}</span></div>`;
-    openSheet(`<h3>🌤️ Wetter</h3>${kv('Gebiet',R().name)}${kv('Heute, '+MON[S.monat],wetterText())}${kv('Vorhersage '+MON[(S.monat+1)%12],progText())}<p class="mut" style="margin:10px 0 0">Die Vorhersage stimmt meistens, aber nicht immer.</p><div class="btns"><button data-a="close">Okay</button></div>`)},
+    openSheet(`<h3>🌤️ Wetter</h3>${kv('Gebiet',R().name)}${kv('Heute, '+MON[S.monat],wetterText())}${kv('Vorhersage '+MON[(S.monat+1)%12],progText())}<p class="mut" style="margin:10px 0 0">Die Vorhersage stimmt meistens, aber nicht immer.</p><div class="btns"><button class="sec" data-a="close">Okay</button></div>`)},
   zurBank(){closeSheet();geh('stadt','bank');render();window.scrollTo(0,0)},
   fi(d,e){const f=e.target.closest('.fen'), b=f.querySelector('.fi'), x=f.querySelector('.finfo'), auf=x.hidden; x.hidden=!auf; b.classList.toggle('an',auf); b.setAttribute('aria-expanded',auf); if(auf) FI_AUF.add(d.id); else FI_AUF.delete(d.id)},
   // Zugeklappter Teil eines Fensters (Steckbrief im Weinberg): auf und zu ohne neues Zeichnen, offen bleibt er bis zum Ortswechsel.
@@ -2622,11 +2624,11 @@ const AKT={
     const a=S.auktion; if(!a) return;
     // Angekündigt: nur der Hinweis, geboten wird erst nächsten Monat.
     if(a.phase===0) return openSheet(`${sbild(a.spitze?'spitzenlage':'auktion')}<h3>🔨 Auktion im ${MON[(S.monat+1)%12]}</h3><p>${losText(a)} ${WO[S.region]} kommen nächsten Monat unter den Hammer. ${losLage(a).satz} Startgebot ${eur(a.start)}, geboten wird in Schritten von ${eur(a.schritt)}.</p>
-      <p class="mut">${S.rang<R_AUKTION?`Mitbieten darfst du ab dem Rang ${RAENGE[R_AUKTION].name}.`:aukDeckel(a)?`${AUK_ZU_GROSS} ${aukDeckel(a)}`:`${aukZeichen(a,a.start)?aukZeichen(a,a.start)+' ':''}Mitgehen kannst du bis Konto plus freier Kreditrahmen, gerade sind das ${eur(Math.max(0,aukLimit()))}.`}</p><div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`);
+      <p class="mut">${S.rang<R_AUKTION?`Mitbieten darfst du ab dem Rang ${RAENGE[R_AUKTION].name}.`:aukDeckel(a)?`${AUK_ZU_GROSS} ${aukDeckel(a)}`:`${aukZeichen(a,a.start)?aukZeichen(a,a.start)+' ':''}Mitgehen kannst du bis Konto plus freier Kreditrahmen, gerade sind das ${eur(Math.max(0,aukLimit()))}.`}</p><div class="btns"><button class="sec" data-a="close">Okay</button></div>`);
     if(S.rang<R_AUKTION) return;
-    if(a.ende) return openSheet(`${sbild(a.spitze?'spitzenlage':'auktion')}<h3>🔨 Auktion beendet</h3><p>${esc(a.text)}</p><div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`);
+    if(a.ende) return openSheet(`${sbild(a.spitze?'spitzenlage':'auktion')}<h3>🔨 Auktion beendet</h3><p>${esc(a.text)}</p><div class="btns"><button class="sec" data-a="close">Okay</button></div>`);
     // Seit 11.5 (Teil B): Passt das Los nicht unter den Deckel, gibt es nur die Erklärung. Die anderen machen es zum Monatswechsel unter sich aus.
-    if(aukDeckel(a)) return openSheet(`${sbild('auktion')}<h3>🔨 Auktion: ${losText(a)} ${WO[S.region]}</h3><p>${AUK_ZU_GROSS} ${aukDeckel(a)}</p><p class="mut">${a.fuehrer?'Höchstgebot':'Startgebot'} ${eur(a.gebot)}${a.fuehrer?' von '+esc(a.fuehrer):''}.</p><div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`);
+    if(aukDeckel(a)) return openSheet(`${sbild('auktion')}<h3>🔨 Auktion: ${losText(a)} ${WO[S.region]}</h3><p>${AUK_ZU_GROSS} ${aukDeckel(a)}</p><p class="mut">${a.fuehrer?'Höchstgebot':'Startgebot'} ${eur(a.gebot)}${a.fuehrer?' von '+esc(a.fuehrer):''}.</p><div class="btns"><button class="sec" data-a="close">Okay</button></div>`);
     const x=aukNaechstes(), lim=aukLimit();
     openSheet(`${sbild(a.spitze?'spitzenlage':'auktion')}<h3>🔨 Auktion: ${losText(a)} ${WO[S.region]}</h3>
       <p class="mut">${losLage(a).satz} Im Saal sitzen außer dir ${a.bieter.length} Bieter. Wie weit sie gehen, verrät keiner.</p>
@@ -2677,13 +2679,13 @@ const AKT={
   },
   schauJa(d){
     const l=lot(d.id); if(!schauEinreichen(l)) return; fx('korken'); save(); render();
-    wettSheet(`${sbild('weltweinschau')}<h3>🌍 Angemeldet</h3><p>${esc(S.schau.ein.name)} tritt im ${MON[WELT_MONAT]} bei der Weltweinschau um die ${KRONEN[S.schau.kl].name} an.</p><div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`);
+    wettSheet(`${sbild('weltweinschau')}<h3>🌍 Angemeldet</h3><p>${esc(S.schau.ein.name)} tritt im ${MON[WELT_MONAT]} bei der Weltweinschau um die ${KRONEN[S.schau.kl].name} an.</p><div class="btns"><button class="sec" data-a="close">Okay</button></div>`);
   },
   // Einreichen: Die Punkte stehen jetzt fest, gewertet wird beim Monatswechsel.
   wettJa(d){
     const l=lot(d.id), w=S.wett; if(!w||w.fertig||S.rang<wettRang()||!wettFaehig(l)) return;
     fx('korken'); w.ein={id:l.id,name:lotName(l),p:wettPunkte(l),sorte:l.sorte,stufe:l.stufe,sekt:l.sekt?1:0}; save(); render();
-    wettSheet(`${sbild(w.typ==='welt'?'weltweinschau':'praemierung')}<h3>🏅 Eingereicht</h3><p>${esc(w.ein.name)} steht bei der Jury ${w.typ==='land'?'der Landesprämierung':w.typ==='welt'?'der Weltweinschau':'des Bundeswettbewerbs'}. Probiert wird diesen Monat, das Ergebnis steht im nächsten Winzerboten.</p><div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`);
+    wettSheet(`${sbild(w.typ==='welt'?'weltweinschau':'praemierung')}<h3>🏅 Eingereicht</h3><p>${esc(w.ein.name)} steht bei der Jury ${w.typ==='land'?'der Landesprämierung':w.typ==='welt'?'der Weltweinschau':'des Bundeswettbewerbs'}. Probiert wird diesen Monat, das Ergebnis steht im nächsten Winzerboten.</p><div class="btns"><button class="sec" data-a="close">Okay</button></div>`);
   },
   ladenAngebot(d){
     const r=d.id, la=S.laeden[r], ls=S.lots.filter(l=>ladenPasst(l,r)).sort((a,b)=>ladenPreis(b,r)-ladenPreis(a,r));
@@ -2728,7 +2730,7 @@ const AKT={
   },
   urkunde(d){
     const e=(S.ehrungen||[])[+d.n]; if(!e) return; const i=urkRang(e);
-    openSheet(`<h2>🎖️ ${esc(e.w&&RAENGE[i].w||RAENGE[i].name)}</h2>${urkHtml(i,e.m||0,e.j||S.jahr,'gross','n' in e?e:{n:'',w:0})}${e.x?`<div class="mut" style="margin:10px 0">${esc(e.x)}</div>`:''}<div class="btns"><button data-a="close">Schließen</button></div>`,'auf');
+    openSheet(`<h2>🎖️ ${esc(e.w&&RAENGE[i].w||RAENGE[i].name)}</h2>${urkHtml(i,e.m||0,e.j||S.jahr,'gross','n' in e?e:{n:'',w:0})}${e.x?`<div class="mut" style="margin:10px 0">${esc(e.x)}</div>`:''}<div class="btns"><button class="sec" data-a="close">Schließen</button></div>`,'auf');
   },
   // Version 8.2: Spenden im Rathaus, die Ehrungen dafür im Büro, Bank und Holzbogen zum Ansehen.
   spenden(){
@@ -2755,14 +2757,14 @@ const AKT={
     if(S.ende.wie==='frei'){TAB='feier'; FSTUFE=0} render(); window.scrollTo(0,0); if(TAB==='feier') schnitt()},
   spEhre(d){
     const s=+d.n, e=(S.spenden||[]).find(x=>x.s===s); if(!e) return; const D=SPENDEN[s];
-    openSheet(`<h2>🤝 ${esc(spKurz(s,e))}</h2>${spEhrHtml(s,'gross',e)}<p class="mut" style="margin:10px 0">${e.st?`Nachgeholt von der Stiftung im ${MON[e.m]} ${e.j}, für ${esc(D.z)}.${s===8?' Der Holzbogen kam mit.':''}`:`Gespendet für ${esc(D.z)} im ${MON[e.m]} ${e.j}. ${esc(D.lohn)}.`}</p>${s===8?spBogenHtml():s===7&&!e.st?`<div class="spbogen" style="background-image:url(bilder/${bankBild()}.jpg)"></div>${spBankTafel()}`:''}<div class="btns"><button data-a="close">Schließen</button></div>`);
+    openSheet(`<h2>🤝 ${esc(spKurz(s,e))}</h2>${spEhrHtml(s,'gross',e)}<p class="mut" style="margin:10px 0">${e.st?`Nachgeholt von der Stiftung im ${MON[e.m]} ${e.j}, für ${esc(D.z)}.${s===8?' Der Holzbogen kam mit.':''}`:`Gespendet für ${esc(D.z)} im ${MON[e.m]} ${e.j}. ${esc(D.lohn)}.`}</p>${s===8?spBogenHtml():s===7&&!e.st?`<div class="spbogen" style="background-image:url(bilder/${bankBild()}.jpg)"></div>${spBankTafel()}`:''}<div class="btns"><button class="sec" data-a="close">Schließen</button></div>`);
   },
-  spBank(){openSheet(`<h3>🪑 Die Bank am Wanderweg</h3><div class="spbogen" style="background-image:url(bilder/${bankBild()}.jpg)"></div>${spBankTafel()}<p class="mut">Über der Spitzenlage, mit Blick über den Fluss ins Tal.</p><div class="btns"><button data-a="close">Schließen</button></div>`)},
-  spBogen(){openSheet(`<h3>🪵 Der Holzbogen</h3>${spBogenHtml()}<div class="btns"><button data-a="close">Schließen</button></div>`)},
+  spBank(){openSheet(`<h3>🪑 Die Bank am Wanderweg</h3><div class="spbogen" style="background-image:url(bilder/${bankBild()}.jpg)"></div>${spBankTafel()}<p class="mut">Über der Spitzenlage, mit Blick über den Fluss ins Tal.</p><div class="btns"><button class="sec" data-a="close">Schließen</button></div>`)},
+  spBogen(){openSheet(`<h3>🪵 Der Holzbogen</h3>${spBogenHtml()}<div class="btns"><button class="sec" data-a="close">Schließen</button></div>`)},
   sub(d){SUB=TAB==='stadt'&&d.id===SUB?'platz':d.id; if(TAB==='gut'&&d.id==='buero') BUERO=''; render();window.scrollTo(0,0)},   // seit 16.6.1: zweiter Tipp auf die aktive Zunge der Stadt führt auf den Platz, seit 16.7.1 die Zunge Büro zu den großen Kacheln
   // Seit 11.2: Bereich im Büro wählen und die ganze Rangliste als Fenster von unten.
   buero(d){if(BUERO===d.id) return; const gross=!BUERO; BUERO=d.id; FI_AUF.clear(); render(); if(gross) window.scrollTo(0,0)},   // seit 16.7.1 auch aus den großen Kacheln
-  rangliste(){openSheet(`<h3>Rangliste</h3><p class="mut">${GEGNER_AKT[aktNr()-1]}</p>${weltForm()?`<p class="mut">${weltFormZeile()}</p>`:''}<p class="mut">${RANGL_I}</p>${ranglisteHtml()}<div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`)},
+  rangliste(){openSheet(`<h3>Rangliste</h3><p class="mut">${GEGNER_AKT[aktNr()-1]}</p>${weltForm()?`<p class="mut">${weltFormZeile()}</p>`:''}<p class="mut">${RANGL_I}</p>${ranglisteHtml()}<div class="btns"><button class="sec" data-a="close">Okay</button></div>`)},
   arbeitsamt(){closeSheet();geh('stadt','arbeit');render();window.scrollTo(0,0)},
   // Seit 11.1 öffnet der Knopf im Kellerbuch das Weinkompendium. Der Name der Aktion bleibt, die Sprechblasen zeigen darauf.
   weinQual(){archivGeh('brett')},
@@ -2861,7 +2863,7 @@ const AKT={
   },
   ideeWa(){const t=ideeText(); if(!t) return; ideeFertig(); window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank')},
   ideeTeilen(){const t=ideeText(); if(!t) return; navigator.share({text:t}).then(ideeFertig).catch(()=>{})},
-  ausblick(){openSheet(`<h3>Was geplant ist</h3><p class="mut">Daran wird gearbeitet. Reihenfolge und Umfang können sich noch ändern.</p>${ausblickHtml()}<div class="mitte"><button class="siegel" data-a="close">Okay</button></div>`)},
+  ausblick(){openSheet(`<h3>Was geplant ist</h3><p class="mut">Daran wird gearbeitet. Reihenfolge und Umfang können sich noch ändern.</p>${ausblickHtml()}<div class="btns"><button class="sec" data-a="close">Okay</button></div>`)},
   titelChronik(){zeigeChronik()},
   titelChronikZu(){const c=document.querySelector('#titel .tchron'); if(c) c.remove()},
   // Seit 12.9: klappt eine Etappe in der Chronik auf oder zu, die vorher offene klappt zu.
@@ -3359,7 +3361,7 @@ function zeigeChronik(){
   const t=$('#titel'); if(!t||t.querySelector('.tchron')) return;
   t.insertAdjacentHTML('beforeend',`<div class="tchron"><div class="tchz" data-a="titelChronikZu"></div><div class="card tchk">
     <div class="tchl"><h3>Was geplant ist</h3>${ausblickHtml()}<h3>Was ist neu</h3>${wasNeuHtml()}</div>
-    <div class="mitte"><button class="siegel" data-a="titelChronikZu">Okay</button></div></div></div>`);
+    <div class="btns"><button class="sec" data-a="titelChronikZu">Okay</button></div></div></div>`);
 }
 // Bringt in jedem Block die Rollenzeilen per Buchstabenabstand und den Namen per Wortabstand (nur zwischen Vor- und Nachname) auf dieselbe Breite.
 function titelBuendig(t){
