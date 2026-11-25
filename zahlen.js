@@ -1746,4 +1746,5 @@ const WB_TEXT={
   panel:'{titel}, Infos', zustand:'Zustand', kosten:'Kosten', tipps:'Tipps', wisch:'Nach unten wischen schließt das Panel.',
   boden:{titel:'Boden und Düngung', klein:'Deine Weinberge, {ha} Hektar', schnitt:'Boden im Schnitt', chef:'Chef-Weinberg', chefKeiner:'Du machst alles selbst',
     noch:'Noch kein Weinberg mit Reben', geduengt:'gedüngt {n} von {max}', sterben:'Zum Jahreswechsel gehen voraussichtlich {von} bis {bis} % der Reben ein',
-    flaeche:'Fläche', bepflanzt:'Bepflanzt', platz:'Platz frei', leute:'Deine Leute reichen für', leistung:'Ernteleistung'}};
+    flaeche:'Fläche', bepflanzt:'Bepflanzt', platz:'Platz frei', leute:'Deine Leute reichen für', leistung:'Ernteleistung',
+    chefAuto:'keiner, alles auf Automatik', gutJahr:'+{n} Punkte im guten Bodenjahr', jahr:'Jahresschnitt bisher {n} %', lage:'Lagen'}};
