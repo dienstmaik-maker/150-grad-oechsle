@@ -736,7 +736,7 @@ function platzFuer(id){const f=Math.max(0,S.ha*HA_REBEN-rebenGesamt()); return i
 // Anteil der Sekt-Reben auf dem einfachen Hang. Die Reben bleiben je Sorte, die Lage ergibt sich zu deinen Gunsten: Die Spitzen-Sorte steht auf dem Südhang,
 // der Sekt zuerst auf der Höhenlage, dann auf dem übrigen Südhang, erst der Rest auf dem einfachen Hang. Der Abzug gilt anteilig (Annahme von Claude).
 function sektEinfach(){const s=R().sorten.filter(sektSorte).reduce((a,id)=>a+S.felder[id].reben,0); if(!s) return 0; const gut=Math.max(0,(hangHa('hoehe')+hangHa('sued'))*HA_REBEN-handReben()); return Math.max(0,s-gut)/s}
-const sektAbzug=()=>Math.round(SEKT_EINFACH_QP*sektEinfach());
+const sektAbzug=()=>Math.round(SEKT_EINFACH_P*sektEinfach()); // seit 14.5.7 Punkte am Sekt (l.sektP), bis 14.5.6 SEKT_EINFACH_QP auf die Qualität
 // So viele Reben der Menge- oder Sekt-Sorte passen noch, ohne Südhang zu belegen (für die Warnung beim Pflanzen). Ohne Südhang unbegrenzt.
 function suedWarnAb(id){if(spitzeId(id)||!hangHa('sued')) return Infinity; const belegt=rebenGesamt()-Math.min(handReben(),hangHa('sued')*HA_REBEN);
   return Math.min(platzFuer(id),Math.max(0,(hangHa('einfach')+hangHa('hoehe'))*HA_REBEN-belegt))}
@@ -903,12 +903,22 @@ function wettFaehig(l){
 function neuerWettbewerb(typ){
   // Seit 13.6.3 läuft die Weltweinschau nicht mehr über S.wett, sondern über S.schau (schauNeu).
   const d=DIFF[S.schwer].feld, bund=typ==='bund', F=[], namen=misch(GUETER);
-  for(let i=0;i<(bund?8:9);i++) F.push({name:namen[i],p:(bund?rint(20,44):i<2?rint(20,34):rint(8,26))+d});
+  // Seit 14.5.7 (Entscheidung 36): die Felder WETT_FELD_PLUS höher, Landesprämierung 48 bis 74, Bundeswettbewerb 60 bis 84 vor Spielstufe und Gegnern.
+  for(let i=0;i<(bund?8:9);i++) F.push({name:namen[i],p:(bund?rint(20,44):i<2?rint(20,34):rint(8,26))+WETT_FELD_PLUS+d});
   for(const g of S.gegner) if(bund||g.region===S.region){const t=GEGNER_TYP[g.typ];F.push({name:g.name,ki:g.id,p:rint(t.ws[0],t.ws[1])+Math.round(g.rang*(bund?1.1:.85))+(bund?4:0)+d+(REGIONEN[g.region].wettPlus||0)})}
   S.wett={typ,feld:F,ein:null,zufall:rint(-4,4)};
 }
+// Seit 14.5.7 (Entscheidung 36, Annahmen 24 bis 28): die Jury wertet Qualität plus Wert der Weinstufe (STUFEN.jury, Sekt SEKT_JURY) plus Flaschenreife
+// (nicht bei der Landesprämierung, nicht beim Jahrhundertwein) plus Öchsle über der Schwelle (höchstens OE_JURY_MAX) plus Jahrhundertwein JH_JURY,
+// dazu die Punkte eigen am Wein: Medaillen und Weinkritiker (l.medP), beim Sekt Hefelager und Hang (l.sektP). juryTeile gibt die Bausteine ohne Tagesform.
+function juryTeile(l,mitReife){return {qual:l.qp||0,stufe:l.sekt?SEKT_JURY:(STUFEN[l.stufe]||{}).jury||0,reife:mitReife?reifeBonus(l):0,
+  oe:l.sekt?0:Math.min(OE_JURY_MAX,oeUeber(l.stufe,l)),jh:jhWein(l)?JH_JURY:0,med:l.medP||0,sekt:l.sekt?(l.sektP||0):0}}
+const juryGrund=(l,mitReife)=>Object.values(juryTeile(l,mitReife)).reduce((a,b)=>a+b,0);
+// Die Bausteine in Worten für die Fenster der Wettbewerbe. Platzhalter, Wortlaut in Meilenstein 17.
+function juryText(l,mitReife){const t=juryTeile(l,mitReife), n={stufe:l.sekt?'Sekt':'Weinstufe',reife:'Flaschenreife',oe:'Öchsle',jh:'Jahrhundertwein',med:'Medaillen',sekt:'Hefe und Hang'};
+  return `${juryGrund(l,mitReife)} Punkte: Qualität ${t.qual}`+Object.keys(n).filter(x=>t[x]).map(x=>`, ${n[x]} ${t[x]>0?'+':'−'}${Math.abs(t[x])}`).join('')}
 // Punkte eines Weins im laufenden Wettbewerb. Stehen beim Einreichen fest.
-function wettPunkte(l){const w=S.wett;return l.qp+(w.typ!=='land'?reifeBonus(l):0)+w.zufall+(R().wettPlus||0)}
+function wettPunkte(l){const w=S.wett;return juryGrund(l,w.typ!=='land')+w.zufall+(R().wettPlus||0)}
 // Wertung zu Beginn des Monatswechsels nach der Ausschreibung, das Ergebnis kommt als Thema in die Zeitung.
 // Medaille und Qualitätspunkte bekommt der Wein nur, wenn er noch im Keller ist. Ansehen und Preisgeld gibt es immer.
 // Seit 13.6.3 nur noch Landesprämierung und Bundeswettbewerb, die Weltweinschau wertet schauAuswerten.
@@ -924,7 +934,8 @@ function wettAuswerten(){
     const pr=P[i];
     if(x.du){
       const mit=!!l, r=ruhm(pr.ans,0,'Wettbewerbe'), was=`+${r} Ansehen${mit?`, +${pr.qp} Punkte für den Wein`:''}${pr.geld?', '+eur(pr.geld)+' Preisgeld':''}`;
-      if(mit){l.qp+=pr.qp; (l.med=l.med||[]).push(`${pr.m} ${name} ${S.jahr}`); if(w.typ==='bund') l.bund=true}
+      // Seit 14.5.7 (Annahme 25): die Punkte der Medaille stehen eigen am Wein (l.medP), die Qualität bleibt die des Weinbergs.
+      if(mit){l.medP=(l.medP||0)+pr.qp; (l.med=l.med||[]).push(`${pr.m} ${name} ${S.jahr}`); if(w.typ==='bund') l.bund=true}
       if(w.typ==='land') tatMerk('medaille');
       ehre(pr.m,`${pr.t} ${wo}: ${e.name}`,0,was); kompMedaille(l||e,i);
       if(pr.geld) kassiere(pr.geld);
@@ -956,7 +967,7 @@ const kroneWein=(l,kl)=>{const K=KRONEN[kl]; return K.sekt?!!l.sekt:!l.sekt&&K.s
 // Regeln wie bisher: abgefüllt, nicht gepanscht, lange genug gelagert, dazu die Klasse.
 function schauFaehig(l,s=S.schau){return !!(s&&l&&l.stufe&&!l.pansch&&l.status==='flasche'&&l.flMonate>=lager(l).min&&kroneWein(l,s.kl))}
 // Es zählen die Punkte wie bisher (mit Reife), seit 14.2.6 auch beim Jahrhundertwein seine eigenen. Sie stehen beim Einreichen fest.
-function schauPunkte(l,s=S.schau){return l.qp+reifeBonus(l)+s.zufall+(R().wettPlus||0)}
+function schauPunkte(l,s=S.schau){return juryGrund(l,1)+s.zufall+(R().wettPlus||0)}
 function schauNeu(){
   const kl=kroneKl(); if(kl==null) return;
   const K=KRONEN[kl], d=DIFF[S.schwer].feld, namen=misch(WELT_GUETER).slice(0,8);
@@ -988,7 +999,7 @@ function schauAuswerten(){
   const pr=P[ich], schon=!!(l&&l.welt), mit=!!l&&!schon, r=ich===0?ruhm(KRONE_ANS,0,'Wettbewerbe',1):ruhm(pr.ans,0,'Wettbewerbe');
   const was=`+${r} Ansehen${mit?`, +${pr.qp} Punkte für den Wein`:''}${pr.geld?', '+eur(pr.geld)+' Preisgeld':''}`;
   if(l) l.welt=true;
-  if(mit){l.qp+=pr.qp; (l.med=l.med||[]).push(`${pr.m} ${WETTNAME.welt} ${S.jahr}`)}
+  if(mit){l.medP=(l.medP||0)+pr.qp; (l.med=l.med||[]).push(`${pr.m} ${WETTNAME.welt} ${S.jahr}`)} // seit 14.5.7 eigen am Wein (Annahme 25)
   if(pr.geld) kassiere(pr.geld);
   kompMedaille(l||e,ich);
   if(ich>0){
@@ -1639,7 +1650,10 @@ const oeSchwelle=st=>st==='eis'?EIS_OE_SCHWELLE:st==='feder'||!st?null:R().min[s
 const oeUeber=(st,w)=>{const s=w.sekt?null:oeSchwelle(st); return s==null?0:Math.max(0,Math.round(w.oe||0)-s)};
 const oePreisF=(st,w)=>1+Math.min(OE_PREIS_MAX,OE_PREIS_JE*oeUeber(st,w));
 // Seit 14.5.6: durchgefallen beim Weinprüfer (w.durch) DURCH_PREIS weniger, auch im Vermögen (lotWert).
-function weinWert(st,w){return STUFEN[st].preis*sortePreisF(w.sorte)*qualPreisF(w.qp)*(1+pflegePreis(w.pfl))*oePreisF(st,w)*sternF(w.sorte)*(w.durch?1-DURCH_PREIS:1)}
+// Seit 14.5.7: Punkte eigen am Wein (Medaillen w.medP, Sekt w.sektP) mit PUNKT_PREIS je Punkt, der Jahrhundertwein JH_PREIS mehr (Maik 25.11.2026, Frage 3).
+const jhPreisF=(st,w)=>w.jh&&!w.sekt&&(st==='tba'||st==='eis')?1+JH_PREIS:1;
+function weinWert(st,w){return STUFEN[st].preis*sortePreisF(w.sorte)*qualPreisF(w.qp)*(1+pflegePreis(w.pfl))*oePreisF(st,w)*sternF(w.sorte)*(w.durch?1-DURCH_PREIS:1)
+  *(1+((w.medP||0)+(w.sektP||0))*PUNKT_PREIS)*jhPreisF(st,w)}
 function preis(l){
   if(l.status!=='flasche') return 0;
   const L=lager(l); if(l.flMonate<L.min) return 0;
@@ -1671,7 +1685,7 @@ for(const id of Object.keys(SORTEN).filter(id=>!SORTEN[id].sl)) kompWissen('sort
   return `${so.farbe==='weiss'?'Weißwein':'Rotwein'}, ${rolleVon(id)?`die ${rolleVon(id).name} im Gebiet ${R().name}`:`im Gebiet ${R().name} ${eigText(eignung(id))}`}. Als Prädikatswein reift er mindestens ${Math.max(1,so.minL-(S.keller||0))} Monate in der Flasche und hält bis zu ${Math.round(so.maxL/12)} Jahre.${so.sektStar?` Als Sekt bringt er ${Math.round((SEKT_STAR-1)*100)} % mehr als andere Sorten.`:''}${sg}`});
 function kompSektText(){
   const so=kompRollen().sekt;
-  return `Sekt macht ab dem Rang ${RAENGE[R_SEKT].name} die ${ROLLEN.sekt.name}, direkt bei der Lese im eigenen Sektkeller, ohne Grundwein. Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche. Er ruht ${SEKT_REIFE} Monate auf der Hefe, mit ${HEFE_LANG} Monaten bekommt er ${HEFE_LANG_QP} Punkte mehr.${S.rollen?` Aus dem ${SORTEN[so].name} wird der Regional-Sekt, er bringt noch einmal ${Math.round((SEKT_STAR-1)*100)} % mehr.`:''} Bei Wettbewerben tritt Sekt erst ab dem Bundeswettbewerb an.`;
+  return `Sekt macht ab dem Rang ${RAENGE[R_SEKT].name} die ${ROLLEN.sekt.name}, direkt bei der Lese im eigenen Sektkeller, ohne Grundwein. Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche. Er ruht ${SEKT_REIFE} Monate auf der Hefe, mit ${HEFE_LANG} Monaten kostet er ${HEFE_LANG_P} % mehr und bekommt bei der Jury ${HEFE_LANG_P} Punkte mehr.${S.rollen?` Aus dem ${SORTEN[so].name} wird der Regional-Sekt, er bringt noch einmal ${Math.round((SEKT_STAR-1)*100)} % mehr.`:''} Bei Wettbewerben tritt Sekt erst ab dem Bundeswettbewerb an.`;
 }
 // Wissens-Seiten: Geschichte und die Zeile "Im Spiel", ohne Siegel. Die Kennungen aus 11.1 bleiben, neu ist helferweg.
 for(const r of Object.keys(REGIONEN)) kompWissen('gebiet_'+r,'gebiet',REGIONEN[r].name,()=>`${REGIONEN[r].text} ${r===S.region?'Hier steht dein Weingut.':`So spielt es sich in einer Partie ${WO[r]}.`}`);
@@ -1681,7 +1695,7 @@ kompWissen('klima','gebiet','Klima je Weinberg',()=>KLIMA_KOMP.replace(/\{(\w+)\
 for(let k=1;k<=KELLER_PREISE.length;k++) kompWissen('keller'+k,'technik',KELLER_NAMEN[k-1],
   ()=>`Stufe ${k} im Kellerausbau. Kostet ${eur(KELLER_PREISE[k-1])} und geht mit ${kellerMit(k-1)} im Kellerbuch. Prädikatsweine und Eiswein sind damit ${k} ${k===1?'Monat':'Monate'} früher verkaufsreif, und jeder Wein gewinnt beim Reifen schneller an Wert.`);
 // Seit 12.1: der Sektkeller mit der Flaschengärung als kleine Geschichte (KOMP_TEXT.sektkeller).
-kompWissen('sektkeller','technik','Sektkeller',()=>`Kostet einmal ${eur(SEKTKELLER_PREIS)} und geht ab dem Rang ${RAENGE[R_SEKT].name}. Ohne ihn gibt es keinen Sekt. Sektflasche, Korken und Agraffe kosten ${eur2(SEKT_KOSTEN)} je Flasche, mit der ${SEKT_ANLAGE_NAME} (${eur(SEKT_ANLAGE_PREIS)}, zu haben ${freiText('sekt_anlage')}) die Hälfte. Bei der Lese der ${ROLLEN.sekt.name} wählst du ${SEKT_REIFE} oder ${HEFE_LANG} Monate auf der Hefe, lang bringt ${HEFE_LANG_QP} Punkte mehr.${S.sektkeller?` Dein Sektkeller steht${S.sektAnlage?', mit Anlage':''}.`:''}`);
+kompWissen('sektkeller','technik','Sektkeller',()=>`Kostet einmal ${eur(SEKTKELLER_PREIS)} und geht ab dem Rang ${RAENGE[R_SEKT].name}. Ohne ihn gibt es keinen Sekt. Sektflasche, Korken und Agraffe kosten ${eur2(SEKT_KOSTEN)} je Flasche, mit der ${SEKT_ANLAGE_NAME} (${eur(SEKT_ANLAGE_PREIS)}, zu haben ${freiText('sekt_anlage')}) die Hälfte. Bei der Lese der ${ROLLEN.sekt.name} wählst du ${SEKT_REIFE} oder ${HEFE_LANG} Monate auf der Hefe, lang bringt ${HEFE_LANG_P} % mehr Preis und ${HEFE_LANG_P} Punkte bei der Jury.${S.sektkeller?` Dein Sektkeller steht${S.sektAnlage?', mit Anlage':''}.`:''}`);
 // Seit 14.5.3 (Annahme 11): die Erziehungsform mit Wahl fürs Leben und Maschinen-Regel, in der Meisterprüfung steht sie nur hier. Platzhalter, Wortlaut in Meilenstein 17.
 kompWissen('form','technik','Erziehungsform',()=>`${Object.values(FORMEN).map(F=>`${F.name}: ${Math.round(F.menge*100)} % Menge, ${F.qual} Punkte Qualität, Rebschnitt ${eur(F.ha)} je Hektar`).join('. ')}. Der Kordon verliert bei Spätfrost und Regen im Oktober nur die Hälfte. ${FORM_MASCH_SATZ} ${FORM_WAHL_SATZ}`);
 kompWissen('reife','technik','Flaschenreife',()=>'In der Flasche gewinnt ein Wein mit jedem Jahr an Wert, höchstens bis zum Vierfachen. Wie schnell das geht und wie lange er hält, hängt an der Rebsorte und am Kellerausbau.');
@@ -2804,7 +2818,7 @@ function mgrHandel(){
   const w=S.wett;
   // Seit 10.3 (Frage 17): Zur Weltweinschau reicht sie nicht ein, den Wein wählt der Spieler.
   if(aufgabeAktiv('wett')&&w&&w.typ!=='welt'&&!w.fertig&&!w.ein&&S.rang>=wettRang()){
-    const land=w.typ==='land', l=S.lots.filter(wettFaehig).sort((a,b)=>b.qp+(land?0:reifeBonus(b))-a.qp-(land?0:reifeBonus(a)))[0];
+    const land=w.typ==='land', l=S.lots.filter(wettFaehig).sort((a,b)=>juryGrund(b,!land)-juryGrund(a,!land))[0]; // seit 14.5.7 nach den Punkten der Jury
     if(l){w.ein={id:l.id,name:lotName(l),p:wettPunkte(l),sorte:l.sorte,stufe:l.stufe,sekt:l.sekt?1:0}; L.push(`${lotName(l)} ${land?'zur Landesprämierung':'zum Bundeswettbewerb'} eingereicht`)}
   }
   const art=festArt(), F=FESTE[art];
@@ -3155,9 +3169,9 @@ function lese(id,la,p,hefe){
   const neu={id:S.nextId++,sorte:id,jahrgang:S.jahr,liter:l,oe:q.oe,leseart:la,edel:f.edel,eis:f.gefroren,...(q.masch?{masch:1}:{}),status:'trauben',stufe:null,qp:qualWb(id),fassMonate:0,flMonate:0,...(f.laub===S.jahr?{laub:1}:{}),boden:S.boden+4*R().sorten.filter(x=>S.felder[x].gelesen||S.felder[x].teil).length,bst:wbBoden(id),pfl:f.pflSt||0,...(f.jh?{jh:1}:{})};
   // Seit 13.5.8: Die Sekt-Trauben liegen erst im Keller (sektTr), Kosten und Ansehen kommen mit dem Umlagern in den Sektkeller (sektUmlagern).
   if(sk){const h=hefe===HEFE_LANG?HEFE_LANG:SEKT_REIFE; Object.assign(neu,{status:'sektTr',stufe:SEKT_GRUND,sekt:true,edel:false,eis:false,...(h>SEKT_REIFE?{hefe:h}:{}),med:[],bund:false});
-    // Seit 13.4.9: Sekt vom einfachen Hang bekommt SEKT_EINFACH_QP Punkte weniger, anteilig nach sektEinfach(). ab merkt den Abzug für die Anzeige.
-    // Seit 14.5.2: auf der Qualität des Weinbergs, SEKT_QP ist weg. Hefelager und Hang rechnen bis 14.5.7 wie bisher auf die Punkte des Sekts.
-    const ab=sektAbzug(); neu.qp=Math.max(0,neu.qp+(h>SEKT_REIFE?HEFE_LANG_QP:0)-ab); if(ab) neu.hangAb=ab}
+    // Seit 13.4.9: Sekt vom einfachen Hang bekommt Punkte weniger, anteilig nach sektEinfach(). ab merkt den Abzug für die Anzeige.
+    // Seit 14.5.7 (Maik 25.11.2026, Frage 2): Hefelager (HEFE_LANG_P) und Hang (SEKT_EINFACH_P) stehen als Punkte am Sekt (l.sektP), die Qualität bleibt die des Weinbergs.
+    const ab=sektAbzug(), sp=(h>SEKT_REIFE?HEFE_LANG_P:0)-ab; if(sp) neu.sektP=sp; if(ab) neu.hangAb=ab}
   // Seit 13.4.6: Erlös der Lese für die Warnung des Weingut-Managers.
   {const st=sk?SEKT_GRUND:besteStufe(q); f.leseW=(f.leseW||0)+(st?leseWert(id,la,st,l):0)}
   S.lots.push(neu);

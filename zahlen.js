@@ -429,10 +429,11 @@ const WELT_FORM_AB=3, WELT_FORM_MON=4;
 const WELT_FORM={stark:['in starker Form','{fav} soll einen Wein im Keller haben, über den ganz Europa spricht.'],
   normal:['in gewohnter Form','{fav} tritt an wie jedes Jahr, stark, aber ohne Überraschung.'],
   schwach:['in schwacher Form','Bei {fav} soll der Jahrgang nicht gelungen sein, heißt es unter den Kennern.']};
+// Seit 14.5.7 (Entscheidung 36): KRONEN.p 100, 125 und 135 (bis 14.5.6: 43, 51 und 160), die Jury rechnet mit juryPunkte in kern.js.
 const KRONEN=[
-  {k:'sekt',name:'Sekt-Krone',sym:'🍾',sekt:1,stufen:[],was:'einem Sekt',fav:'Maison Tessancourt, Champagne',p:43,gesch:'Seit sieben Generationen lagern die Tessancourts ihre Flaschen in Kreidekellern unter Reims, tiefer als jeder Kirchturm im Ort hoch ist. Madame Éloïse Tessancourt rüttelt die besten Flaschen bis heute von Hand und sagt, ein Schaumwein verrate seine Eile beim ersten Schluck. Bei der Weltweinschau hat das Haus die Sekt-Krone öfter geholt als alle anderen zusammen.'},
-  {k:'praed',name:'Prädikats-Krone',sym:'🍷',stufen:['kab','spat','aus'],was:'einem Kabinett, einer Spätlese oder einer Auslese',fav:'Weingut Uferstein, Wachau',p:51,gesch:'Die Steinterrassen von Uferstein hängen in der Wachau steil über der Donau, und Großvater Leopold hat sie nach jedem Hochwasser Stein für Stein neu aufgeschichtet. Seine Enkelin Theresa liest erst, wenn der Herbstnebel vom Fluss abzieht, keinen Tag früher. Ihre Spätlesen gelten als die feinsten der Welt.'},
-  {k:'rar',name:'Raritäten-Krone',sym:'💎',stufen:['ba','eis','tba'],was:'einer Beerenauslese, einem Eiswein oder einer Trockenbeerenauslese',fav:'Hollóvár Pince, Tokaj',p:160,gesch:'Unter der Rabenburg Hollóvár liegen die Keller so tief im Vulkanstein, dass die Wände schwarz vom Kellerschimmel sind. Die Familie Szalay wartet dort jedes Jahr auf die Edelfäulnis und zählt die Beeren einzeln, wenn sie kommt. Wer gegen Hollóvár um die Raritäten-Krone antritt, braucht schon einen Jahrhundertwein.'}];
+  {k:'sekt',name:'Sekt-Krone',sym:'🍾',sekt:1,stufen:[],was:'einem Sekt',fav:'Maison Tessancourt, Champagne',p:100,gesch:'Seit sieben Generationen lagern die Tessancourts ihre Flaschen in Kreidekellern unter Reims, tiefer als jeder Kirchturm im Ort hoch ist. Madame Éloïse Tessancourt rüttelt die besten Flaschen bis heute von Hand und sagt, ein Schaumwein verrate seine Eile beim ersten Schluck. Bei der Weltweinschau hat das Haus die Sekt-Krone öfter geholt als alle anderen zusammen.'},
+  {k:'praed',name:'Prädikats-Krone',sym:'🍷',stufen:['kab','spat','aus'],was:'einem Kabinett, einer Spätlese oder einer Auslese',fav:'Weingut Uferstein, Wachau',p:125,gesch:'Die Steinterrassen von Uferstein hängen in der Wachau steil über der Donau, und Großvater Leopold hat sie nach jedem Hochwasser Stein für Stein neu aufgeschichtet. Seine Enkelin Theresa liest erst, wenn der Herbstnebel vom Fluss abzieht, keinen Tag früher. Ihre Spätlesen gelten als die feinsten der Welt.'},
+  {k:'rar',name:'Raritäten-Krone',sym:'💎',stufen:['ba','eis','tba'],was:'einer Beerenauslese, einem Eiswein oder einer Trockenbeerenauslese',fav:'Hollóvár Pince, Tokaj',p:135,gesch:'Unter der Rabenburg Hollóvár liegen die Keller so tief im Vulkanstein, dass die Wände schwarz vom Kellerschimmel sind. Die Familie Szalay wartet dort jedes Jahr auf die Edelfäulnis und zählt die Beeren einzeln, wenn sie kommt. Wer gegen Hollóvár um die Raritäten-Krone antritt, braucht schon einen Jahrhundertwein.'}];
 // Seit 13.8.6: die Feier zu jeder Krone, {wein} ist der Siegerwein. Die dritte Krone ist zugleich der Sieg.
 const KRONE_FEIER={
   sekt:['{wein} hat Maison Tessancourt geschlagen, und Madame Tessancourt gratuliert mit einem kleinen, sehr französischen Nicken.','Am Holzbogen zieht der Bürgermeister die erste Fahne hoch, die 🍾 Sekt-Krone.','Daneben hängen noch zwei leere Haken. „Die kriegen wir auch voll“, sagt er.'],
@@ -463,10 +464,12 @@ const DIFF={
 // ein Weingut übergeben wurde. Die Freischaltung liegt beim Gerät unter eigenem Schlüssel wie das Album, nicht im Spielstand, und reist mit der Sicherung.
 // Lehrjahre zählen nicht. Ein Spielstand in den Gesellenjahren ab der Generation MEISTER_GEN auf dem Gerät schaltet beim Start frei. Laufende Meisterprüfungen spielen weiter.
 const MEISTER_KEY='oechsle-meister', MEISTER_STUFE='schwer', MEISTER_VON='mittel', MEISTER_GEN=2, MEISTER_SPERRE='zuerst Gesellenjahre';
+// Seit 14.5.7 (Entscheidung 36): ws, die Punkte der Gegner bei Wettbewerben, je 40 höher (WETT_FELD_PLUS, bis 14.5.6: 18 bis 30, 26 bis 42, 14 bis 40).
+// Die Zahlen stehen ausgeschrieben, weil WETT_FELD_PLUS erst weiter unten steht.
 const GEGNER_TYP={
-  vorsicht:{name:'Hannelore Brück',art:'die Vorsichtige',eink:[9000,12000],ans:[16,24],biet:.4,med:.2,ws:[18,30],weine:['einen Kabinett','eine Spätlese','einen Qualitätswein']},
-  qualitaet:{name:'Konrad Steinfeld',art:'der Qualitätsfanatiker',eink:[8000,13000],ans:[20,30],biet:.45,med:.45,ws:[26,42],weine:['eine Auslese','eine Beerenauslese','eine Spätlese','eine Trockenbeerenauslese']},
-  zocker:{name:'Ricky Maurer',art:'der Zocker',eink:[-1000,21000],ans:[8,24],biet:.5,med:.25,ws:[14,40],weine:['einen Tafelwein','eine Auslese','einen Kabinett','eine Beerenauslese']}
+  vorsicht:{name:'Hannelore Brück',art:'die Vorsichtige',eink:[9000,12000],ans:[16,24],biet:.4,med:.2,ws:[58,70],weine:['einen Kabinett','eine Spätlese','einen Qualitätswein']},
+  qualitaet:{name:'Konrad Steinfeld',art:'der Qualitätsfanatiker',eink:[8000,13000],ans:[20,30],biet:.45,med:.45,ws:[66,82],weine:['eine Auslese','eine Beerenauslese','eine Spätlese','eine Trockenbeerenauslese']},
+  zocker:{name:'Ricky Maurer',art:'der Zocker',eink:[-1000,21000],ans:[8,24],biet:.5,med:.25,ws:[54,80],weine:['einen Tafelwein','eine Auslese','einen Kabinett','eine Beerenauslese']}
 };
 // Version 7.0 (Schritt G): Generationswechsel nach dem Fundament aus Schritt A. Zum Jahreswechsel nach je GEN_JAHRE Spieljahren übernimmt die nächste Generation (S.gen).
 // Es bleiben Fläche, Reben, Keller, Wein, Maschinen, Leute, Manager, Exporthandel, alle Freischaltungen und der Rang. Vom Ansehen bleibt ERB_ANSEHEN,
@@ -741,13 +744,14 @@ const AUK_MONATE=[2,3,6,10], AUK_CHANCE=.22;
 // Ab dem Jungwinzer kommt das erste Angebot per Zufall, spätestens AUK_ERST_JAHRE Jahre nach dem Aufstieg (S.aukErst merkt den Monat, in dem es kam).
 const AUK_FRUEH_HA=1, AUK_FRUEH_JAHRE=3, AUK_ERST_JAHRE=4;
 // Seit 13.4.9 (Nachtrag 3, Maik 22.11.2026): Land mit Lage. Jedes Stück Land ist einfacher Hang, kühle Höhenlage oder steiler Südhang (S.hang, S.ha bleibt die Summe).
-// Die Spitzen-Sorte wächst nur auf dem Südhang, Sekt auf dem einfachen Hang bekommt SEKT_EINFACH_QP Punkte weniger (Platzhalter).
+// Die Spitzen-Sorte wächst nur auf dem Südhang. Sekt auf dem einfachen Hang bekommt bis SEKT_EINFACH_P weniger, seit 14.5.7 (Maik 25.11.2026, Frage 2) nicht mehr
+// in der Qualität, sondern als Punkte am Sekt (l.sektP): im Preis 1 Punkt gleich 1 Prozent, bei der Jury die Punkte direkt (bis 14.5.6 SEKT_EINFACH_QP auf die Punkte).
 // SUED_MAX: höchstens so viele Hektar Südhang besitzt du in der ganzen Partie, die Spitzenlage eingerechnet. Bis sie unter den Hammer kam, bleiben ihre SPITZE_HA dafür frei.
 // satz steht bei der Auktion (Platzhalter bis 14.4).
 const LAGEN={einfach:{name:'einfacher Hang',kurz:'Einfacher Hang',sym:'🌄',satz:'Auf dem einfachen Hang trägt die Menge-Sorte gut, der Sekt verliert dort ein paar Punkte.'},
   hoehe:{name:'kühle Höhenlage',kurz:'Kühle Höhenlage',sym:'🏔️',satz:'Oben in der kühlen Höhenlage wird der Sekt am feinsten.'},
   sued:{name:'steiler Südhang',kurz:'Steiler Südhang',sym:'☀️',satz:'Nur auf dem steilen Südhang wächst die Spitzen-Sorte, und mehr als 8 Hektar davon bekommt kein Weingut.'}};
-const LAGE_REIHE=['einfach','hoehe','sued'], SUED_MAX=8, SEKT_EINFACH_QP=5;
+const LAGE_REIHE=['einfach','hoehe','sued'], SUED_MAX=8, SEKT_EINFACH_P=5;
 // Lagen der Lose bei der Auktion je Rang, als Anteile (Platzhalter bis 14.2): im ersten Akt nur einfacher Hang, ab dem Weingutsbesitzer vor allem kühle Höhenlage,
 // seit 14.4.2 ab dem Weinbaurat auch Südhang (bis 14.2 ab dem Gutsherrn). Es gilt die letzte Zeile, deren Rang erreicht ist.
 const AUK_LAGE=[{r:0,w:{einfach:1}},{r:4,w:{einfach:.3,hoehe:.7}},{r:6,w:{einfach:.2,hoehe:.5,sued:.3}}];
@@ -761,7 +765,7 @@ const AUK_WERT_HA=26000, AUK_KLUG=[.9,1];
 const SUED_SATZ={
   keinPlatz:`Die Spitzen-Sorte wächst nur auf dem steilen Südhang, und dort ist kein Platz frei. Südhang gibt es bei den Auktionen ab dem Rang ${RAENGE[AUK_LAGE[AUK_LAGE.length-1].r].name} und einmal mit der Spitzenlage.`,
   spitze:'Sie wächst nur auf dem steilen Südhang.',
-  sekt:`Sekt wird am besten auf der kühlen Höhenlage, auf dem einfachen Hang bekommt er ${SEKT_EINFACH_QP} Punkte weniger.`,
+  sekt:`Sekt wird am besten auf der kühlen Höhenlage, vom einfachen Hang kostet er bis ${SEKT_EINFACH_P} % weniger und bekommt bei der Jury bis ${SEKT_EINFACH_P} Punkte weniger.`, // seit 14.5.7, Platzhalter, Wortlaut in Meilenstein 17
   umpflanzen:'Rodest du die Menge-Sorte, um Sekt zu pflanzen, sind die gerodeten Reben samt ihrer Pflege weg. Die neuen übernehmen die Pflegestufe der Sekt-Sorte, und auf dem einfachen Hang wird der Sekt schlechter.'};
 // Version 7.0 (Schritt I): In der langen Partie kommt der Weinskandal rund alle anderthalb Jahre, die Erbschaft alle drei.
 // Damit nicht immer derselbe Text steht, wechseln die Varianten der Reihe nach durch (S.vz), ohne Zufall.
@@ -784,7 +788,7 @@ const EREIGNIS={
     supersommer:{ok:()=>(S.monat===6||S.monat===7)&&feldHaengt().length,los(){const n=rint(6,9); for(const id of feldHaengt()) S.felder[id].oe=Math.min(OE_MAX,S.felder[id].oe+n); S.sonne++; schlag(80,'Supersommer!',`Wochenlang Sonne satt ${WO[S.region]}. Deine Trauben legen ${n}° Öchsle zu, und der Sommer zählt als zusätzlicher Sonnenmonat.`,'supersommer',{du:1})}},
     mode:{ok:()=>!S.lage,los(){const fr=S.rollen?R().sorten.filter(sorteFrei):null, id=fr?fr[rint(0,fr.length-1)]:R().sorten.slice().sort((a,b)=>eignung(b)-eignung(a))[0], f=1+rnd(.2,.4), n=rint(4,6); S.lage={typ:'mode',f,rest:n,sorte:id}; schlag(80,`${SORTEN[id].name} ist plötzlich in Mode`,`Ein Fernsehkoch schwärmt ${fr?`von der Rebsorte ${SORTEN[id].name} ${WO[S.region]}, und plötzlich wollen alle diesen Wein`:`vom ${SORTEN[id].name} ${WO[S.region]}, und plötzlich wollen ihn alle`}. ${n} Monate lang bringt er ${Math.round((f-1)*100)}\u00a0% mehr.`,'rieslingmode',{du:1})}},
     erbschaft:{ok:()=>true,los(){const b=Math.round(rint(8,20)*1000*(1+S.rang/2)/100)*100; S.geld+=b; fx('kasse'); schlag(80,'Unverhoffte Erbschaft',`${variante('erbschaft').replace('{b}',eur(b))} Das Geld ist steuerfrei.`,'erbschaft',{du:1})}},
-    kritiker:{ok:()=>S.lots.some(kritikerWein),los(){const l=S.lots.filter(kritikerWein).sort((a,b)=>b.qp-a.qp)[0], q=rint(3,5); l.qp+=q; const a=ruhm(12); schlag(80,`Kritiker lobt deinen ${lotName(l)}`,`Ein bekannter Weinkritiker hat deinen ${lotName(l)} probiert und schwärmt in seiner Kolumne. Der Wein bekommt ${q} Punkte mehr, dazu +${a} Ansehen.`,'weinkritiker',{du:1})}}
+    kritiker:{ok:()=>S.lots.some(kritikerWein),los(){const l=S.lots.filter(kritikerWein).sort((a,b)=>b.qp-a.qp)[0], q=rint(3,5); l.medP=(l.medP||0)+q; /* seit 14.5.7 eigen am Wein (Annahme 25), bis 14.5.6 l.qp */ const a=ruhm(12); schlag(80,`Kritiker lobt deinen ${lotName(l)}`,`Ein bekannter Weinkritiker hat deinen ${lotName(l)} probiert und schwärmt in seiner Kolumne. Der Wein bekommt ${q} Punkte mehr, dazu +${a} Ansehen.`,'weinkritiker',{du:1})}}
   },
   schlecht:{
     hagel:{ok:()=>S.monat>=5&&S.monat<=8&&feldHaengt().length,los(){const p=rnd(.2,.4); for(const id of feldHaengt()){const f=S.felder[id]; f.menge=Math.round(f.menge*(1-p))} schlag(80,`Hagel ${WO[S.region]}`,`Ein Unwetter mit Hagelkörnern so groß wie Murmeln ist über deine Weinberge gezogen. Rund ${Math.round(p*100)}\u00a0% der Trauben sind hin.`,'hagel',{du:1})}},
@@ -808,9 +812,10 @@ const SEKT_F=1.6, SEKT_STAR=1.1, SEKT_GRUND='qba';
 // Version 12.1 (Maik 20.11.2026): Sekt nur mit eigenem Sektkeller, einmal zu kaufen ab R_SEKT für SEKTKELLER_PREIS. Sein Ausbau ist die Degorgier- und Abfüllanlage
 // ab FREI.sekt_anlage (seit 14.4.2 mit dem ersten eigenen Sekt, 13.7.8 bis 14.2 mit dem Rebstock der Sekt-Sorte), sie halbiert die Kosten je Flasche (SEKT_ANLAGE_F), ohne Leute und ohne Wartung, deshalb nicht in der Maschinenliste.
 // SEKT_KOSTEN ist Sektflasche, Korken und Agraffe. Einzige Wahl des Spielers bei der Lese: SEKT_REIFE Monate reifen oder HEFE_LANG Monate auf der Hefe (Feld hefe am Wein).
-// Seit 13.3.3 bringt das lange Hefelager HEFE_LANG_QP Qualitätspunkte, der Preis folgt über die Punkte (Startwert, Annahme von Claude, bis 12.9.5 der Faktor 1,25).
+// Seit 13.3.3 bringt das lange Hefelager Punkte (bis 12.9.5 der Faktor 1,25). Seit 14.5.7 (Maik 25.11.2026, Frage 2) als HEFE_LANG_P Punkte am Sekt (l.sektP):
+// im Preis 1 Punkt gleich 1 Prozent, bei der Jury die Punkte direkt, die Qualität des Weinbergs bleibt unberührt (bis 14.5.6 HEFE_LANG_QP auf die Punkte).
 // Preise und Faktor sind Annahmen von Claude bis zum Messlauf 12.1.7. Die Gegner rechnen ihren Sekt weiter über regionF.
-const SEKTKELLER_PREIS=40000, SEKT_ANLAGE_PREIS=30000, SEKT_ANLAGE_F=.5, SEKT_ANLAGE_NAME='Degorgier- und Abfüllanlage', SEKT_REIFE=9, HEFE_LANG=24, HEFE_LANG_QP=6;
+const SEKTKELLER_PREIS=40000, SEKT_ANLAGE_PREIS=30000, SEKT_ANLAGE_F=.5, SEKT_ANLAGE_NAME='Degorgier- und Abfüllanlage', SEKT_REIFE=9, HEFE_LANG=24, HEFE_LANG_P=6;
 // Schritt 3: Faktor des Gebiets auf das Jahreseinkommen der Gegner. preisF und ertragF voll, Sterne mit ★★★ (ihre beste Sorte),
 // sektPreisF nur auf den Anteil GEGNER_SEKT, weil Sekt beim Test-Spieler rund 6 bis 14 % der Einnahmen bringt (Messung Schritt 2).
 const GEGNER_SEKT=.1;
@@ -1552,7 +1557,7 @@ const SOMMER_FUSS='Ob die Öchsle auch reichen, zeigt erst die Lese.';
 const AUSD_LINKS='🍇 Ausdünnen: {kosten}, {m} weniger Menge, {qp} Punkte Qualität';
 const AUSD_MELDUNG='Der {sorte} ist für {kosten} ausgedünnt: Die Lese {jahr} bekommt {qp} Punkte Qualität und {m} weniger Menge.';
 // Preis (Entscheidungen 24, 38 und 44): Qualitätsfaktor QUAL_PREIS_AB plus QUAL_PREIS_JE je Punkt, Grundpreis je Sorte, Jahrhundertwein JH_PREIS mehr.
-// Seit 14.5.4 in preis, lotWert, leseWert und schmier (qualPreisF, sortePreisF in kern.js). JH_PREIS wirkt erst ab 14.5.7.
+// Seit 14.5.4 in preis, lotWert, leseWert und schmier (qualPreisF, sortePreisF in kern.js). JH_PREIS seit 14.5.7 (jhPreisF).
 const QUAL_PREIS_AB=.5, QUAL_PREIS_JE=.01, SORTE_PREIS={menge:1,sekt:1,spitze:1.05}, JH_PREIS=.1;
 // Öchsle-Nachtrag (Maik 25.11.2026, Annahmen 35 bis 38 im Bauplan 14.5), seit 14.5.4. Preis: OE_PREIS_JE je Grad über der Schwelle der Weinstufe
 // (R().min, beim Eiswein EIS_OE_SCHWELLE), höchstens OE_PREIS_MAX, nicht in der Qualität. Jury: derselbe Überschuss, höchstens OE_JURY_MAX Punkte (ab 14.5.7).
@@ -1598,5 +1603,7 @@ const WAGNIS_KOPF='⚖️ Wagnis beim Weinprüfer', WAGNIS_KNOPF='Wagen', PRESSE
   URTEIL_ANS_MINUS=' {n} Ansehen.', PRESSE_JA=' 📰 Die Presse feiert den Wein.', PRESSE_NEIN=' 📰 Die Presse schreibt über die Pleite.', DURCH_NAME=' (herabgestuft)';
 // Jury (Entscheidung 36, Maik 25.11.2026): Jahrhundertwein JH_JURY mehr, Sekt mit dem Wert SEKT_JURY, die Felder WETT_FELD_PLUS höher.
 const JH_JURY=15, SEKT_JURY=11, WETT_FELD_PLUS=40;
-// Sekt (Maik 25.11.2026, Frage 2): langes Hefelager HEFE_LANG_P Punkte, einfacher Hang bis SEKT_EINFACH_P weniger, im Preis 1 Punkt gleich 1 Prozent.
-const HEFE_LANG_P=6, SEKT_EINFACH_P=5;
+// Sekt (Maik 25.11.2026, Frage 2): langes Hefelager HEFE_LANG_P Punkte, einfacher Hang bis SEKT_EINFACH_P weniger. Seit 14.5.7 stehen beide bei ihren Vorgängern
+// (HEFE_LANG beim Sektkeller, LAGE_REIHE bei den Lagen), weil Texte dort beim Laden schon gebaut werden.
+// Seit 14.5.7: Punkte am Wein außerhalb der Qualität (Medaillen l.medP, Sekt l.sektP) zählen im Preis PUNKT_PREIS je Punkt (1 Punkt gleich 1 Prozent, Annahme 25).
+const PUNKT_PREIS=.01;
