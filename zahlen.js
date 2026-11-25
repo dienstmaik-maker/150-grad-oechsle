@@ -580,12 +580,15 @@ const MASCH={duenger:{name:'Düngerstreuer',preis:STREU_PREIS,leist:0,helfer:0,w
   gross:{name:'Vollernter',preis:VOLL_PREIS,leist:VOLL_LEISTUNG,helfer:VOLL_HELFER,wart:VOLL_WARTUNG,rang:R_VOLL,fahrer:2,leute:'helfer',ernte:1,text:'die große Maschine für weite Lagen'},
   abfuell:{name:'Abfüllanlage',preis:ABF_PREIS,leist:0,helfer:0,wart:ABF_WARTUNG,rang:R_ABF,fahrer:1,leute:'lagerarb',bonus:1,f:1,text:'füllt ab, ohne dass etwas danebengeht'}};
 // Seit 14.6.8 (Maik 25.11.2026, Antwort zu D3): Erntemaschine ohne Weinberg mit passender Form. still: Einsatz im Feld Maschinen, in allen Spielstufen.
+// Seit 15.1.1 (Maik 25.11.2026, Bauplan 15.1 Annahme 1) gilt das auch für den Laubschneider (still, formen.laub, kaufLaub).
 // kauf: Satz im Kauf-Fenster der Erntemaschinen nur in den Spielstufen MASCH_FORM_STUFEN ({n} deine Reben, die sie lesen darf, {g} alle, {formen} die passenden Formen),
 // in der Meisterprüfung steht die Regel nur im Weinkompendium (Entscheidung 42). Platzhalter, Wortlaut in Meilenstein 17.
 const MASCH_FORM_STUFEN=['einfach','mittel'];
 const MASCH_FORM_TEXT={still:'steht still, kein Weinberg mit passender Form',
   kauf:'Lesen darf {er} nur am {formen}. Von deinen {g} Reben wären das heute {n}.',
-  formen:{klein:'Flachbogen',gross:'Flachbogen und am Kordon'}};
+  formen:{klein:'Flachbogen',gross:'Flachbogen und am Kordon',laub:'Flachbogen und am Kordon, wenn der Vollernter fährt'},
+  // Seit 15.1.1 (Bauplan 15.1 Annahme 1): derselbe Satz im Kauf-Fenster des Laubschneiders, gleiche Spielstufen. Platzhalter, Wortlaut in Meilenstein 17.
+  kaufLaub:'Schneiden darf er nur am {formen}. Von deinen {g} Reben wären das heute {n}.'};
 // Bonus der drei neuen Maschinen, für Fenster und Infotafeln.
 const MASCH_BONUS={duenger:()=>`Düngen kostet ${Math.round(STREU_RABATT*100)} % weniger und bringt ${STREU_PLUS} statt ${DUENG_PLUS} Punkte Boden`,
   laub:()=>`Sommerschnitt im Juni: Jede Lese des Jahres bekommt ${LAUB_QP} Punkte Qualität und ${Math.round(LAUB_MENGE*100)} % mehr Menge, dazu ${LAUB_ANS} Ansehen`,

@@ -1072,7 +1072,9 @@ function vMaschinen(){
     h+=fenster('kauf_'+id,titel,(T.bonus?`<div class="mut" style="margin-bottom:4px">${MASCH_BONUS[id]()}.</div>`:`<div class="kv"><span>Leistung bei der Lese</span><span>${rbn(T.leist)} Reben</span></div>
       <div class="kv"><span>Deckt übers Jahr ab</span><span>${T.helfer} Hektar Reben</span></div>`)+`<div class="kv"><span>${lw}</span><span>${fa}</span></div><div class="kv"><span>Wartung</span><span>${eur(T.wart)} je %</span></div>`
       // Seit 14.6.8 (Antwort zu D3): in Lehr- und Gesellenjahren ein Satz, wie viele deiner Reben die Erntemaschine lesen darf. Platzhalter, Wortlaut in Meilenstein 17.
-      +(T.ernte&&MASCH_FORM_STUFEN.includes(S.schwer)?`<div class="mut" style="margin-top:4px">${MASCH_FORM_TEXT.kauf.replace('{er}',maschEr({typ:id})).replace('{formen}',MASCH_FORM_TEXT.formen[id]).replace('{g}',rbn(rebenGesamt())).replace('{n}',rbn(maschFormReben(T)))}</div>`:''),{
+      +(T.ernte&&MASCH_FORM_STUFEN.includes(S.schwer)?`<div class="mut" style="margin-top:4px">${MASCH_FORM_TEXT.kauf.replace('{er}',maschEr({typ:id})).replace('{formen}',MASCH_FORM_TEXT.formen[id]).replace('{g}',rbn(rebenGesamt())).replace('{n}',rbn(maschFormReben(T)))}</div>`:'')
+      // Seit 15.1.1 (Bauplan 15.1 Annahme 1): derselbe Satz beim Laubschneider, wie viele deiner Reben er schneiden darf. Platzhalter, Wortlaut in Meilenstein 17.
+      +(T===MASCH.laub&&MASCH_FORM_STUFEN.includes(S.schwer)?`<div class="mut" style="margin-top:4px">${MASCH_FORM_TEXT.kaufLaub.replace('{formen}',MASCH_FORM_TEXT.formen.laub).replace('{g}',rbn(rebenGesamt())).replace('{n}',rbn(laubFormReben()))}</div>`:''),{
       links:hat?`Du hast schon ${T.f?'eine':'einen'}.`:saison?'':'Zu kaufen von Januar bis März.',kn:pk('maschKauf','Kaufen',eur(T.preis),{id,aus:!saison||hat,arm:S.geld<T.preis}),i:was});
   }
   // Seit 13.5.5: Ausbau der Abfüllanlage auf Stufe 2, für jede Anlage, die noch auf Stufe 1 ist. Wie der Kauf von Januar bis März.

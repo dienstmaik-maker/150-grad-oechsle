@@ -402,15 +402,26 @@ function pflegeF(z){return PFLEGE.find(p=>z>=p[0])[1]}
 // Bis 14.6.7 stand sie "im Einsatz" und band einen Fahrer. Die anderen Maschinen passen immer.
 function maschFormReben(T){if(!T.ernte) return null; if(R().steil) return 0;
   return weinberge().reduce((a,id)=>{const f=S.felder[id], x=FORMEN[formVon(id)].masch; return a+(f&&f.reben&&(x===1||x==='voll'&&T===MASCH.gross)?f.reben:0)},0)}
-const maschPasst=ma=>!mTyp(ma).ernte||maschFormReben(mTyp(ma))>0;
+// Seit 15.1.1 (Maik 25.11.2026, Bauplan 15.1 Annahme 1): Für den Laubschneider gilt dieselbe Regel. Er darf in einen Weinberg nach maschDarf (Flachbogen immer,
+// Kordon nur mit dem Vollernter im Einsatz, Einzelpfahl nie, an der Mosel nie). Ohne bepflanzten Weinberg, in den er darf, steht er still und belegt keinen Fahrer,
+// in allen Spielstufen. Bis 15.1.0 stand er "im Einsatz", band einen Fahrer und meldete im Juli einen Sommerschnitt ohne geschnittenen Weinberg.
+// voll: ob ein Vollernter im Einsatz ist. Ohne Angabe nach der Verteilung der Erntemaschinen (ernteVerteilung), die den Laubschneider nicht braucht.
+function laubFormReben(voll){if(R().steil) return 0; if(voll==null) voll=ernteVerteilung().E.some(m=>mTyp(m)===MASCH.gross);
+  return weinberge().reduce((a,id)=>{const f=S.felder[id], x=FORMEN[formVon(id)].masch; return a+(f&&f.reben&&(x===1||x==='voll'&&voll)?f.reben:0)},0)}
+const maschPasst=ma=>{const T=mTyp(ma); return T.ernte?maschFormReben(T)>0:T===MASCH.laub?laubFormReben()>0:true};
 // Maschinen, die laufen können, sobald ihre Leute da sind: nicht ausgefallen und mit passendem Weinberg.
 const maschBereit=ma=>ma.zustand>=MASCH_ROT&&maschPasst(ma);
-function maschVerteilung(h){
-  let frei=h==null?S.helfer:h, lf=S.lagerarb||0; const E=[], ok=S.maschinen.filter(maschBereit);
-  for(const ma of ok.filter(m=>mTyp(m).ernte).sort((a,b)=>mTyp(b).fahrer-mTyp(a).fahrer||b.zustand-a.zustand)){
+// Seit 15.1.1 getrennt: erst die Erntemaschinen (die großen zuerst), sie hängen nicht an den anderen Maschinen. Liefert sie und die übrigen Erntehelfer.
+function ernteVerteilung(h){
+  let frei=h==null?S.helfer:h; const E=[];
+  for(const ma of S.maschinen.filter(m=>mTyp(m).ernte&&maschBereit(m)).sort((a,b)=>mTyp(b).fahrer-mTyp(a).fahrer||b.zustand-a.zustand)){
     const n=mTyp(ma).fahrer; if(frei>=n){frei-=n; E.push(ma)}
   }
-  for(const ma of ok.filter(m=>!mTyp(m).ernte)){
+  return {E,frei};
+}
+function maschVerteilung(h){
+  let {E,frei}=ernteVerteilung(h), lf=S.lagerarb||0; const voll=E.some(m=>mTyp(m)===MASCH.gross);
+  for(const ma of S.maschinen.filter(m=>!mTyp(m).ernte&&m.zustand>=MASCH_ROT&&(mTyp(m)!==MASCH.laub||laubFormReben(voll)>0))){
     const T=mTyp(ma);
     if(T.leute==='lagerarb'){if(lf>=T.fahrer){lf-=T.fahrer; E.push(ma)}}
     else if(frei>=T.fahrer){frei-=T.fahrer; E.push(ma)}
@@ -426,7 +437,7 @@ function bonusMasch(typ){const E=maschVerteilung(); return S.maschinen.find(m=>m
 // Abnutzung einer Bonus-Maschine um p Prozentpunkte mal Pflege-Faktor nach dem Zustand vor dem Einsatz. Bruchteile sammelt ma.abn.
 function abnutz(ma,p){ma.abn=(ma.abn||0)+p*pflegeF(ma.zustand); const d=Math.floor(ma.abn); if(d){ma.abn-=d; ma.zustand=Math.max(MASCH_MIN,ma.zustand-d)}}
 // Maschinen, die nur wegen fehlender Leute stillstehen, und wie viele Fahrer (Erntehelfer) ihnen fehlen.
-// Seit 14.6.8 ohne die Erntemaschinen ohne passenden Weinberg (maschBereit), die brauchen keinen Fahrer.
+// Seit 14.6.8 ohne die Erntemaschinen ohne passenden Weinberg (maschBereit), seit 15.1.1 auch ohne den Laubschneider ohne passenden Weinberg, die brauchen keinen Fahrer.
 function maschOhneFahrer(){const E=maschVerteilung(); return S.maschinen.filter(m=>maschBereit(m)&&!E.includes(m))}
 function fahrerBedarf(){return S.maschinen.filter(m=>maschBereit(m)&&mTyp(m).leute==='helfer').reduce((a,m)=>a+mTyp(m).fahrer,0)}
 function fahrerFehlen(){return Math.max(0,fahrerBedarf()-S.helfer)}
@@ -2275,7 +2286,8 @@ function monatLauf(){
     if(lb){const an=bonusMasch('laub');
       // Seit 14.2.4 nur in Weinbergen, in die die Maschine darf (maschDarf), die anderen bekommen den Sommerschnitt von Hand.
       if(an){S.laubJahr=S.jahr; for(const id of weinberge()){const f=S.felder[id]; if(maschDarf(id)&&f.menge>0&&!f.gelesen&&f.laub!==S.jahr){f.laub=S.jahr; f.menge=Math.round(f.menge*(1+LAUB_MENGE))}} abnutz(an,LAUB_ABN); const a=laubAnsehen(); Z.push(`✂️ Dein Laubschneider hat im Juni den Sommerschnitt gemacht: Die Lese ${S.jahr} bekommt ${LAUB_QP} Punkte Qualität und ${Math.round(LAUB_MENGE*100)} % mehr Menge${a?`, dazu +${a} Ansehen`:''}. Zustand jetzt ${an.zustand} %.`)}
-      else Z.push(`✂️ Dein Laubschneider ${lb.zustand<MASCH_ROT?'ist ausgefallen':'hatte keinen Fahrer'}, einen Sommerschnitt gab es dieses Jahr nicht.`)}}
+      // Seit 15.1.1: ohne Weinberg, in den er darf, steht er still (MASCH_FORM_TEXT.still).
+      else Z.push(`✂️ Dein Laubschneider ${lb.zustand<MASCH_ROT?'ist ausgefallen':!maschPasst(lb)?MASCH_FORM_TEXT.still:'hatte keinen Fahrer'}, einen Sommerschnitt gab es dieses Jahr nicht.`)}}
   // Seit 8.0 nutzen sich Maschinen nur noch bei der Lese ab (maschAbnutzung), die feste Abnutzung je Herbstmonat ist weg.
   // Der Weingut-Manager stellt nach dem Monatswechsel die Helfer für die Handlese ein, sobald Edelfäulnis da ist.
   {const n=mgrHandlese(), t=`${n===1?'einen Erntehelfer':n+' Erntehelfer'} für die Handlese eingestellt`;
