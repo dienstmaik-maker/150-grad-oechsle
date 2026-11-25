@@ -1756,14 +1756,14 @@ function vSabotage(){
 // Kosten (o.k) und als Tipp dem Text des alten i (o.i) samt Buchkapitel. ST_PANEL merkt sich die Teile der zuletzt gezeichneten Karten.
 // stadtBrett: die Orte der Stadt, die schon auf dem Holzbrett ohne Panorama liegen (Entscheidung 3, wie Betrieb und Keller).
 const ST_PANEL={}, ST_SYM={amt:'🏛️',handel:'⚖️',laeden:'🍷',bank:'🏦',arbeit:'🧑‍🌾'};
-const stadtBrett=()=>TAB==='stadt'&&['platz','amt'].includes(SUB);
+const stadtBrett=()=>TAB==='stadt'&&['platz','amt','handel'].includes(SUB);
 function sKarte(id,titel,kopf,auf,o={}){
   if(einZu(id)) return '';
   ST_PANEL[id]={titel:o.iName||titel,z:o.z||'',k:o.k||'',t:o.i||'',buch:o.buch===undefined?BUCH_ORT[SUB]:o.buch,sym:o.sym||ST_SYM[SUB]||'🏛️'};
   return wbKarte(id,titel,o.klein||'',kopf,auf,{ohneBild:1,iId:id,iName:o.iName||titel,unter:o.unter,gesperrt:o.gesperrt,kl:'skarte'+(o.kl?' '+o.kl:'')});
 }
 function wbPanelStadt(id){const P=ST_PANEL[id];
-  return P?wbPanelRahmen(P.titel,wbAbschnitt(P.sym,WB_TEXT.zustand,P.z)+wbAbschnitt('🪙',WB_TEXT.kosten,P.k)+wbAbschnitt('💡',WB_TEXT.tipps,`<p style="margin:0 0 6px">${P.t}</p>${P.buch?mib(P.buch):''}`)):''}
+  return P?wbPanelRahmen(P.titel,wbAbschnitt(P.sym,WB_TEXT.zustand,P.z)+wbAbschnitt('🪙',WB_TEXT.kosten,P.k)+wbAbschnitt('💡',WB_TEXT.tipps,`<div style="margin:0 0 6px">${P.t}</div>${P.buch?mib(P.buch):''}`)):''}
 // Seit 16.6.1 (Bauplan 16.6, Entscheidungen 1, 2 und 10, Timos Bild 08): der Stadtplatz als Startansicht der Stadt. Das Bild über die volle Breite, darauf je Gebäude
 // eine Tippfläche (STADT_PLATZ, mindestens 44 Pixel hoch) mit dem Namen für Bildschirmleser, ein Tipp öffnet das Gebäude wie die Zunge (data-a="sub").
 // Wartet dort etwas, sitzt am Schild der Punkt aus badges(), Rot oder Gelb wie an den Zungen. Platzhalter, Wortlaut in Meilenstein 17.
@@ -1870,31 +1870,38 @@ function vStadt(){
     }}
     if(einZu('anmelden')&&!S.amt&&S.rang<1&&!stOffen()) h+=einKarte('rathaus','Noch kein Wein','Im Rathaus meldest du deinen Wein an, sobald er im Fass liegt. Erst dann darf er in die Flasche.');
   }
-  // Großhandel (seit 7.4 auf dem Fenster-Baustein): "Markt diesen Monat" mit Marktlage und Budget, darunter "Deine Weine" als Liste zum Antippen.
-  // Die Liste steht fest nach Dringlichkeit. Budget und Exporthandel stehen im i, vom Dauerauftrag bleibt eine Zeile (dauerInfo).
+  // Großhandel (seit 7.4 auf dem Fenster-Baustein): "Markt diesen Monat" mit Marktlage und Budget, darunter "Deine Weine". Budget und Exporthandel stehen im i.
+  // Seit 16.6.4 (Bauplan 16.6, Entscheidung 6, Timos Bild 07): auf dem Holzbrett. "Markt diesen Monat" ist eine Karte (Marktlage als Hinweis, Budget übrig als Balken
+  // von marktFrei()), darunter der Kopf "Deine Weine" und je Sorte eine Weinkarte aus dem Baustein von 16.5 (weinKarten mit o.pre 'wg', o.kopf, o.zeile), nur Flaschenwein
+  // ohne Regal wie bisher, fest nach Dringlichkeit. Je Wein eine Zeile mit dem Preis des besten Absatzwegs, "noch N zum vollen Preis" oder "Markt satt", Haltbarkeit,
+  // ein Tipp öffnet buchDetail, darunter der Knopf Verkaufen (verkaufen, unverändert). Verkauft die Handels-Managerin, steht im Kopf ihr Satz zur Grenze und nach dem
+  // letzten Weiterblättern die Wartezeile (Entscheidung 6.2, beide aus VERKAUF_TEXT). Platzhalter, Wortlaut in Meilenstein 17.
   if(SUB==='handel'){
-    const fl=S.lots.filter(l=>l.status==='flasche'&&!l.regal).sort(BSORT_F.dringend), exSt=exportStufen(), pzx=f=>`+${Math.round((f-1)*100)} %`, D=dauerInfo('handel');
-    h+=fenster('markt','Markt diesen Monat',`<div class="kv"><span>Marktlage</span><span>${S.markt>1.04?'gut 📈':S.markt<.96?'schwach 📉':'normal'}</span></div>
-      ${S.lage?`<div class="kv"><span>${S.lage.typ==='mode'?SORTEN[S.lage.sorte].name+' gefragt':'Weinskandal'}</span><span>${proz(S.lage.f)}</span></div>`:''}
-      <div class="kv"><span>Budget übrig</span><span>${eur(marktRest())} von ${eur(marktFrei())}</span></div>`,{
-      i:`Der Großhandel zahlt jeden Monat nur bis zu seinem Budget den vollen Preis. Was über das Budget geht, drückt den Preis, und was du an Weinhandlungen verkaufst, zählt nicht mit. Jeder Rang hebt das Budget um ${eur(MARKT_RANG)}, jeder bepflanzte Hektar über ${HA_FREI} um ${eur(MARKT_HA)}.
+    const T=WB_TEXT.stadt, H=T.hin, G=T.gh, fl=S.lots.filter(l=>l.status==='flasche'&&!l.regal).sort(BSORT_F.dringend), exSt=exportStufen(), pzx=f=>`+${Math.round((f-1)*100)} %`, D=dauerInfo('handel');
+    const mi=`Der Großhandel zahlt jeden Monat nur bis zu seinem Budget den vollen Preis. Was über das Budget geht, drückt den Preis, und was du an Weinhandlungen verkaufst, zählt nicht mit. Jeder Rang hebt das Budget um ${eur(MARKT_RANG)}, jeder bepflanzte Hektar über ${HA_FREI} um ${eur(MARKT_HA)}.
       ${exSt?`<div style="margin-top:6px">🌍 Der Exporthandel nimmt dir mit jedem Rang mehr ab, gerade hebt er das Budget um ${eur(MARKT_EXPORT*exSt)}${exSt<EXPORT_STUFEN?`, ab dem Rang ${RAENGE[S.rang+1].name} um ${eur(MARKT_EXPORT*(exSt+1))}`:''}. Er zahlt mehr als das Inland:</div>
       ${EXPORT_ZEILEN.map(([k,t])=>`<div class="kv"><span>${t}</span><span>${pzx(EXPORT_F[k])}</span></div>`).join('')}`
-      :`<div style="margin-top:6px">🌍 Den Exporthandel gibt es ${freiText('export')}. Er zahlt mehr als das Inland und nimmt dir mit jedem Rang mehr ab.</div>`}`});
+      :`<div style="margin-top:6px">🌍 Den Exporthandel gibt es ${freiText('export')}. Er zahlt mehr als das Inland und nimmt dir mit jedem Rang mehr ab.</div>`}`;
+    const lage=S.markt>1.04?['gruen',G.gut]:S.markt<.96?['gelb',G.schwach]:['grau',G.normal], mr=marktRest(), mf=marktFrei();
+    const mz=wbKv(G.lage,S.markt>1.04?'gut 📈':S.markt<.96?'schwach 📉':'normal')+(S.lage?wbKv(S.lage.typ==='mode'?SORTEN[S.lage.sorte].name+' gefragt':'Weinskandal',proz(S.lage.f)):'')+wbKv(G.budget,`${eur(mr)} von ${eur(mf)}`);
+    h+=sKarte('markt',G.markt,kHin(...lage)+(S.lage?`<div class="wbunter">${S.lage.typ==='mode'?SORTEN[S.lage.sorte].name+' gefragt':'Weinskandal'}, ${proz(S.lage.f)}</div>`:'')
+      +kBal(G.budget,mf?Math.min(100,mr/mf*100):0,mr<=0?'rot':'',`${eur(mr)} von ${eur(mf)}`),mz,{z:mz,i:mi});
     // Ist noch nichts verkaufsreif, steht oben, wann der erste Wein so weit ist (seit 5.0).
     const erst=fl.length&&!fl.some(l=>preis(l))?fl.map(l=>({l,n:lager(l).min-l.flMonate})).sort((a,b)=>a.n-b.n)[0]:null;
-    // Kurze Zeilen wie im Kellerbuch. Der Preis ist der beste Absatzweg mit der Marktlage nach den Verkäufen dieses Monats.
-    h+=fenster('weine','Deine Weine',fl.map(l=>{const W=wege(l),L=lager(l),H=haltText(l),nm=`<b>${dot(l.sorte)}${esc(lotName(l))}${l.med&&l.med.length?' 🏅':''}</b>`,z2=`<div class="bz2">${num(l.liter)} Flaschen · Qualität ${l.qp}</div>`,z3=`<div class="bz3 ${H.r<=2?'rot':''}">${H.t}</div>`;
-      if(!W.length){const n=L.min-l.flMonate; return `<button class="bzeile" data-a="buchDetail" data-id="${l.id}"><div class="bz1">${nm}<span>reif in ${n} ${n===1?'Monat':'Monaten'}</span></div>${z2}${z3}</button>`}
-      // Seit 7.9 (Weg A): Unter dem Preis steht, wie viele Flaschen der Großhandel diesen Monat noch zum vollen Preis nimmt. Gerechnet wird mit dem Rest
-      // des Budgets, also nach jedem Verkauf neu. Vorher galt marktF(0), der Preis der ersten Flasche: Der blieb voll, auch wenn das Budget gerade aufgebraucht war.
-      const w=W[0], fw=federHandel(l), voll=fw?l.liter:Math.min(l.liter,Math.floor(marktRest()/w.p)), satt=!fw&&voll<1;
-      const zv=fw?'':`<div class="bz2">${satt?`alle zusammen im Schnitt ${eur2(w.p*marktF(l.liter*w.p))} je Flasche`:voll>=l.liter?'alle zum vollen Preis':`noch ${voll===1?'1 Flasche':num(voll)+' Flaschen'} zum vollen Preis`}</div>`;
-      return `<button class="bzeile" data-a="verkaufen" data-id="${l.id}"><div class="bz1">${nm}<span>${satt?'Markt satt 📉':(w.name==='Inland'?'':w.flag+' ')+eur2(w.p)}</span></div>${z2}${zv}${z3}</button>`}),{
-      leer:'Kein Flaschenwein im Lager.',
-      hin:[D.hin,erst&&`⏳ Noch nichts verkaufsreif. Als Erstes reif: ${esc(lotName(erst.l))} im ${inMonaten(erst.n)}.`],
-      stand:D.stand,
-      i:`Antippen verkauft. Der Preis je Flasche gilt für den besten Absatzweg, Zoll ist abgezogen. Darunter steht, wie viele Flaschen der Großhandel diesen Monat noch zum vollen Preis nimmt. „Markt satt 📉“ heißt: Das Budget ist weg, jede weitere Flasche drückt den Preis. Was zuerst verdirbt, steht oben.${ladenFrei()?' Weine im Regal deiner Weinhandlung fehlen hier.':''} Wein aus dem Fass meldest du im Rathaus an und füllst ihn danach im Keller ab. Tafel- und Qualitätswein sind zwei Monate danach verkaufsreif.${D.text}`});
+    // Wartezeile: nach dem letzten Weiterblättern, aus dem Bericht der Handels-Managerin (VERKAUF_TEXT.wartet, gerechnet in dauerAuftrag).
+    const M=(S.manager||{}).handel, wq=verkaufText('wartet','§').split('§'), wm=M&&M.zm===S.jahr*12+S.monat-1&&M.zuletzt?new RegExp('([\\d.]+)'+wq[1].replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).exec(M.zuletzt):null;
+    const gi=`Antippen zeigt alle Angaben, Verkaufen verkauft. Der Preis je Flasche gilt für den besten Absatzweg, Zoll ist abgezogen. Darunter steht, wie viele Flaschen der Großhandel diesen Monat noch zum vollen Preis nimmt. „Markt satt 📉“ heißt: Das Budget ist weg, jede weitere Flasche drückt den Preis. Was zuerst verdirbt, steht oben.${ladenFrei()?' Weine im Regal deiner Weinhandlung fehlen hier.':''} Wein aus dem Fass meldest du im Rathaus an und füllst ihn danach im Keller ab. Tafel- und Qualitätswein sind zwei Monate danach verkaufsreif.${D.text}`;
+    if(!einZu('weine')){
+      const reif=fl.filter(l=>wege(l).length);
+      ST_PANEL.wg_alle={titel:WB_TEXT.wein.titel,z:wbKv(G.weine,fl.length)+wbKv(G.reifL,num(reif.reduce((a,l)=>a+l.liter,0))),k:wbKv(G.budget,`${eur(mr)} von ${eur(mf)}`),t:gi,buch:'handel',sym:'⚖️'};
+      const kopfH=[D.hin&&wbInfo(D.hin,''),aufgabeAktiv('handel')&&wbInfo(verkaufText('grenze'),''),aufgabeAktiv('handel')&&wm&&wbInfo(verkaufText('wartet',wm[1]),'','rot'),
+        erst&&`<div class="hilfe">⏳ Noch nichts verkaufsreif. Als Erstes reif: ${esc(lotName(erst.l))} im ${inMonaten(erst.n)}.</div>`,D.stand&&`<div class="fstand">${D.stand}</div>`].filter(Boolean).join('');
+      h+=`<section class="card fen wkband" id="gh_weine"><header class="fkopf"><h3>${WB_TEXT.wein.titel}</h3><button class="fi" data-a="bInfo" data-id="wg_alle" aria-label="Erklärung zu ${WB_TEXT.wein.titel}"><i>i</i></button></header>
+        <div class="fin">${kopfH}${fl.length?`<div class="wbunter">${wbT(G.band,{n:fl.length,r:num(reif.reduce((a,l)=>a+l.liter,0))})}</div>`:`<div class="fleer">${G.leer}</div>`}</div></section>`
+        +weinKarten(fl,{pre:'wg',kopf:ghKopf,zeile:ghZeile});
+      for(const [id,L] of wkGruppen(fl)){const R=L.filter(l=>wege(l).length);
+        ST_PANEL['wg_'+id]={titel:SORTEN[id].name,z:wbKv(G.weine,L.length)+wbKv(G.reifL,num(R.reduce((a,l)=>a+l.liter,0)))+(R.length?wbKv(G.best,eur2(Math.max(...R.map(l=>wege(l)[0].p)))):''),k:'',t:gi,buch:'handel',sym:'⚖️'}}
+    }
     if(einZu('markt')&&einZu('weine_gh')) h+=einKarte('gross','Noch kein Wein','Hier verkaufst du deinen Wein, sobald er in der Flasche und verkaufsreif ist.');
   }
   // Weinhandel (seit 7.4 auf dem Fenster-Baustein), Reihenfolge nach der Regel "was diesen Monat ansteht, Handgriffe, Zustand, Gesperrtes":
@@ -2015,9 +2022,25 @@ function weinKarten(ls,o={}){
   return wkGruppen(ls).map(([id,L])=>{const so=SORTEN[id], ro=rolleVon(id), F=L.filter(l=>l.status==='flasche'), fa=L.filter(l=>l.status==='fass');
     const fl=F.reduce((a,l)=>a+l.liter,0), li=fa.reduce((a,l)=>a+l.liter,0), bald=L.filter(l=>haltText(l).r<=2).length;
     const best=F.map(l=>wkSg(l.stufe)).filter(Boolean).sort((a,b)=>STUFEN[b].rang-STUFEN[a].rang)[0];
-    const kopf=(bald?kHin('rot',bald===1?T.bald:wbT(T.baldN,{n:bald})):'')
+    const kopf=o.kopf?o.kopf(id,L):(bald?kHin('rot',bald===1?T.bald:wbT(T.baldN,{n:bald})):'')
       +`<div class="wkzu"><div><b class="zahl">${num(fl)}</b> Flaschen${li?`<div class="wbunter">${wbT(T.fassL,{l:num(li)})}</div>`:''}</div>${best?wkSiegel(best,'wksgz'):''}</div>`;
-    return wbKarte(pre+'_'+id,esc(so.name),ro?ro.name:'',kopf,`<div class="fzl wkl">${L.map(l=>wkZeile(l,o)).join('')}</div>`,{bild:wkBild(id,L),bildArt:'webp',iId:pre+'_'+id,iName:so.name,kl:'wkarte'})}).join('')}
+    return wbKarte(pre+'_'+id,esc(so.name),ro?ro.name:'',kopf,`<div class="fzl wkl">${L.map(l=>o.zeile?o.zeile(l):wkZeile(l,o)).join('')}</div>`,{bild:wkBild(id,L),bildArt:'webp',iId:pre+'_'+id,iName:so.name,kl:'wkarte'})}).join('')}
+// Seit 16.6.4: Kopf und Zeile der Weinkarten im Großhandel (weinKarten mit o.kopf und o.zeile). Zu: verkaufsreife Flaschen und bester Preis der Sorte, Rot, wenn ein Wein
+// bald verdirbt (dieselbe Grenze wie im Lager). Zeile wie bis 16.6.3 die Liste im Großhandel, ein Tipp öffnet buchDetail, Verkaufen darunter (nicht bei "reif in …").
+function ghKopf(id,L){
+  const T=WB_TEXT.wein, G=WB_TEXT.stadt.gh, R=L.filter(l=>wege(l).length), fl=R.reduce((a,l)=>a+l.liter,0), bald=L.filter(l=>haltText(l).r<=2).length;
+  const best=R.length?Math.max(...R.map(l=>wege(l)[0].p)):0, n=R.length?0:Math.min(...L.map(l=>lager(l).min-l.flMonate));
+  return (bald?kHin('rot',bald===1?T.bald:wbT(T.baldN,{n:bald})):'')
+    +`<div class="wkzu"><div><b class="zahl">${num(fl)}</b> ${G.reif}<div class="wbunter">${R.length?wbT(G.bis,{p:eur2(best)}):wbT(G.erst,{n,mon:n===1?'Monat':'Monaten'})}</div></div></div>`}
+function ghZeile(l){
+  const T=WB_TEXT.wein, W=wege(l), L=lager(l), H=haltText(l), was=l.sekt?T.sekt:l.stufe?STUFEN[l.stufe].name:T.wein;
+  const z=(r,mehr)=>`<button class="bzeile wkz" data-a="buchDetail" data-id="${l.id}"><div class="bz1"><b>${was} <small class="mut">${l.jahrgang}</small>${l.med&&l.med.length?' 🏅':''}</b><span>${r}</span></div>
+      <div class="bz2">${num(l.liter)} Flaschen · Qualität ${l.qp}</div>${mehr||''}<div class="bz3 ${H.r<=2?'rot':''}">${H.t}</div></button>`;
+  if(!W.length){const n=L.min-l.flMonate; return z(`reif in ${n} ${n===1?'Monat':'Monaten'}`)}
+  // Seit 7.9 (Weg A): wie viele Flaschen der Großhandel diesen Monat noch zum vollen Preis nimmt, gerechnet mit dem Rest des Budgets.
+  const w=W[0], fw=federHandel(l), voll=fw?l.liter:Math.min(l.liter,Math.floor(marktRest()/w.p)), satt=!fw&&voll<1;
+  const zv=fw?'':`<div class="bz2">${satt?`alle zusammen im Schnitt ${eur2(w.p*marktF(l.liter*w.p))} je Flasche`:voll>=l.liter?'alle zum vollen Preis':`noch ${voll===1?'1 Flasche':num(voll)+' Flaschen'} zum vollen Preis`}</div>`;
+  return z(satt?'Markt satt 📉':(w.name==='Inland'?'':w.flag+' ')+eur2(w.p),zv)+`<div class="wgkn"><button class="klein" data-a="verkaufen" data-id="${l.id}">${WB_TEXT.stadt.gh.verkaufen}</button></div>`}
 // Kopf über den Karten: Titel, Zahl der Weine und der geschätzte Wert, das i öffnet das Info-Panel mit dem alten i-Text.
 function vLagerWeine(){
   const T=WB_TEXT.wein;
@@ -2142,7 +2165,7 @@ const FU_ZEIG={
   'e1-13':{tab:'keller',sub:'start',karte:'k_keltern',sel:['[data-a="keltern"]','#wb_k_keltern']},   // seit 16.5.2 mit aufgeklappter Karte
   'e1-14':{tab:'stadt',sub:'amt',karte:'anmelden',sel:['[data-a="anmelden"]',fiSel('anmelden')]},
   'e1-15':{tab:'keller',sub:'start',karte:'k_faesser',sel:['[data-a="abfuellen"]','[data-a="anmelden"]','#wb_k_faesser']},
-  'e1-16':{tab:'stadt',sub:'handel',sel:['[data-a="verkaufen"]']},
+  'e1-16':{tab:'stadt',sub:'handel',karte:()=>{const l=S.lots.filter(l=>l.status==='flasche'&&!l.regal&&wege(l).length).sort(BSORT_F.dringend)[0]; return l?'wg_'+l.sorte:''},sel:['[data-a="verkaufen"]']},
   'e1-17':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'e1-18':{tab:'gut',sub:'berg',sel:['[data-a="lesen"]','[data-a="bInfo"][data-id^="feld_"]']},
   'z2-01':{tab:'stadt',sub:'amt',karte:'anmelden',sel:['[data-a="anmelden"]',fiSel('anmelden')]},
