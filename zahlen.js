@@ -1782,4 +1782,15 @@ const WB_TEXT={
     zustand:'Zustand', einsatzL:'Einsatz', leistung:'Leistung bei der Lese', bonus:'Bonus', wirkt:'wirkt', weg:'fällt weg', wartung:'Wartung', jeP:'{p} je %', stufe:'Stufe',
     verkauf:'Verkaufen bringt', abJan:'Verkaufen geht wieder ab Januar.', kaufen:'Maschine kaufen', kaufKopf:'Kaufen geht von Januar bis März, warten das ganze Jahr.',
     deckt:'Deckt übers Jahr ab', hat:'Du hast schon {ein}.', ausbau:'Abfüllanlage ausbauen', verbessern:'Verbessern', schonStufe2:'Deine Abfüllanlage ist schon auf Stufe 2.',
-    regeln:'So arbeiten Maschinen', noch:'Noch keine eigene Maschine.'}};
+    regeln:'So arbeiten Maschinen', noch:'Noch keine eigene Maschine.'},
+  // Seit 16.5.2 (Bauplan 16.5, Entscheidung 1, Bild 23): Karten im Keller. Platzhalter, Wortlaut in Meilenstein 17.
+  keller:{keltern:'Wein keltern', faesser:'Fässer', sekt:'Sektkeller', abfuellen:'Wein abfüllen', vorrat:'Vorrat',
+    hin:{most:'{l} l Most bereit', keineTr:'Keine Trauben im Kelterhaus', fassLeer:'Alle Fässer sind leer', bald:'Ein Fass verdirbt bald', baldN:'{n} Fässer verdirbt bald',
+      bereit:'Fass bereit zum Abfüllen', bereitN:'{n} Fässer bereit zum Abfüllen', anmelden:'Wartet auf die Anmeldung', reift:'Reift im Fass',
+      sektKauf:'Noch kein Sektkeller', sektTr:'Sekt-Trauben warten', sektFertig:'Sekt fertig zum Abfüllen', sektReift:'Reift noch', sektLeer:'Kein Sekt auf der Hefe',
+      vonHand:'Von Hand', vorrat:'Fassraum und Flaschen'},
+    fassraum:'Fassraum', fassUnter:'{bel} von {ges} l belegt', imFass:'Im Fass', aeltest:'Ältestes Fass seit {n} {mon}, verdirbt in {r} {mon2}', hefe:'Hefezeit',
+    hefeUnter:'Am weitesten: noch {n} {mon}', hefeFertig:'Fertig, jetzt abfüllen', flaschen:'Leere Flaschen', zumLager:'Zum Lager', zumKauf:'Zu „Maschine kaufen“ im Betrieb',
+    anlage:'Abfüllanlage', ohneAnlage:'Ohne Abfüllanlage füllst du von Hand ab, ein Liter je Flasche. Die Anlage kaufst du im Betrieb unter „Maschine kaufen“.',
+    trauben:'Trauben im Kelterhaus', frei:'Fassraum frei', weine:'Weine im Fass', angemeldet:'davon angemeldet', sektHefe:'Sekt auf der Hefe', sektFlasche:'Sektflasche, Korken und Agraffe',
+    fassPreis:'Fassraum je Liter', flPreis:'Leere Flasche', sektPreis:'Sektkeller, einmal', anlagePreis:'{name}, Ausbau', jeLiter:'{p} je Liter'}};
