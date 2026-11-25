@@ -1016,17 +1016,19 @@ function mgrPersonal(b){
 }
 function pufferChips(b){const p=mgrPuffer(b); return `<div class="chips" style="flex-wrap:wrap">${MGR_PUFFER.map(n=>`<button class="chip ${p===n?'an':''}" data-a="mgrPuffer" data-b="${b}" data-id="${n}">${n?eur(n):'nichts'}</button>`).join('')}</div>`}
 // Seit 7.5 ein Fenster "Manager" im Arbeitsamt: je Manager eine Zeile mit Stufe und Lohn. Seit 11.5 (Teil C1) ohne Knopf, die Manager kommen von selbst.
-// Die Schalter der Aufgaben stehen im Betrieb. Vor dem Rang des ersten Managers ist das Fenster seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten).
+// Vor dem Rang des ersten Managers ist es seit 10.6 ausgeblendet, das bleibt so. Seit 16.6.6 (Bauplan 16.6, Entscheidung 9.3) die Karte "Köpfe" im Kartenbaustein:
+// immer sichtbar die Zeilen der zwei Köpfe wie in "Deine Leute" (leuteKopf: Porträt, Stufe, Lohn, ein Tipp öffnet ihr Fenster), aufgeklappt je Kopf die nächste Stufe.
 function mgrAmt(){
-  // Seit 10.6: nur die Manager, die der Rang schon freigibt, die anderen tauchen erst mit ihrem Rang auf.
-  const B=Object.keys(MGR_BEREICHE).filter(b=>mgrSt(b)>0);
+  const B=Object.keys(MGR_BEREICHE).filter(b=>mgrSt(b)>0), T=WB_TEXT.stadt.amt, L=WB_TEXT.leute;
   const mgI='Manager nehmen dir Arbeit ab. Jeder kommt mit seinem Rang von selbst dazu und steigt mit späteren Rängen auf, einstellen und befördern musst du niemanden. Jede Stufe bringt neue Aufgaben, sie sind gleich eingeschaltet. Was du lieber selbst machst, schaltest du im Betrieb ab. Manager gehören fest zum Gut, entlassen kannst du sie nicht. Ihr Lohn hängt nur an der Stufe und läuft weiter, auch wenn du alle Schalter ausschaltest.';
   const stufen=B.map(b=>`<div style="margin-top:6px"><b>${MGR_BEREICHE[b].name}</b><br>${MANAGER.filter(e=>e.bereich===b).map(e=>mgrStufenText(e,mgrSt(b))).join('<br>')}</div>`).join('');
-  if(!B.length) return fenster('mgr_amt','Manager','',{zu:freiText(mgrK(MANAGER[0])),buch:'manager',i:mgI+stufen});
-  return fenster('mgr_amt','Manager',B.map(b=>{
-    const st=mgrSt(b), n=mgrNaechste(b), E=MANAGER.filter(e=>e.bereich===b), neu=n?mgrAufg(n).map(k=>MGR_AUFGABEN[k].kurz):[];
-    return fz(MGR_BEREICHE[b].name,st?`Stufe ${st} von ${E.length}, ${eur(mgrEintrag(b,st).lohn)} Lohn im Monat`:'Kommt mit dem nächsten Monat',
-      n?`Stufe ${n.stufe} (${freiText(mgrK(n))})${neu.length?': '+neu.join(', '):''}, dann ${eur(n.lohn)} Lohn`:'Höchste Stufe erreicht')}),{buch:'manager',i:mgI+stufen});
+  if(!B.length) return '';
+  const koepfe=Object.keys(MGR_BEREICHE).sort((a,b)=>a==='weingut'?-1:b==='weingut'?1:0).map(leuteKopf).join('');
+  const auf=B.map(b=>{const st=mgrSt(b), n=mgrNaechste(b), E=MANAGER.filter(e=>e.bereich===b), neu=n?mgrAufg(n).map(k=>MGR_AUFGABEN[k].kurz):[];
+    return `<div class="wbreihe"><div class="wbkv"><b>${MGR_BEREICHE[b].name}</b><span>${wbT(L.stufe,{st,n:E.length})}, ${wbT(L.lohn,{lohn:eur(mgrEintrag(b,st).lohn)})}</span></div>
+      <div class="wbunter">${n?`Stufe ${n.stufe} (${freiText(mgrK(n))})${neu.length?': '+neu.join(', '):''}, dann ${eur(n.lohn)} Lohn`:T.hoechste}</div></div>`}).join('');
+  return sKarte('mgr_amt',T.koepfe,kHin('gruen',wbT(T.imDienst,{n:B.length,m:Object.keys(MGR_BEREICHE).length})),auf,{unter:koepfe,buch:'manager',sym:'<img src="bilder/sym-mitarbeiter.webp" alt="">',
+    z:B.map(b=>wbKv(MGR_BEREICHE[b].name,wbT(L.stufe,{st:mgrSt(b),n:MANAGER.filter(e=>e.bereich===b).length}))).join(''),k:wbKv(L.mgrLohn,eur(mgrLohn())),i:mgI+stufen});
 }
 // Schalter je Aufgabe der erreichten Stufen, darunter die noch fehlenden Stufen und die Auswahl für Reserve und Geldgrenze.
 // Steht seit 7.5 im Fenster des Managers im Betrieb und im Fenster von unten, beide zeigen dasselbe.
@@ -1756,11 +1758,11 @@ function vSabotage(){
 // Kosten (o.k) und als Tipp dem Text des alten i (o.i) samt Buchkapitel. ST_PANEL merkt sich die Teile der zuletzt gezeichneten Karten.
 // stadtBrett: die Orte der Stadt, die schon auf dem Holzbrett ohne Panorama liegen (Entscheidung 3, wie Betrieb und Keller).
 const ST_PANEL={}, ST_SYM={amt:'🏛️',handel:'⚖️',laeden:'🍷',bank:'🏦',arbeit:'🧑‍🌾'};
-const stadtBrett=()=>TAB==='stadt'&&['platz','amt','handel','laeden','bank'].includes(SUB);
+const stadtBrett=()=>TAB==='stadt';   // seit 16.6.6 die ganze Stadt
 function sKarte(id,titel,kopf,auf,o={}){
   if(einZu(id)) return '';
   ST_PANEL[id]={titel:o.iName||titel,z:o.z||'',k:o.k||'',t:o.i||'',buch:o.buch===undefined?BUCH_ORT[SUB]:o.buch,sym:o.sym||ST_SYM[SUB]||'🏛️'};
-  return wbKarte(id,titel,o.klein||'',kopf,auf,{ohneBild:1,iId:id,iName:o.iName||titel,unter:o.unter,gesperrt:o.gesperrt,kl:'skarte'+(o.kl?' '+o.kl:'')});
+  return wbKarte(id,titel,o.klein||'',kopf,auf,{ohneBild:!o.bild,bild:o.bild,bildArt:o.bildArt,iId:id,iName:o.iName||titel,unter:o.unter,gesperrt:o.gesperrt,kl:'skarte'+(o.kl?' '+o.kl:'')});
 }
 function wbPanelStadt(id){const P=ST_PANEL[id];
   return P?wbPanelRahmen(P.titel,wbAbschnitt(P.sym,WB_TEXT.zustand,P.z)+wbAbschnitt('🪙',WB_TEXT.kosten,P.k)+wbAbschnitt('💡',WB_TEXT.tipps,`<div style="margin:0 0 6px">${P.t}</div>${P.buch?mib(P.buch):''}`)):''}
@@ -1775,7 +1777,7 @@ function vPlatz(){
 }
 function vStadt(){
   if(SUB==='platz') return vPlatz();
-  let h=stadtBrett()?'':kopf({amt:'Rathaus',handel:'Großhandel',laeden:ladenFrei()?'Deine Weinhandlung':'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'}[SUB]);
+  let h='';   // seit 16.6.6 ohne Panorama-Bild oben (bis 16.6.1 kopf mit Rathaus, Großhandel, Weinhandel oder Deine Weinhandlung, Bank, Arbeitsamt), die Zunge nennt den Ort
   // Rathaus (seit 7.4 auf dem Fenster-Baustein). Was der Rang noch sperrt, ist seit 10.6 ausgeblendet, das bleibt so. Am Ziel (Präsident) gibt es keinen Makler mehr.
   // Seit 16.6.2 (Bauplan 16.6, Entscheidungen 4 und 5): auf dem Holzbrett, Karten im Kartenbaustein ohne Bild (sKarte), Kennungen wie die alten Fenster, Reihenfolge wie bisher:
   // Verband und Weltweinschau (mit Amt), Wein anmelden, Wettbewerbe, Auktionen, Makler, Kontrolle anregen, Spenden, Stiftung. Zu: Hinweis mit Punkt, wo sinnvoll ein Balken,
@@ -1975,38 +1977,55 @@ function vStadt(){
       <div class="kv"><span>Laufzeit</span><span>12 bis 48 Monate</span></div>`+kKn(pk('kredit','Aufnehmen','')),{
       z:wbKv('Kreditrahmen',eur(rahmen())),k:wbKv('Zinsen im Jahr','6 %'),i:krI});
   }
-  // Arbeitsamt (seit 7.4 auf dem Fenster-Baustein): Erntehelfer, Lagerarbeiter, darunter je Manager ein Fenster. Die Erklärtexte stehen im i,
-  // sichtbar bleiben Zustand, rote Warnungen und der Hinweis, wenn ein Manager das Einstellen übernimmt.
+  // Arbeitsamt (seit 7.4 auf dem Fenster-Baustein): Erntehelfer, Kellerleute, darunter die Köpfe. Die Erklärtexte stehen im i,
+  // sichtbar bleiben Zustand, rote Warnungen und der Hinweis, wenn der Weingut-Manager das Einstellen übernimmt.
+  // Seit 16.6.6 (Bauplan 16.6, Entscheidung 9, 16.4 "Deine Leute"): auf dem Holzbrett. Karten "Draußen" (helfer) und "Drinnen" (lagerarb) mit dem Bild der Leiter
+  // (LEUTE_BILD), Titel der Stufenname (leuteStName), Hinweis Rot "Es fehlt einer" wie bisher die rote Warnung, Balken Ernteleistung von Bedarf beziehungsweise
+  // Angestellt von Gebraucht, Knöpfe Einstellen und Entlassen (helfer, unverändert) immer sichtbar darunter. Die Löhne stehen aufgeklappt als eigene Zeile unter
+  // dem Etikett (bis 16.6.5 brach "Ihre Löhne" um). Karte "Köpfe" (mgr_amt) mit den Zeilen aus "Deine Leute" (leuteKopf, ein Tipp öffnet das Fenster des Kopfs)
+  // und aufgeklappt der nächsten Stufe. Eingestellt und entlassen wird nur hier. Platzhalter, Wortlaut in Meilenstein 17.
   if(SUB==='arbeit'){
-    const bed=rebenGesamt(), lei=leistung(), fe=leuteFehlen(), ms=maschErnte().length, KM=MGR_BEREICHE.weingut.name, WM=MGR_BEREICHE.weingut.name;
+    const T=WB_TEXT.stadt, A=T.amt, L=WB_TEXT.leute, bed=rebenGesamt(), lei=leistung(), fe=leuteFehlen(), ms=maschErnte().length, WM=MGR_BEREICHE.weingut.name;
     const ohneGeld=k=>fe[k]?`<div class="rot" style="font-size:14px;margin:4px 0">${fe[k]===1?'Es fehlt einer':'Es fehlen '+fe[k]}, vorher geht es nicht in den nächsten Monat. Einstellen geht jetzt auch ohne Geld, dein Konto rutscht dann ins Minus.</div>`:'';
     const lohnTeil=k=>{const a=S.loehne[k];
       return `<div class="kv"><span>Angestellt</span><span>${S[k]}</span></div>
-      ${a.length?`<div class="kv lang"><span>Ihre Löhne</span><span>${lohnListe(k)}</span></div><div class="kv"><span>Lohnkosten im Monat</span><span>${eur(lohnSumme(k))}</span></div>`:''}
+      ${a.length?`<div class="wbreihe"><div class="wbkv"><b>${A.loehne}</b></div><div class="wbunter">${lohnListe(k)}</div></div><div class="kv"><span>Lohnkosten im Monat</span><span>${eur(lohnSumme(k))}</span></div>`:''}
       <div class="kv"><span>Angebot diesen Monat</span>${lohnAngebot(k)}</div>`};
     const lohnKnoepfe=k=>{const a=S.loehne[k];
       return [pk('helfer','Einstellen',eur(VERMITTLUNG),{id:k,n:1,arm:S.geld<VERMITTLUNG&&!leuteFehlen()[k],klein:`+${eur(S.angebot[k])} Lohn`}),pk('helfer','Entlassen','',{id:k,n:-1,sec:1,aus:S[k]<1,klein:a.length?`−${eur(a[a.length-1])} Lohn`:''})]};
     const amtI=`Der Lohn beim Arbeitsamt schwankt jeden Monat zwischen ${eur(lohnF(LOHN_MIN))} und ${eur(lohnF(LOHN_MAX))}. Wer eingestellt ist, behält seinen Lohn. Die Vermittlung kostet einmalig ${eur(VERMITTLUNG)}. Entlassen wird immer der teuerste. Deine Leute brauchst du das ganze Jahr: Fehlt jemand, geht es nicht in den nächsten Monat.`;
-    h+=fenster('helfer','Erntehelfer',`${lohnTeil('helfer')}
-      ${ms?`<div class="kv"><span>Erntemaschinen</span><span>${ms}, ${maschEinsatz().length} im Einsatz, ${maschEinsatz().length===1?'deckt':'decken'} ${haWort(maschHelfer())} ab</span></div>`:''}
-      ${fahrerFehlen()?`<div class="kv"><span>Fahrer fehlen</span><span class="rot">${fahrerFehlen()}</span></div>`:''}
-      ${ALLEIN_HA?`<div class="kv"><span>Deine Familie schafft</span><span>${rbn(alleinReben())} Reben</span></div>`:''}
-      <div class="kv"><span>Gebraucht für ${rbn(bed)} Reben</span><span class="${fe.helfer?'rot':''}">${helferBedarf()}</span></div>
+    const lb=k=>LEUTE_BILD[k].replace(/\.\w+$/,''), la=k=>(LEUTE_BILD[k].match(/\.(\w+)$/)||[])[1]||'jpg', nm=k=>{const st=leuteSt(k); return st?leuteStName(k,st):LEUTE_ST[k].name};
+    const fehlt=k=>fe[k]===1?L.fehlt1:wbT(L.fehltN,{n:fe[k]});
+    const kz_=k=>`<div class="wkzu"><div><b class="zahl">${S[k]}</b> ${A.angestellt}${S[k]?`<div class="wbunter">${wbT(L.lohn,{lohn:eur(lohnSumme(k))})}</div>`:''}</div></div>`;
+    // Draußen
+    const hwH=fe.helfer?['rot',fehlt('helfer')]:lei<bed?['rot',L.hin.leistung]:['gruen',A.reicht];
+    h+=sKarte('helfer',nm('helfer'),kHin(...hwH)+kz_('helfer')+kBal(A.leistung,bed?Math.min(100,lei/bed*100):100,lei<bed?'rot':'',`${rbn(lei)} von ${rbn(bed)} Reben`),
+      kInfo([aufgabeAktiv('helfer')&&`${MGR_BEREICHE.weingut.sym} Dein ${WM} stellt fehlende Erntehelfer beim Weiterblättern ein.`,csChef('leute')])
+      +lohnTeil('helfer')
+      +(ms?`<div class="kv"><span>Erntemaschinen</span><span>${ms}, ${maschEinsatz().length} im Einsatz, ${maschEinsatz().length===1?'deckt':'decken'} ${haWort(maschHelfer())} ab</span></div>`:'')
+      +(fahrerFehlen()?`<div class="kv"><span>Fahrer fehlen</span><span class="rot">${fahrerFehlen()}</span></div>`:'')
+      +(ALLEIN_HA?`<div class="kv"><span>Deine Familie schafft</span><span>${rbn(alleinReben())} Reben</span></div>`:'')
+      +`<div class="kv"><span>Gebraucht für ${rbn(bed)} Reben</span><span class="${fe.helfer?'rot':''}">${helferBedarf()}</span></div>
       <div class="kv"><span>Deine Leute reichen für</span><span>${rbn(helferReben())} Reben</span></div>
       ${ohneGeld('helfer')}
-      <div class="kv"><span>Ernteleistung</span><span class="${lei<bed?'rot':''}">${rbn(lei)} von ${rbn(bed)} Reben</span></div>
-      <div class="bar"><i style="width:${bed?Math.min(100,lei/bed*100):100}%"></i></div>`,{
-      hin:[aufgabeAktiv('helfer')&&`${MGR_BEREICHE.weingut.sym} Dein ${WM} stellt fehlende Erntehelfer beim Weiterblättern ein.`,csChef('leute')],
-      kn:lohnKnoepfe('helfer'),
+      <div class="kv"><span>Ernteleistung</span><span class="${lei<bed?'rot':''}">${rbn(lei)} von ${rbn(bed)} Reben</span></div>`,{
+      klein:L.draussen,unter:kKn(lohnKnoepfe('helfer')),kl:'leutek',sym:`<img src="bilder/${LEUTE_BILD.helfer}" alt="">`,bild:lb('helfer'),bildArt:la('helfer'),
+      z:wbKv('Angestellt',S.helfer)+wbKv('Gebraucht',helferBedarf(),fe.helfer?'rot':'')+wbKv(A.leistung,`${rbn(lei)} von ${rbn(bed)} Reben`,lei<bed?'rot':''),
+      k:wbKv('Lohnkosten im Monat',eur(lohnSumme('helfer')))+wbKv('Vermittlung',eur(VERMITTLUNG)),
       i:`${helferRegel()}. Eine Erntemaschine im Einsatz deckt ${MASCH_HELFER} Hektar ab, ein Vollernter ${VOLL_HELFER}. Das gilt nur mit Fahrern: Die Erntemaschine braucht ${MASCH.klein.fahrer}, der Vollernter ${MASCH.gross.fahrer}, gefahren wird von deinen Erntehelfern. Düngerstreuer und Laubschneider brauchen je ${MASCH.duenger.fahrer}, sie bekommen ihre Fahrer erst nach den Erntemaschinen. Trauben mit Edelfäulnis liest man von Hand, dafür brauchst du je ${rbn(HAND_REBEN)} Reben des Felds einen Erntehelfer${ALLEIN_HA?`, die ersten ${rbn(alleinReben())} liest deine Familie`:''}, sonst liest die Maschine und es gibt höchstens Qualitätswein. Pflanzen kannst du nur so viel, wie deine Leute schaffen. Bei der Lese leistet eine abgenutzte Maschine weniger. ${amtI}${aufgabeAktiv('helfer')?` Dein ${WM} stellt zum Angebot des Monats ein, entlassen musst du selbst. Nur die Helfer für die Handlese schickt er nach der Lese wieder heim.`:''}`});
-    h+=fenster('lagerarb','Kellerleute',`${lohnTeil('lagerarb')}
-      <div class="kv"><span>Gebraucht</span><span class="${fe.lagerarb?'rot':''}">${lagerBedarf()}</span></div>
-      <div class="kv"><span>Fassraum</span><span>${num(S.fassraum)} l, betreut bis ${num(fassKap())} l</span></div>
+    // Drinnen
+    const lbd=lagerBedarf();
+    h+=sKarte('lagerarb',nm('lagerarb'),kHin(...(fe.lagerarb?['rot',fehlt('lagerarb')]:['gruen',A.genug]))+kz_('lagerarb')+kBal(A.gebraucht,lbd?Math.min(100,S.lagerarb/lbd*100):100,fe.lagerarb?'rot':'',`${S.lagerarb} von ${lbd}`),
+      kInfo([aufgabeAktiv('lager')&&`${MGR_BEREICHE.weingut.sym} Dein ${WM} stellt fehlende Kellerleute beim Weiterblättern ein.`,csChef('leute')])
+      +lohnTeil('lagerarb')
+      +`<div class="kv"><span>Gebraucht</span><span class="${fe.lagerarb?'rot':''}">${lbd}</span></div>
+      <div class="kv"><span>Fassraum</span><span>${num(S.fassraum)} l, betreut bis ${num(fassKap())} l</span></div>
       <div class="kv"><span>Leere Flaschen</span><span>${num(S.flaschen)}, betreut bis ${num(flKap())}</span></div>
       ${ohneGeld('lagerarb')}`,{
-      hin:[aufgabeAktiv('lager')&&`${MGR_BEREICHE.weingut.sym} Dein ${KM} stellt fehlende Kellerleute beim Weiterblättern ein.`,csChef('leute')],
-      kn:lohnKnoepfe('lagerarb'),
-      i:`${lagerRegel()}, mit der Abfüllanlage im Einsatz ${num(ABF_FLASCHEN)} Flaschen. Einer deiner Kellerleute bedient sie. Mehr Fassraum oder Flaschen kaufen kannst du erst mit mehr Leuten. ${amtI}${aufgabeAktiv('lager')?` Dein ${KM} stellt zum Angebot des Monats ein, entlassen musst du selbst.`:''}`});
+      klein:L.drinnen,unter:kKn(lohnKnoepfe('lagerarb')),kl:'leutek',sym:`<img src="bilder/${LEUTE_BILD.lagerarb}" alt="">`,bild:lb('lagerarb'),bildArt:la('lagerarb'),
+      z:wbKv('Angestellt',S.lagerarb)+wbKv('Gebraucht',lbd,fe.lagerarb?'rot':'')+wbKv('Fassraum betreut bis',`${num(fassKap())} l`),
+      k:wbKv('Lohnkosten im Monat',eur(lohnSumme('lagerarb')))+wbKv('Vermittlung',eur(VERMITTLUNG)),
+      i:`${lagerRegel()}, mit der Abfüllanlage im Einsatz ${num(ABF_FLASCHEN)} Flaschen. Einer deiner Kellerleute bedient sie. Mehr Fassraum oder Flaschen kaufen kannst du erst mit mehr Leuten. ${amtI}${aufgabeAktiv('lager')?` Dein ${WM} stellt zum Angebot des Monats ein, entlassen musst du selbst.`:''}`});
     // Seit 12.6.4 (Entscheidung 4): Solange die Familie alles schafft, steht hier nur eine Karte.
     if(einZu('helfer')&&einZu('lagerarb')) h+=einKarte('amt','Noch packt die Familie an',`Noch packst du mit deiner Familie allein an. Ab ${ALLEIN_HA} Hektar brauchst du Helfer, dann geht hier die Tür auf.`);
     h+=mgrAmt();
