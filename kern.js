@@ -3061,8 +3061,9 @@ function bueroFamilie(){
       leer:'Noch leer.',buch:'ende',i:BESTEN_I});
 }
 function vKeller(){
-  const T={start:'Weinkeller',buch:'Weinarchiv',sabotage:'Hintertür',lager:'Lager'};
-  return kopf(T[SUB])+{start:vKellerStart,buch:vBuch,sabotage:vSabotage,lager:vLager}[SUB]();
+  // Seit 16.5.1 (Bauplan 16.5, Entscheidung 2): Die Hintertür ist kein Unterreiter mehr, ihre Karten stehen unten im Keller (vSabotage in vKellerStart).
+  const T={start:'Weinkeller',buch:'Weinarchiv',lager:'Lager'};
+  return kopf(T[SUB])+{start:vKellerStart,buch:vBuch,lager:vLager}[SUB]();
 }
 // Kellerausbau in drei Stufen. Seit 13.5.8 (Entscheidung 9) gibt der erste angemeldete Wein der Stufe in KELLER_WEIN sie frei, nicht mehr der Rang.
 // S.kellerW ist der höchste Rang (STUFEN.rang) eines angemeldeten Weins ohne Sekt, ein höherer Wein gibt die Stufen darunter mit frei.

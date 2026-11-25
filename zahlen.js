@@ -602,13 +602,13 @@ const FASS='<img class="fass" src="bilder/fass.png" alt="">';
 const SUBS={
   // Seit 16.3.1 (Bauplan 16.3): Aktuelles ist keine Zunge mehr. Der Ort 'aktuell' bleibt als Klemmbrett (imKlemm), erreichbar nur über den Reiter Klemmbrett.
   gut:[['berg','🍇'],['betrieb','🏡'],['buero','🏆']],   // seit 16.4.1 ohne Maschinen, sie stehen im Betrieb
-  keller:[['buch','📜'],['sabotage','🐀'],['start',FASS],['lager','📦']],
+  keller:[['buch','📜'],['start',FASS],['lager','📦']],   // seit 16.5.1 ohne Hintertür, ihre Karten stehen unten im Keller
   // Seit 10.6 (Maik 20.11.2026): Großhandel mit Waage statt Laden, Arbeitsamt mit Winzer statt Bauarbeiter.
   stadt:[['amt','🏛️'],['handel','⚖️'],['laeden','🍷'],['bank','🏦'],['arbeit','🧑‍🌾']]
 };
 const START_SUB={gut:'betrieb',keller:'start',stadt:'amt'};
 // Kurze Namen für die Unterreiter-Leiste unten.
-const SUB_NAME={berg:'Weinberg',betrieb:'Betrieb',aktuell:'Klemmbrett',buero:'Büro',buch:'Weinarchiv',sabotage:'Hintertür',start:'Keller',lager:'Lager',amt:'Rathaus',handel:'Großhandel',laeden:'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'};
+const SUB_NAME={berg:'Weinberg',betrieb:'Betrieb',aktuell:'Klemmbrett',buero:'Büro',buch:'Weinarchiv',start:'Keller',lager:'Lager',amt:'Rathaus',handel:'Großhandel',laeden:'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'};
 // Seit 13.1 (Maik 21.11.2026): Spielstände von vor dem großen Umbau (bis 12.9.5, Marke v7) laufen nicht weiter. Neue tragen v13, lies gibt nur diese zurück.
 // liesAlt findet alle älteren. Sie bleiben liegen, bis ein neues Spiel den Platz überschreibt oder der Spieler sie löscht. Album und Bestenliste liegen getrennt und bleiben.
 // Davor (seit 7.0, Maik 16.11.2026) galt dasselbe mit der Marke v7 für Stände aus 5.1 und älter.
@@ -649,7 +649,7 @@ const NETZ=location.protocol!=='file:';
 // S.zeitAb = Spielmonat, ab dem gezählt wird (alte Spielstände: ab dem Laden in 8.3, dazu S.zeitAlt).
 const ZEIT_LEER=60;
 const PANO_TEILE={gut:{berg:'panorama-weingut-sommer-teil-1',betrieb:'panorama-weingut-sommer-teil-2',aktuell:'panorama-weingut-sommer-teil-3',buero:'panorama-weingut-sommer-teil-5'},
-  keller:{buch:'panorama-keller-teil-1',sabotage:'panorama-keller-teil-2',start:'panorama-keller-teil-3',lager:'panorama-keller-teil-4'},
+  keller:{buch:'panorama-keller-teil-1',start:'panorama-keller-teil-3',lager:'panorama-keller-teil-4'},   // seit 16.5.1 ohne Teil 2 (Hintertür)
   stadt:{amt:'panorama-stadt-teil-1',handel:'panorama-stadt-teil-2',laeden:'panorama-stadt-teil-3',bank:'panorama-stadt-teil-4',arbeit:'panorama-stadt-teil-5'}};
 const PANO_BILD=[1536,1024];
 // Seit 16.3.1 zeigt kein Ort mehr Teil 3 mit der Tafel (Aktuelles entfällt). Die Einträge bleiben, bis die Namenstafel einen neuen Platz hat (offen).
@@ -1252,7 +1252,7 @@ const WACHS_WECHSEL=2600, WACHS_WENDE=3900;   const WF_POS={
 // Version 4.1: Steckbrief eines Gebiets. Alle Zahlen kommen aus REGIONEN, EIGNUNG und den Hürden, damit die Karte nach dem Abstimmen von selbst stimmt.
 // Spätfrost zur Blüte: April 10 %, Mai 3 % (wuerfelWetter), also in rund jedem achten Jahr, überall gleich.
 const SPAET_JAHR=8;
-const BUCH_ORT={berg:'berg',betrieb:'betrieb',aktuell:'aktuell',buero:'buero',buch:'buch',sabotage:'hintertuer',start:'keller',lager:'lager',amt:'rathaus',handel:'handel',laeden:'weinhandel',bank:'bank',arbeit:'arbeit'};
+const BUCH_ORT={berg:'berg',betrieb:'betrieb',aktuell:'aktuell',buero:'buero',buch:'buch',start:'keller',lager:'lager',amt:'rathaus',handel:'handel',laeden:'weinhandel',bank:'bank',arbeit:'arbeit'};
 // Daueraufträge für den Verkauf (seit 4.4, seit 7.0 beim Handels-Manager: Weinhandlungen ab Stufe 1, Großhandel ab Stufe 2).
 // Sie laufen beim Weiterblättern vor dem Monatswechsel: erst die Weinhandlungen (sie zahlen mehr), dann der Großhandel. Seit 14.7.6 (Annahme 24) in jedem Kanal nie unter
 // MGR_PREIS_MIN vom Listenpreis (listenPreis), der Großhandel auch über das Budget hinaus, bis die letzte Flasche auf diese Grenze fällt (bis 14.7.5 nie unter dem vollen Preis,
