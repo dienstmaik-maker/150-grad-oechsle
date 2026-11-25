@@ -565,7 +565,7 @@ function vWeltschau(){
   return fenster('weltschau','Weltweinschau',z+`<div class="mut">${satz}</div>${K?`<div class="kv"><span>⭐ Der Favorit</span><span>${esc(K.fav.split(',')[0])}</span></div><div class="mut"><small>${esc(K.gesch||'')}</small></div>${A.schauB||(s&&s.ein)?'':`<div class="mut">Die erste Krone gibt es im ${MON[WELT_MONAT]} nach deiner ersten Anmeldung im ${MON[WELT_ANM]}.</div>`}`:''}`,{
     stand:K?`${kronen().length} von ${KRONEN.length} Kronen`:'',
     kn:schauAnm()?[pk('schau',s.ein?'Tauschen':n?'Wein anmelden':'Ansehen','',{sec:!!s.ein||!n})]:[],
-    i:`Jedes Jahr im ${MON[WELT_MONAT]} ist Weltweinschau auf dem Dorfplatz, angemeldet wird im ${MON[WELT_ANM]}. Es geht um eine Krone nach der anderen: ${KRONEN.map(X=>`die ${X.name} mit ${X.was}`).join(', ')}. Verlierst du, ist im nächsten Jahr dieselbe Krone dran, gewonnene Kronen bleiben, auch nach einer Abwahl. Jede Krone bringt ${KRONE_ANS} Ansehen. Mit der dritten wirst du ${ehrP()}, danach kommen die letzte Übergabe und die Chronik. Ein Jahrhundertwein hat ${JH_ZUSCHLAG} Punkte mehr, höchstens ${QP_MAX_JH}.`});
+    i:`Jedes Jahr im ${MON[WELT_MONAT]} ist Weltweinschau auf dem Dorfplatz, angemeldet wird im ${MON[WELT_ANM]}. Es geht um eine Krone nach der anderen: ${KRONEN.map(X=>`die ${X.name} mit ${X.was}`).join(', ')}. Verlierst du, ist im nächsten Jahr dieselbe Krone dran, gewonnene Kronen bleiben, auch nach einer Abwahl. Jede Krone bringt ${KRONE_ANS} Ansehen. Mit der dritten wirst du ${ehrP()}, danach kommen die letzte Übergabe und die Chronik.`});
 }
 // Fenster "Weinbauverband" im Rathaus, nur mit Amt (im Amt oder abgewählt): Balken mit Marke, Amtszeiten, nächste Wahl, im Wahlkampf der Herausforderer
 // und der Knopf "Stimmen kaufen". Die Regeln stehen im i.
@@ -883,7 +883,7 @@ const mib=id=>`<span class="mib" data-a="buch" data-id="${id}">📖 Mehr im Buch
 function gebieteGenauer(){
   const h=m=>REIHE.filter(st=>m[st]).map(st=>`${STUFEN[st].name} ${m[st]}°`).join(', ');
   return `<details open><summary>Genauer</summary><ul><li>Hürden in allen Gebieten: ${h(MIN_NORMAL)}.</li>
-    <li>${rollenAn()?`Jedes Gebiet hat drei Rebsorten mit festen Rollen. Die ${ROLLEN.spitze.name} startet mit dem vollen Zucker, die ${ROLLEN.sekt.name} ${-ROLLEN.sekt.zucker}° und die ${ROLLEN.menge.name} ${-ROLLEN.menge.zucker}° darunter. Spielstände von vor Version 11.4 behalten ihre alten Sorten mit Sternen.`:`Die Sorte mit ★★★ startet mit dem vollen Zucker, die anderen mindestens 1° darunter. Die Qualitätspunkte zählen bei ★★ zu 85\u00a0%, bei ★ zu 70\u00a0%.${sternPreisText()}`}</li></ul>${Object.keys(REGIONEN).map(id=>steckbrief(id)).join('')}</details>`;
+    <li>${rollenAn()?`Jedes Gebiet hat drei Rebsorten mit festen Rollen. Die ${ROLLEN.spitze.name} startet mit dem vollen Zucker, die ${ROLLEN.sekt.name} ${-ROLLEN.sekt.zucker}° und die ${ROLLEN.menge.name} ${-ROLLEN.menge.zucker}° darunter. Spielstände von vor Version 11.4 behalten ihre alten Sorten mit Sternen.`:`Die Sorte mit ★★★ startet mit dem vollen Zucker, die anderen mindestens 1° darunter.${sternPreisText()}`}</li></ul>${Object.keys(REGIONEN).map(id=>steckbrief(id)).join('')}</details>`;
 }
 function buchZeig(){
   const b=$('#buch'); if(BUCH==null){b.className=''; b.innerHTML=''; return}
@@ -1125,7 +1125,7 @@ const formFrage=id=>!(S.felder[id]||{}).reben&&S.schwer!=='einfach'&&formenFuer(
 // Wer liest in diesem Weinberg mit dieser Form. Platzhalter, Wortlaut in Meilenstein 17.
 const formLese=(id,fm)=>{const F=FORMEN[fm]; return R().steil?'von Hand, an der Mosel fährt keine Maschine':spitzeId(id)?'von Hand, auf dem Südhang lesen immer Arbeiter':F.masch===1?'Maschine erlaubt':F.masch?(fm===formVon(id)&&!inErziehung(id)?'Maschine erlaubt, der Rebstock steht':'von Hand bis zum Rebstock, danach Maschine'):'nur von Hand'};
 // Steckbrief einer Form für die Wahl und das Umstellen.
-const formSteck=(id,fm)=>{const F=FORMEN[fm], w=(FORM_WIRKUNG[rolleK(id)]||{})[fm]||[1,1]; return `${Math.round(w[0]*100)} % Menge, ${Math.round(w[1]*100)} % Qualität, ${epT(F.ep)} Punkte im Jahr, Rebschnitt ${eur(F.haErz)} je Hektar${F.ha!==F.haErz?` bis zum Rebstock, danach ${eur(F.ha)}`:''}, Lese ${formLese(id,fm)}`};
+const formSteck=(id,fm)=>{const F=FORMEN[fm], w=(FORM_WIRKUNG[rolleK(id)]||{})[fm]||[1,1]; return `${Math.round(w[0]*100)} % Menge, ${F.qual} Punkte Qualität, ${epT(F.ep)} Punkte im Jahr, Rebschnitt ${eur(F.haErz)} je Hektar${F.ha!==F.haErz?` bis zum Rebstock, danach ${eur(F.ha)}`:''}, Lese ${formLese(id,fm)}`};
 // Weinberg (seit 7.4 auf dem Fenster-Baustein): je Sorte ein Fenster (seit 4.4 oben), dann Düngung und Übersicht, darunter zugeklappt der Steckbrief des Gebiets.
 // Sorten, die der Rang noch sperrt, sind seit 10.6 ausgeblendet (bis 10.5 zugeklappt mit Schloss unten). Lese-Hinweise und rote Warnungen bleiben sichtbar, die Erklärungen stehen im i.
 function vBerg(){
@@ -1147,10 +1147,12 @@ function vBerg(){
     // Seit 14.2.2: Entwicklungspunkte mit der nächsten Schwelle und der Wirkung der Stufe. Platzhalter, Wortlaut in Meilenstein 17.
     if(f.reben){const st=f.pflSt||0, SW=epSchwelle(id); z+=`<div class="kv"><span>Pflege</span><span>${st>=PFLEGE_STUFEN.length-1?`${PFLEGE_STUFEN[st]}, höher geht es nicht`:`${PFLEGE_STUFEN[st]}, ab ${epT(SW[st+1])} Punkten ${PFLEGE_STUFEN[st+1]}`}</span></div>
       <div class="kv"><span>Entwicklungspunkte</span><span>${epT(f.ep||0)} von ${EP_MAX}</span></div>
-      <div class="kv"><span>Wirkung der Stufe</span><span>${Math.round(STUFE_MENGE[st]*100)}\u00a0% Menge, ${Math.round(STUFE_QPF[st]*100)}\u00a0% Qualität</span></div>
+      <div class="kv"><span>Wirkung der Stufe</span><span>${Math.round(STUFE_MENGE[st]*100)}\u00a0% Menge</span></div>
       <div class="kv"><span>Rebschnitt durch</span><span>${helferSchneidet(id)?leuteStName('helfer',leuteSt('helfer')):'dich selbst'}, +${epT(epJahrSoll(id))} Punkte im guten Jahr</span></div>`}
+    // Seit 14.5.2 (Annahmen 5 und 8): Qualität des Weinbergs mit ihren vier Bausteinen, in allen Spielstufen, ohne "von 100". Platzhalter, Wortlaut in Meilenstein 17.
+    if(f.reben){const Q=qualTeile(id); z+=`<div class="kv"><span>Qualität</span><span>${Q.q} Punkte: Pflege ${Math.round(Q.pflege)}, Boden ${Math.round(Q.boden)}, Form ${Q.form}, Laubschnitt ${Q.laub}</span></div>`}
     // Seit 14.2.4: Erziehungsform mit Wirkung und Lese, nicht in den Lehrjahren. Platzhalter, Wortlaut in Meilenstein 17.
-    if(f.reben&&S.schwer!=='einfach'){const w=formWirk(id); z+=`<div class="kv"><span>Erziehungsform</span><span>${FORMEN[formVon(id)].name}, ${Math.round(w[0]*100)} % Menge, ${Math.round(w[1]*100)} % Qualität</span></div>
+    if(f.reben&&S.schwer!=='einfach'){const w=formWirk(id); z+=`<div class="kv"><span>Erziehungsform</span><span>${FORMEN[formVon(id)].name}, ${Math.round(w[0]*100)} % Menge, ${FORMEN[formVon(id)].qual} Punkte Qualität</span></div>
       <div class="kv"><span>Lese</span><span>${formLese(id,formVon(id))}</span></div>`}
     if(f.reben) z+=`
       <div class="kv"><span>Deckel</span><span>${deckel(id)}° Öchsle</span></div>
@@ -1231,7 +1233,7 @@ function vKellerStart(){
     leer:'Alle Fässer sind leer.',
     hin:[mf&&`🍷 Dein ${KM} kauft fehlende Flaschen dazu.`,lagerKann(2)&&'🍾 Deine Lagerarbeiter füllen angemeldete Weine beim Weiterblättern ab, sobald genug leere Flaschen da sind.',bonusMasch('abfuell')&&`🍾 Mit der Abfüllanlage kommen ${Math.round(abfPlus()*100)} % mehr Flaschen aus jedem Fass.`],
     i:`Der Wein bleibt mindestens einen Monat im Fass und höchstens sieben, danach verdirbt er. Abfüllen geht erst nach der Anmeldung im Rathaus. Abgefüllt wird immer das ganze Fass, ein Liter je Flasche. Mit der Abfüllanlage geht nichts daneben, dann kommen ${Math.round(ABF_PLUS*100)} % mehr Flaschen heraus, dafür brauchst du auch so viele leere.${mf?` Dein ${KM} kauft die Flaschen für angemeldete Fässer, anmelden musst du selbst.`:''}${lagerKann(2)?' Deine Lagerarbeiter füllen angemeldete Fässer von selbst ab.':''}`});
-  const sektI=`Die ${ROLLEN.sekt.name} macht nur Sekt. Nach der Lese legst du die Trauben noch im selben Monat in den Sektkeller, ohne Grundwein, und ist die Hefezeit um, füllst du ihn ab. Ab Lagerarbeiter Stufe 3 machen das deine Lagerarbeiter. Er reift ${SEKT_REIFE} Monate, mit ${HEFE_LANG} Monaten auf der Hefe bekommt er ${HEFE_LANG_QP} Qualitätspunkte mehr. Das Hefelager wählst du bei der Lese.`;
+  const sektI=`Die ${ROLLEN.sekt.name} macht nur Sekt. Nach der Lese legst du die Trauben noch im selben Monat in den Sektkeller, ohne Grundwein, und ist die Hefezeit um, füllst du ihn ab. Ab Lagerarbeiter Stufe 3 machen das deine Lagerarbeiter. Er reift ${SEKT_REIFE} Monate, mit ${HEFE_LANG} Monaten auf der Hefe bekommt er ${HEFE_LANG_QP} Punkte mehr. Das Hefelager wählst du bei der Lese.`;
   const vorrat=fenster('vorrat','Vorrat',`<div class="kv"><span>Fassraum</span><span>${num(bel)} von ${num(S.fassraum)} l</span></div><div class="kv"><span>Leere Flaschen (1 l)</span><span>${num(S.flaschen)}</span></div>`,
     {buch:'lager',i:'Fassraum und leere Flaschen kaufst du im Lager, beides braucht Lagerarbeiter. Fassraum am besten vor der Lese kaufen, Flaschen vor dem Abfüllen.'});
   // Seit 12.1 (Maik 20.11.2026): eine Karte Sektkeller. Vor dem Kauf nur der Kaufknopf, danach die Weine für Sekt und, sobald der Rang reicht, der Ausbau-Knopf für die Anlage.
@@ -1246,7 +1248,7 @@ function vKellerStart(){
   h+=fenster('sekt','Sektkeller',[...sektTrauben().map(l=>fz(dot(l.sorte)+lotName(l),`${num(l.liter)} Flaschen · frisch gelesen · ${l.hefe||SEKT_REIFE} Monate auf der Hefe gewählt`,
       l3?'Deine Lagerarbeiter legen ihn beim Weiterblättern in den Sektkeller.':`<span class="rot">Muss diesen Monat in den Sektkeller, sonst verdirbt alles.</span> Sektflasche, Korken und Agraffe kosten ${eur(Math.round(l.liter*sk))}.`,
       `<button class="klein" data-a="sektUmlagern" data-id="${l.id}">In den Sektkeller</button>`)),
-    ...sektAufHefe().map(l=>{const n=lager(l).min-l.flMonate, fe=n<=0; return fz(dot(l.sorte)+lotName(l),`${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte`,
+    ...sektAufHefe().map(l=>{const n=lager(l).min-l.flMonate, fe=n<=0; return fz(dot(l.sorte)+lotName(l),`${num(l.liter)} Flaschen · Qualität ${l.qp}`,
       fe?(l3?'Die Hefezeit ist um, deine Lagerarbeiter füllen ihn beim Weiterblättern ab.':'Die Hefezeit ist um, jetzt abfüllen. Erst danach kannst du ihn verkaufen.'):`Noch ${n} ${n===1?'Monat':'Monate'} auf der Hefe.${l3&&n===1?' Deine Lagerarbeiter füllen ihn beim Weiterblättern ab.':''}`,
       ...(fe?[`<button class="klein" data-a="sektAbfuellen" data-id="${l.id}">Abfüllen</button>`]:[]))})],{
     leer:'Gerade liegt kein Sekt auf der Hefe. Neuer Sekt kommt mit der Lese der Sekt-Sorte.',
@@ -1309,7 +1311,7 @@ function vSabotage(){
   +fenster('verschneiden','Fässer verschneiden','',{
     links:paare?'':'Dafür brauchst du zwei angemeldete Fassweine gleicher Farbe.',
     kn:`<button class="klein wag" data-a="misch1" ${paare?'':'disabled'}>Fässer mischen</button>`,
-    i:'Zwei angemeldete Fassweine gleicher Farbe werden zu einem. Der bessere Name bleibt, Öchsle und Qualitätspunkte werden gemittelt. Streng verboten, der Beamte will dafür Schmiergeld.'})
+    i:'Zwei angemeldete Fassweine gleicher Farbe werden zu einem. Der bessere Name bleibt, Öchsle und Qualität werden gemittelt. Streng verboten, der Beamte will dafür Schmiergeld.'})
   +fenster('pruefer','Weinprüfer',`<div class="kv"><span>Gepanschte Weine im Keller</span><span${P?' class="rot"':''}>${P}</span></div>
     ${kz!=='nichts'?`<div class="kv"><span>Kontrolle</span><span${scharf?' class="rot"':''}>${kAbst}</span></div><div class="kv"><span>Strafe bei einem Fund</span><span>${kStrafe}</span></div>`:''}
     ${kz==='warnung'?`<div style="font-size:14px;margin-top:4px">${kontrWarn()}${verwarnOffen()?' '+KONTR_TEXT.verwarnErst:''}</div>`:''}
@@ -1332,7 +1334,7 @@ function vStadt(){
       :`<div class="fleer" style="margin-top:6px">Kein Fasswein wartet auf die Anmeldung.</div>`),{
       i:'Im Rathaus meldest du deinen Fasswein an. Erst dann bekommt er seine Stufe und darf in die Flasche. Welche Stufen für einen Wein möglich sind, siehst du nach dem Tipp auf „Anmelden“. Was zuerst verdirbt, steht oben.'});
     // Seit 7.9: feste Fenster "Wettbewerbe" und "Auktionen". Einreichen und Bieten gehen hier, die Tipps in "Das steht an" führen her.
-    const wI=`Bei der Landesprämierung im Februar treten die Winzer deines Gebiets mit Prädikatsweinen vom letzten Jahrgang an.${S.rang>=R_BUND?' Der Bundeswettbewerb ist alle drei Jahre im Juni, mit verkaufsreifen Prädikatsweinen und Sekten aus der Flasche.':''} Eingereicht wird im Monat der Ausschreibung, das Ergebnis steht im nächsten Winzerboten. Ein Platz auf dem Treppchen bringt Ansehen und Qualitätspunkte für den Wein.${S.amt&&S.amt.brief?` Die Weltweinschau ist jeden ${MON[WELT_MONAT]} bei dir im Dorf, angemeldet wird im ${MON[WELT_ANM]}. Jedes Jahr geht es um eine Krone, in fester Reihenfolge: ${KRONEN.map(K=>K.name).join(', ')}. Verlierst du, ist im nächsten Jahr dieselbe Krone dran.`:''}`;
+    const wI=`Bei der Landesprämierung im Februar treten die Winzer deines Gebiets mit Prädikatsweinen vom letzten Jahrgang an.${S.rang>=R_BUND?' Der Bundeswettbewerb ist alle drei Jahre im Juni, mit verkaufsreifen Prädikatsweinen und Sekten aus der Flasche.':''} Eingereicht wird im Monat der Ausschreibung, das Ergebnis steht im nächsten Winzerboten. Ein Platz auf dem Treppchen bringt Ansehen und Punkte für den Wein.${S.amt&&S.amt.brief?` Die Weltweinschau ist jeden ${MON[WELT_MONAT]} bei dir im Dorf, angemeldet wird im ${MON[WELT_ANM]}. Jedes Jahr geht es um eine Krone, in fester Reihenfolge: ${KRONEN.map(K=>K.name).join(', ')}. Verlierst du, ist im nächsten Jahr dieselbe Krone dran.`:''}`;
     if(S.rang<R_LAND) zu.push(fenster('wettb','Wettbewerbe','',{zu:`ab dem Rang ${RAENGE[R_LAND].name}`,i:wI}));
     else{
       const w=S.wett&&!S.wett.fertig?S.wett:null, mb=aufgabeAktiv('wett')?mgrAufgabe('wett').bereich:'';
@@ -1423,7 +1425,7 @@ function vStadt(){
     // Ist noch nichts verkaufsreif, steht oben, wann der erste Wein so weit ist (seit 5.0).
     const erst=fl.length&&!fl.some(l=>preis(l))?fl.map(l=>({l,n:lager(l).min-l.flMonate})).sort((a,b)=>a.n-b.n)[0]:null;
     // Kurze Zeilen wie im Kellerbuch. Der Preis ist der beste Absatzweg mit der Marktlage nach den Verkäufen dieses Monats.
-    h+=fenster('weine','Deine Weine',fl.map(l=>{const W=wege(l),L=lager(l),H=haltText(l),nm=`<b>${dot(l.sorte)}${esc(lotName(l))}${l.med&&l.med.length?' 🏅':''}</b>`,z2=`<div class="bz2">${num(l.liter)} Flaschen · ${l.qp} Qualitätspunkte</div>`,z3=`<div class="bz3 ${H.r<=2?'rot':''}">${H.t}</div>`;
+    h+=fenster('weine','Deine Weine',fl.map(l=>{const W=wege(l),L=lager(l),H=haltText(l),nm=`<b>${dot(l.sorte)}${esc(lotName(l))}${l.med&&l.med.length?' 🏅':''}</b>`,z2=`<div class="bz2">${num(l.liter)} Flaschen · Qualität ${l.qp}</div>`,z3=`<div class="bz3 ${H.r<=2?'rot':''}">${H.t}</div>`;
       if(!W.length){const n=L.min-l.flMonate; return `<button class="bzeile" data-a="buchDetail" data-id="${l.id}"><div class="bz1">${nm}<span>reif in ${n} ${n===1?'Monat':'Monaten'}</span></div>${z2}${z3}</button>`}
       // Seit 7.9 (Weg A): Unter dem Preis steht, wie viele Flaschen der Großhandel diesen Monat noch zum vollen Preis nimmt. Gerechnet wird mit dem Rest
       // des Budgets, also nach jedem Verkauf neu. Vorher galt marktF(0), der Preis der ersten Flasche: Der blieb voll, auch wenn das Budget gerade aufgebraucht war.
@@ -1542,7 +1544,7 @@ function vWeine(){
       const fl=l.status==='flasche', L=l.stufe?lager(l):null, p=preis(l), H=haltText(l), kid=kompLotId(l);
       const pr=p?eur2(p):fl?`reif in ${L.min-l.flMonate} ${L.min-l.flMonate===1?'Monat':'Monaten'}`:'im Fass';
       return `<button class="bzeile" data-a="buchDetail" data-id="${l.id}"><div class="bz1"><b>${dot(l.sorte)}${esc(lotName(l))}${l.pansch?' 🤫':''}${l.regal?' 🏪':''}${l.med&&l.med.length?' 🏅':''}</b><span>${pr}</span></div>
-      <div class="bz2">${l.stufe?l.qp+' Qualitätspunkte':'nicht angemeldet'} · ${num(l.liter)} ${fl?'Flaschen':'l im Fass'}</div>
+      <div class="bz2">${l.stufe?'':'nicht angemeldet · '}Qualität ${l.qp} · ${num(l.liter)} ${fl?'Flaschen':'l im Fass'}</div>
       <div class="bz3 ${kid?'dws ':''}${H.r<=2?'rot':''}">${kid?`<span>${H.t}</span>${kompSiegel(kompSt(kid),'klein')}`:H.t}</div></button>`}).join('')}</div>`,o);
 }
 // Winzerbote: Erst steht das Bild allein da, dann rollt sich die Zeitung wie eine Schriftrolle vom oberen Rand ab, bis ihr Kopf oben steht.
@@ -1993,8 +1995,8 @@ const AKT={
     const welt=w.typ==='welt';
     wettSheet(`${sbild(welt?'weltweinschau':'praemierung')}<h3>${welt?'🌍':'🏅'} ${WETTNAME[w.typ]} ${S.jahr}</h3>
       ${e?`<p>Eingereicht: <b>${esc(e.name)}</b>. Das Ergebnis steht im nächsten Winzerboten. Bis zum Monatsende kannst du noch tauschen.</p>`:''}
-      <p class="mut">${land?`Zugelassen sind angemeldete Prädikatsweine vom Jahrgang ${S.jahr-1}. Du reichst einen Wein ein, er bleibt dir erhalten.`:welt?`Neun Weingüter aus aller Welt sind zu Gast auf dem Dorfplatz. Zugelassen sind verkaufsreife Prädikatsweine und Sekte aus der Flasche, auch gereifte und schon prämierte. Derselbe Wein darf jedes Jahr wieder antreten, Medaille und Qualitätspunkte bekommt er aber nur beim ersten Mal. Platz 1 macht dich ${anr('zum Ehrenpräsidenten','zur Ehrenpräsidentin')}.`:'Alle Winzer treten gegeneinander an. Zugelassen sind verkaufsreife Prädikatsweine und Sekte aus der Flasche, auch gereifte und schon prämierte. Aufs Treppchen kommt jeder Wein hier nur einmal.'}</p>
-      ${S.rang<wettRang()?`<div class="card mut">Mitmachen darfst du ab dem Rang ${RAENGE[wettRang()].name}.</div>`:ls.length?ls.map(l=>`<button class="wahl ${e&&e.id===l.id?'an':''}" data-a="wettJa" data-id="${l.id}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${l.qp} Qualitätspunkte${!land&&reifeBonus(l)?` · Reife +${reifeBonus(l)}`:''}</span></button>`).join(''):`<div class="card mut">Du hast gerade keinen zugelassenen Wein.${land?' Meldest du diesen Monat noch einen Prädikatswein vom letzten Jahrgang an, kannst du teilnehmen.':''}</div>`}
+      <p class="mut">${land?`Zugelassen sind angemeldete Prädikatsweine vom Jahrgang ${S.jahr-1}. Du reichst einen Wein ein, er bleibt dir erhalten.`:welt?`Neun Weingüter aus aller Welt sind zu Gast auf dem Dorfplatz. Zugelassen sind verkaufsreife Prädikatsweine und Sekte aus der Flasche, auch gereifte und schon prämierte. Derselbe Wein darf jedes Jahr wieder antreten, Medaille und Punkte bekommt er aber nur beim ersten Mal. Platz 1 macht dich ${anr('zum Ehrenpräsidenten','zur Ehrenpräsidentin')}.`:'Alle Winzer treten gegeneinander an. Zugelassen sind verkaufsreife Prädikatsweine und Sekte aus der Flasche, auch gereifte und schon prämierte. Aufs Treppchen kommt jeder Wein hier nur einmal.'}</p>
+      ${S.rang<wettRang()?`<div class="card mut">Mitmachen darfst du ab dem Rang ${RAENGE[wettRang()].name}.</div>`:ls.length?ls.map(l=>`<button class="wahl ${e&&e.id===l.id?'an':''}" data-a="wettJa" data-id="${l.id}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">Qualität ${l.qp}${!land&&reifeBonus(l)?` · Flaschenreife +${reifeBonus(l)}`:''}</span></button>`).join(''):`<div class="card mut">Du hast gerade keinen zugelassenen Wein.${land?' Meldest du diesen Monat noch einen Prädikatswein vom letzten Jahrgang an, kannst du teilnehmen.':''}</div>`}
       <div class="btns"><button class="sec" data-a="close">${e||!ls.length?'Schließen':'Später entscheiden'}</button></div>`);
   },
   // Seit 13.6.3: Anmeldung zur Weltweinschau, nur im Januar, nur Weine der Klasse, die dran ist. Die Punkte stehen beim Anmelden fest.
@@ -2002,8 +2004,8 @@ const AKT={
     const s=S.schau; if(!s) return; const K=KRONEN[s.kl], e=s.ein, an=schauAnm(), ls=an?S.lots.filter(l=>schauFaehig(l)).sort((a,b)=>schauPunkte(b)-schauPunkte(a)):[];
     wettSheet(`${sbild('weltweinschau')}<h3>${K.sym} ${WETTNAME.welt} ${S.jahr}: ${K.name}</h3>
       ${e?`<p>Angemeldet: <b>${esc(e.name)}</b>. Die Schau ist im ${MON[WELT_MONAT]}, das Ergebnis steht im Winzerboten danach.${an?' Bis zum Monatsende kannst du noch tauschen.':''}</p>`:''}
-      <p class="mut">${kroneText(K)} Zugelassen sind verkaufsreife Weine aus der Flasche, nicht gepanscht und lange genug gelagert, auch gereifte und schon prämierte. Es zählen die Punkte. Ein Jahrhundertwein hat ${JH_ZUSCHLAG} Punkte mehr, höchstens ${QP_MAX_JH}. Als Favorit gilt ${esc(s.feld.find(x=>x.fav).name)}.</p>
-      ${!an?'':ls.length?ls.map(l=>`<button class="wahl ${e&&e.id===l.id?'an':''}" data-a="schauJa" data-id="${l.id}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${jhWein(l)?`Jahrhundertwein, ${l.qp} Punkte`:`${l.qp} Qualitätspunkte${reifeBonus(l)?` · Reife +${reifeBonus(l)}`:''}`}</span></button>`).join(''):`<div class="card mut">Du hast gerade keinen zugelassenen Wein für die ${K.name}.</div>`}
+      <p class="mut">${kroneText(K)} Zugelassen sind verkaufsreife Weine aus der Flasche, nicht gepanscht und lange genug gelagert, auch gereifte und schon prämierte. Es zählen die Punkte. Als Favorit gilt ${esc(s.feld.find(x=>x.fav).name)}.</p>
+      ${!an?'':ls.length?ls.map(l=>`<button class="wahl ${e&&e.id===l.id?'an':''}" data-a="schauJa" data-id="${l.id}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${jhWein(l)?`Jahrhundertwein, ${l.qp} Punkte`:`Qualität ${l.qp}${reifeBonus(l)?` · Flaschenreife +${reifeBonus(l)}`:''}`}</span></button>`).join(''):`<div class="card mut">Du hast gerade keinen zugelassenen Wein für die ${K.name}.</div>`}
       <div class="btns"><button class="sec" data-a="close">${e||!ls.length?'Schließen':'Später entscheiden'}</button></div>`);
   },
   schauJa(d){
@@ -2116,7 +2118,7 @@ const AKT={
     ${fl?`<div class="bar g"><i style="width:${L.max===Infinity?Math.min(100,l.flMonate/(L.min*3)*100):l.flMonate/L.max*100}%"></i></div>`:''}
     <div class="kv"><span>Öchsle bei der Lese</span><span>${l.oe}°</span></div>
     ${l.stufe==='eis'?`<div class="kv"><span>Wertstufe</span><span>Öchsle einer ${EIS_WERT[l.eisW||0].name}</span></div>`:''}
-    <div class="kv"><span>Qualitätspunkte</span><span>${l.stufe?l.qp:'erst nach Anmeldung'}</span></div>
+    <div class="kv"><span>Qualität</span><span>${l.qp}</span></div>
     <div class="kv"><span>Preis je Flasche</span><span>${p?eur2(p):fl?`reif in ${L.min-l.flMonate} Monaten`:'noch im Fass'}</span></div>
     ${p?`<div class="kv"><span>Gesamtwert</span><span>${eur(p*l.liter)}</span></div>`:''}
     ${kn.length?`<div class="btns">${kn.join('')}</div>`:''}<div class="btns"><button class="sec" data-a="close">Schließen</button></div>`);
@@ -2327,7 +2329,7 @@ const AKT={
     formUmstellen(id,d.form); fx('schere'); save(); render(); meldung('Umgestellt',`Der ${SORTEN[id].name} steht jetzt am ${FORMEN[d.form].name} und fängt als ${PFLEGE_STUFEN[0]} von vorn an.`)},
   // Seit 14.2.4: Sommerschnitt von Hand im Juni (Annahme 18). Platzhalter, Wortlaut in Meilenstein 17.
   sommerHand(d){const id=d.id; if(!laubHandOffen(id)) return; const k=laubHandKosten(id); if(S.geld<k) return meldung('Zu wenig Geld',`Der Sommerschnitt von Hand kostet ${eur(k)}.`);
-    const a=laubHand(id); fx('schere'); save(); render(); meldung('Sommerschnitt',`Der ${SORTEN[id].name} ist für ${eur(k)} von Hand geschnitten: Die Lese ${S.jahr} bekommt ${LAUB_QP} Qualitätspunkte und ${Math.round(LAUB_MENGE*100)} % mehr Menge${a?`, dazu +${a} Ansehen`:''}.`)},
+    const a=laubHand(id); fx('schere'); save(); render(); meldung('Sommerschnitt',`Der ${SORTEN[id].name} ist für ${eur(k)} von Hand geschnitten: Die Lese ${S.jahr} bekommt ${LAUB_QP} Punkte Qualität und ${Math.round(LAUB_MENGE*100)} % mehr Menge${a?`, dazu +${a} Ansehen`:''}.`)},
   pflanzen(d){
     if(!sorteFrei(d.id)) return meldung('Noch nicht',`${SORTEN[d.id].name} kannst du ab dem Rang ${RAENGE[sorteAb(d.id)].name} pflanzen.`);
     if(sektSorte(d.id)&&!S.sektkeller) return meldung('Erst der Sektkeller',`Die ${ROLLEN.sekt.name} macht nur Sekt. Kauf erst den Sektkeller im Keller.`);
@@ -2366,7 +2368,7 @@ const AKT={
     // Seit 13.3.3: Die Sekt-Sorte wählt nur das Hefelager, gelesen wird alles.
     if(sektSorte(d.id)){
       const l=feldLiter(f,'alles'), k=Math.round(l*sektKosten());
-      const opt=[[SEKT_REIFE,`${SEKT_REIFE} Monate reifen`],[HEFE_LANG,`${HEFE_LANG} Monate auf der Hefe`]].map(([h,t])=>`<button class="wahl" data-a="sektLeseJa" data-id="${d.id}" data-h="${h}" ${l<=0||!S.sektkeller?'disabled':''}><b>${t}</b><br><span class="mut">${num(l)} Flaschen Sekt${h>SEKT_REIFE?` · ${HEFE_LANG_QP} Qualitätspunkte mehr`:''} · verkaufsreif ${inMonaten(h)}</span></button>`).join('');
+      const opt=[[SEKT_REIFE,`${SEKT_REIFE} Monate reifen`],[HEFE_LANG,`${HEFE_LANG} Monate auf der Hefe`]].map(([h,t])=>`<button class="wahl" data-a="sektLeseJa" data-id="${d.id}" data-h="${h}" ${l<=0||!S.sektkeller?'disabled':''}><b>${t}</b><br><span class="mut">${num(l)} Flaschen Sekt${h>SEKT_REIFE?` · ${HEFE_LANG_QP} Punkte mehr`:''} · verkaufsreif ${inMonaten(h)}</span></button>`).join('');
       return openSheet(`${sbild('sektkeller')}<h3>${so.name} lesen</h3><p class="mut">Die ${ROLLEN.sekt.name} macht nur Sekt. Nach der Lese legst du die Trauben noch diesen Monat in den Sektkeller${lagerKann(3)?', das machen deine Lagerarbeiter':''}. Sektflasche, Korken und Agraffe kosten dann ${eur(k)}. Hier wählst du nur, wie lange er auf der Hefe liegt.</p>${S.sektkeller?'':'<p class="rot">Ohne Sektkeller gibt es keinen Sekt.</p>'}${leseFaktor()<1?`<p class="rot">Deine Ernteleistung reicht nur für ${Math.floor(leseFaktor()*100)}\u00a0%. Den Rest liest keiner, er ist verloren.</p>`:''}${opt}${mib('lese')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
     }
     const opt=['reif','ueber','alles'].map(la=>{const b=besteStufe(feldQ(f,la)),l=feldLiter(f,la);
@@ -2398,17 +2400,17 @@ const AKT={
   misch1(){
     if(!hinterOffen()) return;
     const mi=S.lots.filter(mischbar), ls=mi.filter(a=>mi.some(b=>a!==b&&farbe(a)===farbe(b)));
-    openSheet(`${sbild('fassgang')}<h3>Fässer verschneiden</h3><p class="mut">Wähle das erste Fass.</p>${ls.map(l=>`<button class="wahl" data-a="misch2" data-id="${l.id}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${num(l.liter)}\u00a0l · ${l.oe}° Öchsle · ${l.qp} Qualitätspunkte</span></button>`).join('')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
+    openSheet(`${sbild('fassgang')}<h3>Fässer verschneiden</h3><p class="mut">Wähle das erste Fass.</p>${ls.map(l=>`<button class="wahl" data-a="misch2" data-id="${l.id}"><b>${dot(l.sorte)}${esc(lotName(l))}</b><br><span class="mut">${num(l.liter)}\u00a0l · ${l.oe}° Öchsle · Qualität ${l.qp}</span></button>`).join('')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
   },
   misch2(d){
     const a=lot(d.id); if(!a) return;
     const ls=S.lots.filter(b=>mischbar(b)&&b!==a&&farbe(b)===farbe(a));
-    openSheet(`${sbild('fassgang')}<h3>${esc(lotName(a))} mischen mit</h3>${ls.map(b=>{const m=mischung(a,b);return `<button class="wahl" data-a="misch3" data-id="${a.id}" data-b="${b.id}"><b>${dot(b.sorte)}${esc(lotName(b))}</b><br><span class="mut">${num(b.liter)}\u00a0l · ergibt ${num(m.liter)}\u00a0l ${STUFEN[m.a.stufe].name} mit ${m.qp} Qualitätspunkten</span></button>`}).join('')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
+    openSheet(`${sbild('fassgang')}<h3>${esc(lotName(a))} mischen mit</h3>${ls.map(b=>{const m=mischung(a,b);return `<button class="wahl" data-a="misch3" data-id="${a.id}" data-b="${b.id}"><b>${dot(b.sorte)}${esc(lotName(b))}</b><br><span class="mut">${num(b.liter)}\u00a0l · ergibt ${num(m.liter)}\u00a0l ${STUFEN[m.a.stufe].name} mit Qualität ${m.qp}</span></button>`}).join('')}<div class="btns"><button class="sec" data-a="close">Abbrechen</button></div>`);
   },
   misch3(d){
     const a=lot(d.id), b=lot(d.b); if(!a||!b) return; const m=mischung(a,b);
     openSheet(`${sbild('fassgang')}<h3>Wirklich verschneiden?</h3><p>Aus ${esc(lotName(m.a))} (${num(m.a.liter)}\u00a0l) und ${esc(lotName(m.b))} (${num(m.b.liter)}\u00a0l) werden ${num(m.liter)}\u00a0l ${esc(lotName(m.a))}.</p>
-      <div class="kv"><span>Öchsle</span><span>${m.oe}°</span></div><div class="kv"><span>Qualitätspunkte</span><span>${m.qp}</span></div><div class="kv"><span>Schmiergeld für den Beamten</span><span>${eur(m.schmier)}</span></div>
+      <div class="kv"><span>Öchsle</span><span>${m.oe}°</span></div><div class="kv"><span>Qualität</span><span>${m.qp}</span></div><div class="kv"><span>Schmiergeld für den Beamten</span><span>${eur(m.schmier)}</span></div>
       <p class="rot">Der Wein gilt als gepanscht. Findet ihn der Prüfer, wird er vernichtet und es gibt Strafe.</p>
       <div class="btns"><button class="sec" data-a="close">Lieber nicht</button><button class="wag" data-a="mischJa" data-id="${a.id}" data-b="${b.id}" ${S.geld<m.schmier?'disabled':''}>Verschneiden</button></div>`);
   },
@@ -2419,7 +2421,7 @@ const AKT={
     // Seit 13.2.2: Der Verschnitt trägt die niedrigere Pflege- und Boden-Stufe der beiden Weine, für Preisbonus und Namen.
     Object.assign(a,{liter:m.liter,oe:m.oe,qp:m.qp,fassMonate:Math.max(a.fassMonate,m.b.fassMonate),pansch:true,jh:a.jh&&m.b.jh?1:0,pfl:Math.min(a.pfl||0,m.b.pfl||0),bst:Math.min(a.bst||0,m.b.bst||0)});
     S.lots=S.lots.filter(l=>l!==m.b); save();render();
-    meldung('Verschnitten',`${lotName(a)}: ${num(a.liter)}\u00a0l mit ${a.qp} Qualitätspunkten. Bis er verkauft ist, darf ihn kein Prüfer finden.`,'fassgang');
+    meldung('Verschnitten',`${lotName(a)}: ${num(a.liter)}\u00a0l mit Qualität ${a.qp}. Bis er verkauft ist, darf ihn kein Prüfer finden.`,'fassgang');
   },
   /* ---- Weinkontrolle ---- */
   pruefJa(){if(!S.pruefer) return; const t=pruefEnde(0); save();render(); meldung('🔍 Erwischt',t,'kontrolle')},
@@ -2498,7 +2500,7 @@ const AKT={
     if(ill&&S.geld<s.geb+sg) return meldung('Zu wenig Geld',`Der Beamte will ${eur(sg)} Schmiergeld${s.geb?`, dazu kommt die Gebühr von ${eur(s.geb)}`:''}.`);
     zahle(s.geb+sg);l.stufe=st;if(ill)l.pansch=true; const kw=kellerWein(l,st);
     if(st==='eis') l.eisW=eisStufe(l.oe);
-    l.qp=qpFuer(l,st);
+    // Seit 14.5.2 (Annahme 1): Die Qualität hat der Wein seit der Lese (l.qp), die Anmeldung rechnet nichts mehr.
     // Ansehen gibt es je Sorte, Jahrgang und Stufe nur einmal, auch wenn die Lese auf mehrere Fässer verteilt ist. S.ansGeb merkt sich das.
     const ak=l.sorte+'|'+l.jahrgang+'|'+st, AG=S.ansGeb=(S.ansGeb||[]).filter(k=>+k.split('|')[1]>=S.jahr-2), erst=!AG.includes(ak);
     if(s.ans&&!ill&&erst) AG.push(ak);
@@ -2506,7 +2508,7 @@ const AKT={
     const jhA=jhWein(l)&&!ill&&!(S.jhAns=S.jhAns||[]).includes(l.jahrgang); if(jhA) S.jhAns.push(l.jahrgang);
     // Seit 14.2.6: plus 1 Ansehen je ANS_JE_QP Qualitätspunkte, minus ANSPRUCH_ANS je fehlendem Punkt zum Anspruch (ausgeschaltet).
     const ans=(s.ans&&!ill&&erst?ruhm(s.ans+ansZuschlag(l)-ANSPRUCH_ANS*anspruchFehlt(st,l.qp),0,'Weine'):0)+(jhA?ruhm(JH_ANS,0,'Weine'):0);closeSheet();save();render();fx('stempel');
-    meldung('Angemeldet',`${lotName(l)} steht jetzt mit ${l.qp} Qualitätspunkten im Kellerbuch.`+(ill?` Der Beamte hat ${eur(sg)} eingesteckt. Bis der Wein verkauft ist, darf ihn kein Prüfer finden.`:'')+(ans?` +${ans} Ansehen.`:s.ans&&!ill?' Ansehen gab es für diesen Jahrgang und diese Stufe schon.':'')+(st==='feder'?' Federweißer muss noch diesen Monat in die Flasche.':' Jetzt darf er abgefüllt werden.')+kw,'kellerbuch');
+    meldung('Angemeldet',`${lotName(l)} steht jetzt mit Qualität ${l.qp} im Kellerbuch.`+(ill?` Der Beamte hat ${eur(sg)} eingesteckt. Bis der Wein verkauft ist, darf ihn kein Prüfer finden.`:'')+(ans?` +${ans} Ansehen.`:s.ans&&!ill?' Ansehen gab es für diesen Jahrgang und diese Stufe schon.':'')+(st==='feder'?' Federweißer muss noch diesen Monat in die Flasche.':' Jetzt darf er abgefüllt werden.')+kw,'kellerbuch');
   },
   abfuellen(d){
     const l=lot(d.id); closeSheet();

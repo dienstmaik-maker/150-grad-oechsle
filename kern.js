@@ -1,7 +1,7 @@
 // 150 Grad Öchsle: Kern. Rechenregeln, Jahr, Wetter, Speichern. Seit 13.1 eigene Datei, vorher in index.html.
 // Lädt nach zahlen.js und vor oberflaeche.js, alle Namen sind global.
 'use strict';
-for(const [id,[rolle,name,farbe]] of Object.entries(SORTEN_ROLLEN)){const P=ROLLEN[rolle]; SORTEN[id]={name,farbe,rolle,ertrag:P.ertrag,zucker:P.zucker,preis:P.preis,minL:P.minL,maxL:P.maxL,q:P.q,reife:P.reife,...(P.sektStar?{sektStar:true}:{})}}
+for(const [id,[rolle,name,farbe]] of Object.entries(SORTEN_ROLLEN)){const P=ROLLEN[rolle]; SORTEN[id]={name,farbe,rolle,ertrag:P.ertrag,zucker:P.zucker,preis:P.preis,minL:P.minL,maxL:P.maxL,reife:P.reife,...(P.sektStar?{sektStar:true}:{})}}
 // Seit 14.4.4 (Entscheidung 13, Annahme 1): Die Spitzenlage ist ein vierter Weinberg mit eigener Kennung (SL_PRE plus Kennung der Spitzen-Sorte), dieselbe Rebsorte
 // mit allen ihren Werten (stamm zeigt auf sie), eigener Name mit Lagennamen (SL_NAME), damit ihr Wein ein eigener Posten im Keller ist. Die Reihenfolge der Sorten
 // nach Rang bleibt bei drei (R().sorten, sortenFolge, SORTE_RANG), die Liste der Weinberge ist weinberge(): die drei Sorten und, sobald gekauft, die Spitzenlage.
@@ -34,14 +34,14 @@ const eigText=e=>e>=1?'★★★ sehr gut geeignet':e>=.85?'★★ gut geeignet'
 const rolleVon=id=>ROLLEN[(SORTEN[id]||{}).rolle];
 // Seit 13.2.2: Schlüssel der Rolle für die Tabellen der Rebpflege, Sorten ohne Rolle rechnen wie die Menge-Sorte.
 const rolleK=id=>(SORTEN[id]||{}).rolle||'menge';
-// Seit 14.2.2: Mengen-Faktor der Pflegestufe, für alle Rollen gleich (STUFE_MENGE). Die Qualitätspunkte bekommen STUFE_QPF in qpFuer.
+// Seit 14.2.2: Mengen-Faktor der Pflegestufe, für alle Rollen gleich (STUFE_MENGE). Die Qualität rechnet seit 14.5.2 qualTeile.
 const pflegeMenge=(f,id)=>STUFE_MENGE[f.pflSt||0];
 // Seit 14.2.2: Entwicklungspunkte (f.ep, 0 bis EP_MAX). Erziehungsform des Weinbergs, ohne Wahl die passende (Entscheidung 34).
 const formVon=id=>{const f=S.felder[id]||{}; return f.form||FORM_PASST[rolleK(id)]};
 // Schwellen in Punkten: Rebstock nach EP_REBSTOCK_JAHRE Chef-Jahren der Form, Premier Cru, Grand Cru.
 const epSchwelle=id=>[0,EP_REBSTOCK_JAHRE*FORMEN[formVon(id)].ep,EP_PREMIER,EP_GRAND];
 const epStufe=id=>stufeZu((S.felder[id]||{}).ep||0,epSchwelle(id));
-// Seit 14.2.4: Erziehungsformen, die eine Rolle haben darf (Schlüssel in FORM_WIRKUNG), und die Wirkung der Form auf Menge [0] und Qualitätspunkte [1].
+// Seit 14.2.4: Erziehungsformen, die eine Rolle haben darf (Schlüssel in FORM_WIRKUNG), und die Wirkung der Form auf die Menge [0]. Der Teil [1] zählt seit 14.5.2 nicht mehr.
 const formenFuer=id=>Object.keys(FORM_WIRKUNG[rolleK(id)]||{});
 const formWirk=id=>((FORM_WIRKUNG[rolleK(id)]||{})[formVon(id)])||[1,1];
 // In der Erziehung ist ein Weinberg bis zum Rebstock (Kordon teurer im Schnitt und von Hand gelesen, Annahme 11).
@@ -182,7 +182,7 @@ const epJahrSoll=id=>epPlus(id,true,zuwachsVon(helferSchneidet(id)?'helfer':'che
 const sorteSchild=(id,r)=>rolleVon(id)?`${rolleVon(id).name}: ${rolleVon(id).satz}`:eigText(eignung(id,r));
 const sternZahl=(id,r)=>{const e=eignung(id,r); return e>=1?3:e>=.85?2:1};
 const sternF=(id,r)=>[0,STERN_PREIS_1,STERN_PREIS_2,STERN_PREIS_3][sternZahl(id,r)];
-// Seit 13.2.1: Die Punkte des Bodens kommen nur noch aus seiner Stufe (BODEN_ST_QP je Stufe), bodenQP aus dem Bodenzustand ist weg.
+// Seit 13.2.1: Die Punkte des Bodens kamen nur noch aus seiner Stufe (BODEN_ST_QP, bis 14.4), seit 14.5.2 gleitend aus den Bodenpunkten (qualBoden).
 // Der Zustand wirkt weiter auf die Menge und füttert den Zähler: Ein Jahresschnitt ab BODEN_GUT ist ein gutes Bodenjahr.
 const bodenText=b=>b>=BODEN_GUT?'sehr gut':b>=80?'gut':'zu mager, Nachdüngen hilft';
 // Stufe zu einem Zählerstand: die höchste Schwelle, die der Zähler erreicht hat (Boden und ab 13.2.2 Rebpflege).
@@ -851,7 +851,7 @@ function ladenPreis(l,r){return Math.round(preis(l)*LADEN_AUF*100)/100}
 
 /* ================= Wettbewerbe ================= */
 function wettRang(){const t=S.wett&&S.wett.typ; return t==='bund'?R_BUND:R_LAND}
-// Seit 13.6.2: Lagerjahre geben einem Jahrhundertwein nichts dazu. Seit 14.2.6 zählen seine eigenen Punkte samt JH_ZUSCHLAG (qpFuer).
+// Seit 13.6.2: Lagerjahre geben einem Jahrhundertwein nichts dazu. Seit 14.5.2 zählt die Qualität seines Weinbergs, ohne Zuschlag (bis 14.4 JH_ZUSCHLAG).
 function reifeBonus(l){if(jhWein(l)) return 0; return Math.min(12,Math.round((reifeFaktor(l)-1)*8))}
 function wettFaehig(l){
   const w=S.wett; if(!w||!l||!l.stufe||l.pansch) return false;
@@ -883,7 +883,7 @@ function wettAuswerten(){
   F.slice(0,3).forEach((x,i)=>{
     const pr=P[i];
     if(x.du){
-      const mit=!!l, r=ruhm(pr.ans,0,'Wettbewerbe'), was=`+${r} Ansehen${mit?`, +${pr.qp} Qualitätspunkte`:''}${pr.geld?', '+eur(pr.geld)+' Preisgeld':''}`;
+      const mit=!!l, r=ruhm(pr.ans,0,'Wettbewerbe'), was=`+${r} Ansehen${mit?`, +${pr.qp} Punkte für den Wein`:''}${pr.geld?', '+eur(pr.geld)+' Preisgeld':''}`;
       if(mit){l.qp+=pr.qp; (l.med=l.med||[]).push(`${pr.m} ${name} ${S.jahr}`); if(w.typ==='bund') l.bund=true}
       if(w.typ==='land') tatMerk('medaille');
       ehre(pr.m,`${pr.t} ${wo}: ${e.name}`,0,was); kompMedaille(l||e,i);
@@ -946,7 +946,7 @@ function schauAuswerten(){
   if(ich<0) return schlag(60,`Weltweinschau ${S.jahr}: ${F[0].name} holt die ${K.name}`,`${F[0].name} gewinnt die ${K.name} auf dem Dorfplatz. ${S.name} hat diesmal keinen Wein eingereicht. ${nochmal}`,'weltweinschau',{liste:L,wett:{typ:'welt',platz:-1}});
   if(ich>2) return schlag(72,`Weltweinschau: Platz ${ich+1} für ${S.name}`,`${e.name} landet bei der Schau um die ${K.name} auf Platz ${ich+1} von ${F.length}. Die Krone holt ${F[0].name}. ${nochmal}`,'weltweinschau',{liste:L,wett:{typ:'welt',platz:ich},du:1});
   const pr=P[ich], schon=!!(l&&l.welt), mit=!!l&&!schon, r=ich===0?ruhm(KRONE_ANS,0,'Wettbewerbe',1):ruhm(pr.ans,0,'Wettbewerbe');
-  const was=`+${r} Ansehen${mit?`, +${pr.qp} Qualitätspunkte`:''}${pr.geld?', '+eur(pr.geld)+' Preisgeld':''}`;
+  const was=`+${r} Ansehen${mit?`, +${pr.qp} Punkte für den Wein`:''}${pr.geld?', '+eur(pr.geld)+' Preisgeld':''}`;
   if(l) l.welt=true;
   if(mit){l.qp+=pr.qp; (l.med=l.med||[]).push(`${pr.m} ${WETTNAME.welt} ${S.jahr}`)}
   if(pr.geld) kassiere(pr.geld);
@@ -1276,7 +1276,6 @@ function wachse(m){
   // Seit 13.4.2: Im Dezember richtet sich das Wetter nach dem Frost-Wagnis, wenn ein Feld darauf wartet (wagnisWetter).
   if(m===11) wagnisWetter();
   const w=S.wetter;
-  if(w==='sonnig'&&m>=5&&m<=9) S.sonne++;
   // Seit 14.4.4 alle Weinberge, die Spitzenlage würfelt wie der Weinberg ihrer Sorte (si der Sorte), nur ihre Trauben bekommen SPITZE_OE.
   for(const [si,id] of weinberge().map(x=>[reg.sorten.indexOf(stamm(x)),x])){
     const f=S.felder[id], so=SORTEN[id]; if(!f.reben) continue;
@@ -1509,7 +1508,7 @@ function maschAbnutzung(reben,M){
   }
 }
 // Version 4.4: ungefährer Listenwert einer Lese als Flaschenwein der Stufe st, ohne Reife und Marktlage.
-function leseWert(id,la,st,liter){const q=feldQ(S.felder[id],la), pfl=S.felder[id].pflSt||0, qp=qpFuer({sorte:id,oe:q.oe,sonne:S.sonne,boden:S.boden,bst:wbBoden(id),pfl,laub:S.felder[id].laub===S.jahr,fq:formWirk(id)[1]},st);
+function leseWert(id,la,st,liter){const q=feldQ(S.felder[id],la), pfl=S.felder[id].pflSt||0, qp=qualWb(id); // seit 14.5.2 die Qualität des Weinbergs
   return Math.round(liter*STUFEN[st].preis*(st==='eis'?EIS_WERT[eisStufe(q.oe)].f:1)*(1+qp/100)*(1+pflegePreis(id,pfl))*anspruchF(st,qp)*sternF(id)*(R().preisF||1)/100)*100}
 function feldLiter(f,la){const r=f.reif/100,u=f.ueber/100; return Math.round(f.menge*r*(la==='reif'?1-u:la==='ueber'?u*MOST_UEBER:1-u+u*MOST_UEBER)*leseFaktor(feldId(f)))}
 // Ab wann ein Wein frühestens verkauft werden darf, wenn er jetzt gelesen wird.
@@ -1567,7 +1566,7 @@ for(const id of Object.keys(SORTEN).filter(id=>!SORTEN[id].sl)) kompWissen('sort
   return `${so.farbe==='weiss'?'Weißwein':'Rotwein'}, ${rolleVon(id)?`die ${rolleVon(id).name} im Gebiet ${R().name}`:`im Gebiet ${R().name} ${eigText(eignung(id))}`}. Als Prädikatswein reift er mindestens ${Math.max(1,so.minL-(S.keller||0))} Monate in der Flasche und hält bis zu ${Math.round(so.maxL/12)} Jahre.${so.sektStar?` Als Sekt bringt er ${Math.round((SEKT_STAR-1)*100)} % mehr als andere Sorten.`:''}${sg}`});
 function kompSektText(){
   const so=kompRollen().sekt;
-  return `Sekt macht ab dem Rang ${RAENGE[R_SEKT].name} die ${ROLLEN.sekt.name}, direkt bei der Lese im eigenen Sektkeller, ohne Grundwein. Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche. Er ruht ${SEKT_REIFE} Monate auf der Hefe, mit ${HEFE_LANG} Monaten bekommt er ${HEFE_LANG_QP} Qualitätspunkte mehr.${S.rollen?` Aus dem ${SORTEN[so].name} wird der Regional-Sekt, er bringt noch einmal ${Math.round((SEKT_STAR-1)*100)} % mehr.`:''} Bei Wettbewerben tritt Sekt erst ab dem Bundeswettbewerb an.`;
+  return `Sekt macht ab dem Rang ${RAENGE[R_SEKT].name} die ${ROLLEN.sekt.name}, direkt bei der Lese im eigenen Sektkeller, ohne Grundwein. Sektflasche, Korken und Agraffe kosten ${eur2(sektKosten())} je Flasche. Er ruht ${SEKT_REIFE} Monate auf der Hefe, mit ${HEFE_LANG} Monaten bekommt er ${HEFE_LANG_QP} Punkte mehr.${S.rollen?` Aus dem ${SORTEN[so].name} wird der Regional-Sekt, er bringt noch einmal ${Math.round((SEKT_STAR-1)*100)} % mehr.`:''} Bei Wettbewerben tritt Sekt erst ab dem Bundeswettbewerb an.`;
 }
 // Wissens-Seiten: Geschichte und die Zeile "Im Spiel", ohne Siegel. Die Kennungen aus 11.1 bleiben, neu ist helferweg.
 for(const r of Object.keys(REGIONEN)) kompWissen('gebiet_'+r,'gebiet',REGIONEN[r].name,()=>`${REGIONEN[r].text} ${r===S.region?'Hier steht dein Weingut.':`So spielt es sich in einer Partie ${WO[r]}.`}`);
@@ -1575,8 +1574,8 @@ kompWissen('spitze','gebiet','Spitzenlage',()=>`Die beste Lage weit und breit: $
 for(let k=1;k<=KELLER_PREISE.length;k++) kompWissen('keller'+k,'technik',KELLER_NAMEN[k-1],
   ()=>`Stufe ${k} im Kellerausbau. Kostet ${eur(KELLER_PREISE[k-1])} und geht mit ${kellerMit(k-1)} im Kellerbuch. Prädikatsweine und Eiswein sind damit ${k} ${k===1?'Monat':'Monate'} früher verkaufsreif, und jeder Wein gewinnt beim Reifen schneller an Wert.`);
 // Seit 12.1: der Sektkeller mit der Flaschengärung als kleine Geschichte (KOMP_TEXT.sektkeller).
-kompWissen('sektkeller','technik','Sektkeller',()=>`Kostet einmal ${eur(SEKTKELLER_PREIS)} und geht ab dem Rang ${RAENGE[R_SEKT].name}. Ohne ihn gibt es keinen Sekt. Sektflasche, Korken und Agraffe kosten ${eur2(SEKT_KOSTEN)} je Flasche, mit der ${SEKT_ANLAGE_NAME} (${eur(SEKT_ANLAGE_PREIS)}, zu haben ${freiText('sekt_anlage')}) die Hälfte. Bei der Lese der ${ROLLEN.sekt.name} wählst du ${SEKT_REIFE} oder ${HEFE_LANG} Monate auf der Hefe, lang bringt ${HEFE_LANG_QP} Qualitätspunkte mehr.${S.sektkeller?` Dein Sektkeller steht${S.sektAnlage?', mit Anlage':''}.`:''}`);
-kompWissen('reife','technik','Reife in der Flasche',()=>'In der Flasche gewinnt ein Wein mit jedem Jahr an Wert, höchstens bis zum Vierfachen. Wie schnell das geht und wie lange er hält, hängt an der Rebsorte und am Kellerausbau.');
+kompWissen('sektkeller','technik','Sektkeller',()=>`Kostet einmal ${eur(SEKTKELLER_PREIS)} und geht ab dem Rang ${RAENGE[R_SEKT].name}. Ohne ihn gibt es keinen Sekt. Sektflasche, Korken und Agraffe kosten ${eur2(SEKT_KOSTEN)} je Flasche, mit der ${SEKT_ANLAGE_NAME} (${eur(SEKT_ANLAGE_PREIS)}, zu haben ${freiText('sekt_anlage')}) die Hälfte. Bei der Lese der ${ROLLEN.sekt.name} wählst du ${SEKT_REIFE} oder ${HEFE_LANG} Monate auf der Hefe, lang bringt ${HEFE_LANG_QP} Punkte mehr.${S.sektkeller?` Dein Sektkeller steht${S.sektAnlage?', mit Anlage':''}.`:''}`);
+kompWissen('reife','technik','Flaschenreife',()=>'In der Flasche gewinnt ein Wein mit jedem Jahr an Wert, höchstens bis zum Vierfachen. Wie schnell das geht und wie lange er hält, hängt an der Rebsorte und am Kellerausbau.');
 kompWissen('zuckern','technik','Zuckern und Wässern',()=>`Zucker hebt die Öchsle im Most, aber nie über den Deckel des Weinbergs, aus dem die Trauben kommen. Wasser streckt die Menge. Beides geht um höchstens ${ZUCKER_MAX} %. Bis ${ZUCKER_ERLAUBT} % ist das beim Tafelwein erlaubt. Alles andere ist Panscherei und ein Fall für den Weinprüfer.`);
 for(const id of Object.keys(MASCH)) kompWissen('masch_'+id,'technik',MASCH[id].name,
   ()=>{const T=MASCH[id]; return `${T.bonus?MASCH_BONUS[id]():`Schafft ${rbn(T.leist)} Reben bei der Lese und deckt übers Jahr ${T.helfer} Hektar Reben ab`}. Zu kaufen ${maschFreiText(id)} für ${eur(T.preis)}.`});
@@ -1791,7 +1790,7 @@ function neuesSpiel(){
   if(NEU.schwer===MEISTER_STUFE&&!meisterFrei()) NEU.schwer=MEISTER_VON; // seit 13.7.7, gesperrt bis zur ersten Übergabe in den Gesellenjahren
   const reg=REG(NEU.region,!!ROLLEN_NEU);
   S={v:1,v13:1,v145:1,zf:zfNeu(),name:NEU.name.trim().slice(0,NAME_MAX)||'Rebenreich',ich:(NEU.ich||'').trim().slice(0,30),anrede:NEU.anrede==='w'?'w':'m',region:NEU.region,jahr:2027,monat:0,geld:startGeld(NEU.schwer),ha:3,hang:{einfach:3,hoehe:0,sued:0},boden:80,bodenSt:0,bodenP:{einfach:0,hoehe:0,sued:0},duengungen:0,
-    felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',sonne:0,markt:1,ansehen:0,ansV:1,leuteV:1,
+    felder:{},fassraum:6000,flaschen:3000,lots:[],nextId:1,wetter:'kalt',wetterNext:'kalt',prognose:'kalt',markt:1,ansehen:0,ansV:1,leuteV:1,
     jahrEin:0,jahrAus:0,edel33:1,bericht:null,helfer:ALLEIN_HA?0:1,lagerarb:ALLEIN_FASS?0:1,maschinen:[],kredit:null,ehrungen:[],ehrZeig:0,meilen:0,mahnung:0,pleite:false,kontr:{in:rint(24,48),scharf:0},fu:fuNeu(),zeit:0,zeitAb:0,zeitRang:[],rangMon:{0:START_JAHR*12},freiBote:{},taten:{},komp:{},kompV:3,v121:1,ein:{f:[]},...(ROLLEN_NEU?{rollen:1}:{})};
   for(const id of reg.sorten){S.felder[id]={reben:0,pflSt:0,ep:0}; feldReset(S.felder[id])}
   etappe3(3,NEU.schwer);
@@ -2013,7 +2012,7 @@ function monatLauf(){
     if(gew>0){steuer=Math.round((gew-abz)*STEUER); jb+=` Die positive Bilanz bringt +${ruhm(4)} Ansehen.${abz?` Deine Spenden senken den Gewinn um ${eur(abz)}.`:''} Steuer auf den Gewinn: ${eur(steuer)}.`}
     if(spJ&&!abz) jb+=` Gespendet hast du ${eur(spJ)}, ohne Gewinn senkt das keine Steuer.`;
     schlag(50,`Jahresbilanz ${S.jahr}: ${gew>=0?'Gewinn':'Verlust'} von ${eur(Math.abs(gew))}`,jb,'amt',{archiv:1});
-    S.monat=0; S.jahr++; S.jahrEin=0; S.jahrAus=0; S.spJahr=0; S.duengungen=0; S.sonne=0; zahle(steuer);
+    S.monat=0; S.jahr++; S.jahrEin=0; S.jahrAus=0; S.spJahr=0; S.duengungen=0; zahle(steuer);
     // Reben-Abnutzung: je Sorte ein gewürfelter Anteil aus der Spanne des Bodenschnitts, Frost kommt obendrauf. S.verlust merkt die Zahlen für Aktuelles.
     const schnitt=Math.round(S.bodenSum/S.bodenN), sp=verlustSpanne(schnitt), fp=frostPlus(), rebVor=rebenGesamt(); let totAlle=0;
     // Seit 13.2.1: Boden-Zähler. Ein Jahresschnitt ab BODEN_GUT zählt +1, sonst bleibt er stehen. Die Stufe fällt nie.
@@ -2053,7 +2052,7 @@ function monatLauf(){
   if(S.monat===6){const lb=S.maschinen.find(x=>x.typ==='laub');
     if(lb){const an=bonusMasch('laub');
       // Seit 14.2.4 nur in Weinbergen, in die die Maschine darf (maschDarf), die anderen bekommen den Sommerschnitt von Hand.
-      if(an){S.laubJahr=S.jahr; for(const id of weinberge()){const f=S.felder[id]; if(maschDarf(id)&&f.menge>0&&!f.gelesen){f.laub=S.jahr; f.menge=Math.round(f.menge*(1+LAUB_MENGE))}} abnutz(an,LAUB_ABN); const a=laubAnsehen(); Z.push(`✂️ Dein Laubschneider hat im Juni den Sommerschnitt gemacht: Die Lese ${S.jahr} bekommt ${LAUB_QP} Qualitätspunkte und ${Math.round(LAUB_MENGE*100)} % mehr Menge${a?`, dazu +${a} Ansehen`:''}. Zustand jetzt ${an.zustand} %.`)}
+      if(an){S.laubJahr=S.jahr; for(const id of weinberge()){const f=S.felder[id]; if(maschDarf(id)&&f.menge>0&&!f.gelesen){f.laub=S.jahr; f.menge=Math.round(f.menge*(1+LAUB_MENGE))}} abnutz(an,LAUB_ABN); const a=laubAnsehen(); Z.push(`✂️ Dein Laubschneider hat im Juni den Sommerschnitt gemacht: Die Lese ${S.jahr} bekommt ${LAUB_QP} Punkte Qualität und ${Math.round(LAUB_MENGE*100)} % mehr Menge${a?`, dazu +${a} Ansehen`:''}. Zustand jetzt ${an.zustand} %.`)}
       else Z.push(`✂️ Dein Laubschneider ${lb.zustand<MASCH_ROT?'ist ausgefallen':'hatte keinen Fahrer'}, einen Sommerschnitt gab es dieses Jahr nicht.`)}}
   // Seit 8.0 nutzen sich Maschinen nur noch bei der Lese ab (maschAbnutzung), die feste Abnutzung je Herbstmonat ist weg.
   // Der Weingut-Manager stellt nach dem Monatswechsel die Helfer für die Handlese ein, sobald Edelfäulnis da ist.
@@ -2268,21 +2267,22 @@ const hinterOffen=()=>frei('hintertuer');
 const zuckerOe=(l,n)=>Math.min(150,Math.round(l.oe*(1+n/100)));
 function zuckerBis(l){const D=deckel(l.sorte); let n=0; while(n<ZUCKER_MAX-(l.zucker||0)&&zuckerOe(l,n+1)<=D) n++; return n}
 const maniText=l=>[l.zucker?`gezuckert (+${l.zucker}\u00a0%)`:'',l.wasser?`gewässert (+${l.wasser}\u00a0%)`:''].filter(Boolean).join(' und ');
-// Seit 8.0 (Paket B): Trauben aus einem Jahr mit Sommerschnitt (l.laub) bekommen LAUB_QP Punkte obendrauf, nach der Eignung, damit es genau so viele sind.
-// Seit 13.2.1: Der Boden gibt BODEN_ST_QP Punkte je Stufe (l.bst, bei der Lese festgehalten) statt der Punkte aus dem Bodenzustand.
-// Seit 13.2.2: dazu die Punkte der Rebpflege (l.pfl, bei der Lese festgehalten, PFLEGE_QP).
-// Seit 14.2.6 (Entscheidungen 28 und 33): eine Skala bis 100. Grundpunkte (Weinstufe, Öchsle bis 8, Sorte, Sonne bis SONNE_QP_MAX, Boden nach BODEN_ST_QP)
-// mal Pflegestufe mal Form mal Eignung, gerundet, plus Laubschnitt, mindestens QP_MIN und höchstens QP_MAX. Der Jahrhundertwein bekommt danach
-// JH_ZUSCHLAG dazu, höchstens QP_MAX_JH. Der Reife-Bonus bei Wettbewerben bleibt außerhalb der Skala.
-function qpGrund(l,st){return STUFEN[st].qp+(st==='eis'?EIS_WERT[eisStufe(l.oe)].qp:0)+Math.min(8,Math.floor((l.oe-mindest(st))/3))+Math.round(SORTEN[l.sorte].q/2)+Math.min(SONNE_QP_MAX,l.sonne||0)+(BODEN_ST_QP[l.bst||0]||0)}
-function qpFuer(l,st){const n=Math.min(QP_MAX,Math.max(QP_MIN,Math.round(qpGrund(l,st)*STUFE_QPF[l.pfl||0]*(l.fq||1)*eignung(l.sorte))+(l.laub?LAUB_QP:0)));
-  return jhWein(Object.assign({},l,{stufe:st}))?Math.min(QP_MAX_JH,n+JH_ZUSCHLAG):n}
+// Seit 14.5.2 (Entscheidungen 18, 21, 35 und 45, Annahmen 1 bis 5): Qualität je Weinberg von 0 bis 100 aus vier Bausteinen, für alle Weinberge einzeln.
+// Pflege: ab dem Rebstock QUAL_PFLEGE_AB plus QUAL_PFLEGE_EP der Entwicklungspunkte (die Jungrebe nur das Drittel), höchstens QUAL_PFLEGE_MAX.
+// Boden: gleitend zwischen QUAL_BODEN an den Schwellen BODEN_SCHWELLE nach den Bodenpunkten des Weinbergs (wbBodenP), darüber der letzte Wert.
+// Form: FORMEN.qual. Sonstiges: Laubschnitt LAUB_QP nur im laufenden Jahr. Gerundet wird einmal am Ende, QUAL_RESERVE bleibt frei.
+// Weinstufe, Öchsle, Sonne, Jahrhundertjahr und Sorte zählen nicht mehr (bis 14.4: qpGrund und qpFuer, gerechnet bei der Anmeldung).
+function qualBoden(p){const W=BODEN_SCHWELLE, Q=QUAL_BODEN; for(let i=1;i<W.length;i++) if(p<W[i]) return Q[i-1]+(Q[i]-Q[i-1])*(Math.max(0,p)-W[i-1])/(W[i]-W[i-1]); return Q[Q.length-1]}
+function qualTeile(id){const f=S.felder[id]||{}, pflege=Math.min(QUAL_PFLEGE_MAX,((f.pflSt||0)>=1?QUAL_PFLEGE_AB:0)+(f.ep||0)*QUAL_PFLEGE_EP),
+  boden=qualBoden(wbBodenP(id)), form=(FORMEN[formVon(id)]||{}).qual||0, laub=f.laub===S.jahr?LAUB_QP:0;
+  return {pflege,boden,form,laub,q:Math.round(pflege+boden+form+laub)}}
+const qualWb=id=>qualTeile(id).q;
 // Schmiergeld für den Beamten: ein Anteil vom Wert des Weins, mindestens SCHMIER_MIN.
 const schmierVon=w=>Math.max(SCHMIER_MIN,Math.round(w*SCHMIER_ANTEIL/100)*100);
-function schmier(l,st){return schmierVon(l.liter*STUFEN[st].preis*(1+qpFuer(l,st)/100))}
+function schmier(l,st){return schmierVon(l.liter*STUFEN[st].preis*(1+(l.qp||0)/100))} // seit 14.5.2 mit der Qualität des Weins (l.qp)
 const mischbar=l=>l.status==='fass'&&l.stufe&&l.stufe!=='feder';
 const farbe=l=>SORTEN[l.sorte].farbe;
-// Verschnitt zweier Fassweine: Der Wein mit der höheren Stufe gibt den Namen, Öchsle und Qualitätspunkte werden nach Menge gemittelt.
+// Verschnitt zweier Fassweine: Der Wein mit der höheren Stufe gibt den Namen, Öchsle und Qualität werden nach Menge gemittelt.
 function mischung(a,b){
   if(STUFEN[b.stufe].rang>STUFEN[a.stufe].rang) [a,b]=[b,a];
   const L=a.liter+b.liter, o={a,b,liter:L,oe:Math.round((a.oe*a.liter+b.oe*b.liter)/L),qp:Math.round((a.qp*a.liter+b.qp*b.liter)/L)};
@@ -2998,7 +2998,7 @@ function fuText(t,chef){
     if(a==='Frostjahre') return fuFrostJahre();
     // Seit 11.4: Sätze, die von den Sorten der Partie abhängen. Sektstar hängt an "mehr als der Grundwein", Dritte Sorte beschreibt die dritte Rebsorte, Langsorte ist die Sorte mit 18 Monaten Reife.
     if(a==='Sektstar'){const st=L.filter(x=>x.sektStar).map(x=>x.name); return !st.length?'':S.rollen?`, als Sekt vom ${st[0]} noch etwas mehr`:`, ${st.join(' und ')} noch etwas mehr`}
-    if(a==='Dritte Sorte') return S.rollen?`Es ist ${L[2].name}, deine Spitzen-Sorte: Sie trägt wenig, bringt aber die beste Qualität und reift am längsten. Drei Sorten verteilen außerdem das Wetterrisiko.`:'Sie hat nur einen Stern, startet mit weniger Zucker und bringt weniger Qualitätspunkte. Dafür ist sie in manchen Gebieten der erste Rotwein, und drei Sorten verteilen das Wetterrisiko.';
+    if(a==='Dritte Sorte') return S.rollen?`Es ist ${L[2].name}, deine Spitzen-Sorte: Sie trägt wenig, bringt aber die beste Qualität und reift am längsten. Drei Sorten verteilen außerdem das Wetterrisiko.`:'Sie hat nur einen Stern, startet mit weniger Zucker und bringt weniger Geld. Dafür ist sie in manchen Gebieten der erste Rotwein, und drei Sorten verteilen das Wetterrisiko.';
     if(a==='Langsorte') return (L.find(x=>x.minL>=18)||s).name;
     // Seit 12.6.1: das echte Startgeld der Schwierigkeit (Einfach 80.000 €, sonst 60.000 €).
     if(a==='Startgeld') return eur(startGeld(S.schwer));
@@ -3039,11 +3039,12 @@ function lese(id,la,p,hefe){
   const f=S.felder[id], q=feldQ(f,la), l=Math.round(feldLiter(f,la)*p); if(l<=0) return;
   const L=leistung(), M=maschLeistung();
   if(M>0&&maschDarf(id)) maschAbnutzung(f.reben*Math.min(1,M/Math.max(1,rebenGesamt()-handLeseReben())),M);
-  const neu={id:S.nextId++,sorte:id,jahrgang:S.jahr,liter:l,oe:q.oe,leseart:la,edel:f.edel,eis:f.gefroren,...(q.masch?{masch:1}:{}),status:'trauben',stufe:null,qp:0,fassMonate:0,flMonate:0,sonne:S.sonne,...(f.laub===S.jahr?{laub:1}:{}),...(formWirk(id)[1]!==1?{fq:formWirk(id)[1]}:{}),boden:S.boden+4*R().sorten.filter(x=>S.felder[x].gelesen||S.felder[x].teil).length,bst:wbBoden(id),pfl:f.pflSt||0,...(f.jh?{jh:1}:{})};
+  const neu={id:S.nextId++,sorte:id,jahrgang:S.jahr,liter:l,oe:q.oe,leseart:la,edel:f.edel,eis:f.gefroren,...(q.masch?{masch:1}:{}),status:'trauben',stufe:null,qp:qualWb(id),fassMonate:0,flMonate:0,...(f.laub===S.jahr?{laub:1}:{}),boden:S.boden+4*R().sorten.filter(x=>S.felder[x].gelesen||S.felder[x].teil).length,bst:wbBoden(id),pfl:f.pflSt||0,...(f.jh?{jh:1}:{})};
   // Seit 13.5.8: Die Sekt-Trauben liegen erst im Keller (sektTr), Kosten und Ansehen kommen mit dem Umlagern in den Sektkeller (sektUmlagern).
   if(sk){const h=hefe===HEFE_LANG?HEFE_LANG:SEKT_REIFE; Object.assign(neu,{status:'sektTr',stufe:SEKT_GRUND,sekt:true,edel:false,eis:false,...(h>SEKT_REIFE?{hefe:h}:{}),med:[],bund:false});
     // Seit 13.4.9: Sekt vom einfachen Hang bekommt SEKT_EINFACH_QP Punkte weniger, anteilig nach sektEinfach(). ab merkt den Abzug für die Anzeige.
-    const ab=sektAbzug(); neu.qp=Math.min(QP_MAX,Math.max(QP_MIN,qpFuer(neu,SEKT_GRUND)+SEKT_QP+(h>SEKT_REIFE?HEFE_LANG_QP:0)-ab)); if(ab) neu.hangAb=ab} // seit 14.2.6 auf der Skala bis 90 (Entscheidung 33)
+    // Seit 14.5.2: auf der Qualität des Weinbergs, SEKT_QP ist weg. Hefelager und Hang rechnen bis 14.5.7 wie bisher auf die Punkte des Sekts.
+    const ab=sektAbzug(); neu.qp=Math.max(0,neu.qp+(h>SEKT_REIFE?HEFE_LANG_QP:0)-ab); if(ab) neu.hangAb=ab}
   // Seit 13.4.6: Erlös der Lese für die Warnung des Weingut-Managers.
   {const st=sk?SEKT_GRUND:besteStufe(q); f.leseW=(f.leseW||0)+(st?leseWert(id,la,st,l):0)}
   S.lots.push(neu);

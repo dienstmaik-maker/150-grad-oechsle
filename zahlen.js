@@ -4,21 +4,21 @@
 /* ================= Daten ================= */
 const MON=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const SORTEN={
-  riesling:{name:'Riesling',farbe:'weiss',ertrag:4,zucker:0,preis:6,minL:18,maxL:360,q:10,reife:.12,sektStar:true},
-  mueller:{name:'Müller-Thurgau',farbe:'weiss',ertrag:5.6,zucker:-4,preis:3,minL:6,maxL:96,q:3,reife:.05},
-  silvaner:{name:'Silvaner',farbe:'weiss',ertrag:5,zucker:-2,preis:4,minL:6,maxL:120,q:5,reife:.07},
-  spaetb:{name:'Spätburgunder',farbe:'rot',ertrag:3.8,zucker:2,preis:5.5,minL:12,maxL:180,q:8,reife:.10,sektStar:true},
-  portug:{name:'Portugieser',farbe:'rot',ertrag:6,zucker:-5,preis:2.8,minL:3,maxL:48,q:2,reife:.04},
-  troll:{name:'Trollinger',farbe:'rot',ertrag:5.6,zucker:-3,preis:3.2,minL:6,maxL:60,q:3,reife:.05}
+  riesling:{name:'Riesling',farbe:'weiss',ertrag:4,zucker:0,preis:6,minL:18,maxL:360,reife:.12,sektStar:true},
+  mueller:{name:'Müller-Thurgau',farbe:'weiss',ertrag:5.6,zucker:-4,preis:3,minL:6,maxL:96,reife:.05},
+  silvaner:{name:'Silvaner',farbe:'weiss',ertrag:5,zucker:-2,preis:4,minL:6,maxL:120,reife:.07},
+  spaetb:{name:'Spätburgunder',farbe:'rot',ertrag:3.8,zucker:2,preis:5.5,minL:12,maxL:180,reife:.10,sektStar:true},
+  portug:{name:'Portugieser',farbe:'rot',ertrag:6,zucker:-5,preis:2.8,minL:3,maxL:48,reife:.04},
+  troll:{name:'Trollinger',farbe:'rot',ertrag:5.6,zucker:-3,preis:3.2,minL:6,maxL:60,reife:.05}
 };
 // Version 11.4: Rebsorten in drei Rollen, nur in neuen Partien (S.rollen). Jedes Gebiet hat eine Menge-Sorte (ab Start), eine Sekt-Sorte (ab R_SORTE2)
 // und eine Spitzen-Sorte (ab R_SORTE3). Die Sorten einer Rolle haben dieselben Werte und unterscheiden sich nur in Name und Farbe,
 // gemessen werden also drei Profile statt 15 Sorten. Menge startet mit den Werten des alten Müller-Thurgau, Spitze mit denen des alten Rieslings,
 // die Sekt-Sorte liegt dazwischen und ist als einzige Sekt-Star. Die sechs alten Sorten oben bleiben für Spielstände von vor 11.4 unberührt.
 const ROLLEN={
-  menge:{name:'Menge-Sorte',satz:'trägt viel und ist früh verkaufsreif',ertrag:5.6,zucker:-4,preis:3,minL:6,maxL:96,q:3,reife:.05},
-  sekt:{name:'Sekt-Sorte',satz:'gibt den Regional-Sekt',ertrag:4.8,zucker:-2,preis:4.5,minL:9,maxL:144,q:6,reife:.08,sektStar:true},
-  spitze:{name:'Spitzen-Sorte',satz:'trägt wenig, bringt die beste Qualität und reift lange',ertrag:4,zucker:0,preis:9,minL:18,maxL:360,q:10,reife:.12}
+  menge:{name:'Menge-Sorte',satz:'trägt viel und ist früh verkaufsreif',ertrag:5.6,zucker:-4,preis:3,minL:6,maxL:96,reife:.05},
+  sekt:{name:'Sekt-Sorte',satz:'gibt den Regional-Sekt',ertrag:4.8,zucker:-2,preis:4.5,minL:9,maxL:144,reife:.08,sektStar:true},
+  spitze:{name:'Spitzen-Sorte',satz:'trägt wenig, bringt die beste Qualität und reift lange',ertrag:4,zucker:0,preis:9,minL:18,maxL:360,reife:.12}
 };
 // 17 neue Kennungen für 15 Namen (Riesling und Silvaner gibt es in zwei Rollen). Kennungen nie umbenennen, sie stehen in Spielständen und ab 11.4 im Album.
 const SORTEN_ROLLEN={
@@ -57,7 +57,7 @@ const GEBIET_TEXT={
   mosel:{spiel:'Über Wettbewerbe gewinnen',sekt:3,lohnt:'Auf Wettbewerbe und Riesling-Auslese setzen, Sekt in kühlen Jahren',
     strat:['Riesling braucht lange im Keller, die ersten Jahre sind knapp. Federweißer bringt im Herbst schnelles Geld für den Notfall.','Gute Weine zum Wettbewerb: Der Steillagen-Ruf bringt jedem Wein 3 Punkte mehr.','Ab Winzer Sekt aus Riesling machen, er ist ein Sekt-Star.']},
   rheingau:{spiel:'Teuer verkaufen',sekt:3,lohnt:'Auf den Verkauf setzen, Riesling darf lange reifen',
-    strat:['Riesling braucht lange im Keller, die ersten Jahre sind knapp. Nicht zu viel Land auf einmal kaufen.','Jeder Wein bringt 10 % mehr, lange Reife lohnt sich hier besonders.','Spätburgunder kommt schon als Jungwinzer, mit dem Riesling hast du zwei Sekt-Stars.']},
+    strat:['Riesling braucht lange im Keller, die ersten Jahre sind knapp. Nicht zu viel Land auf einmal kaufen.','Jeder Wein bringt 10 % mehr, lange Flaschenreife lohnt sich hier besonders.','Spätburgunder kommt schon als Jungwinzer, mit dem Riesling hast du zwei Sekt-Stars.']},
   rheinhessen:{spiel:'Schnell wachsen',sekt:1,lohnt:'Auf Edelfäulnis und große Mengen setzen',
     strat:['Silvaner bringt schon nach 6 Monaten Geld, der Start ist entspannt.','Im Herbst ruhig länger hängen lassen: mehr Zucker und öfter Edelfäulnis machen Auslese und Beerenauslese leicht.','Sekt nur nebenbei, hier wächst keine Sekt-Star-Sorte.']},
   pfalz:{spiel:'Viel ernten und verkaufen',erst:'Empfohlen für die erste Partie',sekt:2,lohnt:'Auf Edelfäulnis pokern, Riesling als Sekt',
@@ -92,20 +92,21 @@ const EIGNUNG={mosel:{riesling:1,mueller:.85,spaetb:.7},rheingau:{riesling:1,spa
 // Die Gegner bekommen den Faktor für ★★★, weil sie mit ihrer besten Sorte rechnen. Neutral gestellt (1), abgestimmt wird in Schritt 4.
 const STERN_PREIS_3=1, STERN_PREIS_2=1, STERN_PREIS_1=1;
 // Seit 13.3.5 (Bauplan 13.3): ans ist das Ansehen bei der Anmeldung, einmal je Wein (Sorte, Jahrgang, Stufe), dazu ANS_PFLEGE und ANS_TERROIR.
+// Seit 14.5.1 (Annahme 24 im Bauplan 14.5): jury ist der Wert der Weinstufe bei der Jury (bis 14.4 als qp in den Qualitätspunkten), noch ungenutzt bis 14.5.7.
 const STUFEN={
-  feder:{name:'Federweißer',rang:0,preis:3,qp:2,jury:2,geb:0,ans:3},
-  tafel:{name:'Tafelwein',rang:1,preis:2.5,qp:3,jury:3,geb:0,ans:3},
-  qba:{name:'Qualitätswein',rang:2,preis:4.5,qp:6,jury:6,geb:0,ans:5},
-  kab:{name:'Kabinett',rang:3,preis:7,qp:10,jury:10,geb:60,ans:6,lese:'reif',edel:false},
-  spat:{name:'Spätlese',rang:4,preis:10.5,qp:14,jury:14,geb:90,ans:8,lese:'reif',edel:false},
-  aus:{name:'Auslese',rang:5,preis:17,qp:18,jury:18,geb:130,ans:14,lese:'reif'},
-  ba:{name:'Beerenauslese',rang:6,preis:38,qp:24,jury:24,geb:200,ans:22,lese:'ueber',edel:true},
-  tba:{name:'Trockenbeerenauslese',rang:7,preis:75,qp:30,jury:30,geb:300,ans:34,lese:'ueber',edel:true},
-  eis:{name:'Eiswein',rang:8,preis:60,qp:28,jury:28,geb:300,ans:28}
+  feder:{name:'Federweißer',rang:0,preis:3,jury:2,geb:0,ans:3},
+  tafel:{name:'Tafelwein',rang:1,preis:2.5,jury:3,geb:0,ans:3},
+  qba:{name:'Qualitätswein',rang:2,preis:4.5,jury:6,geb:0,ans:5},
+  kab:{name:'Kabinett',rang:3,preis:7,jury:10,geb:60,ans:6,lese:'reif',edel:false},
+  spat:{name:'Spätlese',rang:4,preis:10.5,jury:14,geb:90,ans:8,lese:'reif',edel:false},
+  aus:{name:'Auslese',rang:5,preis:17,jury:18,geb:130,ans:14,lese:'reif'},
+  ba:{name:'Beerenauslese',rang:6,preis:38,jury:24,geb:200,ans:22,lese:'ueber',edel:true},
+  tba:{name:'Trockenbeerenauslese',rang:7,preis:75,jury:30,geb:300,ans:34,lese:'ueber',edel:true},
+  eis:{name:'Eiswein',rang:8,preis:60,jury:28,geb:300,ans:28}
 };
 // Eiswein in drei Wertstufen nach den Öchsle bei der Lese: wie Auslese, Beerenauslese oder Trockenbeerenauslese des Gebiets.
-// Angemeldet wird immer als Eiswein, f ist der Faktor auf den Preis, qp der Zuschlag auf die Qualitätspunkte.
-const EIS_WERT=[{name:'Auslese',f:1,qp:0},{name:'Beerenauslese',f:1.3,qp:4},{name:'Trockenbeerenauslese',f:1.7,qp:8}];
+// Angemeldet wird immer als Eiswein, f ist der Faktor auf den Preis (der Zuschlag qp auf die Qualitätspunkte ist seit 14.5.2 weg).
+const EIS_WERT=[{name:'Auslese',f:1},{name:'Beerenauslese',f:1.3},{name:'Trockenbeerenauslese',f:1.7}];
 // Seit 13.3.2 (Bauplan 13.3, Maik 21.11.2026): zwei Schlösser je Wein. Der Rang gibt ihn frei (FREI, Schlüssel wein_ und die Stufe), der Deckel muss reichen.
 // Der Deckel wirkt schon übers Öchsle (oeGrenze). Wer mehr Öchsle hat, als sein Rang erlaubt, meldet die höchste erlaubte Stufe an. Die Auslese geht seitdem mit und ohne Edelfäulnis.
 // WEIN_ROLLE: welche Stufen eine Rolle überhaupt machen darf. Die Menge-Sorte hat nie Edelfäulnis und keine Auslese, Auslese und höher gibt es nur von der Spitzen-Sorte.
@@ -176,20 +177,20 @@ const WETTER={sonnig:['☀️','sonnig'],mild:['⛅','mild'],regen:['🌧️','R
 const STOCK_F=4; const HA_REBEN=1000, FASS_PREIS=1.2, FLASCHE_PREIS=.35, DUENGER_HA=250, BODEN_MONAT=3, BODEN_REGEN=5;
 // Seit 13.2.1 (Bauplan 13.2, Maik 21.11.2026): Boden-Stufen für das ganze Weingut, auch für neu gekauftes Land. Am Jahresende zählt ein Bodenschnitt
 // ab BODEN_GUT Prozent als gutes Jahr (S.bodenZ +1), ein schlechtes zählt 0, der Boden fällt nie. Die Stufe S.bodenSt steigt, sobald der Zähler
-// ihre Schwelle in BODEN_SCHWELLE erreicht. Je Stufe BODEN_ST_OE Grad mehr Deckel (ab 13.2.3), BODEN_ST_MENGE mehr Menge und BODEN_ST_QP Qualitätspunkte.
+// ihre Schwelle in BODEN_SCHWELLE erreicht. Je Stufe BODEN_ST_OE Grad mehr Deckel (ab 13.2.3) und BODEN_ST_MENGE mehr Menge.
 // Startwerte, Stellschrauben für 14.2.
 // Seit 14.2.5: BODEN_SCHWELLE in Bodenpunkten je Lage (bis 14.2.4 gute Bodenjahre 0, 10, 37, 85), höchstens BODEN_MAX Punkte (Annahme von Claude, wie EP_MAX).
-const BODEN_STUFEN=['Rohboden','Fruchtboden','Gutsboden','Terroir'], BODEN_SCHWELLE=[0,10,40,90], BODEN_MAX=100, BODEN_GUT=90, BODEN_ST_OE=0, BODEN_ST_MENGE=.05, BODEN_ST_QP=[0,5,10,20];
-// Seit 14.2.6 (Entscheidungen 24 und 28): Der Boden hebt den Deckel nicht mehr (BODEN_ST_OE 0, bis 14.2.5: 4), BODEN_ST_QP ist eine Liste je Stufe (bis 14.2.5: 4 je Stufe).
+const BODEN_STUFEN=['Rohboden','Fruchtboden','Gutsboden','Terroir'], BODEN_SCHWELLE=[0,10,40,90], BODEN_MAX=100, BODEN_GUT=90, BODEN_ST_OE=0, BODEN_ST_MENGE=.05;
+// Seit 14.2.6 (Entscheidungen 24 und 28): Der Boden hebt den Deckel nicht mehr (BODEN_ST_OE 0, bis 14.2.5: 4). Seit 14.5.2 gibt der Boden seine Qualität gleitend (QUAL_BODEN).
 // Seit 13.2.2 (Bauplan 13.2): Rebpflege je Sorte (f.pflSt, Zähler f.pflZ), das Rebalter mit Jungreben ist weg. Am Jahresende zählt eine Sorte mit Reben,
 // die bis Ende April geschnitten wurde (f.schnitt), PFLEGE_GUT, sonst geht der Zähler um PFLEGE_PATZER zurück, höchstens bis 0. Die Stufe ist die höchste
 // Schwelle in PFLEGE_SCHWELLE, die der Zähler erreicht, sie fällt also erst, wenn er darunter rutscht. Neue Reben übernehmen die Stufe ihrer Sorte.
 // Menge: Der Setzling trägt SETZ_MENGE nach seinem Zählerstand (0 bis 4), ab Rebstock gilt PFLEGE_MENGE je Rolle für Rebstock, Premier Cru, Grand Cru.
-// Punkte PFLEGE_QP je Rolle und Stufe, Preisbonus PFLEGE_PREIS je Stufe nur bei der Spitzen-Sorte, je Stufe PFLEGE_ST_OE Grad mehr Deckel (ab 13.2.3).
+// Preisbonus PFLEGE_PREIS je Stufe nur bei der Spitzen-Sorte, je Stufe PFLEGE_ST_OE Grad mehr Deckel (ab 13.2.3).
 const PFLEGE_STUFEN=['Jungrebe','Rebstock','Premier Cru','Grand Cru'], PFLEGE_SCHWELLE=[0,5,12,20], PFLEGE_GUT=1, PFLEGE_PATZER=2, PFLEGE_ST_OE=0;
 // Seit 14.2.6 (Entscheidung 24, Annahme 14): Die Pflege hebt den Deckel nicht mehr (PFLEGE_ST_OE 0, bis 14.2.5: 4), PFLEGE_PREIS steht auf 0 (bis 14.2.5: 0, 0, 5, 15 Prozent).
 const SETZ_MENGE=[.4,.48,.55,.63,.7], PFLEGE_MENGE={menge:[1,1,1],sekt:[1,1,1],spitze:[1,.9,.8]};
-const PFLEGE_QP={menge:[0,1,3,6],sekt:[0,1,3,6],spitze:[0,2,6,12]}, PFLEGE_PREIS={spitze:[0,0,0,0]};
+const PFLEGE_PREIS={spitze:[0,0,0,0]};
 // Seit 13.2.3 (Bauplan 13.2): Deckel je Weinberg = DECKEL_BASIS der Rolle + BODEN_ST_OE je Boden-Stufe + PFLEGE_ST_OE je Pflegestufe, also höchstens 90° und 104°.
 // Das Monatsmodell bleibt, es zählt der kleinere Wert aus Wetter und Deckel. Nur die Edelfäulnis der Spitzen-Sorte darf darüber, bis 150°.
 // Seit 14.2.6 (Entscheidung 24): fester Deckel je Sorte, Menge und Sekt 90°, Spitze 104° (bis 14.2.5: 66, 66, 80 plus 4° je Boden- und Pflegestufe).
@@ -217,10 +218,10 @@ const EP_MAX=100, EP_PREMIER=40, EP_GRAND=90, EP_REBSTOCK_JAHRE=3; // EP_PREMIER
 // schutz am Kordon der Anteil, den Spätfrost und Regen im Oktober noch kosten. Noch ungenutzt, qual ab 14.5.2, menge und schutz ab 14.5.3.
 const FORMEN={flach:{name:'Flachbogen',ep:2.5,haErz:250,ha:250,masch:1,qual:5,menge:1},kordon:{name:'Kordon',ep:2.5,haErz:500,ha:375,masch:'rebstock',qual:10,menge:.95,schutz:.5},pfahl:{name:'Einzelpfahl',ep:4,haErz:750,ha:750,masch:0,nur:'spitze',qual:15,menge:.9}};
 const FORM_PASST={menge:'flach',sekt:'kordon',spitze:'pfahl'};
-// Faktoren für Menge und Qualitätspunkte je Rolle und Form, die passende Form hat 1 und 1.
+// Faktoren für Menge und Qualitätspunkte je Rolle und Form, die passende Form hat 1 und 1. Seit 14.5.2 zählt nur noch die Menge [0], die Qualität kommt aus FORMEN.qual.
 const FORM_WIRKUNG={menge:{flach:[1,1],kordon:[.85,1.15]},sekt:{kordon:[1,1],flach:[1.1,.85]},spitze:{pfahl:[1,1],kordon:[1.1,.85],flach:[1.2,.7]}};
 // Wirkung je Pflegestufe für alle Rollen gleich: Jungrebe, Rebstock, Premier Cru, Grand Cru. Ersetzen PFLEGE_MENGE, SETZ_MENGE und PFLEGE_QP.
-const STUFE_MENGE=[.5,1,1,.9], STUFE_QPF=[.5,.75,1,1.25];
+const STUFE_MENGE=[.5,1,1,.9]; // STUFE_QPF ist seit 14.5.2 weg, die Pflege zählt in der Qualität über QUAL_PFLEGE_AB und QUAL_PFLEGE_EP
 // Zuwachs nach dem, der schneidet oder düngt: der Chef ganz, Erntehelfer je Stufe (Index 1 bis 3).
 const ZUWACHS={chef:1,helfer:[0,0,.5,.9]};
 // Anteil der Punkte aus dem Rebschnitt und aus einem guten Bodenjahr (9 zu 1, Startwert nach Entscheidung 37). Verwildern ohne Schnitt im
@@ -235,9 +236,8 @@ const ANS_JE_QP=5;
 // Jahrhundertjahre ohne Terroir: um JH_ERST, dann alle JH_ABSTAND Jahre, jedes bis zu JH_STREU Jahre früher oder später, je Partie fest gewürfelt.
 // Seit 14.4.2 (Maik 24.11.2026, Frage 1): JH_ERST 91 statt 90, Vorgeschmack in Jahr 89 bis 93, die echten ab Jahr 94, nicht vor dem Vizepräsidenten.
 const JH_ERST=91, JH_STREU=2;
-// Skala der Qualitätspunkte: mindestens QP_MIN, normaler Wein höchstens QP_MAX, Jahrhundertwein JH_ZUSCHLAG mehr, höchstens QP_MAX_JH.
-// Sonne gibt bis SONNE_QP_MAX. Sommerschnitt von Hand LAUB_HAND_HA Euro je Hektar.
-const QP_MIN=5, QP_MAX=90, QP_MAX_JH=100, JH_ZUSCHLAG=10, SONNE_QP_MAX=5, LAUB_HAND_HA=500;
+// Sommerschnitt von Hand LAUB_HAND_HA Euro je Hektar. Die Skala der Qualitätspunkte (QP_MIN, QP_MAX, QP_MAX_JH, JH_ZUSCHLAG, SONNE_QP_MAX) ist seit 14.5.2 weg.
+const LAUB_HAND_HA=500;
 // Anspruch je Weinstufe in Qualitätspunkten (Entscheidung 32), ausgeschaltet: ANSPRUCH_PREIS und ANSPRUCH_ANS je fehlendem Punkt stehen auf 0.
 const ANSPRUCH={feder:0,tafel:0,qba:15,kab:30,spat:40,aus:50,ba:60,tba:70,eis:50}, ANSPRUCH_PREIS=0, ANSPRUCH_ANS=0;
 // Seit 14.2.4: Texte zur Erziehungsform und zum Sommerschnitt von Hand. Platzhalter, Wortlaut in Meilenstein 17.
@@ -544,13 +544,13 @@ const R_ERNTE=FREI.masch_klein.r, R_VOLL=FREI.masch_gross.r;
 // Paket B (Maik 17.11.2026): drei Bonus-Maschinen, je eine im Betrieb, eine Maschine je Rang (Düngerstreuer 2, Erntemaschine 3, Laubschneider 4, Vollernter 5, Abfüllanlage 6).
 // Sie zählen nicht als Helfer und lesen nicht. Bei Rot oder ohne Fahrer gibt es keinen Halt, nur der Bonus fällt weg. Preise sind Vorschlag von Claude.
 // Düngerstreuer: Düngen kostet STREU_RABATT weniger und bringt STREU_PLUS statt DUENG_PLUS Punkte Boden, Abnutzung STREU_ABN je Düngung.
-// Laubschneider: Sommerschnitt im Juni, jede Lese des Jahres bekommt LAUB_QP Qualitätspunkte mehr, dazu LAUB_ANS Ansehen. Abnutzung LAUB_ABN je Sommer.
+// Laubschneider: Sommerschnitt im Juni, jede Lese des Jahres bekommt LAUB_QP Punkte Qualität mehr, dazu LAUB_ANS Ansehen. Abnutzung LAUB_ABN je Sommer.
 // Abfüllanlage: ABF_PLUS mehr Flaschen aus jedem Fass, ein Lagerarbeiter betreut ABF_FLASCHEN statt FLASCHEN_JE_LAGERARB leere Flaschen.
 // Abnutzung ABF_ABN je ABF_NORM abgefüllte Flaschen (rund ein Jahr auf 10 Hektar). Bedient wird sie von einem Lagerarbeiter.
 const STREU_PREIS=8000, STREU_WARTUNG=30, STREU_ABN=5, DUENG_PLUS=30, STREU_PLUS=40, STREU_RABATT=.3, R_STREU=FREI.masch_duenger.r;
 // Seit 13.5.5: Der Laubschneider bringt LAUB_QP Punkte und LAUB_MENGE mehr Menge bei allen Sorten (bis 13.4: 1 Punkt), kein Öchsle. Die LAUB_ANS Ansehen bleiben.
-// Seit 14.2.6 (Entscheidung 28): LAUB_QP 5 (bis 14.2.5: 4).
-const LAUB_PREIS=20000, LAUB_WARTUNG=60, LAUB_ABN=15, LAUB_QP=5, LAUB_MENGE=.05, LAUB_ANS=4, R_LAUB=FREI.masch_laub.r;
+// Seit 14.2.6 (Entscheidung 28): LAUB_QP 5 (bis 14.2.5: 4). Seit 14.5.2 (Entscheidung 45): LAUB_QP 2 für den Wein des Jahres, auch von Hand.
+const LAUB_PREIS=20000, LAUB_WARTUNG=60, LAUB_ABN=15, LAUB_QP=2, LAUB_MENGE=.05, LAUB_ANS=4, R_LAUB=FREI.masch_laub.r;
 const ABF_PREIS=60000, ABF_WARTUNG=200, ABF_ABN=15, ABF_NORM=40000, ABF_PLUS=.05, ABF_FLASCHEN=75000, R_ABF=FREI.masch_abfuell.r;
 // Seit 13.5.5 (Maik 21.11.2026): Stufe 2 der Abfüllanlage ist ein Ausbau der vorhandenen (ma.stufe 2, frei über masch_abfuell2): ABF_PLUS2 mehr Flaschen,
 // ein Lagerarbeiter betreut ABF_FLASCHEN2 leere Flaschen. Der Preis ist noch einmal der der Stufe 1, ein Startwert für 14.2.
@@ -563,7 +563,7 @@ const MASCH={duenger:{name:'Düngerstreuer',preis:STREU_PREIS,leist:0,helfer:0,w
   abfuell:{name:'Abfüllanlage',preis:ABF_PREIS,leist:0,helfer:0,wart:ABF_WARTUNG,rang:R_ABF,fahrer:1,leute:'lagerarb',bonus:1,f:1,text:'füllt ab, ohne dass etwas danebengeht'}};
 // Bonus der drei neuen Maschinen, für Fenster und Infotafeln.
 const MASCH_BONUS={duenger:()=>`Düngen kostet ${Math.round(STREU_RABATT*100)} % weniger und bringt ${STREU_PLUS} statt ${DUENG_PLUS} Punkte Boden`,
-  laub:()=>`Sommerschnitt im Juni: Jede Lese des Jahres bekommt ${LAUB_QP} Qualitätspunkte und ${Math.round(LAUB_MENGE*100)} % mehr Menge, dazu ${LAUB_ANS} Ansehen`,
+  laub:()=>`Sommerschnitt im Juni: Jede Lese des Jahres bekommt ${LAUB_QP} Punkte Qualität und ${Math.round(LAUB_MENGE*100)} % mehr Menge, dazu ${LAUB_ANS} Ansehen`,
   abfuell:()=>{const z=S&&S.maschinen.some(x=>x.typ==='abfuell'&&x.stufe>=2); return `${Math.round((z?ABF_PLUS2:ABF_PLUS)*100)} % mehr Flaschen aus jedem Fass, ein Lagerarbeiter betreut ${num(z?ABF_FLASCHEN2:ABF_FLASCHEN)} statt ${num(FLASCHEN_JE_LAGERARB)} leere Flaschen`}};
 // Abnutzung je Lese: ABNUTZ_VOLL Prozentpunkte bei voller Auslastung im Jahr, anteilig darunter, mal Pflege-Faktor aus PFLEGE nach dem Zustand vor der ersten Lese des Jahres.
 // Nie unter MASCH_MIN. Der Weingut-Manager wartet ab Stufe 1 (seit Paket B, vorher 2) nach der Lese jede Maschine unter MGR_WART_AB auf 100 %.
@@ -756,7 +756,7 @@ const AUK_WERT_HA=26000, AUK_KLUG=[.9,1];
 const SUED_SATZ={
   keinPlatz:`Die Spitzen-Sorte wächst nur auf dem steilen Südhang, und dort ist kein Platz frei. Südhang gibt es bei den Auktionen ab dem Rang ${RAENGE[AUK_LAGE[AUK_LAGE.length-1].r].name} und einmal mit der Spitzenlage.`,
   spitze:'Sie wächst nur auf dem steilen Südhang.',
-  sekt:`Sekt wird am besten auf der kühlen Höhenlage, auf dem einfachen Hang bekommt er ${SEKT_EINFACH_QP} Qualitätspunkte weniger.`,
+  sekt:`Sekt wird am besten auf der kühlen Höhenlage, auf dem einfachen Hang bekommt er ${SEKT_EINFACH_QP} Punkte weniger.`,
   umpflanzen:'Rodest du die Menge-Sorte, um Sekt zu pflanzen, sind die gerodeten Reben samt ihrer Pflege weg. Die neuen übernehmen die Pflegestufe der Sekt-Sorte, und auf dem einfachen Hang wird der Sekt schlechter.'};
 // Version 7.0 (Schritt I): In der langen Partie kommt der Weinskandal rund alle anderthalb Jahre, die Erbschaft alle drei.
 // Damit nicht immer derselbe Text steht, wechseln die Varianten der Reihe nach durch (S.vz), ohne Zufall.
@@ -779,7 +779,7 @@ const EREIGNIS={
     supersommer:{ok:()=>(S.monat===6||S.monat===7)&&feldHaengt().length,los(){const n=rint(6,9); for(const id of feldHaengt()) S.felder[id].oe=Math.min(150,S.felder[id].oe+n); S.sonne++; schlag(80,'Supersommer!',`Wochenlang Sonne satt ${WO[S.region]}. Deine Trauben legen ${n}° Öchsle zu, und der Sommer zählt als zusätzlicher Sonnenmonat.`,'supersommer',{du:1})}},
     mode:{ok:()=>!S.lage,los(){const fr=S.rollen?R().sorten.filter(sorteFrei):null, id=fr?fr[rint(0,fr.length-1)]:R().sorten.slice().sort((a,b)=>eignung(b)-eignung(a))[0], f=1+rnd(.2,.4), n=rint(4,6); S.lage={typ:'mode',f,rest:n,sorte:id}; schlag(80,`${SORTEN[id].name} ist plötzlich in Mode`,`Ein Fernsehkoch schwärmt ${fr?`von der Rebsorte ${SORTEN[id].name} ${WO[S.region]}, und plötzlich wollen alle diesen Wein`:`vom ${SORTEN[id].name} ${WO[S.region]}, und plötzlich wollen ihn alle`}. ${n} Monate lang bringt er ${Math.round((f-1)*100)}\u00a0% mehr.`,'rieslingmode',{du:1})}},
     erbschaft:{ok:()=>true,los(){const b=Math.round(rint(8,20)*1000*(1+S.rang/2)/100)*100; S.geld+=b; fx('kasse'); schlag(80,'Unverhoffte Erbschaft',`${variante('erbschaft').replace('{b}',eur(b))} Das Geld ist steuerfrei.`,'erbschaft',{du:1})}},
-    kritiker:{ok:()=>S.lots.some(kritikerWein),los(){const l=S.lots.filter(kritikerWein).sort((a,b)=>b.qp-a.qp)[0], q=rint(3,5); l.qp+=q; const a=ruhm(12); schlag(80,`Kritiker lobt deinen ${lotName(l)}`,`Ein bekannter Weinkritiker hat deinen ${lotName(l)} probiert und schwärmt in seiner Kolumne. Der Wein bekommt ${q} Qualitätspunkte mehr, dazu +${a} Ansehen.`,'weinkritiker',{du:1})}}
+    kritiker:{ok:()=>S.lots.some(kritikerWein),los(){const l=S.lots.filter(kritikerWein).sort((a,b)=>b.qp-a.qp)[0], q=rint(3,5); l.qp+=q; const a=ruhm(12); schlag(80,`Kritiker lobt deinen ${lotName(l)}`,`Ein bekannter Weinkritiker hat deinen ${lotName(l)} probiert und schwärmt in seiner Kolumne. Der Wein bekommt ${q} Punkte mehr, dazu +${a} Ansehen.`,'weinkritiker',{du:1})}}
   },
   schlecht:{
     hagel:{ok:()=>S.monat>=5&&S.monat<=8&&feldHaengt().length,los(){const p=rnd(.2,.4); for(const id of feldHaengt()){const f=S.felder[id]; f.menge=Math.round(f.menge*(1-p))} schlag(80,`Hagel ${WO[S.region]}`,`Ein Unwetter mit Hagelkörnern so groß wie Murmeln ist über deine Weinberge gezogen. Rund ${Math.round(p*100)}\u00a0% der Trauben sind hin.`,'hagel',{du:1})}},
@@ -797,9 +797,9 @@ const SEKT_ANS=8;
 // vom Terroir (l.bst ab NAME_BODEN_AB) noch einmal ANS_TERROIR. Gilt für jeden Wein und den Sekt, nicht für gepanschten (Annahme von Claude: auch beim Sekt).
 // Seit 14.2.6 (Annahme 15): ANS_PFLEGE und ANS_TERROIR sind weg, das Ansehen bei der Anmeldung folgt den Qualitätspunkten (ANS_JE_QP).
 // Seit 13.3.3: Die Sekt-Sorte macht nur Sekt, direkt bei der Lese und ohne Grundwein, die Lagerarbeiter stellen ihn her. Sekt aus Qualitätswein oder Kabinett (SEKT_STUFEN) ist weg.
-// Preis und Punkte rechnet der Sekt auf SEKT_GRUND (Annahme von Claude, damit Preis, Reife und Qualitätspunkte wie bisher laufen), dazu SEKT_QP Punkte wie bisher beim Versekten.
+// Preis und Punkte rechnet der Sekt auf SEKT_GRUND (Annahme von Claude, damit Preis, Reife und Qualitätspunkte wie bisher laufen). SEKT_QP ist seit 14.5.2 weg, der Sekt trägt die Qualität seines Weinbergs.
 // Sekt bringt das SEKT_F-fache, die Sekt-Sorte (sektStar) dazu SEKT_STAR.
-const SEKT_F=1.6, SEKT_STAR=1.1, SEKT_GRUND='qba', SEKT_QP=5;
+const SEKT_F=1.6, SEKT_STAR=1.1, SEKT_GRUND='qba';
 // Version 12.1 (Maik 20.11.2026): Sekt nur mit eigenem Sektkeller, einmal zu kaufen ab R_SEKT für SEKTKELLER_PREIS. Sein Ausbau ist die Degorgier- und Abfüllanlage
 // ab FREI.sekt_anlage (seit 14.4.2 mit dem ersten eigenen Sekt, 13.7.8 bis 14.2 mit dem Rebstock der Sekt-Sorte), sie halbiert die Kosten je Flasche (SEKT_ANLAGE_F), ohne Leute und ohne Wartung, deshalb nicht in der Maschinenliste.
 // SEKT_KOSTEN ist Sektflasche, Korken und Agraffe. Einzige Wahl des Spielers bei der Lese: SEKT_REIFE Monate reifen oder HEFE_LANG Monate auf der Hefe (Feld hefe am Wein).
@@ -883,7 +883,7 @@ const JH_ANZAHL=4, JH_ABSTAND=5, JH_VOR=1;
 // JH_QP: feste Punkte jedes Jahrhundertweins bei Wettbewerben, Lagerjahre und Medaillen geben nichts dazu. Startwert aus 13.6.3: damit liegt die
 // Raritäten-Krone gegen ihren Favoriten bei etwa 70 Prozent (gemessen wird in 14.1).
 // JH_ANS: Ansehen einmal bei der Anmeldung eines Jahrhundertweins, zusätzlich zum Ansehen der Stufe (Annahme von Claude).
-// Seit 14.2.6 (Entscheidung 28): Statt JH_QP (bis 14.2.5: 163 feste Punkte) bekommt der Jahrhundertwein JH_ZUSCHLAG auf seine eigenen Punkte, höchstens QP_MAX_JH.
+// Seit 14.2.6 (Entscheidung 28): Statt JH_QP (bis 14.2.5: 163 feste Punkte) bekam der Jahrhundertwein JH_ZUSCHLAG. Seit 14.5.2 trägt er die Qualität seines Weinbergs.
 const JH_CHANCE=.75, JH_ANS=100;
 const JH_ART={sommer:{name:'Jahrhundertsommer',weg:'edel',tend:'feucht',bild:'supersommer'},winter:{name:'Jahrhundertwinter',weg:'frost',tend:'klar',bild:'eiswein'}};
 // Seit 13.6.9: sommerVor und winterVor kündigen den Vorgeschmack an, Wortlaut seit 13.8.
