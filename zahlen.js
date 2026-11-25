@@ -263,7 +263,7 @@ const FORM_VORAUS='Vorausgewählt ist die Form, die der alte Winzer empfiehlt. D
 // Seit 14.2.5: Winzerbote, wenn eine Lage eine neue Boden-Stufe erreicht. Platzhalter, Wortlaut in Meilenstein 17.
 const BODEN_LAGE_BOTE='🌱 {lage}: Der Boden ist jetzt {stufe}.';
 const LAUB_HAND_BOTE='✂️ Ab jetzt kannst du im Juni den Sommerschnitt von Hand machen, im Weinberg bei jeder Sorte. Eine Maschine kommt in deine steilen Hänge nicht.';
-const VERSION='16.7';
+const VERSION='16.8';
 // Seit 13.3.6 (Maik 21.11.2026): Im Umbau starten neue Partien ohne Spielführer, sonst verspricht er Dinge nach den alten Rängen.
 // Mit neuen Texten muss er am Ende wieder an sein (14.4), dann FU_START=1.
 const FU_START=0;
@@ -1470,9 +1470,11 @@ const IDEE_KEY='oechsle-idee', IDEE_MAX=1000;
 // Seit 16.4.7 (Bauplan 16.4): Version 16.4 Betrieb mit Platzhalter-Punkten (Wortlaut in Meilenstein 17), als Nächstes 16.5.
 // Seit 16.6.7 (Bauplan 16.6): Version 16.6 Stadt mit Platzhalter-Punkten (Wortlaut in Meilenstein 17), als Nächstes 16.7.
 // Seit 16.7.7 (Bauplan 16.7): Version 16.7 Büro mit Platzhalter-Punkten (Wortlaut in Meilenstein 17), als Nächstes 16.8.
+// Seit 16.8.8 (Bauplan 16.8): Version 16.8 Fenster von unten mit Platzhalter-Punkten (Wortlaut in Meilenstein 17), als Nächstes 16.9.
 const WAS_NEU=[
   {k:'🏁 16.0 Design',d:'in Arbeit',p:['Das Spiel bekommt das neue Aussehen nach Timos Entwürfen'],v:[
-    ['▶️','16.8','Fenster von unten'],['⏳','16.9','Abschlussprobe'],
+    ['▶️','16.9','Abschlussprobe'],
+    ['','16.8','Fenster von unten','25.11.2026',['Alle Fenster kommen von unten im Papyrus-Stil, nach unten wischen schließt sie','Kurze Meldungen erscheinen als kleines Schild unten und verschwinden von selbst','Das Wachssiegel steht nur noch auf Knöpfen, die etwas Verbindliches tun','Beim Kredit wählst du erst die Laufzeit und nimmst ihn dann mit Siegel auf','Auktion, Wettbewerbe und Weinhandlung schließt du mit „Später“, sie bleiben im Klemmbrett']],
     ['','16.7','Büro','25.11.2026',['Das Büro öffnet mit vier großen Kacheln: Erfolge, Wissen, Familie und Einstellungen','Dein Rang zeigt alles zum nächsten Aufstieg mit Balken, dazu Ehrungen, Ruf des Hauses und Urkunden als Karten','Das Siegelbrett hängt jetzt bei den Erfolgen, jedes Siegel ein rundes Feld','Das Weinlexikon steht unter Wissen, das Weinarchiv in der Kellerei gibt es nicht mehr','Oben in der Familie hängt die Namenstafel deines Weinguts']],
     ['','16.6','Stadt','25.11.2026',['Der Reiter Stadt öffnet den Stadtplatz, ein Tipp auf ein Gebäude führt hinein','Rathaus, Großhandel, Weinhandel, Bank und Arbeitsamt liegen auf dem Holzbrett, je Aufgabe eine Karte','Die Weltweinschau hat ihre eigene Karte, über dem Anmelde-Knopf steht, welche Sorte für die Krone noch fehlt','Im Großhandel Deine Weine wie im Lager, je Wein ein Knopf zum Verkaufen','Im Arbeitsamt Draußen und Drinnen mit Bild, darunter die zwei Köpfe']],
     ['','16.5','Kellerei','25.11.2026',['Der Keller liegt auf dem Holzbrett, je Arbeit eine Karte: Wein keltern, Fässer, Sektkeller, Wein abfüllen und Vorrat','Die Abfüllanlage steht jetzt in der Karte Wein abfüllen, gekauft wird sie weiter im Betrieb','Die Hintertür ist kein eigener Ort mehr, Zuckern, Verschneiden und der Weinprüfer stehen unten im Keller','Im Lager oben Deine Weine, je Sorte eine Karte mit Flaschen, Siegel und allen Weinen','Fassraum, Flaschen und Kellerausbau als Karten darunter, im Weinarchiv bleiben Siegelbrett und Lexikon']],
