@@ -1044,8 +1044,8 @@ function fenster(id,titel,inhalt,o={}){
 }
 // Zeile im Fenster für einen Wein oder Posten: Name, graue Angaben, darunter links Zustand oder Warnung, rechts der Knopf.
 function fz(name,angaben,zustand,...kn){return `<div class="fz"><b>${name}</b>${angaben?`<div class="mut">${angaben}</div>`:''}${zustand||kn.length?kz(zustand||'',...kn):''}</div>`}
-// Aktuelles (seit 7.4 auf dem Fenster-Baustein): "Das steht an" ganz oben (Maik, Version 4.4), der Rang darunter.
-function vAktuell(){
+// Klemmbrett (seit 16.3.1 der alte Ort Aktuelles ohne Zunge und ohne Bild): "Das steht an" ganz oben (Maik, Version 4.4), der Rang darunter.
+function vKlemm(){
   const A=aufgaben(), an=stehtAn()||fuSperre();
   return fenster('ansteht','Das steht an',A.length?A.map(a=>`<button class="task ${a.rot?'rot':a.ruhig?'hin':'gelb'}" data-a="${a.akt||'tab'}" data-id="${a.tab||''}" data-sub="${a.sub||''}">${a.rot?'⚠️ ':''}${esc(a.t)}</button>`).join(''):[],{
     leer:'Diesen Monat steht nichts an. Du kannst weiterblättern.',
@@ -1935,7 +1935,9 @@ function fuBlaseZu(){
 function fuPunkt(){
   const d=$('#dock'); if(!d) return; d.querySelectorAll('.badge.gruen').forEach(x=>x.remove());
   const z=FU_AKT&&FU_ZEIG[FU_AKT]; if(!z||!z.tab||!SUBS[TAB]) return;
-  const el=TAB!==z.tab?d.querySelector(`#tabs [data-id="${z.tab}"]`):z.sub&&SUB!==z.sub?d.querySelector(`#subs [data-id="${z.sub}"]`):null;
+  // Seit 16.3.1: Ziel Klemmbrett über den Reiter #klemm, aus dem Klemmbrett (ohne Zungen) zu anderen Orten im Weingut über den Reiter Weingut.
+  const kz=z.tab==='gut'&&z.sub==='aktuell', km=imKlemm();
+  const el=kz?(km?null:d.querySelector('#tabs #klemm')):TAB!==z.tab||km?d.querySelector(`#tabs [data-id="${z.tab}"]:not(#klemm)`):z.sub&&SUB!==z.sub?d.querySelector(`#subs [data-id="${z.sub}"]`):null;
   if(el) el.insertAdjacentHTML('beforeend','<span class="badge gruen"></span>');
 }
 // Seit 12.7.1 (Maik 21.11.2026): Der Kopf in der Statusleiste zeigt den, der zuletzt gesprochen hat, bei offener Blase den Sprecher des Tipps,
@@ -2042,7 +2044,7 @@ function render(){
   einPruef(); fuehrerPruef(); fuErlCheck();
   // Seit 10.3: Beim Monatswechsel wird ein Kopf abgelegt (fuAblegen), Kern-Blasen und Warnungen kommen danach wieder. Eine offene Blase kommt ohnehin wieder.
   if(!SUBS[TAB]){if(FU_AKT&&!FU_OFFEN) fuAblegen(); else fuehrerWeg()}
-  if(SUBS[TAB]&&!SUBS[TAB].some(s=>s[0]===SUB)) SUB=START_SUB[TAB];
+  if(SUBS[TAB]&&!SUBS[TAB].some(s=>s[0]===SUB)&&!imKlemm()) SUB=START_SUB[TAB];
   // Kellerbuch und Aktuelles öffnen sich mit einem eigenen Geräusch.
   ortFarbe(SUBS[TAB]?TAB:'gut');
   // Seit 16.1: Im Weinberg liegt das Holzbrett hinter den Karten.
@@ -2056,12 +2058,12 @@ function render(){
   // Seit 16.2.2 (Bild 06): Timos Symbole statt 🏡, Fass und 🏛️, dazu der Reiter Klemmbrett. Bis 16.3 öffnet er "Aktuelles" (Maik 25.11.2026, 18:18 Uhr),
   // seine Zahl sind die Einträge in "Das steht an" ohne die grauen Hinweise, rot, sobald einer davon rot ist (Annahme 1 im Bauplan 16.2).
   const tabs=[['gut','tab-weingut','Weingut'],['keller','tab-kellerei','Kellerei'],['stadt','tab-stadt','Stadt']], B=badges();
-  const klemmAn=TAB==='gut'&&SUB==='aktuell', KA=aufgaben().filter(a=>!a.ruhig), kn=KA.length, krot=KA.some(a=>a.rot);
+  const klemmAn=imKlemm(), KA=aufgaben().filter(a=>!a.ruhig), kn=KA.length, krot=KA.some(a=>a.rot);
   if(TAB==='monat'){$('#app').innerHTML=v; zWehen(); return}
   // Seit 12.7 (Maik 21.11.2026): Gebiet und Ansehen fliegen aus der Statusleiste, rechts steht nur noch der Rang, in der Mitte sitzt der Kopf des Spielführers.
   $('#app').innerHTML=`<div id="top"><div class="wtr" data-a="wetterInfo"><b>${MON[S.monat]} ${S.jahr}</b><small>${wetterText()}</small></div>${fuBereit()?'<button id="tkopf" data-a="fuKopf"></button>':''}<div class="geld" data-a="geldInfo"><b>${geldKurz(S.geld)}</b><small>${duK()}</small></div></div>
   <main>${v}</main>
-  <nav id="dock">${SUBS[TAB]?`<div id="subs">${SUBS[TAB].map(s=>`<button class="${SUB===s[0]?'an':''}" data-a="sub" data-id="${s[0]}"><i>${s[1]}</i><b>${SUB_NAME[s[0]]}</b>${SUB===s[0]?'':badge(B[TAB+'/'+s[0]])}</button>`).join('')}</div>`:''}<div id="tabs">${tabs.map(t=>`<button class="${TAB===t[0]&&!klemmAn?'an':''}" data-a="tab" data-id="${t[0]}"><img src="bilder/${t[1]}.webp" alt=""><b>${t[2]}</b>${badge(B[t[0]])}</button>`).join('')}<button id="klemm" class="${klemmAn?'an':''}" data-a="tab" data-id="gut" data-sub="aktuell" aria-label="Klemmbrett, ${kn} Aufgaben"><img src="bilder/tab-klemmbrett.webp" alt="">${kn?`<em class="kzahl${krot?' rot':''}">${kn}</em>`:''}</button><button id="weiter" class="${fehlt?'zu':''}" data-a="weiter"><span>${fehlt?'🔒':'▶'}</span>${fehlt?'Leute fehlen':'Nächster Monat'}</button></div></nav>`;
+  <nav id="dock">${SUBS[TAB]&&!klemmAn?`<div id="subs">${SUBS[TAB].map(s=>`<button class="${SUB===s[0]?'an':''}" data-a="sub" data-id="${s[0]}"><i>${s[1]}</i><b>${SUB_NAME[s[0]]}</b>${SUB===s[0]?'':badge(B[TAB+'/'+s[0]])}</button>`).join('')}</div>`:''}<div id="tabs">${tabs.map(t=>`<button class="${TAB===t[0]&&!klemmAn?'an':''}" data-a="tab" data-id="${t[0]}"><img src="bilder/${t[1]}.webp" alt=""><b>${t[2]}</b>${badge(B[t[0]])}</button>`).join('')}<button id="klemm" class="${klemmAn?'an':''}" data-a="tab" data-id="gut" data-sub="aktuell" aria-label="Klemmbrett, ${kn} Aufgaben"><img src="bilder/tab-klemmbrett.webp" alt="">${kn?`<em class="kzahl${krot?' rot':''}">${kn}</em>`:''}</button><button id="weiter" class="${fehlt?'zu':''}" data-a="weiter"><span>${fehlt?'🔒':'▶'}</span>${fehlt?'Leute fehlen':'Nächster Monat'}</button></div></nav>`;
   panoStell(); wgStart();
   fuKopfStell(); fuTopMess(); if(FU_OFFEN) fuLage();
   fuehrerZeig(); fuPunkt();
@@ -2228,7 +2230,7 @@ const AKT={
       ok:n=>{kassiere(erloes(n*p));kompVerkauf(l,n);la.rest-=n;l.liter-=n;if(l.liter<=0)S.lots=S.lots.filter(x=>x!==l)}});
   },
   // Seit 16.2.2: Aus dem Klemmbrett (Aktuelles) führt der Reiter Weingut zum Start des Weinguts, er springt dort nicht nur nach oben.
-  tab(d,e){if(d.id===TAB&&!d.sub&&!(TAB==='gut'&&SUB==='aktuell')&&window.scrollY>20){window.scrollTo({top:0,behavior:'smooth'});return} geh(d.id,d.sub);render();window.scrollTo(0,0)},
+  tab(d,e){if(d.id===TAB&&!d.sub&&!imKlemm()&&window.scrollY>20){window.scrollTo({top:0,behavior:'smooth'});return} geh(d.id,d.sub);render();window.scrollTo(0,0)},
   infoWeiter(){
     const el=$('#info'); if(!el||el.classList.contains('aus')) return;
     el.classList.add('aus');

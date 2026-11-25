@@ -600,14 +600,15 @@ const AUK_ZU_GROSS='Das Los ist zu groß für deinen Rang.';
 // Die Reihenfolge der Orte folgt den Motiven im Panoramabild von links nach rechts. Je Ort: Kennung und Symbol für den Titel im Bild.
 const FASS='<img class="fass" src="bilder/fass.png" alt="">';
 const SUBS={
-  gut:[['berg','🍇'],['betrieb','🏡'],['aktuell','📌'],['maschinen','🚜'],['buero','🏆']],
+  // Seit 16.3.1 (Bauplan 16.3): Aktuelles ist keine Zunge mehr. Der Ort 'aktuell' bleibt als Klemmbrett (imKlemm), erreichbar nur über den Reiter Klemmbrett.
+  gut:[['berg','🍇'],['betrieb','🏡'],['maschinen','🚜'],['buero','🏆']],
   keller:[['buch','📜'],['sabotage','🐀'],['start',FASS],['lager','📦']],
   // Seit 10.6 (Maik 20.11.2026): Großhandel mit Waage statt Laden, Arbeitsamt mit Winzer statt Bauarbeiter.
   stadt:[['amt','🏛️'],['handel','⚖️'],['laeden','🍷'],['bank','🏦'],['arbeit','🧑‍🌾']]
 };
 const START_SUB={gut:'betrieb',keller:'start',stadt:'amt'};
 // Kurze Namen für die Unterreiter-Leiste unten.
-const SUB_NAME={berg:'Weinberg',betrieb:'Betrieb',aktuell:'Aktuelles',maschinen:'Maschinen',buero:'Büro',buch:'Weinarchiv',sabotage:'Hintertür',start:'Keller',lager:'Lager',amt:'Rathaus',handel:'Großhandel',laeden:'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'};
+const SUB_NAME={berg:'Weinberg',betrieb:'Betrieb',aktuell:'Klemmbrett',maschinen:'Maschinen',buero:'Büro',buch:'Weinarchiv',sabotage:'Hintertür',start:'Keller',lager:'Lager',amt:'Rathaus',handel:'Großhandel',laeden:'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'};
 // Seit 13.1 (Maik 21.11.2026): Spielstände von vor dem großen Umbau (bis 12.9.5, Marke v7) laufen nicht weiter. Neue tragen v13, lies gibt nur diese zurück.
 // liesAlt findet alle älteren. Sie bleiben liegen, bis ein neues Spiel den Platz überschreibt oder der Spieler sie löscht. Album und Bestenliste liegen getrennt und bleiben.
 // Davor (seit 7.0, Maik 16.11.2026) galt dasselbe mit der Marke v7 für Stände aus 5.1 und älter.
@@ -651,6 +652,7 @@ const PANO_TEILE={gut:{berg:'panorama-weingut-sommer-teil-1',betrieb:'panorama-w
   keller:{buch:'panorama-keller-teil-1',sabotage:'panorama-keller-teil-2',start:'panorama-keller-teil-3',lager:'panorama-keller-teil-4'},
   stadt:{amt:'panorama-stadt-teil-1',handel:'panorama-stadt-teil-2',laeden:'panorama-stadt-teil-3',bank:'panorama-stadt-teil-4',arbeit:'panorama-stadt-teil-5'}};
 const PANO_BILD=[1536,1024];
+// Seit 16.3.1 zeigt kein Ort mehr Teil 3 mit der Tafel (Aktuelles entfällt). Die Einträge bleiben, bis die Namenstafel einen neuen Platz hat (offen).
 // PANO_TAFEL: die leere Fläche der Anschlagtafel in Bildpixeln (links, oben, rechts, unten). Darauf steht der Schild-Text, dorthin zoomt das Bild nach der Ankunft.
 const PANO_TAFEL={gut:{aktuell:[418,312,848,574]}};
 // Zeiten in Millisekunden (Maik 18.11.2026, Testseite _stationen.html): Gleiten, Ruhe vor dem Zoom, Zoom auf die Tafel, Zoom zurück vor dem Weggehen.

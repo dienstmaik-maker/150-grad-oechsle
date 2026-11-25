@@ -527,6 +527,8 @@ function ladenPunkt(){
 }
 // Wechselt den Hauptreiter. Ohne Unterreiter geht es zur Startansicht des Hauptreiters.
 function geh(tab,sub){TAB=tab; SUB=sub||START_SUB[tab]||SUB}
+// Seit 16.3.1: Das Klemmbrett ist der alte Ort gut/aktuell, ohne Zunge und ohne Bild oben. Spielführer, Buch und Monatswechsel führen weiter dorthin.
+function imKlemm(){return TAB==='gut'&&SUB==='aktuell'}
 // Ehrungen für das Büro: Medaillen und Aufstiege. a=1 kennzeichnet einen Aufstieg, x ist ein Zusatz für die Infoseite (was die Ehrung bringt).
 // S.ehrZeig zählt, wie viele Ehrungen die Infoseite schon gezeigt hat. Neue blendet sie beim nächsten Monatswechsel ein.
 // Seit 7.2 merkt sich ein Aufstieg seinen Rang in r, für die Urkundenwand im Büro.
@@ -2761,9 +2763,9 @@ function wgSeit(i){if(!i) return `Der Anfang, ${START_JAHR}`; const e=(S.ehrunge
 // Kopf jeder Ansicht: das Bild des Ortes mit dem Titel darin.
 function kopf(titel){return ortBild(titel)}
 function vGut(){
-  const T={berg:'Weinberg',betrieb:S.name,aktuell:'Aktuelles',maschinen:'Maschinen',buero:'Büro'};
-  // Seit 16.1 (Bauplan 16.1, Entscheidung 1): Im Weinberg entfällt das große Bild oben, die Karten liegen auf dem Holzbrett.
-  return (SUB==='berg'?'':kopf(T[SUB]))+{berg:vBerg,betrieb:vBetrieb,aktuell:vAktuell,maschinen:vMaschinen,buero:vBuero}[SUB]();
+  const T={berg:'Weinberg',betrieb:S.name,maschinen:'Maschinen',buero:'Büro'};
+  // Seit 16.1 (Bauplan 16.1, Entscheidung 1): Im Weinberg entfällt das große Bild oben, die Karten liegen auf dem Holzbrett. Seit 16.3.1 auch im Klemmbrett.
+  return (SUB==='berg'||SUB==='aktuell'?'':kopf(T[SUB]))+{berg:vBerg,betrieb:vBetrieb,aktuell:vKlemm,maschinen:vMaschinen,buero:vBuero}[SUB]();
 }
 // Seit 13.3.1 nur noch ein Schild, warm wirkt nicht mehr.
 const gebietArt=r=>r.warm>0?['🔥','Warm']:r.warm<0?['🧊','Kühl']:['⛰️','Mitte'];
@@ -3313,7 +3315,7 @@ function lese(id,la,p,hefe){
 function neuHinweis(hat){let alt=null; try{alt=localStorage.getItem(NEU_KEY); localStorage.setItem(NEU_KEY,VERSION)}catch(e){return false} return hat&&alt!==VERSION}
 function ideeFertig(){try{localStorage.removeItem(IDEE_KEY)}catch(e){} meldung('Danke für deine Idee!','Jede Idee wird gelesen. Was daraus wird, siehst du bei „Was geplant ist“ und später bei „Was ist neu“.')}
 function subNachbar(d){
-  const L=SUBS[TAB]; if(!S||!L||S.pruefer) return;
+  const L=SUBS[TAB]; if(!S||!L||S.pruefer||imKlemm()) return;
   const i=L.findIndex(s=>s[0]===SUB)+d; if(i<0||i>=L.length) return;
   SUB=L[i][0]; render();
 }
