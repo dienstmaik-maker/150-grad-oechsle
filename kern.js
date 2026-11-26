@@ -408,8 +408,8 @@ function bringtSatz(i){return i===R_MAX?'bringt dir den Stuhl im Festsaal':`brin
 // Seit 11.5 (Teil B) hängt daran auch die neue Grenze fürs Land, wenn sie mit dem Rang wächst.
 // Seit 14.4.8 ohne den Satz zum Besitz-Deckel je Rang, den gibt es für dich seit 14.4.5 nicht mehr (weicher Deckel je Lage).
 function rahmenSatz(i){const r=RAENGE[i];return r.rahmen>RAENGE[i-1].rahmen?` Dein Kreditrahmen steigt auf ${eur(r.rahmen)}.`:''}
-// Seit 15.1.4 mit dem Zuschlag je Gebiet (GEBIET_START_PLUS), r ist das Gebiet.
-const startGeld=(s,r)=>((DIFF[s]||{}).geld||START_GELD)+(((GEBIET_START_PLUS[r]||{})[s])||0), bietF=()=>(DIFF[S.schwer]||{}).biet||1;
+// Der Zuschlag je Gebiet aus 15.1.4 ist seit 15.8.2 wieder raus (Franken hat in Runde 1 ohne ihn keine Pleite in den Lehrjahren).
+const startGeld=s=>(DIFF[s]||{}).geld||START_GELD, bietF=()=>(DIFF[S.schwer]||{}).biet||1;
 // Gibt es in dieser Partie Schädlingsjahre? Nur auf Stufen mit schaed:1 (Meisterprüfung). Daran hängen die Meldungen im Winzerboten und die Seiten im Weinkompendium.
 const schaedAn=()=>!!(SCHAED_AN&&S&&(DIFF[S.schwer]||{}).schaed);
 function genNr(){return S.gen||1}
