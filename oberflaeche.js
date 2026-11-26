@@ -1491,7 +1491,7 @@ function wbPanel(iId){
       +(f.gefroren?wbKv('Trauben','❄️ gefroren'):'')+(f.teil&&f.menge>0?wbKv('Lese','Ein Teil ist schon gelesen, der Rest hängt noch.'):'');
     const zs=zuwachsVon(helferSchneidet(id)?'helfer':'chef'), zd=zuwachsVon(helferDuengt(id)?'helfer':'chef',1), wer=helferSchneidet(id)?`${EINSATZ_TEXT.auto}, ${leuteStName('helfer',leuteSt('helfer'))}`:`${EINSATZ_TEXT.chef}, du selbst`;
     k=wbKv('Rebschnitt',`${eur(schnittKosten(id))}, ${eur(schnittHa(id))} je Hektar`)+wbKv('Düngen',`${eur(duengKosten(id))} je Düngung, höchstens ${DUENG_MAX} Mal im Jahr`)
-      +(frei('laub_hand')?wbKv('Laubschnitt von Hand',`${eur(laubHandKosten(id))}, ${eur(LAUB_HAND_HA)} je Hektar`):'')+(ausdFrei()?wbKv('Ausdünnen',eur(ausdKosten(id))):'')
+      +(frei('laub_hand')?wbKv('Laubschnitt von Hand',`${eur(laubHandKosten(id))}, ${eur(LAUB_HAND_HA)} je Hektar`):'')+(ausdFrei()?wbKv('Ausdünnen',`${eur(ausdKosten(id))}, ${eur(AUSD_HAND_HA)} je Hektar`):'')   /* seit 16.9.6 (Fund 2) je Hektar wie beim Laubschnitt */
       +wbKv(EINSATZ_TEXT.schnitt,`${wer}, +${epT(epJahrSoll(id))} Punkte im guten Jahr, ${Math.round(zd*100)}\u00a0% Zuwachs beim Düngen`)}
   else z=P.nicht;
   k+=wbKv('Preis je Rebe',eur2(rebenPreis(id)/STOCK_F))+wbKv('Ertrag je Rebe',`rund ${String(Math.round(so.ertrag*(R().ertragF||1)/STOCK_F*10)/10).replace('.',',')} l`);
