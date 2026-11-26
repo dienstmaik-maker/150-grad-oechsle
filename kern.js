@@ -565,6 +565,10 @@ function ladenPunkt(){
 }
 // Wechselt den Hauptreiter. Ohne Unterreiter geht es zur Startansicht des Hauptreiters.
 function geh(tab,sub){TAB=tab; SUB=sub||START_SUB[tab]||SUB}
+// Seit 16.3.1: Das Klemmbrett ist der alte Ort gut/aktuell, ohne Zunge und ohne Bild oben. Spielführer, Buch und Monatswechsel führen weiter dorthin.
+function imKlemm(){return TAB==='gut'&&SUB==='aktuell'}
+// Seit 16.6.1: Der Stadtplatz ist der Ort stadt/platz, ohne Zunge. Der Reiter Stadt und ein zweiter Tipp auf die aktive Zunge der Stadt führen hin (AKT.tab, AKT.sub).
+function amPlatz(){return TAB==='stadt'&&SUB==='platz'}
 // Ehrungen für das Büro: Medaillen und Aufstiege. a=1 kennzeichnet einen Aufstieg, x ist ein Zusatz für die Infoseite (was die Ehrung bringt).
 // S.ehrZeig zählt, wie viele Ehrungen die Infoseite schon gezeigt hat. Neue blendet sie beim nächsten Monatswechsel ein.
 // Seit 7.2 merkt sich ein Aufstieg seinen Rang in r, für die Urkundenwand im Büro.
@@ -2623,6 +2627,8 @@ function amtWahl(){
   }
 }
 function kontoKnapp(){const k=kosten(); return 2*(k.basis+k.loehne+k.tilgung+k.zins)}
+// Seit 16.5.3: Die Abfüllanlage steht in der Karte "Wein abfüllen" im Keller, ihre Aufgaben führen dorthin, die anderen Maschinen in den Betrieb.
+const maschOrt=ma=>ma.typ==='abfuell'?{tab:'keller',sub:'start'}:{tab:'gut',sub:'betrieb'};
 function aufgaben(){
   const A=[], m=S.monat, frei=S.ha*HA_REBEN-rebenGesamt();
   // Seit 7.9 drei Arten: rot:1 kann nicht warten und hält das Weiterblättern an. Ohne Merkmal ist es Gelb (Punkt am Reiter, kein Halt).
@@ -2649,8 +2655,8 @@ function aufgaben(){
   // Dazu Gelb für Maschinen ohne Fahrer und für Felder, denen Helfer für die Handlese fehlen.
   {const mw=kellerWartet();
   // Seit Paket B: Bei den Bonus-Maschinen ist Rot nur ein gelber Hinweis, es fällt nur der Bonus weg.
-  for(const ma of S.maschinen) if(ma.zustand<MASCH_ROT) A.push({t:`🔧 ${maschName(ma)} bei ${ma.zustand} %: fällt aus, bis ${maschEr(ma)} gewartet ist${mTyp(ma).bonus?', solange fehlt der Bonus':''}`,...(mTyp(ma).bonus?{}:{rot:1}),tab:'gut',sub:'maschinen'});
-    else if(ma.zustand<MASCH_GELB) A.push({t:`🔧 ${maschName(ma)} bei ${ma.zustand} %: `+(mw?'deine Kellerhelfer warten nach der Lese':'Warten lohnt sich'),tab:'gut',sub:'maschinen',...(mw?{ruhig:1}:{})});
+  for(const ma of S.maschinen) if(ma.zustand<MASCH_ROT) A.push({t:`🔧 ${maschName(ma)} bei ${ma.zustand} %: fällt aus, bis ${maschEr(ma)} gewartet ist${mTyp(ma).bonus?', solange fehlt der Bonus':''}`,...(mTyp(ma).bonus?{}:{rot:1}),...maschOrt(ma)});
+    else if(ma.zustand<MASCH_GELB) A.push({t:`🔧 ${maschName(ma)} bei ${ma.zustand} %: `+(mw?'deine Kellerhelfer warten nach der Lese':'Warten lohnt sich'),...maschOrt(ma),...(mw?{ruhig:1}:{})});
   const of=maschOhneFahrer().filter(x=>mTyp(x).leute==='helfer').length;
   if(maschOhneFahrer().some(x=>mTyp(x).leute==='lagerarb')) A.push({t:'🍾 Die Abfüllanlage steht still, es fehlt ein Kellermensch',tab:'stadt',sub:'arbeit'});
   if(of&&!fehlText()) A.push({t:`🚜 ${of===1?'Eine Maschine steht':of+' Maschinen stehen'} still, es ${fahrerFehlen()===1?'fehlt ein Fahrer':'fehlen '+fahrerFehlen()+' Fahrer'}`,tab:'stadt',sub:'arbeit'});
@@ -2668,7 +2674,7 @@ function aufgaben(){
   const abf=S.lots.filter(l=>l.status==='fass'&&l.stufe&&l.stufe!=='feder');
   for(const l of abf) A.push({t:`${lotName(l)} kann abgefüllt werden`+(S.flaschen<abfFl(l)?` (es fehlen ${num(abfFl(l)-S.flaschen)} Flaschen)`:''),tab:'keller',ruhig:aufgabeAktiv('flaschen')&&!chefsache('abfuellen')?1:0});
   // Seit 8.2 führt die Warnung ins Kellerbuch (dort ist der Wein markiert und hat die passenden Knöpfe). Steht er im Regal, sagt sie das gleich dazu.
-  for(const l of S.lots) if(l.status==='flasche'&&lager(l).max-l.flMonate<=2) A.push({t:`${lotName(l)}: nur noch ${lager(l).max-l.flMonate} Monate haltbar`+(l.regal?', steht im Regal, erst rausnehmen':''),rot:1,tab:'keller',sub:'buch'});
+  for(const l of S.lots) if(l.status==='flasche'&&lager(l).max-l.flMonate<=2) A.push({t:`${lotName(l)}: nur noch ${lager(l).max-l.flMonate} Monate haltbar`+(l.regal?', steht im Regal, erst rausnehmen':''),rot:1,tab:'keller',sub:'lager'});   // seit 16.5.5 ins Lager (Deine Weine)
   if(m<=2&&S.verlust) for(const id of weinberge()) if(S.verlust[id]) A.push({t:`Über den Winter sind ${rbn(S.verlust[id])} ${SORTEN[id].name}-Reben eingegangen. Nachpflanzen`,tab:'gut',sub:'berg',ruhig:aufgabeAktiv('reben')||helferKann(3)?1:0});
   if(m<=2&&frei>0) A.push({t:`Pflanzzeit: Platz für ${rbn(frei)} Reben`,tab:'gut',sub:'berg',ruhig:1});
   // Seit 15.6.5: Warnung, sobald für einen Weinberg so viel Land frei ist, dass er beim Bepflanzen zurückfiele (nach Landkauf, vor dem Pflanzen).
@@ -2691,7 +2697,7 @@ function aufgaben(){
   if(m===11){const t=steuerSchau(); if(t.steuer>0){
     A.push({t:`💶 Im Januar rund ${eur(t.steuer)} Steuer auf ${eur(t.gew)} Gewinn. Fassraum oder Flaschen kaufen senkt sie`,tab:'keller',sub:'lager',ruhig:1});
     if(weinberge().some(duengOffen)) A.push({t:'💶 Steuer senken: noch düngen',tab:'gut',sub:'berg',ruhig:1});
-    if(S.maschinen.some(x=>x.zustand<100)) A.push({t:'💶 Steuer senken: Maschinen warten',tab:'gut',sub:'maschinen',ruhig:1});
+    if(S.maschinen.some(x=>x.zustand<100)) A.push({t:'💶 Steuer senken: Maschinen warten',tab:'gut',sub:'betrieb',ruhig:1});
   }}
   // Seit 8.2: gelber Punkt im Rathaus im November und Dezember, solange die Spende des Rangs offen ist. Nie rot.
   {const s=spOffen(); if(s&&m>=10) A.push({t:`🤝 Spende für ${SPENDEN[s].z}: ${vonGeld(spBezahlt(),SPENDEN[s].b)}. Vor Silvester gespendet senkt sie die Steuer`,tab:'stadt',sub:'amt'})}
@@ -2700,6 +2706,9 @@ function aufgaben(){
   {const art=festArt(); if(art&&m>=5&&m<=7&&S.festJahr!==S.jahr&&S.geld>=FESTE[art].preis) A.push({t:`🎉 Das Geld reicht für ein ${FESTE[art].name}`,tab:'gut',sub:'betrieb',ruhig:1})}
   const vk=S.lots.filter(l=>preis(l)>0&&!l.regal).length;
   if(vk) A.push({t:`${vk} ${vk===1?'Wein ist':'Weine sind'} verkaufsreif`,tab:'stadt',sub:'handel',ruhig:1});
+  // Seit 16.7.5 (Bauplan 16.7, Entscheidung 7.2, Briefing Entscheidung 18): Solange der eigene Name fehlt, eine graue Aufgabe. Nur ruhig, nie rot und nie halt,
+  // damit sie weder die Zahl am Reiter noch sprungHalt() und stehtAn() berührt. Ein Tipp (namenGeh) öffnet die Karte "Deine Namen" in der Familie. Platzhalter, Wortlaut in Meilenstein 17.
+  if(!S.ich) A.push({t:'✍️ Trag deinen Namen ein',tab:'gut',sub:'buero',akt:'namenGeh',ruhig:1});
   return A;
 }
 
@@ -2801,8 +2810,11 @@ function wgSeit(i){if(!i) return `Der Anfang, ${START_JAHR}`; const e=(S.ehrunge
 // Kopf jeder Ansicht: das Bild des Ortes mit dem Titel darin.
 function kopf(titel){return ortBild(titel)}
 function vGut(){
-  const T={berg:'Weinberg',betrieb:S.name,aktuell:'Aktuelles',maschinen:'Maschinen',buero:'Büro'};
-  return kopf(T[SUB])+{berg:vBerg,betrieb:vBetrieb,aktuell:vAktuell,maschinen:vMaschinen,buero:vBuero}[SUB]();
+  const T={berg:'Weinberg',betrieb:S.name,buero:'Büro'};
+  // Seit 16.1 (Bauplan 16.1, Entscheidung 1): Im Weinberg entfällt das große Bild oben, die Karten liegen auf dem Holzbrett. Seit 16.3.1 auch im Klemmbrett.
+  // Seit 16.4.2 (Bild 22) auch im Betrieb, der Name des Weinguts steht als Titel der Karte "Dein Betrieb".
+  // Seit 16.7.1 (Bild 09) auch im Büro, die vier Kacheln stehen gleich oben, die Zunge nennt den Ort. Teil 5 des Panoramas zeigt damit keinen Ort mehr.
+  return (SUB==='berg'||SUB==='aktuell'||SUB==='betrieb'||SUB==='buero'?'':kopf(T[SUB]))+{berg:vBerg,betrieb:vBetrieb,aktuell:vKlemm,buero:vBuero}[SUB]();
 }
 // Seit 13.3.1 nur noch ein Schild, warm wirkt nicht mehr.
 const gebietArt=r=>r.warm>0?['🔥','Warm']:r.warm<0?['🧊','Kühl']:['⛰️','Mitte'];
@@ -2995,11 +3007,13 @@ const pflanzReihe=()=>[...weinberge().filter(pflanzMitA),...weinberge().filter(i
 const pflanzReserve=lg=>R().sorten.filter(id=>lageVon(id)===lg&&pflanzMitA(id)&&pflanzKann(id)).reduce((a,id)=>a+Math.min(pflanzSoll(id),platzFuer(id)),0);
 function pflanzPlan(id){const cap={}; for(const lg of LAGE_REIHE) cap[lg]=lagePlatz(lg);
   for(const x of pflanzReihe()){const lg=lageVon(x), n=pflanzKann(x)?Math.floor(Math.min(pflanzSoll(x),istSL(x)?slPlatz():cap[lg])/10)*10:0; if(x===id) return n; if(!istSL(x)) cap[lg]-=n} return 0}
+// Seit 16.2.1: Wann die Erntehelfer auf Automatik düngen (Boden auf HELFER_DUENG oder darunter, im August schon unter 90), auch für die Info-Zeile im Weinberg.
+const helferDuengBoden=id=>{const f=S.felder[id]; return f.boden<=HELFER_DUENG||(S.monat===7&&f.boden<90)};
 function helferArbeit(L){
   if(!S.helfer) return; const st=leuteSt('helfer'), m=S.monat; chefNorm();
   // Seit 14.2.3: Düngen und Rebschnitt nur, wo der Spieler sie abgegeben hat, schon ab Stufe 1 (Entscheidung 9). Seit 14.7.4 beides je Weinberg auf Automatik (Annahme 9).
   if(st>=1&&abgabe('duengen')) for(const id of weinberge()){const f=S.felder[id];
-    if(helferDuengt(id)&&duengOffen(id)&&(f.boden<=HELFER_DUENG||(m===7&&f.boden<90))&&S.geld>=duengKosten(id)){const ma=bonusMasch('duenger'); duenge(id,'helfer'); L.push(`${SORTEN[id].name} ${ma?'mit dem Düngerstreuer gedüngt':'gedüngt'}`)}}
+    if(helferDuengt(id)&&duengOffen(id)&&helferDuengBoden(id)&&S.geld>=duengKosten(id)){const ma=bonusMasch('duenger'); duenge(id,'helfer'); L.push(`${SORTEN[id].name} ${ma?'mit dem Düngerstreuer gedüngt':'gedüngt'}`)}}
   if(st>=1&&abgabe('schneiden')) for(const id of weinberge()) if(helferSchneidet(id)&&schnittOffen(id)&&S.geld>=schnittKosten(id)){schneide(id,'helfer'); L.push(`${SORTEN[id].name} geschnitten`)}
   // Seit 14.7.4 (Annahmen 13 und 22): Draußen bringt jede Stufe ihre Arbeit. Winzergesellen machen auf Automatik den Laubschnitt (bis 14.7.3 machten die Erntehelfer
   // den Sommerschnitt von Hand, wo der Rebschnitt abgegeben war), Rebmeister das Ausdünnen, beides nur, wo es die nächste Weinstufe bringt (sommerLohnt),
@@ -3086,22 +3100,34 @@ function einKey(id){return id==='weine'&&SUB==='handel'?'weine_gh':id}
 function einPruef(){if(!S||!S.ein) return; for(const k of Object.keys(EIN_REGEL)) if(!S.ein.f.includes(k)) try{if(EIN_REGEL[k]()) S.ein.f.push(k)}catch(e){}}
 function einFrei(k){return !S||!S.ein||!EIN_REGEL[k]||S.ein.f.includes(k)}
 function einZu(id){const k=einKey(id); return !!(S&&S.ein&&EIN_REGEL[k]&&!S.ein.f.includes(k))}
-// Seit 12.6.4: Bei einer neuen Partie fehlen Erfolge und Familie, bis dort das erste Fenster frei ist. Dann öffnet das Büro auf Wissen.
-function bueroBer(){return BUERO_B.filter(([k])=>k==='erfolge'?['rangliste','ehrungen','ruf','urkunden'].some(einFrei):k==='familie'?['meingut','chronik','besten'].some(einFrei):true)}
+// Seit 12.6.4: Bei einer neuen Partie fehlen Erfolge und Familie, bis dort das erste Fenster frei ist. Seit 16.7.1 stehen dann nur die Kacheln, die es gibt.
+// Seit 16.9.6 (Bauplan 16.9, Fund 1): Die Familie steht auch da, solange der Name fehlt (S.ich leer), damit die Aufgabe "Trag deinen Namen ein" (namenGeh) ankommt.
+// Ist dort sonst noch nichts frei (famFrei), zeigt bueroFamilie nur Tafel und "Deine Namen".
+const famFrei=()=>['meingut','chronik','besten'].some(einFrei);
+function bueroBer(){return BUERO_B.filter(([k])=>k==='erfolge'?['rangliste','ehrungen','ruf','urkunden'].some(einFrei):k==='familie'?famFrei()||!S.ich:true)}
 function vBuero(){
-  const BB=bueroBer(); if(!BB.some(b=>b[0]===BUERO)) BUERO=BB[0][0];
-  return bueroKacheln()+namenFenster()+{erfolge:bueroErfolge,wissen:bueroWissen,familie:bueroFamilie,einst:bueroEinst}[BUERO]();
+  // Seit 16.7.1: BUERO '' sind die großen Kacheln, ein Bereich, den es (noch) nicht gibt, führt auch dorthin.
+  const BB=bueroBer(); if(BUERO&&!BB.some(b=>b[0]===BUERO)) BUERO='';
+  // Seit 16.7.5 steht "Deine Namen" in der Familie (Entscheidung 7.2), nicht mehr oben in jedem Bereich.
+  return bueroKacheln()+(BUERO?{erfolge:bueroErfolge,wissen:bueroWissen,familie:bueroFamilie,einst:bueroEinst}[BUERO]():'');
 }
+// Seit 16.7.5 (Bauplan 16.7, Entscheidung 7): oben die Namenstafel (ntafelZeig zeichnet sie nach dem Aufbau), darunter "Deine Namen", solange der Name fehlt,
+// dann Mein Weingut, Chronik und Bestenliste als Karten. Platzhalter, Wortlaut in Meilenstein 17.
 function bueroFamilie(){
-  const L=bestenZeilen();
-  return wgFenster()
+  const L=bestenZeilen(), tafel=`<section class="ntafel" aria-label="Namenstafel: ${esc(S.name)}"><i></i></section>`;
+  if(!famFrei()) return tafel+namenFenster();   // seit 16.9.6 (Fund 1): auf Rang 0 ohne Namen nur Tafel und "Deine Namen"
+  return tafel
+    +namenFenster()
+    +wgFenster()
     +chronikHtml()
-    +fenster('besten','Bestenliste',L.length?L.map(bestenZeile).join(''):[],{
-      leer:'Noch leer.',buch:'ende',i:BESTEN_I});
+    +bKarte('besten','Bestenliste',L.length?L.map(bestenZeile).join(''):[],{sym:'🏆',
+      kopf:`<div class="wbunter">${L.length?`${L.length} ${L.length===1?'Partie':'Partien'}, vorn ${esc(L[0].name)}`:'Noch leer'}</div>`,leer:'Noch leer.',buch:'ende',i:BESTEN_I});
 }
 function vKeller(){
-  const T={start:'Weinkeller',buch:'Weinarchiv',sabotage:'Hintertür',lager:'Lager'};
-  return kopf(T[SUB])+{start:vKellerStart,buch:vBuch,sabotage:vSabotage,lager:vLager}[SUB]();
+  // Seit 16.5.1 (Bauplan 16.5, Entscheidung 2): Die Hintertür ist kein Unterreiter mehr, ihre Karten stehen unten im Keller (vSabotage in vKellerStart).
+  // Seit 16.5.2 (Bild 23): Der Keller liegt wie Weinberg und Betrieb auf dem Holzbrett ohne großes Bild oben.
+  // Seit 16.5.6 auch das Lager (Karten unter Deine Weine). Seit 16.7.6 ohne Weinarchiv (vBuch gelöscht, Bauplan 16.7, Entscheidung 9).
+  return {start:vKellerStart,lager:vLager}[SUB]();
 }
 // Kellerausbau in drei Stufen. Seit 13.5.8 (Entscheidung 9) gibt der erste angemeldete Wein der Stufe in KELLER_WEIN sie frei, nicht mehr der Rang.
 // S.kellerW ist der höchste Rang (STUFEN.rang) eines angemeldeten Weins ohne Sekt, ein höherer Wein gibt die Stufen darunter mit frei.
@@ -3126,11 +3152,6 @@ function kellerRangText(){return ` Stufe 1 (${KELLER_NAMEN[0]}) gibt es mit ${ke
 const lotRest=l=>l.status==='fass'?8-l.fassMonate:lager(l).max-l.flMonate;
 // Haltbarkeit als kurzer Text, wie im Kellerbuch.
 function haltText(l){const fl=l.status==='flasche', r=fl?(lager(l).max===Infinity?Infinity:lager(l).max-l.flMonate):8-l.fassMonate; return {r,t:r===Infinity?'unbegrenzt haltbar':`noch ${r} ${r===1?'Monat':'Monate'} haltbar${fl?'':' im Fass'}`}}
-function vBuch(){
-  if(!ARCHIV_B.some(b=>b[0]===ARCHIV)) ARCHIV='weine';
-  lexInit();
-  return archivKacheln()+{weine:vWeine,brett:vBrett,lexikon:vLexikon}[ARCHIV]();
-}
 // Für welchen Eintrag auf dem Siegelbrett ein Wein zählt (seit 11.8, D1), nach denselben Regeln wie kompVerkauf. Wein im Fass und gepanschter Wein zählen nie.
 function kompLotId(l){
   if(!l||l.pansch||l.status==='fass'||l.status==='trauben') return null;
@@ -3324,7 +3345,7 @@ function fuAblegen(){
   if(!FU_WO&&(b.k||b.a==='warnung')&&fuNochDran(id)){FU_SPAET[id]=FU_ZM; fuehrerWeg(); return}
   fuFertig();
 }
-function wettSheet(h){openSheet(h,'wett')}
+function wettSheet(h,art){openSheet(h,'wett',art)}   // seit 16.8.7 mit der Art des Fensters (Bauplan 16.8)
 function lot(id){return S.lots.find(l=>l.id===+id)}
 // Liest den Anteil p (0 bis 1) eines Feldes. Bei p<1 bleibt der Rest hängen. Der Boden verliert je Feld und Jahr nur einmal 4 Punkte, seit 14.7.4 der Boden dieses Weinbergs.
 // Seit 8.0: Felder mit Edelfäulnis oder gefrorenen Trauben liest die Hand, wenn genug Erntehelfer da sind (handlese), sonst die Maschine mit q.masch (höchstens Qualitätswein).
@@ -3355,7 +3376,7 @@ function lese(id,la,p,hefe){
 function neuHinweis(hat){let alt=null; try{alt=localStorage.getItem(NEU_KEY); localStorage.setItem(NEU_KEY,VERSION)}catch(e){return false} return hat&&alt!==VERSION}
 function ideeFertig(){try{localStorage.removeItem(IDEE_KEY)}catch(e){} meldung('Danke für deine Idee!','Jede Idee wird gelesen. Was daraus wird, siehst du bei „Was geplant ist“ und später bei „Was ist neu“.')}
 function subNachbar(d){
-  const L=SUBS[TAB]; if(!S||!L||S.pruefer) return;
+  const L=SUBS[TAB]; if(!S||!L||S.pruefer||imKlemm()) return;
   const i=L.findIndex(s=>s[0]===SUB)+d; if(i<0||i>=L.length) return;
   SUB=L[i][0]; render();
 }

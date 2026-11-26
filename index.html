@@ -79,6 +79,27 @@ main>h3{font-size:17px;margin:16px 0 8px;padding-left:10px;border-left:4px solid
 .bkach .wahl i{display:block;font-style:normal;font-size:20px;line-height:24px;margin-bottom:2px}.bkach .wahl.an{font-weight:700;color:#7b1e3a}
 /* Seit der Optik 2.0 (10.5): schmaler Pergament-Rahmen wie beim aktiven Unterreiter, die gewählte Kachel hell mit weinroter Linie, die anderen etwas dunkler. */
 .bkach .wahl{border-image:url(bilder/karte-neu.webp) 56 fill/9px stretch;filter:brightness(.86)}.bkach .wahl.an{filter:none;outline:2px solid #7b1e3a;outline-offset:-4px;border-radius:9px}
+/* Seit 16.7.1 (Bild 09): Das Büro öffnet mit den vier Kacheln groß zwei mal zwei, im Bereich die schmale Leiste mit dem Motiv der Kachel klein. */
+.bgross{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:4px 2px 16px}.bgross .bkg{position:relative;display:block;width:100%;aspect-ratio:360/380;margin:0;padding:0;border:0;border-radius:14px;background:transparent center/100% 100% no-repeat;box-shadow:0 4px 10px rgba(40,20,5,.45)}
+.bgross .bkg:active{transform:translateY(2px);box-shadow:0 2px 5px rgba(40,20,5,.45)}.bgross .bkg .lneu{position:absolute;top:10%;right:9%;margin:0}
+.bklein .wahl{min-height:50px;padding:3px 0 5px}.bklein .wahl i{width:100%;height:28px;margin:0 0 2px;background-repeat:no-repeat;background-size:auto 50px;background-position:50% 82%}
+/* Seit 16.7.2: Doppelbalken "Bepflanzt" in der Rang-Karte, hell das gekaufte, dunkel das bepflanzte Land (wie .bar.fl im alten Rang-Fenster). */
+/* Seit 16.7.3 (Bild 16): das Siegelbrett in der Karte, Rahmen und Banner aus dem Bild, die runden Felder zeichnet das Spiel. Seit 16.7.8 zwei Reihen zu je fünf Feldern (Menge, Kür),
+   als Nächstes dran mit hellem Ring (.dran), noch nicht dran blass, Namen 13 Pixel auf dunklem Schild und die Album-Zeile dunkel auf Papyrus (Stilfibel, Probleme 2 und 3). */
+.sbrett{margin:4px -8px 6px;border-style:solid;border-width:86px 14px 38px;border-image:url(bilder/siegelbrett-rahmen.webp) 150 25 68 25 stretch;background:#7a3e19 url(bilder/brett-honig.jpg) center/cover;padding:2px 2px 4px}
+.sbteil h4{display:flex;justify-content:space-between;align-items:baseline;gap:6px;margin:6px 4px 8px;font:700 15px/1.2 var(--schrift);color:#fff1d2;text-shadow:0 1px 2px rgba(0,0,0,.8)}.sbteil h4 small{font-weight:400;font-size:13px;white-space:nowrap}
+.sbraster{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px 2px;justify-items:center}
+.sbfeld{display:flex;flex-direction:column;align-items:center;width:100%;min-width:0;min-height:44px;margin:0;padding:0;border:0;background:none;box-shadow:none;color:#fff1d2;font:600 13px/1.15 var(--schrift);text-align:center;text-shadow:none}
+.sbrund{display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%}.sbrund img{width:38px;height:38px}.sbrund i{font-style:normal;font-size:28px;line-height:1;text-shadow:none}
+.sbfeld.s0 .sbrund{background:radial-gradient(circle,#efe0bd,#dcc495 70%,#c4a674);box-shadow:inset 0 2px 6px rgba(80,50,20,.6),0 1px 0 rgba(255,240,200,.3)}.sbfeld.s0 img,.sbfeld.s0 .sbrund i{opacity:.25;filter:grayscale(1)}
+.sbfeld.s1 .sbrund{background:radial-gradient(circle at 35% 30%,#e57a63,#a5261c 55%,#661009);box-shadow:0 3px 6px rgba(0,0,0,.55)}
+.sbfeld.s2 .sbrund{background:radial-gradient(circle at 35% 30%,#c08ac2,#6e2c6f 55%,#3e123c);box-shadow:0 3px 6px rgba(0,0,0,.55)}
+.sbfeld.s3 .sbrund{background:radial-gradient(circle at 35% 30%,#fff0b8,#e5a93c 55%,#a87908);box-shadow:0 0 12px rgba(255,214,110,.8),0 3px 6px rgba(0,0,0,.55)}
+.sbfeld small{display:block;max-width:calc(100% + 4px);margin-top:4px;padding:1px 1px 2px;border-radius:4px;background:rgba(43,22,8,.84);color:#f3dfb4;font-size:13px;hyphens:manual;overflow-wrap:break-word}
+.sbfeld.s0:not(.dran) .sbrund{opacity:.55}.sbfeld.dran .sbrund{box-shadow:0 0 0 3px #f3dfb4,0 0 12px 2px rgba(243,223,180,.85)}.sbfeld.s0.dran img,.sbfeld.s0.dran .sbrund i{opacity:.5}
+.sbnext>div+div{margin-top:4px}.sbkarte .fussnote.album{font-size:13px;color:#4e3d2a;text-shadow:none}.sbfeld .ksg3{margin-top:2px}
+.sbnext{margin:9px 2px 12px;padding:6px 8px;border-radius:8px;background:rgba(255,244,220,.9);font:13px/1.3 var(--schrift);color:#4a2c12}
+.wbbar.fl{position:relative}.wbbar.fl>i{position:absolute;left:0;top:0}.wbbar.fl>i.hell{opacity:.35}.wbk .rwert{margin:1px 0 7px}
 /* Das Buch: Vollbild im Papier-Stil wie der Winzerbote */
 #buch{display:none;position:fixed;inset:0;z-index:40;flex-direction:column;background:#f3e7ca url(bilder/papier.jpg) center/cover;color:#2b2118;--ink:#2b2118;--mut:#6b5a45;--line:#d3bf93;--wein:#7b1e3a;--card:#fbf4e1}
 #buch.an{display:flex}
@@ -199,14 +220,16 @@ ul.kl{margin:4px 0 0;padding-left:18px;font-size:14px}
    --pk ist die weiche Kante, die beim Wechsel übers neue Bild wandert. .tafel ist der Schild-Text auf der Anschlagtafel, 1em ist ein Hundertstel der Tafelbreite. */
 @property --pk{syntax:'<percentage>';inherits:false;initial-value:130%}
 .pano.teile>i{left:-14%;right:-14%;background-size:cover;background-position:center;will-change:transform}
-.pano .tafel{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1.08;color:#2a1608;pointer-events:none}
-.pano .tafel>*{display:block;white-space:nowrap;font-weight:400;font-style:normal;text-decoration:none;margin:0}
-.pano .tafel i{font-family:Alegreya,serif;font-style:italic;font-size:6.2em;margin-bottom:.2em;color:#4a2a12}
-.pano .tafel b{font-family:"Alegreya SC",Alegreya,serif;font-weight:700;font-size:13.5em;letter-spacing:.04em;color:#2a1206;text-shadow:0 .04em 0 rgba(255,240,200,.55),0 0 .06em rgba(60,20,0,.35)}
-.pano .tafel em{font-family:Alegreya,serif;font-style:italic;font-size:9.5em;margin-top:.1em;color:#6b1a2e}
-.pano .tafel .orn{font-size:7em;line-height:1;margin:.25em 0 .2em;color:#6b1a2e;letter-spacing:.2em}
-.pano .tafel s{font-family:Alegreya,serif;font-style:italic;font-size:6.4em}
-.pano .tafel u{font-family:"Alegreya SC",Alegreya,serif;letter-spacing:.05em;font-size:6em;margin-top:.35em}
+:is(.pano,.ntafel) .tafel{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1.08;color:#2a1608;pointer-events:none}
+:is(.pano,.ntafel) .tafel>*{display:block;white-space:nowrap;font-weight:400;font-style:normal;text-decoration:none;margin:0}
+:is(.pano,.ntafel) .tafel i{font-family:Alegreya,serif;font-style:italic;font-size:6.2em;margin-bottom:.2em;color:#4a2a12}
+:is(.pano,.ntafel) .tafel b{font-family:"Alegreya SC",Alegreya,serif;font-weight:700;font-size:13.5em;letter-spacing:.04em;color:#2a1206;text-shadow:0 .04em 0 rgba(255,240,200,.55),0 0 .06em rgba(60,20,0,.35)}
+:is(.pano,.ntafel) .tafel em{font-family:Alegreya,serif;font-style:italic;font-size:9.5em;margin-top:.1em;color:#6b1a2e}
+:is(.pano,.ntafel) .tafel .orn{font-size:7em;line-height:1;margin:.25em 0 .2em;color:#6b1a2e;letter-spacing:.2em}
+:is(.pano,.ntafel) .tafel s{font-family:Alegreya,serif;font-style:italic;font-size:6.4em}
+:is(.pano,.ntafel) .tafel u{font-family:"Alegreya SC",Alegreya,serif;letter-spacing:.05em;font-size:6em;margin-top:.35em}
+/* Seit 16.7.5: die Namenstafel oben in der Familie, stehendes Bild mit dem Schild-Text (ntafelZeig). */
+.ntafel{position:relative;height:190px;margin:0 0 16px;overflow:hidden;border-radius:12px;background:#3d2312;box-shadow:0 4px 10px rgba(0,0,0,.45)}.ntafel>i{position:absolute;display:block;background-size:100% 100%}
 .ptitel{position:absolute;left:0;right:0;bottom:0;padding:28px 12px 8px;background:linear-gradient(transparent,rgba(0,0,0,.66));color:#fff;text-align:center;pointer-events:none}
 .ptitel b{display:block;font-size:18px;text-shadow:0 1px 3px rgba(0,0,0,.8)}
 .punkte{display:flex;gap:6px;justify-content:center;margin-top:5px;pointer-events:auto}
@@ -492,7 +515,7 @@ img.fass{height:1.1em;vertical-align:-.18em}
 @media (prefers-reduced-motion:reduce){.spschild.neu{animation:none}}
 .umini{all:unset;box-sizing:border-box;cursor:pointer;aspect-ratio:1000/670;background:url(bilder/urkunde.webp) center/100% 100% no-repeat;border:3px solid #6b4a24;border-radius:3px;box-shadow:0 2px 5px rgba(0,0,0,.35),inset 0 0 0 1px #c9a227;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#5a1426;text-align:center;padding:0 12%}
 .umini b{font:700 11.5px/1.1 var(--schrift)}
-.umini small{font:400 9.5px/1.2 var(--schrift);color:#6e5638}
+.umini small{font:400 13px/1.2 var(--schrift);color:#6e5638;white-space:nowrap}/* seit 16.9.6 (Fund 4): 13 statt 9,5 Pixel nach der Fibel, ohne Umbruch */
 /* Version 9.0: Fenster "Mein Weingut" im Büro. Ein großes Sommerbild, darunter die 10 Knöpfe der Stufen. Die nächste Stufe steht dunkel mit Schloss da. */
 .wgbild{position:relative;aspect-ratio:3/2;border-radius:12px;overflow:hidden;background:#2a2018;margin:0 0 10px;box-shadow:0 2px 6px rgba(0,0,0,.3)}
 .wgbild .wgl{position:absolute;inset:0;background:#2a2018 center/cover no-repeat}
@@ -626,6 +649,10 @@ button.fi.wort{width:auto;padding:0 11px;font:600 13px/1 system-ui,-apple-system
 .lpunkt{display:inline-block;width:8px;height:8px;margin-left:5px;border-radius:50%;background:#e5a93c;vertical-align:1px}
 .bkach .wahl .lneu{margin-left:4px;font-size:10px;line-height:14px;padding:0 4px}
 #ksiegel .ksg{width:30px;height:30px;margin:0}#ksiegel b{display:block}#ksiegel small{display:block;font-size:13px;color:#6b5a45}
+/* Seit 16.8.2: kurze Meldungen auf demselben Schild, Titel und Text je eine Zeile in Alegreya. #kmess misst unsichtbar, ob es passt. */
+#ksiegel.kurz{font-family:var(--schrift);padding:9px 16px}#ksiegel.kurz small{font-size:14px;color:#4e3d2a}
+#ksiegel.kurz b,#ksiegel.kurz small,#kmess>*{white-space:nowrap}
+#kmess{position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;font:15px/1.3 var(--schrift)}#kmess>*{position:absolute;left:0;top:0;width:max-content}#kmess>small{font-size:14px}
 /* Optik 2.0: nur Code, ohne neue Bilder */
 :root{--holz:url(bilder/holz-weingut.jpg);--dunkel:.12}
 html.ort-stadt{--holz:url(bilder/holz-stadt.jpg);--dunkel:.12}
@@ -688,6 +715,259 @@ body.fuoffen #top{z-index:16}
 #fuehrer .fblatt button{flex:none;width:56px;height:44px;min-height:44px;margin:0;padding:4px 12px;font-size:22px;line-height:1}
 #fuehrer .fblatt button:disabled{opacity:.35;filter:none}
 #fuehrer .fblatt span{flex:1;text-align:center;font:600 16px var(--knopf);color:#6b5a45;font-variant-numeric:tabular-nums}
+/* Seit 16.1 (Bauplan 16.1 Weinberg, Timos Bilder 1, 3 und 4): Holzbrett, Zettel mit Pinnnadel, Karten zum Auf- und Zuklappen, Balken mit Symbol,
+   Hinweiszeile mit Punkt, graue Info-Zeile und das Info-Panel von unten. Schrift bleibt Alegreya, der Hinweis nur kursiv mit Unterstrich (keine Zierschrift). */
+html.brett,html.brett body{background:#3d2312 url(bilder/holz-weingut.jpg) center top/100% auto repeat-y}
+html.brett main{padding-top:18px}
+.wbk{position:relative;overflow:visible;padding:0;margin:0 0 18px}
+.wbk .pin{position:absolute;top:-7px;left:50%;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:radial-gradient(circle at 35% 32%,#ff9a8a,#c62a1d 52%,#6d0f08);box-shadow:0 3px 3px rgba(0,0,0,.45);z-index:2;pointer-events:none}
+.wbkopf{position:relative;display:flex;gap:10px;padding:12px 8px 6px 10px;cursor:pointer}
+.wbbild{flex:0 0 36%;min-height:108px;border-radius:6px;background:#6b5a45 center/cover no-repeat;box-shadow:inset 0 0 0 1px rgba(90,50,20,.45),0 1px 3px rgba(0,0,0,.35)}
+.wbtext{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;padding-right:30px}
+.wbtext h3{margin:0;font:700 20px/1.1 var(--knopf);font-variant-caps:small-caps;letter-spacing:.03em;color:#4a1526}
+.wbtext h3 small{display:block;margin-top:2px;font:400 13.5px/1.25 var(--schrift);font-variant-caps:normal;letter-spacing:0;color:var(--mut)}
+.wbk .fi{position:absolute;top:4px;right:2px}
+.wbk .fi.an>i,.wbk .fi>i{background:none}
+.hinw{display:flex;align-items:center;gap:7px;font:italic 600 16px/1.2 var(--schrift);color:#8a4a10}
+.hinw>i{flex:none;width:11px;height:11px;border-radius:50%;background:#e08a2c;box-shadow:0 0 0 2px rgba(255,255,255,.55)}
+.hinw>em{min-width:0;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}
+.hinw.rot{color:var(--rot)}.hinw.rot>i{background:var(--rot)}
+.hinw.gruen{color:#3e6a24}.hinw.gruen>i{background:#5c9a35}
+.hinw.grau{color:var(--mut)}.hinw.grau>i{background:#a89676}
+.wbal{display:flex;align-items:center;gap:7px}
+.wbal>b{flex:none;font:700 15px/1.2 var(--schrift)}
+.wbal>.zahl{flex:none;font:700 15px/1.2 var(--schrift);font-variant-numeric:lining-nums tabular-nums}
+.wbunter>.zahl{font-style:normal;color:var(--ink);font-variant-numeric:lining-nums tabular-nums}
+.wbunter>.plus{font-style:normal;font-weight:700;color:#3e6a24}
+.wbal img.siegel{flex:none;width:28px;height:28px;margin:-4px 0}
+.wbbar{flex:1;min-width:40px;height:11px;border-radius:6px;background:rgba(90,60,30,.16);border:1px solid rgba(90,60,30,.5);box-shadow:inset 0 1px 2px rgba(0,0,0,.3);overflow:hidden}
+.wbbar>i{display:block;height:100%;border-radius:5px;background:linear-gradient(#97c25a,#4f7a26)}
+.wbbar.rot>i{background:linear-gradient(#e2775f,#a3261b)}
+.wbunter{font:italic 14px/1.25 var(--schrift);color:var(--mut)}
+.wbzu{display:block;width:44px;height:22px;margin:-4px auto -11px;position:relative;z-index:1;border-radius:0 0 10px 10px;background:linear-gradient(#7a4a24,#5a3216);color:#f0d9a8;font-size:13px;line-height:20px;text-align:center;cursor:pointer;box-shadow:0 2px 3px rgba(0,0,0,.4)}
+.wbauf{padding:2px 14px 16px}
+.wbtrenn{text-align:center;color:#6b8a2a;font:16px/1 Georgia,serif;margin:4px 0 2px}
+.wbst{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid rgba(120,80,40,.22)}
+.wbst>img{flex:none;width:46px;height:46px}
+.wbst>div{flex:1;min-width:0}
+.wbkv{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:0 8px;margin-bottom:4px}
+.wbkv>b{font:700 16px/1.2 var(--schrift)}
+.wbkv>span{font:italic 14px/1.25 var(--schrift);color:var(--mut)}
+.wbfakt{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin:8px 0 2px;padding:9px 0 2px;border-top:1px solid rgba(120,80,40,.3)}
+.wbfakt>div{min-width:0}
+.wbfakt dt{font:13px/1.2 var(--schrift);color:var(--mut)}
+.wbfakt dd{margin:1px 0 0;font:600 15px/1.25 var(--schrift);font-variant-numeric:lining-nums tabular-nums;overflow-wrap:anywhere}
+.wbinfo{display:flex;align-items:center;gap:7px;margin:5px 0;font:14px/1.3 var(--schrift);color:#6b5a45}
+.wbinfo>img,.wbinfo>.em{flex:none;width:24px;height:24px;border-radius:50%;font-size:18px;line-height:24px;text-align:center}
+.wbinfo.rot{color:var(--rot)}
+.wbkn{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:12px}
+.wbkn>button{flex:1 1 40%;min-width:0}
+.wbklein{margin-top:8px;font:14px/1.3 var(--schrift);color:var(--mut)}
+/* Seit 16.4.2 (Bild 22): Zeilen mit Symbol in der Karte Dein Betrieb, Dein Gebiet in der aufgeklappten Karte */
+.wbunterz{padding:0 14px 8px 12px;cursor:pointer}
+/* Seit 16.5.5 (Bild 07): Deine Weine oben im Lager, links die Flasche der Rolle, im Kopf Flaschen und das beste Siegel, je Zeile das Siegel der Stufe */
+.wkarte .wbbild{flex:0 0 26%;min-height:84px}
+.wkzu{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px;font:15px/1.25 var(--schrift)}.wkzu .zahl{font-size:20px}
+.wksgz{flex:none;width:40px;height:40px}.wksg{width:22px;height:22px;margin:-4px 0 -4px 6px;vertical-align:middle}
+.wkz .bz1 small{font-weight:400}.wkband .fin .wbunter{margin:0}
+.wbzl{display:flex;align-items:baseline;gap:6px;padding:3px 0;font:15px/1.25 var(--schrift);color:#4a3520;border-top:1px solid rgba(120,80,40,.18)}
+.wbzl>.em{flex:none;width:20px;text-align:center;font-size:15px}
+.wbzl>span:nth-child(2){flex:1;min-width:0}
+.wbzl>b{flex:none;font-weight:700;font-variant-numeric:lining-nums tabular-nums;white-space:nowrap}
+.wbgebiet{margin-top:10px;padding-top:8px;border-top:1px solid rgba(120,80,40,.3)}
+.wbgebiet .fklapp{margin-top:6px}
+/* Seit 16.4.4: Zeilen der Köpfe und Leitern in Deine Leute */
+.lzeile{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid rgba(120,80,40,.22);cursor:pointer}
+.lzeile>img{flex:none;width:46px;height:46px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px #c9a45c,0 1px 3px rgba(0,0,0,.35)}
+.lzeile>div{flex:1;min-width:0}
+.lzeile b{display:block;font:700 16px/1.2 var(--schrift);color:var(--ink)}
+.lzeile span{display:block;font:italic 14px/1.3 var(--schrift);color:var(--mut)}
+.lzeile span>span{display:inline}
+.lzeile .rot{color:var(--rot)}
+.lzeile>.pf{flex:none;font:700 24px/1 var(--schrift);font-style:normal;color:#8a5a2a;padding-right:4px}
+.lzeile.leiter{cursor:inherit}
+.lzeile.gesperrt{cursor:default;opacity:.8}.lzeile.gesperrt>img{filter:grayscale(1) brightness(.9)}
+.wbk.gesperrt .lzeile{opacity:1}
+/* Seit 16.4.5: Abschnitte im Fenster der Köpfe, Zeilen von Chefsache und Einsatzplan */
+.mgrab{margin-top:12px;padding-top:8px;border-top:1px solid rgba(120,80,40,.3)}
+.mgrab>h4{margin:0 0 6px;font:700 17px/1.2 var(--knopf);font-variant-caps:small-caps;letter-spacing:.03em;color:#4a1526}
+.mgrab .einsatzSh h3{display:none}
+.wbbar.gelb>i{background:linear-gradient(#f0c35a,#c88a1c)}
+/* Seit 16.4.6: Knopf und Fenster "Maschine kaufen" (Bild 22) */
+.mkauf{display:flex;justify-content:center;margin:4px 0 18px}
+.mkaufkn{min-width:70%;padding:12px 18px;font:700 19px/1.1 var(--knopf);font-variant-caps:small-caps;letter-spacing:.03em;color:#f4e2b8;background:linear-gradient(#7a4a24,#4f2c12);border:2px solid #2e1a0a;border-radius:12px;box-shadow:inset 0 0 0 2px rgba(240,200,130,.35),0 3px 5px rgba(0,0,0,.45)}
+.mkz{display:grid;grid-template-columns:86px 1fr;align-items:start;gap:6px 10px;padding:9px 0;border-top:1px solid rgba(120,80,40,.25)}
+.mkz>img{flex:none;width:86px;height:62px;object-fit:cover;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(90,50,20,.45),0 1px 3px rgba(0,0,0,.35)}
+.mkz>div:nth-child(2){flex:1;min-width:0}.mkz b{display:block;font:700 16px/1.2 var(--schrift)}.mkz span{display:block;font:13.5px/1.3 var(--schrift);color:var(--mut)}
+.mkz>.mkkn{grid-column:2;justify-self:end;width:132px}.mkz>.mkkn>.pk{width:100%;min-width:0}.mkz.gesperrt{align-items:center}
+.mkz.gesperrt>img{filter:grayscale(1) brightness(.85)}.mkz.gesperrt b{color:var(--mut)}
+.mkregel{margin:10px 0 4px;font:14px/1.35 var(--schrift)}.mkregel summary{cursor:pointer;font-weight:700}
+.csz{margin:8px 0 2px}.csz>b,.csz>span{display:block;font:600 15px/1.25 var(--schrift)}.csz>.mut{font-size:14px}.csz>.chips{margin-top:4px}
+.wbk.gesperrt{opacity:.82}
+.wbk.gesperrt .wbkopf{cursor:default}
+.wbk.gesperrt .wbbild{filter:grayscale(1) brightness(.85)}
+.wbk.gesperrt h3{color:var(--mut)}
+.wbschloss{width:34px;height:34px;margin-top:2px}
+.wbreihe{padding:8px 0;border-top:1px solid rgba(120,80,40,.22)}
+.wbreihe .wbkv{margin-bottom:3px}
+.wbfakt>.breit{grid-column:1/-1}
+.wbmehr{display:flex;flex-direction:column;gap:10px;margin:10px 0 14px}
+.wbkn>button.pk{min-width:0}
+/* Seit 16.5.3: Name der Abfüllanlage in der Karte "Wein abfüllen" im Keller. */
+.kanl{margin:2px 0 4px;font:700 17px/1.1 var(--knopf);font-variant-caps:small-caps;letter-spacing:.03em;color:#4a1526;text-align:center}
+/* Info-Panel von unten (Bild 3): drei Abschnitte, Wischen nach unten oder ein Tipp auf den Rand schließt es. */
+#sheet .ipanel{touch-action:pan-y}
+/* Seit 16.8.1 (Bauplan 16.8, Entscheidung 1 und 11.1): Fenster von unten in drei Arten. Info und Rückfrage mit Griffstrich statt der Zierlinie oben,
+   die Pflicht-Entscheidung ohne Griff mit stark abgedunkeltem Hintergrund. Der erste Titel ist das Banner wie im Info-Panel (Bild 03).
+   Der Inhalt aller Fenster und die Hilfen in Alegreya, Zahlen in gleicher Höhe. */
+#sheet>div{touch-action:pan-y;font-family:var(--schrift);font-variant-numeric:lining-nums}
+#sheet.pflicht{background:rgba(0,0,0,.8)}
+#sheet:is(.info,.frage)>div::before{display:none}
+#sheet>div>:is(h2,h3):first-of-type{margin:0 -4px 12px;padding:7px 12px;text-align:center;font:700 21px/1.15 var(--knopf);font-variant-caps:small-caps;color:#4a1526;background:linear-gradient(90deg,transparent,rgba(185,153,90,.35) 15%,rgba(185,153,90,.35) 85%,transparent)}
+.hilfe,.finfo{font-family:var(--schrift)}
+#sheet .btns{align-items:center}
+/* Wachssiegel auf verbindlichen Knöpfen (Entscheidung 4): Hauptknopf mit dem Siegel links, die Schrift bleibt stehen. */
+button.vb{position:relative;padding-left:58px}
+button.vb::before{content:'';position:absolute;left:2px;top:50%;width:50px;height:50px;margin-top:-25px;background:url(bilder/siegel.webp) center/contain no-repeat;filter:drop-shadow(0 2px 2px rgba(0,0,0,.45))}
+button.vb.klein{padding-left:46px}button.vb.klein::before{width:40px;height:40px;margin-top:-20px}
+button.pk.vb{padding-left:60px}
+/* Seit 16.8.5: Auswahlzeilen im Fenster in Alegreya, die gewählte hervorgehoben wie die aktive Registerzunge. */
+#sheet .wahl{position:relative;font-family:var(--schrift)}
+#sheet .wahl.an{box-shadow:0 0 0 3px #7b1e3a;border-radius:6px;padding-right:44px}#sheet .wahl.an::after{content:'✓';position:absolute;right:14px;top:50%;transform:translateY(-50%);font:700 24px/1 var(--schrift);color:#7b1e3a}
+/* Seit 16.8.4: Die letzte Knopfzeile eines Fensters bleibt unten stehen, auch wenn der Inhalt rollt, damit Abbrechen und der Aktionsknopf ohne Rollen sichtbar sind. */
+#sheet .btns.unten{position:sticky;bottom:calc(-18px - env(safe-area-inset-bottom));z-index:2;margin:10px -16px calc(-18px - env(safe-area-inset-bottom));padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(rgba(240,205,140,0),#f0cd8c 12px)}
+/* Warnknopf für Löschen und Neu anfangen (Entscheidung 4.1): rotes Schild ohne Siegel. */
+button.warn{--schild:url(bilder/knopf-rot.webp);--kschrift:#f8e6bf;--kschatten:0 1px 2px #3a0a16}
+/* Unauffälliger Knopf für riskante Nebenwege (Entscheidung 4.4): nur Text, kursiv, der sichere Weg ist der auffällige. */
+button.leise{border-image:none;background:none;filter:none;padding:10px 12px;min-height:44px;font:italic 600 16px/1.2 var(--schrift);font-variant-caps:normal;letter-spacing:0;color:#4e3d2a;text-shadow:none;text-decoration:underline;text-underline-offset:3px}
+button.leise:active{transform:translateY(1px);filter:none;opacity:.8}
+.igriff{display:block;width:46px;height:5px;margin:-12px auto 10px;border-radius:3px;background:#b9995a}
+.ipanel .iband{margin:0 0 12px;padding:7px 12px;text-align:center;font:700 21px/1.15 var(--knopf);font-variant-caps:small-caps;color:#4a1526;background:linear-gradient(90deg,transparent,rgba(185,153,90,.35) 15%,rgba(185,153,90,.35) 85%,transparent)}
+.iab{display:flex;gap:10px;align-items:flex-start;padding:10px;margin:0 0 10px;border:1px solid rgba(154,106,53,.55);border-radius:10px;background:rgba(255,255,255,.38)}
+.iab>.isym{flex:none;width:50px;height:50px;display:grid;place-items:center;font-size:32px}
+.iab>.isym img{width:50px;height:50px}
+.iab>div{flex:1;min-width:0;font-size:15px}
+.iab h4{display:inline-block;margin:0 0 6px;padding:3px 14px;border-radius:12px;background:linear-gradient(#8a4f28,#5e3216);color:#f8e6bf;font:700 16px/1.2 var(--knopf);font-variant-caps:small-caps;letter-spacing:.04em}
+.iab .kv{display:block;font-size:15px;padding:3px 0;border-bottom:1px solid rgba(120,80,40,.15)}
+.iab .kv>span{display:block;text-align:left}
+.iab .kv>span:first-child{font-size:13px;color:var(--mut)}
+.iab .kv:last-child{border-bottom:0}
+.iwisch{margin:4px 0 0;text-align:center;font:italic 13.5px var(--schrift);color:var(--mut)}
+/* Seit 16.2.2 (Bild 06): Leiste aus dunklem Holz mit goldener Kante, Reiter mit Timos Symbolen und dünnen goldenen Trennstrichen, der aktive Reiter liegt auf goldenem Schein.
+   Rechts der Reiter Klemmbrett mit Zahl (öffnet bis 16.3 "Aktuelles"), daneben bleibt "Nächster Monat" bis 16.3 in der Leiste (Maik 25.11.2026, 18:18 Uhr). */
+#tabs{gap:0;padding:3px 3px calc(3px + env(safe-area-inset-bottom));background:url(bilder/brett-dunkel.jpg) center/cover;border-top:2px solid #b88a3a;box-shadow:inset 0 2px 0 rgba(0,0,0,.45)}
+#tabs button{flex:1 1 0;min-width:0;margin:2px 0;padding:4px 1px 3px;min-height:58px;border:0;border-image:none;border-radius:12px;background:none;box-shadow:none;transform:none;filter:none;color:#f3dfb4;font:800 14px/1.05 var(--schrift);font-variant-caps:normal;letter-spacing:0;text-shadow:0 1px 0 #2a1305,0 0 3px #1a0a02;gap:2px;justify-content:flex-end}
+#tabs button>img{height:31px;width:auto;max-width:100%;margin:0;object-fit:contain;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}
+#tabs button>b{font-weight:700;white-space:nowrap}
+#tabs>button+button::before{content:'';position:absolute;left:0;top:16%;bottom:16%;width:1.5px;background:linear-gradient(transparent,#c9973f 25%,#c9973f 75%,transparent);opacity:.75}
+#tabs button.an{border:0;border-image:none;border-radius:12px;background:radial-gradient(ellipse 62% 70% at 50% 48%,rgba(255,230,140,.98),rgba(244,182,66,.72) 55%,rgba(214,134,30,0) 100%);color:#4a0f1a;text-shadow:0 0 5px rgba(255,240,200,.95);box-shadow:none;transform:none}
+#tabs button.an::before,#tabs button.an+button::before,#tabs #weiter::before{opacity:0}
+#tabs #klemm{flex:.75 1 0;justify-content:center}
+#tabs #klemm>img{height:42px}
+#tabs .kzahl{position:absolute;top:2px;right:calc(50% - 25px);min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:10px;background:#cf8a1e;border:1.5px solid #f8e6bf;color:#fff;font:800 12px/17px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-style:normal;text-shadow:0 1px 1px rgba(0,0,0,.5);box-shadow:0 1px 3px rgba(0,0,0,.6)}
+#tabs .kzahl.rot{background:#c62828}
+#tabs #weiter{flex:1.4 1 0;margin:4px 1px 5px 3px}
+/* Seit 16.2.3 (Bild 06): Die Unterreiter sind Registerzungen aus Pergament über der Leiste, oben rund, unten offen zur Leiste hin.
+   Die aktive Zunge ist heller, goldumrandet und steht etwas höher. Symbol und kurzes Wort bleiben (Grundaufbau), alle 14 Orte bleiben. */
+#subs{gap:3px;padding:6px 5px 0;border:0;border-radius:0;background:linear-gradient(rgba(20,9,3,.15),rgba(20,9,3,.35)),url(bilder/brett-dunkel.jpg) center/cover;box-shadow:none}
+#subs button{align-self:flex-end;min-height:44px;margin:0;padding:4px 1px 4px;border:1.5px solid #7a4b22;border-bottom:0;border-image:none;border-radius:11px 11px 0 0;background:linear-gradient(#e6d0a0,#cfb07a);color:#57301a;text-shadow:0 1px 0 rgba(255,245,220,.55);font:800 11.5px/1.1 var(--schrift);font-variant-caps:normal;letter-spacing:0;box-shadow:inset 0 1px 0 rgba(255,248,225,.6),inset 0 -6px 8px -6px rgba(60,30,10,.35)}
+#subs button>i{font-size:17px;line-height:20px}
+#subs button>b{font-weight:800}
+#subs button.an{min-height:50px;border:1.5px solid #d9a845;border-bottom:0;border-image:none;border-radius:12px 12px 0 0;background:linear-gradient(#fdf3d8,#f0dcab);color:#4a0f1a;text-shadow:none;box-shadow:0 -2px 6px rgba(255,205,100,.45),inset 0 0 0 1px rgba(255,236,180,.7)}
+#subs button.an>i{transform:scale(1.12) translateY(-1px)}
+#subs .badge{top:3px;right:calc(50% - 20px);box-shadow:0 0 0 2px #e6d0a0}
+/* Seit 16.2.4 (Bild 22): Kopfzeile aus dunklem Holz mit zwei Pergament-Schildern, links Timos Kalender mit Monat, Jahr und Wetter, rechts seine Münzen mit Geld und Rang.
+   In der Mitte sitzt größer und mit Goldrand die echte Sprecher-Figur aus dem Spiel (fuKopfStell), nicht der Mann aus dem Bild. Alle drei bleiben antippbar wie bisher. */
+#top{min-height:52px;padding:calc(6px + env(safe-area-inset-top)) 6px 7px;background:url(bilder/brett-dunkel.jpg) center/cover;border-bottom:2px solid #b88a3a;box-shadow:0 3px 6px rgba(0,0,0,.4)}
+#top>div{border:1.5px solid #8a5a2b;border-radius:10px;background:linear-gradient(#f6e8c6,#e4ca95);box-shadow:inset 0 0 0 1px rgba(255,248,226,.65),inset 0 -4px 8px -4px rgba(120,70,20,.35),0 2px 4px rgba(0,0,0,.55);color:#3a1a0c;padding:4px 8px 4px 34px;background-repeat:no-repeat}
+#top>div b{color:#3a1a0c;text-shadow:none;font:700 15px/1.15 var(--schrift)}
+#top small{color:#5c3a1c;opacity:1;font:italic 400 12.5px/1.2 var(--schrift)}
+#top .wtr{background:url(bilder/kopf-kalender.webp) 6px 50%/23px auto no-repeat,linear-gradient(#f6e8c6,#e4ca95)}
+#top .geld{padding-left:42px;background:url(bilder/kopf-muenzen.webp) 5px 50%/33px auto no-repeat,linear-gradient(#f6e8c6,#e4ca95)}
+#top .geld b{color:#3a1a0c}
+#top .geld b::after,#top .wtr small::after{opacity:.55}
+#tkopf{width:54px;height:54px;margin:-27px 0 0 -27px;border:3px solid #d9a845;box-shadow:0 0 0 1.5px #4a2a10,0 0 0 3px rgba(255,214,120,.35),0 3px 6px rgba(0,0,0,.65);font:24px/48px system-ui,sans-serif}
+#tkopf.offen{box-shadow:0 0 0 1.5px #4a2a10,0 0 0 5px rgba(242,199,102,.6),0 3px 6px rgba(0,0,0,.65)}
+/* Seit 16.6.1 (Bauplan 16.6, Timos Bild 08): der Stadtplatz auf dem Holzbrett, das Bild über die volle Breite, die Gebäude als unsichtbare Tippflächen
+   mit hellem Rand beim Antippen, der Punkt am Schild wie an den Zungen. */
+.stadtplatz{margin:0 0 18px;border:0;border-radius:12px;background:none;box-shadow:0 5px 12px rgba(0,0,0,.55)}
+.spbild{position:relative;aspect-ratio:750/1125;background:#6b5a45 url(bilder/stadtplatz.webp) center/100% 100% no-repeat}
+button.spgeb{position:absolute;min-height:44px;margin:0;padding:0;border:0;border-image:none;border-radius:10px;background:none;filter:none;transition:background-color .1s}
+button.spgeb:active,button.spgeb:focus-visible{transform:none;background:rgba(255,236,190,.22);outline:2px solid rgba(255,236,190,.75);outline-offset:-2px}
+.stadtplatz .spdot{width:16px;height:16px;right:auto;transform:translate(-50%,-50%);box-shadow:0 0 0 2px #f5ebd6,0 1px 3px rgba(0,0,0,.5);pointer-events:none}
+/* Seit 16.6.3: Kronen-Hinweis über dem Anmelde-Knopf der Weltweinschau, Rot solange angemeldet werden kann. */
+.skrone{margin-top:10px;font:600 15px/1.3 var(--schrift);color:var(--mut)}.skrone.rot{color:var(--rot)}
+/* Seit 16.6.4: Verkaufen-Knopf unter der Zeile eines Weins im Großhandel, rote Wartezeile der Handels-Managerin. */
+.wgkn{display:flex;justify-content:flex-end;margin:-2px 0 10px}.wbinfo.rot{color:var(--rot)}
+/* Seit 16.3.2 (Bild 05 und 13): Klemmbrett aus Holz mit Metallklemme, darauf Papier mit Banner und Weingut-Streifen, Aufgaben mit Timos Symbolen.
+   Rot, Gelb und Grau wie bisher als Punkt und Schriftfarbe, rechts der Pfeil. Keine Kästchen zum Abhaken. */
+.klemmbrett{position:relative;margin:14px 0 18px;padding:13px 11px 12px;border-radius:18px;background:#6b3f1d url(bilder/brett-honig.jpg) center/cover;box-shadow:inset 0 0 0 2px rgba(255,214,140,.25),inset 0 0 18px rgba(40,18,4,.55),0 5px 12px rgba(0,0,0,.55)}
+.kbklemme{position:absolute;top:-12px;left:50%;width:118px;height:36px;margin-left:-59px;z-index:2;border-radius:10px 10px 14px 14px;background:linear-gradient(#f4dc93,#c9a04a 45%,#8f6a25);border:1.5px solid #6e4f17;box-shadow:inset 0 2px 0 rgba(255,250,220,.7),0 3px 5px rgba(0,0,0,.5)}
+.kbklemme::before{content:'';position:absolute;top:-13px;left:50%;width:30px;height:20px;margin-left:-15px;border:4px solid #b78d3c;border-bottom:0;border-radius:15px 15px 0 0;box-sizing:border-box}
+.kbklemme::after{content:'';position:absolute;left:12px;right:12px;top:15px;height:3px;border-radius:2px;background:rgba(90,60,15,.45)}
+.kbpapier{position:relative;padding:26px 10px 12px;border-radius:6px;background:#f3e7ca url(bilder/papier.jpg) center/cover;color:#2b2118;--ink:#2b2118;--mut:#5c4a35;box-shadow:inset 0 0 22px rgba(120,80,30,.35),0 1px 2px rgba(0,0,0,.4)}
+.kbband{position:relative;z-index:1;margin:0 14px -10px;padding:5px 12px 7px;text-align:center;border-radius:4px;background:linear-gradient(#fbf0d2,#e7cf9b);border:1.5px solid #a87a3c;box-shadow:0 2px 3px rgba(80,40,10,.35)}
+.kbband::before,.kbband::after{content:'';position:absolute;top:9px;width:20px;height:100%;z-index:-1;background:#d8b97c;border:1.5px solid #a87a3c}
+.kbband::before{left:-14px;clip-path:polygon(0 0,100% 0,100% 100%,0 100%,38% 50%)}
+.kbband::after{right:-14px;clip-path:polygon(0 0,100% 0,62% 50%,100% 100%,0 100%)}
+.kbband h2{margin:0;font:700 23px/1.1 var(--knopf);color:#5a1424;letter-spacing:.02em}
+.kbbild{height:64px;margin:0 4px 6px;border-radius:0 0 40% 40%/0 0 18px 18px;background:#7a8a4a center 62%/cover no-repeat;box-shadow:inset 0 -6px 10px -6px rgba(60,40,10,.5);opacity:.96}
+.kbkopf{display:flex;align-items:center;gap:2px;margin:4px 0 4px}
+.kbkopf .kbtitel{flex:1;padding-left:40px}
+.kbtitel{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0}
+.kbtitel h3{margin:0;padding:3px 14px 4px;border-radius:9px;background:linear-gradient(#8a4f28,#5e3216);border:1.5px solid #c9973f;color:#f8e6bf;font:700 19px/1.2 var(--knopf);letter-spacing:.03em;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,230,170,.35),0 2px 3px rgba(0,0,0,.3)}
+.kbranke{color:#6b8a2a;font:20px/1 Georgia,serif}.kbranke.r{transform:scaleX(-1)}
+.kbkopf .fi{margin-right:-4px}
+.klemmbrett .finfo{margin:0 0 6px;border-radius:8px;border:1px solid rgba(154,106,53,.4)}
+.kbliste{margin:2px 0 4px}
+.kbz{display:flex;align-items:center;gap:8px;width:100%;min-height:52px;margin:0;padding:6px 2px 6px 0;border:0;border-image:none;border-bottom:1px solid rgba(120,80,40,.3);border-radius:0;background:none;box-shadow:none;filter:none;text-shadow:none;transform:none;color:var(--ink);text-align:left;font:600 15.5px/1.25 var(--schrift);font-variant-caps:normal;letter-spacing:0}
+.kbz:active{background:rgba(185,153,90,.18)}
+.kbz>img{flex:none;width:42px;height:42px;filter:drop-shadow(0 1px 1px rgba(60,30,5,.4))}
+.kbz>i{flex:none;width:10px;height:10px;border-radius:50%;background:#e08a2c;box-shadow:0 0 0 2px rgba(255,255,255,.6)}
+.kbz>span{flex:1;min-width:0;overflow-wrap:anywhere}
+.kbz>b{flex:none;width:18px;color:#8a4a1c;font:700 24px/1 var(--schrift);text-align:center}
+.kbz.rot{color:var(--rot)}.kbz.rot>i{background:var(--rot)}
+.kbz.hin{color:var(--mut);font-weight:400;font-size:14.5px;min-height:46px}.kbz.hin>i{background:#a89676}.kbz.hin>img{width:34px;height:34px;margin:0 4px;opacity:.85}
+.kbhin{margin-top:4px}
+.kbleer{padding:12px 6px;text-align:center;font:italic 15px/1.3 var(--schrift);color:var(--mut);border-bottom:1px solid rgba(120,80,40,.3)}
+.kbalt{margin-top:10px}
+/* Seit 16.3.3: Neuigkeiten unter den Aufgaben, Zeilen mit großem Zeichen links, fettem Stichwort und kursivem Text wie in Bild 05, darunter "Mehr anzeigen". */
+.kbtrenn{margin:8px 0 2px;text-align:center;color:#6b8a2a;font:18px/1 Georgia,serif}
+.kbneu{margin:6px 0 2px}
+.kbn{display:flex;align-items:center;gap:10px;min-height:46px;padding:5px 2px;border-bottom:1px solid rgba(120,80,40,.3);font:15px/1.25 var(--schrift)}
+.kbn>.kbsym{flex:none;width:42px;text-align:center;font-size:28px;line-height:1;filter:drop-shadow(0 1px 1px rgba(60,30,5,.35))}
+.kbn>div{flex:1;min-width:0;overflow-wrap:anywhere}
+.kbn b{font-weight:700;color:#3a1a0c}
+.kbn em{font-style:italic}
+.kbn small{display:block;margin-top:2px;font:italic 13.5px/1.25 var(--schrift);color:var(--mut)}
+.kbn.gold b,.kbn.gold em{color:#8a5a06}
+.kbmehr{display:block;width:auto;min-height:44px;margin:4px auto 0;padding:6px 14px;border:0;border-image:none;border-radius:0;background:none;box-shadow:none;filter:none;text-shadow:none;transform:none;color:#2f5a1c;font:italic 600 17px/1.2 var(--schrift);font-variant-caps:normal;letter-spacing:0;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:4px}
+.kbmehr>b{text-decoration:none;display:inline-block;margin-left:3px}
+/* Seit 16.3.4: Monatsknöpfe unten im Klemmbrett wie in Bild 05. "Nächster Monat" als Hauptknopf mit Timos Kalender (wie in 16.2 der goldene Knopf der Leiste),
+   daneben hell und kleiner "Weiter, bis was passiert". Die Leiste hat nur noch die vier Reiter, alle gleich breit. */
+#tabs #klemm{flex:1 1 0}
+.kbknoepfe{display:flex;gap:8px;align-items:stretch;margin:12px 0 2px}
+.kbknoepfe>button{margin:0;min-width:0;min-height:58px;border-image-width:50% 16px}
+.kbnm{flex:1.45 1 0;display:flex;align-items:center;justify-content:center;gap:7px;padding:8px 10px;border-image-source:url(bilder/knopf-aktiv.webp);color:#5a1424;font-size:18.5px;white-space:nowrap}
+.kbnm>img{flex:none;width:30px;height:auto;filter:drop-shadow(0 1px 1px rgba(60,30,5,.45))}
+.kbnm>.kbschloss{font-size:18px}
+.kbnm.zu{filter:grayscale(1) brightness(.92)}
+.kbbis{flex:1 1 0;display:flex;align-items:center;gap:4px;padding:6px 8px;font:italic 600 14px/1.15 var(--schrift);font-variant-caps:normal;letter-spacing:0;text-align:left}
+.kbbis>b{flex:none;font:700 24px/1 var(--schrift);font-style:normal}
+/* Seit 16.8.9 (Bauplan 16.8, Entscheidung 11.2 bis 11.4): Bedienung nach der Stilfibel. Zahl am Klemmbrett dunkel auf Orange (5,5:1, auf Rot hell 5:1),
+   Preisknopf ohne genug Geld grau, aber voll lesbar, Rangknöpfe in "Mein Weingut" und "Mehr im Buch" mit Tippflächen ab 44 x 44, Text ab 13 Pixel
+   (Unterreiter, Büro-Leiste, "Neu", Preiszeile im Knopf, Reife und Haltbarkeit), Hinweistexte mit etwas dunklerem Farbton auf mindestens 4,5:1. */
+#tabs .kzahl{min-width:22px;height:22px;font-size:13px;line-height:19px;color:#2b2118}#tabs .kzahl.rot{color:#fbf0d8}
+button.pk.arm{filter:grayscale(1) brightness(.94)}
+.wgst{flex-wrap:wrap;gap:6px}.wgst button{flex:0 0 44px;width:44px;min-width:44px;min-height:44px;padding:0}
+.mib{line-height:18px;padding:13px 12px 13px 0;margin:-6px 0 -13px}
+#subs button{font-size:13px}
+.bkach .wahl{font-size:13px}.lneu,.bkach .wahl .lneu{font-size:13px;line-height:17px}
+button.pk>small{font-size:13px}
+.bzeile .bz3{font-size:13px}
+.hinw{color:#7a400c}.hinw.rot{color:#a0221a}.hinw.gruen{color:#36601f}.hinw.grau{color:#5e4e3a}
+/* "Zu wenig Geld" als Kurzmeldung, auch mit längerem Text (dann bis zu zwei Zeilen). */
+#ksiegel.kurz.lang{width:min(92vw,520px)}#ksiegel.kurz.lang small{white-space:normal}
 </style>
 </head>
 <body>

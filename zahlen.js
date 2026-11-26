@@ -263,7 +263,7 @@ const FORM_VORAUS='Vorausgewählt ist die Form, die der alte Winzer empfiehlt. D
 // Seit 14.2.5: Winzerbote, wenn eine Lage eine neue Boden-Stufe erreicht. Platzhalter, Wortlaut in Meilenstein 17.
 const BODEN_LAGE_BOTE='🌱 {lage}: Der Boden ist jetzt {stufe}.';
 const LAUB_HAND_BOTE='✂️ Ab jetzt kannst du im Juni den Sommerschnitt von Hand machen, im Weinberg bei jeder Sorte. Eine Maschine kommt in deine steilen Hänge nicht.';
-const VERSION='14.7.2';
+const VERSION='16.9';
 // Seit 13.3.6 (Maik 21.11.2026): Im Umbau starten neue Partien ohne Spielführer, sonst verspricht er Dinge nach den alten Rängen.
 // Mit neuen Texten muss er am Ende wieder an sein (14.4), dann FU_START=1.
 const FU_START=0;
@@ -606,14 +606,20 @@ const AUK_ZU_GROSS='Das Los ist zu groß für deinen Rang.';
 // Die Reihenfolge der Orte folgt den Motiven im Panoramabild von links nach rechts. Je Ort: Kennung und Symbol für den Titel im Bild.
 const FASS='<img class="fass" src="bilder/fass.png" alt="">';
 const SUBS={
-  gut:[['berg','🍇'],['betrieb','🏡'],['aktuell','📌'],['maschinen','🚜'],['buero','🏆']],
-  keller:[['buch','📜'],['sabotage','🐀'],['start',FASS],['lager','📦']],
+  // Seit 16.3.1 (Bauplan 16.3): Aktuelles ist keine Zunge mehr. Der Ort 'aktuell' bleibt als Klemmbrett (imKlemm), erreichbar nur über den Reiter Klemmbrett.
+  gut:[['berg','🍇'],['betrieb','🏡'],['buero','🏆']],   // seit 16.4.1 ohne Maschinen, sie stehen im Betrieb
+  keller:[['start',FASS],['lager','📦']],   // seit 16.5.1 ohne Hintertür, ihre Karten stehen unten im Keller, seit 16.7.6 ohne Weinarchiv (Siegelbrett und Lexikon stehen im Büro)
   // Seit 10.6 (Maik 20.11.2026): Großhandel mit Waage statt Laden, Arbeitsamt mit Winzer statt Bauarbeiter.
   stadt:[['amt','🏛️'],['handel','⚖️'],['laeden','🍷'],['bank','🏦'],['arbeit','🧑‍🌾']]
 };
 const START_SUB={gut:'betrieb',keller:'start',stadt:'amt'};
+// Seit 16.6.1 (Bauplan 16.6, Entscheidungen 1 und 2, Timos Bild 08): Der Reiter Stadt landet auf dem Stadtplatz (SUB 'platz', keine Zunge, amPlatz), direkte Sprünge
+// gehen weiter über START_SUB ins Gebäude. Je Gebäude die Tippfläche in Prozent des Bilds (links, oben, Breite, Höhe) in der Reihenfolge der Zungen und die Stelle
+// rechts oben am Schild, wo der Punkt aus badges() sitzt. Die Schilder malt das Bild, das Spiel malt keine eigenen darüber.
+const STADT_PLATZ=[['amt',41,3.9,27.4,43.6],['handel',0,18.9,41,32.5],['laeden',68.4,19.5,31.6,39.1],['bank',0,51.4,50.8,28],['arbeit',51.8,59.2,48.2,33.3]];
+const STADT_SCHILD={amt:[68,25.2],handel:[37.4,29.8],laeden:[96.5,39.2],bank:[35.6,56.8],arbeit:[89,67.2]};
 // Kurze Namen für die Unterreiter-Leiste unten.
-const SUB_NAME={berg:'Weinberg',betrieb:'Betrieb',aktuell:'Aktuelles',maschinen:'Maschinen',buero:'Büro',buch:'Weinarchiv',sabotage:'Hintertür',start:'Keller',lager:'Lager',amt:'Rathaus',handel:'Großhandel',laeden:'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'};
+const SUB_NAME={berg:'Weinberg',betrieb:'Betrieb',aktuell:'Klemmbrett',buero:'Büro',start:'Keller',lager:'Lager',amt:'Rathaus',handel:'Großhandel',laeden:'Weinhandel',bank:'Bank',arbeit:'Arbeitsamt'};
 // Seit 13.1 (Maik 21.11.2026): Spielstände von vor dem großen Umbau (bis 12.9.5, Marke v7) laufen nicht weiter. Neue tragen v13, lies gibt nur diese zurück.
 // liesAlt findet alle älteren. Sie bleiben liegen, bis ein neues Spiel den Platz überschreibt oder der Spieler sie löscht. Album und Bestenliste liegen getrennt und bleiben.
 // Davor (seit 7.0, Maik 16.11.2026) galt dasselbe mit der Marke v7 für Stände aus 5.1 und älter.
@@ -653,12 +659,15 @@ const NETZ=location.protocol!=='file:';
 // seit dem letzten Tipp wieder ab, der nächste Tipp lässt sie weiterlaufen. S.zeit = Sekunden, S.zeitRang = [{r,j,s}] je Aufstieg,
 // S.zeitAb = Spielmonat, ab dem gezählt wird (alte Spielstände: ab dem Laden in 8.3, dazu S.zeitAlt).
 const ZEIT_LEER=60;
-const PANO_TEILE={gut:{berg:'panorama-weingut-sommer-teil-1',betrieb:'panorama-weingut-sommer-teil-2',aktuell:'panorama-weingut-sommer-teil-3',maschinen:'panorama-weingut-sommer-teil-4',buero:'panorama-weingut-sommer-teil-5'},
-  keller:{buch:'panorama-keller-teil-1',sabotage:'panorama-keller-teil-2',start:'panorama-keller-teil-3',lager:'panorama-keller-teil-4'},
+const PANO_TEILE={gut:{berg:'panorama-weingut-sommer-teil-1',betrieb:'panorama-weingut-sommer-teil-2',aktuell:'panorama-weingut-sommer-teil-3',buero:'panorama-weingut-sommer-teil-5'},
+  keller:{start:'panorama-keller-teil-3',lager:'panorama-keller-teil-4'},   // seit 16.5.1 ohne Teil 2 (Hintertür), seit 16.7.6 ohne Teil 1 (Weinarchiv)
   stadt:{amt:'panorama-stadt-teil-1',handel:'panorama-stadt-teil-2',laeden:'panorama-stadt-teil-3',bank:'panorama-stadt-teil-4',arbeit:'panorama-stadt-teil-5'}};
 const PANO_BILD=[1536,1024];
+// Seit 16.3.1 zeigt kein Ort mehr Teil 3 mit der Tafel (Aktuelles entfällt). Die Einträge bleiben, bis die Namenstafel einen neuen Platz hat (offen).
 // PANO_TAFEL: die leere Fläche der Anschlagtafel in Bildpixeln (links, oben, rechts, unten). Darauf steht der Schild-Text, dorthin zoomt das Bild nach der Ankunft.
-const PANO_TAFEL={gut:{aktuell:[418,312,848,574]}};
+// Seit 16.7.5 (Bauplan 16.7, Entscheidung 7.1): Die Tafel steht oben in der Familie im Büro (ntafelZeig), der Eintrag heißt deshalb familie statt aktuell.
+// Kein Panorama-Ort heißt familie, Gleiten und Zoomen greifen also nicht. Das Bild bleibt Teil 3 (PANO_TEILE.gut.aktuell).
+const PANO_TAFEL={gut:{familie:[418,312,848,574]}};
 // Zeiten in Millisekunden (Maik 18.11.2026, Testseite _stationen.html): Gleiten, Ruhe vor dem Zoom, Zoom auf die Tafel, Zoom zurück vor dem Weggehen.
 const GLEIT_MS=700, TAFEL_RUHE=300, TAFEL_REIN=900, TAFEL_RAUS=350, TAFEL_ZOOM=1.75, PANO_KURVE='cubic-bezier(.45,.05,.3,1)';
 // Bild oben in einem Fenster (Weinkontrolle, Auktion, Prämierung, Rathaus, Kellerbuch, Pleite).
@@ -1256,7 +1265,7 @@ const WACHS_WECHSEL=2600, WACHS_WENDE=3900;   const WF_POS={
 // Version 4.1: Steckbrief eines Gebiets. Alle Zahlen kommen aus REGIONEN, EIGNUNG und den Hürden, damit die Karte nach dem Abstimmen von selbst stimmt.
 // Spätfrost zur Blüte: April 10 %, Mai 3 % (wuerfelWetter), also in rund jedem achten Jahr, überall gleich.
 const SPAET_JAHR=8;
-const BUCH_ORT={berg:'berg',betrieb:'betrieb',aktuell:'aktuell',maschinen:'maschinen',buero:'buero',buch:'buch',sabotage:'hintertuer',start:'keller',lager:'lager',amt:'rathaus',handel:'handel',laeden:'weinhandel',bank:'bank',arbeit:'arbeit'};
+const BUCH_ORT={berg:'berg',betrieb:'betrieb',aktuell:'aktuell',buero:'buero',buch:'buch',start:'keller',lager:'lager',amt:'rathaus',handel:'handel',laeden:'weinhandel',bank:'bank',arbeit:'arbeit'};
 // Daueraufträge für den Verkauf (seit 4.4, seit 7.0 beim Handels-Manager: Weinhandlungen ab Stufe 1, Großhandel ab Stufe 2).
 // Sie laufen beim Weiterblättern vor dem Monatswechsel: erst die Weinhandlungen (sie zahlen mehr), dann der Großhandel. Seit 14.7.6 (Annahme 24) in jedem Kanal nie unter
 // MGR_PREIS_MIN vom Listenpreis (listenPreis), der Großhandel auch über das Budget hinaus, bis die letzte Flasche auf diese Grenze fällt (bis 14.7.5 nie unter dem vollen Preis,
@@ -1290,12 +1299,14 @@ const MED_NAME={'🌍':'Weltweinschau','🏆':'Bundessieg','🥇':'Gold','🥈':
 // BUERO hält die Wahl, bis das Spiel neu geladen wird. BUERO_WO sagt je Fenster, in welchem Bereich es steht (für "Zeig mir, wo" im Spielführer).
 // Reihenfolge je Bereich: Erfolge (Rang mit Platz, Ehrungen mit Siegeln, Weinbotschafter, Urkunden mit Spenden), Wissen (Anleitung, Kompendium, Spielführer),
 // Familie (Mein Weingut, Chronik, Bestenliste), Einstellungen (Ton, Dein Spiel, Deine Idee). Das Fenster "Deine Namen" steht in jedem Bereich oben, bis es erledigt ist.
+// Seit 16.7.1 (Bauplan 16.7, Entscheidung 1): Das Büro öffnet mit den vier Kacheln groß (BUERO ''), das Symbol hier bleibt für Bildschirmleser und Buch, die Kacheln zeigen Bild 09.
 const BUERO_B=[['erfolge','🏆','Erfolge'],['wissen','📖','Wissen'],['familie','👪','Familie'],['einst','⚙️','Einstellungen']];
-const BUERO_WO={rangliste:'erfolge',ehrungen:'erfolge',ruf:'erfolge',botschafter:'erfolge',urkunden:'erfolge',anleitung:'wissen',komp:'wissen',fuehrer:'wissen',meingut:'familie',chronik:'familie',besten:'familie',ton:'einst',spiel:'einst',idee:'einst'};
+// Seit 16.7.3 und 16.7.4: Siegelbrett bei den Erfolgen, Weinlexikon unter Wissen, der Spielführer in den Einstellungen, die Karte "Weinarchiv" (komp) entfällt.
+const BUERO_WO={rangliste:'erfolge',ehrungen:'erfolge',ruf:'erfolge',botschafter:'erfolge',urkunden:'erfolge',brett:'erfolge',anleitung:'wissen',lexikon:'wissen',meingut:'familie',chronik:'familie',besten:'familie',ton:'einst',fuehrer:'einst',spiel:'einst',idee:'einst'};
 const BSORT_F={dringend:(a,b)=>lotRest(a)-lotRest(b)||a.jahrgang-b.jahrgang};
 // Seit 11.8 (Maik 20.11.2026): Der Unterreiter heißt Weinarchiv und hat drei Kacheln wie das Büro (W1): Deine Weine, Siegelbrett, Lexikon.
-// ARCHIV hält die Wahl, bis das Spiel neu geladen wird. Die Kennung buch des Unterreiters bleibt.
-const ARCHIV_B=[['weine','🍷','Deine Weine'],['brett','🏅','Siegelbrett'],['lexikon','📚','Lexikon']];
+// Seit 16.7.6 (Bauplan 16.7, Entscheidung 9, Briefing Konflikt 1) gibt es das Weinarchiv nicht mehr, ARCHIV_B ist gelöscht. Das Siegelbrett steht in den Erfolgen,
+// das Weinlexikon unter Wissen im Büro. BUCH_ORT.buch bleibt als Kapitel der Spielanleitung (Wortlaut in Meilenstein 17).
 // Version 9.0: Beim Jahreszeiten-Wechsel rollt der Winzerbote nur einen schmalen Streifen herunter (Z_TEIL, Maik 18.11.2026), damit das neue Bild zu sehen bleibt.
 // Den Rest holt ein Tipp oder Wischen irgendwo auf der Seite (Maik 18.11.2026). Der Knopf "Weiter" geht trotzdem sofort.
 const Z_TEIL=.12;
@@ -1310,8 +1321,9 @@ const Z_TEIL=.12;
 const FU_SPRECHER={winzer:{name:'Der alte Winzer',rolle:'Dein Nachbar',bild:'fuehrer-winzer'},handel:{name:'Die Handels-Managerin',rolle:'Verkauf und Zahlen',bild:'manager-handel'},
   // Seit 14.7.7 (Bauplan 14.7, Annahme 26): keller ist die Figur der Kellerleute mit dem Bild des früheren Kellermeisters, aussen die Figur draußen (Erntehelfer)
   // ohne Bild bis Meilenstein 17, dafür das Symbol sym. Der Name ist der Titel ihrer Stufe (titel, fuTitel), ein Bild je Figur. Platzhalter, Wortlaut in Meilenstein 17.
+  // Seit 16.2.6 (Timos Bilder 37 bis 41): neue Gesichter unter den alten Namen, aussen bekommt Timos Erntehelferin (leute-erntehelferin), sym bleibt als Ersatz.
   keller:{get name(){return fuTitel(this,'lagerarb')},titel:['Der Kellerhelfer','Der Kellergeselle','Der Kellermeister'],get rolle(){return LEUTE_GRUPPE.lagerarb},bild:'manager-keller'},
-  aussen:{get name(){return fuTitel(this,'helfer')},titel:['Die Erntehelferin','Die Winzergesellin','Die Rebmeisterin'],get rolle(){return LEUTE_GRUPPE.helfer},bild:'',sym:'🧑‍🌾'},
+  aussen:{get name(){return fuTitel(this,'helfer')},titel:['Die Erntehelferin','Die Winzergesellin','Die Rebmeisterin'],get rolle(){return LEUTE_GRUPPE.helfer},bild:'leute-erntehelferin',sym:'🧑‍🌾'},
   weingut:{name:'Der Weingut-Manager',rolle:'Plan und Einkauf',bild:'manager-weingut'},
   // Seit 10.3: Tipp ohne Gesicht, falls nach der ersten Übergabe noch kein Manager da ist.
   gut:{name:'Dein Weingut',rolle:'Notiz aus dem Büro',bild:''}};
@@ -1458,7 +1470,26 @@ const IDEE_KEY='oechsle-idee', IDEE_MAX=1000;
 // (Wortlaut in Meilenstein 17), als Nächstes 14.6. Seit 14.6.9 (Maiks Antwort 3 im Bauplan 14.6): Version 14.7.1 ohne eigenen Eintrag, die sichtbar geänderten
 // Regeln aus 14.6 stehen als vier Punkte unter 14.7 (Platzhalter, Wortlaut in Meilenstein 17), die Zeile "als Nächstes 14.6" ist weg. Seit 15.1.5 (Bauplan 15.1 Annahme 6): Version 14.7.2 ohne eigenen Eintrag,
 // die zwei sichtbaren Reparaturen aus 15.1 (Laubschneider steht still, Chef-Weinberg bleibt) als zwei weitere Punkte unter 14.7 (Platzhalter, Wortlaut in Meilenstein 17). Meilenstein 13 ist seit 22.11.2026 fertig, seine Kopfzeile trägt deshalb das ✅ (die Abschlussprobe 13.9 bekam keine Version).
+// Seit 16.1.6 (Bauplan 16.1, Zweig design-16): Block 16.0 Design mit Version 16.1, Punkte sind Platzhalter, Wortlaut in Meilenstein 17. Das Kommende bekommt
+// erst eine Zeile, wenn 16.2 bis 16.9 aufgeteilt sind. Beim Zusammenführen nach 15.8 die Blöcke 14.0 und 15.0 von Meilenstein 15 übernehmen.
+// Seit 16.2.6 (Bauplan 16.2): Version 16.2 mit Platzhalter-Punkten (Wortlaut in Meilenstein 17), darüber das Kommende 16.3 bis 16.9 nach dem Fahrplan der 16.0.
+// Seit 16.3.6 (Bauplan 16.3): Version 16.3 Klemmbrett mit Platzhalter-Punkten (Wortlaut in Meilenstein 17), als Nächstes 16.4.
+// Seit 16.4.7 (Bauplan 16.4): Version 16.4 Betrieb mit Platzhalter-Punkten (Wortlaut in Meilenstein 17), als Nächstes 16.5.
+// Seit 16.6.7 (Bauplan 16.6): Version 16.6 Stadt mit Platzhalter-Punkten (Wortlaut in Meilenstein 17), als Nächstes 16.7.
+// Seit 16.7.7 (Bauplan 16.7): Version 16.7 Büro mit Platzhalter-Punkten (Wortlaut in Meilenstein 17), als Nächstes 16.8.
+// Seit 16.8.8 (Bauplan 16.8): Version 16.8 Fenster von unten mit Platzhalter-Punkten (Wortlaut in Meilenstein 17), als Nächstes 16.9.
+// Seit 16.9.7 (Bauplan 16.9, Entscheidung 11): Version 16.9 ohne eigenen Eintrag wie bei 14.6.9, die Zeile "als Nächstes 16.9" entfällt. Die weiblichen Namen draußen
+// (16.9.6) stehen als Punkt bei 16.6 Stadt.
 const WAS_NEU=[
+  {k:'🏁 16.0 Design',d:'in Arbeit',p:['Das Spiel bekommt das neue Aussehen nach Timos Entwürfen'],v:[
+    ['','16.8','Fenster von unten','25.11.2026',['Alle Fenster kommen von unten im Papyrus-Stil, nach unten wischen schließt sie','Kurze Meldungen erscheinen als kleines Schild unten und verschwinden von selbst','Das Wachssiegel steht nur noch auf Knöpfen, die etwas Verbindliches tun','Beim Kredit wählst du erst die Laufzeit und nimmst ihn dann mit Siegel auf','Auktion, Wettbewerbe und Weinhandlung schließt du mit „Später“, sie bleiben im Klemmbrett']],
+    ['','16.7','Büro','25.11.2026',['Das Büro öffnet mit vier großen Kacheln: Erfolge, Wissen, Familie und Einstellungen','Dein Rang zeigt alles zum nächsten Aufstieg mit Balken, dazu Ehrungen, Ruf des Hauses und Urkunden als Karten','Das Siegelbrett hängt jetzt bei den Erfolgen, jedes Siegel ein rundes Feld','Das Weinlexikon steht unter Wissen, das Weinarchiv in der Kellerei gibt es nicht mehr','Oben in der Familie hängt die Namenstafel deines Weinguts']],
+    ['','16.6','Stadt','25.11.2026',['Der Reiter Stadt öffnet den Stadtplatz, ein Tipp auf ein Gebäude führt hinein','Rathaus, Großhandel, Weinhandel, Bank und Arbeitsamt liegen auf dem Holzbrett, je Aufgabe eine Karte','Die Weltweinschau hat ihre eigene Karte, über dem Anmelde-Knopf steht, welche Sorte für die Krone noch fehlt','Im Großhandel Deine Weine wie im Lager, je Wein ein Knopf zum Verkaufen','Im Arbeitsamt Draußen und Drinnen mit Bild, darunter die zwei Köpfe','Draußen arbeiten jetzt Erntehelferin, Winzergesellin und Rebmeisterin, auch bei deinen Leuten im Betrieb']],
+    ['','16.5','Kellerei','25.11.2026',['Der Keller liegt auf dem Holzbrett, je Arbeit eine Karte: Wein keltern, Fässer, Sektkeller, Wein abfüllen und Vorrat','Die Abfüllanlage steht jetzt in der Karte Wein abfüllen, gekauft wird sie weiter im Betrieb','Die Hintertür ist kein eigener Ort mehr, Zuckern und der Weinprüfer stehen unten im Keller','Im Lager oben Deine Weine, je Sorte eine Karte mit Flaschen, Siegel und allen Weinen','Fassraum, Flaschen und Kellerausbau als Karten darunter, im Weinarchiv bleiben Siegelbrett und Lexikon']],
+    ['','16.4','Betrieb','25.11.2026',['Der Betrieb liegt auf dem Holzbrett, oben die Karte deines Weinguts mit Fassraum, Flaschen, Löhnen und deinem Gebiet','Deine Leute zeigen deine zwei Köpfe mit Bild und darunter deine Leute draußen und drinnen','Ein Tipp auf einen Kopf öffnet sein Fenster, beim Weingut-Manager stehen Einsatzplan und Chefsache direkt darin','Jede Maschine als Karte mit Timos Bild, Zustand und Hinweis, gekauft wird über „Maschine kaufen“','Der Unterreiter Maschinen entfällt, beim Weingut bleiben Weinberg, Betrieb und Büro']],
+    ['','16.3','Klemmbrett','25.11.2026',['Das Klemmbrett ist ein eigener Ort mit deinen Aufgaben, Aktuelles entfällt','Jede Aufgabe mit Timos Bild für Weinberg, Betrieb, Keller oder Stadt','Darunter Neuigkeiten mit Wetter, Vorhersage und den wichtigsten Schlagzeilen','„Nächster Monat“ sitzt unten im Klemmbrett, daneben „Weiter, bis was passiert“','Deinen Rang findest du im Büro']],
+    ['','16.2','Navigation und Kopfzeile','25.11.2026',['Die Leiste unten aus Holz mit Timos Bildern für Weingut, Kellerei und Stadt','Neu das Klemmbrett mit der Zahl deiner Aufgaben, es öffnet vorerst Aktuelles','Die Unterreiter sind Registerzungen über der Leiste','Oben Datum, Wetter und Geld auf Pergament, in der Mitte groß das Gesicht, das gerade spricht','Timo hat den alten Winzer, beide Köpfe, den Kellermann und die Erntehelferin neu gezeichnet']],
+    ['','16.1','Weinberg','25.11.2026',['Der Weinberg liegt auf dem Holzbrett, je Sorte ein Zettel zum Auf- und Zuklappen','Ein Hinweis je Weinberg zeigt, was gerade am wichtigsten ist','Öchsle, Rebstufe, Boden und Dünger als Balken mit Siegel und Symbol','Das kleine i öffnet Zustand, Kosten und Tipps, nach unten wischen schließt','Ganz oben die Karte Boden und Düngung mit dem Bild der Jahreszeit']]]},
   {k:'🏁 14.0 Pflege-Umbau',d:'in Arbeit',p:['Wie du deine Reben und deinen Boden pflegst, entscheidet über deinen Wein'],v:[
     ['','14.7','Köpfe und Helfer','25.11.2026',['Zwei Köpfe statt drei: Die Handels-Managerin verkauft, der Weingut-Manager plant und kauft ein','Erntehelfer und Kellerleute lernen je Stufe eine neue Arbeit, die Kellerhelfer warten die Maschinen','Im Einsatzplan wählst du deinen Chef-Weinberg, dazu Laubschnitt und Ausdünnen je Weinberg','Jede Arbeit ist Chefsache oder Automatik, nur die Lese bleibt immer bei dir','Die Handels-Managerin verkauft keine Flasche unter 85 % vom Listenpreis','Die Raritäten-Krone braucht je einen verkauften Jahrgang von Menge, Sekt und Spitze','Sommerschnitt von Hand im Juni, eine Erntemaschine ohne passende Erziehungsform steht still','Nicht gekaufte Höhenlage kommt nur jede zweite Auktion wieder, dazwischen auch Südhang','Rangmeldung und Rangliste nennen nur, was schon da ist: Export und Laden erst mit ihrem Ereignis, die Rivalen ohne Akt-Nummer','Ein Laubschneider ohne passende Erziehungsform steht still','Dein Chef-Weinberg bleibt, bis du ihn umsetzt, er Grand Cru wird oder wegfällt']],
     ['','14.5','Qualität und Weinprüfer','25.11.2026',['Jeder Weinberg hat seine Qualität von 0 bis 100: Pflege, Boden, Form, Laubschnitt und Ausdünnen','Jeder Wein braucht drei Schlüssel: Rang, Lesereife und Qualität','Ab dem 2. Akt darfst du beim Weinprüfer wagen, als Präsident lädst du die Presse ein','Der Preis folgt der Qualität, die Jury wertet Qualität, Weinstufe, Flaschenreife und Öchsle','Jede Lage hat ihre Sorte, Höhenlage und Südhang kommen sicher unter den Hammer']],
@@ -1736,3 +1767,97 @@ const EINSATZ_TEXT={
   autoAusd:'🍇 Ausdünnen auf Automatik: Deine {wer} dünnen aus, wenn es die nächste Weinstufe bringt.',
   neuChef:'Den {sorte} machst du ab jetzt selbst, Rebschnitt und Düngen.',
   weg:'{sorte} schneiden und düngen ab jetzt deine {wer}.'};
+// Seit 16.1 (Bauplan 16.1 Weinberg): Texte der Sorten-Karten, der Karte "Boden und Düngung" und des Info-Panels. {st}, {next}, {n} sind Stufe, nächste Stufe und
+// was fehlt. Bilder der Karten: je Lage ein Platzhalter aus den vorhandenen Bildern bis Meilenstein 17. Platzhalter, Wortlaut in Meilenstein 17.
+const WB_TEXT={
+  oe:'Öchsle', reb:'Rebstufe', bod:'Bodenstufe', dueng:'Dünger', stand:'Stand',
+  bis:'{st}, noch {n} bis {next}', top:'{st}, höher geht es nicht', unter:'noch {n} bis {next}', punkte:'{n} Punkte', grad:'{n}°',
+  erwartet:'rund {l} l erwartet', gelesen:'Für dieses Jahr gelesen', teil:'Ein Teil ist gelesen, der Rest ist verloren', leer:'Keine Trauben mehr am Stock', nicht:'Nicht angebaut',
+  gesperrt:'Ab dem Rang {rang}',
+  fakt:{reben:'Reben', menge:'Menge am Stock', form:'Erziehungsform', lage:'Lage', eignung:'Eignung', rolle:'Rolle', plan:'Einsatzplan', preis:'Preis je Rebe', ertrag:'Ertrag je Rebe'},
+  lage:'{lage}, Platz für {n} Reben', slLage:'{name}, {ha} Hektar, Platz für {n} Reben',
+  // Seit 16.6.2 (Bauplan 16.6, Entscheidungen 4 bis 9): Karten der fünf Gebäude in der Stadt. Platzhalter, Wortlaut in Meilenstein 17.
+  stadt:{anmelden:'Wein anmelden', wettb:'Wettbewerbe', auktionen:'Auktionen', makler:'Makler', anreg:'Kontrolle anregen', spenden:'Spenden', stiftung:'Stiftung fürs Dorf',
+    verband:'Weinbauverband', weltschau:'Weltweinschau',
+    hin:{fass1:'1 Fass wartet', fassN:'{n} Fässer warten', fassKein:'Kein Fass wartet', eingereicht:'Eingereicht: {name}', einreichen:'Einreichen nur diesen Monat',
+      mgrReicht:'{wer} reicht beim Weiterblättern ein', keinWein:'Kein zugelassener Wein', naechst:'Als Nächstes im {m}',
+      aukKeine:'Keine Auktion in Sicht', aukBald:'Geboten wird im {m}', aukJetzt:'Gebote nur diesen Monat', aukArm:'Zum Mitbieten reicht das Geld nicht', aukEnde:'Auktion beendet', aukZu:'Zu groß für dich',
+      maklerJa:'Ein Hektar zu haben', maklerNein:'Verkauft dir gerade nichts', anregFrei:'Dein Hinweis ist frei', anregSchon:'Hinweis für dieses Jahr gegeben', geruecht:'Es gibt Gerüchte',
+      spStufe:'Spende Stufe {s} offen', spFertig:'Alle Spenden erledigt', stFehlt1:'Eine Spende fehlt dem Dorf', stFehltN:'{n} Spenden fehlen dem Dorf',
+      stimmGut:'Die Stimmung reicht', stimmSchlecht:'Die Stimmung reicht nicht', umfrage:'Umfrage im {m}', schauAn:'Angemeldet: {name}', schauJetzt:'Anmelden nur diesen Monat',
+      schauKein:'Kein Wein angemeldet', schauIm:'Die Schau ist im {m}', schauNaechst:'Anmeldung im {m}', schauFertig:'Alle Kronen geholt', keineWahl:'Keine Wahl mehr'},
+    fassweine:'Fassweine ohne Anmeldung', zugelassen:'Zugelassene Weine', mitgehen:'Mitgehen bis', flaeche:'Deine Fläche', naechsterRang:'Nächster Rang', maklerJahr:'Dieses Jahr gekauft',
+    preisHa:'Ein Hektar beim Makler', gespendet:'Gespendet', eingezahlt:'Eingezahlt', stufe:'Stufe {s}', fuer:'für {z}', erledigt:'Erledigt', stimmung:'Stimmung', kronen:'Kronen',
+    gegner:'Gegner', hinweis:'Hinweis dieses Jahr', frei:'frei', gegeben:'gegeben', stimmKauf:'Stimmen kaufen',
+    gh:{markt:'Markt diesen Monat', gut:'Marktlage gut', schwach:'Marktlage schwach', normal:'Marktlage normal', lage:'Marktlage', budget:'Budget übrig', weine:'Weine', reifL:'Flaschen verkaufsreif',
+      best:'Bester Preis je Flasche', band:'{n} Weine, {r} Flaschen verkaufsreif', leer:'Kein Flaschenwein im Lager.', reif:'Flaschen verkaufsreif', bis:'bis {p} je Flasche',
+      erst:'reif in {n} {mon}', verkaufen:'Verkaufen'},
+    laeden:'Weinhandlungen', regalRein:'Ins Regal stellen', regal:'Dein Regal', konto:'Dein Konto', kredit:'Kredit',
+    wh:{keinWein:'Noch kein passender Wein', nimmt1:'Eine Weinhandlung nimmt deinen Wein', nimmtN:'{n} Weinhandlungen nehmen deinen Wein', nichts:'Diesen Monat geht nichts mehr',
+      passt1:'Ein Wein passt ins Regal', passtN:'{n} Weine passen ins Regal', keinReif:'Kein verkaufsreifer Wein', imRegal:'{n} Flaschen im Regal', leer:'Das Regal ist leer',
+      passend:'Passende Weine', offen:'Weinhandlungen mit Platz', kann:'Weine fürs Regal', flaschen:'Flaschen im Regal', bis:'Verkauft im Monat bis'},
+    bank:{plus:'Konto im Plus', minus:'Konto im Minus', mahnung:'{n}. Mahnung', stand:'auf dem Konto', spielraum:'Spielraum', frei:'{x} frei von {r}', ueber:'{x} über dem Rahmen',
+      deinKredit:'Dein Kredit', rest:'Restschuld {x}', moeglich:'Möglich bis {x}'},
+    amt:{loehne:'Ihre Löhne', angestellt:'angestellt', reicht:'Ernteleistung reicht', leistung:'Ernteleistung', genug:'Genug Kellerleute', gebraucht:'Gebraucht',
+      koepfe:'Köpfe', imDienst:'{n} von {m} im Dienst', hoechste:'Höchste Stufe erreicht'}},
+  hin:{fass:'Trauben müssen ins Fass', leute:'Leute fehlen', leistung:'Ernteleistung reicht nicht', duengen:'Düngen nötig', schneiden:'Reben schneiden',
+    laub:'Sommerschnitt offen', ausd:'Ausdünnen offen', pflanzen:'Pflanzen möglich', eis:'Eiswein möglich', gefroren:'Trauben gefroren', ueber:'Überreif',
+    lesen:'Lesen möglich', fertig:'Alles erledigt', leer:'Nicht angebaut', gelesen:'Gelesen', gesperrt:'Noch gesperrt'},
+  helferDuengen:'Deine {wer} düngen beim Weiterblättern, wenn der Boden mager wird.',
+  // Seit 16.2.1: auf der Sorten-Karte nur, wenn sie beim nächsten Weiterblättern wirklich düngen (helferDuengBoden), Platzhalter, Wortlaut in Meilenstein 17.
+  helferDuengenJetzt:'Deine {wer} düngen diesen Weinberg beim Weiterblättern{geld}.', helferDuengenGeld:', sobald das Geld reicht',
+  mehr:'Mehr', mehrKopf:'{sorte}: Mehr', chefMachen:'Zum Chef-Weinberg machen', chefAbgeben:'Rebschnitt und Düngen abgeben', einsatz:'📋 Einsatzplan',
+  panel:'{titel}, Infos', zustand:'Zustand', kosten:'Kosten', tipps:'Tipps', wisch:'Nach unten wischen schließt das Panel.',
+  boden:{titel:'Boden und Düngung', klein:'Deine Weinberge, {ha} Hektar', schnitt:'Boden im Schnitt', chef:'Chef-Weinberg', chefKeiner:'Du machst alles selbst',
+    noch:'Noch kein Weinberg mit Reben', geduengt:'gedüngt {n} von {max}', sterben:'Zum Jahreswechsel gehen voraussichtlich {von} bis {bis} % der Reben ein',
+    flaeche:'Fläche', bepflanzt:'Bepflanzt', platz:'Platz frei', leute:'Deine Leute reichen für', leistung:'Ernteleistung',
+    chefAuto:'keiner, alles auf Automatik', gutJahr:'+{n} Punkte im guten Bodenjahr', jahr:'Jahresschnitt bisher {n} %', lage:'Lagen'},
+  // Seit 16.4.2 (Bild 22): Karte "Dein Betrieb" im Unterreiter Betrieb. Platzhalter, Wortlaut in Meilenstein 17.
+  betrieb:{klein:'Anbaugebiet {gebiet}', fass:'Fassraum', fassUnter:'{bel} von {ges} l', flaschen:'Leere Flaschen', loehne:'Löhne im Monat',
+    hin:{leute:'Leute fehlen', fass:'Fassraum reicht nicht', fertig:'Alles im Lot'},
+    flaeche:'Fläche', bepflanzt:'Bepflanzt', platz:'Platz frei', lage:'Lagen', spitze:'Spitzenlage', kosten:'Feste Kosten im Monat', kredit:'Kredit, Restschuld',
+    gebiet:'Dein Gebiet', zeigen:'Steckbrief zeigen', zuklappen:'Zuklappen', frei:'frei', einsatz:'im Einsatz', masch:'Maschinen', basis:'Betriebskosten', rate:'Kreditrate',
+    familie:'Deine Leute', familieW:'Familie, schafft {ha} Hektar'},
+  // Seit 16.4.4 (Maiks Entscheidung 2, Annahmen 5 und 6): Karte "Deine Leute" mit den zwei Köpfen und den zwei Leitern. Platzhalter, Wortlaut in Meilenstein 17.
+  leute:{titel:'Deine Leute', klein:'Köpfe und Leute im Betrieb', hin:{fehlen:'Leute fehlen', leistung:'Ernteleistung reicht nicht', fertig:'Alle an Bord'},
+    stufe:'Stufe {st} von {n}', lohn:'{lohn} im Monat', kommt:'kommt mit dem nächsten Monat', keiner:'Noch keiner angestellt', fehlt1:'Es fehlt einer', fehltN:'Es fehlen {n}',
+    // Seit 16.9.6 (Bauplan 16.9, Entscheidung 14): weibliche Stufennamen der Leiter draußen, nur für die Anzeige als Titel im Arbeitsamt und in "Deine Leute"
+    // (leuteTitel). Die Zahl steht dann in der Zeile darunter (anzahl), damit keine falsche Mehrzahl entsteht. LEUTE_ST bleibt für Sätze und Spielführer.
+    weiblich:{helfer:['Erntehelferin','Winzergesellin','Rebmeisterin']}, anzahl:'{n} angestellt',
+    reichen:'Reichen für {n} Reben', leistung:'Ernteleistung {n} Reben', draussen:'Draußen', drinnen:'Drinnen', angestellt:'Angestellt', stufeL:'Stufe', lohnL:'Lohn im Monat',
+    sperre:'vorher geht es nicht in den nächsten Monat', koepfe:'Köpfe', loehne:'Löhne der Leute', mgrLohn:'Löhne der Köpfe'},
+  // Seit 16.4.5 (Maiks Entscheidung 3): Abschnitte im Fenster der zwei Köpfe. Platzhalter, Wortlaut in Meilenstein 17.
+  mgr:{aufgaben:'Aufgaben', einsatz:'📋 Einsatzplan', verkauf:'Verkauf', reserve:'Je Wein bleiben im Keller, außer kurz vorm Verderben:'},
+  // Seit 16.4.6 (Bild 22, Annahmen 1 bis 4): Maschinen-Karten und Fenster "Maschine kaufen". Platzhalter, Wortlaut in Meilenstein 17.
+  masch:{hin:{einsatz:'Im Einsatz', gelb:'Warten lohnt sich', rot:'Reparatur nötig', fahrer:'Kein Fahrer', keller:'Kein Kellermensch', still:'Steht still'},
+    zustand:'Zustand', einsatzL:'Einsatz', leistung:'Leistung bei der Lese', bonus:'Bonus', wirkt:'wirkt', weg:'fällt weg', wartung:'Wartung', jeP:'{p} je %', stufe:'Stufe',
+    verkauf:'Verkaufen bringt', abJan:'Verkaufen geht wieder ab Januar.', kaufen:'Maschine kaufen', kaufKopf:'Kaufen geht von Januar bis März, warten das ganze Jahr.',
+    deckt:'Deckt übers Jahr ab', hat:'Du hast schon {ein}.', ausbau:'Abfüllanlage ausbauen', verbessern:'Verbessern', schonStufe2:'Deine Abfüllanlage ist schon auf Stufe 2.',
+    regeln:'So arbeiten Maschinen', noch:'Noch keine eigene Maschine.'},
+  // Seit 16.5.2 (Bauplan 16.5, Entscheidung 1, Bild 23): Karten im Keller. Platzhalter, Wortlaut in Meilenstein 17.
+  keller:{keltern:'Wein keltern', faesser:'Fässer', sekt:'Sektkeller', abfuellen:'Wein abfüllen', vorrat:'Vorrat',
+    hin:{most:'{l} l Most bereit', keineTr:'Keine Trauben im Kelterhaus', fassLeer:'Alle Fässer sind leer', bald:'Ein Fass verdirbt bald', baldN:'{n} Fässer verdirbt bald',
+      bereit:'Fass bereit zum Abfüllen', bereitN:'{n} Fässer bereit zum Abfüllen', anmelden:'Wartet auf die Anmeldung', reift:'Reift im Fass',
+      sektKauf:'Noch kein Sektkeller', sektTr:'Sekt-Trauben warten', sektFertig:'Sekt fertig zum Abfüllen', sektReift:'Reift noch', sektLeer:'Kein Sekt auf der Hefe',
+      vonHand:'Von Hand', vorrat:'Fassraum und Flaschen',
+      // Seit 16.5.4: Karten der Hintertür. Platzhalter, Wortlaut in Meilenstein 17.
+      zuckerMost:'{l} l Most im Kelterhaus', pansch1:'Ein gepanschter Wein im Keller',
+      panschN:'{n} gepanschte Weine im Keller', kieker:'Der Prüfer hat dich auf dem Kieker', sauber:'Noch alles sauber'},
+    zuckern:'Most zuckern oder wässern', pruefer:'Weinprüfer', zuckerUnter:'Bis {erl} % erlaubt, höchstens {max} %',
+    pansch:'Gepanschte Weine im Keller', kontrolle:'Kontrolle',
+    strafe:'Strafe bei einem Fund', kiekerZ:'Der Prüfer hat dich auf dem Kieker.', erlaubt:'Erlaubt als Tafelwein', hoechstens:'Höchstens',
+    fassraum:'Fassraum', fassUnter:'{bel} von {ges} l belegt', imFass:'Im Fass', aeltest:'Ältestes Fass seit {n} {mon}, verdirbt in {r} {mon2}', hefe:'Hefezeit',
+    hefeUnter:'Am weitesten: noch {n} {mon}', hefeFertig:'Fertig, jetzt abfüllen', flaschen:'Leere Flaschen', zumLager:'Zum Lager', zumKauf:'Zu „Maschine kaufen“ im Betrieb',
+    anlage:'Abfüllanlage', ohneAnlage:'Ohne Abfüllanlage füllst du von Hand ab, ein Liter je Flasche. Die Anlage kaufst du im Betrieb unter „Maschine kaufen“.',
+    trauben:'Trauben im Kelterhaus', frei:'Fassraum frei', weine:'Weine im Fass', angemeldet:'davon angemeldet', sektHefe:'Sekt auf der Hefe', sektFlasche:'Sektflasche, Korken und Agraffe',
+    fassPreis:'Fassraum je Liter', flPreis:'Leere Flasche', sektPreis:'Sektkeller, einmal', anlagePreis:'{name}, Ausbau', jeLiter:'{p} je Liter'},
+  // Seit 16.5.6: Karten im Lager. Platzhalter, Wortlaut in Meilenstein 17.
+  lager:{fassraum:'Fassraum', fassKlein:'Fässer kaufen', flaschen:'Flaschen', flKlein:'Leere Flaschen kaufen', ausbau:'Kellerausbau', belegt:'Fassraum belegt',
+    fassUnter:'{bel} von {ges} l belegt', platz:'Flaschenplatz belegt', flUnter:'{n} von {ges} Flaschen', ausgebaut:'Ausgebaut', stufe:'Stufe {k} von {n}',
+    betreut:'Betreut bis', moeglich:'Möglich noch', zuletzt:'Zuletzt gebaut', naechste:'Nächste Stufe: {name}',
+    hin:{leute:'Mehr Kellerleute nötig', fass:'Noch {l} l möglich', fl:'Noch {n} Flaschen möglich', fertig:'Fertig ausgebaut', zu:'Stufe {st} noch gesperrt', kann:'Stufe {st} möglich'}},
+  // Seit 16.5.5 (Bild 07): Deine Weine oben im Lager. Platzhalter, Wortlaut in Meilenstein 17.
+  wein:{titel:'Deine Weine', band:'{n} Weine, geschätzter Wert {w}', leer:'Noch keine Einträge. Hier stehen später alle deine Weine im Fass und in der Flasche.',
+    bald:'Ein Wein verdirbt bald', baldN:'{n} Weine verderben bald', fassL:'dazu {l} l im Fass', imFass:'Im Fass', sekt:'Sekt', wein:'Wein', nichtAn:'nicht angemeldet',
+    reif:'reif in {n} {mon}', fass:'im Fass', weine:'Weine', flaschen:'Flaschen', imFassL:'Im Fass', wert:'Geschätzter Wert',
+    i:'Alle deine Weine im Fass und in der Flasche, je Sorte eine Karte. Was zuerst verdirbt, steht oben. Rot heißt, bald ist es zu spät. Ein Tipp auf einen Wein zeigt alle Angaben und die Knöpfe. Die drei kleinen Siegel zeigen, wie weit der Eintrag auf dem Siegelbrett ist, für den dieser Wein zählt. Wein im Fass, gepanschter Wein und Stufen aus einer anderen Sorte zählen nicht.'}};
