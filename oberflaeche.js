@@ -2576,7 +2576,8 @@ function mengeSheet(o){
 }
 function slUpd(){if(!SL)return;const n=+$('#slr').value;$('#slv').innerHTML=SL.info(n);$('#slok').disabled=n<=0}
 // Hinweis mit dem direkten Weg zum Arbeitsamt, für alles, was an fehlenden Leuten scheitert. text ist fertiges HTML.
-function leuteSheet(titel,text){openSheet(`${sbild('arbeit')}<h3>${esc(titel)}</h3>${text}
+// Seit 16.9.6 (Bauplan 16.9, Fund 3): als Rückfrage (frageSheet) wie in Maiks Liste "Was wohin gehört", Knöpfe unverändert.
+function leuteSheet(titel,text){frageSheet(`${sbild('arbeit')}<h3>${esc(titel)}</h3>${text}
   <div class="kv"><span>Angebot Erntehelfer</span>${lohnAngebot('helfer')}</div><div class="kv"><span>Angebot Kellerleute</span>${lohnAngebot('lagerarb')}</div>
   <div class="btns"><button class="sec" data-a="close">Zurück</button><button data-a="arbeitsamt">Zum Arbeitsamt</button></div>`)}
 
