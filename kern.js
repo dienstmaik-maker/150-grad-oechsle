@@ -3056,7 +3056,10 @@ function einPruef(){if(!S||!S.ein) return; for(const k of Object.keys(EIN_REGEL)
 function einFrei(k){return !S||!S.ein||!EIN_REGEL[k]||S.ein.f.includes(k)}
 function einZu(id){const k=einKey(id); return !!(S&&S.ein&&EIN_REGEL[k]&&!S.ein.f.includes(k))}
 // Seit 12.6.4: Bei einer neuen Partie fehlen Erfolge und Familie, bis dort das erste Fenster frei ist. Seit 16.7.1 stehen dann nur die Kacheln, die es gibt.
-function bueroBer(){return BUERO_B.filter(([k])=>k==='erfolge'?['rangliste','ehrungen','ruf','urkunden'].some(einFrei):k==='familie'?['meingut','chronik','besten'].some(einFrei):true)}
+// Seit 16.9.6 (Bauplan 16.9, Fund 1): Die Familie steht auch da, solange der Name fehlt (S.ich leer), damit die Aufgabe "Trag deinen Namen ein" (namenGeh) ankommt.
+// Ist dort sonst noch nichts frei (famFrei), zeigt bueroFamilie nur Tafel und "Deine Namen".
+const famFrei=()=>['meingut','chronik','besten'].some(einFrei);
+function bueroBer(){return BUERO_B.filter(([k])=>k==='erfolge'?['rangliste','ehrungen','ruf','urkunden'].some(einFrei):k==='familie'?famFrei()||!S.ich:true)}
 function vBuero(){
   // Seit 16.7.1: BUERO '' sind die großen Kacheln, ein Bereich, den es (noch) nicht gibt, führt auch dorthin.
   const BB=bueroBer(); if(BUERO&&!BB.some(b=>b[0]===BUERO)) BUERO='';
@@ -3066,8 +3069,9 @@ function vBuero(){
 // Seit 16.7.5 (Bauplan 16.7, Entscheidung 7): oben die Namenstafel (ntafelZeig zeichnet sie nach dem Aufbau), darunter "Deine Namen", solange der Name fehlt,
 // dann Mein Weingut, Chronik und Bestenliste als Karten. Platzhalter, Wortlaut in Meilenstein 17.
 function bueroFamilie(){
-  const L=bestenZeilen();
-  return `<section class="ntafel" aria-label="Namenstafel: ${esc(S.name)}"><i></i></section>`
+  const L=bestenZeilen(), tafel=`<section class="ntafel" aria-label="Namenstafel: ${esc(S.name)}"><i></i></section>`;
+  if(!famFrei()) return tafel+namenFenster();   // seit 16.9.6 (Fund 1): auf Rang 0 ohne Namen nur Tafel und "Deine Namen"
+  return tafel
     +namenFenster()
     +wgFenster()
     +chronikHtml()
