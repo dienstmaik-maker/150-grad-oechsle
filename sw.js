@@ -2,7 +2,7 @@
 // Die Spielseite (index.html), das Buch (anleitung.js) und seit 8.1 die Sprechblasen (fuehrer.js) kommen immer zuerst frisch aus dem Netz, so kommen neue Fassungen von selbst an. Ohne Netz gilt die gespeicherte.
 // Seit 13.1 steht der Code in zahlen.js, kern.js und oberflaeche.js. Sie kommen wie die Seite zuerst frisch, sonst sähe ein Handy einen halben alten Stand.
 // Bilder und Töne kommen aus dem Speicher. Ändert sich eines davon, die Nummer in LAGER erhöhen, dann lädt das Gerät alles neu.
-const LAGER = 'oechsle-50';
+const LAGER = 'oechsle-51';   // seit dem Zusammenführen 15 und 16 (26.11.2026): eins über oechsle-50 (design-16) und oechsle-43 (umbau-13)
 const FRISCH = ['anleitung.js', 'fuehrer.js', 'zahlen.js', 'kern.js', 'oberflaeche.js'];
 const DATEIEN = [
   './', 'index.html', 'manifest.webmanifest', 'anleitung.js', 'fuehrer.js', 'zahlen.js', 'kern.js', 'oberflaeche.js',

@@ -263,7 +263,7 @@ const FORM_VORAUS='Vorausgewählt ist die Form, die der alte Winzer empfiehlt. D
 // Seit 14.2.5: Winzerbote, wenn eine Lage eine neue Boden-Stufe erreicht. Platzhalter, Wortlaut in Meilenstein 17.
 const BODEN_LAGE_BOTE='🌱 {lage}: Der Boden ist jetzt {stufe}.';
 const LAUB_HAND_BOTE='✂️ Ab jetzt kannst du im Juni den Sommerschnitt von Hand machen, im Weinberg bei jeder Sorte. Eine Maschine kommt in deine steilen Hänge nicht.';
-const VERSION='16.9';
+const VERSION='16.9.1';   // seit dem Zusammenführen 15 und 16 (26.11.2026): 16.9 mit den Regeln aus 15 bis 15.8, ohne eigenen Eintrag wie 14.7.2
 // Seit 13.3.6 (Maik 21.11.2026): Im Umbau starten neue Partien ohne Spielführer, sonst verspricht er Dinge nach den alten Rängen.
 // Mit neuen Texten muss er am Ende wieder an sein (14.4), dann FU_START=1.
 const FU_START=0;
@@ -1480,6 +1480,8 @@ const IDEE_KEY='oechsle-idee', IDEE_MAX=1000;
 // Seit 16.8.8 (Bauplan 16.8): Version 16.8 Fenster von unten mit Platzhalter-Punkten (Wortlaut in Meilenstein 17), als Nächstes 16.9.
 // Seit 16.9.7 (Bauplan 16.9, Entscheidung 11): Version 16.9 ohne eigenen Eintrag wie bei 14.6.9, die Zeile "als Nächstes 16.9" entfällt. Die weiblichen Namen draußen
 // (16.9.6) stehen als Punkt bei 16.6 Stadt.
+// Seit dem Zusammenführen 15 und 16 (26.11.2026, Z.4): Version 16.9.1 ohne eigenen Eintrag, weil 15 bis 15.8 keine eigene Version hatte (14.7.2). Die Blöcke der Reihe nach:
+// 16.0 Design oben, darunter 14.0 mit den zwei Punkten aus 15.1 unter 14.7, dann 13.0 und älter. Verschneiden fällt im Punkt 16.5 weg (15.6.9).
 const WAS_NEU=[
   {k:'🏁 16.0 Design',d:'in Arbeit',p:['Das Spiel bekommt das neue Aussehen nach Timos Entwürfen'],v:[
     ['','16.8','Fenster von unten','25.11.2026',['Alle Fenster kommen von unten im Papyrus-Stil, nach unten wischen schließt sie','Kurze Meldungen erscheinen als kleines Schild unten und verschwinden von selbst','Das Wachssiegel steht nur noch auf Knöpfen, die etwas Verbindliches tun','Beim Kredit wählst du erst die Laufzeit und nimmst ihn dann mit Siegel auf','Auktion, Wettbewerbe und Weinhandlung schließt du mit „Später“, sie bleiben im Klemmbrett']],
